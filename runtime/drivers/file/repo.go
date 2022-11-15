@@ -9,6 +9,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 var excludes = []string{"__pycache__", "build", "dist", "node_modules", "venv"}
@@ -45,7 +47,7 @@ func (c *connection) ListRecursive(ctx context.Context, repoID string) ([]string
 		}
 
 		// Track file if it's a .sql file
-		if path.Ext(p) == ".sql" {
+		if hasSupportForExt(p) {
 			pathFromRoot := strings.TrimPrefix(p, cleanRoot)
 			paths = append(paths, pathFromRoot)
 		}
@@ -71,9 +73,21 @@ func (c *connection) Get(ctx context.Context, repoID string, filePath string) (s
 	return string(b), nil
 }
 
+// Stat implements drivers.RepoStore by returning the file's stat
+func (c *connection) Stat(ctx context.Context, repoID string, filePath string) (*drivers.RepoObjectStat, error) {
+	filePath = path.Join(c.root, filePath)
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.RepoObjectStat{
+		LastUpdated: info.ModTime(),
+	}, nil
+}
+
 // PutBlob implements drivers.RepoStore
 func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string, blob string) error {
-	if path.Ext(filePath) != ".sql" {
+	if !hasSupportForExt(filePath) {
 		return fmt.Errorf("file repo: can only edit .sql files")
 	}
 
@@ -113,11 +127,22 @@ func (c *connection) PutReader(ctx context.Context, repoID string, filePath stri
 	return filePath, nil
 }
 
+func (c *connection) Rename(ctx context.Context, repoID string, from string, filePath string) error {
+	filePath = path.Join(c.root, filePath)
+	from = path.Join(c.root, from)
+	return os.Rename(from, filePath)
+}
+
 // Delete implements drivers.RepoStore
 func (c *connection) Delete(ctx context.Context, repoID string, filePath string) error {
-	if path.Ext(filePath) != ".sql" {
+	if !hasSupportForExt(filePath) {
 		return fmt.Errorf("file repo: can only edit .sql files")
 	}
 	filePath = path.Join(c.root, filePath)
 	return os.Remove(filePath)
+}
+
+func hasSupportForExt(filePath string) bool {
+	ext := path.Ext(filePath)
+	return ext == ".sql" || ext == ".yaml"
 }

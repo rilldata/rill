@@ -18,22 +18,30 @@ type CatalogStore interface {
 
 // CatalogObject represents one object in the catalog, such as a source
 type CatalogObject struct {
-	Name        string
-	Type        CatalogObjectType
-	SQL         string
-	Schema      *api.StructType
-	Managed     bool
+	// basic fields
+	Name    string
+	Type    CatalogObjectType
+	SQL     string
+	Schema  *api.StructType
+	Managed bool
+
+	// artifact fields
+	Definition []byte
+	Path       string
+
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 	RefreshedOn time.Time `db:"refreshed_on"`
 }
 
 // Constants representing different kinds of catalog objects
+
 type CatalogObjectType string
 
 const (
 	CatalogObjectTypeUnspecified CatalogObjectType = ""
 	CatalogObjectTypeTable       CatalogObjectType = "table"
 	CatalogObjectTypeSource      CatalogObjectType = "source"
+	CatalogObjectTypeModel       CatalogObjectType = "model"
 	CatalogObjectTypeMetricsView CatalogObjectType = "metrics_view"
 )

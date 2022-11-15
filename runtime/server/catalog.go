@@ -3,13 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
-	sqlpure "github.com/rilldata/rill/runtime/sql/pure"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -95,7 +93,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 	}
 
 	// Parse SQL
-	source, err := sqlToSource(obj.SQL)
+	source, err := sources.SqlToSource(obj.SQL)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -128,6 +126,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 
 // TriggerSync implements RuntimeService
 func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (*api.TriggerSyncResponse, error) {
+	// TODO: move to using migrate
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
@@ -143,13 +142,13 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 	olap, _ := conn.OLAPStore()
 
 	// Get catalog
-	catalog, err := s.openCatalog(ctx, inst)
+	catalogStore, err := s.openCatalog(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Get full catalog
-	objs := catalog.FindObjects(ctx, req.InstanceId, drivers.CatalogObjectTypeUnspecified)
+	objs := catalogStore.FindObjects(ctx, req.InstanceId, drivers.CatalogObjectTypeUnspecified)
 
 	// Get information schema
 	tables, err := olap.InformationSchema().All(ctx)
@@ -181,7 +180,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 			// If the table has already been synced, update the schema if it has changed
 			if !proto.Equal(t.Schema, obj.Schema) {
 				obj.Schema = t.Schema
-				err := catalog.UpdateObject(ctx, inst.ID, obj)
+				err := catalogStore.UpdateObject(ctx, inst.ID, obj)
 				if err != nil {
 					return nil, status.Errorf(codes.FailedPrecondition, err.Error())
 				}
@@ -189,7 +188,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 			}
 		} else if !ok {
 			// If we haven't seen this table before, add it
-			err := catalog.CreateObject(ctx, inst.ID, &drivers.CatalogObject{
+			err := catalogStore.CreateObject(ctx, inst.ID, &drivers.CatalogObject{
 				Name:    t.Name,
 				Type:    drivers.CatalogObjectTypeTable,
 				Schema:  t.Schema,
@@ -208,7 +207,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 	for name, seen := range objSeen {
 		obj := objMap[name]
 		if !seen && obj.Type == drivers.CatalogObjectTypeTable && !obj.Managed {
-			err := catalog.DeleteObject(ctx, inst.ID, name)
+			err := catalogStore.DeleteObject(ctx, inst.ID, name)
 			if err != nil {
 				return nil, status.Errorf(codes.FailedPrecondition, err.Error())
 			}
@@ -230,11 +229,11 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 
 func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drivers.CatalogStore, error) {
 	if !inst.EmbedCatalog {
-		catalog, ok := s.metastore.CatalogStore()
+		catalogStore, ok := s.metastore.CatalogStore()
 		if !ok {
 			return nil, fmt.Errorf("metastore cannot serve as catalog")
 		}
-		return catalog, nil
+		return catalogStore, nil
 	}
 
 	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
@@ -242,12 +241,12 @@ func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drive
 		return nil, err
 	}
 
-	catalog, ok := conn.CatalogStore()
+	catalogStore, ok := conn.CatalogStore()
 	if !ok {
 		return nil, fmt.Errorf("instance cannot embed catalog")
 	}
 
-	return catalog, nil
+	return catalogStore, nil
 }
 
 func catalogObjectTypeFromPB(t api.CatalogObject_Type) drivers.CatalogObjectType {
@@ -292,7 +291,7 @@ func catalogObjectTableToPB(obj *drivers.CatalogObject) (*api.CatalogObject, err
 }
 
 func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
-	source, err := sqlToSource(obj.SQL)
+	source, err := sources.SqlToSource(obj.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -315,50 +314,4 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, er
 		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
 		RefreshedOn: timestamppb.New(obj.RefreshedOn),
 	}, nil
-}
-
-func sqlToSource(sqlStr string) (*connectors.Source, error) {
-	astStmt, err := sqlpure.Parse(sqlStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse error: %s", err.Error())
-	}
-
-	if astStmt.CreateSource == nil {
-		return nil, fmt.Errorf("refresh error: object cannot be refreshed")
-	}
-
-	ast := astStmt.CreateSource
-
-	s := &connectors.Source{
-		Name:       ast.Name,
-		Properties: make(map[string]any),
-	}
-
-	for _, prop := range ast.With.Properties {
-		if strings.ToLower(prop.Key) == "connector" {
-			s.Connector = safePtrToStr(prop.Value.String)
-			continue
-		}
-		if prop.Value.Number != nil {
-			s.Properties[prop.Key] = *prop.Value.Number
-		} else if prop.Value.String != nil {
-			s.Properties[prop.Key] = *prop.Value.String
-		} else if prop.Value.Boolean != nil {
-			s.Properties[prop.Key] = *prop.Value.Boolean
-		}
-	}
-
-	err = s.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
-}
-
-func safePtrToStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

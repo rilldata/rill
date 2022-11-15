@@ -49,25 +49,25 @@ service RuntimeService {
     };
   }
 
-  // ListRepoObjects lists all the objects (files) in a repo sorted by full path. 
-  // It includes objects in nested "directories".
-  rpc ListRepoObjects(ListRepoObjectsRequest) returns (ListRepoObjectsResponse) {
+  // ListFiles lists all the files matching a glob in a repo.
+  // The files are sorted by their full path.
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
     option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/objects"
+      get: "/v1/repos/{repo_id}/files"
     };
   }
 
-  // GetRepoObject returns the contents of a specific object (file) in a repo.
-  rpc GetRepoObject(GetRepoObjectRequest) returns (GetRepoObjectResponse) {
+  // GetFile returns the contents of a specific file in a repo.
+  rpc GetFile(GetFileRequest) returns (GetFileResponse) {
     option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/objects/-/{path=**}"
+      get: "/v1/repos/{repo_id}/files/-/{path=**}"
     };
   }
 
-  // PutRepoObject can be used to create, update, or delete an object (file) in a repo
-  rpc PutRepoObject(PutRepoObjectRequest) returns (PutRepoObjectResponse) {
+  // PutFile creates or updates a file in a repo
+  rpc PutFile(PutFileRequest) returns (PutFileResponse) {
     option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/objects/-/{path=**}",
+      post: "/v1/repos/{repo_id}/files/-/{path=**}",
       body: "*"
     };
   }
@@ -138,7 +138,7 @@ service RuntimeService {
 
   // Migrations
 
-  // Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.
+  // Migrate applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
   // the desired state expressed in the artifacts. Any existing objects not described in the submitted
   // artifacts will be deleted.
@@ -165,6 +165,15 @@ service RuntimeService {
   rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/migrate/single/delete",
+      body: "*"
+    };
+  }
+
+  // PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+  // It is equivalent to calling the two RPCs sequentially.
+  rpc PutFileAndMigrate(PutFileAndMigrateRequest) returns (PutFileAndMigrateResponse) {
+    option (google.api.http) = {
+      post: "/v1/put-and-migrate",
       body: "*"
     };
   }
@@ -407,37 +416,45 @@ message DeleteRepoRequest {
 // Response message for RuntimeService.DeleteRepo
 message DeleteRepoResponse {}
 
-// Request message for RuntimeService.ListRepoObjects
-message ListRepoObjectsRequest {
+// Request message for RuntimeService.ListFiles
+message ListFilesRequest {
   string repo_id = 1;
+  string glob = 2;
 }
 
-// Response message for RuntimeService.ListRepoObjects
-message ListRepoObjectsResponse {
+// Response message for RuntimeService.ListFiles
+message ListFilesResponse {
   repeated string paths = 1;
 }
 
-// Request message for RuntimeService.GetRepoObjectRequest
-message GetRepoObjectRequest {
+// Request message for RuntimeService.GetFile
+message GetFileRequest {
   string repo_id = 1;
   string path = 2;
 }
 
-// Response message for RuntimeService.GetRepoObjectResponse
-message GetRepoObjectResponse {
+// Reponse message for RuntimeService.GetFile
+message GetFileResponse {
   string blob = 1;
+  google.protobuf.Timestamp updated_on = 2;
 }
 
-// Request message for RuntimeService.PutRepoObjectRequest
-message PutRepoObjectRequest {
+// Request message for RuntimeService.PutFile
+message PutFileRequest {
   string repo_id = 1;
   string path = 2;
   string blob = 3;
-  bool delete = 4;
+  // Create indicates whether to create the file if it doesn't already exist
+  bool create = 4;
+  // Will cause the operation to fail if the file already exists.
+  // It should only be set when create = true.
+  bool create_only = 5;
+  // Delete will remove the file. If true, the passed blob must be empty.
+  bool delete = 6;
 }
 
-// Response message for RuntimeService.PutRepoObjectRequest
-message PutRepoObjectResponse {
+// Response message for RuntimeService.PutFile
+message PutFileResponse {
   string file_path = 1;
 }
 
@@ -525,22 +542,25 @@ message DeleteInstanceResponse {}
 // Catalog
 // **********
 
-
 // CatalogObject represents an object stored in the catalog
 message CatalogObject {
   enum Type {
     TYPE_UNSPECIFIED = 0;
     TYPE_TABLE = 1;
     TYPE_SOURCE = 2;
-    TYPE_METRICS_VIEW = 3;
+    TYPE_MODEL = 3;
+    TYPE_METRICS_VIEW = 4;
   }
   Type type = 1;
   Table table = 2;
   Source source = 3;
-  MetricsView metrics_view = 4;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
-  google.protobuf.Timestamp refreshed_on = 7;
+  Model model = 4;
+  MetricsView metrics_view = 5;
+  string name = 6;
+  string path = 7;
+  google.protobuf.Timestamp created_on = 8;
+  google.protobuf.Timestamp updated_on = 9;
+  google.protobuf.Timestamp refreshed_on = 10;
 }
 
 // Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
@@ -556,45 +576,72 @@ message Table {
   bool managed = 3;
 }
 
-// Source represents a catalog object created using CREATE SOURCE
+// Source is the internal representation of a source definition
 message Source {
-  // Formatted SQL DDL for the source
-  string sql = 1;
   // Name of the source
-  string name = 2;
+  string name = 1;
   // Connector used by the source
-  string connector = 3;
+  string connector = 2;
   // Connector properties assigned in the source
-  google.protobuf.Struct properties = 4;
+  google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
+
+  // Used for the SQL statement for sources
+  // TODO: Remove before merging this branch
+  string sql = 20;
 }
 
-// MetricsView represents a catalog object created using CREATE METRICS VIEW
+// Model is the internal representation of a model definition
+message Model {
+  // Dialects supported for models
+  enum Dialect {
+    DIALECT_UNSPECIFIED = 0;
+    DIALECT_DUCKDB = 1;
+  }
+  // Name of the model
+  string name = 1;
+  // SQL is a SELECT statement representing the model
+  string sql = 2;
+  // Dialect of the SQL statement
+  Dialect dialect = 3;
+  // Detected schema of the model
+  StructType schema = 4;
+}
+
+// Metrics view is the internal representation of a metrics view definition
 message MetricsView {
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
-    string type = 2;
-    bool primary_time = 3;
-    string description = 4;
+    string label = 2;
+    string description = 3;
+    string enabled = 4;
+    string error = 5;
   }
   // Measures are aggregated computed values
   message Measure {
     string name = 1;
-    string type = 2;
-    string description = 3;
+    string label = 2;
+    string expression = 3;
+    string description = 4;
+    string format = 5;
+    string enabled = 6;
+    string error = 7;
   }
-  // Formatted SQL DDL for the metrics view
-  string sql = 1;
   // Name of the metrics view
-  string name = 2;
+  string name = 1;
   // Name of the source or model that the metrics view is based on
-  string from_object = 3;
+  string from = 2;
+  // Name of the primary time dimension, used for rendering time series
+  string time_dimension = 3;
+  // Recommended granularities for rolling up the time dimension.
+  // Should be a valid SQL INTERVAL value.
+  repeated string time_grains = 4;
   // Dimensions in the metrics view
-  repeated Dimension dimensions = 4;
+  repeated Dimension dimensions = 5;
   // Measures in the metrics view
-  repeated Measure measures = 5;
+  repeated Measure measures = 6;
 }
 
 // Request message for RuntimeService.ListCatalogObjects
@@ -650,15 +697,69 @@ message MigrateRequest {
   // Instance to migrate
   string instance_id = 1;
   // Contents of files containing one or more SQL DDL statements
-  repeated string blobs = 2;
-  // If true, all catalog objects not present in blobs (except for unmanaged tables) will be deleted
-  bool drop_deleted = 3;
-  // If true, will validate the SQL, but not actually execute the migrations
-  bool dry_run = 4;
+  string repo_id = 2;
+  // Changed paths provides a way to "hint" what files have changed in the repo, enabling
+  // migrations to execute faster by not scanning all code artifacts for changes.
+  repeated string changed_paths = 3;
+  // If true, will validate the file artifacts, but not actually execute any migrations
+  bool dry = 4;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 5;
 }
 
 // Response message for RuntimeService.Migrate
-message MigrateResponse {}
+message MigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the migration. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
+  repeated string affected_paths = 2;
+}
+
+// MigrationError represents an error encountered while running Migrate.
+message MigrationError {
+  // Code represents different categories of migration errors
+  enum Code {
+    // Unspecified error
+    CODE_UNSPECIFIED = 0;
+    // Code artifact failed to parse
+    CODE_SYNTAX = 1;
+    // Code artifact has internal validation errors
+    CODE_VALIDATION = 2;
+    // Code artifact is valid, but has invalid dependencies
+    CODE_DEPENDENCY = 3;
+    // Error returned from the OLAP database
+    CODE_OLAP = 4;
+    // Error encountered during source inspection or ingestion
+    CODE_SOURCE = 5;
+  }
+  // CharLocation is a line and column in a code artifact
+  message CharLocation {
+    uint32 line = 1;
+    uint32 column = 2;
+  }
+  // Code denotes the category of error
+  Code code = 1;
+  // Message is a developer-friendly error message
+  string message = 2;
+  // File path of the code artifact that this error relates to (if any)
+  string file_path = 3;
+  // Property path of the error in the code artifact (if any).
+  // It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+  // It only applies to structured code artifacts (i.e. YAML).
+  // Only applicable if file_path is set.
+  string property_path = 4;
+  // Start location of the error in the code artifact (if any).
+  // Only applicable if file_path is set.
+  CharLocation start_location = 5;
+  // End location of the error in the code artifact (if any).
+  // Only applicable if file_path and start_location is set.
+  CharLocation end_location = 6;
+}
 
 // Request message for RuntimeService.MigrateSingle
 message MigrateSingleRequest {
@@ -688,6 +789,41 @@ message MigrateDeleteRequest {
 
 // Response message for RuntimeService.MigrateDelete
 message MigrateDeleteResponse {}
+
+message PutFileAndMigrateRequest {
+  // Repo to store the file in
+  string repo_id = 1;
+  // Instance to apply the migrations to
+  string instance_id = 2;
+  // Path to store the file at
+  string path = 3;
+  // Contents to save to the file
+  string blob = 4;
+  // Create indicates whether to create the file if it doesn't already exist
+  bool create = 5;
+  // create_only will cause the operation to fail if a file already exists at path.
+  // It should only be set when create = true.
+  bool create_only = 6;
+  // Delete will remove the file. If true, the passed blob must be empty.
+  bool delete = 7;
+
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 8;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 9;
+}
+
+message PutFileAndMigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file paths that were considered while
+  // executing the migration. For a PutFileAndMigrate, this includes the put file
+  // as well as any file artifacts that rely on objects declared in it.
+  repeated string affected_paths = 2;
+}
 
 // **********
 // Queries

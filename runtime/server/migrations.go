@@ -7,13 +7,32 @@ import (
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // Migrate implements RuntimeService
 func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.MigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.RepoId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	resp, err := service.Migrate(ctx, catalog.MigrationConfig{
+		DryRun:       req.Dry,
+		Strict:       req.Strict,
+		ChangedPaths: req.ChangedPaths,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MigrateResponse{
+		Errors:        resp.Errors,
+		AffectedPaths: resp.AffectedPaths,
+	}, nil
 }
 
 // MigrateSingle implements RuntimeService
@@ -83,10 +102,39 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 	return &api.MigrateDeleteResponse{}, nil
 }
 
+// PutFileAndMigrate implements RuntimeService
+func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigrateRequest) (*api.PutFileAndMigrateResponse, error) {
+	_, err := s.PutFile(ctx, &api.PutFileRequest{
+		RepoId:     req.RepoId,
+		Path:       req.Path,
+		Blob:       req.Blob,
+		Create:     req.Create,
+		CreateOnly: req.CreateOnly,
+		Delete:     req.Delete,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.PutFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
 // NOTE: This is an initial migration implementation with several flaws.
 func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
 	// Parse SQL
-	source, err := sqlToSource(req.Sql)
+	source, err := sources.SqlToSource(req.Sql)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -140,7 +188,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 
 		// Check whether the properties for the new object are different (i.e. whether to re-ingest or just rename)
-		renameSource, err := sqlToSource(renameObj.SQL)
+		renameSource, err := sources.SqlToSource(renameObj.SQL)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "could not parse existing sql: %s", err.Error())
 		}

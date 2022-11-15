@@ -40,6 +40,7 @@ type Server struct {
 	logger       *zap.Logger
 	connCache    *connectionCache
 	catalogCache *catalogCache
+	serviceCache *servicesCache
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -56,6 +57,7 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 		logger:       logger,
 		connCache:    newConnectionCache(opts.ConnectionCacheSize),
 		catalogCache: newCatalogCache(opts.CatalogCacheSize, opts.CatalogCacheDuration),
+		serviceCache: newServicesCache(),
 	}, nil
 }
 
@@ -94,8 +96,8 @@ func (s *Server) Serve(ctx context.Context) error {
 		}
 		mux.HandlePath(
 			"POST",
-			"/v1/repos/{repo_id}/objects/file/-/{path=**}",
-			s.PutRepoObjectFromHTTPRequest,
+			"/v1/repos/{repo_id}/files/upload/-/{path=**}",
+			s.UploadMultipartFile,
 		)
 		handler := cors(mux)
 		server := &http.Server{Handler: handler}
