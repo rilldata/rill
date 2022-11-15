@@ -1,20 +1,21 @@
 <script lang="ts">
+  import { level as levelTokens } from "../../application-config";
   import AlertCircle from "../icons/AlertCircle.svelte";
   import AlertTriangle from "../icons/AlertTriangle.svelte";
   import InfoCircle from "../icons/InfoCircle.svelte";
 
   export let level: "info" | "warning" | "error" = "info";
+  export let rounded = true;
+  export let border = true;
 
-  const sharedClasses = "p-3 grid gap-x-4 border rounded items-center border-1";
-  const classes = {
-    info: "bg-blue-50 text-blue-800 border-blue-600",
-    warning: "bg-yellow-100 text-yellow-800 border-yellow-600",
-    error: "bg-red-100 text-red-800 border-red-600",
-  };
+  const sharedClasses = "p-3 grid gap-x-4 items-center border-1";
 </script>
 
 <div
-  class="grid {sharedClasses} {classes[level]}"
+  class:rounded
+  class:border
+  class="grid {sharedClasses} {levelTokens[level].text} {levelTokens[level]
+    .bg} {levelTokens[level].border}"
   style:grid-template-columns="max-content auto"
 >
   <div style:font-size=".875rem">

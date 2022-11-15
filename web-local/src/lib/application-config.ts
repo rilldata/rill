@@ -31,3 +31,28 @@ export const SURFACE_SLIDE_DURATION = 400;
 export const LIST_SLIDE_DURATION = 200;
 export const SURFACE_SLIDE_EASING = easing;
 export const SURFACE_DRAG_DURATION = 50;
+
+/** level color tokens */
+export const level = {
+  info: {
+    text: "text-blue-800",
+    border: "border-blue-600",
+    bg: "bg-blue-50",
+    bgSecondary: "bg-blue-50",
+    borderSecondary: "border-blue-500",
+  },
+  warning: {
+    text: "text-yellow-800",
+    border: " border-yellow-600",
+    bg: "bg-yellow-100",
+    bgSecondary: "bg-yellow-50",
+    borderSecondary: "border-yellow-400",
+  },
+  error: {
+    text: "text-red-800",
+    border: "border-red-600",
+    bg: "bg-red-100",
+    borderSecondary: "border-red-500",
+    bgSecondary: "bg-red-50",
+  },
+};
