@@ -2,56 +2,124 @@ package start
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/web"
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/https"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
+	"github.com/rilldata/rill/runtime/drivers"
+	_ "github.com/rilldata/rill/runtime/drivers/druid"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"golang.org/x/sync/errgroup"
 )
 
 // StartCmd represents the start command
 func StartCmd() *cobra.Command {
+	var olapDriver string
+	var olapDSN string
+	var repoDSN string
+	var httpPort int
+	var grpcPort int
+	var verbose bool
+
 	var startCmd = &cobra.Command{
 		Use:   "start",
-		Short: "A brief description of rill start",
-		Long:  `A longer description.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			var logger *zap.Logger
-			url := "http://localhost:8080"
+		Short: "Start the Rill Developer application",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create a logger
+			lvl := zapcore.ErrorLevel
+			if verbose {
+				lvl = zapcore.DebugLevel
+			}
+			logger, err := zap.NewDevelopment(zap.IncreaseLevel(lvl))
+			if err != nil {
+				return err
+			}
 
-			ctx := graceful.WithCancelOnTerminate(context.Background())
+			// Create an in-memory metastore
+			metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
+			if err != nil {
+				return fmt.Errorf("error: could not connect to metadata db: %s", err)
+			}
+			err = metastore.Migrate(context.Background())
+			if err != nil {
+				return fmt.Errorf("error: metadata db migration: %s", err)
+			}
+
+			// Create the local runtime server
+			opts := &server.ServerOptions{
+				HTTPPort:             httpPort,
+				GRPCPort:             grpcPort,
+				ConnectionCacheSize:  100,
+				CatalogCacheSize:     100,
+				CatalogCacheDuration: 1 * time.Second,
+			}
+			server, err := server.NewServer(opts, metastore, logger)
+			if err != nil {
+				return fmt.Errorf("error: could not create server: %s", err)
+			}
+
+			// Prepare errgroup with graceful shutdown
+			gctx := graceful.WithCancelOnTerminate(context.Background())
+			group, ctx := errgroup.WithContext(gctx)
+
+			// Create one HTTP server serving both the UI and the runtime's REST service
 			uiHandler, err := web.StaticHandler()
 			if err != nil {
-				logger.Error("failed to set up ui handler: %w", zap.Error(err))
+				return err
+			}
+			runtimeHandler, err := server.HTTPHandler(ctx)
+			if err != nil {
+				return err
+			}
+			mux := http.NewServeMux()
+			mux.Handle("/", uiHandler)
+			mux.Handle("/v1/", runtimeHandler)
+
+			// Open the browser
+			uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
+			err = browser.Open(uiURL)
+			if err != nil {
+				return fmt.Errorf("could not open browser: %v", err)
 			}
 
-			err = browser.Open(url)
+			// Start the gRPC and combined UI/REST servers
+			group.Go(func() error {
+				return server.ServeGRPC(ctx)
+			})
+			group.Go(func() error {
+				server := &http.Server{Handler: mux}
+				logger.Info("serving HTTP", zap.Int("port", opts.HTTPPort))
+				return graceful.ServeHTTP(ctx, server, opts.HTTPPort)
+			})
+			err = group.Wait()
 			if err != nil {
-				log.Fatalf("Couldn't open browser: %v", err)
+				return fmt.Errorf("server crashed: %v", err)
 			}
 
-			server := &http.Server{Handler: uiHandler}
-			err = graceful.ServeHTTP(ctx, server, 8080)
-			if err != nil {
-				logger.Error("server crashed", zap.Error(err))
-			}
+			logger.Info("server shutdown gracefully")
+			return nil
 		},
 	}
 
+	startCmd.Flags().StringVar(&olapDriver, "db-driver", "duckdb", "OLAP database driver")
+	startCmd.Flags().StringVar(&olapDSN, "db", "stage.db", "OLAP database DSN")
+	startCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
+	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for the UI and runtime")
+	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for the runtime's gRPC service")
+	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+
 	return startCmd
-}
-
-func init() {
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
