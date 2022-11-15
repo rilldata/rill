@@ -337,6 +337,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 }
 
 func assertMigration(t *testing.T, result MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
+	fmt.Println(result)
 	require.Len(t, result.Errors, errCount)
 	require.Len(t, result.AddedObjects, addCount)
 	require.Len(t, result.UpdatedObjects, updateCount)
