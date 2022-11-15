@@ -2,6 +2,7 @@ package start
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -96,6 +97,13 @@ func StartCmd() *cobra.Command {
 			}
 			logger.Sugar().Infof("Serving local instance '%s' and repo '%s'", inst.Instance.InstanceId, repo.Repo.RepoId)
 
+			// Create config object to serve on /local/config
+			localConfig := map[string]any{
+				"instance_id": localInstanceID,
+				"repo_id":     localRepoID,
+				"grpc_port":   grpcPort,
+			}
+
 			// Prepare errgroup with graceful shutdown
 			gctx := graceful.WithCancelOnTerminate(context.Background())
 			group, ctx := errgroup.WithContext(gctx)
@@ -112,6 +120,15 @@ func StartCmd() *cobra.Command {
 			mux := http.NewServeMux()
 			mux.Handle("/", uiHandler)
 			mux.Handle("/v1/", runtimeHandler)
+			mux.Handle("/local/config", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				data, err := json.Marshal(localConfig)
+				if err != nil {
+					w.WriteHeader(400)
+					return
+				}
+				w.Header().Add("Content-Type", "application/json")
+				w.Write(data)
+			}))
 
 			// Open the browser
 			uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
