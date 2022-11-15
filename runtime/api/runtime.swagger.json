@@ -604,112 +604,6 @@
         ]
       }
     },
-    "/v1/instances/{instanceId}/migrate/single": {
-      "post": {
-        "summary": "MigrateSingle applies a single `CREATE` statement.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
-        "operationId": "RuntimeService_MigrateSingle",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1MigrateSingleResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "instanceId",
-            "description": "Instance to migrate",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "sql": {
-                  "type": "string",
-                  "title": "A CREATE statement"
-                },
-                "dryRun": {
-                  "type": "boolean",
-                  "title": "If true, will validate the SQL, but not actually execute the migrations"
-                },
-                "createOrReplace": {
-                  "type": "boolean",
-                  "title": "If true, will replace existing definitions with the same name"
-                },
-                "renameFrom": {
-                  "type": "string",
-                  "description": "If provided, will attempt to rename an existing object and only recompute if necessary.\nNOTE: very questionable semantics here."
-                }
-              },
-              "description": "Request message for RuntimeService.MigrateSingle.\nTODO: Remove once Migrate has been adopted."
-            }
-          }
-        ],
-        "tags": [
-          "RuntimeService"
-        ]
-      }
-    },
-    "/v1/instances/{instanceId}/migrate/single/delete": {
-      "post": {
-        "summary": "MigrateDelete deletes a single object.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
-        "operationId": "RuntimeService_MigrateDelete",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1MigrateDeleteResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "instanceId",
-            "description": "Instance to migrate",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "title": "Name of object to drop"
-                }
-              },
-              "description": "Request message for RuntimeService.MigrateDelete\nTODO: Remove once Migrate has been adopted."
-            }
-          }
-        ],
-        "tags": [
-          "RuntimeService"
-        ]
-      }
-    },
     "/v1/instances/{instanceId}/query": {
       "post": {
         "summary": "Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.",
@@ -1911,10 +1805,6 @@
       },
       "title": "Response message for RuntimeService.MetricsViewTotals"
     },
-    "v1MigrateDeleteResponse": {
-      "type": "object",
-      "title": "Response message for RuntimeService.MigrateDelete"
-    },
     "v1MigrateResponse": {
       "type": "object",
       "properties": {
@@ -1934,10 +1824,6 @@
         }
       },
       "title": "Response message for RuntimeService.Migrate"
-    },
-    "v1MigrateSingleResponse": {
-      "type": "object",
-      "title": "Response message for RuntimeService.MigrateSingle"
     },
     "v1MigrationError": {
       "type": "object",

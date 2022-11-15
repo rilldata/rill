@@ -71,3 +71,13 @@ func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, ca
 		// TODO: handle same queries but different text
 		strings.TrimSpace(cat1.Model.Sql) == strings.TrimSpace(cat2.Model.Sql)
 }
+
+func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
+	if err == drivers.ErrNotFound {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return true, nil
+}

@@ -40,6 +40,7 @@ type Server struct {
 	logger       *zap.Logger
 	connCache    *connectionCache
 	catalogCache *catalogCache
+	serviceCache *servicesCache
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -56,6 +57,7 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 		logger:       logger,
 		connCache:    newConnectionCache(opts.ConnectionCacheSize),
 		catalogCache: newCatalogCache(opts.CatalogCacheSize, opts.CatalogCacheDuration),
+		serviceCache: newServicesCache(),
 	}, nil
 }
 

@@ -45,7 +45,7 @@ func TestMigrate(t *testing.T) {
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			assertMigration(t, result, 2, 0, 2, 0)
-			require.ErrorIs(t, result.ArtifactErrors[1].Error, metrics_views.SourceNotFound)
+			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[1].Message)
 			assertTable(t, s, "AdBids", AdBidsRepoPath)
 			assertTableAbsence(t, s, "AdBids_model")
 
@@ -63,6 +63,16 @@ func TestMigrate(t *testing.T) {
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			assertMigration(t, result, 0, 0, 0, 0)
+
+			// delete from olap
+			res, err := s.Olap.Execute(context.Background(), &drivers.Statement{
+				Query: "drop table AdBids",
+			})
+			require.NoError(t, err)
+			require.NoError(t, res.Close())
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			assertMigration(t, result, 0, 1, 2, 0)
 
 			// delete file
 			err = os.Remove(path.Join(dir, AdBidsRepoPath))
@@ -97,11 +107,7 @@ func TestMigrateRenames(t *testing.T) {
 			err := os.Remove(path.Join(dir, AdBidsRepoPath))
 			require.NoError(t, err)
 			createSource(t, s, "AdBidsNew", "AdBids.csv", AdBidsNewRepoPath)
-			createModel(t, s, &api.Model{
-				Name:    "AdBids_model",
-				Sql:     "select * from AdBidsNew",
-				Dialect: api.Model_DuckDB,
-			}, AdBidsModelRepoPath)
+			createModel(t, s, "AdBids_model", "select * from AdBidsNew", AdBidsModelRepoPath)
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			assertMigration(t, result, 0, 0, 3, 0)
@@ -120,33 +126,32 @@ func TestMigrateRenames(t *testing.T) {
 	}
 }
 
-func TestMigrateMetricsView(t *testing.T) {
-	s, _ := initBasicService(t)
+func TestRefreshSource(t *testing.T) {
+	configs := []struct {
+		title  string
+		config MigrationConfig
+	}{
+		{"MigrateAll", MigrationConfig{
+			ForcedPaths: []string{AdBidsRepoPath},
+		}},
+		{"MigrateSelected", MigrationConfig{
+			ForcedPaths:  []string{AdBidsRepoPath},
+			ChangedPaths: []string{AdBidsRepoPath},
+		}},
+	}
 
-	createModel(t, s, &api.Model{
-		Name:    "AdBids_model",
-		Sql:     "select id, publisher, domain, bid_price from AdBids",
-		Dialect: api.Model_DuckDB,
-	}, AdBidsModelRepoPath)
-	result, err := s.Migrate(context.Background(), MigrationConfig{})
-	require.NoError(t, err)
-	assertMigration(t, result, 1, 0, 1, 0)
-	// dropping the timestamp column gives a different error
-	require.ErrorIs(t, result.ArtifactErrors[0].Error, metrics_views.TimestampNotFound)
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, _ := initBasicService(t)
 
-	createModel(t, s, &api.Model{
-		Name:    "AdBids_model",
-		Sql:     "select id, timestamp, publisher from AdBids",
-		Dialect: api.Model_DuckDB,
-	}, AdBidsModelRepoPath)
-	result, err = s.Migrate(context.Background(), MigrationConfig{})
-	require.NoError(t, err)
-	// invalid measure/dimension doesnt return error for the object
-	assertMigration(t, result, 0, 1, 1, 0)
-	require.Empty(t, result.AddedObjects[0].MetricsView.Measures[0].Error)
-	require.Contains(t, result.AddedObjects[0].MetricsView.Measures[1].Error, `Binder Error: Referenced column "bid_price" not found`)
-	require.Empty(t, "", result.AddedObjects[0].MetricsView.Dimensions[0].Error)
-	require.Equal(t, result.AddedObjects[0].MetricsView.Dimensions[1].Error, `dimension not found: domain`)
+			// update with same content
+			createSource(t, s, "AdBids", "AdBids.csv", AdBidsRepoPath)
+			result, err := s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			// ForcedPaths updates all dependant items
+			assertMigration(t, result, 0, 0, 3, 0)
+		})
+	}
 }
 
 func TestInterdependentModel(t *testing.T) {
@@ -166,16 +171,8 @@ func TestInterdependentModel(t *testing.T) {
 
 			AdBidsSourceModelRepoPath := "/models/AdBids_source_model.yaml"
 
-			createModel(t, s, &api.Model{
-				Name:    "AdBids_source_model",
-				Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids",
-				Dialect: api.Model_DuckDB,
-			}, AdBidsSourceModelRepoPath)
-			createModel(t, s, &api.Model{
-				Name:    "AdBids_model",
-				Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids_source_model",
-				Dialect: api.Model_DuckDB,
-			}, AdBidsModelRepoPath)
+			createModel(t, s, "AdBids_source_model", "select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
+			createModel(t, s, "AdBids_model", "select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
 			result, err := s.Migrate(context.Background(), MigrationConfig{})
 			require.NoError(t, err)
 			assertMigration(t, result, 0, 1, 2, 0)
@@ -187,7 +184,7 @@ func TestInterdependentModel(t *testing.T) {
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			assertMigration(t, result, 3, 0, 3, 0)
-			require.ErrorIs(t, result.ArtifactErrors[2].Error, metrics_views.SourceNotFound)
+			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[2].Message)
 			assertTableAbsence(t, s, "AdBids_source_model")
 			assertTableAbsence(t, s, "AdBids_model")
 
@@ -202,6 +199,27 @@ func TestInterdependentModel(t *testing.T) {
 	}
 }
 
+func TestMigrateMetricsView(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	createModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
+	result, err := s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	assertMigration(t, result, 1, 0, 1, 0)
+	// dropping the timestamp column gives a different error
+	require.Equal(t, metrics_views.TimestampNotFound.Error(), result.Errors[0].Message)
+
+	createModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
+	result, err = s.Migrate(context.Background(), MigrationConfig{})
+	require.NoError(t, err)
+	// invalid measure/dimension doesnt return error for the object
+	assertMigration(t, result, 0, 1, 1, 0)
+	require.Empty(t, result.AddedObjects[0].MetricsView.Measures[0].Error)
+	require.Contains(t, result.AddedObjects[0].MetricsView.Measures[1].Error, `Binder Error: Referenced column "bid_price" not found`)
+	require.Empty(t, "", result.AddedObjects[0].MetricsView.Dimensions[0].Error)
+	require.Equal(t, result.AddedObjects[0].MetricsView.Dimensions[1].Error, `dimension not found: domain`)
+}
+
 func initBasicService(t *testing.T) (*Service, string) {
 	s, dir := getService(t)
 	createSource(t, s, "AdBids", "AdBids.csv", AdBidsRepoPath)
@@ -210,11 +228,7 @@ func initBasicService(t *testing.T) (*Service, string) {
 	assertMigration(t, result, 0, 1, 0, 0)
 	assertTable(t, s, "AdBids", AdBidsRepoPath)
 
-	createModel(t, s, &api.Model{
-		Name:    "AdBids_model",
-		Sql:     "select id, timestamp, publisher, domain, bid_price from AdBids",
-		Dialect: api.Model_DuckDB,
-	}, AdBidsModelRepoPath)
+	createModel(t, s, "AdBids_model", "select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
 	result, err = s.Migrate(context.Background(), MigrationConfig{})
 	require.NoError(t, err)
 	assertMigration(t, result, 0, 1, 0, 0)
@@ -268,12 +282,16 @@ func createSource(t *testing.T, s *Service, name string, file string, path strin
 	require.NoError(t, err)
 }
 
-func createModel(t *testing.T, s *Service, model *api.Model, path string) {
+func createModel(t *testing.T, s *Service, name string, sql string, path string) {
 	err := artifacts.Write(context.Background(), s.Repo, s.RepoId, &api.CatalogObject{
-		Name:  model.Name,
-		Type:  api.CatalogObject_TYPE_MODEL,
-		Model: model,
-		Path:  path,
+		Name: name,
+		Type: api.CatalogObject_TYPE_MODEL,
+		Model: &api.Model{
+			Name:    name,
+			Sql:     sql,
+			Dialect: api.Model_DIALECT_DUCKDB,
+		},
+		Path: path,
 	})
 	require.NoError(t, err)
 }
@@ -316,7 +334,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 }
 
 func assertMigration(t *testing.T, result MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
-	require.Len(t, result.ArtifactErrors, errCount)
+	require.Len(t, result.Errors, errCount)
 	require.Len(t, result.AddedObjects, addCount)
 	require.Len(t, result.UpdatedObjects, updateCount)
 	require.Len(t, result.DroppedObjects, dropCount)

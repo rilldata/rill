@@ -46,10 +46,16 @@ func NewService(
 	}
 }
 
+func (s *Service) Init() error {
+
+	return nil
+}
+
 func (s *Service) ListObjects(
 	ctx context.Context,
+	typ api.CatalogObject_Type,
 ) ([]*api.CatalogObject, error) {
-	objs := s.Catalog.FindObjects(ctx, s.InstId, drivers.CatalogObjectTypeUnspecified)
+	objs := s.Catalog.FindObjects(ctx, s.InstId, catalogObjectTypeFromPB(typ))
 	pbs := make([]*api.CatalogObject, len(objs))
 	var err error
 	for i, obj := range objs {

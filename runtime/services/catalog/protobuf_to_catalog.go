@@ -29,3 +29,19 @@ func pbToCatalogObject(apiCatalog *api.CatalogObject) (*drivers.CatalogObject, e
 
 	return catalog, err
 }
+
+func catalogObjectTypeFromPB(t api.CatalogObject_Type) drivers.CatalogObjectType {
+	switch t {
+	case api.CatalogObject_TYPE_UNSPECIFIED:
+		return drivers.CatalogObjectTypeUnspecified
+	case api.CatalogObject_TYPE_TABLE:
+		return drivers.CatalogObjectTypeTable
+	case api.CatalogObject_TYPE_SOURCE:
+		return drivers.CatalogObjectTypeSource
+	case api.CatalogObject_TYPE_METRICS_VIEW:
+		return drivers.CatalogObjectTypeMetricsView
+	default:
+		// NOTE: Consider returning and handling an error instead
+		return drivers.CatalogObjectTypeUnspecified
+	}
+}

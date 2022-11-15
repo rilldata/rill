@@ -99,7 +99,7 @@ func toModelArtifact(catalog *api.CatalogObject) (*Model, error) {
 	}
 
 	switch catalog.Model.Dialect {
-	case api.Model_DuckDB:
+	case api.Model_DIALECT_DUCKDB:
 		modelArtifact.Dialect = ModelDialectDuckDB
 	}
 
@@ -174,7 +174,7 @@ func fromModelArtifact(artifact *Artifact, catalog *api.CatalogObject) error {
 	}
 	switch modelArtifact.Dialect {
 	case ModelDialectDuckDB:
-		catalog.Model.Dialect = api.Model_DuckDB
+		catalog.Model.Dialect = api.Model_DIALECT_DUCKDB
 	}
 
 	return nil

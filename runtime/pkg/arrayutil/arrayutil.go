@@ -14,3 +14,12 @@ func Dedupe[E string | int](array []E) []E {
 
 	return deduped
 }
+
+func Contains[E string | int](array []E, c E) bool {
+	for _, e := range array {
+		if e == c {
+			return true
+		}
+	}
+	return false
+}

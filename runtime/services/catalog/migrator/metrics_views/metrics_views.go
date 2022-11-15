@@ -92,6 +92,10 @@ func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObje
 	return false
 }
 
+func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+	return true, nil
+}
+
 func validateDimension(ctx context.Context, model *drivers.Table, dimension *api.MetricsView_Dimension) error {
 	for _, field := range model.Schema.Fields {
 		// TODO: check type

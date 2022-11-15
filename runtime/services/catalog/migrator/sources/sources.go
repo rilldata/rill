@@ -85,6 +85,16 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, c
 	return s1.PropertiesEquals(s2)
 }
 
+func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
+	if err == drivers.ErrNotFound {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func SqlToSource(sqlStr string) (*connectors.Source, error) {
 	astStmt, err := sql.Parse(sqlStr)
 	if err != nil {

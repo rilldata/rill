@@ -11,6 +11,9 @@ import (
  * Any entity specific actions when a catalog is deleted will be here.
  * EG: on delete sources will drop the table and models will drop the view
  * Any future entity specific cache invalidation will go here as well.
+ *
+ * TODO: does migrator name fit this?
+ * TODO: is this in the right place?
  */
 
 var Migrators = make(map[string]EntityMigrator)
@@ -33,6 +36,7 @@ type EntityMigrator interface {
 	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
 	// IsEqual checks everything but the name
 	IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool
+	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error)
 }
 
 func Create(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
@@ -101,6 +105,15 @@ func IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObje
 		return false
 	}
 	return migrator.IsEqual(ctx, cat1, cat2)
+}
+
+func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+	migrator, ok := getMigrator(catalog)
+	if !ok {
+		// no error here. not all migrators are needed
+		return false, nil
+	}
+	return migrator.ExistsInOlap(ctx, olap, catalog)
 }
 
 func getMigrator(catalog *api.CatalogObject) (EntityMigrator, bool) {
