@@ -3,12 +3,15 @@ package artifacts_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -18,12 +21,13 @@ func TestSourceReadWrite(t *testing.T) {
 	catalogs := []struct {
 		Name    string
 		Catalog *api.CatalogObject
+		Raw     string
 	}{
 		{
 			"Source",
 			&api.CatalogObject{
 				Name: "Source",
-				Path: "path/Source.yaml",
+				Path: "sources/Source.yaml",
 				Type: api.CatalogObject_TYPE_SOURCE,
 				Source: &api.Source{
 					Name:      "Source",
@@ -33,25 +37,30 @@ func TestSourceReadWrite(t *testing.T) {
 					}),
 				},
 			},
+			`version: 0.0.1
+type: file
+uri: data/source.csv
+`,
 		},
 		{
 			"Model",
 			&api.CatalogObject{
 				Name: "Model",
-				Path: "path/Model.yaml",
+				Path: "models/Model.sql",
 				Type: api.CatalogObject_TYPE_MODEL,
 				Model: &api.Model{
 					Name:    "Model",
 					Sql:     "select * from A",
-					Dialect: 0,
+					Dialect: api.Model_DIALECT_DUCKDB,
 				},
 			},
+			"select * from A",
 		},
 		{
 			"MetricsView",
 			&api.CatalogObject{
 				Name: "MetricsView",
-				Path: "path/MetricsView.yaml",
+				Path: "dashboards/MetricsView.yaml",
 				Type: api.CatalogObject_TYPE_METRICS_VIEW,
 				MetricsView: &api.MetricsView{
 					Name:          "MetricsView",
@@ -88,10 +97,37 @@ func TestSourceReadWrite(t *testing.T) {
 					},
 				},
 			},
+			`version: 0.0.1
+display_name: ""
+description: ""
+from: Model
+time_dimension: time
+timegrains:
+- 1 day
+- 1 month
+default_timegrain: ""
+dimensions:
+- label: Dim0_L
+  property: dim0
+  description: Dim0_D
+- label: Dim1_L
+  property: dim1
+  description: Dim1_D
+measures:
+- label: Mea0_L
+  expression: count(c0)
+  description: Mea0_D
+  format_preset: humanise
+- label: Mea1_L
+  expression: avg(c1)
+  description: Mea1_D
+  format_preset: humanise
+`,
 		},
 	}
 
-	fileStore, err := drivers.Open("file", t.TempDir())
+	dir := t.TempDir()
+	fileStore, err := drivers.Open("file", dir)
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -101,7 +137,7 @@ func TestSourceReadWrite(t *testing.T) {
 			repo := &api.Repo{
 				RepoId: "foo",
 				Driver: "file",
-				Dsn:    t.TempDir(),
+				Dsn:    dir,
 			}
 			err := artifacts.Write(ctx, repoStore, repo.RepoId, tt.Catalog)
 			require.NoError(t, err)
@@ -109,6 +145,10 @@ func TestSourceReadWrite(t *testing.T) {
 			readCatalog, err := artifacts.Read(ctx, repoStore, repo.RepoId, tt.Catalog.Path)
 			require.NoError(t, err)
 			require.Equal(t, readCatalog, tt.Catalog)
+
+			b, err := os.ReadFile(path.Join(dir, tt.Catalog.Path))
+			require.NoError(t, err)
+			require.Equal(t, tt.Raw, string(b))
 		})
 	}
 }

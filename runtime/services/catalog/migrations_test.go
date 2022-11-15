@@ -14,6 +14,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
@@ -26,7 +27,7 @@ const testDataPath = "../../../web-local/test/data"
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
-const AdBidsModelRepoPath = "/models/AdBids_model.yaml"
+const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestMigrate(t *testing.T) {
 	if testing.Short() {
@@ -188,7 +189,7 @@ func TestInterdependentModel(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			s, _ := initBasicService(t)
 
-			AdBidsSourceModelRepoPath := "/models/AdBids_source_model.yaml"
+			AdBidsSourceModelRepoPath := "/models/AdBids_source_model.sql"
 
 			createModel(t, s, "AdBids_source_model", "select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
 			createModel(t, s, "AdBids_model", "select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
