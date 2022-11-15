@@ -42,9 +42,7 @@
     isActive={active}
     {excluded}
     on:click
-    color={excluded
-      ? "bg-gray-200 dark:bg-gray-600"
-      : "bg-blue-200 dark:bg-blue-700"}
+    color={excluded ? "ui-measure-bar-excluded" : "ui-measure-bar-included"}
   >
     <!--
       title element
@@ -58,20 +56,15 @@
     <div
       class:ui-copy={!atLeastOneActive && !loading}
       class:ui-copy-disabled={excluded}
-      style:font-weight={excluded ? "normal" : "500"}
-      class="leaderboard-list-item-title w-full text-ellipsis overflow-hidden whitespace-nowrap"
+      class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
       slot="title"
     >
       <slot name="label" />
     </div>
     <!-- right-hand metric value -->
-    <div class="leaderboard-list-item-right" slot="right">
+    <div slot="right">
       <!-- {#if !(atLeastOneActive && !active)} -->
-      <div
-        class:ui-copy-disabled={excluded}
-        style:font-weight={excluded ? "normal" : "500"}
-        in:fly={{ duration: 200, y: 4 }}
-      >
+      <div class:ui-copy-disabled={excluded} in:fly={{ duration: 200, y: 4 }}>
         <slot name="right" />
       </div>
       <!-- {/if} -->

@@ -53,7 +53,7 @@
 
   /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
   .ui-copy-disabled-faint {
-    @apply text-gray-400 dark:text-gray-400;
+    @apply italic text-gray-400 dark:text-gray-400;
   }
 
   .ui-divider {
@@ -66,6 +66,14 @@
 
   .ui-divider-strong {
     @apply border-gray-400 dark:border-gray-500;
+  }
+
+  .ui-measure-bar-included {
+    @apply bg-blue-100 dark:bg-blue-700;
+  }
+
+  .ui-measure-bar-excluded {
+    @apply bg-gray-100 dark:bg-gray-700;
   }
 }
 
