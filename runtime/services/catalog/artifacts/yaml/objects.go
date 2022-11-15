@@ -57,7 +57,7 @@ func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
 	if ok {
 		source.URI = uri
 	}
-	region, ok := props["region"].(string)
+	region, ok := props["aws.region"].(string)
 	if ok {
 		source.Region = region
 	}
@@ -81,7 +81,7 @@ func fromSourceArtifact(name string, path string, source *Source) (*api.CatalogO
 		"path": source.URI,
 	}
 	if source.Region != "" {
-		props["region"] = source.Region
+		props["aws.region"] = source.Region
 	}
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {

@@ -128,10 +128,12 @@ func TestMigrateRenames(t *testing.T) {
 			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
 			// write a new file with same name
-			createSource(t, s, "AdBidsNew", "AdImpressions.csv", AdBidsRepoPath)
+			createSource(t, s, "AdBidsNew", "AdImpressions.tsv", AdBidsRepoPath)
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			assertMigration(t, result, 1, 0, 0, 0)
+			// name is derived from file path, so there is no error here and AdBids is added
+			assertMigration(t, result, 0, 1, 0, 0)
+			assertTable(t, s, "AdBids", AdBidsRepoPath)
 			assertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
 			assertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 		})

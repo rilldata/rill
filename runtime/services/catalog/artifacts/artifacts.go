@@ -38,8 +38,6 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, fileP
 		return nil, FileReadError
 	}
 
-	fmt.Println(blob)
-
 	catalog, err := artifact.DeSerialise(ctx, filePath, blob)
 	if err != nil {
 		return nil, err
