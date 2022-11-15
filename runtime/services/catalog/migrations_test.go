@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -21,13 +22,17 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const testDataPath = "../../../web-local/test/data/"
+const testDataPath = "../../../web-local/test/data"
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.yaml"
 
 func TestMigrate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -88,6 +93,10 @@ func TestMigrate(t *testing.T) {
 }
 
 func TestMigrateRenames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -129,6 +138,10 @@ func TestMigrateRenames(t *testing.T) {
 }
 
 func TestRefreshSource(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -157,6 +170,10 @@ func TestRefreshSource(t *testing.T) {
 }
 
 func TestInterdependentModel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config MigrationConfig
@@ -202,6 +219,10 @@ func TestInterdependentModel(t *testing.T) {
 }
 
 func TestMigrateMetricsView(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	s, _ := initBasicService(t)
 
 	createModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
@@ -276,7 +297,7 @@ func createSource(t *testing.T, s *Service, name string, file string, path strin
 			Name:      name,
 			Connector: "file",
 			Properties: toProtoStruct(map[string]any{
-				"path": testDataPath + file,
+				"path": filepath.Join(testDataPath, file),
 			}),
 		},
 		Path: path,

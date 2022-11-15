@@ -1599,7 +1599,7 @@ export const runtimeServiceGetFile = (
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetFileResponse>({
-    url: `/v1/repos/${repoId}/files/-/${path}`,
+    url: `/v1/repos/${repoId}/objects/-/${path}`,
     method: "get",
     signal,
   });
@@ -1608,7 +1608,7 @@ export const runtimeServiceGetFile = (
 export const getRuntimeServiceGetFileQueryKey = (
   repoId: string,
   path: string
-) => [`/v1/repos/${repoId}/files/-/${path}`];
+) => [`/v1/repos/${repoId}/objects/-/${path}`];
 
 export type RuntimeServiceGetFileQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetFile>>
@@ -1671,7 +1671,7 @@ export const runtimeServicePutFile = (
   runtimeServicePutFileBody: RuntimeServicePutFileBody
 ) => {
   return httpClient<V1PutFileResponse>({
-    url: `/v1/repos/${repoId}/files/-/${path}`,
+    url: `/v1/repos/${repoId}/objects/-/${path}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: runtimeServicePutFileBody,

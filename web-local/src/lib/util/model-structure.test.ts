@@ -156,7 +156,7 @@ select something, count(*) from       table
     input: `
         select something, count(*) from       table    abc    
             LEFT JOIN cruds ON cruds.id = table.id;`,
-    output: [{ name: "table", start: 39, end: 44 }],
+    output: [{ name: "table", start: 47, end: 52 }],
   },
 ];
 
