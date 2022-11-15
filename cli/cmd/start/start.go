@@ -8,6 +8,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/web"
+	"github.com/rilldata/rill/runtime/api"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -24,6 +25,9 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 )
+
+var localInstanceID = "local"
+var localRepoID = "local"
 
 // StartCmd represents the start command
 func StartCmd() *cobra.Command {
@@ -70,6 +74,27 @@ func StartCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("error: could not create server: %s", err)
 			}
+
+			// Create instance and repo configured for local use
+			inst, err := server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
+				InstanceId:   localInstanceID,
+				Driver:       olapDriver,
+				Dsn:          olapDSN,
+				Exposed:      true,
+				EmbedCatalog: olapDriver == "duckdb",
+			})
+			if err != nil {
+				return err
+			}
+			repo, err := server.CreateRepo(context.Background(), &api.CreateRepoRequest{
+				RepoId: localRepoID,
+				Driver: "file",
+				Dsn:    repoDSN,
+			})
+			if err != nil {
+				return err
+			}
+			logger.Sugar().Infof("Serving local instance '%s' and repo '%s'", inst.Instance.InstanceId, repo.Repo.RepoId)
 
 			// Prepare errgroup with graceful shutdown
 			gctx := graceful.WithCancelOnTerminate(context.Background())
