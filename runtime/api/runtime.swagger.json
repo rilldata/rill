@@ -168,6 +168,49 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/cardinality-of-column/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Get cardinality for a column",
+        "operationId": "RuntimeService_GetCardinalityOfColumn",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CategoricalSummary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/catalog": {
       "get": {
         "summary": "ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog",
@@ -287,6 +330,49 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/descriptive-statistics/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Get basic stats for a numeric column like min, max, mean, stddev, etc",
+        "operationId": "RuntimeService_GetDescriptiveStatistics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1NumericSummary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/estimate-rollup-interval/{tableName}": {
       "post": {
         "operationId": "RuntimeService_EstimateRollupInterval",
@@ -326,6 +412,113 @@
               "properties": {
                 "columnName": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/estimate-smallest-time-grain/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Estimates the smallest time grain present in the column",
+        "operationId": "RuntimeService_EstimateSmallestTimeGrain",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1EstimateSmallestTimeGrainResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/generate-timeseries": {
+      "post": {
+        "summary": "Generate time series",
+        "operationId": "RuntimeService_GenerateTimeSeries",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TimeSeriesRollup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "tableName": {
+                  "type": "string"
+                },
+                "measures": {
+                  "$ref": "#/definitions/GenerateTimeSeriesRequestBasicMeasures"
+                },
+                "timestampColumnName": {
+                  "type": "string"
+                },
+                "timeRange": {
+                  "$ref": "#/definitions/v1TimeSeriesTimeRange"
+                },
+                "filters": {
+                  "$ref": "#/definitions/v1MetricsViewRequestFilter"
+                },
+                "pixels": {
+                  "type": "string",
+                  "format": "int64"
+                },
+                "sampleSize": {
+                  "type": "integer",
+                  "format": "int32"
                 }
               }
             }
@@ -759,6 +952,98 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/null-count/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Get the number of nulls in a column",
+        "operationId": "RuntimeService_GetNullCount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1NullCountResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/numeric-histogram/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Get the histogram for values in a column",
+        "operationId": "RuntimeService_GetNumericHistogram",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1NumericSummary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/query": {
       "post": {
         "summary": "Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.",
@@ -936,6 +1221,55 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/rug-histogram/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Get outliers for a numeric column",
+        "operationId": "RuntimeService_GetRugHistogram",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1NumericSummary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/sync": {
       "post": {
         "summary": "TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.\nIf the instance has exposed=true, tables found in the information schema will be added to the catalog.",
@@ -1082,6 +1416,49 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/time-range-summary/{tableName}/{columnName}": {
+      "get": {
+        "summary": "Get the time range summaries (min, max) for a column",
+        "operationId": "RuntimeService_GetTimeRangeSummary",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TimeRangeSummary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "columnName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/topk/{tableName}/{columnName}": {
       "post": {
         "summary": "Get TopK elements from a table for a column given an agg function\nagg function and k are optional, defaults are count(*) and 50 respectively",
@@ -1090,7 +1467,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1TopKResponse"
+              "$ref": "#/definitions/v1CategoricalSummary"
             }
           },
           "default": {
@@ -1517,6 +1894,31 @@
       "default": "TYPE_UNSPECIFIED",
       "title": "Type represents the field type"
     },
+    "EstimateSmallestTimeGrainResponseTimeGrain": {
+      "type": "string",
+      "enum": [
+        "MILLISECONDS",
+        "SECONDS",
+        "MINUTES",
+        "HOURS",
+        "DAYS",
+        "WEEKS",
+        "MONTHS",
+        "YEARS"
+      ],
+      "default": "MILLISECONDS"
+    },
+    "GenerateTimeSeriesRequestBasicMeasures": {
+      "type": "object",
+      "properties": {
+        "basicMeasures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BasicMeasureDefinition"
+          }
+        }
+      }
+    },
     "MetricsViewDimension": {
       "type": "object",
       "properties": {
@@ -1537,6 +1939,15 @@
         }
       },
       "title": "Dimensions are columns to filter and group by"
+    },
+    "MetricsViewDimensionValueValues": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {}
+        }
+      }
     },
     "MetricsViewFilterCond": {
       "type": "object",
@@ -1604,6 +2015,48 @@
       "default": "DIALECT_UNSPECIFIED",
       "title": "Dialects supported for models"
     },
+    "NumericHistogramBinsBin": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "number",
+          "format": "double"
+        },
+        "low": {
+          "type": "number",
+          "format": "double"
+        },
+        "high": {
+          "type": "number",
+          "format": "double"
+        },
+        "count": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "NumericOutliersOutlier": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "number",
+          "format": "double"
+        },
+        "low": {
+          "type": "number",
+          "format": "double"
+        },
+        "high": {
+          "type": "number",
+          "format": "double"
+        },
+        "present": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
     "StructTypeField": {
       "type": "object",
       "properties": {
@@ -1612,6 +2065,47 @@
         },
         "type": {
           "$ref": "#/definitions/runtimev1Type"
+        }
+      }
+    },
+    "TimeRangeSummaryInterval": {
+      "type": "object",
+      "properties": {
+        "months": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "days": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "micros": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "TimeSeriesResponseTimeSeriesValues": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TimeSeriesValue"
+          }
+        }
+      }
+    },
+    "TopKResponseTopKEntry": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "value is optional so that null values from the database can be represented."
+        },
+        "count": {
+          "type": "number",
+          "format": "double"
         }
       }
     },
@@ -1676,6 +2170,22 @@
       },
       "title": "Type represents a data type in a schema"
     },
+    "v1BasicMeasureDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "expression": {
+          "type": "string",
+          "title": "mandatory user defined metadata"
+        },
+        "sqlName": {
+          "type": "string",
+          "title": "optional user defined metadata"
+        }
+      }
+    },
     "v1CardinalityResponse": {
       "type": "object",
       "properties": {
@@ -1734,6 +2244,19 @@
         "TYPE_METRICS_VIEW"
       ],
       "default": "TYPE_UNSPECIFIED"
+    },
+    "v1CategoricalSummary": {
+      "type": "object",
+      "properties": {
+        "topKResponse": {
+          "$ref": "#/definitions/v1TopKResponse"
+        },
+        "cardinality": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "description": "Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set."
     },
     "v1Connector": {
       "type": "object",
@@ -1849,6 +2372,15 @@
           "$ref": "#/definitions/v1Scalar"
         }
       }
+    },
+    "v1EstimateSmallestTimeGrainResponse": {
+      "type": "object",
+      "properties": {
+        "timeGrain": {
+          "$ref": "#/definitions/EstimateSmallestTimeGrainResponseTimeGrain"
+        }
+      },
+      "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
     },
     "v1GetCatalogObjectResponse": {
       "type": "object",
@@ -2052,6 +2584,21 @@
       },
       "title": "MetricsViewColumn represents a column in a metrics view"
     },
+    "v1MetricsViewDimensionValue": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "in": {
+          "type": "array",
+          "items": {}
+        },
+        "like": {
+          "$ref": "#/definitions/MetricsViewDimensionValueValues"
+        }
+      }
+    },
     "v1MetricsViewFilter": {
       "type": "object",
       "properties": {
@@ -2099,6 +2646,23 @@
         }
       },
       "title": "Response message for RuntimeService.MetricsViewMeta"
+    },
+    "v1MetricsViewRequestFilter": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MetricsViewDimensionValue"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MetricsViewDimensionValue"
+          }
+        }
+      }
     },
     "v1MetricsViewSort": {
       "type": "object",
@@ -2256,6 +2820,88 @@
         }
       },
       "title": "Model is the internal representation of a model definition"
+    },
+    "v1NullCountResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Response for RuntimeService.GetNullCount"
+    },
+    "v1NumericHistogramBins": {
+      "type": "object",
+      "properties": {
+        "bins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NumericHistogramBinsBin"
+          }
+        }
+      },
+      "title": "Response for RuntimeService.GetNumericHistogram"
+    },
+    "v1NumericOutliers": {
+      "type": "object",
+      "properties": {
+        "outliers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NumericOutliersOutlier"
+          }
+        }
+      }
+    },
+    "v1NumericStatistics": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number",
+          "format": "double"
+        },
+        "max": {
+          "type": "number",
+          "format": "double"
+        },
+        "mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "q25": {
+          "type": "number",
+          "format": "double"
+        },
+        "q50": {
+          "type": "number",
+          "format": "double"
+        },
+        "q75": {
+          "type": "number",
+          "format": "double"
+        },
+        "sd": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "Response for RuntimeService.GetDescriptiveStatistics"
+    },
+    "v1NumericSummary": {
+      "type": "object",
+      "properties": {
+        "numericHistogramBins": {
+          "$ref": "#/definitions/v1NumericHistogramBins"
+        },
+        "numericStatistics": {
+          "$ref": "#/definitions/v1NumericStatistics"
+        },
+        "numericOutliers": {
+          "$ref": "#/definitions/v1NumericOutliers"
+        }
+      },
+      "description": "Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.\nMessage will have either numericHistogramBins, numericStatistics or numericOutliers set."
     },
     "v1PingResponse": {
       "type": "object",
@@ -2506,16 +3152,114 @@
       },
       "description": "Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically\nscanning the database's information schema when the instance is created with exposed=true. Pre-existing tables\nhave managed = false."
     },
+    "v1TimeRangeName": {
+      "type": "string",
+      "enum": [
+        "LastHour",
+        "Last6Hours",
+        "LastDay",
+        "Last2Days",
+        "Last5Days",
+        "LastWeek",
+        "Last2Weeks",
+        "Last30Days",
+        "Last60Days",
+        "AllTime"
+      ],
+      "default": "LastHour"
+    },
+    "v1TimeRangeSummary": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "string"
+        },
+        "max": {
+          "type": "string"
+        },
+        "interval": {
+          "$ref": "#/definitions/TimeRangeSummaryInterval"
+        }
+      }
+    },
+    "v1TimeSeriesResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TimeSeriesValue"
+          }
+        },
+        "spark": {
+          "$ref": "#/definitions/TimeSeriesResponseTimeSeriesValues"
+        },
+        "timeRange": {
+          "$ref": "#/definitions/v1TimeSeriesTimeRange"
+        },
+        "sampleSize": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TimeSeriesRollup": {
+      "type": "object",
+      "properties": {
+        "rollup": {
+          "$ref": "#/definitions/v1TimeSeriesResponse"
+        }
+      }
+    },
+    "v1TimeSeriesTimeRange": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/v1TimeRangeName"
+        },
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TimeSeriesValue": {
+      "type": "object",
+      "properties": {
+        "ts": {
+          "type": "string"
+        },
+        "bin": {
+          "type": "number",
+          "format": "double"
+        },
+        "records": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      }
+    },
     "v1TopKResponse": {
       "type": "object",
       "properties": {
-        "meta": {
-          "$ref": "#/definitions/v1StructType"
-        },
-        "data": {
+        "entries": {
           "type": "array",
           "items": {
-            "type": "object"
+            "$ref": "#/definitions/TopKResponseTopKEntry"
           }
         }
       },
