@@ -287,6 +287,55 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/estimate-rollup-interval/{tableName}": {
+      "post": {
+        "operationId": "RuntimeService_EstimateRollupInterval",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1EstimateRollupIntervalResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "columnName": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/metrics-views/{metricsViewName}/meta": {
       "post": {
         "summary": "MetricsViewMeta returns metadata about a metrics view.\nIt's comparable to calling GetCatalogObject and will be deprecated in the future.",
@@ -832,6 +881,61 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/rename-object": {
+      "post": {
+        "summary": "Tablewide profiling APIs",
+        "operationId": "RuntimeService_RenameDatabaseObject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RenameDatabaseObjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "newname",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "TABLE",
+              "VIEW",
+              "FUNCTION"
+            ],
+            "default": "TABLE"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/sync": {
       "post": {
         "summary": "TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.\nIf the instance has exposed=true, tables found in the information schema will be added to the catalog.",
@@ -856,6 +960,121 @@
             "in": "path",
             "required": true,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/tables/{tableName}/cardinality": {
+      "get": {
+        "operationId": "RuntimeService_TableCardinality",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CardinalityResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/tables/{tableName}/profile-columns": {
+      "get": {
+        "operationId": "RuntimeService_ProfileColumns",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ProfileColumnsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/instances/{instanceId}/tables/{tableName}/rows": {
+      "get": {
+        "operationId": "RuntimeService_TableRows",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RowsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [
@@ -1457,6 +1676,15 @@
       },
       "title": "Type represents a data type in a schema"
     },
+    "v1CardinalityResponse": {
+      "type": "object",
+      "properties": {
+        "cardinality": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "v1CatalogObject": {
       "type": "object",
       "properties": {
@@ -1590,6 +1818,15 @@
       },
       "title": "Response message for RuntimeService.CreateRepo"
     },
+    "v1DatabaseObjectType": {
+      "type": "string",
+      "enum": [
+        "TABLE",
+        "VIEW",
+        "FUNCTION"
+      ],
+      "default": "TABLE"
+    },
     "v1DeleteInstanceResponse": {
       "type": "object",
       "title": "Response message for RuntimeService.DeleteInstance"
@@ -1597,6 +1834,21 @@
     "v1DeleteRepoResponse": {
       "type": "object",
       "title": "Response message for RuntimeService.DeleteRepo"
+    },
+    "v1EstimateRollupIntervalResponse": {
+      "type": "object",
+      "properties": {
+        "interval": {
+          "type": "string",
+          "format": "int64"
+        },
+        "min": {
+          "$ref": "#/definitions/v1Scalar"
+        },
+        "max": {
+          "$ref": "#/definitions/v1Scalar"
+        }
+      }
     },
     "v1GetCatalogObjectResponse": {
       "type": "object",
@@ -2020,6 +2272,32 @@
       },
       "title": "Response message for RuntimeService.Ping"
     },
+    "v1ProfileColumn": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "largestStringLength": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1ProfileColumnsResponse": {
+      "type": "object",
+      "properties": {
+        "profileColumns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ProfileColumn"
+          }
+        }
+      }
+    },
     "v1PutFileAndMigrateRequest": {
       "type": "object",
       "properties": {
@@ -2123,6 +2401,9 @@
       },
       "title": "Response message for RuntimeService.Query"
     },
+    "v1RenameDatabaseObjectResponse": {
+      "type": "object"
+    },
     "v1Repo": {
       "type": "object",
       "properties": {
@@ -2140,6 +2421,34 @@
         }
       },
       "description": "Repo represents a collection of file artifacts containing SQL statements.\nIt will usually by represented as a folder on disk, but may also be backed by a\ndatabase (for modelling in the cloud where no persistant file system is available)."
+    },
+    "v1RowsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "v1Scalar": {
+      "type": "object",
+      "properties": {
+        "int64": {
+          "type": "string",
+          "format": "int64"
+        },
+        "double": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     },
     "v1Source": {
       "type": "object",
