@@ -1,22 +1,17 @@
 import { runtimeServiceGetCatalogObject } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
-import { LOCAL_RUNTIME_INSTANCE_ID } from "../../../../lib/config/constants";
+import { fetchWrapper } from "../../../../lib/util/fetchWrapper";
 
 export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  // TODO: might have to check for if(browser) here
-
   try {
-    await runtimeServiceGetCatalogObject(
-      LOCAL_RUNTIME_INSTANCE_ID,
-      params.name
-    );
+    const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
+    await runtimeServiceGetCatalogObject(instanceResp.instanceId, params.name);
 
-    console.log("source name", params.name);
     return {
-      runtimeInstanceId: LOCAL_RUNTIME_INSTANCE_ID,
+      runtimeInstanceId: instanceResp.instanceId,
       sourceName: params.name,
     };
   } catch (e) {
