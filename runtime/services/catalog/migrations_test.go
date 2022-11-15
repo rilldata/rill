@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -15,11 +16,13 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const testDataPath = "../../../web-local/test/data/"
+const testDataPath = "../../../web-local/test/data"
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
@@ -274,7 +277,7 @@ func createSource(t *testing.T, s *Service, name string, file string, path strin
 			Name:      name,
 			Connector: "file",
 			Properties: toProtoStruct(map[string]any{
-				"path": testDataPath + file,
+				"path": filepath.Join(testDataPath, file),
 			}),
 		},
 		Path: path,

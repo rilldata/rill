@@ -43,18 +43,10 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
 };
 
-/**
- * Request message for RuntimeService.MigrateDelete
-TODO: Remove once Migrate has been adopted.
- */
 export type RuntimeServiceMigrateDeleteBody = {
   name?: string;
 };
 
-/**
- * Request message for RuntimeService.MigrateSingle.
-TODO: Remove once Migrate has been adopted.
- */
 export type RuntimeServiceMigrateSingleBody = {
   sql?: string;
   dryRun?: boolean;

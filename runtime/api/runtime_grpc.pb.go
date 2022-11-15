@@ -63,6 +63,14 @@ type RuntimeServiceClient interface {
 	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
 	// artifacts will be deleted.
 	Migrate(ctx context.Context, in *MigrateRequest, opts ...grpc.CallOption) (*MigrateResponse, error)
+	// MigrateSingle applies a single `CREATE` statement.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateSingle(ctx context.Context, in *MigrateSingleRequest, opts ...grpc.CallOption) (*MigrateSingleResponse, error)
+	// MigrateDelete deletes a single object.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateDelete(ctx context.Context, in *MigrateDeleteRequest, opts ...grpc.CallOption) (*MigrateDeleteResponse, error)
 	// PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
 	// It is equivalent to calling the two RPCs sequentially.
 	PutFileAndMigrate(ctx context.Context, in *PutFileAndMigrateRequest, opts ...grpc.CallOption) (*PutFileAndMigrateResponse, error)
@@ -252,6 +260,24 @@ func (c *runtimeServiceClient) Migrate(ctx context.Context, in *MigrateRequest, 
 	return out, nil
 }
 
+func (c *runtimeServiceClient) MigrateSingle(ctx context.Context, in *MigrateSingleRequest, opts ...grpc.CallOption) (*MigrateSingleResponse, error) {
+	out := new(MigrateSingleResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/MigrateSingle", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) MigrateDelete(ctx context.Context, in *MigrateDeleteRequest, opts ...grpc.CallOption) (*MigrateDeleteResponse, error) {
+	out := new(MigrateDeleteResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/MigrateDelete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) PutFileAndMigrate(ctx context.Context, in *PutFileAndMigrateRequest, opts ...grpc.CallOption) (*PutFileAndMigrateResponse, error) {
 	out := new(PutFileAndMigrateResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/PutFileAndMigrate", in, out, opts...)
@@ -378,6 +404,14 @@ type RuntimeServiceServer interface {
 	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
 	// artifacts will be deleted.
 	Migrate(context.Context, *MigrateRequest) (*MigrateResponse, error)
+	// MigrateSingle applies a single `CREATE` statement.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateSingle(context.Context, *MigrateSingleRequest) (*MigrateSingleResponse, error)
+	// MigrateDelete deletes a single object.
+	// It bypasses the reconciling migrations described in Migrate.
+	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+	MigrateDelete(context.Context, *MigrateDeleteRequest) (*MigrateDeleteResponse, error)
 	// PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
 	// It is equivalent to calling the two RPCs sequentially.
 	PutFileAndMigrate(context.Context, *PutFileAndMigrateRequest) (*PutFileAndMigrateResponse, error)
@@ -461,6 +495,12 @@ func (UnimplementedRuntimeServiceServer) TriggerSync(context.Context, *TriggerSy
 }
 func (UnimplementedRuntimeServiceServer) Migrate(context.Context, *MigrateRequest) (*MigrateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Migrate not implemented")
+}
+func (UnimplementedRuntimeServiceServer) MigrateSingle(context.Context, *MigrateSingleRequest) (*MigrateSingleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MigrateSingle not implemented")
+}
+func (UnimplementedRuntimeServiceServer) MigrateDelete(context.Context, *MigrateDeleteRequest) (*MigrateDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MigrateDelete not implemented")
 }
 func (UnimplementedRuntimeServiceServer) PutFileAndMigrate(context.Context, *PutFileAndMigrateRequest) (*PutFileAndMigrateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PutFileAndMigrate not implemented")
@@ -808,6 +848,42 @@ func _RuntimeService_Migrate_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_MigrateSingle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MigrateSingleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).MigrateSingle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/MigrateSingle",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).MigrateSingle(ctx, req.(*MigrateSingleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_MigrateDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MigrateDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).MigrateDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/MigrateDelete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).MigrateDelete(ctx, req.(*MigrateDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_PutFileAndMigrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PutFileAndMigrateRequest)
 	if err := dec(in); err != nil {
@@ -1044,6 +1120,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Migrate",
 			Handler:    _RuntimeService_Migrate_Handler,
+		},
+		{
+			MethodName: "MigrateSingle",
+			Handler:    _RuntimeService_MigrateSingle_Handler,
+		},
+		{
+			MethodName: "MigrateDelete",
+			Handler:    _RuntimeService_MigrateDelete_Handler,
 		},
 		{
 			MethodName: "PutFileAndMigrate",
