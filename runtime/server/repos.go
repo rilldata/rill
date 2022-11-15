@@ -141,9 +141,13 @@ func (s *Server) PutFile(ctx context.Context, req *api.PutFileRequest) (*api.Put
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// TODO: Handle req.Create, req.CreateOnly, req.Delete
+	// TODO: Handle req.Create, req.CreateOnly
 	repoStore, _ := conn.RepoStore()
-	err = repoStore.PutBlob(ctx, repo.ID, req.Path, req.Blob)
+	if req.Delete {
+		err = repoStore.Delete(ctx, repo.ID, req.Path)
+	} else {
+		err = repoStore.PutBlob(ctx, repo.ID, req.Path, req.Blob)
+	}
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
