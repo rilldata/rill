@@ -7,12 +7,12 @@
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
   import PreviewTable from "../../preview-table/PreviewTable.svelte";
-  import SourceInspector from "./SourceInspector.svelte";
-
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import SourceInspector from "./SourceInspector.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  export let sourceID: string;
+  export let runtimeInstanceId: string;
+  export let sourceName: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -22,10 +22,10 @@
   ) as DerivedTableStore;
 
   $: currentSource = $persistentTableStore?.entities
-    ? $persistentTableStore.entities.find((q) => q.id === sourceID)
+    ? $persistentTableStore.entities.find((q) => q.tableName === sourceName) // consider sanitization
     : undefined;
   $: currentDerivedSource = $derivedTableStore?.entities
-    ? $derivedTableStore.entities.find((q) => q.id === sourceID)
+    ? $derivedTableStore.entities.find((q) => q.id === currentSource.id)
     : undefined;
 
   const switchToSource = async (sourceID: string) => {
@@ -37,7 +37,7 @@
     ]);
   };
 
-  $: switchToSource(sourceID);
+  $: switchToSource(currentSource.id);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.
@@ -58,15 +58,15 @@
 </script>
 
 <!-- for now, we will key the entire element on the sourceId. -->
-{#key sourceID}
-  <WorkspaceContainer assetID={sourceID}>
+{#key currentSource.id}
+  <WorkspaceContainer assetID={currentSource.id}>
     <div
       slot="body"
       class="grid pb-6"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader id={sourceID} />
+      <SourceWorkspaceHeader id={currentSource.id} />
       <div
         style:overflow="auto"
         style:height="100%"
@@ -82,6 +82,6 @@
         {/if}
       </div>
     </div>
-    <SourceInspector {sourceID} slot="inspector" />
+    <SourceInspector sourceID={currentSource.id} slot="inspector" />
   </WorkspaceContainer>
 {/key}

@@ -5,8 +5,10 @@
 </script>
 
 <svelte:head>
-  <!-- TODO: add the source name to the title -->
-  <title>Rill Developer</title>
+  <title>Rill Developer | {data.sourceName}</title>
 </svelte:head>
 
-<SourceWorkspace sourceID={data.sourceID} />
+<SourceWorkspace
+  runtimeInstanceId={data.runtimeInstanceId}
+  sourceName={data.sourceName}
+/>
