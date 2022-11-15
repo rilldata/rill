@@ -22,11 +22,11 @@ func TestServer_GetTopK(t *testing.T) {
 		t.Error(err)
 	}
 	require.NotEmpty(t, res)
-	require.Equal(t, 2, len(res.Data))
-	require.Equal(t, "abc", res.Data[0].Fields["value"].GetStringValue())
-	require.Equal(t, 2, int(res.Data[0].Fields["count"].GetNumberValue()))
-	require.Equal(t, "def", res.Data[1].Fields["value"].GetStringValue())
-	require.Equal(t, 1, int(res.Data[1].Fields["count"].GetNumberValue()))
+	require.Equal(t, 2, len(res.TopKResponse.Entries))
+	require.Equal(t, "abc", *res.TopKResponse.Entries[0].Value)
+	require.Equal(t, 2, int(res.TopKResponse.Entries[0].Count))
+	require.Equal(t, "def", *res.TopKResponse.Entries[1].Value)
+	require.Equal(t, 1, int(res.TopKResponse.Entries[1].Count))
 
 	agg := "sum(val)"
 	res, err = server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: &agg})
@@ -34,11 +34,11 @@ func TestServer_GetTopK(t *testing.T) {
 		t.Error(err)
 	}
 	require.NotEmpty(t, res)
-	require.Equal(t, 2, len(res.Data))
-	require.Equal(t, "def", res.Data[0].Fields["value"].GetStringValue())
-	require.Equal(t, 5, int(res.Data[0].Fields["count"].GetNumberValue()))
-	require.Equal(t, "abc", res.Data[1].Fields["value"].GetStringValue())
-	require.Equal(t, 4, int(res.Data[1].Fields["count"].GetNumberValue()))
+	require.Equal(t, 2, len(res.TopKResponse.Entries))
+	require.Equal(t, "def", *res.TopKResponse.Entries[0].Value)
+	require.Equal(t, 5, int(res.TopKResponse.Entries[0].Count))
+	require.Equal(t, "abc", *res.TopKResponse.Entries[1].Value)
+	require.Equal(t, 4, int(res.TopKResponse.Entries[1].Count))
 
 	k := int32(1)
 	res, err = server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: &k})
@@ -46,7 +46,7 @@ func TestServer_GetTopK(t *testing.T) {
 		t.Error(err)
 	}
 	require.NotEmpty(t, res)
-	require.Equal(t, 1, len(res.Data))
-	require.Equal(t, "abc", res.Data[0].Fields["value"].GetStringValue())
-	require.Equal(t, 2, int(res.Data[0].Fields["count"].GetNumberValue()))
+	require.Equal(t, 1, len(res.TopKResponse.Entries))
+	require.Equal(t, "abc", *res.TopKResponse.Entries[0].Value)
+	require.Equal(t, 2, int(res.TopKResponse.Entries[0].Count))
 }
