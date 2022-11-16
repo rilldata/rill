@@ -8,7 +8,4 @@
   <title>Rill Developer | {data.sourceName}</title>
 </svelte:head>
 
-<SourceWorkspace
-  runtimeInstanceId={data.runtimeInstanceId}
-  sourceName={data.sourceName}
-/>
+<SourceWorkspace sourceName={data.sourceName} />

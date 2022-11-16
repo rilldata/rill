@@ -14,7 +14,6 @@ export async function load({ params }) {
     );
 
     return {
-      runtimeInstanceId: instanceResp.instanceId,
       sourceName: sourceResp.object.source.name,
     };
   } catch (e) {
