@@ -1,20 +1,38 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     RuntimeServiceListCatalogObjectsType,
+    useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceListCatalogObjects,
-    useRuntimeServiceMigrateDelete,
     useRuntimeServiceMigrateSingle,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import {
+    autoCreateMetricsDefinitionForSource,
+    createModelForSource,
+    sourceUpdated,
+  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { createEventDispatcher, getContext } from "svelte";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
@@ -24,26 +42,6 @@
   import Import from "../../icons/Import.svelte";
   import Model from "../../icons/Model.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
-
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
-
-  import { goto } from "$app/navigation";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-    sourceUpdated,
-  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { Divider, MenuItem } from "../../menu";
   import { refreshSource } from "./refreshSource";
 
@@ -65,7 +63,7 @@
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
-  const deleteSource = useRuntimeServiceMigrateDelete();
+  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServiceMigrateSingle();
@@ -87,9 +85,10 @@
   const handleDeleteSource = (tableName: string) => {
     $deleteSource.mutate(
       {
-        instanceId: runtimeInstanceId,
         data: {
-          name: tableName.toLowerCase(),
+          repoId: $runtimeStore.repoId,
+          instanceId: runtimeInstanceId,
+          path: `sources/${tableName}`,
         },
       },
       {
@@ -102,8 +101,11 @@
               $persistentTableStore.entities,
               sourceID
             );
-            if (nextSourceId) {
-              goto(`/source/${nextSourceId}`);
+            const nextSourceName = $persistentTableStore.entities.find(
+              (source) => source.id === nextSourceId
+            ).tableName;
+            if (nextSourceName) {
+              goto(`/source/${nextSourceName}`);
             } else {
               goto("/");
             }
