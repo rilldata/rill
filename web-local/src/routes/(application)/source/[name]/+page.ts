@@ -8,11 +8,14 @@ export const ssr = false;
 export async function load({ params }) {
   try {
     const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
-    await runtimeServiceGetCatalogObject(instanceResp.instanceId, params.name);
+    const sourceResp = await runtimeServiceGetCatalogObject(
+      instanceResp.instanceId,
+      params.name
+    );
 
     return {
       runtimeInstanceId: instanceResp.instanceId,
-      sourceName: params.name,
+      sourceName: sourceResp.object.source.name,
     };
   } catch (e) {
     if (e.response?.status && e.response?.data?.message) {

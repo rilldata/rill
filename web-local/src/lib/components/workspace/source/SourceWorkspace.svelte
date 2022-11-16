@@ -22,7 +22,7 @@
   ) as DerivedTableStore;
 
   $: currentSource = $persistentTableStore?.entities
-    ? $persistentTableStore.entities.find((q) => q.tableName === sourceName) // consider sanitization
+    ? $persistentTableStore.entities.find((q) => q.tableName === sourceName)
     : undefined;
   $: currentDerivedSource = $derivedTableStore?.entities
     ? $derivedTableStore.entities.find((q) => q.id === currentSource.id)
