@@ -77,7 +77,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 	)
 	api.RegisterRuntimeServiceServer(server, s)
-	s.logger.Info("serving gRPC", zap.Int("port", s.opts.GRPCPort))
+	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -89,7 +89,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
@@ -108,7 +108,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.HandlePath(
 		"POST",
 		"/v1/repos/{repo_id}/objects/file/-/{path=**}",
-		s.PutRepoObjectFromHTTPRequest,
+		s.UploadMultipartFile,
 	)
 
 	// Register CORS

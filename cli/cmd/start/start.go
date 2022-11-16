@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime/api"
@@ -44,20 +45,27 @@ func StartCmd() *cobra.Command {
 		Short: "Start the Rill Developer application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a logger
-			lvl := zapcore.ErrorLevel
+			config := zap.NewDevelopmentEncoderConfig()
+			config.EncodeLevel = zapcore.CapitalColorLevelEncoder
+			lvl := zap.NewAtomicLevel()
+			serverLevel := zap.ErrorLevel
 			if verbose {
-				lvl = zapcore.DebugLevel
+				lvl.SetLevel(zap.DebugLevel)
+				serverLevel = zap.DebugLevel
 			}
-			logger, err := zap.NewDevelopment(zap.IncreaseLevel(lvl))
-			if err != nil {
-				return err
-			}
+
+			logger := zap.New(zapcore.NewCore(
+				zapcore.NewConsoleEncoder(config),
+				zapcore.AddSync(colorable.NewColorableStdout()),
+				lvl,
+			))
 
 			// Create an in-memory metastore
 			metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
 			if err != nil {
 				return fmt.Errorf("error: could not connect to metadata db: %s", err)
 			}
+
 			err = metastore.Migrate(context.Background())
 			if err != nil {
 				return fmt.Errorf("error: metadata db migration: %s", err)
@@ -71,10 +79,14 @@ func StartCmd() *cobra.Command {
 				CatalogCacheSize:     100,
 				CatalogCacheDuration: 1 * time.Second,
 			}
-			server, err := server.NewServer(opts, metastore, logger)
-			if err != nil {
-				return fmt.Errorf("error: could not create server: %s", err)
-			}
+
+			// create server logger default to ErrorLevel if verbose is not true
+			serverLogger := zap.New(zapcore.NewCore(
+				zapcore.NewConsoleEncoder(config),
+				zapcore.AddSync(colorable.NewColorableStdout()),
+				serverLevel,
+			))
+			server, err := server.NewServer(opts, metastore, serverLogger)
 
 			// Create instance and repo configured for local use
 			inst, err := server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
@@ -93,9 +105,9 @@ func StartCmd() *cobra.Command {
 				Dsn:    repoDSN,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("could not create repo: %v", err)
 			}
-			logger.Sugar().Infof("Serving local instance '%s' and repo '%s'", inst.Instance.InstanceId, repo.Repo.RepoId)
+			logger.Sugar().Infof("serving local instance '%s' and repo '%s'", inst.Instance.InstanceId, repo.Repo.RepoId)
 
 			// Create config object to serve on /local/config
 			localConfig := map[string]any{
@@ -115,23 +127,20 @@ func StartCmd() *cobra.Command {
 			}
 			runtimeHandler, err := server.HTTPHandler(ctx)
 			if err != nil {
-				return err
+				return fmt.Errorf("could not create runtime http handler:%v", err)
 			}
+
+			// Add UI, runtime and local/config handlers on HTTP server
+			localConfigHandler := localConfigHandler(localConfig)
 			mux := http.NewServeMux()
 			mux.Handle("/", uiHandler)
 			mux.Handle("/v1/", runtimeHandler)
-			mux.Handle("/local/config", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				data, err := json.Marshal(localConfig)
-				if err != nil {
-					w.WriteHeader(400)
-					return
-				}
-				w.Header().Add("Content-Type", "application/json")
-				w.Write(data)
-			}))
+			mux.Handle("/local/config", localConfigHandler)
 
 			// Open the browser
 			uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
+			logger.Sugar().Infof("opening browser on url: %s", uiURL)
+
 			err = browser.Open(uiURL)
 			if err != nil {
 				return fmt.Errorf("could not open browser: %v", err)
@@ -139,19 +148,21 @@ func StartCmd() *cobra.Command {
 
 			// Start the gRPC and combined UI/REST servers
 			group.Go(func() error {
+				logger.Sugar().Infof("serving runtime gRPC on port:%v", opts.GRPCPort)
 				return server.ServeGRPC(ctx)
 			})
 			group.Go(func() error {
 				server := &http.Server{Handler: mux}
-				logger.Info("serving HTTP", zap.Int("port", opts.HTTPPort))
+				logger.Sugar().Infof("serving static UI and runtime HTTP on port:%v", opts.HTTPPort)
 				return graceful.ServeHTTP(ctx, server, opts.HTTPPort)
 			})
+
 			err = group.Wait()
 			if err != nil {
 				return fmt.Errorf("server crashed: %v", err)
 			}
 
-			logger.Info("server shutdown gracefully")
+			logger.Sugar().Error("server shutdown gracefully")
 			return nil
 		},
 	}
@@ -164,4 +175,16 @@ func StartCmd() *cobra.Command {
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 
 	return startCmd
+}
+
+func localConfigHandler(localConfig map[string]any) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := json.Marshal(localConfig)
+		if err != nil {
+			w.WriteHeader(400)
+			return
+		}
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(data)
+	})
 }
