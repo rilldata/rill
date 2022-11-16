@@ -35,6 +35,18 @@ export function compileCreateSourceSql(
   );
 }
 
+export function compileCreateSourceYAML(
+  values: Record<string, unknown>,
+  connectorName: string
+) {
+  const compiledKeyValues = Object.entries(values)
+    .filter(([key]) => key !== "sourceName")
+    .map(([key, value]) => `${key}: "${value}"`)
+    .join("\n");
+
+  return `type: "${connectorName}"\n` + compiledKeyValues;
+}
+
 export function inferSourceName(connector: V1Connector, path: string) {
   if (
     !path ||

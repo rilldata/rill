@@ -5,7 +5,7 @@
     ConnectorPropertyType,
     getRuntimeServiceListCatalogObjectsQueryKey,
     RuntimeServiceListCatalogObjectsType,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServicePutFileAndMigrate,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
@@ -23,7 +23,7 @@
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import { humanReadableErrorMessage } from "./errors";
   import {
-    compileCreateSourceSql,
+    compileCreateSourceYAML,
     inferSourceName,
     waitForSource,
   } from "./sourceUtils";
@@ -36,7 +36,7 @@
   export let connector: V1Connector;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServiceMigrateSingle();
+  const createSource = useRuntimeServicePutFileAndMigrate();
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -74,22 +74,26 @@
           ])
         );
 
-        const sql = compileCreateSourceSql(formValues, connector.name);
-        // TODO: call runtime/repo.put() to create source artifact
+        const yaml = compileCreateSourceYAML(formValues, connector.name);
+
         $createSource.mutate(
           {
-            instanceId: runtimeInstanceId,
-            data: { sql, createOrReplace: false },
+            data: {
+              repoId: $runtimeStore.repoId,
+              instanceId: runtimeInstanceId,
+              path: `sources/${values.sourceName}.yaml`,
+              blob: yaml,
+              create: true,
+              createOnly: true,
+              strict: true,
+            },
           },
           {
             onSuccess: async () => {
               waitingOnSourceImport = true;
-              const newId = await waitForSource(
-                values.sourceName,
-                persistentTableStore
-              );
+              await waitForSource(values.sourceName, persistentTableStore);
               waitingOnSourceImport = false;
-              goto(`/source/${newId}`);
+              goto(`/source/${values.sourceName}`);
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
