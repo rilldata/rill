@@ -1,27 +1,38 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { getContext } from "svelte";
+  import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ModelInspector from "./inspector/ModelInspector.svelte";
   import ModelBody from "./ModelBody.svelte";
-  export let modelID;
 
-  const switchToModel = async (modelID) => {
-    if (!modelID) return;
+  export let modelName: string;
+
+  const persistentModelStore = getContext(
+    "rill:app:persistent-model-store"
+  ) as PersistentModelStore;
+
+  $: model = $persistentModelStore?.entities
+    ? $persistentModelStore.entities.find((model) => model.name === modelName)
+    : undefined;
+
+  const switchToModel = async (modelName: string) => {
+    if (!modelName) return;
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
-      modelID,
+      model.id,
     ]);
   };
 
-  $: switchToModel(modelID);
+  $: switchToModel(modelName);
 </script>
 
-{#key modelID}
-  <WorkspaceContainer assetID={modelID}>
+{#key model.id}
+  <WorkspaceContainer assetID={modelName}>
     <div slot="body">
-      <ModelBody {modelID} />
+      <ModelBody modelID={model.id} />
     </div>
     <ModelInspector slot="inspector" />
   </WorkspaceContainer>
