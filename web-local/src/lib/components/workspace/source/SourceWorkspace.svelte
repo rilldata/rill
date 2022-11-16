@@ -59,7 +59,7 @@
 
 <!-- for now, we will key the entire element on the sourceId. -->
 {#key currentSource.id}
-  <WorkspaceContainer assetID={currentSource.id}>
+  <WorkspaceContainer assetID={sourceName}>
     <div
       slot="body"
       class="grid pb-6"
