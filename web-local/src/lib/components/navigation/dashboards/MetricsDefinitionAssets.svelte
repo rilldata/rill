@@ -1,6 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { useRuntimeServicePutFileAndMigrate } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { getEmptyDashboardDocument } from "@rilldata/web-local/lib/yaml-serializer/metrics";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     MetricsDefinitionEntity,
@@ -40,6 +43,10 @@
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
 
+  const createDashboard = useRuntimeServicePutFileAndMigrate();
+  $: repoId = $runtimeStore.repoId;
+  $: instanceId = $runtimeStore.instanceId;
+
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
   const derivedModelStore = getContext(
@@ -66,7 +73,27 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    await store.dispatch(createMetricsDefsAndFocusApi());
+
+    const yaml = getEmptyDashboardDocument();
+
+    $createDashboard.mutate(
+      {
+        data: {
+          repoId,
+          instanceId,
+          path: `dashboards/sample.yaml`,
+          blob: yaml,
+          create: true,
+          createOnly: true,
+          strict: true,
+        },
+      },
+      {
+        onSuccess: async () => {
+          goto(`/dashboard/sample.yaml`);
+        },
+      }
+    );
   };
 
   const editModel = (sourceModelId: string) => {

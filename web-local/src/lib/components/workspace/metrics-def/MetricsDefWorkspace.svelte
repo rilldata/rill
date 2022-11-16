@@ -34,8 +34,11 @@
 
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
+  import { useRuntimeServicePutFileAndMigrate } from "@rilldata/web-common/runtime-client";
   export let metricsDefId;
   export let nonStandardError;
+
+  const metricQuery = useRuntimeServicePutFileAndMigrate();
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
   $: dimensions = getDimensionsByMetricsId(metricsDefId);
