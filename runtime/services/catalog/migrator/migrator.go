@@ -2,6 +2,7 @@ package migrator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -20,9 +21,7 @@ var Migrators = make(map[string]EntityMigrator)
 
 func Register(name string, artifact EntityMigrator) {
 	if Migrators[name] != nil {
-		return
-		// no panic here. to make sure migrators are registered we could load them multiple times
-		//panic(fmt.Errorf("already registered migrator type with name '%s'", name))
+		panic(fmt.Errorf("already registered migrator type with name '%s'", name))
 	}
 	Migrators[name] = artifact
 }

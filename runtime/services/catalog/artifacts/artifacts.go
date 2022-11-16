@@ -22,7 +22,7 @@ func Register(name string, artifact Artifact) {
 }
 
 type Artifact interface {
-	DeSerialise(ctx context.Context, blob string) (*api.CatalogObject, error)
+	DeSerialise(ctx context.Context, filePath string, blob string) (*api.CatalogObject, error)
 	Serialise(ctx context.Context, catalogObject *api.CatalogObject) (string, error)
 }
 
@@ -38,7 +38,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, fileP
 		return nil, FileReadError
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, blob)
+	catalog, err := artifact.DeSerialise(ctx, filePath, blob)
 	if err != nil {
 		return nil, err
 	}
