@@ -143,16 +143,56 @@ func (s *Server) PutFile(ctx context.Context, req *api.PutFileRequest) (*api.Put
 
 	// TODO: Handle req.Create, req.CreateOnly
 	repoStore, _ := conn.RepoStore()
-	if req.Delete {
-		err = repoStore.Delete(ctx, repo.ID, req.Path)
-	} else {
-		err = repoStore.PutBlob(ctx, repo.ID, req.Path, req.Blob)
-	}
+	err = repoStore.PutBlob(ctx, repo.ID, req.Path, req.Blob)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &api.PutFileResponse{}, nil
+}
+
+// DeleteFile implements RuntimeService
+func (s *Server) DeleteFile(ctx context.Context, req *api.DeleteFileRequest) (*api.DeleteFileResponse, error) {
+	registry, _ := s.metastore.RegistryStore()
+	repo, found := registry.FindRepo(ctx, req.RepoId)
+	if !found {
+		return nil, status.Error(codes.NotFound, "repo not found")
+	}
+
+	conn, err := drivers.Open(repo.Driver, repo.DSN)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	repoStore, _ := conn.RepoStore()
+	err = repoStore.Delete(ctx, repo.ID, req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &api.DeleteFileResponse{}, nil
+}
+
+// RenameFile implements RuntimeService
+func (s *Server) RenameFile(ctx context.Context, req *api.RenameFileRequest) (*api.RenameFileResponse, error) {
+	registry, _ := s.metastore.RegistryStore()
+	repo, found := registry.FindRepo(ctx, req.RepoId)
+	if !found {
+		return nil, status.Error(codes.NotFound, "repo not found")
+	}
+
+	conn, err := drivers.Open(repo.Driver, repo.DSN)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	repoStore, _ := conn.RepoStore()
+	err = repoStore.Rename(ctx, req.RepoId, req.FromPath, req.ToPath)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &api.RenameFileResponse{}, nil
 }
 
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.

@@ -39,6 +39,39 @@
         ]
       }
     },
+    "/v1/delete-and-migrate": {
+      "post": {
+        "summary": "DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.",
+        "operationId": "RuntimeService_DeleteFileAndMigrate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteFileAndMigrateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1DeleteFileAndMigrateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances": {
       "get": {
         "summary": "ListInstances lists all the instances currently managed by the runtime",
@@ -1576,6 +1609,39 @@
         ]
       }
     },
+    "/v1/rename-and-migrate": {
+      "post": {
+        "summary": "RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.",
+        "operationId": "RuntimeService_RenameFileAndMigrate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RenameFileAndMigrateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RenameFileAndMigrateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/repos": {
       "get": {
         "summary": "ListRepos lists all the repos currently managed by the runtime",
@@ -1779,6 +1845,42 @@
           "RuntimeService"
         ]
       },
+      "delete": {
+        "summary": "DeleteFile deletes a file from a repo",
+        "operationId": "RuntimeService_DeleteFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteFileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      },
       "post": {
         "summary": "PutFile creates or updates a file in a repo",
         "operationId": "RuntimeService_PutFile",
@@ -1827,13 +1929,57 @@
                 "createOnly": {
                   "type": "boolean",
                   "description": "Will cause the operation to fail if the file already exists.\nIt should only be set when create = true."
-                },
-                "delete": {
-                  "type": "boolean",
-                  "description": "Delete will remove the file. If true, the passed blob must be empty."
                 }
               },
               "title": "Request message for RuntimeService.PutFile"
+            }
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
+    "/v1/repos/{repoId}/files/rename": {
+      "post": {
+        "summary": "RenameFile renames a file in a repo",
+        "operationId": "RuntimeService_RenameFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RenameFileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "fromPath": {
+                  "type": "string"
+                },
+                "toPath": {
+                  "type": "string"
+                }
+              },
+              "title": "Request message for RuntimeService.RenameFile"
             }
           }
         ],
@@ -2349,6 +2495,54 @@
         "FUNCTION"
       ],
       "default": "TABLE"
+    },
+    "v1DeleteFileAndMigrateRequest": {
+      "type": "object",
+      "properties": {
+        "repoId": {
+          "type": "string",
+          "title": "Repo to store the file in"
+        },
+        "instanceId": {
+          "type": "string",
+          "title": "Instance to apply the migrations to"
+        },
+        "path": {
+          "type": "string",
+          "title": "Path to store the file at"
+        },
+        "dry": {
+          "type": "boolean",
+          "description": "If true, will save the file and validate it and related file artifacts, but not actually execute any migrations."
+        },
+        "strict": {
+          "type": "boolean",
+          "title": "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort migration (including dropping objects with artifacts\nthat fail to validate.)"
+        }
+      }
+    },
+    "v1DeleteFileAndMigrateResponse": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MigrationError"
+          },
+          "description": "Errors encountered during the migration. If strict = false, any path in\naffected_paths without an error can be assumed to have been migrated succesfully."
+        },
+        "affectedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "affected_paths lists all the file paths that were considered while\nexecuting the migration. For a PutFileAndMigrate, this includes the put file\nas well as any file artifacts that rely on objects declared in it."
+        }
+      }
+    },
+    "v1DeleteFileResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.DeleteFile"
     },
     "v1DeleteInstanceResponse": {
       "type": "object",
@@ -2971,10 +3165,6 @@
           "type": "boolean",
           "description": "create_only will cause the operation to fail if a file already exists at path.\nIt should only be set when create = true."
         },
-        "delete": {
-          "type": "boolean",
-          "description": "Delete will remove the file. If true, the passed blob must be empty."
-        },
         "dry": {
           "type": "boolean",
           "description": "If true, will save the file and validate it and related file artifacts, but not actually execute any migrations."
@@ -3049,6 +3239,58 @@
     },
     "v1RenameDatabaseObjectResponse": {
       "type": "object"
+    },
+    "v1RenameFileAndMigrateRequest": {
+      "type": "object",
+      "properties": {
+        "repoId": {
+          "type": "string",
+          "title": "Repo to store the file in"
+        },
+        "instanceId": {
+          "type": "string",
+          "title": "Instance to apply the migrations to"
+        },
+        "fromPath": {
+          "type": "string",
+          "title": "Current path of the file"
+        },
+        "toPath": {
+          "type": "string",
+          "title": "New path of the file"
+        },
+        "dry": {
+          "type": "boolean",
+          "description": "If true, will save the file and validate it and related file artifacts, but not actually execute any migrations."
+        },
+        "strict": {
+          "type": "boolean",
+          "title": "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort migration (including dropping objects with artifacts\nthat fail to validate.)"
+        }
+      }
+    },
+    "v1RenameFileAndMigrateResponse": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MigrationError"
+          },
+          "description": "Errors encountered during the migration. If strict = false, any path in\naffected_paths without an error can be assumed to have been migrated succesfully."
+        },
+        "affectedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "affected_paths lists all the file paths that were considered while\nexecuting the migration. For a PutFileAndMigrate, this includes the put file\nas well as any file artifacts that rely on objects declared in it."
+        }
+      }
+    },
+    "v1RenameFileResponse": {
+      "type": "object",
+      "title": "Response message for RuntimeService.RenameFile"
     },
     "v1Repo": {
       "type": "object",
