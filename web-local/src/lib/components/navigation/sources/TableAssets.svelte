@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -11,14 +13,10 @@
   import { createModelForSource } from "../../../redux-store/source/source-apis";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import Source from "../../icons/Source.svelte";
+  import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
   import AddSourceModal from "./AddSourceModal.svelte";
-
-  import { page } from "$app/stores";
-
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import NavigationEntry from "../NavigationEntry.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
@@ -84,8 +82,8 @@
           out:slide={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
-            href={`/source/${id}`}
-            open={$page.url.pathname === `/source/${id}`}
+            href={`/source/${tableName}`}
+            open={$page.url.pathname === `/source/${tableName}`}
             on:command-click={() => queryHandler(tableName)}
             name={tableName}
           >
