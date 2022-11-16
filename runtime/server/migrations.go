@@ -110,7 +110,6 @@ func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigra
 		Blob:       req.Blob,
 		Create:     req.Create,
 		CreateOnly: req.CreateOnly,
-		Delete:     req.Delete,
 	})
 	if err != nil {
 		return nil, err
@@ -132,14 +131,18 @@ func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigra
 }
 
 func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAndMigrateRequest) (*api.RenameFileAndMigrateResponse, error) {
-	err := s.RenameFile(ctx, req)
+	_, err := s.RenameFile(ctx, &api.RenameFileRequest{
+		RepoId:   req.RepoId,
+		FromPath: req.FromPath,
+		ToPath:   req.ToPath,
+	})
 	if err != nil {
 		return nil, err
 	}
 	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
 		InstanceId:   req.InstanceId,
 		RepoId:       req.RepoId,
-		ChangedPaths: []string{req.FromPath, req.Path},
+		ChangedPaths: []string{req.FromPath, req.ToPath},
 		Dry:          false,
 		Strict:       false,
 	})
@@ -147,6 +150,30 @@ func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAn
 		return nil, err
 	}
 	return &api.RenameFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *api.DeleteFileAndMigrateRequest) (*api.DeleteFileAndMigrateResponse, error) {
+	_, err := s.DeleteFile(ctx, &api.DeleteFileRequest{
+		RepoId: req.RepoId,
+		Path:   req.Path,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.DeleteFileAndMigrateResponse{
 		Errors:        migrateResp.Errors,
 		AffectedPaths: migrateResp.AffectedPaths,
 	}, nil

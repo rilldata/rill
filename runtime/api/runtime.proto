@@ -72,6 +72,21 @@ service RuntimeService {
     };
   }
 
+  // DeleteFile deletes a file from a repo
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
+    option (google.api.http) = {
+      delete: "/v1/repos/{repo_id}/files/-/{path=**}"
+    };
+  }
+
+  // RenameFile renames a file in a repo
+  rpc RenameFile(RenameFileRequest) returns (RenameFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/repos/{repo_id}/files/rename",
+      body: "*"
+    };
+  }
+
   // Instances
 
   // ListInstances lists all the instances currently managed by the runtime
@@ -178,8 +193,15 @@ service RuntimeService {
     };
   }
 
+  // DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+  rpc DeleteFileAndMigrate(DeleteFileAndMigrateRequest) returns (DeleteFileAndMigrateResponse) {
+    option (google.api.http) = {
+      post: "/v1/delete-and-migrate",
+      body: "*"
+    };
+  }
+
   // RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-  // NOTE: there is no dedicated API for RenameFile
   rpc RenameFileAndMigrate(RenameFileAndMigrateRequest) returns (RenameFileAndMigrateResponse) {
     option (google.api.http) = {
       post: "/v1/rename-and-migrate",
@@ -458,14 +480,32 @@ message PutFileRequest {
   // Will cause the operation to fail if the file already exists.
   // It should only be set when create = true.
   bool create_only = 5;
-  // Delete will remove the file. If true, the passed blob must be empty.
-  bool delete = 6;
 }
 
 // Response message for RuntimeService.PutFile
 message PutFileResponse {
   string file_path = 1;
 }
+
+// Request message for RuntimeService.DeleteFile
+message DeleteFileRequest {
+  string repo_id = 1;
+  string path = 2;
+}
+
+// Response message for RuntimeService.DeleteFile
+message DeleteFileResponse {
+}
+
+// Request message for RuntimeService.RenameFile
+message RenameFileRequest {
+  string repo_id = 1;
+  string from_path = 2;
+  string to_path = 3;
+}
+
+// Response message for RuntimeService.RenameFile
+message RenameFileResponse {}
 
 // **********
 // Instances
@@ -813,8 +853,6 @@ message PutFileAndMigrateRequest {
   // create_only will cause the operation to fail if a file already exists at path.
   // It should only be set when create = true.
   bool create_only = 6;
-  // Delete will remove the file. If true, the passed blob must be empty.
-  bool delete = 7;
 
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 8;
@@ -834,16 +872,40 @@ message PutFileAndMigrateResponse {
   repeated string affected_paths = 2;
 }
 
+message DeleteFileAndMigrateRequest {
+  // Repo to store the file in
+  string repo_id = 1;
+  // Instance to apply the migrations to
+  string instance_id = 2;
+  // Path to store the file at
+  string path = 3;
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 4;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 5;
+}
+
+message DeleteFileAndMigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file paths that were considered while
+  // executing the migration. For a PutFileAndMigrate, this includes the put file
+  // as well as any file artifacts that rely on objects declared in it.
+  repeated string affected_paths = 2;
+}
+
 message RenameFileAndMigrateRequest {
   // Repo to store the file in
   string repo_id = 1;
   // Instance to apply the migrations to
   string instance_id = 2;
-  // New path to rename the artifact to
-  string path = 3;
-  // Original path of the artifact
-  string fromPath = 4;
-
+  // Current path of the file
+  string from_path = 3;
+  // New path of the file
+  string to_path = 4;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 5;
   // If true, will not execute any migrations if any artifact fails to validate.

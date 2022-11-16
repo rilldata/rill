@@ -77,6 +77,7 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 		Driver: "file",
 		Dsn:    dir,
 	})
+	require.NoError(t, err)
 	service, err := server.serviceCache.createCatalogService(ctx, server, instanceId, repoResp.Repo.RepoId)
 	require.NoError(t, err)
 
@@ -109,7 +110,7 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 		RepoId:     repoResp.Repo.RepoId,
 		InstanceId: instanceId,
 		FromPath:   AdBidsRepoPath,
-		Path:       AdBidsNewRepoPath,
+		ToPath:     AdBidsNewRepoPath,
 	})
 	require.NoError(t, err)
 	require.Len(t, renameResp.Errors, 0)
@@ -117,14 +118,13 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 	testutils.AssertTable(t, service, "AdBidsNew", AdBidsNewRepoPath)
 
 	// delete
-	resp, err = server.PutFileAndMigrate(ctx, &api.PutFileAndMigrateRequest{
+	delResp, err := server.DeleteFileAndMigrate(ctx, &api.DeleteFileAndMigrateRequest{
 		RepoId:     repoResp.Repo.RepoId,
 		InstanceId: instanceId,
 		Path:       AdBidsNewRepoPath,
-		Delete:     true,
 	})
 	require.NoError(t, err)
-	require.Len(t, resp.Errors, 0)
+	require.Len(t, delResp.Errors, 0)
 	testutils.AssertTableAbsence(t, service, "AdBids")
 	testutils.AssertTableAbsence(t, service, "AdBidsNew")
 }
