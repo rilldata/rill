@@ -32,6 +32,7 @@ export/
 /state
 /models
 /dashboards
+/sources
 
 # check in generated data files
 !/web-local/test/data/*.parquet
