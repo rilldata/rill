@@ -16,6 +16,8 @@ import type {
 import type {
   V1ListConnectorsResponse,
   RpcStatus,
+  V1DeleteFileAndMigrateResponse,
+  V1DeleteFileAndMigrateRequest,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
   V1CreateInstanceResponse,
@@ -65,6 +67,8 @@ import type {
   V1PingResponse,
   V1PutFileAndMigrateResponse,
   V1PutFileAndMigrateRequest,
+  V1RenameFileAndMigrateResponse,
+  V1RenameFileAndMigrateRequest,
   V1ListReposResponse,
   RuntimeServiceListReposParams,
   V1CreateRepoResponse,
@@ -74,8 +78,11 @@ import type {
   V1ListFilesResponse,
   RuntimeServiceListFilesParams,
   V1GetFileResponse,
+  V1DeleteFileResponse,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
+  V1RenameFileResponse,
+  RuntimeServiceRenameFileBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -140,6 +147,56 @@ export const useRuntimeServiceListConnectors = <
   return query;
 };
 
+/**
+ * @summary DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+ */
+export const runtimeServiceDeleteFileAndMigrate = (
+  v1DeleteFileAndMigrateRequest: V1DeleteFileAndMigrateRequest
+) => {
+  return httpClient<V1DeleteFileAndMigrateResponse>({
+    url: `/v1/delete-and-migrate`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1DeleteFileAndMigrateRequest,
+  });
+};
+
+export type RuntimeServiceDeleteFileAndMigrateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>
+>;
+export type RuntimeServiceDeleteFileAndMigrateMutationBody =
+  V1DeleteFileAndMigrateRequest;
+export type RuntimeServiceDeleteFileAndMigrateMutationError = RpcStatus;
+
+export const useRuntimeServiceDeleteFileAndMigrate = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    TError,
+    { data: V1DeleteFileAndMigrateRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    { data: V1DeleteFileAndMigrateRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceDeleteFileAndMigrate(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    TError,
+    { data: V1DeleteFileAndMigrateRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListInstances lists all the instances currently managed by the runtime
  */
@@ -2328,6 +2385,56 @@ export const useRuntimeServicePutFileAndMigrate = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+ */
+export const runtimeServiceRenameFileAndMigrate = (
+  v1RenameFileAndMigrateRequest: V1RenameFileAndMigrateRequest
+) => {
+  return httpClient<V1RenameFileAndMigrateResponse>({
+    url: `/v1/rename-and-migrate`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1RenameFileAndMigrateRequest,
+  });
+};
+
+export type RuntimeServiceRenameFileAndMigrateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>
+>;
+export type RuntimeServiceRenameFileAndMigrateMutationBody =
+  V1RenameFileAndMigrateRequest;
+export type RuntimeServiceRenameFileAndMigrateMutationError = RpcStatus;
+
+export const useRuntimeServiceRenameFileAndMigrate = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    TError,
+    { data: V1RenameFileAndMigrateRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    { data: V1RenameFileAndMigrateRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceRenameFileAndMigrate(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    TError,
+    { data: V1RenameFileAndMigrateRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary ListRepos lists all the repos currently managed by the runtime
  */
 export const runtimeServiceListRepos = (
@@ -2702,6 +2809,51 @@ export const useRuntimeServiceGetFile = <
 };
 
 /**
+ * @summary DeleteFile deletes a file from a repo
+ */
+export const runtimeServiceDeleteFile = (repoId: string, path: string) => {
+  return httpClient<V1DeleteFileResponse>({
+    url: `/v1/repos/${repoId}/files/-/${path}`,
+    method: "delete",
+  });
+};
+
+export type RuntimeServiceDeleteFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
+>;
+
+export type RuntimeServiceDeleteFileMutationError = RpcStatus;
+
+export const useRuntimeServiceDeleteFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { repoId: string; path: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    { repoId: string; path: string }
+  > = (props) => {
+    const { repoId, path } = props ?? {};
+
+    return runtimeServiceDeleteFile(repoId, path);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { repoId: string; path: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary PutFile creates or updates a file in a repo
  */
 export const runtimeServicePutFile = (
@@ -2749,6 +2901,56 @@ export const useRuntimeServicePutFile = <
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
     TError,
     { repoId: string; path: string; data: RuntimeServicePutFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RenameFile renames a file in a repo
+ */
+export const runtimeServiceRenameFile = (
+  repoId: string,
+  runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody
+) => {
+  return httpClient<V1RenameFileResponse>({
+    url: `/v1/repos/${repoId}/files/rename`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRenameFileBody,
+  });
+};
+
+export type RuntimeServiceRenameFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenameFile>>
+>;
+export type RuntimeServiceRenameFileMutationBody = RuntimeServiceRenameFileBody;
+export type RuntimeServiceRenameFileMutationError = RpcStatus;
+
+export const useRuntimeServiceRenameFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    TError,
+    { repoId: string; data: RuntimeServiceRenameFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    { repoId: string; data: RuntimeServiceRenameFileBody }
+  > = (props) => {
+    const { repoId, data } = props ?? {};
+
+    return runtimeServiceRenameFile(repoId, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    TError,
+    { repoId: string; data: RuntimeServiceRenameFileBody },
     TContext
   >(mutationFn, mutationOptions);
 };
