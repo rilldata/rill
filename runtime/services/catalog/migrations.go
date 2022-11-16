@@ -57,6 +57,28 @@ type MigrationResult struct {
 	Errors         []*api.MigrationError
 }
 
+func (r *MigrationResult) collectAffectedPaths() {
+	pathDuplicates := make(map[string]bool)
+	for _, added := range r.AddedObjects {
+		r.AffectedPaths = append(r.AffectedPaths, added.Path)
+		pathDuplicates[added.Path] = true
+	}
+	for _, updated := range r.UpdatedObjects {
+		if pathDuplicates[updated.Path] {
+			continue
+		}
+		r.AffectedPaths = append(r.AffectedPaths, updated.Path)
+		pathDuplicates[updated.Path] = true
+	}
+	for _, deleted := range r.AddedObjects {
+		if pathDuplicates[deleted.Path] {
+			continue
+		}
+		r.AffectedPaths = append(r.AffectedPaths, deleted.Path)
+		pathDuplicates[deleted.Path] = true
+	}
+}
+
 type ArtifactError struct {
 	Error error
 	Path  string
@@ -96,17 +118,7 @@ func (s *Service) Migrate(
 
 	// TODO: changes to the file will not be picked up if done while running migration
 	s.LastMigration = time.Now()
-
-	for _, added := range result.AddedObjects {
-		result.AffectedPaths = append(result.AffectedPaths, added.Path)
-	}
-	for _, updated := range result.UpdatedObjects {
-		result.AffectedPaths = append(result.AffectedPaths, updated.Path)
-	}
-	for _, deleted := range result.AddedObjects {
-		result.AffectedPaths = append(result.AffectedPaths, deleted.Path)
-	}
-
+	result.collectAffectedPaths()
 	return result, nil
 }
 
