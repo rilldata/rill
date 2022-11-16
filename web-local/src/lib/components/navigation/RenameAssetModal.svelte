@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { createForm } from "svelte-forms-lib";
@@ -29,7 +29,8 @@
     runtimeInstanceId,
     currentAssetName
   );
-  const renameSource = useRuntimeServiceMigrateSingle();
+
+  const renameSource = useRuntimeServiceRenameFileAndMigrate();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -49,21 +50,18 @@
       // TODO: remove this branching logic once we have a unified backend for all entities
       switch (entityType) {
         case EntityType.Table: {
-          const currentSql = $getCatalog.data.object.source.sql;
-          const newSql = currentSql.replace(
-            `CREATE SOURCE ${currentAssetName}`,
-            `CREATE SOURCE ${values.newName}`
-          );
+          // CHECK: Is this `updateTableName` API call necessary?
           dataModelerService.dispatch("updateTableName", [
             entityId,
             values.newName,
           ]);
           $renameSource.mutate(
             {
-              instanceId: runtimeInstanceId,
               data: {
-                sql: newSql,
-                renameFrom: currentAssetName,
+                repoId: $runtimeStore.repoId,
+                instanceId: runtimeInstanceId,
+                fromPath: `sources/${currentAssetName}`,
+                toPath: `sources/${values.newName}`,
               },
             },
             {
