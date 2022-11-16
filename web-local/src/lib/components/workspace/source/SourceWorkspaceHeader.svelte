@@ -3,6 +3,7 @@
     getRuntimeServiceGetCatalogObjectQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceMigrateSingle,
+    useRuntimeServiceRenameFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
@@ -32,8 +33,30 @@
     (entity) => entity.id === id
   );
 
+  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+
   const onChangeCallback = async (e) => {
     dataModelerService.dispatch("updateTableName", [id, e.target.value]);
+    $renameSource.mutate(
+      {
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: runtimeInstanceId,
+          fromPath: `sources/${currentSource.tableName}`,
+          toPath: `sources/${e.target.value}`,
+        },
+      },
+      {
+        onError: (err) => {
+          console.error(err.response.data.message);
+          // reset the new table name
+          dataModelerService.dispatch("updateTableName", [
+            currentSource.id,
+            "",
+          ]);
+        },
+      }
+    );
   };
 
   $: titleInput = currentSource?.name;
