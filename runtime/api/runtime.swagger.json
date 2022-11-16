@@ -500,7 +500,7 @@
                   "type": "string"
                 },
                 "measures": {
-                  "$ref": "#/definitions/v1GenerateTimeSeriesRequestBasicMeasures"
+                  "$ref": "#/definitions/GenerateTimeSeriesRequestBasicMeasures"
                 },
                 "timestampColumnName": {
                   "type": "string"
@@ -1855,6 +1855,17 @@
       ],
       "default": "MILLISECONDS"
     },
+    "GenerateTimeSeriesRequestBasicMeasures": {
+      "type": "object",
+      "properties": {
+        "basicMeasures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BasicMeasureDefinition"
+          }
+        }
+      }
+    },
     "MetricsViewDimension": {
       "type": "object",
       "properties": {
@@ -2301,17 +2312,6 @@
         }
       },
       "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
-    },
-    "v1GenerateTimeSeriesRequestBasicMeasures": {
-      "type": "object",
-      "properties": {
-        "basicMeasures": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1BasicMeasureDefinition"
-          }
-        }
-      }
     },
     "v1GetCatalogObjectResponse": {
       "type": "object",
