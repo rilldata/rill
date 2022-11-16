@@ -29,6 +29,26 @@ export type RuntimeServiceGetTopKBody = {
   k?: number;
 };
 
+export type RuntimeServiceTableRowsParams = { limit?: number };
+
+export type RuntimeServiceGetRugHistogramParams = { columnType?: string };
+
+export type RuntimeServiceRenameDatabaseObjectType =
+  typeof RuntimeServiceRenameDatabaseObjectType[keyof typeof RuntimeServiceRenameDatabaseObjectType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RuntimeServiceRenameDatabaseObjectType = {
+  TABLE: "TABLE",
+  VIEW: "VIEW",
+  FUNCTION: "FUNCTION",
+} as const;
+
+export type RuntimeServiceRenameDatabaseObjectParams = {
+  name?: string;
+  newname?: string;
+  type?: RuntimeServiceRenameDatabaseObjectType;
+};
+
 export type RuntimeServiceQueryDirectBody = {
   sql?: string;
   args?: unknown[];
@@ -42,6 +62,8 @@ export type RuntimeServiceQueryBody = {
   priority?: string;
   dryRun?: boolean;
 };
+
+export type RuntimeServiceGetNumericHistogramParams = { columnType?: string };
 
 export type RuntimeServiceMigrateDeleteBody = {
   name?: string;
@@ -88,6 +110,10 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: string;
   filter?: V1MetricsViewFilter;
+};
+
+export type RuntimeServiceEstimateRollupIntervalBody = {
+  columnName?: string;
 };
 
 export type RuntimeServiceListCatalogObjectsType =
@@ -153,18 +179,76 @@ export interface V1TriggerRefreshResponse {
   [key: string]: any;
 }
 
-export type V1TopKResponseDataItem = { [key: string]: any };
-
-export interface V1StructType {
-  fields?: StructTypeField[];
-}
-
 /**
  * Response for RuntimeService.GetTopK.
  */
 export interface V1TopKResponse {
-  meta?: V1StructType;
-  data?: V1TopKResponseDataItem[];
+  entries?: TopKResponseTopKEntry[];
+}
+
+export type V1TimeSeriesValueRecords = { [key: string]: number };
+
+export interface V1TimeSeriesValue {
+  ts?: string;
+  bin?: number;
+  records?: V1TimeSeriesValueRecords;
+}
+
+export interface V1TimeSeriesTimeRange {
+  name?: V1TimeRangeName;
+  start?: string;
+  end?: string;
+  interval?: string;
+}
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  tableName?: string;
+  measures?: GenerateTimeSeriesRequestBasicMeasures;
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  filters?: V1MetricsViewRequestFilter;
+  pixels?: string;
+  sampleSize?: number;
+};
+
+export interface V1TimeSeriesResponse {
+  id?: string;
+  results?: V1TimeSeriesValue[];
+  spark?: TimeSeriesResponseTimeSeriesValues;
+  timeRange?: V1TimeSeriesTimeRange;
+  sampleSize?: number;
+  error?: string;
+}
+
+export interface V1TimeSeriesRollup {
+  rollup?: V1TimeSeriesResponse;
+}
+
+export interface V1TimeRangeSummary {
+  min?: string;
+  max?: string;
+  interval?: TimeRangeSummaryInterval;
+}
+
+export type V1TimeRangeName =
+  typeof V1TimeRangeName[keyof typeof V1TimeRangeName];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1TimeRangeName = {
+  LastHour: "LastHour",
+  Last6Hours: "Last6Hours",
+  LastDay: "LastDay",
+  Last2Days: "Last2Days",
+  Last5Days: "Last5Days",
+  LastWeek: "LastWeek",
+  Last2Weeks: "Last2Weeks",
+  Last30Days: "Last30Days",
+  Last60Days: "Last60Days",
+  AllTime: "AllTime",
+} as const;
+
+export interface V1StructType {
+  fields?: StructTypeField[];
 }
 
 /**
@@ -190,6 +274,18 @@ export interface V1Source {
   sql?: string;
 }
 
+export interface V1Scalar {
+  int64?: string;
+  double?: number;
+  timestamp?: string;
+}
+
+export type V1RowsResponseDataItem = { [key: string]: any };
+
+export interface V1RowsResponse {
+  data?: V1RowsResponseDataItem[];
+}
+
 /**
  * Repo represents a collection of file artifacts containing SQL statements.
 It will usually by represented as a folder on disk, but may also be backed by a
@@ -201,6 +297,10 @@ export interface V1Repo {
   driver?: string;
   /** DSN for driver. If the driver is "file", this should be the path to the root directory. */
   dsn?: string;
+}
+
+export interface V1RenameDatabaseObjectResponse {
+  [key: string]: any;
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -247,9 +347,51 @@ It should only be set when create = true. */
   strict?: boolean;
 }
 
+export interface V1ProfileColumn {
+  name?: string;
+  type?: string;
+  largestStringLength?: number;
+}
+
+export interface V1ProfileColumnsResponse {
+  profileColumns?: V1ProfileColumn[];
+}
+
 export interface V1PingResponse {
   version?: string;
   time?: string;
+}
+
+export interface V1NumericStatistics {
+  min?: number;
+  max?: number;
+  mean?: number;
+  q25?: number;
+  q50?: number;
+  q75?: number;
+  sd?: number;
+}
+
+export interface V1NumericOutliers {
+  outliers?: NumericOutliersOutlier[];
+}
+
+export interface V1NumericHistogramBins {
+  bins?: NumericHistogramBinsBin[];
+}
+
+/**
+ * Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
+Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+ */
+export interface V1NumericSummary {
+  numericHistogramBins?: V1NumericHistogramBins;
+  numericStatistics?: V1NumericStatistics;
+  numericOutliers?: V1NumericOutliers;
+}
+
+export interface V1NullCountResponse {
+  count?: string;
 }
 
 export interface V1Model {
@@ -330,6 +472,11 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export interface V1MetricsViewRequestFilter {
+  include?: V1MetricsViewDimensionValue[];
+  exclude?: V1MetricsViewDimensionValue[];
+}
+
 export interface V1MetricsViewMetaResponse {
   metricsViewName?: string;
   fromObject?: string;
@@ -341,6 +488,12 @@ export interface V1MetricsViewFilter {
   match?: string[];
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewDimensionValue {
+  name?: string;
+  in?: unknown[];
+  like?: MetricsViewDimensionValueValues;
 }
 
 export interface V1MetricsViewColumn {
@@ -437,6 +590,16 @@ export interface V1GetCatalogObjectResponse {
   object?: V1CatalogObject;
 }
 
+export interface V1EstimateSmallestTimeGrainResponse {
+  timeGrain?: EstimateSmallestTimeGrainResponseTimeGrain;
+}
+
+export interface V1EstimateRollupIntervalResponse {
+  interval?: string;
+  min?: V1Scalar;
+  max?: V1Scalar;
+}
+
 export interface V1DeleteRepoResponse {
   [key: string]: any;
 }
@@ -444,6 +607,16 @@ export interface V1DeleteRepoResponse {
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
+
+export type V1DatabaseObjectType =
+  typeof V1DatabaseObjectType[keyof typeof V1DatabaseObjectType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1DatabaseObjectType = {
+  TABLE: "TABLE",
+  VIEW: "VIEW",
+  FUNCTION: "FUNCTION",
+} as const;
 
 export interface V1CreateRepoResponse {
   repo?: V1Repo;
@@ -479,6 +652,14 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
+/**
+ * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
+ */
+export interface V1CategoricalSummary {
+  topKResponse?: V1TopKResponse;
+  cardinality?: string;
+}
+
 export type V1CatalogObjectType =
   typeof V1CatalogObjectType[keyof typeof V1CatalogObjectType];
 
@@ -502,6 +683,16 @@ export interface V1CatalogObject {
   createdOn?: string;
   updatedOn?: string;
   refreshedOn?: string;
+}
+
+export interface V1CardinalityResponse {
+  cardinality?: string;
+}
+
+export interface V1BasicMeasureDefinition {
+  id?: string;
+  expression?: string;
+  sqlName?: string;
 }
 
 export interface Runtimev1Type {
@@ -539,9 +730,39 @@ export interface ProtobufAny {
   [key: string]: unknown;
 }
 
+export interface TopKResponseTopKEntry {
+  /** value is optional so that null values from the database can be represented. */
+  value?: string;
+  count?: number;
+}
+
+export interface TimeSeriesResponseTimeSeriesValues {
+  values?: V1TimeSeriesValue[];
+}
+
+export interface TimeRangeSummaryInterval {
+  months?: number;
+  days?: number;
+  micros?: string;
+}
+
 export interface StructTypeField {
   name?: string;
   type?: Runtimev1Type;
+}
+
+export interface NumericOutliersOutlier {
+  bucket?: number;
+  low?: number;
+  high?: number;
+  present?: number;
+}
+
+export interface NumericHistogramBinsBin {
+  bucket?: number;
+  low?: number;
+  high?: number;
+  count?: string;
 }
 
 export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
@@ -573,6 +794,10 @@ export interface MetricsViewFilterCond {
   like?: unknown[];
 }
 
+export interface MetricsViewDimensionValueValues {
+  values?: unknown[];
+}
+
 export interface MetricsViewDimension {
   name?: string;
   label?: string;
@@ -580,6 +805,25 @@ export interface MetricsViewDimension {
   enabled?: string;
   error?: string;
 }
+
+export interface GenerateTimeSeriesRequestBasicMeasures {
+  basicMeasures?: V1BasicMeasureDefinition[];
+}
+
+export type EstimateSmallestTimeGrainResponseTimeGrain =
+  typeof EstimateSmallestTimeGrainResponseTimeGrain[keyof typeof EstimateSmallestTimeGrainResponseTimeGrain];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const EstimateSmallestTimeGrainResponseTimeGrain = {
+  MILLISECONDS: "MILLISECONDS",
+  SECONDS: "SECONDS",
+  MINUTES: "MINUTES",
+  HOURS: "HOURS",
+  DAYS: "DAYS",
+  WEEKS: "WEEKS",
+  MONTHS: "MONTHS",
+  YEARS: "YEARS",
+} as const;
 
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
