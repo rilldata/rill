@@ -1216,7 +1216,6 @@ message NumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  string column_type = 4;
 }
 
 // Response for RuntimeService.GetNumericHistogram
@@ -1235,7 +1234,6 @@ message RugHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  string column_type = 4;
 }
 
 // Request for RuntimeService.GetTimeRangeSummary

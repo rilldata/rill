@@ -283,13 +283,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 		FDEstimatorBucketSize := math.Ceil(rangeVal / bucketWidth)
 		bucketSize = math.Min(40, FDEstimatorBucketSize)
 	}
-	_, ok := TIMESTAMPS[request.ColumnType]
-	var selectColumn string
-	if ok {
-		selectColumn = fmt.Sprintf("epoch(%s)", sanitizedColumnName)
-	} else {
-		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	}
+	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
 	histogramSql := fmt.Sprintf(`
           WITH data_table AS (
@@ -371,14 +365,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramRequest) (*api.NumericSummary, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	outlierPseudoBucketSize := 500
-
-	_, ok := TIMESTAMPS[request.ColumnType]
-	var selectColumn string
-	if ok {
-		selectColumn = fmt.Sprintf("epoch(%s)", sanitizedColumnName)
-	} else {
-		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	}
+	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
 	sql := fmt.Sprintf(`WITH data_table AS (
             SELECT %[1]s as %[2]s

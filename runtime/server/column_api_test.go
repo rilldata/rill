@@ -110,8 +110,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 func TestServer_GetNumericHistogram(t *testing.T) {
 	server, instanceId, err := getTestServerWithData(t)
 
-	// Get Numeric Histogram works with numeric and timestamp columns
-	res, err := server.GetNumericHistogram(context.Background(), &api.NumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val", ColumnType: "INTEGER"})
+	res, err := server.GetNumericHistogram(context.Background(), &api.NumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		t.Error(err)
 	}
@@ -126,7 +125,7 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 func TestServer_GetCategoricalHistogram(t *testing.T) {
 	server, instanceId, err := getTestServerWithData(t)
 
-	res, err := server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val", ColumnType: "INTEGER"})
+	res, err := server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		t.Error(err)
 	}
@@ -138,17 +137,9 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, 1.008, res.NumericOutliers.Outliers[0].High)
 	require.Equal(t, true, res.NumericOutliers.Outliers[0].Present)
 
-	res, err = server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times", ColumnType: "TIMESTAMP"})
-	if err != nil {
-		t.Error(err)
-	}
-
-	require.NotNil(t, res)
-	require.Equal(t, 2, len(res.NumericOutliers.Outliers))
-	require.Equal(t, int64(0), res.NumericOutliers.Outliers[0].Bucket)
-	require.Equal(t, 1667260800.0, res.NumericOutliers.Outliers[0].Low)
-	require.Equal(t, 1667261145.0, res.NumericOutliers.Outliers[0].High)
-	require.Equal(t, true, res.NumericOutliers.Outliers[0].Present)
+	// works only with numeric columns
+	res, err = server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	require.ErrorContains(t, err, "Conversion Error: Unimplemented type for cast (TIMESTAMP -> DOUBLE)")
 }
 
 func TestServer_GetTimeRangeSummary(t *testing.T) {
