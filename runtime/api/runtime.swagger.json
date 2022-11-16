@@ -2165,8 +2165,8 @@
       "type": "object",
       "properties": {
         "bucket": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "int64"
         },
         "low": {
           "type": "number",
@@ -2186,8 +2186,8 @@
       "type": "object",
       "properties": {
         "bucket": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "int64"
         },
         "low": {
           "type": "number",
@@ -2198,8 +2198,7 @@
           "format": "double"
         },
         "present": {
-          "type": "number",
-          "format": "double"
+          "type": "boolean"
         }
       }
     },
