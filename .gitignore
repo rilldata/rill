@@ -31,6 +31,7 @@ export/
 /*_state.json
 /state
 /models
+/dashboards
 
 # check in generated data files
 !/web-local/test/data/*.parquet

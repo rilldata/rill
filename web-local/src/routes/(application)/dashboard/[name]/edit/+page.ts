@@ -1,3 +1,4 @@
+import { runtimeServiceGetCatalogObject } from "@rilldata/web-common/runtime-client";
 import {
   ExplorerSourceColumnDoesntExist,
   ExplorerSourceModelDoesntExist,
@@ -5,21 +6,28 @@ import {
   ExplorerTimeDimensionDoesntExist,
   ExplorerMetricsDefinitionDoesntExist,
 } from "@rilldata/web-local/common/errors/ErrorMessages";
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import { getMetricsViewMetadata } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
+import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
+  const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
   try {
-    const meta = await getMetricsViewMetadata(config, params.id);
+    const dashboardResp = await runtimeServiceGetCatalogObject(
+      instanceResp.instanceId,
+      params.name
+    );
+
+    const dashboardMeta = dashboardResp.object.metricsView;
 
     // if metric definition exists, go to component
-    if (meta) {
+    if (dashboardMeta) {
       return {
-        metricsDefId: params.id,
+        metricsDefId: params.name,
       };
     }
+
+    console.log(dashboardMeta);
   } catch (err) {
     const invalidDashboardErrors = [
       ExplorerSourceModelDoesntExist,
@@ -35,7 +43,7 @@ export async function load({ params }) {
       )
     ) {
       return {
-        metricsDefId: params.id,
+        metricsDefId: params.name,
       };
     } else {
       if (
@@ -46,7 +54,7 @@ export async function load({ params }) {
       }
       // Pass non standard error message to be shown in dialog
       return {
-        metricsDefId: params.id,
+        metricsDefId: params.name,
         error: err.message,
       };
     }
