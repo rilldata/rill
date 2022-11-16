@@ -11,7 +11,6 @@
   import SourceInspector from "./SourceInspector.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  export let runtimeInstanceId: string;
   export let sourceName: string;
 
   const persistentTableStore = getContext(
