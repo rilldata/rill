@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     useRuntimeServiceGetCatalogObject,
@@ -42,16 +43,21 @@
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
-          fromPath: `sources/${currentSource.tableName}`,
-          toPath: `sources/${e.target.value}`,
+          fromPath: `sources/${currentSource.tableName}.yaml`,
+          toPath: `sources/${e.target.value}.yaml`,
         },
       },
       {
+        onSuccess: () => {
+          // TODO: invalidate the sidebar, once it uses the `ListFiles` API
+          // TODO: see if we can change the URL without a full page reload
+          goto(`/source/${e.target.value}`, { replaceState: true });
+        },
         onError: (err) => {
           console.error(err.response.data.message);
           // reset the new table name
           dataModelerService.dispatch("updateTableName", [
-            currentSource.id,
+            currentSource?.id,
             "",
           ]);
         },
@@ -82,7 +88,7 @@
         $createSource
       );
       // invalidate the data preview (async)
-      dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
+      dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(

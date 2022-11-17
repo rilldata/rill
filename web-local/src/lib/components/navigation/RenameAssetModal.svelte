@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceRenameFileAndMigrate,
@@ -67,6 +68,9 @@
             {
               onSuccess: () => {
                 closeModal();
+                // TODO: invalidate the sidebar, once it uses the `ListFiles` API
+                // TODO: see if we can change the URL without a full page reload
+                goto(`/source/${values.newName}`, { replaceState: true });
                 notifications.send({
                   message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
                 });
