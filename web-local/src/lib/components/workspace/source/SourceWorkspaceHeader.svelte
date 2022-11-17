@@ -21,6 +21,7 @@
   import Import from "../../icons/Import.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
+  import notifications from "../../notifications";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
@@ -38,6 +39,15 @@
   const renameSource = useRuntimeServiceRenameFileAndMigrate();
 
   const onChangeCallback = async (e) => {
+    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      notifications.send({
+        message:
+          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = currentSource.name; // resets the input
+      return;
+    }
+
     dataModelerService.dispatch("updateTableName", [id, e.target.value]);
     $renameSource.mutate(
       {
