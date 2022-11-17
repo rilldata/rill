@@ -7,14 +7,12 @@
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
@@ -28,6 +26,8 @@
   } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { createEventDispatcher, getContext } from "svelte";
+  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { getNextEntityId } from "../../../../common/utils/getNextEntityId";
   import {
     dataModelerService,
     runtimeStore,
@@ -46,6 +46,8 @@
 
   export let sourceName: string;
   export let sourceID: string;
+  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
+  export let toggleMenu: () => void;
 
   const dispatch = createEventDispatcher();
 
@@ -68,6 +70,7 @@
     runtimeInstanceId,
     persistentTable.tableName
   );
+
   const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndMigrate();
@@ -112,6 +115,10 @@
         },
         onError: (error) => {
           console.error(error);
+        },
+        onSettled: () => {
+          // onSettled gets triggered *after* both onSuccess and onError
+          toggleMenu();
         },
       }
     );
@@ -227,7 +234,11 @@
   rename...
 </MenuItem>
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<MenuItem icon on:select={() => handleDeleteSource(sourceName)}>
+<MenuItem
+  icon
+  propogateSelect={false}
+  on:select={() => handleDeleteSource(sourceName)}
+>
   <Cancel slot="icon" />
   delete</MenuItem
 >
