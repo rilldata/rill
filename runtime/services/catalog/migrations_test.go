@@ -265,12 +265,8 @@ func TestMigrateMetricsView(t *testing.T) {
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	// invalid measure/dimension doesnt return error for the object
-	testutils.AssertMigration(t, result, 0, 1, 1, 0)
-	require.Empty(t, result.AddedObjects[0].MetricsView.Measures[0].Error)
-	require.Contains(t, result.AddedObjects[0].MetricsView.Measures[1].Error, `Binder Error: Referenced column "bid_price" not found`)
-	require.Empty(t, "", result.AddedObjects[0].MetricsView.Dimensions[0].Error)
-	require.Equal(t, result.AddedObjects[0].MetricsView.Dimensions[1].Error, `dimension not found: domain`)
+	testutils.AssertMigration(t, result, 1, 0, 1, 0)
+	require.Equal(t, `dimension not found: domain`, result.Errors[0].Message)
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {

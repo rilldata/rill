@@ -68,18 +68,14 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	for _, dimension := range catalog.MetricsView.Dimensions {
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
-			dimension.Error = err.Error()
-		} else {
-			dimension.Error = ""
+			return err
 		}
 	}
 
 	for _, measure := range catalog.MetricsView.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
-			measure.Error = err.Error()
-		} else {
-			measure.Error = ""
+			return err
 		}
 	}
 
