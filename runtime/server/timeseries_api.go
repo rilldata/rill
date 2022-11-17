@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -212,6 +213,146 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 	return rtr, nil
 }
 
+func sMap(k string, v float64) map[string]float64 {
+	m := make(map[string]float64, 1)
+	m[k] = v
+	return m
+}
+
+/**
+ * Contains an as-of-this-commit unpublished algorithm for an M4-like line density reduction.
+ * This will take in an n-length time series and produce a pixels * 4 reduction of the time series
+ * that preserves the shape and trends.
+ *
+ * This algorithm expects the source table to have a timestamp column and some kind of value column,
+ * meaning it expects the data to essentially already be aggregated.
+ *
+ * It's important to note that this implemention is NOT the original M4 aggregation method, but a method
+ * that has the same basic understanding but is much faster.
+ *
+ * Nonetheless, we mostly use this to reduce a many-thousands-point-long time series to about 120 * 4 pixels.
+ * Importantly, this function runs very fast. For more information about the original M4 method,
+ * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
+ */
+func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
+	ctx context.Context,
+	instanceId string,
+	table string,
+	timestampColumn string,
+	valueColumn string,
+	pixels int,
+) ([]*api.TimeSeriesValue, error) {
+	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
+	cardinality, err := s.TableCardinality(ctx, &api.CardinalityRequest{
+		InstanceId: instanceId,
+		TableName:  table,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if cardinality.Cardinality < int64(pixels*4) {
+		rows, err := s.query(ctx, instanceId, &drivers.Statement{
+			Query: `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + table + `"`,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		results := make([]*api.TimeSeriesValue, (pixels+1)*4)
+		for rows.Next() {
+			var ts time.Time
+			var count float64
+			err = rows.Scan(&ts, &count)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, &api.TimeSeriesValue{
+				Ts:      ts.Format(time.RFC3339),
+				Records: sMap("count", count),
+			})
+		}
+		return results, nil
+	}
+
+	sql := ` -- extract unix time
+      WITH Q as (
+        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + table + `"
+      ),
+      -- generate bounds
+      M as (
+        SELECT min(t) as t1, max(t) as t2, max(t) - min(t) as diff FROM Q
+      )
+      -- core logic
+      SELECT 
+        -- left boundary point
+        min(t) * 1000  as min_t, 
+        arg_min(v, t) as argmin_tv, 
+
+        -- right boundary point
+        max(t) * 1000 as max_t, 
+        arg_max(v, t) as argmax_tv,
+
+        -- smallest point within boundary
+        min(v) as min_v, 
+        arg_min(t, v) * 1000  as argmin_vt,
+
+        -- largest point within boundary
+        max(v) as max_v, 
+        arg_max(t, v) * 1000  as argmax_vt,
+
+        round(` + strconv.FormatInt(int64(pixels), 10) + ` * (t - (SELECT t1 FROM M)) / (SELECT diff FROM M)) AS bin
+  
+      FROM Q GROUP BY bin
+      ORDER BY bin
+    `
+
+	rows, err := s.query(ctx, instanceId, &drivers.Statement{
+		Query: sql,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	results := make([]*api.TimeSeriesValue, (pixels+1)*4)
+	for rows.Next() {
+		var minT, maxT, argminVT, argmaxVT int64
+		var argminTV, argmaxTV, minV, maxV float64
+		var bin float64
+		err = rows.Scan(&minT, &argminTV, &maxT, &argmaxTV, &minV, &argminVT, &maxV, &argmaxVT, &bin)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &api.TimeSeriesValue{
+			Ts:      time.UnixMilli(minT).Format(time.RFC3339),
+			Bin:     &bin,
+			Records: sMap("count", argminTV),
+		})
+		results = append(results, &api.TimeSeriesValue{
+			Ts:      time.UnixMilli(argminVT).Format(time.RFC3339),
+			Bin:     &bin,
+			Records: sMap("count", minV),
+		})
+
+		results = append(results, &api.TimeSeriesValue{
+			Ts:      time.UnixMilli(argmaxVT).Format(time.RFC3339),
+			Bin:     &bin,
+			Records: sMap("count", maxV),
+		})
+
+		results = append(results, &api.TimeSeriesValue{
+			Ts:      time.UnixMilli(argminVT).Format(time.RFC3339),
+			Bin:     &bin,
+			Records: sMap("count", argmaxTV),
+		})
+		if argminVT > argmaxVT {
+			i := len(results)
+			results[i-3], results[i-2] = results[i-2], results[i-3]
+		}
+	}
+	return results, nil
+}
+
 func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesRollup, error) {
 	timeRange, err := s.normaliseTimeRange(ctx, request)
 	if err != nil {
@@ -276,11 +417,23 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	if err != nil {
 		return createErrResultWithPartial(timeRange, results), err
 	}
+	var spOp *api.TimeSeriesResponse_TimeSeriesValues
+	if request.Pixels != nil {
+		pixels := int(*request.Pixels)
+		sparkValues, er := s.createTimestampRollupReduction(ctx, request.InstanceId, "_ts_", "ts", "count", pixels)
+		if er != nil {
+			return createErrResultWithPartial(timeRange, results), er
+		}
+		spOp = &api.TimeSeriesResponse_TimeSeriesValues{
+			Values: sparkValues,
+		}
+	}
 
 	return &api.TimeSeriesRollup{
 		Rollup: &api.TimeSeriesResponse{
 			Results:   results,
 			TimeRange: timeRange,
+			Spark:     spOp,
 		},
 	}, nil
 }
