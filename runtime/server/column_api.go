@@ -44,7 +44,7 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*ap
 	}
 	for rows.Next() {
 		var topKEntry api.TopKResponse_TopKEntry
-		err := rows.Scan(&topKEntry.Value, &topKEntry.Count)
+		err = rows.Scan(&topKEntry.Value, &topKEntry.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -70,7 +70,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.NullCou
 
 	var count int64
 	for rows.Next() {
-		err := rows.Scan(&count)
+		err = rows.Scan(&count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -104,7 +104,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.Desc
 
 	stats := new(api.NumericStatistics)
 	for rows.Next() {
-		err := rows.Scan(&stats.Min, &stats.Q25, &stats.Q50, &stats.Q75, &stats.Max, &stats.Mean, &stats.Sd)
+		err = rows.Scan(&stats.Min, &stats.Q25, &stats.Q50, &stats.Q75, &stats.Max, &stats.Mean, &stats.Sd)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -267,7 +267,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 	defer rows.Close()
 	var iqr, count, rangeVal float64
 	for rows.Next() {
-		err := rows.Scan(&iqr, &count, &rangeVal)
+		err = rows.Scan(&iqr, &count, &rangeVal)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -282,13 +282,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 		FDEstimatorBucketSize := math.Ceil(rangeVal / bucketWidth)
 		bucketSize = math.Min(40, FDEstimatorBucketSize)
 	}
-	_, ok := TIMESTAMPS[request.ColumnType]
-	var selectColumn string
-	if ok {
-		selectColumn = fmt.Sprintf("epoch(%s)", sanitizedColumnName)
-	} else {
-		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	}
+	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
 	histogramSql := fmt.Sprintf(`
           WITH data_table AS (
@@ -352,7 +346,10 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 	histogramBins := make([]*api.NumericHistogramBins_Bin, 0)
 	for histogramRows.Next() {
 		bin := &api.NumericHistogramBins_Bin{}
-		rows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
+		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		histogramBins = append(histogramBins, bin)
 	}
 	return &api.NumericSummary{
@@ -365,14 +362,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramRequest) (*api.NumericSummary, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	outlierPseudoBucketSize := 500
-
-	_, ok := TIMESTAMPS[request.ColumnType]
-	var selectColumn string
-	if ok {
-		selectColumn = fmt.Sprintf("epoch(%s)", sanitizedColumnName)
-	} else {
-		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	}
+	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
 	sql := fmt.Sprintf(`WITH data_table AS (
             SELECT %[1]s as %[2]s
@@ -445,7 +435,10 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramR
 	outlierBins := make([]*api.NumericOutliers_Outlier, 0)
 	for outlierResults.Next() {
 		outlier := &api.NumericOutliers_Outlier{}
-		outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
+		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		outlierBins = append(outlierBins, outlier)
 	}
 
@@ -469,7 +462,7 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 	for rows.Next() {
 		summary := &api.TimeRangeSummary{}
 		rowMap := make(map[string]any)
-		err := rows.MapScan(rowMap)
+		err = rows.MapScan(rowMap)
 		if err != nil {
 			return nil, err
 		}
@@ -497,7 +490,10 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.Cardin
 	}
 	for rows.Next() {
 		summary := &api.CategoricalSummary{}
-		rows.Scan(&summary.Cardinality)
+		err = rows.Scan(&summary.Cardinality)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		return summary, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")

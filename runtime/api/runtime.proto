@@ -1132,10 +1132,10 @@ message TimeRangeSummary {
 
 message NumericOutliers {
   message Outlier {
-    double bucket = 1;
+    int64 bucket = 1;
     double low = 2;
     double high = 3;
-    double present = 4;
+    bool present = 4;
   }
   repeated Outlier outliers = 1;
 }
@@ -1216,13 +1216,12 @@ message NumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  string column_type = 4;
 }
 
 // Response for RuntimeService.GetNumericHistogram
 message NumericHistogramBins {
   message Bin {
-    double bucket = 1;
+    int64 bucket = 1;
     double low = 2;
     double high = 3;
     int64 count = 4;
@@ -1235,7 +1234,6 @@ message RugHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  string column_type = 4;
 }
 
 // Request for RuntimeService.GetTimeRangeSummary

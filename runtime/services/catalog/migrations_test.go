@@ -31,6 +31,7 @@ var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
+const AdBidsSourceModelRepoPath = "/models/AdBids_source_model.sql"
 
 func TestMigrate(t *testing.T) {
 	if testing.Short() {
@@ -55,7 +56,7 @@ func TestMigrate(t *testing.T) {
 			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 2, 0, 2, 0)
+			testutils.AssertMigration(t, result, 2, 0, 1, 0)
 			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[1].Message)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
@@ -89,7 +90,7 @@ func TestMigrate(t *testing.T) {
 			err = os.Remove(path.Join(dir, AdBidsRepoPath))
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 2, 0, 1, 1)
+			testutils.AssertMigration(t, result, 2, 0, 0, 1)
 			testutils.AssertTableAbsence(t, s, "AdBids")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 		})
@@ -195,8 +196,6 @@ func TestInterdependentModel(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			s, _ := initBasicService(t)
 
-			AdBidsSourceModelRepoPath := "/models/AdBids_source_model.sql"
-
 			testutils.CreateModel(t, s, "AdBids_source_model",
 				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
 			testutils.CreateModel(t, s, "AdBids_model",
@@ -211,7 +210,7 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 3, 0, 3, 0)
+			testutils.AssertMigration(t, result, 3, 0, 1, 0)
 			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[2].Message)
 			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
@@ -225,6 +224,30 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 		})
 	}
+}
+
+func TestModelVariations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
+	s, _ := initBasicService(t)
+
+	// update to invalid model
+	testutils.CreateModel(t, s, "AdBids_model",
+		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsModelRepoPath)
+	result, err := s.Migrate(context.Background(), catalog.MigrationConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 2, 0, 0, 0)
+	testutils.AssertTableAbsence(t, s, "AdBids_model")
+
+	// new invalid model
+	testutils.CreateModel(t, s, "AdBids_source_model",
+		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsSourceModelRepoPath)
+	result, err = s.Migrate(context.Background(), catalog.MigrationConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0)
+	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 }
 
 func TestMigrateMetricsView(t *testing.T) {
