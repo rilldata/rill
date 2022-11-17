@@ -19,6 +19,11 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -27,7 +32,7 @@ type Config struct {
 	Env            string        `default:"development"`
 	HTTPPort       int           `default:"8080" split_words:"true"`
 	GRPCPort       int           `default:"9090" split_words:"true"`
-	LogLevel       zapcore.Level `default:"info" split_words:"true"`
+	LogLevel       zapcore.Level `default:"warn" split_words:"true"`
 	DatabaseDriver string        `default:"sqlite"`
 	DatabaseURL    string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 }

@@ -31,6 +31,15 @@ func TestServer_MigrateSingleSources(t *testing.T) {
 
 	ctx := context.Background()
 
+	dir := t.TempDir()
+	repoResp, err := server.CreateRepo(ctx, &api.CreateRepoRequest{
+		Driver: "file",
+		Dsn:    dir,
+	})
+	require.NoError(t, err)
+	_, err = server.serviceCache.createCatalogService(ctx, server, instanceId, repoResp.Repo.RepoId)
+	require.NoError(t, err)
+
 	_, err = server.MigrateSingle(ctx, &api.MigrateSingleRequest{
 		InstanceId: instanceId,
 		Sql:        fmt.Sprintf("create source AdBids with connector = 'file', path = '%s'", AdBidsCsvPath),

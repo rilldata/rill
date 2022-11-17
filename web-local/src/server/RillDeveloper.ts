@@ -14,6 +14,7 @@ import { existsSync, mkdirSync } from "fs";
 import type {
   V1CreateRepoRequest,
   V1CreateRepoResponse,
+  V1PutFileAndMigrateRequest,
 } from "@rilldata/web-common/runtime-client";
 import { dataModelerServiceFactory } from "./serverFactory";
 
@@ -86,9 +87,12 @@ export class RillDeveloper {
         this.config.project.duckDbPath,
       ]);
     }
-    await this.duckDbConnection.init();
 
     await this.createRepo();
+
+    await this.triggerMigrate();
+
+    await this.duckDbConnection.init();
   }
 
   public async destroy() {
@@ -117,5 +121,19 @@ export class RillDeveloper {
           // no-op
         }
       );
+  }
+
+  private async triggerMigrate() {
+    const instId = this.dataModelerService
+      .getDatabaseService()
+      .getDatabaseClient()
+      .getInstanceId();
+    const repoId = this.dataModelerStateService.getApplicationState().repoId;
+    const resp = await axios.post(
+      `${this.config.database.runtimeUrl}/v1/instances/${instId}/migrate`,
+      {
+        repoId,
+      } as V1PutFileAndMigrateRequest
+    );
   }
 }
