@@ -225,6 +225,10 @@ func TestInterdependentModel(t *testing.T) {
 }
 
 func TestModelVariations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	s, _ := initBasicService(t)
 
 	// update to invalid model
