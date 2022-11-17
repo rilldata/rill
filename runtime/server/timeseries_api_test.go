@@ -228,3 +228,23 @@ func TestServer_RangeSanity(t *testing.T) {
 	require.Equal(t, time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC), min)
 	require.Equal(t, int32(1), r.Days)
 }
+
+func TestServer_normaliseRanger(t *testing.T) {
+	server, instanceId, err := getTestServer(t)
+	require.NoError(t, err)
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &api.TimeSeriesTimeRange{
+		Interval: api.TimeGrain_UNSPECIFIED,
+	}
+	r, err = server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "2019-01-01 00:00:00", r.Start)
+	require.Equal(t, "2019-01-02 00:00:00", r.End)
+	require.Equal(t, api.TimeGrain_HOUR, r.Interval)
+}

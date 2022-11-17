@@ -176,23 +176,19 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 	var rollupInterval api.TimeGrain
 	if r.Days == 0 && r.Micros <= MICROS_MINUTE {
 		rollupInterval = api.TimeGrain_MILLISECOND
-	}
-	if r.Days == 0 && r.Micros > MICROS_MINUTE && r.Micros <= MICROS_HOUR {
+	} else if r.Days == 0 && r.Micros > MICROS_MINUTE && r.Micros <= MICROS_HOUR {
 		rollupInterval = api.TimeGrain_SECOND
-	}
-	if r.Days == 0 && r.Micros <= MICROS_DAY {
+	} else if r.Days == 0 && r.Micros <= MICROS_DAY {
 		rollupInterval = api.TimeGrain_MINUTE
-	}
-	if r.Days <= 7 {
+	} else if r.Days <= 7 {
 		rollupInterval = api.TimeGrain_HOUR
-	}
-	if r.Days <= 365*20 {
+	} else if r.Days <= 365*20 {
 		rollupInterval = api.TimeGrain_DAY
-	}
-	if r.Days <= 365*500 {
+	} else if r.Days <= 365*500 {
 		rollupInterval = api.TimeGrain_MONTH
+	} else {
+		rollupInterval = api.TimeGrain_YEAR
 	}
-	rollupInterval = api.TimeGrain_YEAR
 
 	start := min.Format("2006-01-02 15:04:05")
 	end := max.Format("2006-01-02 15:04:05") // todo iso format
@@ -219,7 +215,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesRollup, error) {
 	timeRange, err := s.normaliseTimeRange(ctx, request)
 	if err != nil {
-		return createErrResult(request), err
+		return createErrResult(request.TimeRange), err
 	}
 	var measures []*api.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
 	var timestampColumn string = request.TimestampColumnName
@@ -265,36 +261,40 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: sql,
 	})
+	defer s.dropTempTable(ctx, request.InstanceId)
 	if err != nil {
-		s.dropTempTable(ctx, request.InstanceId)
-		return createErrResult(request), err
+		return createErrResult(timeRange), err
 	}
 	rows.Close()
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: "SELECT * from _ts_",
 	})
 	if err != nil {
-		s.dropTempTable(ctx, request.InstanceId)
-		return createErrResult(request), err
+		return createErrResult(timeRange), err
 	}
-	results := convertRowsToTimeSeriesValues(rows, len(measures)+1)
-	s.dropTempTable(ctx, request.InstanceId)
+	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1)
+	if err != nil {
+		return createErrResultWithPartial(timeRange, results), err
+	}
 
 	return &api.TimeSeriesRollup{
 		Rollup: &api.TimeSeriesResponse{
 			Results:   results,
-			TimeRange: request.TimeRange, // todo return the generated time range
+			TimeRange: timeRange,
 		},
 	}, nil
 }
 
-func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) []*api.TimeSeriesValue {
+func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.TimeSeriesValue, error) {
 	results := make([]*api.TimeSeriesValue, 0)
 	for rows.Next() {
 		value := api.TimeSeriesValue{}
 		results = append(results, &value)
 		row := make(map[string]interface{}, rowLength)
-		rows.MapScan(row)
+		err := rows.MapScan(row)
+		if err != nil {
+			return results, err
+		}
 		value.Ts = row["ts"].(time.Time).Format("2006-01-02 15:04:05")
 		delete(row, "ts")
 		value.Records = make(map[string]float64, len(row))
@@ -303,15 +303,24 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) []*api.T
 		}
 	}
 	rows.Close()
-	return results
+	return results, nil
 }
 
-func createErrResult(request *api.GenerateTimeSeriesRequest) *api.TimeSeriesRollup {
+func createErrResult(timeRange *api.TimeSeriesTimeRange) *api.TimeSeriesRollup {
 	return &api.TimeSeriesRollup{
 		Rollup: &api.TimeSeriesResponse{
 			Results:   []*api.TimeSeriesValue{},
-			TimeRange: request.TimeRange, // todo return the generated time range
-		}, // todo review
+			TimeRange: timeRange,
+		},
+	}
+}
+
+func createErrResultWithPartial(timeRange *api.TimeSeriesTimeRange, results []*api.TimeSeriesValue) *api.TimeSeriesRollup {
+	return &api.TimeSeriesRollup{
+		Rollup: &api.TimeSeriesResponse{
+			Results:   results,
+			TimeRange: timeRange,
+		},
 	}
 }
 
