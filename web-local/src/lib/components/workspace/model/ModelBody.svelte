@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { useRuntimeServiceRenameFileAndMigrate } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServiceRenameFileAndMigrate,
+  } from "@rilldata/web-common/runtime-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import type {
     DerivedModelStore,
@@ -9,7 +12,6 @@
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
-  import { updateModelQueryApi } from "@rilldata/web-local/lib/redux-store/model/model-apis";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -26,6 +28,8 @@
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
+
+  const updateModel = useRuntimeServicePutFileAndMigrate();
 
   $: currentModel = $persistentModelStore?.entities
     ? $persistentModelStore.entities.find((q) => q.id === modelID)
@@ -113,7 +117,21 @@
             content={currentModel.query}
             selections={$queryHighlight}
             on:write={(evt) =>
-              updateModelQueryApi(currentModel.id, evt.detail.content)}
+              $updateModel.mutate(
+                {
+                  data: {
+                    repoId: $runtimeStore.repoId,
+                    instanceId: $runtimeStore.instanceId,
+                    path: `models/${currentModel.tableName}`,
+                    blob: evt.detail.content,
+                  },
+                },
+                {
+                  onError: (err) => {
+                    console.error(err.response.data.message);
+                  },
+                }
+              )}
           />
         {/key}
       </div>
