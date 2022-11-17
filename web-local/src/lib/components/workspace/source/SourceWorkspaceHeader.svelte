@@ -2,7 +2,7 @@
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
@@ -63,7 +63,7 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServiceMigrateSingle();
+  const createSource = useRuntimeServicePutFileAndMigrate();
 
   $: getSource = useRuntimeServiceGetCatalogObject(
     runtimeInstanceId,
