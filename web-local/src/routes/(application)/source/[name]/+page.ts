@@ -1,4 +1,4 @@
-import { runtimeServiceGetCatalogObject } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 import { fetchWrapper } from "../../../../lib/util/fetchWrapper";
 
@@ -8,13 +8,14 @@ export const ssr = false;
 export async function load({ params }) {
   try {
     const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
-    const sourceResp = await runtimeServiceGetCatalogObject(
-      instanceResp.instanceId,
-      params.name
+
+    await runtimeServiceGetFile(
+      instanceResp.repoId,
+      `sources/${params.name}.yaml`
     );
 
     return {
-      sourceName: sourceResp.object.source.name,
+      sourceName: params.name,
     };
   } catch (e) {
     if (e.response?.status && e.response?.data?.message) {
