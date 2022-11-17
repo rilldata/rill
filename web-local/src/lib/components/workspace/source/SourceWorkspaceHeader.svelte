@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
@@ -49,9 +50,10 @@
       },
       {
         onSuccess: () => {
-          // TODO: invalidate the sidebar, once it uses the `ListFiles` API
-          // TODO: see if we can change the URL without a full page reload
           goto(`/source/${e.target.value}`, { replaceState: true });
+          return queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
         },
         onError: (err) => {
           console.error(err.response.data.message);

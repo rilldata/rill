@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
@@ -13,6 +14,7 @@
   } from "../../application-state-stores/application-store";
   import { updateMetricsDefsWrapperApi } from "../../redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "../../redux-store/store-root";
+  import { queryClient } from "../../svelte-query/globalQueryClient";
   import Input from "../forms/Input.svelte";
   import SubmissionError from "../forms/SubmissionError.svelte";
   import { Dialog } from "../modal/index";
@@ -68,12 +70,13 @@
             {
               onSuccess: () => {
                 closeModal();
-                // TODO: invalidate the sidebar, once it uses the `ListFiles` API
-                // TODO: see if we can change the URL without a full page reload
                 goto(`/source/${values.newName}`, { replaceState: true });
                 notifications.send({
                   message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
                 });
+                return queryClient.invalidateQueries(
+                  getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                );
               },
               onError: (err) => {
                 error = err.response.data.message;
