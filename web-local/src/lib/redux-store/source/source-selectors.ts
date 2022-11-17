@@ -10,7 +10,7 @@ const isProfileColumnATimestamp = (column: ProfileColumn) =>
 
 export const derivedProfileEntityHasTimestampColumn = (
   derivedProfileEntity: DataProfileEntity
-) => derivedProfileEntity.profile.some(isProfileColumnATimestamp);
+) => derivedProfileEntity?.profile.some(isProfileColumnATimestamp);
 
 export const selectTimestampColumnFromProfileEntity = (
   derivedProfileEntity: DataProfileEntity

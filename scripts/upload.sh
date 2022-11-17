@@ -33,7 +33,7 @@ upload(){
 }
 
 if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
-  mv rilldata/rill-macos-x64 rill
+  cp rilldata/rill-macos-x64 rill
   shasum -a 256 rill > rill.sha256
   upload rill macos-x64/rill
   upload rill.sha256 macos-x64/rill.sha256
@@ -41,7 +41,7 @@ if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 fi
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-  mv rilldata/rill-linux-x64 rill
+  cp rilldata/rill-linux-x64 rill
   shasum -a 256 rill > rill.sha256
   upload rill linux-x64/rill
   upload rill.sha256 linux-x64/rill.sha256

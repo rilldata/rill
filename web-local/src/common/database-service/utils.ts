@@ -1,3 +1,4 @@
+import { escapeColumn } from "@rilldata/web-local/common/database-service/columnUtils";
 import {
   BasicMeasureDefinition,
   getFallbackMeasureName,
@@ -22,21 +23,22 @@ function getFilterFromDimensionValuesFilter(
     .map((dimensionValue) => {
       const nonNullValues = dimensionValue.in.filter((value) => value !== null);
       const conditions = [];
+      const escapedDimensionName = escapeColumn(dimensionValue.name);
       if (nonNullValues.length > 0) {
         conditions.push(
-          `"${dimensionValue.name}" ${prefix} IN (${nonNullValues
+          `${escapedDimensionName} ${prefix} IN (${nonNullValues
             .map((value) => `'${escapeFilterValue(value)}'`)
             .join(",")}) `
         );
       }
       if (nonNullValues.length < dimensionValue.in.length) {
-        conditions.push(`"${dimensionValue.name}" IS ${prefix} NULL`);
+        conditions.push(`${escapedDimensionName} IS ${prefix} NULL`);
       }
       if (dimensionValue.like?.length) {
         conditions.push(
           ...dimensionValue.like.map(
             (value) =>
-              `"${dimensionValue.name}" ${prefix} ILIKE '${escapeFilterValue(
+              `${escapedDimensionName} ${prefix} ILIKE '${escapeFilterValue(
                 value
               )}'`
           )
@@ -117,10 +119,16 @@ export function getWhereClauseFromFilters(
     metricViewFilters?.include?.length ||
     metricViewFilters?.exclude?.length
   ) {
-    whereClauses.push(getFilterFromMetricsViewFilters(metricViewFilters));
+    const filter = getFilterFromMetricsViewFilters(metricViewFilters);
+    if (filter !== "") {
+      whereClauses.push(filter);
+    }
   }
   if (timeRange?.start || timeRange?.end) {
-    whereClauses.push(getFilterFromTimeRange(timestampColumn, timeRange));
+    const tsFilter = getFilterFromTimeRange(timestampColumn, timeRange);
+    if (tsFilter !== "") {
+      whereClauses.push(tsFilter);
+    }
   }
   return whereClauses.length ? `${prefix} ${whereClauses.join(" AND ")}` : "";
 }
@@ -131,14 +139,15 @@ export function getFilterFromTimeRange(
 ): string {
   const timeRangeFilters = new Array<string>();
   timeRange = normaliseTimeRange(timeRange);
+  const escapedTimestampColumn = escapeColumn(timestampColumn);
   if (timeRange.start) {
     timeRangeFilters.push(
-      `"${timestampColumn}" >= TIMESTAMP '${timeRange.start}'`
+      `${escapedTimestampColumn} >= TIMESTAMP '${timeRange.start}'`
     );
   }
   if (timeRange.end) {
     timeRangeFilters.push(
-      `"${timestampColumn}" <= TIMESTAMP '${timeRange.end}'`
+      `${escapedTimestampColumn} <= TIMESTAMP '${timeRange.end}'`
     );
   }
   return timeRangeFilters.join(" AND ");

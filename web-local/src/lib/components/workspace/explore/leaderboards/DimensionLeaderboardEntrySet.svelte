@@ -8,6 +8,7 @@ divider
 see more button
 -->
 <script lang="ts">
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher } from "svelte";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
@@ -70,7 +71,11 @@ see more button
         {:else}
           <div>
             filter {filterExcludeMode ? "out" : "on"}
-            <span class="italic">{label}</span>
+            <span class="italic"
+              >{label?.length > TOOLTIP_STRING_LIMIT
+                ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."
+                : label}</span
+            >
           </div>
         {/if}
       </svelte:fragment>

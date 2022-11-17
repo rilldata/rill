@@ -4,11 +4,16 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*sqlx.Rows, error) {
+func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {
+	return drivers.ErrUnsupportedConnector
+}
+
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
 		prepared, err := c.db.PrepareContext(ctx, stmt.Query)
@@ -24,7 +29,43 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*sql
 		return nil, err
 	}
 
-	return rows, nil
+	schema, err := rowsToSchema(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return &drivers.Result{Rows: rows, Schema: schema}, nil
+}
+
+func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
+	if r == nil {
+		return nil, nil
+	}
+
+	cts, err := r.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	fields := make([]*api.StructType_Field, len(cts))
+	for i, ct := range cts {
+		nullable, ok := ct.Nullable()
+		if !ok {
+			nullable = true
+		}
+
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		if err != nil {
+			return nil, err
+		}
+
+		fields[i] = &api.StructType_Field{
+			Name: ct.Name(),
+			Type: t,
+		}
+	}
+
+	return &api.StructType{Fields: fields}, nil
 }
 
 type informationSchema struct {
@@ -47,7 +88,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', 'sys')
+		WHERE T.TABLE_SCHEMA = 'druid'
 		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
@@ -55,6 +96,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
@@ -76,7 +118,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', 'sys') AND T.TABLE_NAME = ?
+		WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
 		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
@@ -84,6 +126,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tables, err := i.scanTables(rows)
 	if err != nil {
@@ -118,31 +161,72 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var t *drivers.Table
 		if len(res) > 0 {
 			t = res[len(res)-1]
-			if !(t.Database == database && t.Schema == schema && t.Name == name && t.Type == tableType) {
+			if !(t.Database == database && t.DatabaseSchema == schema && t.Name == name) {
 				t = nil
 			}
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database: database,
-				Schema:   schema,
-				Name:     name,
-				Type:     tableType,
+				Database:       database,
+				DatabaseSchema: schema,
+				Name:           name,
+				Schema:         &api.StructType{},
 			}
 			res = append(res, t)
 		}
 
+		// parse column type
+		colType, err := databaseTypeToPB(columnType, nullable)
+		if err != nil {
+			return nil, err
+		}
+
 		// append column
-		t.Columns = append(t.Columns, drivers.Column{
-			Name:     columnName,
-			Type:     columnType,
-			Nullable: nullable,
+		t.Schema.Fields = append(t.Schema.Fields, &api.StructType_Field{
+			Name: columnName,
+			Type: colType,
 		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return res, nil
 }
 
-func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {
-	return drivers.ErrUnsupportedConnector
+func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
+	t := &api.Type{Nullable: nullable}
+	switch dbt {
+	case "BOOLEAN":
+		t.Code = api.Type_CODE_BOOL
+	case "TINYINT":
+		t.Code = api.Type_CODE_INT8
+	case "SMALLINT":
+		t.Code = api.Type_CODE_INT16
+	case "INTEGER":
+		t.Code = api.Type_CODE_INT32
+	case "BIGINT":
+		t.Code = api.Type_CODE_INT64
+	case "FLOAT":
+		t.Code = api.Type_CODE_FLOAT32
+	case "DOUBLE":
+		t.Code = api.Type_CODE_FLOAT64
+	case "REAL":
+		t.Code = api.Type_CODE_FLOAT64
+	case "DECIMAL":
+		t.Code = api.Type_CODE_FLOAT64
+	case "CHAR":
+		t.Code = api.Type_CODE_STRING
+	case "VARCHAR":
+		t.Code = api.Type_CODE_STRING
+	case "TIMESTAMP":
+		t.Code = api.Type_CODE_TIMESTAMP
+	case "DATE":
+		t.Code = api.Type_CODE_TIMESTAMP
+	case "OTHER":
+		t.Code = api.Type_CODE_JSON
+	}
+
+	return t, nil
 }

@@ -37,7 +37,7 @@ func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 
 // Catalog implements drivers.Connection
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // Repo implements drivers.Connection

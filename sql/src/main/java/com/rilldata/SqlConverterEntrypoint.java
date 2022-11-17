@@ -1,7 +1,7 @@
 package com.rilldata;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.rilldata.calcite.dialects.Dialects;
+import com.rilldata.protobuf.generated.Requests;
 import com.rilldata.protobuf.generated.SqlNodeProto;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
@@ -10,7 +10,7 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
-import com.rilldata.protobuf.generated.Requests;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Base64;
@@ -48,6 +48,27 @@ public class SqlConverterEntrypoint
     }
   }
 
+  public static Requests.Response parse(Requests.Request r) {
+    Requests.ParseRequest parseRequest = r.getParseRequest();
+    String sql = parseRequest.getSql();
+    Requests.Response response;
+    try {
+      SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
+      SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql, parseRequest.getAddTypeInfo());
+      response = Requests.Response
+          .newBuilder()
+          .setParseResponse(Requests.ParseResponse.newBuilder().setAst(sqlNodeProto).build())
+          .build();
+    } catch (Exception e) {
+      response = Requests.Response
+          .newBuilder()
+          .setError(
+              Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
+          .build();
+    }
+    return response;
+  }
+
   @CEntryPoint(name = "request")
   public static CCharPointer processRequest(IsolateThread thread, AllocatorFn allocatorFn, CCharPointer request) {
     String b64String = CTypeConversion.toJavaString(request);
@@ -56,24 +77,7 @@ public class SqlConverterEntrypoint
     try {
       Requests.Request r = Requests.Request.parseFrom(decoded);
       if (r.hasParseRequest()) {
-        Requests.ParseRequest parseRequest = r.getParseRequest();
-        String sql = parseRequest.getSql();
-        SqlConverter sqlConverter = new SqlConverter(parseRequest.getCatalog());
-        Requests.Response response;
-        try {
-          SqlNodeProto sqlNodeProto = sqlConverter.getAST(sql);
-          response = Requests.Response
-              .newBuilder()
-              .setParseResponse(Requests.ParseResponse.newBuilder().setAst(sqlNodeProto).build())
-              .build();
-        } catch (Exception e) {
-          response = Requests.Response
-              .newBuilder()
-              .setError(
-                Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
-              .build();
-        }
-        byte[] b64response = Base64.getEncoder().encode(response.toByteArray());
+        byte[] b64response = Base64.getEncoder().encode(parse(r).toByteArray());
         return convertToCCharPointer(allocatorFn, b64response);
       } else if (r.hasTranspileRequest()) {
           byte[] response = transpile(r).toByteArray();
@@ -84,14 +88,17 @@ public class SqlConverterEntrypoint
           .newBuilder()
           .setError(Requests.Error.newBuilder().setMessage("Empty request").build())
           .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+      
+      byte[] b64response = Base64.getEncoder().encode(build.toByteArray());
+      return convertToCCharPointer(allocatorFn, b64response);
     } catch (Exception e) {
       Requests.Response build = Requests.Response
           .newBuilder()
           .setError(
               Requests.Error.newBuilder().setMessage(e.getMessage()).setStackTrace(stackTraceToString(e)).build())
           .build();
-      return convertToCCharPointer(allocatorFn, new String(build.toByteArray()));
+      byte[] b64response = Base64.getEncoder().encode(build.toByteArray());
+      return convertToCCharPointer(allocatorFn, b64response);
     }
   }
 

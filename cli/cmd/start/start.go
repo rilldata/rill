@@ -1,9 +1,15 @@
 package start
 
 import (
-	"fmt"
+	"context"
+	"log"
+	"net/http"
 
+	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/web"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // StartCmd represents the start command
@@ -13,7 +19,25 @@ func StartCmd() *cobra.Command {
 		Short: "A brief description of rill start",
 		Long:  `A longer description.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("start called")
+			var logger *zap.Logger
+			url := "http://localhost:8080"
+
+			ctx := graceful.WithCancelOnTerminate(context.Background())
+			uiHandler, err := web.StaticHandler()
+			if err != nil {
+				logger.Error("failed to set up ui handler: %w", zap.Error(err))
+			}
+
+			err = browser.Open(url)
+			if err != nil {
+				log.Fatalf("Couldn't open browser: %v", err)
+			}
+
+			server := &http.Server{Handler: uiHandler}
+			err = graceful.ServeHTTP(ctx, server, 8080)
+			if err != nil {
+				logger.Error("server crashed", zap.Error(err))
+			}
 		},
 	}
 

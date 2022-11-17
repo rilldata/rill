@@ -4,6 +4,7 @@
   import { slideRight } from "../../transitions";
 
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { Switch } from "@rilldata/web-local/lib/components/button";
 
   import Shortcut from "../tooltip/Shortcut.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
@@ -15,8 +16,6 @@
   import Search from "../icons/Search.svelte";
 
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
-  import Cancel from "../icons/Cancel.svelte";
-  import Check from "../icons/Check.svelte";
   import Close from "../icons/Close.svelte";
   import SearchBar from "../search/Search.svelte";
   import Spinner from "../Spinner.svelte";
@@ -79,14 +78,10 @@
     style:cursor="pointer"
   >
     <Tooltip location="left" distance={16}>
-      <div
-        class="flex items-center mr-3 ui-copy-icon"
-        style:grid-column-gap=".2rem"
-        on:click={toggleFilterMode}
-      >
-        {#if excludeMode}<Check size="20px" /> Include{:else}<Cancel
-            size="20px"
-          /> Exclude{/if}
+      <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <Switch on:click={() => toggleFilterMode()} checked={excludeMode}>
+          Exclude
+        </Switch>
       </div>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>

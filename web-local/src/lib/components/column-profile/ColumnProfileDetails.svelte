@@ -3,18 +3,19 @@
   import { slide } from "svelte/transition";
   import { dataModelerService } from "../../application-state-stores/application-store";
 
-  import TopKSummary from "../viz/TopKSummary.svelte";
   import {
     CATEGORICALS,
+    DATA_TYPE_COLORS,
     NUMERICS,
     TIMESTAMPS,
-    DATA_TYPE_COLORS,
   } from "../../duckdb-data-types";
+  import TopKSummary from "../viz/TopKSummary.svelte";
 
-  import TimestampHistogram from "../viz/histogram/TimestampHistogram.svelte";
+  import { LIST_SLIDE_DURATION } from "../../application-config";
+  import { TimestampDetail } from "../data-graphic/compositions/timestamp-profile";
   import NumericHistogram from "../viz/histogram/NumericHistogram.svelte";
   import OutlierHistogram from "../viz/histogram/OutlierHistogram.svelte";
-  import { TimestampDetail } from "../data-graphic/compositions/timestamp-profile";
+  import TimestampHistogram from "../viz/histogram/TimestampHistogram.svelte";
 
   export let type;
   export let summary;
@@ -41,7 +42,10 @@
 <!-- FIXME: document all magic number sums of indent levels in this component,
   and potentially move to another file -->
 {#if active}
-  <div transition:slide|local={{ duration: 200 }} class="pt-3 pb-3  w-full">
+  <div
+    transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+    class="pt-3 pb-3  w-full"
+  >
     {#if CATEGORICALS.has(type) && summary?.topK}
       <div class="pl-{indentLevel === 1 ? 16 : 10} pr-4 w-full">
         <!-- pl-16 pl-8 -->

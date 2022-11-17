@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/https"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -18,7 +19,13 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server"
-	_ "github.com/rilldata/rill/runtime/sql"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
@@ -66,9 +73,11 @@ func main() {
 
 	// Init server
 	opts := &server.ServerOptions{
-		HTTPPort:            conf.HTTPPort,
-		GRPCPort:            conf.GRPCPort,
-		ConnectionCacheSize: 100,
+		HTTPPort:             conf.HTTPPort,
+		GRPCPort:             conf.GRPCPort,
+		ConnectionCacheSize:  100,
+		CatalogCacheSize:     100,
+		CatalogCacheDuration: 1 * time.Second,
 	}
 	server, err := server.NewServer(opts, metastore, logger)
 	if err != nil {

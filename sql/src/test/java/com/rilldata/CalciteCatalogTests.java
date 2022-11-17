@@ -8,6 +8,7 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Litmus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -24,6 +25,15 @@ public class CalciteCatalogTests
   {
     String catalog = new String(StaticSchemaTest.class.getResourceAsStream("/catalog.json").readAllBytes());
     calciteToolbox = CalciteToolbox.buildToolbox(catalog);
+  }
+
+  @Test
+  public void testEmptyCatalog() throws IOException, ValidationException, SqlParseException
+  {
+    CalciteToolbox calciteToolbox = CalciteToolbox.buildToolbox("{}");
+    for (Dialects dialect : Dialects.values()) {
+      Assertions.assertEquals("SELECT 1", calciteToolbox.getRunnableQuery("SELECT 1", dialect.getSqlDialect()));
+    }
   }
 
   @ParameterizedTest

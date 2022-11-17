@@ -17,6 +17,8 @@ export/
 /tmp
 /runtime/sql/deps
 /runtime/release
+/cli/pkg/web/embed/dist
+/rill
 
 # data files
 *.duckdb

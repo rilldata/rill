@@ -10,7 +10,7 @@ This is a full list of development dependencies:
 - [Node.js 18](https://nodejs.org/en/) (we recommend installing it with [nvm](https://github.com/nvm-sh/nvm))
 - [Go 1.19](https://go.dev) (on macOS, install with `brew install go`)
 - [GraalVM](https://www.graalvm.org) and [Maven](https://maven.apache.org) for Java (we recommend installing both through [sdkman](https://sdkman.io))
-- [Protocol Buffers](https://grpc.io/docs/protoc-installation/) (`protoc`) (on macOS, install with `brew install protoc`)
+- [Protocol Buffers](https://grpc.io/docs/protoc-installation/) (`protoc`) (on macOS, install with `brew install protobuf`)
 
 ## Technologies
 

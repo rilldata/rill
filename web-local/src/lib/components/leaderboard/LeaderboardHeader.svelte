@@ -76,7 +76,7 @@
       {#if hovered || optionsMenuActive}
         <LeaderboardOptionsMenu
           bind:optionsMenuActive
-          on:toggle-filter-exclude-mode
+          on:toggle-filter-mode
           {filterExcludeMode}
         />
       {/if}

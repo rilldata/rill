@@ -26,17 +26,21 @@ import (
 )
 
 type ServerOptions struct {
-	HTTPPort            int
-	GRPCPort            int
-	ConnectionCacheSize int
+	HTTPPort             int
+	GRPCPort             int
+	ConnectionCacheSize  int
+	CatalogCacheSize     int
+	CatalogCacheDuration time.Duration
 }
 
 type Server struct {
 	api.UnsafeRuntimeServiceServer
-	opts      *ServerOptions
-	metastore drivers.Connection
-	logger    *zap.Logger
-	cache     *connectionCache
+	opts         *ServerOptions
+	metastore    drivers.Connection
+	logger       *zap.Logger
+	connCache    *connectionCache
+	catalogCache *catalogCache
+	serviceCache *servicesCache
 }
 
 var _ api.RuntimeServiceServer = (*Server)(nil)
@@ -48,14 +52,15 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 	}
 
 	return &Server{
-		opts:      opts,
-		metastore: metastore,
-		logger:    logger,
-		cache:     newConnectionCache(opts.ConnectionCacheSize),
+		opts:         opts,
+		metastore:    metastore,
+		logger:       logger,
+		connCache:    newConnectionCache(opts.ConnectionCacheSize),
+		catalogCache: newCatalogCache(opts.CatalogCacheSize, opts.CatalogCacheDuration),
+		serviceCache: newServicesCache(),
 	}, nil
 }
 
-// Serve starts a gRPC server and a gRPC REST gateway server
 func (s *Server) Serve(ctx context.Context) error {
 	group, cctx := errgroup.WithContext(ctx)
 
@@ -89,13 +94,22 @@ func (s *Server) Serve(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		mux.HandlePath(
+			"POST",
+			"/v1/repos/{repo_id}/files/upload/-/{path=**}",
+			s.UploadMultipartFile,
+		)
 		handler := cors(mux)
 		server := &http.Server{Handler: handler}
 		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
 		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
 	})
-
 	return group.Wait()
+}
+
+// Metrics APIs
+func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
+	return &api.EstimateRollupIntervalResponse{}, nil
 }
 
 // Ping implements RuntimeService

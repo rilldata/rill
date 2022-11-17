@@ -34,13 +34,16 @@ func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Inst
 
 // CreateInstance implements drivers.RegistryStore
 func (c *connection) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	id := uuid.NewString()
+	if inst.ID == "" {
+		inst.ID = uuid.NewString()
+	}
+
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
 		"INSERT INTO instances(id, driver, dsn, object_prefix, exposed, embed_catalog, created_on, updated_on) "+
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7)",
-		id,
+		inst.ID,
 		inst.Driver,
 		inst.DSN,
 		inst.ObjectPrefix,
@@ -52,7 +55,6 @@ func (c *connection) CreateInstance(ctx context.Context, inst *drivers.Instance)
 		return err
 	}
 	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
-	inst.ID = id
 	inst.CreatedOn = now
 	inst.UpdatedOn = now
 	return nil
@@ -89,12 +91,14 @@ func (c *connection) FindRepo(ctx context.Context, id string) (*drivers.Repo, bo
 
 // CreateRepo implements drivers.RegistryStore
 func (c *connection) CreateRepo(ctx context.Context, repo *drivers.Repo) error {
-	id := uuid.NewString()
+	if repo.ID == "" {
+		repo.ID = uuid.NewString()
+	}
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
 		"INSERT INTO repos(id, driver, dsn, created_on, updated_on) VALUES ($1, $2, $3, $4, $4)",
-		id,
+		repo.ID,
 		repo.Driver,
 		repo.DSN,
 		now,
@@ -103,7 +107,6 @@ func (c *connection) CreateRepo(ctx context.Context, repo *drivers.Repo) error {
 		return err
 	}
 	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
-	repo.ID = id
 	repo.CreatedOn = now
 	repo.UpdatedOn = now
 	return nil

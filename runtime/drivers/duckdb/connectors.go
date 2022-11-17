@@ -3,11 +3,13 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/file"
-	"github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/fileutil"
 )
 
 func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {
@@ -20,12 +22,14 @@ func (c *connection) Ingest(ctx context.Context, source *connectors.Source) erro
 	switch source.Connector {
 	case "file":
 		return c.ingestFile(ctx, source)
-	case "s3":
-		return c.ingestS3(ctx, source)
 	}
 
-	// TODO: Use generic connectors.Consume when it's implemented
-	return drivers.ErrUnsupportedConnector
+	path, err := connectors.ConsumeAsFile(ctx, source)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(path)
+	return c.ingestFromRawFile(ctx, source, path)
 }
 
 func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) error {
@@ -37,9 +41,14 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 	// Not using query args since not quite sure about behaviour of injecting table names that way.
 	// Also, it's a source, so the caller can be trusted.
 
-	from := fmt.Sprintf("'%s'", conf.Path)
+	var from string
 	if conf.Format == "csv" && conf.CSVDelimiter != "" {
 		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", conf.Path, conf.CSVDelimiter)
+	} else {
+		from, err = getSourceReader(conf.Path)
+		if err != nil {
+			return err
+		}
 	}
 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
@@ -55,35 +64,13 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 	return nil
 }
 
-func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) error {
-	conf, err := s3.ParseConfig(source.Properties)
+func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string) error {
+	from, err := getSourceReader(path)
 	if err != nil {
 		return err
-	}
-
-	// TODO: set AWS settings for the transaction only
-
-	qry := fmt.Sprintf("SET s3_region='%s';", conf.AWSRegion)
-
-	if conf.AWSKey != "" && conf.AWSSecret != "" {
-		qry += fmt.Sprintf("SET s3_access_key_id='%s'; SET s3_secret_access_key='%s';", conf.AWSKey, conf.AWSSecret)
-	} else if conf.AWSSession != "" {
-		qry += fmt.Sprintf("SET s3_session_token='%s';", conf.AWSSession)
 	}
 	rows, err := c.Execute(ctx, &drivers.Statement{
-		Query:    qry,
-		Priority: 1,
-	})
-	if err != nil {
-		return err
-	}
-	if err = rows.Close(); err != nil {
-		return err
-	}
-
-	// TODO: we need to fix the issue of no error returned for the last query in a multi query request
-	rows, err = c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, conf.Path),
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from),
 		Priority: 1,
 	})
 	if err != nil {
@@ -94,4 +81,17 @@ func (c *connection) ingestS3(ctx context.Context, source *connectors.Source) er
 	}
 
 	return nil
+}
+
+func getSourceReader(path string) (string, error) {
+	ext := fileutil.FullExt(path)
+	if ext == "" {
+		return "", fmt.Errorf("invalid file")
+	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") {
+		return fmt.Sprintf("read_csv_auto('%s')", path), nil
+	} else if strings.Contains(ext, ".parquet") {
+		return fmt.Sprintf("read_parquet('%s')", path), nil
+	} else {
+		return "", fmt.Errorf("file type not supported : %s", ext)
+	}
 }

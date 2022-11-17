@@ -124,31 +124,33 @@
 >
   <TimeSeriesChartContainer start={startValue} end={endValue}>
     <!-- mouseover date elements-->
-    <div />
-    <div style:padding-left="24px">
-      {#if point?.ts}
-        <div
-          class="absolute italic text-gray-600"
-          transition:fly|local={{ duration: 100, y: 4 }}
-        >
-          {formatDateByInterval(interval, point.ts)}
-        </div>
-        &nbsp;
-      {:else}
-        &nbsp;
-      {/if}
+    <div class="bg-white sticky left-0 top-0" />
+    <div class="bg-white sticky left-0 top-0">
+      <div style:padding-left="24px">
+        {#if point?.ts}
+          <div
+            class="absolute italic text-gray-600"
+            transition:fly|local={{ duration: 100, y: 4 }}
+          >
+            {formatDateByInterval(interval, point.ts)}
+          </div>
+          &nbsp;
+        {:else}
+          &nbsp;
+        {/if}
+      </div>
+      <!-- top axis element -->
+      <div />
+      <SimpleDataGraphic
+        height={32}
+        top={34}
+        bottom={0}
+        xMin={startValue}
+        xMax={endValue}
+      >
+        <Axis superlabel side="top" />
+      </SimpleDataGraphic>
     </div>
-    <!-- top axis element -->
-    <div />
-    <SimpleDataGraphic
-      height={32}
-      top={34}
-      bottom={0}
-      xMin={startValue}
-      xMax={endValue}
-    >
-      <Axis superlabel side="top" />
-    </SimpleDataGraphic>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
       {#each $metaQuery.data?.measures as measure, index (measure.id)}

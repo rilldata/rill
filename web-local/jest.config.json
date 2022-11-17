@@ -5,6 +5,7 @@
   },
   "moduleNameMapper": {
     "^\\@rilldata\\/web-local(.*)$": "<rootDir>/src/$1",
+    "^\\@rilldata\\/web-common(.*)$": "<rootDir>/../web-common/src/$1",
     "^\\$app(.*)$": [
       "<rootDir>/.svelte-kit/dev/runtime/app$1",
       "<rootDir>/.svelte-kit/build/runtime/app$1"

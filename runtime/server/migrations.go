@@ -3,24 +3,186 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // Migrate implements RuntimeService
 func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.MigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.RepoId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	resp, err := service.Migrate(ctx, catalog.MigrationConfig{
+		DryRun:       req.Dry,
+		Strict:       req.Strict,
+		ChangedPaths: req.ChangedPaths,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MigrateResponse{
+		Errors:        resp.Errors,
+		AffectedPaths: resp.AffectedPaths,
+	}, nil
 }
 
 // MigrateSingle implements RuntimeService
-// NOTE: This is an initial migration implementation with several flaws.
+// NOTE: Everything here is an initial implementation with many flaws.
 func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
+	// TODO: Handle all kinds of objects, not just sources
+	return s.migrateSingleSource(ctx, req)
+}
+
+// MigrateDelete implements RuntimeService
+func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteRequest) (*api.MigrateDeleteResponse, error) {
+	// Get instance
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, req.InstanceId)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	}
+
+	// Get catalog
+	catalog, err := s.openCatalog(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get object
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
+	if !found {
+		return nil, status.Errorf(codes.InvalidArgument, "object not found")
+	}
+
+	// Delete from underlying if applicable
+	switch obj.Type {
+	case drivers.CatalogObjectTypeSource:
+		// Get OLAP
+		conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+		olap, _ := conn.OLAPStore()
+
+		// Drop table with source name
+		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE %s", obj.Name)})
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+		if err = rows.Close(); err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	case drivers.CatalogObjectTypeTable:
+		// Don't allow deletion of tables created directly in DB
+		return nil, status.Error(codes.InvalidArgument, "can not delete unmanaged table")
+	case drivers.CatalogObjectTypeMetricsView:
+		// Nothing to do
+	default:
+		panic(fmt.Errorf("unhandled catalog object type: %v", obj.Type))
+	}
+
+	// Remove from catalog
+	err = catalog.DeleteObject(ctx, req.InstanceId, obj.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
+	}
+
+	// Reset catalog cache
+	s.catalogCache.reset(req.InstanceId)
+
+	return &api.MigrateDeleteResponse{}, nil
+}
+
+// PutFileAndMigrate implements RuntimeService
+func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigrateRequest) (*api.PutFileAndMigrateResponse, error) {
+	_, err := s.PutFile(ctx, &api.PutFileRequest{
+		RepoId:     req.RepoId,
+		Path:       req.Path,
+		Blob:       req.Blob,
+		Create:     req.Create,
+		CreateOnly: req.CreateOnly,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.PutFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAndMigrateRequest) (*api.RenameFileAndMigrateResponse, error) {
+	_, err := s.RenameFile(ctx, &api.RenameFileRequest{
+		RepoId:   req.RepoId,
+		FromPath: req.FromPath,
+		ToPath:   req.ToPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.FromPath, req.ToPath},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.RenameFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *api.DeleteFileAndMigrateRequest) (*api.DeleteFileAndMigrateResponse, error) {
+	_, err := s.DeleteFile(ctx, &api.DeleteFileRequest{
+		RepoId: req.RepoId,
+		Path:   req.Path,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.DeleteFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
+// NOTE: This is an initial migration implementation with several flaws.
+func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
 	// Parse SQL
-	source, err := sqlToSource(req.Sql)
+	source, err := sources.SqlToSource(req.Sql)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -39,7 +201,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 	}
 
 	// Get olap
-	conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -65,7 +227,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		}
 
 		// Get the object to rename
-		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.RenameFrom))
+		renameObj, renameFound = catalog.FindObject(ctx, req.InstanceId, req.RenameFrom)
 		if !renameFound {
 			return nil, status.Errorf(codes.InvalidArgument, "could not find existing object named '%s' to rename", req.RenameFrom)
 		}
@@ -74,7 +236,7 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		}
 
 		// Check whether the properties for the new object are different (i.e. whether to re-ingest or just rename)
-		renameSource, err := sqlToSource(renameObj.SQL)
+		renameSource, err := sources.SqlToSource(renameObj.SQL)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "could not parse existing sql: %s", err.Error())
 		}
@@ -88,9 +250,10 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 
 	// Create the object to save
 	newObj := &drivers.CatalogObject{
-		Name: source.Name,
-		Type: drivers.CatalogObjectTypeSource,
-		SQL:  req.Sql,
+		Name:        source.Name,
+		Type:        drivers.CatalogObjectTypeSource,
+		SQL:         req.Sql,
+		RefreshedOn: time.Now(),
 	}
 
 	// We now have several cases to handle
@@ -100,6 +263,12 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		st, err := olap.InformationSchema().Lookup(ctx, source.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "couldn't detect schema of ingested source: %s", err.Error())
+		}
+		newObj.Schema = st.Schema
 
 		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
@@ -111,6 +280,12 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		st, err := olap.InformationSchema().Lookup(ctx, source.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "couldn't detect schema of ingested source: %s", err.Error())
+		}
+		newObj.Schema = st.Schema
 
 		err = catalog.UpdateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
@@ -140,6 +315,12 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
+		st, err := olap.InformationSchema().Lookup(ctx, source.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "couldn't detect schema of ingested source: %s", err.Error())
+		}
+		newObj.Schema = st.Schema
+
 		err = catalog.CreateObject(ctx, req.InstanceId, newObj)
 		if err != nil {
 			return nil, status.Errorf(codes.Unknown, "error: could not insert source into catalog: %s (warning: watch out for corruptions)", err.Error())
@@ -157,63 +338,9 @@ func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleReques
 		rows.Close()
 	}
 
+	// Reset catalog cache
+	s.catalogCache.reset(req.InstanceId)
+
 	// Done
 	return &api.MigrateSingleResponse{}, nil
-}
-
-// MigrateDelete implements RuntimeService
-func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteRequest) (*api.MigrateDeleteResponse, error) {
-	// Get instance
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	// Get catalog
-	catalog, err := s.openCatalog(ctx, inst)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Get object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, strings.ToLower(req.Name))
-	if !found {
-		return nil, status.Errorf(codes.InvalidArgument, "object not found")
-	}
-
-	// Delete from underlying if applicable
-	switch obj.Type {
-	case drivers.CatalogObjectTypeSource:
-		// Get OLAP
-		conn, err := s.cache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-		olap, _ := conn.OLAPStore()
-
-		// Drop table with source name
-		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE %s", obj.Name)})
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-		if err = rows.Close(); err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-	case drivers.CatalogObjectTypeUnmanagedTable:
-		// Don't allow deletion of tables created directly in DB
-		return nil, status.Error(codes.InvalidArgument, "can not delete unmanaged table")
-	case drivers.CatalogObjectTypeMetricsView:
-		// Nothing to do
-	default:
-		panic(fmt.Errorf("unhandled catalog object type: %v", obj.Type))
-	}
-
-	// Remove from catalog
-	err = catalog.DeleteObject(ctx, req.InstanceId, obj.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
-	}
-
-	return &api.MigrateDeleteResponse{}, nil
 }

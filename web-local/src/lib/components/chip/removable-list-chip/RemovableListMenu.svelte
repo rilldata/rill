@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-local/lib/components/button";
   import { Search } from "@rilldata/web-local/lib/components/search";
+  import { Switch } from "@rilldata/web-local/lib/components/button";
 
   import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
   import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
@@ -8,7 +8,7 @@
 
   import { Menu } from "@rilldata/web-local/lib/components/menu";
   import MenuItem from "@rilldata/web-local/lib/components/menu/core/MenuItem.svelte";
-  import { createEventDispatcher, tick } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import Footer from "./Footer.svelte";
 
   export let selectedValues: string[];
@@ -19,41 +19,33 @@
 
   const dispatch = createEventDispatcher();
 
-  function onCloseHandler() {
-    dispatch("close");
-  }
-
   function onSearch() {
     dispatch("search", searchText);
   }
 
-  async function onApplyHandler() {
-    dispatch("apply", candidateValues);
-    await tick();
-    onCloseHandler();
+  function onToggleHandler() {
+    dispatch("toggle");
   }
 
   /** On instantiation, only take the exact current selectedValues, so that
    * when the user unchecks a menu item, it still persists in the FilterMenu
    * until the user closes.
    */
-  let candidateValues = [];
-  let valuesToDisplay = [...selectedValues];
+  let candidateValues = [...selectedValues];
+  let valuesToDisplay = [...candidateValues];
 
   $: if (searchText) {
     valuesToDisplay = [...searchedValues];
-  } else valuesToDisplay = [...selectedValues];
+  } else valuesToDisplay = [...candidateValues];
 
   $: numSelectedNotInSearch = selectedValues.filter(
     (v) => !valuesToDisplay.includes(v)
   ).length;
 
   function toggleValue(value) {
-    if (candidateValues.includes(value)) {
-      candidateValues = [
-        ...candidateValues.filter((candidate) => candidate !== value),
-      ];
-    } else {
+    dispatch("apply", value);
+
+    if (!candidateValues.includes(value)) {
       candidateValues = [...candidateValues, value];
     }
   }
@@ -87,9 +79,9 @@
           }}
         >
           <svelte:fragment slot="icon">
-            {#if selectedValues.includes(value) !== candidateValues.includes(value) && !excludeMode}
+            {#if selectedValues.includes(value) && !excludeMode}
               <Check />
-            {:else if selectedValues.includes(value) !== candidateValues.includes(value) && excludeMode}
+            {:else if selectedValues.includes(value) && excludeMode}
               <Cancel />
             {:else}
               <Spacer />
@@ -107,21 +99,11 @@
     {/if}
   </div>
   <Footer>
-    <Button
-      type="secondary"
-      compact
-      disabled={!candidateValues.length}
-      on:click={onApplyHandler}
-    >
-      {#if excludeMode}
-        <Cancel />
-      {:else}
-        <Check />
-      {/if}
-      <span class="font-semibold ui-copy">
-        {excludeMode ? "Exclude" : "Include"}
-      </span>
-    </Button>
+    <span class="ui-copy">
+      <Switch on:click={() => onToggleHandler()} checked={excludeMode}>
+        Exclude
+      </Switch>
+    </span>
     {#if numSelectedNotInSearch}
       <div class="ui-label italic">
         {numSelectedNotInSearch} other value{numSelectedNotInSearch > 1

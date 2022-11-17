@@ -24,7 +24,7 @@ export async function load({ params }) {
 
   if (modelExists) {
     return {
-      modelId: params.id,
+      modelID: params.id,
     };
   }
 

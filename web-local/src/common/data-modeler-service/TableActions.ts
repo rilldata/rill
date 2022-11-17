@@ -1,6 +1,22 @@
+import {
+  runtimeServiceMigrateDelete,
+  runtimeServiceMigrateSingle,
+} from "@rilldata/web-common/runtime-client";
+import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+import {
+  FILE_EXTENSION_TO_TABLE_TYPE,
+  ProfileColumn,
+  TableSourceType,
+} from "@rilldata/web-local/lib/types";
+import {
+  extractFileExtension,
+  extractTableName,
+  getTableNameFromFile,
+  INVALID_CHARS,
+  sanitizeEntityName,
+} from "@rilldata/web-local/lib/util/extract-table-name";
+import { existsSync } from "fs";
 import { SOURCE_PREVIEW_COUNT } from "../constants";
-import { ActionResponse, ActionStatus } from "./response/ActionResponse";
-import { ActionResponseFactory } from "./response/ActionResponseFactory";
 import type {
   DerivedTableEntity,
   DerivedTableStateActionArg,
@@ -17,20 +33,9 @@ import type {
 import { DatabaseActionQueuePriority } from "../priority-action-queue/DatabaseActionQueuePriority";
 import { getNewDerivedTable, getNewTable } from "../stateInstancesFactory";
 import { getName } from "../utils/incrementName";
-import {
-  FILE_EXTENSION_TO_TABLE_TYPE,
-  ProfileColumn,
-  TableSourceType,
-} from "@rilldata/web-local/lib/types";
-import {
-  extractFileExtension,
-  extractTableName,
-  getTableNameFromFile,
-  INVALID_CHARS,
-  sanitizeEntityName,
-} from "@rilldata/web-local/lib/util/extract-table-name";
-import { existsSync } from "fs";
 import { DataModelerActions } from ".//DataModelerActions";
+import { ActionResponse, ActionStatus } from "./response/ActionResponse";
+import { ActionResponseFactory } from "./response/ActionResponseFactory";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
@@ -54,6 +59,41 @@ export class TableActions extends DataModelerActions {
         table.id,
       ]);
     });
+  }
+
+  // Temporary hack for CLI to call the runtime.
+  // This is here instead of ImportTableCommand
+  // because ImportTableCommand can be called without a runtime present.
+  @DataModelerActions.PersistentTableAction()
+  public async importTableFromCLI(
+    { stateService }: PersistentTableStateActionArg,
+    tableSourceFile: string,
+    tableName: string
+  ) {
+    const sql = compileCreateSourceSql(
+      {
+        sourceName: tableName,
+        path: tableSourceFile,
+      },
+      "file"
+    );
+    await runtimeServiceMigrateSingle(
+      this.dataModelerService
+        .getDatabaseService()
+        .getDatabaseClient()
+        .getInstanceId(),
+      {
+        sql,
+        createOrReplace: true,
+      }
+    );
+
+    const existingTable = stateService.getByField("tableName", tableName);
+    if (existingTable) {
+      await this.dataModelerService.dispatch("collectTableInfo", [
+        existingTable.id,
+      ]);
+    }
   }
 
   @DataModelerActions.PersistentTableAction()
@@ -272,12 +312,8 @@ export class TableActions extends DataModelerActions {
     const table = stateService.getById(tableId);
     const currentName = table.tableName;
 
-    this.dataModelerStateService.dispatch("updateTableName", [
+    this.dataModelerStateService.dispatch("renameTableName", [
       tableId,
-      sanitizedNewName,
-    ]);
-    this.databaseService.dispatch("renameTable", [
-      currentName,
       sanitizedNewName,
     ]);
     return ActionResponseFactory.getSuccessResponse(
@@ -307,8 +343,7 @@ export class TableActions extends DataModelerActions {
   @DataModelerActions.PersistentTableAction()
   public async dropTable(
     { stateService }: PersistentTableStateActionArg,
-    tableName: string,
-    removeOnly = false
+    tableName: string
   ): Promise<ActionResponse> {
     const table = stateService.getByField("tableName", tableName);
     if (!table) {
@@ -317,13 +352,6 @@ export class TableActions extends DataModelerActions {
       );
     }
 
-    if (!removeOnly) {
-      await this.databaseActionQueue.enqueue(
-        { id: table.id, priority: DatabaseActionQueuePriority.TableImport },
-        "dropTable",
-        [table.tableName]
-      );
-    }
     this.notificationService.notify({
       message: `dropped table ${table.tableName}`,
       type: "info",
@@ -333,6 +361,23 @@ export class TableActions extends DataModelerActions {
       EntityType.Table,
       table.id,
     ]);
+  }
+
+  // Temporary hack for CLI to call the runtime.
+  // This is here instead of DropTableCommand
+  // because DropTableCommand can be called without a runtime present.
+  @DataModelerActions.PersistentTableAction()
+  public async dropTableFromCLI(
+    args: PersistentTableStateActionArg,
+    tableName: string
+  ) {
+    await runtimeServiceMigrateDelete(
+      this.databaseService.getDatabaseClient().getInstanceId(),
+      {
+        name: tableName,
+      }
+    );
+    return this.dropTable(args, tableName);
   }
 
   @DataModelerActions.DerivedTableAction()

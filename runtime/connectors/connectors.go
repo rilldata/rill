@@ -1,6 +1,7 @@
 package connectors
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -23,6 +24,8 @@ type Connector interface {
 	// iterator for data in it. For consumption by a drivers.OLAPStore. Also consider
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
+
+	ConsumeAsFile(ctx context.Context, source *Source) (string, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -40,6 +43,8 @@ type PropertySchema struct {
 	DisplayName string
 	Description string
 	Placeholder string
+	Hint        string
+	Href        string
 }
 
 // PropertySchemaType is an enum of types supported for connector properties.
@@ -50,9 +55,10 @@ const (
 	StringPropertyType
 	NumberPropertyType
 	BooleanPropertyType
+	InformationalPropertyType
 )
 
-// Validate checks that val has the correct type
+// ValidateType checks that val has the correct type
 func (ps PropertySchema) ValidateType(val any) bool {
 	switch val.(type) {
 	case string:
@@ -104,6 +110,22 @@ func (s *Source) Validate() error {
 	}
 
 	return nil
+}
+
+func ConsumeAsFile(ctx context.Context, source *Source) (string, error) {
+	connector, ok := Connectors[source.Connector]
+	if !ok {
+		return "", fmt.Errorf("connector: not found")
+	}
+
+	// TODO: connector.ConsumeAsFile should output a list of files to support globs
+	//       this should be output back to drivers that should import each file into the same table
+	path, err := connector.ConsumeAsFile(ctx, source)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

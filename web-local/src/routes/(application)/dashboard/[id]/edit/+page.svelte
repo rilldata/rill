@@ -1,12 +1,12 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import MetricsDefWorkspace from "@rilldata/web-local/lib/components/workspace/metrics-def/MetricsDefWorkspace.svelte";
-  import MetricsDefWorkspaceHeader from "@rilldata/web-local/lib/components/workspace/metrics-def/MetricsDefWorkspaceHeader.svelte";
+  import { MetricsDefinitionWorkspace } from "@rilldata/web-local/lib/components/workspace";
 
   export let data;
 
   $: metricsDefId = data.metricsDefId;
+  $: nonStandardError = data.error;
 
   $: dataModelerService.dispatch("setActiveAsset", [
     EntityType.MetricsDefinition,
@@ -19,5 +19,7 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<MetricsDefWorkspaceHeader metricsDefId={data.metricsDefId} />
-<MetricsDefWorkspace metricsDefId={data.metricsDefId} />
+<MetricsDefinitionWorkspace
+  metricsDefId={data.metricsDefId}
+  {nonStandardError}
+/>

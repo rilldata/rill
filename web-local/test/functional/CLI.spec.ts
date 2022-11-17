@@ -1,7 +1,13 @@
+import { expect } from "@jest/globals";
+import type { DerivedModelState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+import type { PersistentModelState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
+import { asyncWaitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+import treeKill from "tree-kill";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { exec } from "node:child_process";
 import { promisify } from "util";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
@@ -106,11 +112,8 @@ export class CLISpec extends FunctionalTestBase {
     );
     const oldStateObject = { ...adBids };
 
-    const oldStateUpdateTime = oldStateObject.lastUpdated;
-    delete oldStateObject.lastUpdated;
-    // check the newAdBids field minus the lastUpdated time stamp.
+    // check the newAdBids
     expect(newAdBids).toEqual(expect.objectContaining(oldStateObject));
-    expect(newAdBids.lastUpdated > oldStateUpdateTime).toBeTruthy();
   }
 
   @FunctionalTestBase.Test()
@@ -133,5 +136,35 @@ export class CLISpec extends FunctionalTestBase {
       readFileSync(`${CLI_STATE_FOLDER}/persistent_table_state.json`).toString()
     );
     expect(persistentState.entities.length).toBe(0);
+  }
+
+  @FunctionalTestBase.Test()
+  public async shouldInitDbAtTheBeginning(): Promise<void> {
+    await execVerbose(`${CLI_COMMAND} init ${CLI_TEST_FOLDER_ARG}`);
+    await execVerbose(
+      `${CLI_COMMAND} import-source test/data/AdBids.csv ${CLI_TEST_FOLDER_ARG}`
+    );
+
+    const cp = exec(`${CLI_COMMAND} start ${CLI_TEST_FOLDER_ARG}`);
+    writeFileSync(
+      `${CLI_TEST_FOLDER}/models/TestBroken.sql`,
+      "SELECT * FROM AdBids"
+    );
+    await asyncWaitUntil(() => isPortOpen(8080));
+    treeKill(cp.pid);
+
+    const persistentModelState: PersistentModelState = JSON.parse(
+      readFileSync(`${CLI_STATE_FOLDER}/persistent_model_state.json`).toString()
+    );
+    const model = persistentModelState.entities.find(
+      (m) => m.tableName === "TestBroken"
+    );
+    const derivedModelState: DerivedModelState = JSON.parse(
+      readFileSync(`${CLI_STATE_FOLDER}/derived_model_state.json`).toString()
+    );
+    const derivedModel = derivedModelState.entities.find(
+      (d) => d.id === model.id
+    );
+    expect(derivedModel.error).toBeUndefined();
   }
 }

@@ -1,11 +1,11 @@
-import type { DatabaseMetadata } from "./DatabaseMetadata";
+import {
+  escapeColumn,
+  escapeColumnAlias,
+} from "@rilldata/web-local/common/database-service/columnUtils";
 import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { DatabaseActions } from "./DatabaseActions";
-
-function escapeColumn(columnName: string): string {
-  return columnName.replace(/"/g, "'");
-}
+import type { DatabaseMetadata } from "./DatabaseMetadata";
 
 export class DatabaseTableActions extends DatabaseActions {
   public async createViewOfQuery(
@@ -15,6 +15,16 @@ export class DatabaseTableActions extends DatabaseActions {
   ): Promise<void> {
     await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
             CREATE OR REPLACE TEMPORARY VIEW "${tableName}" AS (${query});`);
+  }
+
+  public async renameView(
+    metadata: DatabaseMetadata,
+    tableName: string,
+    newTableName: string
+  ): Promise<void> {
+    await this.databaseClient.execute(
+      `ALTER VIEW ${tableName} RENAME TO ${newTableName};`
+    );
   }
 
   public async getFirstNOfTable(
@@ -60,9 +70,9 @@ export class DatabaseTableActions extends DatabaseActions {
       tableName,
       tableDef
     )) as { [key: string]: number };
-    tableDef = tableDef.map((column: ProfileColumn) => {
+    tableDef = tableDef.map((column: ProfileColumn, index) => {
       // get string rep length value to estimate preview table column sizes
-      column.largestStringLength = characterLengths[column.name];
+      column.largestStringLength = characterLengths[`col_${index}`];
       return column;
     });
     try {
@@ -102,33 +112,43 @@ export class DatabaseTableActions extends DatabaseActions {
     columns: ProfileColumn[]
   ) {
     /** get columns */
+    const columnNames = columns
+      .map(
+        (column, index) =>
+          [escapeColumn(column.name), index] as [string, number]
+      )
+      .filter(([columnName]) => columnName !== "");
     // template in the column mins and maxes.
     // treat categoricals a little differently; all they have is length.
-    const minAndMax = columns
-      .map((column) => {
-        const escapedColumn = escapeColumn(column.name);
+    const minAndMax = columnNames
+      .map(([columnName]) => {
+        const columnAlias = escapeColumnAlias(columnName);
         return (
-          `min(length('${column.name}')) as "min_${escapedColumn}",` +
-          `max(length('${column.name}')) as "max_${escapedColumn}"`
+          `min(length(${columnName})) as "min_${columnAlias}",` +
+          `max(length(${columnName})) as "max_${columnAlias}"`
         );
       })
       .join(", ");
-    const largestStrings = columns
-      .map((column) => {
-        const escapedColumn = escapeColumn(column.name);
+    const largestStrings = columnNames
+      .map(([columnName, index]) => {
+        const columnAlias = escapeColumnAlias(columnName);
         return (
-          `CASE WHEN "min_${escapedColumn}" > "max_${escapedColumn}" THEN "min_${escapedColumn}" ` +
-          `ELSE "max_${escapedColumn}" END AS "${escapedColumn}"`
+          `CASE WHEN "min_${columnAlias}" > "max_${columnAlias}" THEN "min_${columnAlias}" ` +
+          `ELSE "max_${columnAlias}" END AS col_${index}`
         );
       })
       .join(",");
-    return (
-      await this.databaseClient.execute(
-        `
+    try {
+      return (
+        await this.databaseClient.execute(
+          `
       WITH strings AS (SELECT ${minAndMax} from "${table}")
       SELECT ${largestStrings} from strings;
     `
-      )
-    )[0];
+        )
+      )[0];
+    } catch (err) {
+      return {};
+    }
   }
 }

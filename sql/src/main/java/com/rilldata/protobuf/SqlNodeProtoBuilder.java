@@ -309,7 +309,7 @@ public class SqlNodeProtoBuilder
       basicSqlTypeProtoBuilder.setCollation(handleSqlCollation(basicSqlType.getCollation()));
     }
     basicSqlTypeProtoBuilder.setIsNullable(basicSqlType.isNullable());
-    if (basicSqlType.getFieldList() != null && basicSqlType.getFieldList().size() > 0) {
+    if (basicSqlType.isStruct() && basicSqlType.getFieldList() != null && basicSqlType.getFieldList().size() > 0) {
       for (RelDataTypeField relDataTypeField : basicSqlType.getFieldList()) {
         basicSqlTypeProtoBuilder.addFieldList(handleRelDataTypeFieldProto(relDataTypeField));
       }

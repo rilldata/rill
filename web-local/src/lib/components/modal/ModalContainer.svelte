@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Portal from "../Portal.svelte";
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import { fly } from "svelte/transition";
+  import Portal from "../Portal.svelte";
   import Overlay from "./Overlay.svelte";
   const dispatch = createEventDispatcher();
   let modal;
@@ -61,6 +61,7 @@
     initiateOnMount(container);
 
   onDestroy(() => {
+    if (!modal) return;
     modal.deactivate();
     unlockBodyScrolling(container);
     if (typeof originalTrigger?.focus === "function") {
@@ -84,9 +85,6 @@
     class="fixed top-0 left-0 right-0 bottom-0"
     transition:fly={{ duration: 125, y: 4 }}
     bind:this={container}
-    on:click={() => {
-      dispatch("cancel");
-    }}
   >
     <slot />
   </div>

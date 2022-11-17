@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package runtime.v1;
+package rill.runtime.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
@@ -49,25 +49,40 @@ service RuntimeService {
     };
   }
 
-  // ListRepoObjects lists all the objects (files) in a repo sorted by full path. 
-  // It includes objects in nested "directories".
-  rpc ListRepoObjects(ListRepoObjectsRequest) returns (ListRepoObjectsResponse) {
+  // ListFiles lists all the files matching a glob in a repo.
+  // The files are sorted by their full path.
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
     option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/objects"
+      get: "/v1/repos/{repo_id}/files"
     };
   }
 
-  // GetRepoObject returns the contents of a specific object (file) in a repo.
-  rpc GetRepoObject(GetRepoObjectRequest) returns (GetRepoObjectResponse) {
+  // GetFile returns the contents of a specific file in a repo.
+  rpc GetFile(GetFileRequest) returns (GetFileResponse) {
     option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/objects/-/{path}"
+      get: "/v1/repos/{repo_id}/files/-/{path=**}"
     };
   }
 
-  // PutRepoObject can be used to create, update, or delete an object (file) in a repo
-  rpc PutRepoObject(PutRepoObjectRequest) returns (PutRepoObjectResponse) {
+  // PutFile creates or updates a file in a repo
+  rpc PutFile(PutFileRequest) returns (PutFileResponse) {
     option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/objects/-/{path}",
+      post: "/v1/repos/{repo_id}/files/-/{path=**}",
+      body: "*"
+    };
+  }
+
+  // DeleteFile deletes a file from a repo
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
+    option (google.api.http) = {
+      delete: "/v1/repos/{repo_id}/files/-/{path=**}"
+    };
+  }
+
+  // RenameFile renames a file in a repo
+  rpc RenameFile(RenameFileRequest) returns (RenameFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/repos/{repo_id}/files/rename",
       body: "*"
     };
   }
@@ -128,9 +143,17 @@ service RuntimeService {
     };
   }
 
+  // TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
+  // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
+  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/sync"
+    };
+  }
+
   // Migrations
 
-  // Migrate applies a full set of SQL artifacts (files containing CREATE statements) to the catalog/infra.
+  // Migrate applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
   // the desired state expressed in the artifacts. Any existing objects not described in the submitted
   // artifacts will be deleted.
@@ -157,6 +180,31 @@ service RuntimeService {
   rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/migrate/single/delete",
+      body: "*"
+    };
+  }
+
+  // PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+  // It is equivalent to calling the two RPCs sequentially.
+  rpc PutFileAndMigrate(PutFileAndMigrateRequest) returns (PutFileAndMigrateResponse) {
+    option (google.api.http) = {
+      post: "/v1/put-and-migrate",
+      body: "*"
+    };
+  }
+
+  // DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+  rpc DeleteFileAndMigrate(DeleteFileAndMigrateRequest) returns (DeleteFileAndMigrateResponse) {
+    option (google.api.http) = {
+      post: "/v1/delete-and-migrate",
+      body: "*"
+    };
+  }
+
+  // RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+  rpc RenameFileAndMigrate(RenameFileAndMigrateRequest) returns (RenameFileAndMigrateResponse) {
+    option (google.api.http) = {
+      post: "/v1/rename-and-migrate",
       body: "*"
     };
   }
@@ -214,6 +262,108 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/totals",
       body: "*"
+    };
+  }
+
+  // Metrics APIs
+
+  rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}",
+      body: "*"
+    };
+  }
+
+  // Profiling APIs
+
+  // Get TopK elements from a table for a column given an agg function
+  // agg function and k are optional, defaults are count(*) and 50 respectively
+  rpc GetTopK(TopKRequest) returns (CategoricalSummary) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/topk/{table_name}/{column_name}",
+      body: "*"
+    };
+  }
+
+  // Get the number of nulls in a column
+  rpc GetNullCount(NullCountRequest) returns (NullCountResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/null-count/{table_name}/{column_name}"
+    };
+  }
+
+  // Get basic stats for a numeric column like min, max, mean, stddev, etc
+  rpc GetDescriptiveStatistics(DescriptiveStatisticsRequest) returns (NumericSummary) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/descriptive-statistics/{table_name}/{column_name}"
+    };
+  }
+
+  // Estimates the smallest time grain present in the column
+  rpc EstimateSmallestTimeGrain(EstimateSmallestTimeGrainRequest) returns (EstimateSmallestTimeGrainResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/estimate-smallest-time-grain/{table_name}/{column_name}"
+    };
+  }
+
+  // Get the histogram for values in a column
+  rpc GetNumericHistogram(NumericHistogramRequest) returns (NumericSummary) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/numeric-histogram/{table_name}/{column_name}"
+    };
+  }
+
+  // Get outliers for a numeric column
+  rpc GetRugHistogram(RugHistogramRequest) returns (NumericSummary) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/rug-histogram/{table_name}/{column_name}"
+    };
+  }
+
+  // Get the time range summaries (min, max) for a column
+  rpc GetTimeRangeSummary(TimeRangeSummaryRequest) returns (TimeRangeSummary) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/time-range-summary/{table_name}/{column_name}"
+    };
+  }
+
+  // Get cardinality for a column
+  rpc GetCardinalityOfColumn(CardinalityOfColumnRequest) returns (CategoricalSummary) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/cardinality-of-column/{table_name}/{column_name}"
+    };
+  }
+
+  // Generate time series
+  rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (TimeSeriesRollup) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate-timeseries",
+      body: "*"
+    };
+  }
+
+  // Tablewide profiling APIs
+  rpc RenameDatabaseObject(RenameDatabaseObjectRequest) returns (RenameDatabaseObjectResponse) { // todo it's not a profiling endpoint - move smw else
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/rename-object"
+    };
+  }
+
+  rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
+    };
+  }
+
+  rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
+    };
+  }
+
+  rpc TableRows(RowsRequest) returns (RowsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
     };
   }
 
@@ -280,8 +430,9 @@ message GetRepoResponse {
 
 // Request message for RuntimeService.CreateRepo
 message CreateRepoRequest {
-  string driver = 1;
-  string dsn = 2;
+  string repo_id = 1;
+  string driver = 2;
+  string dsn = 3;
 }
 
 // Response message for RuntimeService.CreateRepo
@@ -297,37 +448,65 @@ message DeleteRepoRequest {
 // Response message for RuntimeService.DeleteRepo
 message DeleteRepoResponse {}
 
-// Request message for RuntimeService.ListRepoObjects
-message ListRepoObjectsRequest {
+// Request message for RuntimeService.ListFiles
+message ListFilesRequest {
   string repo_id = 1;
+  string glob = 2;
 }
 
-// Response message for RuntimeService.ListRepoObjects
-message ListRepoObjectsResponse {
+// Response message for RuntimeService.ListFiles
+message ListFilesResponse {
   repeated string paths = 1;
 }
 
-// Request message for RuntimeService.GetRepoObjectRequest
-message GetRepoObjectRequest {
+// Request message for RuntimeService.GetFile
+message GetFileRequest {
   string repo_id = 1;
   string path = 2;
 }
 
-// Reponse message for RuntimeService.GetRepoObjectResponse
-message GetRepoObjectResponse {
+// Reponse message for RuntimeService.GetFile
+message GetFileResponse {
   string blob = 1;
+  google.protobuf.Timestamp updated_on = 2;
 }
 
-// Request message for RuntimeService.PutRepoObjectRequest
-message PutRepoObjectRequest {
+// Request message for RuntimeService.PutFile
+message PutFileRequest {
   string repo_id = 1;
   string path = 2;
   string blob = 3;
-  bool delete = 4;
+  // Create indicates whether to create the file if it doesn't already exist
+  bool create = 4;
+  // Will cause the operation to fail if the file already exists.
+  // It should only be set when create = true.
+  bool create_only = 5;
 }
 
-// Response message for RuntimeService.PutRepoObjectRequest
-message PutRepoObjectResponse {}
+// Response message for RuntimeService.PutFile
+message PutFileResponse {
+  string file_path = 1;
+}
+
+// Request message for RuntimeService.DeleteFile
+message DeleteFileRequest {
+  string repo_id = 1;
+  string path = 2;
+}
+
+// Response message for RuntimeService.DeleteFile
+message DeleteFileResponse {
+}
+
+// Request message for RuntimeService.RenameFile
+message RenameFileRequest {
+  string repo_id = 1;
+  string from_path = 2;
+  string to_path = 3;
+}
+
+// Response message for RuntimeService.RenameFile
+message RenameFileResponse {}
 
 // **********
 // Instances
@@ -387,6 +566,7 @@ message GetInstanceResponse {
 // Request message for RuntimeService.CreateInstance
 message CreateInstanceRequest {
   // See message Instance for field descriptions
+  string instance_id = 1;
   string driver = 2;
   string dsn = 3;
   string object_prefix = 4;
@@ -414,64 +594,110 @@ message DeleteInstanceResponse {}
 
 // CatalogObject represents an object stored in the catalog
 message CatalogObject {
-  oneof type {
-    Source source = 1;
-    MetricsView metrics_view = 2;
-    UnmanagedTable unmanaged_table = 3;
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_TABLE = 1;
+    TYPE_SOURCE = 2;
+    TYPE_MODEL = 3;
+    TYPE_METRICS_VIEW = 4;
   }
+  Type type = 1;
+  Table table = 2;
+  Source source = 3;
+  Model model = 4;
+  MetricsView metrics_view = 5;
+  string name = 6;
+  string path = 7;
+  google.protobuf.Timestamp created_on = 8;
+  google.protobuf.Timestamp updated_on = 9;
+  google.protobuf.Timestamp refreshed_on = 10;
 }
 
-// Source represents a catalog object created using CREATE SOURCE
+// Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
+// scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
+// have managed = false.
+message Table {
+  // Table name
+  string name = 1;
+  // Table schema
+  StructType schema = 2;
+  // Managed is true if the table was created through a runtime migration, false if it was discovered in by
+  // scanning the database's information schema.
+  bool managed = 3;
+}
+
+// Source is the internal representation of a source definition
 message Source {
-  // Formatted SQL DDL for the source
-  string sql = 1;
   // Name of the source
-  string name = 2;
+  string name = 1;
   // Connector used by the source
-  string connector = 3;
+  string connector = 2;
   // Connector properties assigned in the source
-  google.protobuf.Struct properties = 4;
+  google.protobuf.Struct properties = 3;
+  // Detected schema of the source
+  StructType schema = 5;
+
+  // Used for the SQL statement for sources
+  // TODO: Remove before merging this branch
+  string sql = 20;
 }
 
-// MetricsView represents a catalog object created using CREATE METRICS VIEW
+// Model is the internal representation of a model definition
+message Model {
+  // Dialects supported for models
+  enum Dialect {
+    DIALECT_UNSPECIFIED = 0;
+    DIALECT_DUCKDB = 1;
+  }
+  // Name of the model
+  string name = 1;
+  // SQL is a SELECT statement representing the model
+  string sql = 2;
+  // Dialect of the SQL statement
+  Dialect dialect = 3;
+  // Detected schema of the model
+  StructType schema = 4;
+}
+
+// Metrics view is the internal representation of a metrics view definition
 message MetricsView {
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
-    string type = 2;
-    bool primary_time = 3;
-    string description = 4;
+    string label = 2;
+    string description = 3;
+    string enabled = 4;
+    string error = 5;
   }
   // Measures are aggregated computed values
   message Measure {
     string name = 1;
-    string type = 2;
-    string description = 3;
+    string label = 2;
+    string expression = 3;
+    string description = 4;
+    string format = 5;
+    string enabled = 6;
+    string error = 7;
   }
-  // Formatted SQL DDL for the metrics view
-  string sql = 1;
   // Name of the metrics view
-  string name = 2;
-  // Name of the source or model that the metrics view is based on
-  string from_object = 3;
-  // Dimensions in the metrics view
-  repeated Dimension dimensions = 4;
-  // Measures in the metrics view
-  repeated Measure measures = 5;
-}
-
-// UnmanagedTable represents a pre-existing table in the OLAP database (i.e. a table that
-// was NOT created through the runtime's migrations). The runtime periodically looks for
-// unmanaged tables in the database's information schema if the instance is created with exposed=true.
-message UnmanagedTable {
   string name = 1;
-  bool view = 2;
-  repeated SchemaColumn schema = 3;
+  // Name of the source or model that the metrics view is based on
+  string from = 2;
+  // Name of the primary time dimension, used for rendering time series
+  string time_dimension = 3;
+  // Recommended granularities for rolling up the time dimension.
+  // Should be a valid SQL INTERVAL value.
+  repeated string time_grains = 4;
+  // Dimensions in the metrics view
+  repeated Dimension dimensions = 5;
+  // Measures in the metrics view
+  repeated Measure measures = 6;
 }
 
 // Request message for RuntimeService.ListCatalogObjects
 message ListCatalogObjectsRequest {
   string instance_id = 1;
+  CatalogObject.Type type = 2;
 }
 
 // Response message for RuntimeService.ListCatalogObjects
@@ -499,6 +725,19 @@ message TriggerRefreshRequest {
 // Response message for RuntimeService.TriggerRefresh
 message TriggerRefreshResponse {}
 
+// Request message for RuntimeService.TriggerSync
+message TriggerSyncRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.TriggerSync
+message TriggerSyncResponse {
+  uint32 objects_count = 1;
+  uint32 objects_added_count = 2;
+  uint32 objects_updated_count = 3;
+  uint32 objects_removed_count = 4;
+}
+
 // **********
 // Migrations
 // **********
@@ -508,15 +747,69 @@ message MigrateRequest {
   // Instance to migrate
   string instance_id = 1;
   // Contents of files containing one or more SQL DDL statements
-  repeated string blobs = 2;
-  // If true, all catalog objects not present in blobs (except for unmanaged tables) will be deleted
-  bool drop_deleted = 3;
-  // If true, will validate the SQL, but not actually execute the migrations
-  bool dry_run = 4;
+  string repo_id = 2;
+  // Changed paths provides a way to "hint" what files have changed in the repo, enabling
+  // migrations to execute faster by not scanning all code artifacts for changes.
+  repeated string changed_paths = 3;
+  // If true, will validate the file artifacts, but not actually execute any migrations
+  bool dry = 4;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 5;
 }
 
 // Response message for RuntimeService.Migrate
-message MigrateResponse {}
+message MigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the migration. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
+  repeated string affected_paths = 2;
+}
+
+// MigrationError represents an error encountered while running Migrate.
+message MigrationError {
+  // Code represents different categories of migration errors
+  enum Code {
+    // Unspecified error
+    CODE_UNSPECIFIED = 0;
+    // Code artifact failed to parse
+    CODE_SYNTAX = 1;
+    // Code artifact has internal validation errors
+    CODE_VALIDATION = 2;
+    // Code artifact is valid, but has invalid dependencies
+    CODE_DEPENDENCY = 3;
+    // Error returned from the OLAP database
+    CODE_OLAP = 4;
+    // Error encountered during source inspection or ingestion
+    CODE_SOURCE = 5;
+  }
+  // CharLocation is a line and column in a code artifact
+  message CharLocation {
+    uint32 line = 1;
+    uint32 column = 2;
+  }
+  // Code denotes the category of error
+  Code code = 1;
+  // Message is a developer-friendly error message
+  string message = 2;
+  // File path of the code artifact that this error relates to (if any)
+  string file_path = 3;
+  // Property path of the error in the code artifact (if any).
+  // It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+  // It only applies to structured code artifacts (i.e. YAML).
+  // Only applicable if file_path is set.
+  string property_path = 4;
+  // Start location of the error in the code artifact (if any).
+  // Only applicable if file_path is set.
+  CharLocation start_location = 5;
+  // End location of the error in the code artifact (if any).
+  // Only applicable if file_path and start_location is set.
+  CharLocation end_location = 6;
+}
 
 // Request message for RuntimeService.MigrateSingle
 message MigrateSingleRequest {
@@ -547,6 +840,91 @@ message MigrateDeleteRequest {
 // Response message for RuntimeService.MigrateDelete
 message MigrateDeleteResponse {}
 
+message PutFileAndMigrateRequest {
+  // Repo to store the file in
+  string repo_id = 1;
+  // Instance to apply the migrations to
+  string instance_id = 2;
+  // Path to store the file at
+  string path = 3;
+  // Contents to save to the file
+  string blob = 4;
+  // Create indicates whether to create the file if it doesn't already exist
+  bool create = 5;
+  // create_only will cause the operation to fail if a file already exists at path.
+  // It should only be set when create = true.
+  bool create_only = 6;
+
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 8;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 9;
+}
+
+message PutFileAndMigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file paths that were considered while
+  // executing the migration. For a PutFileAndMigrate, this includes the put file
+  // as well as any file artifacts that rely on objects declared in it.
+  repeated string affected_paths = 2;
+}
+
+message DeleteFileAndMigrateRequest {
+  // Repo to store the file in
+  string repo_id = 1;
+  // Instance to apply the migrations to
+  string instance_id = 2;
+  // Path to store the file at
+  string path = 3;
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 4;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 5;
+}
+
+message DeleteFileAndMigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file paths that were considered while
+  // executing the migration. For a PutFileAndMigrate, this includes the put file
+  // as well as any file artifacts that rely on objects declared in it.
+  repeated string affected_paths = 2;
+}
+
+message RenameFileAndMigrateRequest {
+  // Repo to store the file in
+  string repo_id = 1;
+  // Instance to apply the migrations to
+  string instance_id = 2;
+  // Current path of the file
+  string from_path = 3;
+  // New path of the file
+  string to_path = 4;
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 5;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
+  // that fail to validate.)
+  bool strict = 6;
+}
+
+message RenameFileAndMigrateResponse {
+  // Errors encountered during the migration. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been migrated succesfully.
+  repeated MigrationError errors = 1;
+  // affected_paths lists all the file paths that were considered while
+  // executing the migration. For a PutFileAndMigrate, this includes the put file
+  // as well as any file artifacts that rely on objects declared in it.
+  repeated string affected_paths = 2;
+}
+
 // **********
 // Queries
 // **********
@@ -568,7 +946,7 @@ message QueryRequest {
 // Response message for RuntimeService.Query
 message QueryResponse {
   // Schema of result data
-  repeated SchemaColumn meta = 1;
+  StructType meta = 1;
   // Result data
   repeated google.protobuf.Struct data = 2;
 }
@@ -590,7 +968,7 @@ message QueryDirectRequest {
 // Response message for RuntimeService.QueryDirect
 message QueryDirectResponse {
   // Schema of result data
-  repeated SchemaColumn meta = 1;
+  StructType meta = 1;
   // Result data
   repeated google.protobuf.Struct data = 2;
 }
@@ -629,7 +1007,7 @@ message MetricsViewToplistRequest {
 
 // Response message for RuntimeService.MetricsViewToplist
 message MetricsViewToplistResponse {
-  repeated SchemaColumn meta = 1;
+  repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -646,7 +1024,7 @@ message MetricsViewTimeSeriesRequest {
 
 // Response message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
-  repeated SchemaColumn meta = 1;
+  repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -662,7 +1040,7 @@ message MetricsViewTotalsRequest {
 
 // Response message for RuntimeService.MetricsViewTotals
 message MetricsViewTotalsResponse {
-  repeated SchemaColumn meta = 1;
+  repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
 }
 
@@ -684,6 +1062,330 @@ message MetricsViewFilter {
   repeated Cond exclude = 3;
 }
 
+// MetricsViewColumn represents a column in a metrics view
+message MetricsViewColumn {
+  string name = 1;
+  string type = 2;
+  bool nullable = 3;
+}
+
+// **********
+// Metrics APIs
+// **********
+
+message EstimateRollupIntervalRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+message Scalar {
+  oneof value {
+    int64 int64 = 1;
+    double double = 2;
+    google.protobuf.Timestamp timestamp = 3;
+  }
+}
+
+message EstimateRollupIntervalResponse {
+  int64 interval = 1;
+  Scalar min = 2;
+  Scalar max = 3;
+}
+
+// **********
+// Profiling APIs
+// **********
+
+message ProfileColumnSummary {
+  oneof Case {
+    CategoricalSummary categoricalSummary = 1;
+    NumericSummary numericSummary = 2;
+    TimeRangeSummary timeRangeSummary = 3;
+  }
+}
+
+// Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
+message CategoricalSummary {
+  optional TopKResponse topKResponse = 1;
+  optional int64 cardinality = 2;
+}
+
+// Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
+// Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+message NumericSummary {
+  optional NumericHistogramBins numericHistogramBins = 1;
+  optional NumericStatistics numericStatistics = 2;
+  optional NumericOutliers numericOutliers = 3;
+}
+
+message TimeRangeSummary {
+    string min = 1;
+    string max = 2;
+    message Interval {
+      int32 months = 1;
+      int32 days = 2;
+      int64 micros = 3;
+    }
+    Interval interval = 3;
+}
+
+message NumericOutliers {
+  message Outlier {
+    int64 bucket = 1;
+    double low = 2;
+    double high = 3;
+    bool present = 4;
+  }
+  repeated Outlier outliers = 1;
+}
+
+// Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
+message TopKRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  optional string agg = 4; // default is count(*)
+  optional int32 k = 5; // default is 50
+}
+
+// Response for RuntimeService.GetTopK.
+message TopKResponse {
+  message TopKEntry {
+    // value is optional so that null values from the database can be represented.
+    optional string value = 1;
+    double count = 2;
+  }
+  repeated TopKEntry entries = 1;
+}
+
+// Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
+message NullCountRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+// Response for RuntimeService.GetNullCount
+message NullCountResponse {
+  int64 count = 1;
+}
+
+// Request for RuntimeService.GetDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
+message DescriptiveStatisticsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+// Response for RuntimeService.GetDescriptiveStatistics
+message NumericStatistics {
+    double min = 1;
+    double max = 2;
+    double mean = 3;
+    double q25 = 4;
+    double q50 = 5;
+    double q75 = 6;
+    double sd = 7;
+}
+
+// Request for RuntimeService.GetEstimateSmallestTimeGrainRequest
+message EstimateSmallestTimeGrainRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+// Response for RuntimeService.EstimateSmallestTimeGrain
+message EstimateSmallestTimeGrainResponse {
+  enum TimeGrain {
+    MILLISECONDS = 0;
+    SECONDS = 1;
+    MINUTES = 2;
+    HOURS = 3;
+    DAYS = 4;
+    WEEKS = 5;
+    MONTHS = 6;
+    YEARS = 7;
+  }
+  TimeGrain time_grain = 1;
+}
+
+// Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
+message NumericHistogramRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+// Response for RuntimeService.GetNumericHistogram
+message NumericHistogramBins {
+  message Bin {
+    int64 bucket = 1;
+    double low = 2;
+    double high = 3;
+    int64 count = 4;
+  }
+  repeated Bin bins = 1;
+}
+
+// Request for RuntimeService.GetRugHistogram
+message RugHistogramRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+// Request for RuntimeService.GetTimeRangeSummary
+message TimeRangeSummaryRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+// Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
+message CardinalityOfColumnRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+}
+
+message GenerateTimeSeriesRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  optional BasicMeasures measures = 3;
+  string timestamp_column_name = 4;
+  optional TimeSeriesTimeRange time_range = 5;
+  optional MetricsViewRequestFilter filters = 6;
+  optional int64 pixels = 7;
+  optional int32 sample_size = 8;
+  message BasicMeasures {
+    repeated BasicMeasureDefinition basicMeasures = 1;
+  }
+}
+
+message BasicMeasureDefinition {
+  string id = 1;
+  // mandatory user defined metadata
+  string expression = 2;
+  // optional user defined metadata
+  optional string sql_name = 3;
+}
+
+message TimeSeriesTimeRange {
+  TimeRangeName name = 1;
+  string start = 2;
+  string end = 3;
+  string interval = 4; // TODO: switch this to TimeGrain
+}
+
+enum TimeRangeName {
+  LastHour = 0;
+  Last6Hours = 1;
+  LastDay = 2;
+  Last2Days = 3;
+  Last5Days = 4;
+  LastWeek = 5;
+  Last2Weeks = 6;
+  Last30Days = 7;
+  Last60Days = 8;
+  AllTime = 9;
+  // Today
+  // MonthToDate
+  // CustomRange
+}
+
+message MetricsViewDimensionValue {
+  string name = 1;
+  repeated google.protobuf.Value in = 2;
+  optional Values like = 3;
+  message Values {
+    repeated google.protobuf.Value values = 1;
+  }
+}
+
+message MetricsViewRequestFilter {
+  repeated MetricsViewDimensionValue include = 1;
+  repeated MetricsViewDimensionValue exclude = 2;
+}
+
+message TimeSeriesResponse {
+  optional string id = 1;
+  repeated TimeSeriesValue results = 2;
+  optional TimeSeriesValues spark = 3;
+  optional TimeSeriesTimeRange time_range = 4;
+  int32 sample_size = 5;
+  optional string error = 6;
+  message TimeSeriesValues {
+    repeated TimeSeriesValue values = 1;
+  }
+}
+
+message TimeSeriesRollup {
+  TimeSeriesResponse rollup = 1;
+}
+
+message TimeSeriesValue {
+  string ts = 1;
+  optional double bin = 2;
+  map<string, double> records = 3;
+}
+
+// **********
+// Tablewide profiling API
+// **********
+
+enum DatabaseObjectType {
+  TABLE = 0;
+  VIEW = 1;
+  FUNCTION = 2;
+}
+
+message RenameDatabaseObjectRequest {
+  string instance_id = 1;
+  string name = 2;
+  string newname = 3;
+  optional DatabaseObjectType type = 4;
+}
+
+message RenameDatabaseObjectResponse {
+}
+
+message CardinalityRequest {
+  string instance_id = 1;
+  string table_name = 2;
+}
+
+message CardinalityResponse {
+  int64 cardinality = 1;
+}
+
+message ProfileColumnsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+}
+
+message ProfileColumnsResponse {
+  repeated ProfileColumn profile_columns = 1;
+}
+
+message ProfileColumn {
+  string name = 1;
+  string type = 2;
+  int32 largest_string_length = 3;
+}
+
+message RowsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  int32 limit = 3;
+}
+
+message RowsResponse {
+  repeated google.protobuf.Struct data = 1;
+}
+
+
 // **********
 // Connectors
 // **********
@@ -699,6 +1401,7 @@ message Connector {
       TYPE_STRING = 1;
       TYPE_NUMBER = 2;
       TYPE_BOOLEAN = 3;
+      TYPE_INFORMATIONAL = 4;
     }
     // The property key
     string key = 1;
@@ -712,6 +1415,10 @@ message Connector {
     Type type = 5;
     // Nullable is true if the field is optional
     bool nullable = 6;
+    // Additional textual explanation for use in UIs
+    string hint = 7;
+    // Link to documentation for this property
+    string href = 8;
   }
   // Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
   string name = 1;
@@ -735,8 +1442,59 @@ message ListConnectorsResponse {
 // Common messages
 // **********
 
-message SchemaColumn {
-  string name = 1;
-  string type = 2;
-  bool nullable = 3;
+// Type represents a data type in a schema
+message Type {
+  // Code enumerates all the types that can be represented in a schema
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    CODE_BOOL = 1;
+    CODE_INT8 = 2;
+    CODE_INT16 = 3;
+    CODE_INT32 = 4;
+    CODE_INT64 = 5;
+    CODE_INT128 = 6;
+    CODE_UINT8 = 7;
+    CODE_UINT16 = 8;
+    CODE_UINT32 = 9;
+    CODE_UINT64 = 10;
+    CODE_UINT128 = 11;
+    CODE_FLOAT32 = 12;
+    CODE_FLOAT64 = 13;
+    CODE_TIMESTAMP = 14;
+    CODE_DATE = 15;
+    CODE_TIME = 16;
+    CODE_STRING = 17;
+    CODE_BYTES = 18;
+    CODE_ARRAY = 19;
+    CODE_STRUCT = 20;
+    CODE_MAP = 21;
+    CODE_DECIMAL = 22;
+    CODE_JSON = 23;
+    CODE_UUID = 24;
+  }
+  // Code designates the type
+  Code code = 1;
+  // Nullable indicates whether null values are possible
+  bool nullable = 2;
+  // If code is CODE_ARRAY, array_element_type specifies the type of the array elements
+  Type array_element_type = 3;
+  // If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
+  StructType struct_type = 4;
+  // If code is CODE_MAP, map_type specifies the map's key and value types
+  MapType map_type = 5;
+}
+
+// StructType is a type composed of ordered, named and typed sub-fields
+message StructType {
+  message Field {
+    string name = 1;
+    Type type = 2;
+  }
+  repeated Field fields = 1;
+}
+
+// MapType is a complex type for mapping keys to values
+message MapType {
+  Type key_type = 1;
+  Type value_type = 2;
 }
