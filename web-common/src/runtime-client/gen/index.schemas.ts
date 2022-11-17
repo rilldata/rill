@@ -34,8 +34,6 @@ export type RuntimeServiceGetTopKBody = {
 
 export type RuntimeServiceTableRowsParams = { limit?: number };
 
-export type RuntimeServiceGetRugHistogramParams = { columnType?: string };
-
 export type RuntimeServiceRenameDatabaseObjectType =
   typeof RuntimeServiceRenameDatabaseObjectType[keyof typeof RuntimeServiceRenameDatabaseObjectType];
 
@@ -65,8 +63,6 @@ export type RuntimeServiceQueryBody = {
   priority?: string;
   dryRun?: boolean;
 };
-
-export type RuntimeServiceGetNumericHistogramParams = { columnType?: string };
 
 export type RuntimeServiceMigrateDeleteBody = {
   name?: string;
@@ -113,6 +109,16 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: string;
   filter?: V1MetricsViewFilter;
+};
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  tableName?: string;
+  measures?: GenerateTimeSeriesRequestBasicMeasures;
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  filters?: V1MetricsViewRequestFilter;
+  pixels?: string;
+  sampleSize?: number;
 };
 
 export type RuntimeServiceEstimateRollupIntervalBody = {
@@ -203,16 +209,6 @@ export interface V1TimeSeriesTimeRange {
   end?: string;
   interval?: string;
 }
-
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  tableName?: string;
-  measures?: GenerateTimeSeriesRequestBasicMeasures;
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewRequestFilter;
-  pixels?: string;
-  sampleSize?: number;
-};
 
 export interface V1TimeSeriesResponse {
   id?: string;
@@ -671,6 +667,7 @@ export interface V1CreateRepoResponse {
 }
 
 export interface V1CreateRepoRequest {
+  repoId?: string;
   driver?: string;
   dsn?: string;
 }
@@ -800,14 +797,14 @@ export interface StructTypeField {
 }
 
 export interface NumericOutliersOutlier {
-  bucket?: number;
+  bucket?: string;
   low?: number;
   high?: number;
-  present?: number;
+  present?: boolean;
 }
 
 export interface NumericHistogramBinsBin {
-  bucket?: number;
+  bucket?: string;
   low?: number;
   high?: number;
   count?: string;
