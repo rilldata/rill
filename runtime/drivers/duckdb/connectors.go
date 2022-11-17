@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/file"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {

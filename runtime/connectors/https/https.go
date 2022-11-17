@@ -8,7 +8,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 func init() {
