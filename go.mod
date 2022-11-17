@@ -150,6 +150,6 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
-replace github.com/marcboeker/go-duckdb v1.0.3 => github.com/begelundmuller/go-duckdb v0.0.0-20221117155436-872418aa18af
+replace github.com/marcboeker/go-duckdb v1.0.3 => github.com/begelundmuller/go-duckdb v0.0.0-20221117171428-8004b0828ebd
 
 replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
