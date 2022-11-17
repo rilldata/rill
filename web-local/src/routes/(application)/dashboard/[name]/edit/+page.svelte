@@ -7,7 +7,7 @@
 
   $: metricsDefId = data.metricsDefId;
   $: nonStandardError = data.error;
-
+  $: yaml = data.yaml;
   $: dataModelerService.dispatch("setActiveAsset", [
     EntityType.MetricsDefinition,
     metricsDefId,
@@ -22,4 +22,5 @@
 <MetricsDefinitionWorkspace
   metricsDefId={data.metricsDefId}
   {nonStandardError}
+  {yaml}
 />

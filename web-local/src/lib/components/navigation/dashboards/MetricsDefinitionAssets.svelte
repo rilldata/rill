@@ -90,7 +90,7 @@
       },
       {
         onSuccess: async () => {
-          goto(`/dashboard/sample.yaml`);
+          goto(`/dashboard/sample`);
         },
       }
     );

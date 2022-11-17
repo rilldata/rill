@@ -38,6 +38,12 @@
   export let metricsDefId;
   export let nonStandardError;
 
+  // the runtime yaml string
+  export let yaml;
+
+  // the local copy of the yaml string
+  let internalYAML = yaml;
+
   const metricQuery = useRuntimeServicePutFileAndMigrate();
 
   $: measures = getMeasuresByMetricsId(metricsDefId);
