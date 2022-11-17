@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
@@ -112,6 +113,9 @@
             }
           }
           sourceUpdated(tableName);
+          return queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
         },
         onError: (error) => {
           console.error(error);

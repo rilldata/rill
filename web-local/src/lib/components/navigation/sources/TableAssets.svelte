@@ -1,10 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
@@ -19,6 +21,11 @@
   import AddSourceModal from "./AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
+
+  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
+  $: sourceNames = $getFiles?.data?.paths
+    ?.filter((path) => path.includes("sources/"))
+    .map((path) => path.replace("/sources/", "").replace(".yaml", ""));
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -71,21 +78,24 @@
 
 {#if showTables}
   <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#if $persistentTableStore?.entities && $derivedTableStore?.entities}
+    {#if sourceNames && $persistentTableStore?.entities && $derivedTableStore?.entities}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
-      {#each $persistentTableStore.entities as { tableName, id } (id)}
+      {#each sourceNames as sourceName (sourceName)}
+        {@const persistentTable = $persistentTableStore.entities.find(
+          (t) => t["tableName"] == sourceName
+        )}
         {@const derivedTable = $derivedTableStore.entities.find(
-          (t) => t["id"] === id
+          (t) => t["id"] === persistentTable?.id
         )}
         <div
           animate:flip={{ duration: 200 }}
           out:slide={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
-            href={`/source/${tableName}`}
-            open={$page.url.pathname === `/source/${tableName}`}
-            on:command-click={() => queryHandler(tableName)}
-            name={tableName}
+            href={`/source/${sourceName}`}
+            open={$page.url.pathname === `/source/${sourceName}`}
+            on:command-click={() => queryHandler(sourceName)}
+            name={sourceName}
           >
             <svelte:fragment slot="more">
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
@@ -94,22 +104,22 @@
                   cardinality={derivedTable?.cardinality ?? 0}
                   profile={derivedTable?.profile ?? []}
                   head={derivedTable?.preview ?? []}
-                  entityId={id}
+                  entityId={persistentTable.id}
                 />
               </div>
             </svelte:fragment>
 
             <svelte:fragment slot="tooltip-content">
-              <SourceTooltip sourceName={tableName} />
+              <SourceTooltip {sourceName} />
             </svelte:fragment>
 
             <svelte:fragment slot="menu-items" let:toggleMenu>
               <SourceMenuItems
-                sourceName={tableName}
-                sourceID={id}
+                {sourceName}
+                sourceID={persistentTable.id}
                 {toggleMenu}
                 on:rename-asset={() => {
-                  openRenameTableModal(id, tableName);
+                  openRenameTableModal(persistentTable.id, sourceName);
                 }}
               />
             </svelte:fragment>

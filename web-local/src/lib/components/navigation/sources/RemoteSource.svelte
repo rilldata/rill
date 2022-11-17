@@ -3,8 +3,7 @@
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    RuntimeServiceListCatalogObjectsType,
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServicePutFileAndMigrate,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
@@ -97,9 +96,7 @@
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
-                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, {
-                  type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
-                })
+                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
               );
             },
             onError: () => {
