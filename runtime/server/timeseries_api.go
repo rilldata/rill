@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -141,13 +142,90 @@ func normaliseMeasures(measures *api.GenerateTimeSeriesRequest_BasicMeasures) *a
 	return measures
 }
 
+func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesTimeRange, error) {
+	tableName := EscapeDoubleQuotes(request.TableName)
+	escapedColumnName := EscapeDoubleQuotes(request.TimestampColumnName)
+	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
+		Query: `SELECT
+        	max(` + escapedColumnName + `) - min(` + escapedColumnName + `) as r,
+        	max(` + escapedColumnName + `) as max_value,
+        	min(` + escapedColumnName + `) as min_value,
+        	count(*) as count
+        	from ` + tableName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	rows.Next()
+	var r duckdb.Interval
+	var max, min time.Time
+	var count int64
+	err = rows.Scan(&r, &max, &min, &count)
+	if err != nil {
+		return nil, err
+	}
+
+	const (
+		MICROS_SECOND = 1000 * 1000
+		MICROS_MINUTE = 1000 * 1000 * 60
+		MICROS_HOUR   = 1000 * 1000 * 60 * 60
+		MICROS_DAY    = 1000 * 1000 * 60 * 60 * 24
+	)
+
+	var rollupInterval api.TimeGrain
+	if r.Days == 0 && r.Micros <= MICROS_MINUTE {
+		rollupInterval = api.TimeGrain_MILLISECOND
+	}
+	if r.Days == 0 && r.Micros > MICROS_MINUTE && r.Micros <= MICROS_HOUR {
+		rollupInterval = api.TimeGrain_SECOND
+	}
+	if r.Days == 0 && r.Micros <= MICROS_DAY {
+		rollupInterval = api.TimeGrain_MINUTE
+	}
+	if r.Days <= 7 {
+		rollupInterval = api.TimeGrain_HOUR
+	}
+	if r.Days <= 365*20 {
+		rollupInterval = api.TimeGrain_DAY
+	}
+	if r.Days <= 365*500 {
+		rollupInterval = api.TimeGrain_MONTH
+	}
+	rollupInterval = api.TimeGrain_YEAR
+
+	start := min.Format("2006-01-02 15:04:05")
+	end := max.Format("2006-01-02 15:04:05") // todo iso format
+
+	rtr := request.TimeRange
+	if rtr == nil {
+		rtr = &api.TimeSeriesTimeRange{
+			Start: start,
+			End:   end,
+		}
+	}
+	if rtr.Start == "" {
+		rtr.Start = start
+	}
+	if rtr.End == "" {
+		rtr.End = end
+	}
+	if rtr.Interval == api.TimeGrain_UNSPECIFIED {
+		rtr.Interval = rollupInterval
+	}
+	return rtr, nil
+}
+
 func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesRollup, error) {
-	var timeRange *api.TimeSeriesTimeRange = request.TimeRange
+	timeRange, err := s.normaliseTimeRange(ctx, request)
+	if err != nil {
+		return createErrResult(request), err
+	}
 	var measures []*api.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
 	var timestampColumn string = request.TimestampColumnName
 	var tableName string = request.TableName
 	var filter string = getFilterFromMetricsViewFilters(request.Filters)
-	var timeGranularity string = strings.Split(timeRange.Interval, " ")[1]
+	var timeGranularity string = timeRange.Interval.Enum().String()
 	var tsAlias string
 	if timestampColumn == "ts" {
 		tsAlias = "_ts"
@@ -166,7 +244,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
             generate_series(
               date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start + `'), 
               date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End + `'),
-              interval '` + timeRange.Interval + `')
+              interval '1 ` + timeGranularity + `')
         ),
         -- transform the original data, and optionally sample it.
         series AS (
@@ -188,29 +266,34 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 		Query: sql,
 	})
 	if err != nil {
-		rs, er := s.query(ctx, request.InstanceId, &drivers.Statement{
-			Query: "DROP TABLE _ts_",
-		})
-		if er == nil {
-			rs.Close()
-		}
-		return &api.TimeSeriesRollup{
-			Rollup: &api.TimeSeriesResponse{
-				Results:   []*api.TimeSeriesValue{},
-				TimeRange: request.TimeRange, // todo return the generated time range
-				// SampleSize: *request.SampleSize, todo
-			}, // todo review
-		}, err
+		s.dropTempTable(ctx, request.InstanceId)
+		return createErrResult(request), err
 	}
 	rows.Close()
-	rows, _ = s.query(ctx, request.InstanceId, &drivers.Statement{
+	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: "SELECT * from _ts_",
 	})
+	if err != nil {
+		s.dropTempTable(ctx, request.InstanceId)
+		return createErrResult(request), err
+	}
+	results := convertRowsToTimeSeriesValues(rows, len(measures)+1)
+	s.dropTempTable(ctx, request.InstanceId)
+
+	return &api.TimeSeriesRollup{
+		Rollup: &api.TimeSeriesResponse{
+			Results:   results,
+			TimeRange: request.TimeRange, // todo return the generated time range
+		},
+	}, nil
+}
+
+func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) []*api.TimeSeriesValue {
 	results := make([]*api.TimeSeriesValue, 0)
 	for rows.Next() {
 		value := api.TimeSeriesValue{}
 		results = append(results, &value)
-		row := make(map[string]interface{}, len(measures))
+		row := make(map[string]interface{}, rowLength)
 		rows.MapScan(row)
 		value.Ts = row["ts"].(time.Time).Format("2006-01-02 15:04:05")
 		delete(row, "ts")
@@ -220,16 +303,23 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 		}
 	}
 	rows.Close()
-	rows, _ = s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: "DROP TABLE _ts_",
-	})
-	rows.Close()
+	return results
+}
 
+func createErrResult(request *api.GenerateTimeSeriesRequest) *api.TimeSeriesRollup {
 	return &api.TimeSeriesRollup{
 		Rollup: &api.TimeSeriesResponse{
-			Results:   results,
+			Results:   []*api.TimeSeriesValue{},
 			TimeRange: request.TimeRange, // todo return the generated time range
-			// SampleSize: *request.SampleSize,
-		},
-	}, nil
+		}, // todo review
+	}
+}
+
+func (s *Server) dropTempTable(ctx context.Context, instanceId string) {
+	rs, er := s.query(ctx, instanceId, &drivers.Statement{
+		Query: "DROP TABLE _ts_",
+	})
+	if er == nil {
+		rs.Close()
+	}
 }

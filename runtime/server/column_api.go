@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math"
-	"time"
 )
 
 const defaultK = 50
@@ -220,35 +221,35 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *api.Est
 	switch timeGrainString {
 	case "milliseconds":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_MILLISECONDS,
+			TimeGrain: api.TimeGrain_MILLISECOND,
 		}
 	case "seconds":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_SECONDS,
+			TimeGrain: api.TimeGrain_SECOND,
 		}
 	case "minutes":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_MINUTES,
+			TimeGrain: api.TimeGrain_MINUTE,
 		}
 	case "hours":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_HOURS,
+			TimeGrain: api.TimeGrain_HOUR,
 		}
 	case "days":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_DAYS,
+			TimeGrain: api.TimeGrain_DAY,
 		}
 	case "weeks":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_WEEKS,
+			TimeGrain: api.TimeGrain_WEEK,
 		}
 	case "months":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_MONTHS,
+			TimeGrain: api.TimeGrain_MONTH,
 		}
 	case "years":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_YEARS,
+			TimeGrain: api.TimeGrain_YEAR,
 		}
 	}
 	return timeGrain, nil

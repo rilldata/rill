@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/marcboeker/go-duckdb"
 	"github.com/stretchr/testify/require"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 
@@ -53,7 +55,7 @@ func TestServer_Timeseries(t *testing.T) {
 		TimeRange: &api.TimeSeriesTimeRange{
 			Start:    "2019-01-01",
 			End:      "2019-12-01",
-			Interval: "1 year",
+			Interval: api.TimeGrain_YEAR,
 		},
 		Filters: &api.MetricsViewRequestFilter{
 			Include: []*api.MetricsViewDimensionValue{
@@ -99,7 +101,7 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 		TimeRange: &api.TimeSeriesTimeRange{
 			Start:    "2019-01-01",
 			End:      "2019-12-01",
-			Interval: "1 year",
+			Interval: api.TimeGrain_YEAR,
 		},
 		Filters: &api.MetricsViewRequestFilter{
 			Include: []*api.MetricsViewDimensionValue{
@@ -141,7 +143,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 		TimeRange: &api.TimeSeriesTimeRange{
 			Start:    "2019-01-01",
 			End:      "2019-12-01",
-			Interval: "1 year",
+			Interval: api.TimeGrain_YEAR,
 		},
 		Filters: &api.MetricsViewRequestFilter{
 			Include: []*api.MetricsViewDimensionValue{
@@ -192,7 +194,7 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		TimeRange: &api.TimeSeriesTimeRange{
 			Start:    "2019-01-01",
 			End:      "2019-01-02",
-			Interval: "1 day",
+			Interval: api.TimeGrain_DAY,
 		},
 		Filters: &api.MetricsViewRequestFilter{
 			Include: []*api.MetricsViewDimensionValue{
@@ -207,4 +209,22 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 2, len(results))
+}
+
+func TestServer_RangeSanity(t *testing.T) {
+	server, instanceId, err := getTestServer(t)
+	require.NoError(t, err)
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	result.Close()
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",
+	})
+	require.NoError(t, err)
+	var min, max time.Time
+	var r duckdb.Interval
+	result.Next()
+	err = result.Scan(&min, &max, &r)
+	require.NoError(t, err)
+	require.Equal(t, time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC), min)
+	require.Equal(t, int32(1), r.Days)
 }
