@@ -105,6 +105,7 @@
 
             <svelte:fragment slot="menu-items" let:toggleMenu>
               <SourceMenuItems
+                sourceName={tableName}
                 sourceID={id}
                 on:rename-asset={() => {
                   openRenameTableModal(id, tableName);
