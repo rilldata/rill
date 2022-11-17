@@ -3,38 +3,25 @@ package server
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
+	"github.com/rilldata/rill/runtime/services/catalog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListCatalogObjects implements RuntimeService
 func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObjectsRequest) (*api.ListCatalogObjectsResponse, error) {
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	catalog, err := s.openCatalog(ctx, inst)
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	objs := catalog.FindObjects(ctx, req.InstanceId, catalogObjectTypeFromPB(req.Type))
-	pbs := make([]*api.CatalogObject, len(objs))
-	for i, obj := range objs {
-		pbs[i], err = catalogObjectToPB(obj)
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
+	pbs, err := service.ListObjects(ctx, req.Type)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &api.ListCatalogObjectsResponse{Objects: pbs}, nil
@@ -42,25 +29,14 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 
 // GetCatalogObject implements RuntimeService
 func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObjectRequest) (*api.GetCatalogObjectResponse, error) {
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	catalog, err := s.openCatalog(ctx, inst)
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "object not found")
-	}
-
-	pb, err := catalogObjectToPB(obj)
+	pb, err := service.GetCatalogObject(ctx, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &api.GetCatalogObjectResponse{Object: pb}, nil
@@ -68,54 +44,26 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 
 // TriggerRefresh implements RuntimeService
 func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequest) (*api.TriggerRefreshResponse, error) {
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	catalog, err := s.openCatalog(ctx, inst)
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Find object
-	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "object not found")
+	path, ok := service.NameToPath[req.Name]
+	if !ok {
+		return nil, status.Error(codes.NotFound, "artifact not found")
 	}
 
-	// Check that it's a refreshable object
-	switch obj.Type {
-	case drivers.CatalogObjectTypeSource:
-	default:
-		return nil, status.Error(codes.InvalidArgument, "object is not refreshable")
-	}
-
-	// Parse SQL
-	source, err := sources.SqlToSource(obj.SQL)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Get olap
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	resp, err := service.Migrate(ctx, catalog.MigrationConfig{
+		ChangedPaths: []string{path},
+		ForcedPaths:  []string{path},
+		Strict:       true,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	olap, _ := conn.OLAPStore()
-
-	// Ingest the source
-	err = olap.Ingest(ctx, source)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	// Update object
-	obj.RefreshedOn = time.Now()
-	err = catalog.UpdateObject(ctx, req.InstanceId, obj)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+	if len(resp.Errors) > 0 {
+		return nil, status.Error(codes.Unknown, resp.Errors[0].Message)
 	}
 
 	return &api.TriggerRefreshResponse{}, nil
@@ -241,71 +189,4 @@ func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drive
 	}
 
 	return catalogStore, nil
-}
-
-func catalogObjectTypeFromPB(t api.CatalogObject_Type) drivers.CatalogObjectType {
-	switch t {
-	case api.CatalogObject_TYPE_UNSPECIFIED:
-		return drivers.CatalogObjectTypeUnspecified
-	case api.CatalogObject_TYPE_TABLE:
-		return drivers.CatalogObjectTypeTable
-	case api.CatalogObject_TYPE_SOURCE:
-		return drivers.CatalogObjectTypeSource
-	case api.CatalogObject_TYPE_METRICS_VIEW:
-		return drivers.CatalogObjectTypeMetricsView
-	default:
-		// NOTE: Consider returning and handling an error instead
-		return drivers.CatalogObjectTypeUnspecified
-	}
-}
-
-func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
-	switch obj.Type {
-	case drivers.CatalogObjectTypeTable:
-		return catalogObjectTableToPB(obj)
-	case drivers.CatalogObjectTypeSource:
-		return catalogObjectSourceToPB(obj)
-	default:
-		panic(fmt.Errorf("not implemented for type %v", obj.Type))
-	}
-}
-
-func catalogObjectTableToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
-	return &api.CatalogObject{
-		Type: api.CatalogObject_TYPE_TABLE,
-		Table: &api.Table{
-			Name:    obj.Name,
-			Schema:  obj.Schema,
-			Managed: obj.Managed,
-		},
-		CreatedOn:   timestamppb.New(obj.CreatedOn),
-		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-		RefreshedOn: timestamppb.New(obj.RefreshedOn),
-	}, nil
-}
-
-func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
-	source, err := sources.SqlToSource(obj.SQL)
-	if err != nil {
-		return nil, err
-	}
-
-	propsPB, err := structpb.NewStruct(source.Properties)
-	if err != nil {
-		panic(err) // TODO: Should never happen, but maybe handle defensively?
-	}
-
-	return &api.CatalogObject{
-		Type: api.CatalogObject_TYPE_SOURCE,
-		Source: &api.Source{
-			Sql:        obj.SQL,
-			Name:       obj.Name,
-			Connector:  source.Connector,
-			Properties: propsPB,
-			Schema:     obj.Schema,
-		},
-		CreatedOn:   timestamppb.New(obj.CreatedOn),
-		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-		RefreshedOn: timestamppb.New(obj.RefreshedOn),
-	}, nil
 }

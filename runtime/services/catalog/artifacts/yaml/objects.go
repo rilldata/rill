@@ -17,7 +17,8 @@ const Version = "0.0.1"
 type Source struct {
 	Version string
 	Type    string
-	URI     string
+	URI     string `yaml:"uri,omitempty"`
+	Path    string `yaml:"path,omitempty"`
 	Region  string `yaml:"region,omitempty"`
 }
 
@@ -53,9 +54,13 @@ func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
 	}
 
 	props := catalog.Source.Properties.AsMap()
-	uri, ok := props["path"].(string)
+	path, ok := props["path"].(string)
 	if ok {
-		source.URI = uri
+		if catalog.Source.Connector == "file" {
+			source.Path = path
+		} else {
+			source.URI = path
+		}
 	}
 	region, ok := props["aws.region"].(string)
 	if ok {
@@ -77,8 +82,11 @@ func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
 }
 
 func fromSourceArtifact(name string, path string, source *Source) (*api.CatalogObject, error) {
-	props := map[string]interface{}{
-		"path": source.URI,
+	props := map[string]interface{}{}
+	if source.Type == "file" {
+		props["path"] = source.Path
+	} else {
+		props["path"] = source.URI
 	}
 	if source.Region != "" {
 		props["aws.region"] = source.Region

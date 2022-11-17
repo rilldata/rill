@@ -32,3 +32,24 @@ func getTestServer(t *testing.T) (*Server, string, error) {
 
 	return server, resp.InstanceId, nil
 }
+
+func getTestServerWithData(t *testing.T) (*Server, string, error) {
+	server, instanceId, err := getTestServer(t)
+
+	_, err = server.QueryDirect(context.Background(), &api.QueryDirectRequest{
+		InstanceId: instanceId,
+		Sql: `CREATE TABLE test AS (
+			SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 
+			UNION ALL 
+			SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times
+			UNION ALL 
+			SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+			UNION ALL 
+			SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+			)`,
+		Args: nil,
+	})
+	require.NoError(t, err)
+
+	return server, instanceId, nil
+}

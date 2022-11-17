@@ -91,12 +91,14 @@ func (c *connection) FindRepo(ctx context.Context, id string) (*drivers.Repo, bo
 
 // CreateRepo implements drivers.RegistryStore
 func (c *connection) CreateRepo(ctx context.Context, repo *drivers.Repo) error {
-	id := uuid.NewString()
+	if repo.ID == "" {
+		repo.ID = uuid.NewString()
+	}
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
 		"INSERT INTO repos(id, driver, dsn, created_on, updated_on) VALUES ($1, $2, $3, $4, $4)",
-		id,
+		repo.ID,
 		repo.Driver,
 		repo.DSN,
 		now,
@@ -105,7 +107,6 @@ func (c *connection) CreateRepo(ctx context.Context, repo *drivers.Repo) error {
 		return err
 	}
 	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
-	repo.ID = id
 	repo.CreatedOn = now
 	repo.UpdatedOn = now
 	return nil

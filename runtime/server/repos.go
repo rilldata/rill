@@ -42,6 +42,7 @@ func (s *Server) GetRepo(ctx context.Context, req *api.GetRepoRequest) (*api.Get
 // CreateRepo implements RuntimeService
 func (s *Server) CreateRepo(ctx context.Context, req *api.CreateRepoRequest) (*api.CreateRepoResponse, error) {
 	repo := &drivers.Repo{
+		ID:     req.RepoId,
 		Driver: req.Driver,
 		DSN:    req.Dsn,
 	}
