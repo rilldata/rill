@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
+  import { useRuntimeServiceRenameFileAndMigrate } from "@rilldata/web-common/runtime-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
-  import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -16,6 +15,7 @@
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
   export let modelID;
 
@@ -47,17 +47,25 @@
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
   }
 
-  // FIXME: this should eventually be a redux action dispatcher `onChangeAction`
+  const renameModel = useRuntimeServiceRenameFileAndMigrate();
+
   const onChangeCallback = async (e) => {
-    if (currentModel?.id) {
-      const resp = await dataModelerService.dispatch("updateModelName", [
-        currentModel?.id,
-        formatModelName(e.target.value),
-      ]);
-      if (resp.status === ActionStatus.Failure) {
-        e.target.value = currentModel.name;
+    // CHECK: do I have to rename the entity in the Node backend too?
+    $renameModel.mutate(
+      {
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: $runtimeStore.instanceId,
+          fromPath: `models/${currentModel.tableName}`,
+          toPath: `models/${e.target.value}`,
+        },
+      },
+      {
+        onError: (err) => {
+          console.error(err.response.data.message);
+        },
       }
-    }
+    );
   };
 
   /** model body layout elements */

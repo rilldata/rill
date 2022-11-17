@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { createForm } from "svelte-forms-lib";
@@ -29,7 +29,7 @@
     runtimeInstanceId,
     currentAssetName
   );
-  const renameSource = useRuntimeServiceMigrateSingle();
+  const renameAsset = useRuntimeServiceRenameFileAndMigrate();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -83,16 +83,34 @@
           break;
         }
         case EntityType.Model: {
-          dataModelerService
-            .dispatch("updateModelName", [entityId, values.newName])
-            .then((response) => {
-              if (response.status === 0) {
-                notifications.send({ message: response.messages[0].message });
+          // CHECK: Is this `updateModelName` API call necessary?
+          dataModelerService.dispatch("updateModelName", [
+            entityId,
+            values.newName,
+          ]);
+          $renameAsset.mutate(
+            {
+              data: {
+                repoId: $runtimeStore.repoId,
+                instanceId: runtimeInstanceId,
+                fromPath: `models/${currentAssetName}`,
+                toPath: `models/${values.newName}`,
+              },
+            },
+            {
+              onSuccess: () => {
                 closeModal();
-              } else if (response.status === 1) {
-                error = response.messages[0].message;
-              }
-            });
+                notifications.send({
+                  message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
+                });
+              },
+              onError: (err) => {
+                error = err.response.data.message;
+                // reset the new model name
+                dataModelerService.dispatch("updateModelName", [entityId, ""]);
+              },
+            }
+          );
           break;
         }
         case EntityType.MetricsDefinition: {
