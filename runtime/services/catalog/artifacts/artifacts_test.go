@@ -41,7 +41,7 @@ func TestSourceReadWrite(t *testing.T) {
 			},
 			`version: 0.0.1
 type: file
-uri: data/source.csv
+path: data/source.csv
 `,
 		},
 		{

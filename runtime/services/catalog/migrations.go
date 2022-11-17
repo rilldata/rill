@@ -57,6 +57,16 @@ type MigrationResult struct {
 	Errors         []*api.MigrationError
 }
 
+func NewMigrationResult() *MigrationResult {
+	return &MigrationResult{
+		AddedObjects:   make([]*api.CatalogObject, 0),
+		UpdatedObjects: make([]*api.CatalogObject, 0),
+		DroppedObjects: make([]*api.CatalogObject, 0),
+		AffectedPaths:  make([]string, 0),
+		Errors:         make([]*api.MigrationError, 0),
+	}
+}
+
 func (r *MigrationResult) collectAffectedPaths() {
 	pathDuplicates := make(map[string]bool)
 	for _, added := range r.AddedObjects {
@@ -89,19 +99,13 @@ type ArtifactError struct {
 func (s *Service) Migrate(
 	ctx context.Context,
 	conf MigrationConfig,
-) (MigrationResult, error) {
-	result := MigrationResult{
-		AddedObjects:   make([]*api.CatalogObject, 0),
-		UpdatedObjects: make([]*api.CatalogObject, 0),
-		DroppedObjects: make([]*api.CatalogObject, 0),
-		AffectedPaths:  make([]string, 0),
-		Errors:         make([]*api.MigrationError, 0),
-	}
+) (*MigrationResult, error) {
+	result := NewMigrationResult()
 
 	// collect repos and create migration items
-	migrationMap, err := s.collectRepos(ctx, conf, &result)
+	migrationMap, err := s.collectRepos(ctx, conf, result)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	// order the items to have parents before children
@@ -111,9 +115,9 @@ func (s *Service) Migrate(
 		return result, nil
 	}
 
-	err = s.runMigrationItems(ctx, conf, migrations, &result)
+	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	// TODO: changes to the file will not be picked up if done while running migration
@@ -400,7 +404,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					migration.Type = MigrationUpdate
 				}
-			} else {
+			} else if _, ok := s.PathToName[migration.Path]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -474,6 +478,13 @@ func (s *Service) runMigrationItems(
 
 		if err == nil {
 			switch item.Type {
+			case MigrationNoChange:
+				if _, ok := s.PathToName[item.Path]; !ok {
+					// this is perhaps an init. so populate cache data
+					s.PathToName[item.Path] = item.Name
+					s.NameToPath[item.Name] = item.Path
+					s.dag.Add(item.Name, item.Dependencies)
+				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
 				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)

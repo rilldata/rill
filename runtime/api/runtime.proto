@@ -430,8 +430,9 @@ message GetRepoResponse {
 
 // Request message for RuntimeService.CreateRepo
 message CreateRepoRequest {
-  string driver = 1;
-  string dsn = 2;
+  string repo_id = 1;
+  string driver = 2;
+  string dsn = 3;
 }
 
 // Response message for RuntimeService.CreateRepo
