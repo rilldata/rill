@@ -96,9 +96,6 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
 	}
 
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
-
 	return &api.MigrateDeleteResponse{}, nil
 }
 
@@ -337,9 +334,6 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 		rows.Close()
 	}
-
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
 
 	// Done
 	return &api.MigrateSingleResponse{}, nil

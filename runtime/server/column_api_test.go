@@ -11,6 +11,7 @@ import (
 
 func TestServer_GetTopK(t *testing.T) {
 	server, instanceId, err := getTestServer(t)
+	require.NoError(t, err)
 
 	_, err = server.QueryDirect(context.Background(), &api.QueryDirectRequest{
 		InstanceId: instanceId,

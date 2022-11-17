@@ -118,9 +118,6 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
-
 	return &api.TriggerRefreshResponse{}, nil
 }
 
@@ -214,9 +211,6 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 			removed++
 		}
 	}
-
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
 
 	// Done
 	return &api.TriggerSyncResponse{

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -18,9 +17,7 @@ func getTestServer(t *testing.T) (*Server, string, error) {
 	require.NoError(t, err)
 
 	server, err := NewServer(&ServerOptions{
-		ConnectionCacheSize:  100,
-		CatalogCacheSize:     100,
-		CatalogCacheDuration: 10 * time.Second,
+		ConnectionCacheSize: 100,
 	}, metastore, nil)
 	require.NoError(t, err)
 
