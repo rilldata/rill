@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -121,7 +122,7 @@ func (s *Service) Migrate(
 	}
 
 	// TODO: changes to the file will not be picked up if done while running migration
-	s.LastMigration = time.Now()
+	s.LastMigration = time.Now().Add(time.Millisecond)
 	result.collectAffectedPaths()
 	return result, nil
 }
@@ -334,6 +335,7 @@ func (s *Service) getMigrationItem(
 		} else {
 			repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
 			item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
+			fmt.Println(repoPath, repoStat.LastUpdated.Unix(), s.LastMigration.Unix())
 			if repoStat.LastUpdated.After(s.LastMigration) {
 				// assume creation until we see a catalog object
 				item.Type = MigrationCreate

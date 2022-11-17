@@ -32,10 +32,6 @@ const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestMigrate(t *testing.T) {
-	if testing.Short() {
-		t.Skip("migrate: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.MigrationConfig
@@ -96,10 +92,6 @@ func TestMigrate(t *testing.T) {
 }
 
 func TestMigrateRenames(t *testing.T) {
-	if testing.Short() {
-		t.Skip("migrate: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.MigrationConfig
@@ -143,10 +135,6 @@ func TestMigrateRenames(t *testing.T) {
 }
 
 func TestRefreshSource(t *testing.T) {
-	if testing.Short() {
-		t.Skip("migrate: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.MigrationConfig
@@ -175,10 +163,6 @@ func TestRefreshSource(t *testing.T) {
 }
 
 func TestInterdependentModel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("migrate: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.MigrationConfig
@@ -226,10 +210,6 @@ func TestInterdependentModel(t *testing.T) {
 }
 
 func TestMigrateMetricsView(t *testing.T) {
-	if testing.Short() {
-		t.Skip("migrate: skipping test in short mode")
-	}
-
 	s, _ := initBasicService(t)
 
 	testutils.CreateModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
@@ -299,7 +279,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 func getService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"))
+	duckdbStore, err := drivers.Open("duckdb", "")
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
