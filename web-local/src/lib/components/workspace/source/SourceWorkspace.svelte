@@ -24,7 +24,7 @@
     ? $persistentTableStore.entities.find((q) => q.tableName === sourceName)
     : undefined;
   $: currentDerivedSource = $derivedTableStore?.entities
-    ? $derivedTableStore.entities.find((q) => q.id === currentSource.id)
+    ? $derivedTableStore.entities.find((q) => q.id === currentSource?.id)
     : undefined;
 
   const switchToSource = async (sourceID: string) => {
@@ -36,7 +36,7 @@
     ]);
   };
 
-  $: switchToSource(currentSource.id);
+  $: switchToSource(currentSource?.id);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.
@@ -49,7 +49,7 @@
     if (previewRowCount === 1 || currentDerivedSource?.cardinality !== 1) {
       profiling = true;
       dataModelerService.dispatch("refreshPreview", [
-        currentSource.id,
+        currentSource?.id,
         currentSource.tableName,
       ]);
     }
@@ -57,7 +57,7 @@
 </script>
 
 <!-- for now, we will key the entire element on the sourceId. -->
-{#key currentSource.id}
+{#key currentSource?.id}
   <WorkspaceContainer assetID={sourceName}>
     <div
       slot="body"
@@ -65,7 +65,7 @@
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader id={currentSource.id} />
+      <SourceWorkspaceHeader id={currentSource?.id} />
       <div
         style:overflow="auto"
         style:height="100%"
@@ -81,6 +81,6 @@
         {/if}
       </div>
     </div>
-    <SourceInspector sourceID={currentSource.id} slot="inspector" />
+    <SourceInspector sourceID={currentSource?.id} slot="inspector" />
   </WorkspaceContainer>
 {/key}
