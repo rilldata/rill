@@ -18,7 +18,7 @@ type modelMigrator struct{}
 
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TEMPORARY VIEW %s AS (%s)", catalogObj.Name, catalogObj.Model.Sql),
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", catalogObj.Name, catalogObj.Model.Sql),
 		Priority: 100,
 	})
 	if err != nil {
