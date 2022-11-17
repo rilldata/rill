@@ -33,9 +33,12 @@ Row.svelte enables functionality around moving the row among other rows.
   <div class="w-full">
     <WithDragHandle
       {suppressTooltips}
-      on:mousedown={() => {
+      on:mousedown={(event) => {
         dispatch("select", false);
-        dispatch("draghandle-mousedown");
+        dispatch("draghandle-mousedown", {
+          x: event.clientX,
+          y: event.clientY,
+        });
       }}
       bind:active={dragMenuActive}
     >

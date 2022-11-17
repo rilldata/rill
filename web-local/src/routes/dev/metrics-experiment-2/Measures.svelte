@@ -233,7 +233,6 @@
 
   function onMousemove(event) {
     every += 1;
-
     if (isDragging && every % 5 === 0) {
       dragY = Math.max(0, event.clientY - containerTop);
       let indexMap = (dragY / containerSize) * measures.length;
@@ -256,6 +255,7 @@
     isDragging = false;
     /** wait for the update before redrawing */
     dragID = undefined;
+    candidateDragInsertionPoint = undefined;
   }
 
   /** drag id */
@@ -266,7 +266,7 @@
 
   function handleDragHandleMousedown(id: string) {
     return (event) => {
-      dragY = Math.max(0, event.clientY - containerTop);
+      dragY = Math.max(0, event.detail.y - containerTop);
       isDragging = true;
       dragID = id;
     };
