@@ -4,12 +4,10 @@ package yaml
 import (
 	"context"
 	"errors"
-	"path"
-	"strings"
+	"path/filepath"
 
 	"github.com/go-yaml/yaml"
 	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
 
@@ -22,11 +20,7 @@ func init() {
 }
 
 func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*api.CatalogObject, error) {
-	ext := fileutil.FullExt(filePath)
-	fileName := path.Base(filePath)
-	dir := strings.Trim(path.Dir(filePath), "./")
-	name := strings.TrimSuffix(fileName, ext)
-
+	dir := filepath.Base(filepath.Dir(filePath))
 	switch dir {
 	case "sources":
 		source := &Source{}
@@ -34,14 +28,14 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string
 		if err != nil {
 			return nil, err
 		}
-		return fromSourceArtifact(name, fileName, source)
+		return fromSourceArtifact(source, filePath)
 	case "dashboards":
 		metrics := &MetricsView{}
 		err := yaml.Unmarshal([]byte(blob), &metrics)
 		if err != nil {
 			return nil, err
 		}
-		return fromMetricsViewArtifact(name, fileName, metrics)
+		return fromMetricsViewArtifact(metrics, filePath)
 	}
 
 	return nil, NotSupported

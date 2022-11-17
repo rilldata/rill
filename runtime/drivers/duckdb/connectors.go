@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/connectors"
@@ -12,7 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-func (c *connection) Ingest(ctx context.Context, source *connectors.Source) error {
+func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	err := source.Validate()
 	if err != nil {
 		return err
@@ -21,21 +22,31 @@ func (c *connection) Ingest(ctx context.Context, source *connectors.Source) erro
 	// Driver-specific overrides
 	switch source.Connector {
 	case "file":
-		return c.ingestFile(ctx, source)
+		return c.ingestFile(ctx, env, source)
 	}
 
-	path, err := connectors.ConsumeAsFile(ctx, source)
+	path, err := connectors.ConsumeAsFile(ctx, env, source)
 	if err != nil {
 		return err
 	}
 	defer os.Remove(path)
+
 	return c.ingestFromRawFile(ctx, source, path)
 }
 
-func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) error {
+func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	conf, err := file.ParseConfig(source.Properties)
 	if err != nil {
 		return err
+	}
+
+	path := conf.Path
+	if !filepath.IsAbs(path) {
+		// If the path is relative, it's relative to the repo root
+		if env.RepoDriver != "file" || env.RepoDSN == "" {
+			return fmt.Errorf("file connector cannot ingest source '%s': path is relative, but repo is not available", source.Name)
+		}
+		path = filepath.Join(env.RepoDSN, path)
 	}
 
 	// Not using query args since not quite sure about behaviour of injecting table names that way.
@@ -43,9 +54,9 @@ func (c *connection) ingestFile(ctx context.Context, source *connectors.Source) 
 
 	var from string
 	if conf.Format == "csv" && conf.CSVDelimiter != "" {
-		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", conf.Path, conf.CSVDelimiter)
+		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", path, conf.CSVDelimiter)
 	} else {
-		from, err = getSourceReader(conf.Path)
+		from, err = getSourceReader(path)
 		if err != nil {
 			return err
 		}

@@ -70,6 +70,6 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source) (string, error) {
+func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
 	return "", errors.New("not implemented")
 }
