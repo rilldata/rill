@@ -12,37 +12,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// InitCatalogService implements RuntimeService
-func (s *Server) InitCatalogService(ctx context.Context, req *api.InitCatalogServiceRequest) (*api.InitCatalogServiceResponse, error) {
-	instResp, err := s.CreateInstance(ctx, req.Instance)
-	if err != nil {
-		return nil, err
-	}
-
-	repoResp, err := s.CreateRepo(ctx, req.Repo)
-	if err != nil {
-		return nil, err
-	}
-
-	service, err := s.serviceCache.createCatalogService(ctx, s, instResp.Instance.InstanceId, repoResp.Repo.RepoId)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := service.Init(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Errors) > 0 {
-		// TODO: send more errors
-		return nil, status.Error(codes.Unknown, resp.Errors[0].Message)
-	}
-
-	return &api.InitCatalogServiceResponse{
-		Instance: instResp.Instance,
-		Repo:     repoResp.Repo,
-	}, nil
-}
-
 // ListCatalogObjects implements RuntimeService
 func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObjectsRequest) (*api.ListCatalogObjectsResponse, error) {
 	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")

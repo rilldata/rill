@@ -32,6 +32,10 @@ const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestMigrate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config catalog.MigrationConfig

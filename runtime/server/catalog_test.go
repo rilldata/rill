@@ -24,22 +24,10 @@ func TestServer_InitCatalogService(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-
 	dir := t.TempDir()
-	serviceResp, err := server.InitCatalogService(ctx, &api.InitCatalogServiceRequest{
-		Instance: &api.CreateInstanceRequest{
-			Driver:       "duckdb",
-			Dsn:          filepath.Join(dir, "stage.db"),
-			Exposed:      true,
-			EmbedCatalog: true,
-		},
-		Repo: &api.CreateRepoRequest{
-			Driver: "file",
-			Dsn:    dir,
-		},
-	})
-	require.NoError(t, err)
-	service, err := server.serviceCache.createCatalogService(ctx, server, serviceResp.Instance.InstanceId, serviceResp.Repo.RepoId)
+
+	instId, repoId := createInstanceAndRepo(t, server, ctx, dir)
+	service, err := server.serviceCache.createCatalogService(ctx, server, instId, repoId)
 	require.NoError(t, err)
 
 	testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
@@ -51,22 +39,12 @@ func TestServer_InitCatalogService(t *testing.T) {
 	testutils.AssertTable(t, service, "AdBids_model", AdBidsModelRepoPath)
 
 	// create a new service and make sure DAG is generated
-	serviceResp, err = server.InitCatalogService(ctx, &api.InitCatalogServiceRequest{
-		Instance: &api.CreateInstanceRequest{
-			Driver:       "duckdb",
-			Dsn:          filepath.Join(dir, "stage.db"),
-			Exposed:      true,
-			EmbedCatalog: true,
-		},
-		Repo: &api.CreateRepoRequest{
-			Driver: "file",
-			Dsn:    dir,
-		},
-	})
-	require.NoError(t, err)
-	service, err = server.serviceCache.createCatalogService(ctx, server, serviceResp.Instance.InstanceId, serviceResp.Repo.RepoId)
+	instId, repoId = createInstanceAndRepo(t, server, ctx, dir)
+	service, err = server.serviceCache.createCatalogService(ctx, server, instId, repoId)
 	require.NoError(t, err)
 
+	// initial migrate to setup cache
+	migrateResp, err = service.Migrate(ctx, catalog.MigrationConfig{})
 	// force update the source
 	migrateResp, err = service.Migrate(ctx, catalog.MigrationConfig{
 		ChangedPaths: []string{AdBidsRepoPath},
@@ -74,4 +52,23 @@ func TestServer_InitCatalogService(t *testing.T) {
 	})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, migrateResp, 0, 0, 2, 0)
+}
+
+func createInstanceAndRepo(t *testing.T, server *Server, ctx context.Context, dir string) (string, string) {
+	instResp, err := server.CreateInstance(ctx, &api.CreateInstanceRequest{
+		Driver: "duckdb",
+		// use persistent file to test fresh load
+		Dsn:          filepath.Join(dir, "stage.db"),
+		Exposed:      true,
+		EmbedCatalog: true,
+	})
+	require.NoError(t, err)
+
+	repoResp, err := server.CreateRepo(ctx, &api.CreateRepoRequest{
+		Driver: "file",
+		Dsn:    dir,
+	})
+	require.NoError(t, err)
+
+	return instResp.Instance.InstanceId, repoResp.Repo.RepoId
 }

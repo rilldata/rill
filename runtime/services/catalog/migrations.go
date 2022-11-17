@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -95,28 +94,6 @@ type ArtifactError struct {
 	Path  string
 }
 
-func (s *Service) Init(ctx context.Context) (*MigrationResult, error) {
-	result := NewMigrationResult()
-	conf := MigrationConfig{}
-
-	// collect repos and create migration items
-	migrationMap, err := s.collectRepos(ctx, conf, result)
-	if err != nil {
-		return nil, err
-	}
-
-	// populate the service metadata
-	for _, item := range migrationMap {
-		s.NameToPath[item.Name] = item.Path
-		s.PathToName[item.Path] = item.Name
-		s.dag.Add(item.Name, item.Dependencies)
-	}
-
-	// TODO: rehydrate olap. need to handle things like long source ingestion
-
-	return result, nil
-}
-
 // TODO: support loading existing projects
 
 func (s *Service) Migrate(
@@ -184,8 +161,6 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 	migrationMap := make(map[string]*MigrationItem)
 	deletions := make(map[string]*MigrationItem)
 	additions := make(map[string]*MigrationItem)
-
-	fmt.Println("Migrating ", repoPaths)
 
 	for _, repoPath := range repoPaths {
 		item := s.getMigrationItem(ctx, repoPath, storeObjectsMap, forcedPathMap)
@@ -331,7 +306,6 @@ func (s *Service) getMigrationItem(
 
 	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
 	if err != nil {
-		fmt.Println(repoPath, " Error ", err)
 		if err != artifacts.FileReadError {
 			item.Error = &api.MigrationError{
 				Code:     api.MigrationError_CODE_SYNTAX,
@@ -352,23 +326,17 @@ func (s *Service) getMigrationItem(
 		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
 		err = migrator.Validate(ctx, s.Olap, catalog)
 		if err != nil {
-			fmt.Println(repoPath, " Validate Error ", err)
 			item.Error = &api.MigrationError{
 				Code:     api.MigrationError_CODE_VALIDATION,
 				Message:  err.Error(),
 				FilePath: repoPath,
 			}
 		} else {
-			repoStat, err := s.Repo.Stat(ctx, s.RepoId, repoPath)
-			if err != nil {
-				fmt.Println(repoPath, " Stat Error ", err)
-			} else {
-				fmt.Println(repoPath, " Stat ", repoStat, s.LastMigration)
-				item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
-				if repoStat.LastUpdated.After(s.LastMigration) {
-					// assume creation until we see a catalog object
-					item.Type = MigrationCreate
-				}
+			repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
+			item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
+			if repoStat.LastUpdated.After(s.LastMigration) {
+				// assume creation until we see a catalog object
+				item.Type = MigrationCreate
 			}
 		}
 	}
@@ -379,7 +347,6 @@ func (s *Service) getMigrationItem(
 	}
 	apiCatalog, err := catalogObjectToPB(catalogInStore)
 	if err != nil {
-		fmt.Println(repoPath, " Catalog Error ", err)
 		return item
 	}
 	item.CatalogInStore = apiCatalog
@@ -437,7 +404,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					migration.Type = MigrationUpdate
 				}
-			} else {
+			} else if _, ok := s.PathToName[migration.Path]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -503,8 +470,6 @@ func (s *Service) runMigrationItems(
 	result *MigrationResult,
 ) error {
 	for _, item := range migrations {
-		fmt.Println("Migrate", item.Name, item.Path, item.Type)
-
 		var err error
 
 		if item.CatalogInFile != nil && item.CatalogInFile.Type == api.CatalogObject_TYPE_METRICS_VIEW {
@@ -513,6 +478,13 @@ func (s *Service) runMigrationItems(
 
 		if err == nil {
 			switch item.Type {
+			case MigrationNoChange:
+				if _, ok := s.PathToName[item.Path]; !ok {
+					// this is perhaps an init. so populate cache data
+					s.PathToName[item.Path] = item.Name
+					s.NameToPath[item.Name] = item.Path
+					s.dag.Add(item.Name, item.Dependencies)
+				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
 				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)

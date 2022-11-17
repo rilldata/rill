@@ -16,39 +16,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/catalog/service/init": {
-      "post": {
-        "summary": "InitCatalogService creates an catalog service. Also initialises the catalog service.",
-        "operationId": "RuntimeService_InitCatalogService",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1InitCatalogServiceResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1InitCatalogServiceRequest"
-            }
-          }
-        ],
-        "tags": [
-          "RuntimeService"
-        ]
-      }
-    },
     "/v1/connectors/meta": {
       "get": {
         "summary": "ListConnectors returns a description of all the connectors implemented in the runtime,\nincluding their schema and validation rules",
@@ -2651,30 +2618,6 @@
         }
       },
       "title": "Response message for RuntimeService.GetRepo"
-    },
-    "v1InitCatalogServiceRequest": {
-      "type": "object",
-      "properties": {
-        "instance": {
-          "$ref": "#/definitions/v1CreateInstanceRequest"
-        },
-        "repo": {
-          "$ref": "#/definitions/v1CreateRepoRequest"
-        }
-      },
-      "title": "Request message for RuntimeService.InitCatalogService"
-    },
-    "v1InitCatalogServiceResponse": {
-      "type": "object",
-      "properties": {
-        "instance": {
-          "$ref": "#/definitions/v1Instance"
-        },
-        "repo": {
-          "$ref": "#/definitions/v1Repo"
-        }
-      },
-      "title": "Response message for RuntimeService.InitCatalogService"
     },
     "v1Instance": {
       "type": "object",

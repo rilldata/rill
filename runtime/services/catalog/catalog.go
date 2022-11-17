@@ -22,8 +22,11 @@ type Service struct {
 	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
 	LastMigration time.Time
 	dag           *dag2.DAG
-	NameToPath    map[string]string
-	PathToName    map[string]string
+	// used to get path when we only have name. happens when we get name from DAG
+	// TODO: should we add path to the DAG instead
+	NameToPath map[string]string
+	// used to get last logged name when parsing fails
+	PathToName map[string]string
 }
 
 func NewService(

@@ -120,14 +120,6 @@ service RuntimeService {
 
   // Catalog
 
-  // InitCatalogService creates an catalog service. Also initialises the catalog service.
-  rpc InitCatalogService(InitCatalogServiceRequest) returns (InitCatalogServiceResponse) {
-    option (google.api.http) = {
-      post: "/v1/catalog/service/init",
-      body: "*"
-    };
-  }
-
   // ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
   rpc ListCatalogObjects(ListCatalogObjectsRequest) returns (ListCatalogObjectsResponse) {
     option (google.api.http) = {
@@ -700,18 +692,6 @@ message MetricsView {
   repeated Dimension dimensions = 5;
   // Measures in the metrics view
   repeated Measure measures = 6;
-}
-
-// Request message for RuntimeService.InitCatalogService
-message InitCatalogServiceRequest {
-  CreateInstanceRequest instance = 1;
-  CreateRepoRequest repo = 2;
-}
-
-// Response message for RuntimeService.InitCatalogService
-message InitCatalogServiceResponse {
-  Instance instance = 1;
-  Repo repo = 2;
 }
 
 // Request message for RuntimeService.ListCatalogObjects

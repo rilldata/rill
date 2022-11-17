@@ -51,8 +51,6 @@ type RuntimeServiceClient interface {
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
-	// InitCatalogService creates an catalog service. Also initialises the catalog service.
-	InitCatalogService(ctx context.Context, in *InitCatalogServiceRequest, opts ...grpc.CallOption) (*InitCatalogServiceResponse, error)
 	// ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
 	ListCatalogObjects(ctx context.Context, in *ListCatalogObjectsRequest, opts ...grpc.CallOption) (*ListCatalogObjectsResponse, error)
 	// GetCatalogObject returns information about a specific object in the catalog
@@ -259,15 +257,6 @@ func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateIns
 func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error) {
 	out := new(DeleteInstanceResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/DeleteInstance", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) InitCatalogService(ctx context.Context, in *InitCatalogServiceRequest, opts ...grpc.CallOption) (*InitCatalogServiceResponse, error) {
-	out := new(InitCatalogServiceResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/InitCatalogService", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -586,8 +575,6 @@ type RuntimeServiceServer interface {
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
-	// InitCatalogService creates an catalog service. Also initialises the catalog service.
-	InitCatalogService(context.Context, *InitCatalogServiceRequest) (*InitCatalogServiceResponse, error)
 	// ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
 	ListCatalogObjects(context.Context, *ListCatalogObjectsRequest) (*ListCatalogObjectsResponse, error)
 	// GetCatalogObject returns information about a specific object in the catalog
@@ -712,9 +699,6 @@ func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *Create
 }
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
-}
-func (UnimplementedRuntimeServiceServer) InitCatalogService(context.Context, *InitCatalogServiceRequest) (*InitCatalogServiceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method InitCatalogService not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListCatalogObjects(context.Context, *ListCatalogObjectsRequest) (*ListCatalogObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogObjects not implemented")
@@ -1070,24 +1054,6 @@ func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).DeleteInstance(ctx, req.(*DeleteInstanceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_InitCatalogService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InitCatalogServiceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).InitCatalogService(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/InitCatalogService",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).InitCatalogService(ctx, req.(*InitCatalogServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1712,10 +1678,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteInstance",
 			Handler:    _RuntimeService_DeleteInstance_Handler,
-		},
-		{
-			MethodName: "InitCatalogService",
-			Handler:    _RuntimeService_InitCatalogService_Handler,
 		},
 		{
 			MethodName: "ListCatalogObjects",
