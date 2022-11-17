@@ -1,3 +1,4 @@
+// Package yaml reads and writes artifacts that exactly mirror the internal representation
 package yaml
 
 import (
@@ -11,10 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
-
-/**
- * yaml package is for reading and writing artifacts that exactly mirror the internal representation
- */
 
 type artifact struct{}
 
