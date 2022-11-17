@@ -8,7 +8,9 @@ import (
 	"strings"
 )
 
-// FullExt recursively strips file extension returns it
+// FullExt returns all of path's extensions. For example, for "foo.csv.zip"
+// it returns ".csv.zip", not just ".zip" as filepath.Ext from the standard
+// library does.
 func FullExt(path string) string {
 	fullExt := filepath.Ext(path)
 	fullName := strings.TrimSuffix(path, fullExt)
@@ -25,14 +27,11 @@ func FullExt(path string) string {
 	return fullExt
 }
 
+// CopyToTempFile pipes a reader to a temporary file. The caller must delete
+// the temporary file when it's no longer needed.
 func CopyToTempFile(r io.Reader, name string, ext string) (string, error) {
-	// CreateTemp adds a random string at the end.
-	// But we need an extension at the end so that duckdb uses the correct loader.
-	// Hence adding <name>*<extension> so that CreateTemp adds the random strings before the extension.
-	f, err := os.CreateTemp(
-		os.TempDir(),
-		fmt.Sprintf("%s*%s", name, ext),
-	)
+	// The * in the pattern will be replaced by a random string
+	f, err := os.CreateTemp("", fmt.Sprintf("%s*%s", name, ext))
 	if err != nil {
 		return "", fmt.Errorf("os.Create: %v", err)
 	}
@@ -44,5 +43,6 @@ func CopyToTempFile(r io.Reader, name string, ext string) (string, error) {
 		return "", err
 	}
 	f.Close()
+
 	return f.Name(), err
 }
