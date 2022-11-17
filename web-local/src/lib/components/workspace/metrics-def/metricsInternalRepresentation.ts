@@ -1,5 +1,5 @@
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
-import { Document, ParsedNode, parseDocument } from "yaml";
+import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 
 export interface MetricsConfig {
@@ -45,26 +45,43 @@ export class MetricsInternalRepresentation {
   }
 
   decorateInternalRepresentation(yamlString: string) {
-    const internalRepresentation = parseDocument(yamlString);
-    const measures = (internalRepresentation.get("measures") as Collection)
-      .items;
+    const internalRepresentationDoc = parseDocument(yamlString);
+    const numberOfMeasures = (
+      internalRepresentationDoc.get("measures") as Collection
+    ).items.length;
 
-    measures.forEach((measure: MeasureEntity) => {
-      measure.__GUID__ = guidGenerator();
-    });
-    this.internalRepresentationDocument = internalRepresentation;
+    Array(numberOfMeasures)
+      .fill(0)
+      .map((_, i) => {
+        const measure = internalRepresentationDoc.getIn([
+          "measures",
+          i,
+        ]) as YAMLMap;
 
-    return internalRepresentation.toJSON();
+        measure.add({ key: "__GUID__", value: guidGenerator() });
+      });
+
+    this.internalRepresentationDocument = internalRepresentationDoc;
+
+    return internalRepresentationDoc.toJSON();
   }
 
   regenerateInternalYAML() {
     const temporaryRepresentation = this.internalRepresentationDocument.clone();
-    const measures = (temporaryRepresentation.get("measures") as Collection)
-      .items;
+    const numberOfMeasures = (
+      temporaryRepresentation.get("measures") as Collection
+    ).items.length;
 
-    measures.forEach((measure: MeasureEntity) => {
-      delete measure.__GUID__;
-    });
+    Array(numberOfMeasures)
+      .fill(0)
+      .map((_, i) => {
+        const measure = temporaryRepresentation.getIn([
+          "measures",
+          i,
+        ]) as YAMLMap;
+        if (measure.has("__GUID__")) measure.delete("__GUID__");
+        if (measure.has("__ERROR__")) measure.delete("__ERROR__");
+      });
 
     this.internalYAML = temporaryRepresentation.toString();
     this.internalRepresentation = this.internalRepresentationDocument.toJSON();

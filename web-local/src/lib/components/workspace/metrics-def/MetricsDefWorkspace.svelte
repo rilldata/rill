@@ -1,21 +1,10 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
   import { Callout } from "../../callout";
 
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
   import { CATEGORICALS } from "../../../duckdb-data-types";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    createDimensionsApi,
-    deleteDimensionsApi,
-    updateDimensionsWrapperApi,
-  } from "../../../redux-store/dimension-definition/dimension-definition-apis";
-  import { validateMeasureExpressionApi } from "../../../redux-store/measure-definition/measure-definition-apis";
-  import { bootstrapMetricsDefinition } from "../../../redux-store/metrics-definition/bootstrapMetricsDefinition";
-  import { store } from "../../../redux-store/store-root";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
-  import { invalidateMetricsView } from "../../../svelte-query/queries/metrics-views/invalidation";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
@@ -42,16 +31,15 @@
   // the local copy of the yaml string
   let metricsInternalRep = new MetricsInternalRepresentation(yaml);
 
-  $: repoId = $runtimeStore.repoId;
-  $: instanceId = $runtimeStore.instanceId;
-
   // reset internal representation in case of deviation from runtime YAML
   $: if (yaml !== metricsInternalRep.internalYAML) {
     metricsInternalRep = new MetricsInternalRepresentation(yaml);
   }
 
-  const metricMigrate = useRuntimeServicePutFileAndMigrate();
+  $: repoId = $runtimeStore.repoId;
+  $: instanceId = $runtimeStore.instanceId;
 
+  const metricMigrate = useRuntimeServicePutFileAndMigrate();
   function callPutAndMigrate() {
     $metricMigrate.mutate({
       data: {
@@ -76,11 +64,11 @@
     callPutAndMigrate();
   }
   function handleUpdateMeasure(index, name, value) {
-    metricsInternalRep.updateMeasure();
+    metricsInternalRep.updateMeasure(index, name, value);
     callPutAndMigrate();
   }
   function handleDeleteMeasure(evt) {
-    metricsInternalRep.deleteMeasure();
+    metricsInternalRep.deleteMeasure(evt.detail);
     callPutAndMigrate();
 
     // invalidateMetricsView(queryClient, metricsDefId);
@@ -100,11 +88,11 @@
     callPutAndMigrate();
   }
   function handleUpdateDimension(index, name, value) {
-    metricsInternalRep.updateDimension();
+    metricsInternalRep.updateDimension(index, name, value);
     callPutAndMigrate();
   }
   function handleDeleteDimension(evt) {
-    metricsInternalRep.deleteDimension();
+    metricsInternalRep.deleteDimension(evt.detail);
     callPutAndMigrate();
     // invalidateMetricsView(queryClient, metricsDefId);
   }
