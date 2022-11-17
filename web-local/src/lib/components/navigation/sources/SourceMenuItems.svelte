@@ -5,7 +5,7 @@
     RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceListCatalogObjects,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -66,7 +66,7 @@
   const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServiceMigrateSingle();
+  const createSource = useRuntimeServicePutFileAndMigrate();
   $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
     type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
   });
@@ -88,7 +88,7 @@
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
-          path: `sources/${tableName}`,
+          path: `sources/${tableName}.yaml`,
         },
       },
       {

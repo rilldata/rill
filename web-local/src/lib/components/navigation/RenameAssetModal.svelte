@@ -60,8 +60,8 @@
               data: {
                 repoId: $runtimeStore.repoId,
                 instanceId: runtimeInstanceId,
-                fromPath: `sources/${currentAssetName}`,
-                toPath: `sources/${values.newName}`,
+                fromPath: `sources/${currentAssetName}.yaml`,
+                toPath: `sources/${values.newName}.yaml`,
               },
             },
             {

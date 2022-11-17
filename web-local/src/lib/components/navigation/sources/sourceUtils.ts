@@ -39,6 +39,11 @@ export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string
 ) {
+  if (connectorName !== "file") {
+    values.uri = values.path;
+    delete values.path;
+  }
+
   const compiledKeyValues = Object.entries(values)
     .filter(([key]) => key !== "sourceName")
     .map(([key, value]) => `${key}: "${value}"`)
