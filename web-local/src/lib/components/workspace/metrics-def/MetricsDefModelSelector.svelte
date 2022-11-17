@@ -2,17 +2,12 @@
   import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import ModelIcon from "../../icons/Model.svelte";
-  import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../../redux-store/store-root";
   import { getContext } from "svelte";
 
-  export let metricsDefId: string;
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  export let metricsInternalRep;
 
   $: sourceModelDisplayValue =
-    $selectedMetricsDef?.sourceModelId || "__DEFAULT_VALUE__";
+    metricsInternalRep.getModel() || "__DEFAULT_VALUE__";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -21,12 +16,7 @@
   function updateMetricsDefinitionHandler(
     metricsDef: Partial<MetricsDefinitionEntity>
   ) {
-    store.dispatch(
-      updateMetricsDefsWrapperApi({
-        id: metricsDefId,
-        changes: metricsDef,
-      })
-    );
+    metricsInternalRep.updateModel(metricsDef);
   }
 </script>
 

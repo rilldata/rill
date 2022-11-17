@@ -1,6 +1,6 @@
 import { error, redirect } from "@sveltejs/kit";
 import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
-import { runtimeServiceGetCatalogObject } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
 import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
 
 export const ssr = false;
@@ -9,19 +9,18 @@ export const ssr = false;
 export async function load({ params }) {
   const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
   try {
-    const dashboardResp = await runtimeServiceGetCatalogObject(
-      instanceResp.instanceId,
+    const dashboardMeta = await runtimeServiceGetFile(
+      instanceResp.repoId,
       params.name
     );
 
-    const dashboardMeta = dashboardResp.object.metricsView;
-
-    console.log(dashboardMeta);
+    // TODO fix names
+    const dashboardYAML = dashboardMeta.blob;
 
     // check if metrics definition is defined
-    if (dashboardMeta.timeDimension !== undefined) {
+    if (dashboardYAML.timeDimension !== undefined) {
       return {
-        metricsDefId: dashboardMeta.name,
+        metricsDefId: params.name,
       };
     }
 

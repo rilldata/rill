@@ -7,24 +7,16 @@
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
-  export let metricsDefId;
+  export let metricsDefName;
+  export let metricsInternalRep;
 
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-
-  $: titleInput = $selectedMetricsDef?.metricDefLabel;
+  $: titleInput = metricsInternalRep.getTitle();
 
   const onChangeCallback = async (e) => {
-    store.dispatch(
-      updateMetricsDefsWrapperApi({
-        id: metricsDefId,
-        changes: { metricDefLabel: e.target.value },
-      })
-    );
+    metricsInternalRep.updateTitle(e.target.value);
   };
 
-  $: metricsSourceSelectionError = $selectedMetricsDef
-    ? MetricsSourceSelectionError($selectedMetricsDef)
-    : "";
+  $: metricsSourceSelectionError = false;
 </script>
 
 <div
@@ -36,6 +28,6 @@
   </WorkspaceHeader>
 
   {#if !metricsSourceSelectionError}
-    <MetricsDefinitionExploreMetricsButton {metricsDefId} />
+    <MetricsDefinitionExploreMetricsButton metricsDefId={metricsDefName} />
   {/if}
 </div>

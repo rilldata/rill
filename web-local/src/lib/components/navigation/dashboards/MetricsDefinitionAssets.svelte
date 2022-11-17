@@ -3,7 +3,6 @@
   import { page } from "$app/stores";
   import { useRuntimeServicePutFileAndMigrate } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getEmptyDashboardDocument } from "@rilldata/web-local/lib/yaml-serializer/metrics";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     MetricsDefinitionEntity,
@@ -42,6 +41,7 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
+  import { metricsTemplate } from "./metricsUtils";
 
   const createDashboard = useRuntimeServicePutFileAndMigrate();
   $: repoId = $runtimeStore.repoId;
@@ -74,23 +74,22 @@
       showMetricsDefs = true;
     }
 
-    const yaml = getEmptyDashboardDocument();
-
+    const yaml = metricsTemplate;
     $createDashboard.mutate(
       {
         data: {
           repoId,
           instanceId,
-          path: `dashboards/sample.yaml`,
+          path: `dashboards/sample2.yaml`,
           blob: yaml,
           create: true,
           createOnly: true,
-          strict: true,
+          strict: false,
         },
       },
       {
         onSuccess: async () => {
-          goto(`/dashboard/sample`);
+          goto(`/dashboard/sample2`);
         },
       }
     );
