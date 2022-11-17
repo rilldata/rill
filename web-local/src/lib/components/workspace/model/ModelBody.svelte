@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
@@ -19,7 +20,8 @@
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
-  export let modelID;
+
+  export let modelName: string;
 
   const queryHighlight = getContext("rill:app:query-highlight");
   const persistentModelStore = getContext(
@@ -29,14 +31,19 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
+  $: getModel = useRuntimeServiceGetCatalogObject(
+    $runtimeStore.instanceId,
+    modelName
+  );
   const updateModel = useRuntimeServicePutFileAndMigrate();
+  const renameModel = useRuntimeServiceRenameFileAndMigrate();
 
   $: currentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.id === modelID)
+    ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
     : undefined;
 
   $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === modelID)
+    ? $derivedModelStore.entities.find((q) => q.id === currentModel.id)
     : undefined;
 
   // track innerHeight to calculate the size of the editor element.
@@ -51,8 +58,6 @@
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
   }
 
-  const renameModel = useRuntimeServiceRenameFileAndMigrate();
-
   const onChangeCallback = async (e) => {
     // CHECK: do I have to rename the entity in the Node backend too?
     $renameModel.mutate(
@@ -60,8 +65,8 @@
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: $runtimeStore.instanceId,
-          fromPath: `models/${currentModel.tableName}`,
-          toPath: `models/${e.target.value}`,
+          fromPath: `models/${modelName}.sql`,
+          toPath: `models/${e.target.value}.sql`,
         },
       },
       {
@@ -73,7 +78,7 @@
   };
 
   /** model body layout elements */
-  const outputLayout = localStorageStore(`${modelID}-output`, {
+  const outputLayout = localStorageStore(`${currentModel.id}-output`, {
     value: 500,
     visible: true,
   });

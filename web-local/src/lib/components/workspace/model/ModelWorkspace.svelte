@@ -32,7 +32,7 @@
 {#key model.id}
   <WorkspaceContainer assetID={modelName}>
     <div slot="body">
-      <ModelBody modelID={model.id} />
+      <ModelBody {modelName} />
     </div>
     <ModelInspector slot="inspector" />
   </WorkspaceContainer>
