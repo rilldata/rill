@@ -21,6 +21,8 @@ export class DuckDBClient {
   private static instance: DuckDBClient;
   protected runtimeProcess: ChildProcess;
   protected instanceID: string;
+  // temporary
+  protected repoId: string;
   protected onCallback: () => void;
 
   protected offCallback: () => void;
@@ -80,6 +82,10 @@ export class DuckDBClient {
     return this.instanceID;
   }
 
+  public getRepoId(): string {
+    return this.repoId;
+  }
+
   protected async spawnRuntime() {
     if (!this.config.database.spawnRuntime) {
       return;
@@ -134,14 +140,21 @@ export class DuckDBClient {
       databaseName = "";
     }
 
-    const res = await this.request("/v1/instances", {
-      driver: "duckdb",
-      dsn: databaseName,
-      exposed: true,
-      embed_catalog: true,
+    const res = await this.request("/v1/catalog/service/init", {
+      instance: {
+        driver: "duckdb",
+        dsn: databaseName,
+        exposed: true,
+        embed_catalog: true,
+      },
+      repo: {
+        driver: "file",
+        dsn: this.config.projectFolder,
+      },
     });
 
-    this.instanceID = res["instanceId"];
+    this.instanceID = res.instance.instanceId;
+    this.repoId = res.repo.repoId;
 
     await this.execute(`
       INSTALL 'json';

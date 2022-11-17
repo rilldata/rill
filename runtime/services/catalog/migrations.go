@@ -57,6 +57,16 @@ type MigrationResult struct {
 	Errors         []*api.MigrationError
 }
 
+func NewMigrationResult() *MigrationResult {
+	return &MigrationResult{
+		AddedObjects:   make([]*api.CatalogObject, 0),
+		UpdatedObjects: make([]*api.CatalogObject, 0),
+		DroppedObjects: make([]*api.CatalogObject, 0),
+		AffectedPaths:  make([]string, 0),
+		Errors:         make([]*api.MigrationError, 0),
+	}
+}
+
 func (r *MigrationResult) collectAffectedPaths() {
 	pathDuplicates := make(map[string]bool)
 	for _, added := range r.AddedObjects {
@@ -84,24 +94,40 @@ type ArtifactError struct {
 	Path  string
 }
 
+func (s *Service) Init(ctx context.Context) (*MigrationResult, error) {
+	result := NewMigrationResult()
+	conf := MigrationConfig{}
+
+	// collect repos and create migration items
+	migrationMap, err := s.collectRepos(ctx, conf, result)
+	if err != nil {
+		return nil, err
+	}
+
+	// populate the service metadata
+	for _, item := range migrationMap {
+		s.NameToPath[item.Name] = item.Path
+		s.PathToName[item.Path] = item.Name
+		s.dag.Add(item.Name, item.Dependencies)
+	}
+
+	// TODO: rehydrate olap. need to handle things like long source ingestion
+
+	return result, nil
+}
+
 // TODO: support loading existing projects
 
 func (s *Service) Migrate(
 	ctx context.Context,
 	conf MigrationConfig,
-) (MigrationResult, error) {
-	result := MigrationResult{
-		AddedObjects:   make([]*api.CatalogObject, 0),
-		UpdatedObjects: make([]*api.CatalogObject, 0),
-		DroppedObjects: make([]*api.CatalogObject, 0),
-		AffectedPaths:  make([]string, 0),
-		Errors:         make([]*api.MigrationError, 0),
-	}
+) (*MigrationResult, error) {
+	result := NewMigrationResult()
 
 	// collect repos and create migration items
-	migrationMap, err := s.collectRepos(ctx, conf, &result)
+	migrationMap, err := s.collectRepos(ctx, conf, result)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	// order the items to have parents before children
@@ -111,9 +137,9 @@ func (s *Service) Migrate(
 		return result, nil
 	}
 
-	err = s.runMigrationItems(ctx, conf, migrations, &result)
+	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	// TODO: changes to the file will not be picked up if done while running migration

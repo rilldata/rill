@@ -315,7 +315,7 @@ func getService(t *testing.T) (*catalog.Service, string) {
 	return catalog.NewService(catalogObject, repo, olap, "test", "test"), dir
 }
 
-func assertMigration(t *testing.T, result catalog.MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
+func assertMigration(t *testing.T, result *catalog.MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
 	require.Len(t, result.Errors, errCount)
 	require.Len(t, result.AddedObjects, addCount)
 	require.Len(t, result.UpdatedObjects, updateCount)

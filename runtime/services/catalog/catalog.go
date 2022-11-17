@@ -46,11 +46,6 @@ func NewService(
 	}
 }
 
-func (s *Service) Init() error {
-
-	return nil
-}
-
 func (s *Service) ListObjects(
 	ctx context.Context,
 	typ api.CatalogObject_Type,

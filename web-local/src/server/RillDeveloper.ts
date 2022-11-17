@@ -88,10 +88,6 @@ export class RillDeveloper {
       ]);
     }
 
-    await this.createRepo();
-
-    await this.triggerMigrate();
-
     await this.duckDbConnection.init();
   }
 
@@ -99,41 +95,5 @@ export class RillDeveloper {
     await this.dataModelerStateSyncService.destroy();
     await this.duckDbConnection.destroy();
     await this.dataModelerService.destroy();
-  }
-
-  // temporary hack to create a repo for the project folder
-  private async createRepo() {
-    const resp = await axios.post(
-      `${this.config.database.runtimeUrl}/v1/repos`,
-      {
-        driver: "file",
-        dsn: this.config.projectFolder,
-      } as V1CreateRepoRequest
-    );
-    const repoResp: V1CreateRepoResponse = resp.data;
-    this.dataModelerStateService
-      .getEntityStateService(EntityType.Application, StateType.Derived)
-      .updateState(
-        (draft) => {
-          draft.repoId = repoResp.repo.repoId;
-        },
-        () => {
-          // no-op
-        }
-      );
-  }
-
-  private async triggerMigrate() {
-    const instId = this.dataModelerService
-      .getDatabaseService()
-      .getDatabaseClient()
-      .getInstanceId();
-    const repoId = this.dataModelerStateService.getApplicationState().repoId;
-    const resp = await axios.post(
-      `${this.config.database.runtimeUrl}/v1/instances/${instId}/migrate`,
-      {
-        repoId,
-      } as V1PutFileAndMigrateRequest
-    );
   }
 }

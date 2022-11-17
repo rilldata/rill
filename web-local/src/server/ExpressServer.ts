@@ -122,8 +122,9 @@ export class ExpressServer {
             .getDatabaseClient()
             .getInstanceId(),
           repoId: this.dataModelerService
-            .getStateService()
-            .getApplicationState().repoId,
+              .getDatabaseService()
+              .getDatabaseClient()
+              .getRepoId(),
         },
       })
     );
