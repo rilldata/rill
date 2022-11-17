@@ -1,27 +1,40 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import {
+    getRuntimeServiceListCatalogObjectsQueryKey,
+    RuntimeServiceListCatalogObjectsType,
+    useRuntimeServiceListCatalogObjects,
+    useRuntimeServicePutFile,
+  } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
+  import { getNextModelName } from "../../../../common/utils/incrementName";
   import {
     ApplicationStore,
-    dataModelerService,
+    runtimeStore,
   } from "../../../application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "../../../application-state-stores/model-stores";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import ModelIcon from "../../icons/Model.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
+  import RenameAssetModal from "../RenameAssetModal.svelte";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: getModels = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
+    type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
+  });
+  const createModel = useRuntimeServicePutFile();
 
   const store = getContext("rill:app:store") as ApplicationStore;
   const persistentModelStore = getContext(
@@ -59,13 +72,37 @@
     };
   });
 
-  async function addModel() {
-    let response = await dataModelerService.dispatch("addModel", [{}]);
-    goto(`/model/${response.id}`);
-    // if the models are not visible in the assets list, show them.
-    if (!showModels) {
-      showModels = true;
-    }
+  async function handleAddModel() {
+    const newModelName = getNextModelName(
+      $getModels.data.objects.map((object) => object.name)
+    );
+    $createModel.mutate(
+      {
+        repoId: $runtimeStore.repoId,
+        path: `models/${newModelName}`,
+        data: {
+          create: true,
+          createOnly: true,
+        },
+      },
+      {
+        onSuccess: () => {
+          goto(`/model/${newModelName}`);
+          queryClient.invalidateQueries(
+            getRuntimeServiceListCatalogObjectsQueryKey(
+              $runtimeStore.instanceId,
+              {
+                type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
+              }
+            )
+          );
+          // if the models are not visible in the assets list, show them.
+          if (!showModels) {
+            showModels = true;
+          }
+        },
+      }
+    );
   }
 
   /** rename the model */
@@ -82,7 +119,7 @@
 <NavigationHeader
   bind:show={showModels}
   tooltipText="create a new model"
-  on:add={addModel}
+  on:add={handleAddModel}
   contextButtonID={"create-model-button"}
 >
   <ModelIcon size="16px" /> Models
