@@ -107,6 +107,7 @@
               <SourceMenuItems
                 sourceName={tableName}
                 sourceID={id}
+                {toggleMenu}
                 on:rename-asset={() => {
                   openRenameTableModal(id, tableName);
                 }}

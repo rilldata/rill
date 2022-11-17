@@ -13,6 +13,7 @@
   export let animateSelect = true;
   export let focusOnMount = true;
   export let disabled = false;
+  export let propogateSelect = true; // if true, clicks will fire the `rill:menu:onSelect` function
 
   const dispatch = createEventDispatcher();
 
@@ -98,7 +99,7 @@
     setTimeout(
       () => {
         dispatch("select");
-        onSelect();
+        if (propogateSelect) onSelect();
         justClicked = false;
       },
       animateSelect ? 150 : 0
