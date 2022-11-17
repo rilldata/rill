@@ -1,20 +1,40 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    getRuntimeServiceListCatalogObjectsQueryKey,
     RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceListCatalogObjects,
     useRuntimeServiceMigrateDelete,
     useRuntimeServiceMigrateSingle,
+    useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import {
+    autoCreateMetricsDefinitionForSource,
+    sourceUpdated,
+  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { createEventDispatcher, getContext } from "svelte";
+  import { getName } from "../../../../common/utils/incrementName";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
@@ -24,26 +44,6 @@
   import Import from "../../icons/Import.svelte";
   import Model from "../../icons/Model.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
-
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
-
-  import { goto } from "$app/navigation";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-    sourceUpdated,
-  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { Divider, MenuItem } from "../../menu";
   import { refreshSource } from "./refreshSource";
 
@@ -72,6 +72,10 @@
   $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
     type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
   });
+  $: getModels = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
+    type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
+  });
+  const createModel = useRuntimeServicePutFileAndMigrate();
 
   $: persistentTable = $persistentTableStore?.entities?.find(
     (source) => source.id === sourceID
@@ -114,23 +118,53 @@
     );
   };
 
-  const createModel = (tableName: string) => {
+  const handleCreateModel = (tableName: string) => {
     const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    const asynchronous = true;
+    const newModelName = getName(
+      `${tableName}_model`,
+      $getModels.data.objects.map((object) => object.name)
+    );
 
-    createModelForSource(
-      $persistentModelStore.entities,
-      tableName,
-      asynchronous
-    ).then((createdModelId) => {
-      navigationEvent.fireEvent(
-        createdModelId,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
-        MetricsEventScreenName.Model
-      );
-    });
+    $createModel.mutateAsync(
+      {
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: $runtimeStore.instanceId,
+          path: `models/${newModelName}.sql`,
+          blob: `select * from ${tableName}`,
+          create: true,
+          createOnly: true,
+          strict: true,
+        },
+      },
+      {
+        onSuccess: (res) => {
+          if (res.errors) {
+            res.errors.forEach((error) => {
+              console.error(error);
+            });
+            return;
+          }
+
+          navigationEvent.fireEvent(
+            newModelName,
+            BehaviourEventMedium.Menu,
+            MetricsEventSpace.LeftPanel,
+            EntityTypeToScreenMap[previousActiveEntity],
+            MetricsEventScreenName.Model
+          );
+
+          queryClient.invalidateQueries(
+            getRuntimeServiceListCatalogObjectsQueryKey(
+              $runtimeStore.instanceId,
+              {
+                type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
+              }
+            )
+          );
+        },
+      }
+    );
   };
 
   const bootstrapDashboard = async (id: string, tableName: string) => {
@@ -177,7 +211,10 @@
   };
 </script>
 
-<MenuItem icon on:select={() => createModel(currentSourceObject.source.name)}>
+<MenuItem
+  icon
+  on:select={() => handleCreateModel(currentSourceObject.source.name)}
+>
   <Model slot="icon" />
   create new model
 </MenuItem>
