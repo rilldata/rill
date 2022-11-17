@@ -2,9 +2,8 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
-    RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceDeleteFileAndMigrate,
-    useRuntimeServiceListCatalogObjects,
+    useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
@@ -45,7 +44,8 @@
   import { Divider, MenuItem } from "../../menu";
   import { refreshSource } from "./refreshSource";
 
-  export let sourceID;
+  export let sourceName: string;
+  export let sourceID: string;
 
   const dispatch = createEventDispatcher();
 
@@ -63,13 +63,14 @@
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
-  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: getSource = useRuntimeServiceGetCatalogObject(
+    runtimeInstanceId,
+    persistentTable.tableName
+  );
+  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndMigrate();
-  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
-    type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
-  });
 
   $: persistentTable = $persistentTableStore?.entities?.find(
     (source) => source.id === sourceID
@@ -77,9 +78,6 @@
 
   $: derivedTable = $derivedTableStore?.entities?.find(
     (source) => source.id === sourceID
-  );
-  $: currentSourceObject = $getSources?.data?.objects?.find(
-    (object) => object.source.name === persistentTable.tableName
   );
 
   const handleDeleteSource = (tableName: string) => {
@@ -111,6 +109,9 @@
             }
           }
           sourceUpdated(tableName);
+        },
+        onError: (error) => {
+          console.error(error);
         },
       }
     );
@@ -156,7 +157,7 @@
   const onRefreshSource = async (id: string, tableName: string) => {
     try {
       await refreshSource(
-        currentSourceObject?.source?.connector,
+        $getSource.data.object.source.connector,
         tableName,
         $runtimeStore,
         $refreshSourceMutation,
@@ -179,7 +180,7 @@
   };
 </script>
 
-<MenuItem icon on:select={() => createModel(currentSourceObject.source.name)}>
+<MenuItem icon on:select={() => createModel(sourceName)}>
   <Model slot="icon" />
   create new model
 </MenuItem>
@@ -187,8 +188,7 @@
 <MenuItem
   disabled={!derivedProfileEntityHasTimestampColumn(derivedTable)}
   icon
-  on:select={() =>
-    bootstrapDashboard(sourceID, currentSourceObject.source.name)}
+  on:select={() => bootstrapDashboard(sourceID, sourceName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
@@ -199,21 +199,15 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if currentSourceObject?.source?.connector === "file"}
-  <MenuItem
-    icon
-    on:select={() => onRefreshSource(sourceID, currentSourceObject.source.name)}
-  >
+{#if $getSource.data.object.source.connector === "file"}
+  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
     import local file to refresh source
   </MenuItem>
 {:else}
-  <MenuItem
-    icon
-    on:select={() => onRefreshSource(sourceID, currentSourceObject.source.name)}
-  >
+  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
     <svelte:fragment slot="icon">
       <RefreshIcon />
     </svelte:fragment>
@@ -233,10 +227,7 @@
   rename...
 </MenuItem>
 <!-- FIXME: this should pop up an "are you sure?" modal -->
-<MenuItem
-  icon
-  on:select={() => handleDeleteSource(currentSourceObject.source.name)}
->
+<MenuItem icon on:select={() => handleDeleteSource(sourceName)}>
   <Cancel slot="icon" />
   delete</MenuItem
 >
