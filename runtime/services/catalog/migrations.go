@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
@@ -184,6 +185,8 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 	deletions := make(map[string]*MigrationItem)
 	additions := make(map[string]*MigrationItem)
 
+	fmt.Println("Migrating ", repoPaths)
+
 	for _, repoPath := range repoPaths {
 		item := s.getMigrationItem(ctx, repoPath, storeObjectsMap, forcedPathMap)
 		if item == nil {
@@ -328,6 +331,7 @@ func (s *Service) getMigrationItem(
 
 	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
 	if err != nil {
+		fmt.Println(repoPath, " Error ", err)
 		if err != artifacts.FileReadError {
 			item.Error = &api.MigrationError{
 				Code:     api.MigrationError_CODE_SYNTAX,
@@ -348,17 +352,23 @@ func (s *Service) getMigrationItem(
 		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
 		err = migrator.Validate(ctx, s.Olap, catalog)
 		if err != nil {
+			fmt.Println(repoPath, " Validate Error ", err)
 			item.Error = &api.MigrationError{
 				Code:     api.MigrationError_CODE_VALIDATION,
 				Message:  err.Error(),
 				FilePath: repoPath,
 			}
 		} else {
-			repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
-			item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
-			if repoStat.LastUpdated.After(s.LastMigration) {
-				// assume creation until we see a catalog object
-				item.Type = MigrationCreate
+			repoStat, err := s.Repo.Stat(ctx, s.RepoId, repoPath)
+			if err != nil {
+				fmt.Println(repoPath, " Stat Error ", err)
+			} else {
+				fmt.Println(repoPath, " Stat ", repoStat, s.LastMigration)
+				item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
+				if repoStat.LastUpdated.After(s.LastMigration) {
+					// assume creation until we see a catalog object
+					item.Type = MigrationCreate
+				}
 			}
 		}
 	}
@@ -369,6 +379,7 @@ func (s *Service) getMigrationItem(
 	}
 	apiCatalog, err := catalogObjectToPB(catalogInStore)
 	if err != nil {
+		fmt.Println(repoPath, " Catalog Error ", err)
 		return item
 	}
 	item.CatalogInStore = apiCatalog
@@ -492,6 +503,8 @@ func (s *Service) runMigrationItems(
 	result *MigrationResult,
 ) error {
 	for _, item := range migrations {
+		fmt.Println("Migrate", item.Name, item.Path, item.Type)
+
 		var err error
 
 		if item.CatalogInFile != nil && item.CatalogInFile.Type == api.CatalogObject_TYPE_METRICS_VIEW {

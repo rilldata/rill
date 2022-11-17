@@ -2,20 +2,10 @@ import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { DuckDbConnection } from "@rilldata/web-local/common/connection/DuckDbConnection";
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
-import {
-  EntityType,
-  StateType,
-} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
-import axios from "axios";
 import { existsSync, mkdirSync } from "fs";
-import type {
-  V1CreateRepoRequest,
-  V1CreateRepoResponse,
-  V1PutFileAndMigrateRequest,
-} from "@rilldata/web-common/runtime-client";
 import { dataModelerServiceFactory } from "./serverFactory";
 
 /**

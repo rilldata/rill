@@ -14,8 +14,6 @@ import (
 
 // InitCatalogService implements RuntimeService
 func (s *Server) InitCatalogService(ctx context.Context, req *api.InitCatalogServiceRequest) (*api.InitCatalogServiceResponse, error) {
-	fmt.Println(req)
-
 	instResp, err := s.CreateInstance(ctx, req.Instance)
 	if err != nil {
 		return nil, err

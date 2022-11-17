@@ -24,6 +24,7 @@ var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
+const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestServer_MigrateSingleSources(t *testing.T) {
 	server, instanceId, err := getTestServer(t)
