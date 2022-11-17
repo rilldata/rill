@@ -24,12 +24,22 @@ var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
+const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestServer_MigrateSingleSources(t *testing.T) {
 	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
 
 	ctx := context.Background()
+
+	dir := t.TempDir()
+	repoResp, err := server.CreateRepo(ctx, &api.CreateRepoRequest{
+		Driver: "file",
+		Dsn:    dir,
+	})
+	require.NoError(t, err)
+	_, err = server.serviceCache.createCatalogService(ctx, server, instanceId, repoResp.Repo.RepoId)
+	require.NoError(t, err)
 
 	_, err = server.MigrateSingle(ctx, &api.MigrateSingleRequest{
 		InstanceId: instanceId,
