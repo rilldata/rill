@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTestServer(t *testing.T) (*Server, string, error) {
+func getTestServer(t *testing.T) (*Server, string) {
 	metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
 	require.NoError(t, err)
 
@@ -30,13 +30,13 @@ func getTestServer(t *testing.T) (*Server, string, error) {
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.InstanceId)
 
-	return server, resp.InstanceId, nil
+	return server, resp.InstanceId
 }
 
-func getTestServerWithData(t *testing.T) (*Server, string, error) {
-	server, instanceId, err := getTestServer(t)
+func getTestServerWithData(t *testing.T) (*Server, string) {
+	server, instanceId := getTestServer(t)
 
-	_, err = server.QueryDirect(context.Background(), &api.QueryDirectRequest{
+	_, err := server.QueryDirect(context.Background(), &api.QueryDirectRequest{
 		InstanceId: instanceId,
 		Sql: `CREATE TABLE test AS (
 			SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 
@@ -51,5 +51,5 @@ func getTestServerWithData(t *testing.T) (*Server, string, error) {
 	})
 	require.NoError(t, err)
 
-	return server, instanceId, nil
+	return server, instanceId
 }
