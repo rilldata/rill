@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math"
-	"math/big"
 	"time"
 )
 
@@ -347,12 +346,10 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 	histogramBins := make([]*api.NumericHistogramBins_Bin, 0)
 	for histogramRows.Next() {
 		bin := &api.NumericHistogramBins_Bin{}
-		rowMap := make(map[string]any)
-		histogramRows.MapScan(rowMap)
-		bin.Bucket = rowMap["bucket"].(int64)
-		bin.Low = rowMap["low"].(float64)
-		bin.High = rowMap["high"].(float64)
-		bin.Count = rowMap["count"].(*big.Int).Int64()
+		err := histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 		histogramBins = append(histogramBins, bin)
 	}
 	return &api.NumericSummary{

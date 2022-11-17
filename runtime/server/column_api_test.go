@@ -13,9 +13,7 @@ func TestServer_GetTopK(t *testing.T) {
 	server, instanceId, err := getTestServerWithData(t)
 
 	res, err := server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 3, len(res.TopKResponse.Entries))
 	require.Equal(t, "abc", *res.TopKResponse.Entries[0].Value)
@@ -27,9 +25,7 @@ func TestServer_GetTopK(t *testing.T) {
 
 	agg := "sum(val)"
 	res, err = server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: &agg})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 3, len(res.TopKResponse.Entries))
 	require.Equal(t, "def", *res.TopKResponse.Entries[0].Value)
@@ -41,9 +37,7 @@ func TestServer_GetTopK(t *testing.T) {
 
 	k := int32(1)
 	res, err = server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: &k})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 1, len(res.TopKResponse.Entries))
 	require.Equal(t, "abc", *res.TopKResponse.Entries[0].Value)
@@ -54,16 +48,12 @@ func TestServer_GetNullCount(t *testing.T) {
 	server, instanceId, err := getTestServerWithData(t)
 
 	res, err := server.GetNullCount(context.Background(), &api.NullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, int64(1), res.Count)
 
 	res, err = server.GetNullCount(context.Background(), &api.NullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, int64(0), res.Count)
 }
@@ -78,9 +68,7 @@ func TestServer_GetDescriptiveStatistics(t *testing.T) {
 	}
 
 	res, err := server.GetDescriptiveStatistics(context.Background(), &api.DescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 1.0, res.NumericStatistics.Min)
 	require.Equal(t, 5.0, res.NumericStatistics.Max)
@@ -100,9 +88,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
 	}
 	res, err := server.EstimateSmallestTimeGrain(context.Background(), &api.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, "DAYS", res.TimeGrain.String())
 }
@@ -111,9 +97,7 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 	server, instanceId, err := getTestServerWithData(t)
 
 	res, err := server.GetNumericHistogram(context.Background(), &api.NumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3, len(res.NumericHistogramBins.Bins))
 	require.Equal(t, int64(0), res.NumericHistogramBins.Bins[0].Bucket)
@@ -126,10 +110,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	server, instanceId, err := getTestServerWithData(t)
 
 	res, err := server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
-	if err != nil {
-		t.Error(err)
-	}
-
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3, len(res.NumericOutliers.Outliers))
 	require.Equal(t, int64(0), res.NumericOutliers.Outliers[0].Bucket)
@@ -147,9 +128,7 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 
 	// Get Time Range Summary works with timestamp columns
 	res, err := server.GetTimeRangeSummary(context.Background(), &api.TimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, "2022-11-01 00:00:00 +0000 UTC", res.Min)
 	require.Equal(t, "2022-11-03 00:00:00 +0000 UTC", res.Max)
@@ -163,23 +142,17 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 
 	// Get Cardinality of Column works with all columns
 	res, err := server.GetCardinalityOfColumn(context.Background(), &api.CardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, int64(3), *res.Cardinality)
 
 	res, err = server.GetCardinalityOfColumn(context.Background(), &api.CardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, int64(3), *res.Cardinality)
 
 	res, err = server.GetCardinalityOfColumn(context.Background(), &api.CardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, int64(2), *res.Cardinality)
 }
