@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -27,8 +28,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var localInstanceID = "local"
-var localRepoID = "local"
+var localInstanceID = "default"
+var localRepoID = "default"
 
 // StartCmd represents the start command
 func StartCmd() *cobra.Command {
@@ -38,26 +39,30 @@ func StartCmd() *cobra.Command {
 	var httpPort int
 	var grpcPort int
 	var verbose bool
+	var disableUI bool
 
 	var startCmd = &cobra.Command{
 		Use:   "start",
 		Short: "Start the Rill Developer application",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Create a logger
+			// Create base logger
 			config := zap.NewDevelopmentEncoderConfig()
 			config.EncodeLevel = zapcore.CapitalColorLevelEncoder
-			lvl := zap.NewAtomicLevel()
-			serverLevel := zap.ErrorLevel
-			if verbose {
-				lvl.SetLevel(zap.DebugLevel)
-				serverLevel = zap.DebugLevel
-			}
-
-			logger := zap.New(zapcore.NewCore(
+			l := zap.New(zapcore.NewCore(
 				zapcore.NewConsoleEncoder(config),
 				zapcore.AddSync(colorable.NewColorableStdout()),
-				lvl,
+				zapcore.DebugLevel,
 			))
+
+			// Create derived loggers
+			cliLevel := zap.InfoLevel
+			serverLevel := zap.ErrorLevel
+			if verbose {
+				cliLevel = zap.DebugLevel
+				serverLevel = zap.DebugLevel
+			}
+			logger := l.WithOptions(zap.IncreaseLevel(cliLevel)).Sugar()
+			serverLogger := l.WithOptions(zap.IncreaseLevel(serverLevel))
 
 			// Create an in-memory metastore
 			metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
@@ -78,15 +83,13 @@ func StartCmd() *cobra.Command {
 			}
 
 			// create server logger default to ErrorLevel if verbose is not true
-			serverLogger := zap.New(zapcore.NewCore(
-				zapcore.NewConsoleEncoder(config),
-				zapcore.AddSync(colorable.NewColorableStdout()),
-				serverLevel,
-			))
 			server, err := server.NewServer(opts, metastore, serverLogger)
+			if err != nil {
+				return err
+			}
 
 			// Create instance and repo configured for local use
-			inst, err := server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
+			_, err = server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
 				InstanceId:   localInstanceID,
 				Driver:       olapDriver,
 				Dsn:          olapDSN,
@@ -96,7 +99,7 @@ func StartCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			repo, err := server.CreateRepo(context.Background(), &api.CreateRepoRequest{
+			_, err = server.CreateRepo(context.Background(), &api.CreateRepoRequest{
 				RepoId: localRepoID,
 				Driver: "file",
 				Dsn:    repoDSN,
@@ -104,7 +107,29 @@ func StartCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("could not create repo: %v", err)
 			}
-			logger.Sugar().Infof("serving local instance '%s' and repo '%s'", inst.Instance.InstanceId, repo.Repo.RepoId)
+
+			// Get full path to repo for logging
+			repoAbs, err := filepath.Abs(repoDSN)
+			if err != nil {
+				return err
+			}
+
+			// Trigger a migration
+			logger.Infof("Hydrating project at '%s'", repoAbs)
+			res, err := server.Migrate(context.Background(), &api.MigrateRequest{
+				InstanceId: localInstanceID,
+				RepoId:     localRepoID,
+			})
+			if err != nil {
+				return err
+			}
+			for _, merr := range res.Errors {
+				logger.Errorf("%s: %s", merr.FilePath, merr.Message)
+			}
+			for _, path := range res.AffectedPaths {
+				logger.Infof("Migrated: %s", path)
+			}
+			logger.Infof("Hydration completed!")
 
 			// Create config object to serve on /local/config
 			localConfig := map[string]any{
@@ -130,36 +155,40 @@ func StartCmd() *cobra.Command {
 			// Add UI, runtime and local/config handlers on HTTP server
 			localConfigHandler := localConfigHandler(localConfig)
 			mux := http.NewServeMux()
-			mux.Handle("/", uiHandler)
+			if !disableUI {
+				mux.Handle("/", uiHandler)
+			}
 			mux.Handle("/v1/", runtimeHandler)
 			mux.Handle("/local/config", localConfigHandler)
 
 			// Open the browser
-			uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
-			logger.Sugar().Infof("opening browser on url: %s", uiURL)
+			if !disableUI {
+				uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
+				logger.Infof("opening browser on url: %s", uiURL)
 
-			err = browser.Open(uiURL)
-			if err != nil {
-				return fmt.Errorf("could not open browser: %v", err)
+				err = browser.Open(uiURL)
+				if err != nil {
+					return fmt.Errorf("could not open browser: %v", err)
+				}
 			}
 
 			// Start the gRPC and combined UI/REST servers
 			group.Go(func() error {
-				logger.Sugar().Infof("serving runtime gRPC on port:%v", opts.GRPCPort)
+				logger.Debugf("Serving runtime gRPC on http://localhost:%d", opts.GRPCPort)
 				return server.ServeGRPC(ctx)
 			})
 			group.Go(func() error {
 				server := &http.Server{Handler: mux}
-				logger.Sugar().Infof("serving static UI and runtime HTTP on port:%v", opts.HTTPPort)
+				logger.Infof("Serving Rill on: http://localhost:%d", opts.HTTPPort)
 				return graceful.ServeHTTP(ctx, server, opts.HTTPPort)
 			})
 
 			err = group.Wait()
 			if err != nil {
-				return fmt.Errorf("server crashed: %v", err)
+				return fmt.Errorf("rill crashed: %v", err)
 			}
 
-			logger.Sugar().Error("server shutdown gracefully")
+			logger.Info("Rill shutdown gracefully")
 			return nil
 		},
 	}
@@ -170,6 +199,7 @@ func StartCmd() *cobra.Command {
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for the UI and runtime")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for the runtime's gRPC service")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	startCmd.Flags().BoolVar(&disableUI, "disable-ui", false, "Serve only the runtime")
 
 	return startCmd
 }
