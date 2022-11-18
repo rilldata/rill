@@ -19,7 +19,7 @@
   import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { getContext } from "svelte";
 
-  export let activeEntityID: string;
+  export let modelName: string;
   export let hasError = false;
   export let width = undefined;
 
@@ -30,11 +30,15 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
+  $: currentPersistentModel = $persistentModelStore?.entities
+    ? $persistentModelStore.entities.find((q) => q.name === modelName)
+    : undefined;
   let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  $: currentDerivedModel = $derivedModelStore?.entities
+    ? $derivedModelStore.entities.find(
+        (q) => q.id === currentPersistentModel?.id
+      )
+    : undefined;
 
   $: timestampColumns =
     selectTimestampColumnFromProfileEntity(currentDerivedModel);
@@ -45,10 +49,8 @@
     // MetricsDefinition page. (The logic for this is contained in the
     // not-pictured async thunk.)
     autoCreateMetricsDefinitionForModel(
-      $persistentModelStore.entities.find(
-        (model) => model.id === activeEntityID
-      ).tableName,
-      activeEntityID,
+      modelName,
+      currentPersistentModel?.id,
       timestampColumns[0].name
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(

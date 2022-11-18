@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import { createResizeListenerActionFactory } from "@rilldata/web-local/lib/components/actions/create-resize-listener-factory";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
@@ -8,20 +7,16 @@
   import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
+  export let modelName: string;
+
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
-  const store = getContext("rill:app:store") as ApplicationStore;
-
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $store?.activeEntity?.id;
-
   let currentModel: PersistentModelEntity;
-  $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  $: currentModel = $persistentModelStore?.entities
+    ? $persistentModelStore.entities.find((q) => q.name === modelName)
+    : undefined;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -29,7 +24,10 @@
 
 {#key currentModel?.id}
   <div use:listenToNodeResize>
-    <ModelInspectorHeader containerWidth={$observedNode?.clientWidth} />
+    <ModelInspectorHeader
+      {modelName}
+      containerWidth={$observedNode?.clientWidth}
+    />
     <StickToHeaderDivider />
     <ModelInspectorModelProfile />
   </div>

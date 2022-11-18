@@ -14,7 +14,9 @@
   ) as PersistentModelStore;
 
   $: model = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((model) => model.name === modelName)
+    ? $persistentModelStore.entities.find(
+        (model) => model.tableName === modelName
+      )
     : undefined;
 
   const switchToModel = async (modelName: string) => {
@@ -22,18 +24,18 @@
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
-      model.id,
+      model?.id,
     ]);
   };
 
   $: switchToModel(modelName);
 </script>
 
-{#key model.id}
+{#key model?.id}
   <WorkspaceContainer assetID={modelName}>
     <div slot="body">
       <ModelBody {modelName} />
     </div>
-    <ModelInspector slot="inspector" />
+    <ModelInspector {modelName} slot="inspector" />
   </WorkspaceContainer>
 {/key}
