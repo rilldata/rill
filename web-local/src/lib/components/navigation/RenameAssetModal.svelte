@@ -33,7 +33,7 @@
     currentAssetName
   );
 
-  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+  const renameAsset = useRuntimeServiceRenameFileAndMigrate();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -58,7 +58,7 @@
             entityId,
             values.newName,
           ]);
-          $renameSource.mutate(
+          $renameAsset.mutate(
             {
               data: {
                 repoId: $runtimeStore.repoId,
