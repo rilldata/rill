@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -73,11 +72,9 @@ func StartCmd() *cobra.Command {
 
 			// Create the local runtime server
 			opts := &server.ServerOptions{
-				HTTPPort:             httpPort,
-				GRPCPort:             grpcPort,
-				ConnectionCacheSize:  100,
-				CatalogCacheSize:     100,
-				CatalogCacheDuration: 1 * time.Second,
+				HTTPPort:            httpPort,
+				GRPCPort:            grpcPort,
+				ConnectionCacheSize: 100,
 			}
 
 			// create server logger default to ErrorLevel if verbose is not true
