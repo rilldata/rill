@@ -2,9 +2,12 @@ package yaml
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/jinzhu/copier"
 	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -81,7 +84,7 @@ func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
 	return metricsArtifact, nil
 }
 
-func fromSourceArtifact(name string, path string, source *Source) (*api.CatalogObject, error) {
+func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error) {
 	props := map[string]interface{}{}
 	if source.Type == "file" {
 		props["path"] = source.Path
@@ -96,6 +99,7 @@ func fromSourceArtifact(name string, path string, source *Source) (*api.CatalogO
 		return nil, err
 	}
 
+	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
 	return &api.CatalogObject{
 		Name: name,
 		Type: api.CatalogObject_TYPE_SOURCE,
@@ -108,17 +112,19 @@ func fromSourceArtifact(name string, path string, source *Source) (*api.CatalogO
 	}, nil
 }
 
-func fromMetricsViewArtifact(name string, path string, metrics *MetricsView) (*api.CatalogObject, error) {
+func fromMetricsViewArtifact(metrics *MetricsView, path string) (*api.CatalogObject, error) {
 	apiMetrics := &api.MetricsView{}
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
 		return nil, err
 	}
+
 	// this is needed since measure names are not given by the user
 	for i, measure := range apiMetrics.Measures {
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
+	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
 	apiMetrics.Name = name
 	return &api.CatalogObject{
 		Name:        name,

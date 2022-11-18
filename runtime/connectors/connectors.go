@@ -25,7 +25,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFile(ctx context.Context, source *Source) (string, error)
+	ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -72,6 +72,13 @@ func (ps PropertySchema) ValidateType(val any) bool {
 	}
 }
 
+// Env contains contextual information for a source, such as the repo it came from
+// and (in the future) secrets configured by the user.
+type Env struct {
+	RepoDriver string
+	RepoDSN    string
+}
+
 // Source represents a dataset to ingest using a specific connector (like a connector instance)
 type Source struct {
 	Name         string
@@ -112,7 +119,7 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFile(ctx context.Context, source *Source) (string, error) {
+func ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return "", fmt.Errorf("connector: not found")
@@ -120,7 +127,7 @@ func ConsumeAsFile(ctx context.Context, source *Source) (string, error) {
 
 	// TODO: connector.ConsumeAsFile should output a list of files to support globs
 	//       this should be output back to drivers that should import each file into the same table
-	path, err := connector.ConsumeAsFile(ctx, source)
+	path, err := connector.ConsumeAsFile(ctx, env, source)
 	if err != nil {
 		return "", err
 	}

@@ -25,11 +25,9 @@ import (
 )
 
 type ServerOptions struct {
-	HTTPPort             int
-	GRPCPort             int
-	ConnectionCacheSize  int
-	CatalogCacheSize     int
-	CatalogCacheDuration time.Duration
+	HTTPPort            int
+	GRPCPort            int
+	ConnectionCacheSize int
 }
 
 type Server struct {
@@ -38,7 +36,6 @@ type Server struct {
 	metastore    drivers.Connection
 	logger       *zap.Logger
 	connCache    *connectionCache
-	catalogCache *catalogCache
 	serviceCache *servicesCache
 }
 
@@ -55,7 +52,6 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 		metastore:    metastore,
 		logger:       logger,
 		connCache:    newConnectionCache(opts.ConnectionCacheSize),
-		catalogCache: newCatalogCache(opts.CatalogCacheSize, opts.CatalogCacheDuration),
 		serviceCache: newServicesCache(),
 	}, nil
 }

@@ -160,9 +160,6 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 		}
 	}
 
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
-
 	// Done
 	return &api.TriggerSyncResponse{
 		ObjectsCount:        uint32(len(tables)),

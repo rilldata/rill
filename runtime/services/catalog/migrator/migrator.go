@@ -27,8 +27,8 @@ func Register(name string, artifact EntityMigrator) {
 }
 
 type EntityMigrator interface {
-	Create(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
-	Update(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
+	Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error
+	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error
 	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *api.CatalogObject) error
 	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
 	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string
@@ -38,22 +38,22 @@ type EntityMigrator interface {
 	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error)
 }
 
-func Create(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
 		return nil
 	}
-	return migrator.Create(ctx, olap, catalog)
+	return migrator.Create(ctx, olap, repo, catalog)
 }
 
-func Update(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
 		return nil
 	}
-	return migrator.Update(ctx, olap, catalog)
+	return migrator.Update(ctx, olap, repo, catalog)
 }
 
 func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *api.CatalogObject) error {

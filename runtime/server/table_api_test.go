@@ -22,11 +22,10 @@ func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
 }
 
 func TestServer_Database(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 	result := createTestTable(server, instanceId, t)
 	require.Equal(t, 1, getSingleValue(t, result.Rows))
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
+	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from test",
 	})
 	require.NoError(t, err)
@@ -56,8 +55,7 @@ func createTable(server *Server, instanceId string, t *testing.T, tableName stri
 }
 
 func TestServer_TableCardinality(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
 	cr, err := server.TableCardinality(context.Background(), &api.CardinalityRequest{
@@ -78,8 +76,7 @@ func TestServer_TableCardinality(t *testing.T) {
 }
 
 func TestServer_ProfileColumns(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
 	cr, err := server.ProfileColumns(context.Background(), &api.ProfileColumnsRequest{
@@ -98,8 +95,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 }
 
 func TestServer_TableRows(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
 	cr, err := server.TableRows(context.Background(), &api.RowsRequest{
@@ -112,11 +108,10 @@ func TestServer_TableRows(t *testing.T) {
 }
 
 func TestServer_RenameObject(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	_, err = server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
+	_, err := server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
 		InstanceId: instanceId,
 		Name:       "test",
 		Newname:    "test2",
@@ -134,12 +129,11 @@ func TestServer_RenameObject(t *testing.T) {
 }
 
 func TestServer_EstimateRollupInterval(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
 	var resp *api.EstimateRollupIntervalResponse
-	resp, err = server.EstimateRollupInterval(context.Background(), &api.EstimateRollupIntervalRequest{
+	resp, err := server.EstimateRollupInterval(context.Background(), &api.EstimateRollupIntervalRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		ColumnName: "a",

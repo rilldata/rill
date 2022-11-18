@@ -16,6 +16,16 @@ import (
 var excludes = []string{"__pycache__", "build", "dist", "node_modules", "venv"}
 var maxDepth = 2
 
+// Driver implements drivers.RepoStore
+func (c *connection) Driver() string {
+	return "file"
+}
+
+// DSN implements drivers.RepoStore
+func (c *connection) DSN() string {
+	return c.root
+}
+
 // ListRecursive implements drivers.RepoStore.
 // This implementation has some hard-coded rules: it only returns .sql files, it searches
 // to a max-depth of 3, and it excludes some common large folders (such as node_modules).

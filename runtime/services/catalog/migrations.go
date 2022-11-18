@@ -87,6 +87,13 @@ func (r *MigrationResult) collectAffectedPaths() {
 		r.AffectedPaths = append(r.AffectedPaths, deleted.Path)
 		pathDuplicates[deleted.Path] = true
 	}
+	for _, errored := range r.Errors {
+		if pathDuplicates[errored.FilePath] {
+			continue
+		}
+		r.AffectedPaths = append(r.AffectedPaths, errored.FilePath)
+		pathDuplicates[errored.FilePath] = true
+	}
 }
 
 type ArtifactError struct {
@@ -324,20 +331,11 @@ func (s *Service) getMigrationItem(
 		item.CatalogInFile = catalog
 
 		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
-		err = migrator.Validate(ctx, s.Olap, catalog)
-		if err != nil {
-			item.Error = &api.MigrationError{
-				Code:     api.MigrationError_CODE_VALIDATION,
-				Message:  err.Error(),
-				FilePath: repoPath,
-			}
-		} else {
-			repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
-			item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
-			if repoStat.LastUpdated.After(s.LastMigration) {
-				// assume creation until we see a catalog object
-				item.Type = MigrationCreate
-			}
+		repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
+		item.CatalogInFile.UpdatedOn = timestamppb.New(repoStat.LastUpdated)
+		if repoStat.LastUpdated.After(s.LastMigration) {
+			// assume creation until we see a catalog object
+			item.Type = MigrationCreate
 		}
 	}
 
@@ -472,7 +470,7 @@ func (s *Service) runMigrationItems(
 	for _, item := range migrations {
 		var err error
 
-		if item.CatalogInFile != nil && item.CatalogInFile.Type == api.CatalogObject_TYPE_METRICS_VIEW {
+		if item.CatalogInFile != nil {
 			err = migrator.Validate(ctx, s.Olap, item.CatalogInFile)
 		}
 
@@ -496,7 +494,7 @@ func (s *Service) runMigrationItems(
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationDelete:
 				err = s.deleteInStore(ctx, item)
-				result.DroppedObjects = append(result.DroppedObjects, item.CatalogInFile)
+				result.DroppedObjects = append(result.DroppedObjects, item.CatalogInStore)
 			}
 		}
 
@@ -545,7 +543,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.Name, item.Dependencies)
 
 	// create in olap
-	err := migrator.Create(ctx, s.Olap, item.CatalogInFile)
+	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
@@ -602,7 +600,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.Name, item.Dependencies)
 
 	// update in olap
-	err := migrator.Update(ctx, s.Olap, item.CatalogInFile)
+	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
