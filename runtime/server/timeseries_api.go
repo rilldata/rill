@@ -191,8 +191,8 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 		rollupInterval = api.TimeGrain_YEAR
 	}
 
-	start := min.Format("2006-01-02 15:04:05")
-	end := max.Format("2006-01-02 15:04:05") // todo iso format
+	start := min.Format(ISO_FORMAT)
+	end := max.Format(ISO_FORMAT)
 
 	rtr := request.TimeRange
 	if rtr == nil {
@@ -212,6 +212,8 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 	}
 	return rtr, nil
 }
+
+const ISO_FORMAT string = "2006-01-02T15:04:05.000Z"
 
 func sMap(k string, v float64) map[string]float64 {
 	m := make(map[string]float64, 1)
@@ -268,7 +270,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 				return nil, err
 			}
 			results = append(results, &api.TimeSeriesValue{
-				Ts:      ts.Format(time.RFC3339),
+				Ts:      ts.Format(ISO_FORMAT),
 				Records: sMap("count", count),
 			})
 		}
@@ -314,7 +316,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 		return nil, err
 	}
 	defer rows.Close()
-	results := make([]*api.TimeSeriesValue, (pixels+1)*4)
+	results := make([]*api.TimeSeriesValue, 0, (pixels+1)*4)
 	for rows.Next() {
 		var minT, maxT, argminVT, argmaxVT int64
 		var argminTV, argmaxTV, minV, maxV float64
@@ -324,24 +326,24 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 			return nil, err
 		}
 		results = append(results, &api.TimeSeriesValue{
-			Ts:      time.UnixMilli(minT).Format(time.RFC3339),
+			Ts:      time.UnixMilli(minT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", argminTV),
 		})
 		results = append(results, &api.TimeSeriesValue{
-			Ts:      time.UnixMilli(argminVT).Format(time.RFC3339),
+			Ts:      time.UnixMilli(argminVT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", minV),
 		})
 
 		results = append(results, &api.TimeSeriesValue{
-			Ts:      time.UnixMilli(argmaxVT).Format(time.RFC3339),
+			Ts:      time.UnixMilli(argmaxVT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", maxV),
 		})
 
 		results = append(results, &api.TimeSeriesValue{
-			Ts:      time.UnixMilli(argminVT).Format(time.RFC3339),
+			Ts:      time.UnixMilli(maxT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", argmaxTV),
 		})
@@ -448,7 +450,7 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.
 		if err != nil {
 			return results, err
 		}
-		value.Ts = row["ts"].(time.Time).Format("2006-01-02 15:04:05")
+		value.Ts = row["ts"].(time.Time).Format(ISO_FORMAT)
 		delete(row, "ts")
 		value.Records = make(map[string]float64, len(row))
 		for k, v := range row {

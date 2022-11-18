@@ -33,6 +33,36 @@ func CreateSimpleTimeseriesTable(server *Server, instanceId string, t *testing.T
 	return result
 }
 
+func CreateTimeseriesTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
+	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)",
+	})
+	require.NoError(t, err)
+	result.Close()
+	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "insert into " + quoteName(tableName) + ` values 
+		(1.0, '2019-01-01 00:00:00', 'android'), 
+		(1.0, '2019-01-02 00:00:00', 'iphone'),
+		(1.0, '2019-01-02 00:00:00', 'android'), 
+		(1.0, '2019-01-03 00:00:00', 'iphone'),
+		(1.0, '2019-01-04 00:00:00', 'android'), 
+
+		(1.0, '2019-01-05 00:00:00', 'iphone'),
+		(1.0, '2019-01-06 00:00:00', 'android'), 
+		(1.0, '2019-01-07 00:00:00', 'iphone'),
+		(1.0, '2019-01-07 00:00:00', 'android'), 
+		(1.0, '2019-01-08 00:00:00', 'iphone'),
+		`,
+	})
+	require.NoError(t, err)
+	result.Close()
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "select count(*) from " + quoteName(tableName),
+	})
+	require.NoError(t, err)
+	return result
+}
+
 func TestServer_Timeseries(t *testing.T) {
 	server, instanceId, err := getTestServer(t)
 	require.NoError(t, err)
@@ -247,4 +277,73 @@ func TestServer_normaliseRanger(t *testing.T) {
 	require.Equal(t, "2019-01-01 00:00:00", r.Start)
 	require.Equal(t, "2019-01-02 00:00:00", r.End)
 	require.Equal(t, api.TimeGrain_HOUR, r.Interval)
+}
+
+func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
+	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)", // todo device is redundant - ie remove
+	})
+	require.NoError(t, err)
+	result.Close()
+	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "insert into " + quoteName(tableName) + ` values 
+		(2.0, '2019-01-01T00:00:00Z', 'android'), 
+		(3.0, '2019-01-02T00:00:00Z', 'iphone'),
+		(1.0, '2019-01-03T00:00:00Z', 'iphone'),
+		(2.0, '2019-01-04T00:00:00Z', 'android'), 
+
+		(2.0, '2019-01-05T00:00:00Z', 'iphone'),
+		(1.0, '2019-01-06T00:00:00Z', 'android'), 
+		(4.0, '2019-01-07T00:00:00Z', 'android'), 
+		(3, '2019-01-08T00:00:00Z', 'iphone'),
+
+		(1.0, '2019-01-09T00:00:00Z', 'iphone'),
+		`,
+	})
+	require.NoError(t, err)
+	result.Close()
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
+		Query: "select count(*) from " + quoteName(tableName),
+	})
+	require.NoError(t, err)
+	return result
+}
+
+func TestServer_SparkOnly(t *testing.T) {
+	time.Local = time.UTC
+	server, instanceId, err := getTestServer(t)
+	require.NoError(t, err)
+	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
+	require.Equal(t, 9, getSingleValue(t, result.Rows))
+	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, "timeseries", "time", "clicks", 2.0)
+	require.NoError(t, err)
+
+	require.Equal(t, "2019-01-01T00:00:00.000Z", values[0].Ts)
+	require.Equal(t, "2019-01-02T00:00:00.000Z", values[1].Ts)
+	require.Equal(t, "2019-01-03T00:00:00.000Z", values[2].Ts)
+	require.Equal(t, "2019-01-04T00:00:00.000Z", values[3].Ts)
+	require.Equal(t, "2019-01-05T00:00:00.000Z", values[4].Ts)
+	require.Equal(t, "2019-01-06T00:00:00.000Z", values[5].Ts)
+	require.Equal(t, "2019-01-07T00:00:00.000Z", values[6].Ts)
+	require.Equal(t, "2019-01-08T00:00:00.000Z", values[7].Ts)
+
+	require.Equal(t, 0.0, *values[0].Bin)
+	require.Equal(t, 0.0, *values[1].Bin)
+	require.Equal(t, 0.0, *values[2].Bin)
+	require.Equal(t, 0.0, *values[3].Bin)
+	require.Equal(t, 1.0, *values[4].Bin)
+	require.Equal(t, 1.0, *values[5].Bin)
+	require.Equal(t, 1.0, *values[6].Bin)
+	require.Equal(t, 1.0, *values[7].Bin)
+	require.Equal(t, 2.0, *values[8].Bin)
+
+	require.Equal(t, 2.0, values[0].Records["count"])
+	require.Equal(t, 3.0, values[1].Records["count"])
+	require.Equal(t, 1.0, values[2].Records["count"])
+	require.Equal(t, 2.0, values[3].Records["count"])
+	require.Equal(t, 2.0, values[4].Records["count"])
+	require.Equal(t, 1.0, values[5].Records["count"])
+	require.Equal(t, 4.0, values[6].Records["count"])
+	require.Equal(t, 3.0, values[7].Records["count"])
+	require.Equal(t, 1.0, values[8].Records["count"])
 }
