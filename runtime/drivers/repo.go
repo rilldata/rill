@@ -8,6 +8,8 @@ import (
 
 // RepoStore is implemented by drivers capable of storing SQL file artifacts
 type RepoStore interface {
+	Driver() string
+	DSN() string
 	ListRecursive(ctx context.Context, repoID string, glob string) ([]string, error)
 	Get(ctx context.Context, repoID string, path string) (string, error)
 	Stat(ctx context.Context, repoID string, path string) (*RepoObjectStat, error)

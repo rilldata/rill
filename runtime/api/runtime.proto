@@ -164,26 +164,6 @@ service RuntimeService {
     };
   }
 
-  // MigrateSingle applies a single `CREATE` statement.
-  // It bypasses the reconciling migrations described in Migrate.
-  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-  rpc MigrateSingle(MigrateSingleRequest) returns (MigrateSingleResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/migrate/single",
-      body: "*"
-    };
-  }
-
-  // MigrateDelete deletes a single object.
-  // It bypasses the reconciling migrations described in Migrate.
-  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-  rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/migrate/single/delete",
-      body: "*"
-    };
-  }
-
   // PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
   // It is equivalent to calling the two RPCs sequentially.
   rpc PutFileAndMigrate(PutFileAndMigrateRequest) returns (PutFileAndMigrateResponse) {
@@ -209,9 +189,31 @@ service RuntimeService {
     };
   }
 
+  // Non-reconciling migrations (TODO: Remove once fully transitioned to Migrate)
+
+  // DEPRECATED: MigrateSingle applies a single `CREATE` statement.
+  // It bypasses the reconciling migrations described in Migrate.
+  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+  rpc MigrateSingle(MigrateSingleRequest) returns (MigrateSingleResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/migrate/single",
+      body: "*"
+    };
+  }
+
+  // DEPRECATED: MigrateDelete deletes a single object.
+  // It bypasses the reconciling migrations described in Migrate.
+  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
+  rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/migrate/single/delete",
+      body: "*"
+    };
+  }
+
   // Queries
 
-  // Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
+  // Query runs a SQL query against the instance's OLAP datastore.
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query",
@@ -219,8 +221,7 @@ service RuntimeService {
     };
   }
 
-  // QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-  // It bypasses Rill SQL and expects the query to use the underlying dialect.
+  // DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
   rpc QueryDirect(QueryDirectRequest) returns (QueryDirectResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query/direct",
@@ -265,16 +266,15 @@ service RuntimeService {
     };
   }
 
-  // Metrics APIs
+  // Profiling APIs
 
+  // EstimateRollupInterval (TODO: add description)
   rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}",
       body: "*"
     };
   }
-
-  // Profiling APIs
 
   // Get TopK elements from a table for a column given an agg function
   // agg function and k are optional, defaults are count(*) and 50 respectively
@@ -349,18 +349,21 @@ service RuntimeService {
     };
   }
 
+  // TableCardinality (TODO: add description)
   rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
     };
   }
 
+  // ProfileColumns (TODO: add description)
   rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
     };
   }
 
+  // TableRows (TODO: add description)
   rpc TableRows(RowsRequest) returns (RowsResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
@@ -485,7 +488,7 @@ message PutFileRequest {
 
 // Response message for RuntimeService.PutFile
 message PutFileResponse {
-  string file_path = 1;
+  string file_path = 1; // TODO: Redundant, should be removed (but frontend currently uses it)
 }
 
 // Request message for RuntimeService.DeleteFile
@@ -518,23 +521,18 @@ message RenameFileResponse {}
 message Instance {
   // Identifier (UUID)
   string instance_id = 1;
-
   // Name of OLAP infra driver ("druid" or "duckdb")
   string driver = 2;
-
   // DSN for connection to the OLAP infra 
   string dsn = 3;
-
   // Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
   // Use it as an alternative to database schemas.
   string object_prefix = 4;
-
   // Indicates that the underlying infra may be manipulated directly by users.
   // If true, the runtime will continuously poll the infra's information schema
   // to discover tables not created through the runtime. They will be added to the
   // catalog as UnmanagedTables.
   bool exposed = 5;
-
   // If true, the runtime will store the instance's catalog data (such as sources and metrics views)
   // in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
   // only supported for the duckdb driver.
@@ -636,9 +634,8 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
-
   // Used for the SQL statement for sources
-  // TODO: Remove before merging this branch
+  // TODO: Remove when frontend sources code has been refactored
   string sql = 20;
 }
 
@@ -667,7 +664,6 @@ message MetricsView {
     string label = 2;
     string description = 3;
     string enabled = 4;
-    string error = 5;
   }
   // Measures are aggregated computed values
   message Measure {
@@ -677,7 +673,6 @@ message MetricsView {
     string description = 4;
     string format = 5;
     string enabled = 6;
-    string error = 7;
   }
   // Name of the metrics view
   string name = 1;
@@ -1070,7 +1065,7 @@ message MetricsViewColumn {
 }
 
 // **********
-// Metrics APIs
+// Profiling APIs
 // **********
 
 message EstimateRollupIntervalRequest {
@@ -1093,9 +1088,6 @@ message EstimateRollupIntervalResponse {
   Scalar max = 3;
 }
 
-// **********
-// Profiling APIs
-// **********
 
 message ProfileColumnSummary {
   oneof Case {
@@ -1384,7 +1376,6 @@ message RowsRequest {
 message RowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
-
 
 // **********
 // Connectors

@@ -14,7 +14,7 @@ func TestInformationSchemaAll(t *testing.T) {
 	olap, _ := conn.OLAPStore()
 
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{
-		Query: "CREATE TEMPORARY VIEW model as (select 1, 2, 3)",
+		Query: "CREATE VIEW model as (select 1, 2, 3)",
 	})
 	require.NoError(t, err)
 	require.NoError(t, rows.Close())
@@ -40,7 +40,7 @@ func TestInformationSchemaLookup(t *testing.T) {
 	ctx := context.Background()
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query: "CREATE TEMPORARY VIEW model as (select 1, 2, 3)",
+		Query: "CREATE VIEW model as (select 1, 2, 3)",
 	})
 	require.NoError(t, err)
 	require.NoError(t, rows.Close())

@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 func init() {
@@ -72,7 +72,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, source *connectors.Source) (string, error) {
+func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse config: %v", err)

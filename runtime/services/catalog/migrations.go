@@ -543,7 +543,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.Name, item.Dependencies)
 
 	// create in olap
-	err := migrator.Create(ctx, s.Olap, item.CatalogInFile)
+	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
@@ -600,7 +600,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.Name, item.Dependencies)
 
 	// update in olap
-	err := migrator.Update(ctx, s.Olap, item.CatalogInFile)
+	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	if err != nil {
 		return err
 	}

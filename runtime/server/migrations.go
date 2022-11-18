@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
@@ -95,9 +96,6 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
 	}
-
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
 
 	return &api.MigrateDeleteResponse{}, nil
 }
@@ -256,10 +254,17 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		RefreshedOn: time.Now(),
 	}
 
+	// Make connector env
+	// Since we're deprecating this code soon, this is just a hack to ingest sources from paths relative to pwd
+	env := &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}
+
 	// We now have several cases to handle
 	if !existingFound && !renameFound {
 		// Just ingest and save object
-		err := olap.Ingest(ctx, source)
+		err := olap.Ingest(ctx, env, source)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -276,7 +281,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 	} else if existingFound && !renameFound {
 		// Reingest and then update object
-		err := olap.Ingest(ctx, source)
+		err := olap.Ingest(ctx, env, source)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -310,7 +315,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		rows.Close()
 	} else if renameFound && renameAndReingest { // earlier check ensures !existingFound
 		// Reingest and save object, then drop old
-		err := olap.Ingest(ctx, source)
+		err := olap.Ingest(ctx, env, source)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -337,9 +342,6 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 		rows.Close()
 	}
-
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
 
 	// Done
 	return &api.MigrateSingleResponse{}, nil
