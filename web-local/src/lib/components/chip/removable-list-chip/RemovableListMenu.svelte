@@ -80,18 +80,23 @@
         >
           <svelte:fragment slot="icon">
             {#if selectedValues.includes(value) && !excludeMode}
-              <Check />
+              <Check size="20px" />
             {:else if selectedValues.includes(value) && excludeMode}
-              <Cancel />
+              <Cancel size="20px" />
             {:else}
-              <Spacer />
+              <Spacer size="20px" />
             {/if}
           </svelte:fragment>
-          {#if value?.length > 240}
-            {value.slice(0, 240)}...
-          {:else}
-            {value}
-          {/if}
+          <span
+            class:ui-copy-disabled={selectedValues.includes(value) &&
+              excludeMode}
+          >
+            {#if value?.length > 240}
+              {value.slice(0, 240)}...
+            {:else}
+              {value}
+            {/if}
+          </span>
         </MenuItem>
       {/each}
     {:else}
