@@ -408,6 +408,7 @@
     },
     "/v1/instances/{instanceId}/estimate-rollup-interval/{tableName}": {
       "post": {
+        "summary": "EstimateRollupInterval (TODO: add description)",
         "operationId": "RuntimeService_EstimateRollupInterval",
         "responses": {
           "200": {
@@ -881,7 +882,7 @@
     },
     "/v1/instances/{instanceId}/migrate/single": {
       "post": {
-        "summary": "MigrateSingle applies a single `CREATE` statement.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
+        "summary": "DEPRECATED: MigrateSingle applies a single `CREATE` statement.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
         "operationId": "RuntimeService_MigrateSingle",
         "responses": {
           "200": {
@@ -940,7 +941,7 @@
     },
     "/v1/instances/{instanceId}/migrate/single/delete": {
       "post": {
-        "summary": "MigrateDelete deletes a single object.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
+        "summary": "DEPRECATED: MigrateDelete deletes a single object.\nIt bypasses the reconciling migrations described in Migrate.\nWe aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.",
         "operationId": "RuntimeService_MigrateDelete",
         "responses": {
           "200": {
@@ -1073,7 +1074,7 @@
     },
     "/v1/instances/{instanceId}/query": {
       "post": {
-        "summary": "Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.",
+        "summary": "Query runs a SQL query against the instance's OLAP datastore.",
         "operationId": "RuntimeService_Query",
         "responses": {
           "200": {
@@ -1134,7 +1135,7 @@
     },
     "/v1/instances/{instanceId}/query/direct": {
       "post": {
-        "summary": "QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.\nIt bypasses Rill SQL and expects the query to use the underlying dialect.",
+        "summary": "DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.",
         "operationId": "RuntimeService_QueryDirect",
         "responses": {
           "200": {
@@ -1324,6 +1325,7 @@
     },
     "/v1/instances/{instanceId}/tables/{tableName}/cardinality": {
       "get": {
+        "summary": "TableCardinality (TODO: add description)",
         "operationId": "RuntimeService_TableCardinality",
         "responses": {
           "200": {
@@ -1360,6 +1362,7 @@
     },
     "/v1/instances/{instanceId}/tables/{tableName}/profile-columns": {
       "get": {
+        "summary": "ProfileColumns (TODO: add description)",
         "operationId": "RuntimeService_ProfileColumns",
         "responses": {
           "200": {
@@ -1396,6 +1399,7 @@
     },
     "/v1/instances/{instanceId}/tables/{tableName}/rows": {
       "get": {
+        "summary": "TableRows (TODO: add description)",
         "operationId": "RuntimeService_TableRows",
         "responses": {
           "200": {
@@ -2067,9 +2071,6 @@
         },
         "enabled": {
           "type": "string"
-        },
-        "error": {
-          "type": "string"
         }
       },
       "title": "Dimensions are columns to filter and group by"
@@ -2118,9 +2119,6 @@
           "type": "string"
         },
         "enabled": {
-          "type": "string"
-        },
-        "error": {
           "type": "string"
         }
       },
@@ -3349,7 +3347,7 @@
         },
         "sql": {
           "type": "string",
-          "title": "Used for the SQL statement for sources\nTODO: Remove before merging this branch"
+          "title": "Used for the SQL statement for sources\nTODO: Remove when frontend sources code has been refactored"
         }
       },
       "title": "Source is the internal representation of a source definition"

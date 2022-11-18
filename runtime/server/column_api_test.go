@@ -10,7 +10,7 @@ import (
 )
 
 func TestServer_GetTopK(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
 	res, err := server.GetTopK(context.Background(), &api.TopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
@@ -45,7 +45,7 @@ func TestServer_GetTopK(t *testing.T) {
 }
 
 func TestServer_GetNullCount(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
 	res, err := server.GetNullCount(context.Background(), &api.NullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
@@ -59,9 +59,9 @@ func TestServer_GetNullCount(t *testing.T) {
 }
 
 func TestServer_GetDescriptiveStatistics(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
-	_, err = server.GetDescriptiveStatistics(context.Background(), &api.DescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
+	_, err := server.GetDescriptiveStatistics(context.Background(), &api.DescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	if err != nil {
 		// "col" is a varchar column, so this should fail
 		require.ErrorContains(t, err, "No function matches the given name and argument types 'approx_quantile(VARCHAR, DECIMAL(3,2))'")
@@ -80,9 +80,9 @@ func TestServer_GetDescriptiveStatistics(t *testing.T) {
 }
 
 func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
-	_, err = server.EstimateSmallestTimeGrain(context.Background(), &api.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	_, err := server.EstimateSmallestTimeGrain(context.Background(), &api.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		// "val" is a numeric column, so this should fail
 		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
@@ -94,7 +94,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
 	res, err := server.GetNumericHistogram(context.Background(), &api.NumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
@@ -107,7 +107,7 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 }
 
 func TestServer_GetCategoricalHistogram(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
 	res, err := server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
 	// Get Time Range Summary works with timestamp columns
 	res, err := server.GetTimeRangeSummary(context.Background(), &api.TimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
@@ -138,7 +138,7 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {
-	server, instanceId, err := getTestServerWithData(t)
+	server, instanceId := getTestServerWithData(t)
 
 	// Get Cardinality of Column works with all columns
 	res, err := server.GetCardinalityOfColumn(context.Background(), &api.CardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})

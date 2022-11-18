@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
 

@@ -20,8 +20,7 @@ import (
 )
 
 func TestServer_InitCatalogService(t *testing.T) {
-	server, _, err := getTestServer(t)
-	require.NoError(t, err)
+	server, _ := getTestServer(t)
 
 	ctx := context.Background()
 	dir := t.TempDir()
