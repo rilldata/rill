@@ -106,6 +106,7 @@ func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string
 
 // PutReader implements drivers.RepoStore
 func (c *connection) PutReader(ctx context.Context, repoID string, filePath string, reader io.Reader) (string, error) {
+	originalPath := filePath
 	filePath = filepath.Join(c.root, filePath)
 
 	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
@@ -124,7 +125,7 @@ func (c *connection) PutReader(ctx context.Context, repoID string, filePath stri
 		return "", err
 	}
 
-	return filePath, nil
+	return originalPath, nil
 }
 
 // Rename implements drivers.RepoStore
