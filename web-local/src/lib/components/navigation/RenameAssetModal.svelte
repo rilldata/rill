@@ -98,16 +98,20 @@
               data: {
                 repoId: $runtimeStore.repoId,
                 instanceId: runtimeInstanceId,
-                fromPath: `models/${currentAssetName}`,
-                toPath: `models/${values.newName}`,
+                fromPath: `models/${currentAssetName}.sql`,
+                toPath: `models/${values.newName}.sql`,
               },
             },
             {
               onSuccess: () => {
                 closeModal();
+                goto(`/model/${values.newName}`, { replaceState: true });
                 notifications.send({
                   message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
                 });
+                return queryClient.invalidateQueries(
+                  getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                );
               },
               onError: (err) => {
                 error = err.response.data.message;
