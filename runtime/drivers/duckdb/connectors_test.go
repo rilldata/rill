@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/connectors"
@@ -12,21 +13,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testdataFolder = "../../../web-local/test/data/"
-
 func TestConnectorWithSourceVariations(t *testing.T) {
+	testdataPathRel := "../../../web-local/test/data"
+	testdataPathAbs, err := filepath.Abs(testdataPathRel)
+	require.NoError(t, err)
+
 	sources := []struct {
 		Connector       string
 		Path            string
 		AdditionalProps map[string]any
 	}{
-		{"file", testdataFolder + "AdBids.csv", nil},
-		{"file", testdataFolder + "AdBids.csv", map[string]any{"csv.delimiter": ","}},
-		{"file", testdataFolder + "AdBids.csv.gz", nil},
-		{"file", testdataFolder + "AdBids.parquet", nil},
+		{"file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
+		{"file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
+		{"file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
+		{"file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
+		{"file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
-		//{"file", testdataFolder + "AdBids.parquet.gz", nil},
+		//{"file", testdataPath + "AdBids.parquet.gz", nil},
 		// only enable to do adhoc tests. needs credentials to work
 		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv", nil},
 		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv.gz", nil},
@@ -53,12 +57,16 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 			}
 			props["path"] = tt.Path
 
+			e := &connectors.Env{
+				RepoDriver: "file",
+				RepoDSN:    ".",
+			}
 			s := &connectors.Source{
 				Name:       "foo",
 				Connector:  tt.Connector,
 				Properties: props,
 			}
-			err = olap.Ingest(ctx, s)
+			err = olap.Ingest(ctx, e, s)
 			require.NoError(t, err)
 
 			var count int

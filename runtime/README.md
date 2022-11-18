@@ -61,13 +61,13 @@ go run ./runtime/cmd/main.go
 curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' --data '{ "driver": "duckdb", "dsn": "test.db?access_mode=read_write", "exposed": true, "embed_catalog": true, "instance_id": "default" }'
 
 # Create table
-curl --request POST  --url http://localhost:8080/v1/instances/default/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "create table foo(x int)"}'
+curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "create table foo(x int)"}'
 
 # Insert data into table
-curl --request POST  --url http://localhost:8080/v1/instances/default/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "insert into foo(x) values (10,), (20,), (30,)"}'
+curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "insert into foo(x) values (10,), (20,), (30,)"}'
 
 # Query data
-curl --request POST  --url http://localhost:8080/v1/instances/default/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "select * from foo"}'
+curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "select * from foo"}'
 
 # Get available connectors
 curl --request GET   --url http://localhost:8080/v1/connectors/meta
@@ -76,7 +76,7 @@ curl --request GET   --url http://localhost:8080/v1/connectors/meta
 curl --request POST  --url http://localhost:8080/v1/instances/default/migrate/single  --header 'Content-Type: application/json'  --data "{\"sql\": \"create source bar with connector = 'file', path = './web-local/test/data/AdBids.csv' \"}"
 
 # Select from source
-curl --request POST  --url http://localhost:8080/v1/instances/default/query/direct  --header 'Content-Type: application/json'  --data '{"sql": "select * from bar limit 100"}'
+curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "select * from bar limit 100"}'
 
 # Get info about all sources in catalog
 curl --request GET   --url http://localhost:8080/v1/instances/default/catalog

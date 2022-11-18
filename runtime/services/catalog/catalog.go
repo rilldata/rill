@@ -6,7 +6,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
-	dag2 "github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/dag"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,7 +21,7 @@ type Service struct {
 	// temporary information. should this be persisted into olap?
 	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
 	LastMigration time.Time
-	dag           *dag2.DAG
+	dag           *dag.DAG
 	// used to get path when we only have name. happens when we get name from DAG
 	// TODO: should we add path to the DAG instead
 	NameToPath map[string]string
@@ -43,7 +43,7 @@ func NewService(
 		RepoId:  repoId,
 		InstId:  instId,
 
-		dag:        dag2.NewDAG(),
+		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
 		PathToName: make(map[string]string),
 	}
