@@ -140,10 +140,89 @@
   const lineTweenDuration = 300;
   const lineTweenDelay = 700;
 
+  /**
+   * Plot animations
+   * ======== Y Axis ========
+   * There are two states to track:
+   * new > old (taller) – usually when clearing filters
+   * old > new (shorter) - usually when adding filters
+   *  */
+
+  // for now, just assume the y axis min value tween only functions this way.
   $: yMinTweenProps = {
     duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
     delay: 200,
   };
+
+  let lineTweenProps = { duration: 400, delay: 0 };
+
+  // reactive variables for  clarity
+  $: newY = yMax;
+  $: oldY = $previousYMax;
+
+  let yMaxTweenProps = { duration: 400, delay: 0 };
+
+  $: if (longTimeSeries) {
+    /** */
+    yMaxTweenProps = {
+      duration: 0,
+      delay: 0,
+    };
+
+    lineTweenProps = {
+      duration: 0,
+      // if new is larger than old, delay animation so the line does not
+      // go off the page.
+      delay: 0,
+      interpolate: interpolateArray,
+    };
+  } else if (allZeros) {
+    yMaxTweenProps = {
+      duration: 100,
+      delay: 0,
+    };
+
+    lineTweenProps = {
+      duration: 0,
+      // if new is larger than old, delay animation so the line does not
+      // go off the page.
+      delay: 0,
+      interpolate: interpolateArray,
+    };
+  } else if (newY > oldY) {
+    // We tween the yMax first, then the line.
+    // this is to prevent the line from blowing past the plot extents
+    // and being super weird.
+    yMaxTweenProps = {
+      duration: scaleTweenDuration,
+      delay: 400,
+      easing: linear,
+    };
+    lineTweenProps = {
+      duration: lineTweenDuration,
+      // if new is larger than old, delay animation so the line does not
+      // go off the page.
+      delay: lineTweenDelay,
+      easing: cubicOut,
+      interpolate: interpolateArray,
+    };
+  } else if (oldY < newY) {
+    // we can tween the yMax and the line at the same time, since there is no risk of clipping the area chart.
+    yMaxTweenProps = {
+      duration: scaleTweenDuration + lineTweenDuration,
+      delay: 0,
+      easing: linear,
+    };
+
+    lineTweenProps = {
+      duration: lineTweenDuration,
+      // if new is larger than old, delay animation so the line does not
+      // go off the page.
+      delay: 0,
+      easing: cubicOut,
+      interpolate: interpolateArray,
+    };
+  }
 
   /** how do we set the y scale (max) props?
    * We time it accordingly:
@@ -151,18 +230,18 @@
    * if the new yMax > old yMax,
    */
 
-  $: yMaxTweenProps = {
-    duration: longTimeSeries
-      ? 0
-      : allZeros
-      ? 100
-      : // if new is larger than old, stick to line tweeen duration
-      $previousYMax < yMax
-      ? scaleTweenDuration
-      : scaleTweenDuration + lineTweenDuration,
-    delay: $previousYMax > yMax ? 0 : 400,
-    easing: linear,
-  };
+  // $: yMaxTweenProps = {
+  //   duration: longTimeSeries
+  //     ? 0
+  //     : allZeros
+  //     ? 100
+  //     : // if new is larger than old, stick to line tweeen duration
+  //     $previousYMax < yMax
+  //     ? scaleTweenDuration
+  //     : scaleTweenDuration + lineTweenDuration,
+  //   delay: $previousYMax > yMax ? 0 : 400,
+  //   easing: linear,
+  // };
 
   let opacityTween = tweened(1, { duration: fadeTweenDuration });
   let opacityTweenTimeout;
@@ -174,20 +253,20 @@
     opacityTween.set(0.7);
   }
 
-  $: lineTweenProps = {
-    duration: longTimeSeries
-      ? 0
-      : !hideCurrent
-      ? allZeros
-        ? 0
-        : lineTweenDuration
-      : 0,
-    // if new is larger than old, delay animation so the line does not
-    // go off the page.
-    delay: $previousYMax < yMax ? lineTweenDelay : 0,
-    easing: cubicOut,
-    interpolate: interpolateArray,
-  };
+  // $: lineTweenProps = {
+  //   duration: longTimeSeries
+  //     ? 0
+  //     : !hideCurrent
+  //     ? allZeros
+  //       ? 0
+  //       : lineTweenDuration
+  //     : 0,
+  //   // if new is larger than old, delay animation so the line does not
+  //   // go off the page.
+  //   delay: $previousYMax < yMax ? lineTweenDelay : 0,
+  //   easing: cubicOut,
+  //   interpolate: interpolateArray,
+  // };
 </script>
 
 {#if key && dataCopy?.length}
