@@ -55,17 +55,19 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var repoStore drivers.RepoStore
 	repo, ok := registry.FindRepo(ctx, repoId)
-	if ok {
-		repoConn, err := drivers.Open(repo.Driver, repo.DSN)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		repoStore, ok = repoConn.RepoStore()
-		if !ok {
-			return nil, status.Errorf(codes.InvalidArgument, "repo '%s' is not a valid repo store", repoId)
-		}
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "repo '%s' not found", repoId)
+	}
+
+	repoConn, err := drivers.Open(repo.Driver, repo.DSN)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	repoStore, ok := repoConn.RepoStore()
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "repo '%s' is not a valid repo store", repoId)
 	}
 
 	service = catalog.NewService(catalogStore, repoStore, olap, repoId, instId)

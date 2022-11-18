@@ -14,7 +14,7 @@ import (
 
 // ListCatalogObjects implements RuntimeService
 func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObjectsRequest) (*api.ListCatalogObjectsResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.InstanceId) // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -29,7 +29,7 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 
 // GetCatalogObject implements RuntimeService
 func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObjectRequest) (*api.GetCatalogObjectResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.InstanceId) // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -44,7 +44,7 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 
 // TriggerRefresh implements RuntimeService
 func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequest) (*api.TriggerRefreshResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "")
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.InstanceId) // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
