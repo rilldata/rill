@@ -147,7 +147,7 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 		}
 	} else {
 		var err error
-		repoPaths, err = s.Repo.ListRecursive(ctx, s.RepoId)
+		repoPaths, err = s.Repo.ListRecursive(ctx, s.RepoId, "**/*.{sql,yaml,yml}")
 		if err != nil {
 			return nil, err
 		}

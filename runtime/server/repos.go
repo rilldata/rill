@@ -92,8 +92,13 @@ func (s *Server) ListFiles(ctx context.Context, req *api.ListFilesRequest) (*api
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	glob := req.Glob
+	if glob == "" {
+		glob = "**"
+	}
+
 	repoStore, _ := conn.RepoStore()
-	paths, err := repoStore.ListRecursive(ctx, repo.ID) // TODO: use req.Glob
+	paths, err := repoStore.ListRecursive(ctx, repo.ID, glob)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
