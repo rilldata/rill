@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -73,11 +72,9 @@ func main() {
 
 	// Init server
 	opts := &server.ServerOptions{
-		HTTPPort:             conf.HTTPPort,
-		GRPCPort:             conf.GRPCPort,
-		ConnectionCacheSize:  100,
-		CatalogCacheSize:     100,
-		CatalogCacheDuration: 1 * time.Second,
+		HTTPPort:            conf.HTTPPort,
+		GRPCPort:            conf.GRPCPort,
+		ConnectionCacheSize: 100,
 	}
 	server, err := server.NewServer(opts, metastore, logger)
 	if err != nil {

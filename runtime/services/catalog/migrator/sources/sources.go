@@ -18,7 +18,7 @@ func init() {
 
 type sourceMigrator struct{}
 
-func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *api.CatalogObject) error {
 	apiSource := catalogObj.Source
 	var source *connectors.Source
 	var err error
@@ -34,11 +34,17 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, cat
 			Properties: apiSource.Properties.AsMap(),
 		}
 	}
-	return olap.Ingest(ctx, source)
+
+	env := &connectors.Env{
+		RepoDriver: repo.Driver(),
+		RepoDSN:    repo.DSN(),
+	}
+
+	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
-	return m.Create(ctx, olap, catalogObj)
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *api.CatalogObject) error {
+	return m.Create(ctx, olap, repo, catalogObj)
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *api.CatalogObject) error {

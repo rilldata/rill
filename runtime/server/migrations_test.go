@@ -27,8 +27,7 @@ const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestServer_MigrateSingleSources(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 
 	ctx := context.Background()
 
@@ -77,8 +76,7 @@ func TestServer_MigrateSingleSources(t *testing.T) {
 }
 
 func TestServer_PutFileAndMigrate(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
 
 	ctx := context.Background()
 	dir := t.TempDir()

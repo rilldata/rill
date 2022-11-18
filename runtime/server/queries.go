@@ -18,11 +18,6 @@ import (
 
 // Query implements RuntimeService
 func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
-}
-
-// QueryDirect implements RuntimeService
-func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (*api.QueryDirectResponse, error) {
 	args := make([]any, len(req.Args))
 	for i, arg := range req.Args {
 		args[i] = arg.AsInterface()
@@ -42,7 +37,7 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 	if req.DryRun {
 		// TODO: Return a meta object for dry-run queries
 		// NOTE: Currently, instance.Query return nil rows for succesful dry-run queries
-		return &api.QueryDirectResponse{}, nil
+		return &api.QueryResponse{}, nil
 	}
 
 	defer res.Close()
@@ -52,12 +47,32 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	resp := &api.QueryDirectResponse{
+	resp := &api.QueryResponse{
 		Meta: res.Schema,
 		Data: data,
 	}
 
 	return resp, nil
+}
+
+// QueryDirect implements RuntimeService
+func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (*api.QueryDirectResponse, error) {
+	// NOTE: Deprecated – just proxy to Query
+	res, err := s.Query(ctx, &api.QueryRequest{
+		InstanceId: req.InstanceId,
+		Sql:        req.Sql,
+		Args:       req.Args,
+		Priority:   req.Priority,
+		DryRun:     req.DryRun,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.QueryDirectResponse{
+		Meta: res.Meta,
+		Data: res.Data,
+	}, nil
 }
 
 func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {

@@ -21,11 +21,11 @@ var TimestampNotFound = errors.New("metrics view selected timestamp not found")
 
 type metricsViewMigrator struct{}
 
-func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *api.CatalogObject) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *api.CatalogObject) error {
 	return nil
 }
 
@@ -68,18 +68,14 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	for _, dimension := range catalog.MetricsView.Dimensions {
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
-			dimension.Error = err.Error()
-		} else {
-			dimension.Error = ""
+			return err
 		}
 	}
 
 	for _, measure := range catalog.MetricsView.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
-			measure.Error = err.Error()
-		} else {
-			measure.Error = ""
+			return err
 		}
 	}
 
