@@ -43,7 +43,7 @@
     : undefined;
 
   $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === currentModel.id)
+    ? $derivedModelStore.entities.find((q) => q.id === currentModel?.id)
     : undefined;
 
   // track innerHeight to calculate the size of the editor element.
@@ -78,7 +78,7 @@
   };
 
   /** model body layout elements */
-  const outputLayout = localStorageStore(`${currentModel.id}-output`, {
+  const outputLayout = localStorageStore(`${currentModel?.id}-output`, {
     value: 500,
     visible: true,
   });
@@ -127,7 +127,7 @@
                   data: {
                     repoId: $runtimeStore.repoId,
                     instanceId: $runtimeStore.instanceId,
-                    path: `models/${currentModel.tableName}`,
+                    path: `models/${currentModel.tableName}.sql`,
                     blob: evt.detail.content,
                   },
                 },
