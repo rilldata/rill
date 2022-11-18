@@ -34,6 +34,11 @@
     // if this somehow creates an NaN, let's set it to 0.
     renderedBarValue = !isNaN(renderedBarValue) ? renderedBarValue : 0;
   }
+  $: barColor = excluded
+    ? "ui-measure-bar-excluded"
+    : active
+    ? "ui-measure-bar-included-selected"
+    : "ui-measure-bar-included";
 </script>
 
 <Tooltip location="right">
@@ -42,7 +47,7 @@
     isActive={active}
     {excluded}
     on:click
-    color={excluded ? "ui-measure-bar-excluded" : "ui-measure-bar-included"}
+    color={barColor}
   >
     <!--
       title element
@@ -55,6 +60,7 @@
      -->
     <div
       class:ui-copy={!atLeastOneActive && !loading}
+      class:ui-copy-strong={!excluded && active}
       class:ui-copy-disabled={excluded}
       class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
       slot="title"
