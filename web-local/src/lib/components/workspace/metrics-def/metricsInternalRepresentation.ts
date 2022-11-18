@@ -115,7 +115,7 @@ export class MetricsInternalRepresentation {
       label: "",
       expression: "",
       description: "",
-      format_preset: "",
+      format_preset: "humanize",
       visible: true,
       __GUID__: guidGenerator(),
     });

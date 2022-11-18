@@ -1,7 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useRuntimeServicePutFileAndMigrate } from "@rilldata/web-common/runtime-client";
+  import {
+    getRuntimeServiceListFilesQueryKey,
+    useRuntimeServiceListFiles,
+    useRuntimeServicePutFileAndMigrate,
+  } from "@rilldata/web-common/runtime-client";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
@@ -42,10 +47,18 @@
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
   import { metricsTemplate } from "./metricsUtils";
+  import { getName } from "@rilldata/web-local/common/utils/incrementName";
 
-  const createDashboard = useRuntimeServicePutFileAndMigrate();
   $: repoId = $runtimeStore.repoId;
   $: instanceId = $runtimeStore.instanceId;
+
+  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
+  $: dashboardNames = $getFiles?.data?.paths
+    ?.filter((path) => path.includes("dashboards/"))
+    .map((path) => path.replace("/dashboards/", "").replace(".yaml", ""));
+
+  const createDashboard = useRuntimeServicePutFileAndMigrate();
+  // const deleteDashboard = useRuntimeServiceDeleteFileAndMigrate();
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -73,14 +86,14 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-
+    const newDashboardName = getName("dashboard", dashboardNames);
     const yaml = metricsTemplate;
     $createDashboard.mutate(
       {
         data: {
           repoId,
           instanceId,
-          path: `dashboards/sample2.yaml`,
+          path: `dashboards/${newDashboardName}.yaml`,
           blob: yaml,
           create: true,
           createOnly: true,
@@ -89,7 +102,10 @@
       },
       {
         onSuccess: async () => {
-          goto(`/dashboard/sample2`);
+          goto(`/dashboard/${newDashboardName}`);
+          queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
         },
       }
     );
