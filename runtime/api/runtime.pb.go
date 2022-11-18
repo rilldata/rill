@@ -5162,6 +5162,7 @@ type Scalar struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Value:
+	//
 	//	*Scalar_Int64
 	//	*Scalar_Double
 	//	*Scalar_Timestamp
@@ -5319,6 +5320,7 @@ type ProfileColumnSummary struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Case:
+	//
 	//	*ProfileColumnSummary_CategoricalSummary
 	//	*ProfileColumnSummary_NumericSummary
 	//	*ProfileColumnSummary_TimeRangeSummary
