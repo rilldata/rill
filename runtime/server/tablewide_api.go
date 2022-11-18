@@ -63,14 +63,14 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 		return nil, err
 	}
 	defer rows.Close()
-	pcs := make([]*api.ProfileColumn, 2)
+	var pcs []*api.ProfileColumn
 	i := 0
 	for rows.Next() {
 		pc := api.ProfileColumn{}
 		if err := rows.StructScan(&pc); err != nil {
 			return nil, err
 		}
-		pcs[i] = &pc
+		pcs = append(pcs, &pc)
 		i++
 	}
 
