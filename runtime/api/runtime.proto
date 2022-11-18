@@ -1188,18 +1188,20 @@ message EstimateSmallestTimeGrainRequest {
   string column_name = 3;
 }
 
+enum TimeGrain {
+  MILLISECOND = 0;
+  SECOND = 1;
+  MINUTE = 2;
+  HOUR = 3;
+  DAY = 4;
+  WEEK = 5;
+  MONTH = 6;
+  YEAR = 7;
+  UNSPECIFIED = 8;
+}
+
 // Response for RuntimeService.EstimateSmallestTimeGrain
 message EstimateSmallestTimeGrainResponse {
-  enum TimeGrain {
-    MILLISECONDS = 0;
-    SECONDS = 1;
-    MINUTES = 2;
-    HOURS = 3;
-    DAYS = 4;
-    WEEKS = 5;
-    MONTHS = 6;
-    YEARS = 7;
-  }
   TimeGrain time_grain = 1;
 }
 
@@ -1268,7 +1270,7 @@ message TimeSeriesTimeRange {
   TimeRangeName name = 1;
   string start = 2;
   string end = 3;
-  string interval = 4; // TODO: switch this to TimeGrain
+  TimeGrain interval = 4;
 }
 
 enum TimeRangeName {
