@@ -1,8 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    RuntimeServiceListCatalogObjectsType,
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
@@ -33,7 +32,9 @@
   import Explore from "../../icons/Explore.svelte";
   import { Divider, MenuItem } from "../../menu";
 
-  export let modelID;
+  export let modelName: string;
+  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
+  export let toggleMenu: () => void;
 
   const dispatch = createEventDispatcher();
 
@@ -48,11 +49,11 @@
   const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   $: persistentModel = $persistentModelStore?.entities?.find(
-    (model) => model.id === modelID
+    (model) => model.tableName === modelName
   );
 
   $: derivedModel = $derivedModelStore?.entities?.find(
-    (model) => model.id === modelID
+    (model) => model.id === persistentModel?.id
   );
 
   /** functionality for bootstrapping a dashboard */
@@ -60,8 +61,8 @@
     const previousActiveEntity = $applicationStore?.activeEntity?.type;
 
     autoCreateMetricsDefinitionForModel(
-      persistentModel.tableName,
-      modelID,
+      modelName,
+      persistentModel?.id,
       selectTimestampColumnFromProfileEntity(derivedModel)[0].name
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(
@@ -80,7 +81,7 @@
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: $runtimeStore.instanceId,
-          path: `models/${modelName}`,
+          path: `models/${modelName}.sql`,
         },
       },
       {
@@ -104,13 +105,12 @@
           }
 
           queryClient.invalidateQueries(
-            getRuntimeServiceListCatalogObjectsQueryKey(
-              $runtimeStore.instanceId,
-              {
-                type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
-              }
-            )
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
           );
+        },
+        onSettled: () => {
+          // onSettled gets triggered *after* both onSuccess and onError
+          toggleMenu();
         },
       }
     );
@@ -140,7 +140,11 @@
   <EditIcon slot="icon" />
   rename...
 </MenuItem>
-<MenuItem icon on:select={() => handleDeleteModel(persistentModel.name)}>
+<MenuItem
+  icon
+  propogateSelect={false}
+  on:select={() => handleDeleteModel(modelName)}
+>
   <Cancel slot="icon" />
   delete
 </MenuItem>
