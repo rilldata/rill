@@ -49,14 +49,12 @@ import type {
   V1MigrateDeleteResponse,
   RuntimeServiceMigrateDeleteBody,
   V1NullCountResponse,
-  RuntimeServiceGetNumericHistogramParams,
   V1QueryResponse,
   RuntimeServiceQueryBody,
   V1QueryDirectResponse,
   RuntimeServiceQueryDirectBody,
   V1RenameDatabaseObjectResponse,
   RuntimeServiceRenameDatabaseObjectParams,
-  RuntimeServiceGetRugHistogramParams,
   V1TriggerSyncResponse,
   V1CardinalityResponse,
   V1ProfileColumnsResponse,
@@ -1524,13 +1522,11 @@ export const runtimeServiceGetNumericHistogram = (
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetNumericHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1NumericSummary>({
     url: `/v1/instances/${instanceId}/numeric-histogram/${tableName}/${columnName}`,
     method: "get",
-    params,
     signal,
   });
 };
@@ -1538,11 +1534,9 @@ export const runtimeServiceGetNumericHistogram = (
 export const getRuntimeServiceGetNumericHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
-  params?: RuntimeServiceGetNumericHistogramParams
+  columnName: string
 ) => [
   `/v1/instances/${instanceId}/numeric-histogram/${tableName}/${columnName}`,
-  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetNumericHistogramQueryResult = NonNullable<
@@ -1557,7 +1551,6 @@ export const useRuntimeServiceGetNumericHistogram = <
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetNumericHistogramParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
@@ -1578,8 +1571,7 @@ export const useRuntimeServiceGetNumericHistogram = <
     getRuntimeServiceGetNumericHistogramQueryKey(
       instanceId,
       tableName,
-      columnName,
-      params
+      columnName
     );
 
   const queryFn: QueryFunction<
@@ -1589,7 +1581,6 @@ export const useRuntimeServiceGetNumericHistogram = <
       instanceId,
       tableName,
       columnName,
-      params,
       signal
     );
 
@@ -1770,13 +1761,11 @@ export const runtimeServiceGetRugHistogram = (
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetRugHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1NumericSummary>({
     url: `/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`,
     method: "get",
-    params,
     signal,
   });
 };
@@ -1784,12 +1773,8 @@ export const runtimeServiceGetRugHistogram = (
 export const getRuntimeServiceGetRugHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
-  params?: RuntimeServiceGetRugHistogramParams
-) => [
-  `/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`,
-  ...(params ? [params] : []),
-];
+  columnName: string
+) => [`/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`];
 
 export type RuntimeServiceGetRugHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
@@ -1803,7 +1788,6 @@ export const useRuntimeServiceGetRugHistogram = <
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetRugHistogramParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
@@ -1821,23 +1805,12 @@ export const useRuntimeServiceGetRugHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetRugHistogramQueryKey(
-      instanceId,
-      tableName,
-      columnName,
-      params
-    );
+    getRuntimeServiceGetRugHistogramQueryKey(instanceId, tableName, columnName);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
   > = ({ signal }) =>
-    runtimeServiceGetRugHistogram(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetRugHistogram(instanceId, tableName, columnName, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,

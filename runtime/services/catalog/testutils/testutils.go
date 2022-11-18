@@ -108,3 +108,11 @@ func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
 	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 }
+
+func AssertMigration(t *testing.T, result *catalog.MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
+	// TODO: assert affected path
+	require.Len(t, result.Errors, errCount)
+	require.Len(t, result.AddedObjects, addCount)
+	require.Len(t, result.UpdatedObjects, updateCount)
+	require.Len(t, result.DroppedObjects, dropCount)
+}

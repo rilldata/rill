@@ -46,7 +46,7 @@ export async function* uploadTableFiles(
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`;
+  const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/files/upload`;
   let lastTableName: string;
 
   for (const validFile of validFiles) {
@@ -73,14 +73,14 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName) {
-    const newId = await waitForSource(
+    await waitForSource(
       lastTableName,
       dataModelerStateService.getEntityStateService(
         EntityType.Table,
         StateType.Persistent
       ).store
     );
-    goto(`/source/${newId}`);
+    goto(`/source/${lastTableName}`);
   }
 
   if (invalidFiles.length) {

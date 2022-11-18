@@ -2,12 +2,12 @@
   import {
     getRuntimeServiceListCatalogObjectsQueryKey,
     RuntimeServiceListCatalogObjectsType,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import { uploadTableFiles } from "../../util/file-upload";
@@ -23,7 +23,7 @@
   ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServiceMigrateSingle();
+  const createSource = useRuntimeServicePutFileAndMigrate();
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -35,7 +35,7 @@
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
-        const sql = compileCreateSourceSql(
+        const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
             path: filePath,
@@ -43,8 +43,15 @@
           "file"
         );
         await $createSource.mutateAsync({
-          instanceId: runtimeInstanceId,
-          data: { sql, createOrReplace: true },
+          data: {
+            repoId: $runtimeStore.repoId,
+            instanceId: runtimeInstanceId,
+            path: `sources/${tableName}.yaml`,
+            blob: yaml,
+            create: true,
+            createOnly: true,
+            strict: true,
+          },
         });
       } catch (err) {
         console.error(err);

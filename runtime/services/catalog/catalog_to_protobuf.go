@@ -46,7 +46,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 		catalog.MetricsView = metricsView
 
 	default:
-		panic(fmt.Errorf("not implemented"))
+		fmt.Println("not implemented")
 	}
 
 	return catalog, nil

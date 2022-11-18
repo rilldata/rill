@@ -3,10 +3,11 @@
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     getRuntimeServiceListCatalogObjectsQueryKey,
+    getRuntimeServiceListFilesQueryKey,
     RuntimeServiceListCatalogObjectsType,
+    useRuntimeServiceDeleteFileAndMigrate,
+    useRuntimeServiceGetCatalogObject,
     useRuntimeServiceListCatalogObjects,
-    useRuntimeServiceMigrateDelete,
-    useRuntimeServiceMigrateSingle,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
@@ -47,7 +48,10 @@
   import { Divider, MenuItem } from "../../menu";
   import { refreshSource } from "./refreshSource";
 
-  export let sourceID;
+  export let sourceName: string;
+  export let sourceID: string;
+  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
+  export let toggleMenu: () => void;
 
   const dispatch = createEventDispatcher();
 
@@ -65,17 +69,19 @@
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
-  const deleteSource = useRuntimeServiceMigrateDelete();
   $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: getSource = useRuntimeServiceGetCatalogObject(
+    runtimeInstanceId,
+    persistentTable.tableName
+  );
+
+  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServiceMigrateSingle();
-  $: getSources = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
-    type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
-  });
   $: getModels = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
     type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
   });
   const createModel = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndMigrate();
 
   $: persistentTable = $persistentTableStore?.entities?.find(
     (source) => source.id === sourceID
@@ -84,16 +90,14 @@
   $: derivedTable = $derivedTableStore?.entities?.find(
     (source) => source.id === sourceID
   );
-  $: currentSourceObject = $getSources?.data?.objects?.find(
-    (object) => object.source.name === persistentTable.tableName
-  );
 
   const handleDeleteSource = (tableName: string) => {
     $deleteSource.mutate(
       {
-        instanceId: runtimeInstanceId,
         data: {
-          name: tableName.toLowerCase(),
+          repoId: $runtimeStore.repoId,
+          instanceId: runtimeInstanceId,
+          path: `sources/${tableName}.yaml`,
         },
       },
       {
@@ -106,13 +110,26 @@
               $persistentTableStore.entities,
               sourceID
             );
-            if (nextSourceId) {
-              goto(`/source/${nextSourceId}`);
+            const nextSourceName = $persistentTableStore.entities.find(
+              (source) => source.id === nextSourceId
+            ).tableName;
+            if (nextSourceName) {
+              goto(`/source/${nextSourceName}`);
             } else {
               goto("/");
             }
           }
           sourceUpdated(tableName);
+          return queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        },
+        onError: (error) => {
+          console.error(error);
+        },
+        onSettled: () => {
+          // onSettled gets triggered *after* both onSuccess and onError
+          toggleMenu();
         },
       }
     );
@@ -188,7 +205,7 @@
   const onRefreshSource = async (id: string, tableName: string) => {
     try {
       await refreshSource(
-        currentSourceObject?.source?.connector,
+        $getSource.data.object.source.connector,
         tableName,
         $runtimeStore,
         $refreshSourceMutation,
@@ -211,10 +228,7 @@
   };
 </script>
 
-<MenuItem
-  icon
-  on:select={() => handleCreateModel(currentSourceObject.source.name)}
->
+<MenuItem icon on:select={() => handleCreateModel(sourceName)}>
   <Model slot="icon" />
   create new model
 </MenuItem>
@@ -222,8 +236,7 @@
 <MenuItem
   disabled={!derivedProfileEntityHasTimestampColumn(derivedTable)}
   icon
-  on:select={() =>
-    bootstrapDashboard(sourceID, currentSourceObject.source.name)}
+  on:select={() => bootstrapDashboard(sourceID, sourceName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
@@ -234,21 +247,15 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if currentSourceObject?.source?.connector === "file"}
-  <MenuItem
-    icon
-    on:select={() => onRefreshSource(sourceID, currentSourceObject.source.name)}
-  >
+{#if $getSource.data.object.source.connector === "file"}
+  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
     import local file to refresh source
   </MenuItem>
 {:else}
-  <MenuItem
-    icon
-    on:select={() => onRefreshSource(sourceID, currentSourceObject.source.name)}
-  >
+  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
     <svelte:fragment slot="icon">
       <RefreshIcon />
     </svelte:fragment>
@@ -270,7 +277,8 @@
 <!-- FIXME: this should pop up an "are you sure?" modal -->
 <MenuItem
   icon
-  on:select={() => handleDeleteSource(currentSourceObject.source.name)}
+  propogateSelect={false}
+  on:select={() => handleDeleteSource(sourceName)}
 >
   <Cancel slot="icon" />
   delete</MenuItem

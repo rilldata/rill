@@ -1064,12 +1064,6 @@
             "in": "path",
             "required": true,
             "type": "string"
-          },
-          {
-            "name": "columnType",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -1289,12 +1283,6 @@
             "name": "columnName",
             "in": "path",
             "required": true,
-            "type": "string"
-          },
-          {
-            "name": "columnType",
-            "in": "query",
-            "required": false,
             "type": "string"
           }
         ],
@@ -2165,8 +2153,8 @@
       "type": "object",
       "properties": {
         "bucket": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "int64"
         },
         "low": {
           "type": "number",
@@ -2186,8 +2174,8 @@
       "type": "object",
       "properties": {
         "bucket": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "int64"
         },
         "low": {
           "type": "number",
@@ -2198,8 +2186,7 @@
           "format": "double"
         },
         "present": {
-          "type": "number",
-          "format": "double"
+          "type": "boolean"
         }
       }
     },
@@ -2469,6 +2456,9 @@
     "v1CreateRepoRequest": {
       "type": "object",
       "properties": {
+        "repoId": {
+          "type": "string"
+        },
         "driver": {
           "type": "string"
         },
