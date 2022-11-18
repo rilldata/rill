@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
