@@ -6,7 +6,6 @@
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import {
-    ApplicationStore,
     config as appConfig,
     dataModelerService,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -50,8 +49,6 @@
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
-
-  const appStore = getContext("rill:app:store") as ApplicationStore;
 
   let contextMenuOpen = false;
 
