@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -128,9 +129,13 @@ func (c *connection) PutReader(ctx context.Context, repoID string, filePath stri
 
 // Rename implements drivers.RepoStore
 func (c *connection) Rename(ctx context.Context, repoID string, from string, filePath string) error {
-	filePath = filepath.Join(c.root, filePath)
-	from = filepath.Join(c.root, from)
-	return os.Rename(from, filePath)
+	filePath = path.Join(c.root, filePath)
+	from = path.Join(c.root, from)
+	err := os.Rename(from, filePath)
+	if err != nil {
+		return err
+	}
+	return os.Chtimes(filePath, time.Now(), time.Now())
 }
 
 // Delete implements drivers.RepoStore

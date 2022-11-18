@@ -33,7 +33,7 @@ func TestServer_InitCatalogService(t *testing.T) {
 	testutils.CreateModel(t, service, "AdBids_model", "select timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	migrateResp, err := service.Migrate(ctx, catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, migrateResp, 0, 2, 0, 0)
+	testutils.AssertMigration(t, migrateResp, 0, 2, 0, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 	testutils.AssertTable(t, service, "AdBids", AdBidsRepoPath)
 	testutils.AssertTable(t, service, "AdBids_model", AdBidsModelRepoPath)
 
@@ -50,7 +50,7 @@ func TestServer_InitCatalogService(t *testing.T) {
 		ForcedPaths:  []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, migrateResp, 0, 0, 2, 0)
+	testutils.AssertMigration(t, migrateResp, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 }
 
 func createInstanceAndRepo(t *testing.T, server *Server, ctx context.Context, dir string) (string, string) {

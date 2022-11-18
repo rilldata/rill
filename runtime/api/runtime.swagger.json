@@ -2032,20 +2032,6 @@
       "default": "TYPE_UNSPECIFIED",
       "title": "Type represents the field type"
     },
-    "EstimateSmallestTimeGrainResponseTimeGrain": {
-      "type": "string",
-      "enum": [
-        "MILLISECONDS",
-        "SECONDS",
-        "MINUTES",
-        "HOURS",
-        "DAYS",
-        "WEEKS",
-        "MONTHS",
-        "YEARS"
-      ],
-      "default": "MILLISECONDS"
-    },
     "GenerateTimeSeriesRequestBasicMeasures": {
       "type": "object",
       "properties": {
@@ -2559,7 +2545,7 @@
       "type": "object",
       "properties": {
         "timeGrain": {
-          "$ref": "#/definitions/EstimateSmallestTimeGrainResponseTimeGrain"
+          "$ref": "#/definitions/v1TimeGrain"
         }
       },
       "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
@@ -3382,6 +3368,21 @@
       },
       "description": "Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically\nscanning the database's information schema when the instance is created with exposed=true. Pre-existing tables\nhave managed = false."
     },
+    "v1TimeGrain": {
+      "type": "string",
+      "enum": [
+        "MILLISECOND",
+        "SECOND",
+        "MINUTE",
+        "HOUR",
+        "DAY",
+        "WEEK",
+        "MONTH",
+        "YEAR",
+        "UNSPECIFIED"
+      ],
+      "default": "MILLISECOND"
+    },
     "v1TimeRangeName": {
       "type": "string",
       "enum": [
@@ -3460,7 +3461,7 @@
           "type": "string"
         },
         "interval": {
-          "type": "string"
+          "$ref": "#/definitions/v1TimeGrain"
         }
       }
     },

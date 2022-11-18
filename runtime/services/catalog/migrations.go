@@ -80,7 +80,7 @@ func (r *MigrationResult) collectAffectedPaths() {
 		r.AffectedPaths = append(r.AffectedPaths, updated.Path)
 		pathDuplicates[updated.Path] = true
 	}
-	for _, deleted := range r.AddedObjects {
+	for _, deleted := range r.DroppedObjects {
 		if pathDuplicates[deleted.Path] {
 			continue
 		}
