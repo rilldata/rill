@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
@@ -19,6 +21,8 @@
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import notifications from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
@@ -59,6 +63,15 @@
   }
 
   const onChangeCallback = async (e) => {
+    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      notifications.send({
+        message:
+          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = currentModel.name; // resets the input
+      return;
+    }
+
     // CHECK: do I have to rename the entity in the Node backend too?
     $renameModel.mutate(
       {
@@ -70,6 +83,12 @@
         },
       },
       {
+        onSuccess: () => {
+          goto(`/model/${e.target.value}`, { replaceState: true });
+          return queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        },
         onError: (err) => {
           console.error(err.response.data.message);
         },
