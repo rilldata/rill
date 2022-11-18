@@ -64,8 +64,8 @@ func CreateTimeseriesTable(server *Server, instanceId string, t *testing.T, tabl
 }
 
 func TestServer_Timeseries(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
@@ -105,8 +105,8 @@ func TestServer_Timeseries(t *testing.T) {
 }
 
 func TestServer_Timeseries_2measures(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
@@ -152,8 +152,8 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 }
 
 func TestServer_Timeseries_1dim(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
@@ -203,8 +203,8 @@ func printResults(results []*api.TimeSeriesValue) {
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
@@ -242,11 +242,11 @@ func TestServer_Timeseries_1day(t *testing.T) {
 }
 
 func TestServer_RangeSanity(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
+	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",
 	})
 	require.NoError(t, err)
@@ -260,22 +260,22 @@ func TestServer_RangeSanity(t *testing.T) {
 }
 
 func TestServer_normaliseRanger(t *testing.T) {
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &api.TimeSeriesTimeRange{
 		Interval: api.TimeGrain_UNSPECIFIED,
 	}
-	r, err = server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
 		InstanceId:          instanceId,
 		TimeRange:           r,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "2019-01-01 00:00:00", r.Start)
-	require.Equal(t, "2019-01-02 00:00:00", r.End)
+	require.Equal(t, "2019-01-01T00:00:00.000Z", r.Start)
+	require.Equal(t, "2019-01-02T00:00:00.000Z", r.End)
 	require.Equal(t, api.TimeGrain_HOUR, r.Interval)
 }
 
@@ -311,8 +311,8 @@ func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing
 
 func TestServer_SparkOnly(t *testing.T) {
 	time.Local = time.UTC
-	server, instanceId, err := getTestServer(t)
-	require.NoError(t, err)
+	server, instanceId := getTestServer(t)
+
 	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
 	require.Equal(t, 9, getSingleValue(t, result.Rows))
 	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, "timeseries", "time", "clicks", 2.0)

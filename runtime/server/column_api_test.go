@@ -90,7 +90,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 	res, err := server.EstimateSmallestTimeGrain(context.Background(), &api.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, "DAYS", res.TimeGrain.String())
+	require.Equal(t, "DAY", res.TimeGrain.String())
 }
 
 func TestServer_GetNumericHistogram(t *testing.T) {
@@ -119,7 +119,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, true, res.NumericOutliers.Outliers[0].Present)
 
 	// works only with numeric columns
-	res, err = server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	_, err = server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.ErrorContains(t, err, "Conversion Error: Unimplemented type for cast (TIMESTAMP -> DOUBLE)")
 }
 
