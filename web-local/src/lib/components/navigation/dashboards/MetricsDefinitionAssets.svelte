@@ -9,10 +9,7 @@
   import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import {
-    MetricsDefinitionEntity,
-    SourceModelValidationStatus,
-  } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -179,25 +176,25 @@
   <Explore size="16px" /> Dashboards
 </NavigationHeader>
 
-{#if showMetricsDefs && $metricsDefinitions}
+{#if showMetricsDefs && dashboardNames}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
-    {#each $metricsDefinitions as metricsDef (metricsDef.id)}
+    {#each dashboardNames as dashboardName (dashboardName)}
       <NavigationEntry
         notExpandable={true}
-        name={metricsDef.metricDefLabel}
-        href={`/dashboard/${metricsDef.id}`}
-        open={$page.url.pathname === `/dashboard/${metricsDef.id}` ||
-          $page.url.pathname === `/dashboard/${metricsDef.id}/edit`}
+        name={dashboardName}
+        href={`/dashboard/${dashboardName}`}
+        open={$page.url.pathname === `/dashboard/${dashboardName}` ||
+          $page.url.pathname === `/dashboard/${dashboardName}/edit`}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
         </svelte:fragment>
 
-        <svelte:fragment slot="menu-items">
+        <!-- <svelte:fragment slot="menu-items">
           {@const selectionError = MetricsSourceSelectionError(metricsDef)}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
@@ -239,7 +236,7 @@
             <Cancel slot="icon" />
             delete</MenuItem
           >
-        </svelte:fragment>
+        </svelte:fragment> -->
       </NavigationEntry>
     {/each}
   </div>

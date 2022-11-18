@@ -79,29 +79,24 @@ export class MetricsInternalRepresentation {
           "measures",
           i,
         ]) as YAMLMap;
-        if (measure.has("__GUID__")) measure.delete("__GUID__");
-        if (measure.has("__ERROR__")) measure.delete("__ERROR__");
+
+        if (measure.has("__GUID__"))
+          temporaryRepresentation.deleteIn(["measures", i, "__GUID__"]);
+
+        if (measure.has("__ERROR__"))
+          temporaryRepresentation.deleteIn(["measures", i, "__ERROR__"]);
       });
 
     this.internalYAML = temporaryRepresentation.toString();
     this.internalRepresentation = this.internalRepresentationDocument.toJSON();
   }
 
-  getModel() {
-    return this.internalRepresentation.model_path;
+  getMetricKey(key) {
+    return this.internalRepresentation[key];
   }
 
-  updateModel(model_path) {
-    this.internalRepresentationDocument.set("model_path", model_path);
-    this.regenerateInternalYAML();
-  }
-
-  getTitle() {
-    return this.internalRepresentation.display_name;
-  }
-
-  updateTitle(title) {
-    this.internalRepresentationDocument.set("display_name", title);
+  updateMetricKey(key, value) {
+    this.internalRepresentationDocument.set(key, value);
     this.regenerateInternalYAML();
   }
 
@@ -111,7 +106,7 @@ export class MetricsInternalRepresentation {
   }
 
   addNewMeasure() {
-    this.internalRepresentationDocument.addIn(["measures"], {
+    const measureNode = this.internalRepresentationDocument.createNode({
       label: "",
       expression: "",
       description: "",
@@ -120,6 +115,7 @@ export class MetricsInternalRepresentation {
       __GUID__: guidGenerator(),
     });
 
+    this.internalRepresentationDocument.addIn(["measures"], measureNode);
     this.regenerateInternalYAML();
   }
 
@@ -129,13 +125,7 @@ export class MetricsInternalRepresentation {
   }
 
   updateMeasure(index: number, key: string, change) {
-    const prevMeasure = this.internalRepresentationDocument.getIn([
-      "measures",
-      index,
-    ]);
-    prevMeasure[key] = change;
-    this.internalRepresentationDocument.setIn(["measures", index], prevMeasure);
-
+    this.internalRepresentationDocument.setIn(["measures", index, key], change);
     this.regenerateInternalYAML();
   }
 
@@ -145,7 +135,7 @@ export class MetricsInternalRepresentation {
   }
 
   addNewDimension() {
-    this.internalRepresentationDocument.addIn(["dimensions"], {
+    const dimensionNode = this.internalRepresentationDocument.createNode({
       label: "",
       property: "",
       description: "",
@@ -153,20 +143,15 @@ export class MetricsInternalRepresentation {
       visible: true,
     });
 
+    this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
     this.regenerateInternalYAML();
   }
 
   updateDimension(index: number, key: string, change) {
-    const prevDimension = this.internalRepresentationDocument.getIn([
-      "dimensions",
-      index,
-    ]);
-    prevDimension[key] = change;
     this.internalRepresentationDocument.setIn(
-      ["dimensions", index],
-      prevDimension
+      ["dimensions", index, key],
+      change
     );
-
     this.regenerateInternalYAML();
   }
 

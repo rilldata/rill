@@ -53,23 +53,29 @@
   }
 
   $: measures = metricsInternalRep.getMeasures();
+
+  $: console.log("measures", measures);
   $: dimensions = metricsInternalRep.getDimensions();
 
-  $: model_path = metricsInternalRep.getModel();
+  $: model_path = metricsInternalRep.getMetricKey("model_path");
   $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
   $: model = $getModel.data?.object?.model;
 
   function handleCreateMeasure() {
     metricsInternalRep.addNewMeasure();
     callPutAndMigrate();
+    metricsInternalRep = metricsInternalRep;
   }
   function handleUpdateMeasure(index, name, value) {
     metricsInternalRep.updateMeasure(index, name, value);
     callPutAndMigrate();
+    metricsInternalRep = metricsInternalRep;
   }
+
   function handleDeleteMeasure(evt) {
     metricsInternalRep.deleteMeasure(evt.detail);
     callPutAndMigrate();
+    metricsInternalRep = metricsInternalRep;
 
     // invalidateMetricsView(queryClient, metricsDefId);
   }
@@ -105,9 +111,9 @@
 
   let validDimensionSelectorOption: SelectorOption[] = [];
   $: if (model) {
-    const selectedMetricsDefModelProfile = model?.profile ?? [];
+    const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
-      .filter((column) => CATEGORICALS.has(column.type))
+      .filter((column) => CATEGORICALS.has(column.type as string))
       .map((column) => ({ label: column.name, value: column.name }));
   } else {
     validDimensionSelectorOption = [];
@@ -143,7 +149,7 @@
         <div class="flex-none flex flex-row">
           <div>
             <MetricsDefModelSelector {metricsInternalRep} />
-            <MetricsDefTimeColumnSelector {metricsDefId} />
+            <MetricsDefTimeColumnSelector {metricsInternalRep} />
           </div>
           <div class="self-center pl-10">
             {#if metricsSourceSelectionError}
@@ -151,7 +157,7 @@
                 {metricsSourceSelectionError}
               </Callout>
             {:else}
-              <MetricsDefinitionGenerateButton {metricsDefId} />
+              <!-- <MetricsDefinitionGenerateButton {metricsDefId} /> -->
             {/if}
           </div>
         </div>

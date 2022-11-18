@@ -7,16 +7,14 @@
   export let metricsInternalRep;
 
   $: sourceModelDisplayValue =
-    metricsInternalRep.getModel() || "__DEFAULT_VALUE__";
+    metricsInternalRep.getMetricKey("model_path") || "__DEFAULT_VALUE__";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
-  function updateMetricsDefinitionHandler(
-    metricsDef: Partial<MetricsDefinitionEntity>
-  ) {
-    metricsInternalRep.updateModel(metricsDef);
+  function updateMetricsDefinitionHandler(sourceModelName) {
+    metricsInternalRep.updateMetricKey("model_path", sourceModelName);
   }
 </script>
 
@@ -30,14 +28,14 @@
       style="background-color: #FFF; width:18em"
       value={sourceModelDisplayValue}
       on:change={(evt) => {
-        updateMetricsDefinitionHandler({ sourceModelId: evt.target.value });
+        updateMetricsDefinitionHandler({ sourceModelName: evt.target.value });
       }}
     >
       <option value="__DEFAULT_VALUE__" disabled selected
         >select a model...</option
       >
       {#each $persistentModelStore?.entities || [] as entity}
-        <option value={entity.id}>{entity.name}</option>
+        <option value={entity.name}>{entity.name}</option>
       {/each}
     </select>
   </div>
