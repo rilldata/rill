@@ -31,6 +31,11 @@ const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 const AdBidsSourceModelRepoPath = "/models/AdBids_source_model.sql"
+const AdBidsDashboardRepoPath = "/dashboards/AdBids_dashboard.yaml"
+
+var AdBidsAffectedPaths = []string{AdBidsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+var AdBidsNewAffectedPaths = []string{AdBidsNewRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+var AdBidsDashboardAffectedPaths = []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath}
 
 func TestMigrate(t *testing.T) {
 	if testing.Short() {
@@ -55,7 +60,7 @@ func TestMigrate(t *testing.T) {
 			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 2, 0, 1, 0)
+			testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsAffectedPaths)
 			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[1].Message)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
@@ -65,7 +70,7 @@ func TestMigrate(t *testing.T) {
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			// TODO: should the model/dashboard be counted as updated or added
-			testutils.AssertMigration(t, result, 0, 2, 1, 0)
+			testutils.AssertMigration(t, result, 0, 2, 1, 0, AdBidsAffectedPaths)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
@@ -73,7 +78,7 @@ func TestMigrate(t *testing.T) {
 			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 0, 0, 0)
+			testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 
 			// delete from olap
 			res, err := s.Olap.Execute(context.Background(), &drivers.Statement{
@@ -83,15 +88,23 @@ func TestMigrate(t *testing.T) {
 			require.NoError(t, res.Close())
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 1, 2, 0)
+			testutils.AssertMigration(t, result, 0, 1, 2, 0, AdBidsAffectedPaths)
 
 			// delete file
 			err = os.Remove(path.Join(dir, AdBidsRepoPath))
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 2, 0, 0, 1)
+			testutils.AssertMigration(t, result, 2, 0, 0, 1, AdBidsAffectedPaths)
 			testutils.AssertTableAbsence(t, s, "AdBids")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
+
+			// add back source
+			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			result, err = s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 3, 0, 0, AdBidsAffectedPaths)
+			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
+			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 		})
 	}
 }
@@ -125,7 +138,7 @@ func TestMigrateRenames(t *testing.T) {
 			testutils.CreateModel(t, s, "AdBids_model", "select * from AdBidsNew", AdBidsModelRepoPath)
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 0, 3, 0)
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsNewAffectedPaths)
 			testutils.AssertTableAbsence(t, s, "AdBids")
 			testutils.AssertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
@@ -135,7 +148,7 @@ func TestMigrateRenames(t *testing.T) {
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			// name is derived from file path, so there is no error here and AdBids is added
-			testutils.AssertMigration(t, result, 0, 1, 0, 0)
+			testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsRepoPath})
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
@@ -170,7 +183,7 @@ func TestRefreshSource(t *testing.T) {
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
 			// ForcedPaths updates all dependant items
-			testutils.AssertMigration(t, result, 0, 0, 3, 0)
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
 		})
 	}
 }
@@ -190,6 +203,9 @@ func TestInterdependentModel(t *testing.T) {
 		}},
 	}
 
+	AdBidsSourceAffectedPaths := []string{AdBidsSourceModelRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+	AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
+
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
 			s, _ := initBasicService(t)
@@ -200,7 +216,7 @@ func TestInterdependentModel(t *testing.T) {
 				"select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
 			result, err := s.Migrate(context.Background(), catalog.MigrationConfig{})
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 1, 2, 0)
+			testutils.AssertMigration(t, result, 0, 1, 2, 0, AdBidsSourceAffectedPaths)
 			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
@@ -208,7 +224,7 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 3, 0, 1, 0)
+			testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
 			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[2].Message)
 			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
@@ -217,7 +233,7 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 			result, err = s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 3, 1, 0)
+			testutils.AssertMigration(t, result, 0, 3, 1, 0, AdBidsAllAffectedPaths)
 			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 		})
@@ -236,7 +252,7 @@ func TestModelVariations(t *testing.T) {
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsModelRepoPath)
 	result, err := s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 2, 0, 0, 0)
+	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsDashboardAffectedPaths)
 	testutils.AssertTableAbsence(t, s, "AdBids_model")
 
 	// new invalid model
@@ -244,7 +260,7 @@ func TestModelVariations(t *testing.T) {
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsSourceModelRepoPath)
 	result, err = s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
 	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 }
 
@@ -258,14 +274,14 @@ func TestMigrateMetricsView(t *testing.T) {
 	testutils.CreateModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
 	result, err := s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 1, 0)
+	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	// dropping the timestamp column gives a different error
 	require.Equal(t, metrics_views.TimestampNotFound.Error(), result.Errors[0].Message)
 
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 1, 0)
+	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	require.Equal(t, `dimension not found: domain`, result.Errors[0].Message)
 }
 
@@ -274,13 +290,14 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err := s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 0, 0)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsRepoPath})
 	testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 
-	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
+	testutils.CreateModel(t, s, "AdBids_model",
+		"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
 	result, err = s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 0, 0)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsModelRepoPath})
 	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
 	testutils.CreateMetricsView(t, s, &api.MetricsView{
@@ -306,11 +323,11 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 				Expression: "avg(bid_price)",
 			},
 		},
-	}, "/dashboards/AdBids_dashboard.yaml")
+	}, AdBidsDashboardRepoPath)
 	result, err = s.Migrate(context.Background(), catalog.MigrationConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 0, 0)
-	testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", "/dashboards/AdBids_dashboard.yaml")
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+	testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
 
 	return s, dir
 }

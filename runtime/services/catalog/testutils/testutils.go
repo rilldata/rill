@@ -113,10 +113,18 @@ func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 }
 
-func AssertMigration(t *testing.T, result *catalog.MigrationResult, errCount int, addCount int, updateCount int, dropCount int) {
-	// TODO: assert affected path
+func AssertMigration(
+	t *testing.T,
+	result *catalog.MigrationResult,
+	errCount int,
+	addCount int,
+	updateCount int,
+	dropCount int,
+	affectedPaths []string,
+) {
 	require.Len(t, result.Errors, errCount)
 	require.Len(t, result.AddedObjects, addCount)
 	require.Len(t, result.UpdatedObjects, updateCount)
 	require.Len(t, result.DroppedObjects, dropCount)
+	require.ElementsMatch(t, result.AffectedPaths, affectedPaths)
 }
