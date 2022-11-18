@@ -646,11 +646,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeGranularity": {
                   "type": "string"
@@ -720,11 +720,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "limit": {
                   "type": "string",
@@ -799,11 +799,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "filter": {
                   "$ref": "#/definitions/v1MetricsViewFilter"
