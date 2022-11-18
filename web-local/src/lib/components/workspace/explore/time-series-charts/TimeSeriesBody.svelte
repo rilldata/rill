@@ -127,8 +127,9 @@
   }
 
   /** Tweening parameters */
+  // ratio > 0 means one is bigger than the other.
+  // ratio = 1 means that one is twice the size of the other
   $: diffRatio = Math.abs((yMax - $previousYMax) / yMax);
-  let crossThreshold = guidGenerator();
 
   // design notes:
   // keep it a second or less
@@ -139,21 +140,27 @@
   const lineTweenDuration = 300;
   const lineTweenDelay = 700;
 
-  $: if (diffRatio > 0.5) crossThreshold = guidGenerator();
-
   $: yMinTweenProps = {
     duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
     delay: 200,
   };
+
+  /** how do we set the y scale (max) props?
+   * We time it accordingly:
+   *
+   * if the new yMax > old yMax,
+   */
+
   $: yMaxTweenProps = {
     duration: longTimeSeries
       ? 0
       : allZeros
       ? 100
-      : $previousYMax < yMax
+      : // if new is larger than old, stick to line tweeen duration
+      $previousYMax < yMax
       ? scaleTweenDuration
       : scaleTweenDuration + lineTweenDuration,
-    delay: 0,
+    delay: $previousYMax > yMax ? 0 : 400,
     easing: linear,
   };
 
@@ -164,8 +171,23 @@
     setTimeout(() => {
       opacityTween.set(1);
     }, fadeDuration);
-    opacityTween.set(0.3);
+    opacityTween.set(0.7);
   }
+
+  $: lineTweenProps = {
+    duration: longTimeSeries
+      ? 0
+      : !hideCurrent
+      ? allZeros
+        ? 0
+        : lineTweenDuration
+      : 0,
+    // if new is larger than old, delay animation so the line does not
+    // go off the page.
+    delay: $previousYMax < yMax ? lineTweenDelay : 0,
+    easing: cubicOut,
+    interpolate: interpolateArray,
+  };
 </script>
 
 {#if key && dataCopy?.length}
@@ -216,18 +238,7 @@
             <WithTween
               value={dataCopy}
               let:output={tweenedData}
-              tweenProps={{
-                duration: longTimeSeries
-                  ? 0
-                  : !hideCurrent
-                  ? allZeros
-                    ? 0
-                    : lineTweenDuration
-                  : 0,
-                delay: $previousYMax < yMax ? lineTweenDelay : 0,
-                easing: cubicOut,
-                interpolate: interpolateArray,
-              }}
+              tweenProps={lineTweenProps}
             >
               <Area data={tweenedData} yAccessor={accessor} xAccessor="ts" />
               <g style:opacity={$opacityTween}>
