@@ -4,7 +4,7 @@
   import { cubicOut, linear } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { derived, get, writable } from "svelte/store";
-  import { fade, fly } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
@@ -25,7 +25,10 @@
 
   // the recycled mouseover event, in case anyone else has one set
   export let mouseover = undefined;
-  export let key: string;
+  // this is the time range key. We use it to trigger animation when the time range changes.
+  export let timeRangeKey: string;
+  // we use this is a key as well.
+  export let timeGrain: string;
   // bind and send up to parent to create global mouseover
   export let mouseoverValue = undefined;
 
@@ -59,13 +62,19 @@
   $: dataInDomain = dataCopy.some((di) => di.ts >= start && di.ts <= end);
 
   $: [_, yMax] = extent(dataCopy, (d) => d[accessor]);
-  $: [xMin, xMax] = extent(dataCopy, (d) => d.ts);
 
   let yms = writable(yMax);
   $: yms.set(yMax);
 
-  let range = writable([xMin, xMax]);
-  $: range.set([xMin, xMax]);
+  let keyStore = writable(timeRangeKey);
+  $: keyStore.set(timeRangeKey);
+  let previousKeyStore = previousStoreValue(keyStore);
+
+  // get previous time grain so we can track whether we animate transitions with a scale-down
+  // or a fade.
+  let timeGrainStore = writable(timeGrain);
+  $: timeGrainStore.set(timeGrain);
+  let previousTimeGrain = previousStoreValue(timeGrainStore);
 
   function previousStoreValue(anotherStore) {
     let previousValue = get(anotherStore);
@@ -80,22 +89,6 @@
       previousValue = $currentValue;
     });
   }
-
-  function delayedStoreValue(anotherStore, downtimeMS = 500) {
-    let tm;
-    return derived(anotherStore, ($currentValue, set) => {
-      if (tm) clearTimeout(tm);
-      tm = setTimeout(() => {
-        set($currentValue);
-      }, downtimeMS);
-    });
-  }
-
-  const previousYMax = previousStoreValue(yms);
-  // if $prev < yMax, do something
-  // if $prev > yMax, do something else
-
-  // need to control xMin, xMax, yMin, yMax.
 
   export function scaleVertical(
     node: Element,
@@ -118,27 +111,34 @@
       delay,
       duration,
       easing,
-      css: (_t, u) => `
-    transform: ${transform} scaleY(${1 - sd * u});
+      css: (_t, u) => {
+        return `
+    transform: ${transform} scaleY(${1 - sd * u}) scaleY(${1 - sd * u});
     transform-origin: 100% calc(100% - ${16}px);
     opacity: ${target_opacity - od * u}
-  `,
+  `;
+      },
     };
   }
 
-  /** Tweening parameters */
-  // ratio > 0 means one is bigger than the other.
-  // ratio = 1 means that one is twice the size of the other
-  $: diffRatio = Math.abs((yMax - $previousYMax) / yMax);
+  function delayedStoreValue(anotherStore, downtimeMS = 500) {
+    let tm;
+    return derived(anotherStore, ($currentValue, set) => {
+      if (tm) clearTimeout(tm);
+      tm = setTimeout(() => {
+        set($currentValue);
+      }, downtimeMS);
+    });
+  }
 
-  // design notes:
-  // keep it a second or less
-  // think about fixing the axes from being jarring
-  const scaleTweenDuration = 600;
-  const fadeDuration = 700;
+  const previousYMax = previousStoreValue(yms);
+
+  const scaleTweenDuration = 400;
+  const fadeDuration = 0;
   const fadeTweenDuration = 50;
-  const lineTweenDuration = 300;
-  const lineTweenDelay = 700;
+
+  const lineTweenDuration = scaleTweenDuration;
+  const lineTweenDelay = scaleTweenDuration;
 
   /**
    * Plot animations
@@ -148,7 +148,7 @@
    * old > new (shorter) - usually when adding filters
    *  */
 
-  // for now, just assume the y axis min value tween only functions this way.
+  // for now, just assume the y axis min value tween only functions in this one way.
   $: yMinTweenProps = {
     duration: longTimeSeries ? 0 : allZeros ? 100 : 500,
     delay: 200,
@@ -156,14 +156,26 @@
 
   let lineTweenProps = { duration: 400, delay: 0 };
 
-  // reactive variables for  clarity
+  // reactive variables for clarity
   $: newY = yMax;
   $: oldY = $previousYMax;
+  $: isSmaller = newY < oldY;
 
+  $: keyChanged = $keyStore !== $previousKeyStore;
+  $: diffTimeGrains = $previousTimeGrain !== $timeGrainStore;
+
+  let xTweenProps = {
+    duration: scaleTweenDuration * 2,
+    delay: scaleTweenDuration,
+  };
   let yMaxTweenProps = { duration: 400, delay: 0 };
 
   $: if (longTimeSeries) {
-    /** */
+    /**
+     *
+     * case 1: long time series
+     *
+     */
     yMaxTweenProps = {
       duration: 0,
       delay: 0,
@@ -177,6 +189,11 @@
       interpolate: interpolateArray,
     };
   } else if (allZeros) {
+    /**
+     *
+     * case 1: all zeroes
+     *
+     */
     yMaxTweenProps = {
       duration: 100,
       delay: 0,
@@ -189,13 +206,13 @@
       delay: 0,
       interpolate: interpolateArray,
     };
-  } else if (newY > oldY) {
+  } else if (!isSmaller) {
     // We tween the yMax first, then the line.
     // this is to prevent the line from blowing past the plot extents
     // and being super weird.
     yMaxTweenProps = {
       duration: scaleTweenDuration,
-      delay: 400,
+      delay: 0,
       easing: linear,
     };
     lineTweenProps = {
@@ -206,16 +223,16 @@
       easing: cubicOut,
       interpolate: interpolateArray,
     };
-  } else if (oldY < newY) {
+  } else if (isSmaller) {
     // we can tween the yMax and the line at the same time, since there is no risk of clipping the area chart.
     yMaxTweenProps = {
-      duration: scaleTweenDuration + lineTweenDuration,
+      duration: scaleTweenDuration,
       delay: 0,
       easing: linear,
     };
 
     lineTweenProps = {
-      duration: lineTweenDuration,
+      duration: scaleTweenDuration,
       // if new is larger than old, delay animation so the line does not
       // go off the page.
       delay: 0,
@@ -223,25 +240,6 @@
       interpolate: interpolateArray,
     };
   }
-
-  /** how do we set the y scale (max) props?
-   * We time it accordingly:
-   *
-   * if the new yMax > old yMax,
-   */
-
-  // $: yMaxTweenProps = {
-  //   duration: longTimeSeries
-  //     ? 0
-  //     : allZeros
-  //     ? 100
-  //     : // if new is larger than old, stick to line tweeen duration
-  //     $previousYMax < yMax
-  //     ? scaleTweenDuration
-  //     : scaleTweenDuration + lineTweenDuration,
-  //   delay: $previousYMax > yMax ? 0 : 400,
-  //   easing: linear,
-  // };
 
   let opacityTween = tweened(1, { duration: fadeTweenDuration });
   let opacityTweenTimeout;
@@ -252,24 +250,9 @@
     }, fadeDuration);
     opacityTween.set(0.7);
   }
-
-  // $: lineTweenProps = {
-  //   duration: longTimeSeries
-  //     ? 0
-  //     : !hideCurrent
-  //     ? allZeros
-  //       ? 0
-  //       : lineTweenDuration
-  //     : 0,
-  //   // if new is larger than old, delay animation so the line does not
-  //   // go off the page.
-  //   delay: $previousYMax < yMax ? lineTweenDelay : 0,
-  //   easing: cubicOut,
-  //   interpolate: interpolateArray,
-  // };
 </script>
 
-{#if key && dataCopy?.length}
+{#if timeRangeKey && dataCopy?.length}
   <div transition:fly|local={{ duration: 500, y: 10 }}>
     <SimpleDataGraphic
       shareYScale={false}
@@ -278,30 +261,23 @@
       {yMax}
       {yMinTweenProps}
       {yMaxTweenProps}
-      xMinTweenProps={{
-        duration: 800,
-        delay: 400,
-      }}
-      xMaxTweenProps={{
-        duration: 800,
-        delay: 400,
-      }}
+      xMinTweenProps={xTweenProps}
+      xMaxTweenProps={xTweenProps}
     >
       <Body>
-        {#key key}
-          <!-- here, we switch hideCurrent before and after the transition, so
-            in cases of the key updating, we can gracefully transition all kinds of
-            interesting animations.
+        {#key timeRangeKey}
+          <!-- this key will trigger the scale changes.
+            We typically only trigger scale changes when the date ranges change
           -->
           <g
             opacity={$opacityTween}
             filter="grayscale({(1 - $opacityTween) * 100}%)"
-            in:fade={{
+            in:scaleVertical={{
               duration: 400,
-              delay: 0,
+              delay: diffTimeGrains ? 400 : 0,
               start: 0,
             }}
-            out:fade={{
+            out:scaleVertical={{
               duration: 400,
               delay: 0,
               start: 0,

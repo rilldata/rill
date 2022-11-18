@@ -109,11 +109,10 @@
 
   let mouseoverValue = undefined;
 
-  $: key = `${startValue}` + `${endValue}`;
-
   $: [minVal, maxVal] = extent(dataCopy ?? [], (d: TimeSeriesValue) => d.ts);
   $: startValue = removeTimezoneOffset(new Date(minVal));
   $: endValue = removeTimezoneOffset(new Date(maxVal));
+  $: key = `${startValue}` + `${endValue}`;
 </script>
 
 <WithBisector
@@ -184,7 +183,8 @@
               data={formattedData}
               accessor={measure.sqlName}
               mouseover={point}
-              {key}
+              timeRangeKey={key}
+              timeGrain={metricsExplorer.selectedTimeRange?.interval}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
