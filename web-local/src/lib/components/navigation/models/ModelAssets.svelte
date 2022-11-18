@@ -2,21 +2,16 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    RuntimeServiceListCatalogObjectsType,
-    useRuntimeServiceListCatalogObjects,
-    useRuntimeServicePutFile,
+    getRuntimeServiceListFilesQueryKey,
+    useRuntimeServiceListFiles,
+    useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import { getNextModelName } from "../../../../common/utils/incrementName";
-  import {
-    ApplicationStore,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -30,13 +25,13 @@
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getModels = useRuntimeServiceListCatalogObjects(runtimeInstanceId, {
-    type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
-  });
-  const createModel = useRuntimeServicePutFile();
+  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
+  $: modelNames = $getFiles?.data?.paths
+    ?.filter((path) => path.includes("models/"))
+    .map((path) => path.replace("/models/", "").replace(".sql", ""));
 
-  const store = getContext("rill:app:store") as ApplicationStore;
+  const createModel = useRuntimeServicePutFileAndMigrate();
+
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
@@ -46,55 +41,25 @@
 
   let showModels = true;
 
-  // type Coll
-
-  let persistentModelEntities: PersistentModelEntity[] = [];
-  $: activeEntityID = $store?.activeEntity?.id;
-  $: persistentModelEntities =
-    ($persistentModelStore && $persistentModelStore.entities) || [];
-
-  $: availableModels = persistentModelEntities.map((query) => {
-    let derivedModel = $derivedModelStore.entities.find(
-      (model) => model.id === query.id
-    );
-
-    return {
-      id: query.id,
-      modelName: query.name,
-      tableSummaryProps: {
-        name: query.name,
-        cardinality: derivedModel?.cardinality ?? 0,
-        profile: derivedModel?.profile ?? [],
-        head: derivedModel?.preview ?? [],
-        sizeInBytes: derivedModel?.sizeInBytes ?? 0,
-        active: query?.id === activeEntityID,
-      },
-    };
-  });
-
   async function handleAddModel() {
-    const newModelName = getNextModelName(
-      $getModels.data.objects.map((object) => object.name)
-    );
+    const newModelName = getNextModelName(modelNames);
     $createModel.mutate(
       {
-        repoId: $runtimeStore.repoId,
-        path: `models/${newModelName}`,
         data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: $runtimeStore.instanceId,
+          path: `models/${newModelName}.sql`,
+          blob: ``,
           create: true,
           createOnly: true,
+          strict: true,
         },
       },
       {
         onSuccess: () => {
           goto(`/model/${newModelName}`);
           queryClient.invalidateQueries(
-            getRuntimeServiceListCatalogObjectsQueryKey(
-              $runtimeStore.instanceId,
-              {
-                type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
-              }
-            )
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
           );
           // if the models are not visible in the assets list, show them.
           if (!showModels) {
@@ -131,41 +96,47 @@
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
-    {#each availableModels as { id, modelName, tableSummaryProps }, i (id)}
-      {@const derivedModel = $derivedModelStore.entities.find(
-        (t) => t["id"] === id
-      )}
-      <NavigationEntry
-        name={modelName.split(".sql")[0]}
-        href={`/model/${id}`}
-        open={$page.url.pathname === `/model/${id}`}
-      >
-        <svelte:fragment slot="more">
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-            <ColumnProfile
-              indentLevel={1}
-              cardinality={tableSummaryProps.cardinality}
-              profile={tableSummaryProps.profile}
-              head={tableSummaryProps.head}
-              entityId={id}
+    {#if modelNames && $persistentModelStore?.entities && $derivedModelStore?.entities}
+      {#each modelNames as modelName (modelName)}
+        {@const persistentModel = $persistentModelStore.entities.find(
+          (model) => model["name"] === modelName
+        )}
+        {@const derivedModel = $derivedModelStore.entities.find(
+          (model) => model["id"] === persistentModel?.id
+        )}
+        <NavigationEntry
+          name={modelName}
+          href={`/model/${modelName}`}
+          open={$page.url.pathname === `/model/${modelName}`}
+        >
+          <svelte:fragment slot="more">
+            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+              <ColumnProfile
+                indentLevel={1}
+                cardinality={derivedModel?.cardinality ?? 0}
+                profile={derivedModel?.profile ?? []}
+                head={derivedModel?.preview ?? []}
+                entityId={persistentModel?.id}
+              />
+            </div>
+          </svelte:fragment>
+
+          <svelte:fragment slot="tooltip-content">
+            <ModelTooltip {modelName} />
+          </svelte:fragment>
+
+          <svelte:fragment slot="menu-items" let:toggleMenu>
+            <ModelMenuItems
+              {modelName}
+              {toggleMenu}
+              on:rename-asset={() => {
+                openRenameModelModal(persistentModel?.id, modelName);
+              }}
             />
-          </div>
-        </svelte:fragment>
-
-        <svelte:fragment slot="tooltip-content">
-          <ModelTooltip {modelName} />
-        </svelte:fragment>
-
-        <svelte:fragment slot="menu-items">
-          <ModelMenuItems
-            modelID={derivedModel.id}
-            on:rename-asset={() => {
-              openRenameModelModal(id, modelName);
-            }}
-          />
-        </svelte:fragment>
-      </NavigationEntry>
-    {/each}
+          </svelte:fragment>
+        </NavigationEntry>
+      {/each}
+    {/if}
   </div>
 {/if}
 
