@@ -30,7 +30,7 @@ func (c *connection) FindObject(ctx context.Context, instanceID string, name str
 }
 
 func (c *connection) findObjects(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogObject {
-	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, sql, schema, managed, definition, path, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -43,7 +43,7 @@ func (c *connection) findObjects(ctx context.Context, whereClause string, args .
 		var schemaBlob []byte
 		obj := &drivers.CatalogObject{}
 
-		err := rows.Scan(&obj.Name, &obj.Type, &obj.SQL, &schemaBlob, &obj.Managed, &obj.CreatedOn, &obj.UpdatedOn, &obj.RefreshedOn)
+		err := rows.Scan(&obj.Name, &obj.Type, &obj.SQL, &schemaBlob, &obj.Managed, &obj.Definition, &obj.Path, &obj.CreatedOn, &obj.UpdatedOn, &obj.RefreshedOn)
 		if err != nil {
 			panic(err)
 		}
@@ -73,12 +73,14 @@ func (c *connection) CreateObject(ctx context.Context, instanceID string, obj *d
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, sql, schema, managed, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, sql, schema, managed, definition, path, refreshed_on, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		obj.Name,
 		obj.Type,
 		obj.SQL,
 		schema,
 		obj.Managed,
+		obj.Definition,
+		obj.Path,
 		now,
 		now,
 		now,
@@ -100,23 +102,22 @@ func (c *connection) UpdateObject(ctx context.Context, instanceID string, obj *d
 		return err
 	}
 
-	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, sql = ?, schema = ?, managed = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, sql = ?, schema = ?, managed = ?, definition = ?, path = ?, refreshed_on = ?, updated_on = ? WHERE name = ?",
 		obj.Type,
 		obj.SQL,
 		schema,
 		obj.Managed,
-		now,
+		obj.Definition,
+		obj.Path,
 		obj.RefreshedOn,
+		obj.UpdatedOn,
 		obj.Name,
 	)
 	if err != nil {
 		return err
 	}
-
-	obj.UpdatedOn = now
 	return nil
 }
 

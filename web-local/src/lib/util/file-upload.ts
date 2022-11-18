@@ -1,5 +1,5 @@
 import { goto } from "$app/navigation";
-import type { V1PutRepoObjectResponse } from "@rilldata/web-common/runtime-client";
+import type { V1PutFileResponse } from "@rilldata/web-common/runtime-client";
 import {
   EntityType,
   StateType,
@@ -147,7 +147,7 @@ export async function uploadFile(url: string, file: File): Promise<string> {
 
   try {
     // TODO: generate client and use it in component
-    const resp: V1PutRepoObjectResponse = await fetchWrapperDirect(
+    const resp: V1PutFileResponse = await fetchWrapperDirect(
       `${url}/-/data/${file.name}`,
       "POST",
       formData,

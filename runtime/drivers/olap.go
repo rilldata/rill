@@ -15,7 +15,7 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries
 type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
-	Ingest(ctx context.Context, source *connectors.Source) error
+	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
 	InformationSchema() InformationSchema
 }
 

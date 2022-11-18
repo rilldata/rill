@@ -1,8 +1,10 @@
+import { describe, expect } from "@jest/globals";
 import {
   extractCTEs,
   extractCoreSelectStatements,
   extractFromStatements,
   extractJoins,
+  extractSourceTables,
 } from "./model-structure";
 
 const q1 = `
@@ -154,7 +156,7 @@ select something, count(*) from       table
     input: `
         select something, count(*) from       table    abc    
             LEFT JOIN cruds ON cruds.id = table.id;`,
-    output: [{ name: "table", start: 39, end: 44 }],
+    output: [{ name: "table", start: 47, end: 52 }],
   },
 ];
 
@@ -188,7 +190,7 @@ describe("extractFromStatements", () => {
     expect(extractFromStatements(selectQueries[8].input)).toEqual(
       selectQueries[8].output
     );
-    expect(extractFromStatements(selectQueries[8].input)).toEqual(
+    expect(extractFromStatements(selectQueries[9].input)).toEqual(
       selectQueries[9].output
     );
   });
@@ -257,3 +259,12 @@ describe("extractJoins", () => {
 //         expect(extractCoreWhereClauses(joinQueries[0].input)).toEqual(joinQueries[0].output);
 //     })
 // })
+
+describe("extractTables", () => {
+  it("extractTables from CTEs", () => {
+    expect(extractSourceTables(q5).map((table) => table.name)).toEqual([
+      "test",
+      "y",
+    ]);
+  });
+});

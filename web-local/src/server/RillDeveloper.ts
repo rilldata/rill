@@ -1,3 +1,7 @@
+import type {
+  V1CreateRepoRequest,
+  V1CreateRepoResponse,
+} from "@rilldata/web-common/runtime-client";
 import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { DuckDbConnection } from "@rilldata/web-local/common/connection/DuckDbConnection";
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
@@ -11,10 +15,6 @@ import type { MetricsService } from "@rilldata/web-local/common/metrics-service/
 import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
 import axios from "axios";
 import { existsSync, mkdirSync } from "fs";
-import type {
-  V1CreateRepoRequest,
-  V1CreateRepoResponse,
-} from "@rilldata/web-common/runtime-client";
 import { dataModelerServiceFactory } from "./serverFactory";
 
 /**
@@ -86,9 +86,12 @@ export class RillDeveloper {
         this.config.project.duckDbPath,
       ]);
     }
-    await this.duckDbConnection.init();
 
     await this.createRepo();
+    // Enable this when we are only testing the new runtime
+    // await this.migrate();
+
+    await this.duckDbConnection.init();
   }
 
   public async destroy() {
@@ -97,7 +100,6 @@ export class RillDeveloper {
     await this.dataModelerService.destroy();
   }
 
-  // temporary hack to create a repo for the project folder
   private async createRepo() {
     const resp = await axios.post(
       `${this.config.database.runtimeUrl}/v1/repos`,
@@ -117,5 +119,25 @@ export class RillDeveloper {
           // no-op
         }
       );
+  }
+
+  private async migrate() {
+    try {
+      await axios.post(
+        `${
+          this.config.database.runtimeUrl
+        }/v1/instances/${this.dataModelerService
+          .getDatabaseService()
+          .getDatabaseClient()
+          .getInstanceId()}/migrate`,
+        {
+          repo_id: this.dataModelerService
+            .getStateService()
+            .getApplicationState().repoId,
+        } as V1CreateRepoRequest
+      );
+    } catch (err) {
+      console.log(err.response.data);
+    }
   }
 }

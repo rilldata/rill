@@ -21,7 +21,7 @@ Follow the instructions below to grant Rill access to your Google Cloud Storage 
 5. Click Add to open the modal to add members to your bucket.
 ![](https://images.contentful.com/ve6smfzbifwz/2Ki9BiKaHYMivZ5DPTiwbd/762b2a071d3d6fb58a1b08fd13973dc2/8fa34b8-permissions_add.png)
 
-6. In the New members field, enter your google service account. You can find your google service account in the Settings page for your workspace in RCC. This will typically have the form  \<organization\>-\<workspace\>@rilldata.iam.gserviceaccount.com.
+6. In the New members field, enter your google service account. You can find your google service account in the Settings page for your workspace in RCC. This will typically have the form  `{workspace}`-`{organization}`@rilldata.iam.gserviceaccount.com.
 ![](https://images.contentful.com/ve6smfzbifwz/50nIholwjMFJkaMTw8bMjy/c3334709d2eb6c8516e056f72f424957/42d2803-new_members_modal.png)
 
 7. Select the role Cloud Storage -> Storage Object Viewer. 

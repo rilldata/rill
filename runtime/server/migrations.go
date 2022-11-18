@@ -6,14 +6,34 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // Migrate implements RuntimeService
 func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.MigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.RepoId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	resp, err := service.Migrate(ctx, catalog.MigrationConfig{
+		DryRun:       req.Dry,
+		Strict:       req.Strict,
+		ChangedPaths: req.ChangedPaths,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.MigrateResponse{
+		Errors:        resp.Errors,
+		AffectedPaths: resp.AffectedPaths,
+	}, nil
 }
 
 // MigrateSingle implements RuntimeService
@@ -77,16 +97,90 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
 	}
 
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
-
 	return &api.MigrateDeleteResponse{}, nil
+}
+
+// PutFileAndMigrate implements RuntimeService
+func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigrateRequest) (*api.PutFileAndMigrateResponse, error) {
+	_, err := s.PutFile(ctx, &api.PutFileRequest{
+		RepoId:     req.RepoId,
+		Path:       req.Path,
+		Blob:       req.Blob,
+		Create:     req.Create,
+		CreateOnly: req.CreateOnly,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.PutFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAndMigrateRequest) (*api.RenameFileAndMigrateResponse, error) {
+	_, err := s.RenameFile(ctx, &api.RenameFileRequest{
+		RepoId:   req.RepoId,
+		FromPath: req.FromPath,
+		ToPath:   req.ToPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.FromPath, req.ToPath},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.RenameFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *api.DeleteFileAndMigrateRequest) (*api.DeleteFileAndMigrateResponse, error) {
+	_, err := s.DeleteFile(ctx, &api.DeleteFileRequest{
+		RepoId: req.RepoId,
+		Path:   req.Path,
+	})
+	if err != nil {
+		return nil, err
+	}
+	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+		InstanceId:   req.InstanceId,
+		RepoId:       req.RepoId,
+		ChangedPaths: []string{req.Path},
+		Dry:          false,
+		Strict:       false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &api.DeleteFileAndMigrateResponse{
+		Errors:        migrateResp.Errors,
+		AffectedPaths: migrateResp.AffectedPaths,
+	}, nil
 }
 
 // NOTE: This is an initial migration implementation with several flaws.
 func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
 	// Parse SQL
-	source, err := sqlToSource(req.Sql)
+	source, err := sources.SqlToSource(req.Sql)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -140,7 +234,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 
 		// Check whether the properties for the new object are different (i.e. whether to re-ingest or just rename)
-		renameSource, err := sqlToSource(renameObj.SQL)
+		renameSource, err := sources.SqlToSource(renameObj.SQL)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "could not parse existing sql: %s", err.Error())
 		}
@@ -160,10 +254,17 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		RefreshedOn: time.Now(),
 	}
 
+	// Make connector env
+	// Since we're deprecating this code soon, this is just a hack to ingest sources from paths relative to pwd
+	env := &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}
+
 	// We now have several cases to handle
 	if !existingFound && !renameFound {
 		// Just ingest and save object
-		err := olap.Ingest(ctx, source)
+		err := olap.Ingest(ctx, env, source)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -180,7 +281,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 	} else if existingFound && !renameFound {
 		// Reingest and then update object
-		err := olap.Ingest(ctx, source)
+		err := olap.Ingest(ctx, env, source)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -214,7 +315,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		rows.Close()
 	} else if renameFound && renameAndReingest { // earlier check ensures !existingFound
 		// Reingest and save object, then drop old
-		err := olap.Ingest(ctx, source)
+		err := olap.Ingest(ctx, env, source)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -241,9 +342,6 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 		}
 		rows.Close()
 	}
-
-	// Reset catalog cache
-	s.catalogCache.reset(req.InstanceId)
 
 	// Done
 	return &api.MigrateSingleResponse{}, nil

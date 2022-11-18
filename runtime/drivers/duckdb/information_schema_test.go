@@ -13,12 +13,19 @@ func TestInformationSchemaAll(t *testing.T) {
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 
+	rows, err := olap.Execute(context.Background(), &drivers.Statement{
+		Query: "CREATE VIEW model as (select 1, 2, 3)",
+	})
+	require.NoError(t, err)
+	require.NoError(t, rows.Close())
+
 	tables, err := olap.InformationSchema().All(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tables))
+	require.Equal(t, 3, len(tables))
 
 	require.Equal(t, "bar", tables[0].Name)
 	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, "model", tables[2].Name)
 
 	require.Equal(t, 2, len(tables[1].Schema.Fields))
 	require.Equal(t, "bar", tables[1].Schema.Fields[0].Name)
@@ -32,12 +39,22 @@ func TestInformationSchemaLookup(t *testing.T) {
 	olap, _ := conn.OLAPStore()
 	ctx := context.Background()
 
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query: "CREATE VIEW model as (select 1, 2, 3)",
+	})
+	require.NoError(t, err)
+	require.NoError(t, rows.Close())
+
 	table, err := olap.InformationSchema().Lookup(ctx, "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", table.Name)
 
 	_, err = olap.InformationSchema().Lookup(ctx, "bad")
 	require.Equal(t, drivers.ErrNotFound, err)
+
+	table, err = olap.InformationSchema().Lookup(ctx, "model")
+	require.NoError(t, err)
+	require.Equal(t, "model", table.Name)
 }
 
 func TestDatabaseTypeToPB(t *testing.T) {
