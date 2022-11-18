@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -140,7 +141,11 @@ func (c *connection) PutReader(ctx context.Context, repoID string, filePath stri
 func (c *connection) Rename(ctx context.Context, repoID string, from string, filePath string) error {
 	filePath = path.Join(c.root, filePath)
 	from = path.Join(c.root, from)
-	return os.Rename(from, filePath)
+	err := os.Rename(from, filePath)
+	if err != nil {
+		return err
+	}
+	return os.Chtimes(filePath, time.Now(), time.Now())
 }
 
 // Delete implements drivers.RepoStore
