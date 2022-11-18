@@ -3,8 +3,11 @@ package testutils
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -127,4 +130,11 @@ func AssertMigration(
 	require.Len(t, result.UpdatedObjects, updateCount)
 	require.Len(t, result.DroppedObjects, dropCount)
 	require.ElementsMatch(t, result.AffectedPaths, affectedPaths)
+}
+
+func RenameFile(t *testing.T, dir string, from string, to string) {
+	err := os.Rename(path.Join(dir, from), path.Join(dir, to))
+	require.NoError(t, err)
+	err = os.Chtimes(path.Join(dir, to), time.Now(), time.Now())
+	require.NoError(t, err)
 }

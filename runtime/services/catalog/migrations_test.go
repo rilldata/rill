@@ -132,9 +132,7 @@ func TestMigrateRenames(t *testing.T) {
 			s, dir := initBasicService(t)
 
 			// write to a new file (should rename)
-			err := os.Remove(path.Join(dir, AdBidsRepoPath))
-			require.NoError(t, err)
-			testutils.CreateSource(t, s, "AdBidsNew", AdBidsCsvPath, AdBidsNewRepoPath)
+			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsNewRepoPath)
 			testutils.CreateModel(t, s, "AdBids_model", "select * from AdBidsNew", AdBidsModelRepoPath)
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)
@@ -236,6 +234,48 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.AssertMigration(t, result, 0, 3, 1, 0, AdBidsAllAffectedPaths)
 			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+		})
+	}
+}
+
+func TestModelRename(t *testing.T) {
+	if testing.Short() {
+		t.Skip("migrate: skipping test in short mode")
+	}
+
+	var AdBidsRenameModelRepoPath = "/models/AdBidsRename.sql"
+	var AdBidsRenameNewModelRepoPath = "/models/AdBidsRenameNew.sql"
+
+	configs := []struct {
+		title  string
+		config catalog.MigrationConfig
+	}{
+		{"MigrateAll", catalog.MigrationConfig{}},
+		{"MigrateSelected", catalog.MigrationConfig{
+			ChangedPaths: []string{AdBidsRenameModelRepoPath, AdBidsRenameNewModelRepoPath},
+		}},
+	}
+
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
+
+			testutils.CreateModel(t, s, "AdBidsRename", "select * from AdBids", AdBidsRenameModelRepoPath)
+			result, err := s.Migrate(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsRenameModelRepoPath})
+
+			for i := 0; i < 5; i++ {
+				testutils.RenameFile(t, dir, AdBidsRenameModelRepoPath, AdBidsRenameNewModelRepoPath)
+				result, err = s.Migrate(context.Background(), tt.config)
+				require.NoError(t, err)
+				testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsRenameNewModelRepoPath})
+
+				testutils.RenameFile(t, dir, AdBidsRenameNewModelRepoPath, AdBidsRenameModelRepoPath)
+				result, err = s.Migrate(context.Background(), tt.config)
+				require.NoError(t, err)
+				testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsRenameModelRepoPath})
+			}
 		})
 	}
 }
