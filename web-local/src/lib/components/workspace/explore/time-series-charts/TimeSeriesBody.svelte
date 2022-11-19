@@ -4,7 +4,7 @@
   import { cubicOut, linear } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { derived, get, writable } from "svelte/store";
-  import { fly } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
@@ -56,8 +56,6 @@
     longTimeSeriesKey = undefined;
   }
 
-  let hideCurrent = false;
-
   $: allZeros = dataCopy.every((di) => di[accessor] === 0);
   $: dataInDomain = dataCopy.some((di) => di.ts >= start && di.ts <= end);
 
@@ -78,16 +76,22 @@
 
   function previousStoreValue(anotherStore) {
     let previousValue = get(anotherStore);
-    return derived(anotherStore, ($currentValue, set) => {
+
+    let store = writable(previousValue);
+    anotherStore.subscribe(($currentValue) => {
       if (Array.isArray(previousValue)) {
-        set([...previousValue]);
+        store.set([...previousValue]);
       } else if (typeof previousValue === "object" && previousValue !== null) {
-        set({ ...previousValue });
+        store.set({ ...previousValue });
       } else {
-        set(previousValue);
+        store.set(previousValue);
       }
       previousValue = $currentValue;
     });
+    return {
+      subscribe: store.subscribe,
+      set: store.set,
+    };
   }
 
   export function scaleVertical(
@@ -98,6 +102,7 @@
       easing = cubicOut,
       start = 0,
       opacity = 0,
+      scaleDown = false,
     } = {}
   ) {
     const style = getComputedStyle(node);
@@ -112,9 +117,10 @@
       duration,
       easing,
       css: (_t, u) => {
+        const yScale = scaleDown ? ` scaleY(${1 - sd * u})` : "";
         return `
-    transform: ${transform} scaleY(${1 - sd * u}) scaleY(${1 - sd * u});
-    transform-origin: 100% calc(100% - ${16}px);
+    transform: ${transform} scaleY(${1 - sd * u}) ${yScale};
+    transform-origin: 100% calc(100% - ${0}px);
     opacity: ${target_opacity - od * u}
   `;
       },
@@ -133,12 +139,12 @@
 
   const previousYMax = previousStoreValue(yms);
 
-  const scaleTweenDuration = 400;
+  const scaleTweenDuration = 300;
   const fadeDuration = 0;
   const fadeTweenDuration = 50;
 
   const lineTweenDuration = scaleTweenDuration;
-  const lineTweenDelay = scaleTweenDuration;
+  const lineTweenDelay = scaleTweenDuration * 1.3;
 
   /**
    * Plot animations
@@ -161,7 +167,7 @@
   $: oldY = $previousYMax;
   $: isSmaller = newY < oldY;
 
-  $: keyChanged = $keyStore !== $previousKeyStore;
+  $: differentTimeRanges = $keyStore !== $previousKeyStore;
   $: diffTimeGrains = $previousTimeGrain !== $timeGrainStore;
 
   let xTweenProps = {
@@ -206,7 +212,7 @@
       delay: 0,
       interpolate: interpolateArray,
     };
-  } else if (!isSmaller) {
+  } else if (!isSmaller && !differentTimeRanges) {
     // We tween the yMax first, then the line.
     // this is to prevent the line from blowing past the plot extents
     // and being super weird.
@@ -223,7 +229,7 @@
       easing: cubicOut,
       interpolate: interpolateArray,
     };
-  } else if (isSmaller) {
+  } else if (isSmaller && !differentTimeRanges) {
     // we can tween the yMax and the line at the same time, since there is no risk of clipping the area chart.
     yMaxTweenProps = {
       duration: scaleTweenDuration,
@@ -239,6 +245,11 @@
       easing: cubicOut,
       interpolate: interpolateArray,
     };
+  } else {
+    lineTweenProps = {
+      duration: lineTweenDuration * 10,
+      interpolate: interpolateArray,
+    };
   }
 
   let opacityTween = tweened(1, { duration: fadeTweenDuration });
@@ -250,9 +261,21 @@
     }, fadeDuration);
     opacityTween.set(0.7);
   }
+
+  let timeout;
+  $: setTimeout(() => {
+    clearTimeout(timeout);
+    previousKeyStore.set($keyStore);
+    previousTimeGrain.set($timeGrainStore);
+  }, scaleTweenDuration * 2);
+
+  // $: console.log(timeRangeKey, dataCopy);
 </script>
 
 {#if timeRangeKey && dataCopy?.length}
+  <!-- {diffTimeGrains} -
+  {$previousYMax} -
+  {yMax} -->
   <div transition:fly|local={{ duration: 500, y: 10 }}>
     <SimpleDataGraphic
       shareYScale={false}
@@ -265,7 +288,7 @@
       xMaxTweenProps={xTweenProps}
     >
       <Body>
-        {#key timeRangeKey}
+        {#key timeGrain}
           <!-- this key will trigger the scale changes.
             We typically only trigger scale changes when the date ranges change
           -->
@@ -273,33 +296,42 @@
             opacity={$opacityTween}
             filter="grayscale({(1 - $opacityTween) * 100}%)"
             in:scaleVertical={{
-              duration: 400,
-              delay: diffTimeGrains ? 400 : 0,
+              duration: scaleTweenDuration,
+              delay: scaleTweenDuration,
+              //diffTimeGrains && !differentTimeRanges ? scaleTweenDuration : 0,
               start: 0,
+              scaleDown: diffTimeGrains,
             }}
             out:scaleVertical={{
-              duration: 400,
+              duration: scaleTweenDuration,
               delay: 0,
               start: 0,
+              scaleDown: diffTimeGrains,
             }}
             style:transition="opacity 250ms"
-            on:outrostart={() => {
-              hideCurrent = true;
-            }}
-            on:outroend={() => {
-              hideCurrent = false;
-            }}
           >
-            <WithTween
-              value={dataCopy}
-              let:output={tweenedData}
-              tweenProps={lineTweenProps}
-            >
-              <Area data={tweenedData} yAccessor={accessor} xAccessor="ts" />
-              <g style:opacity={$opacityTween}>
-                <Line data={tweenedData} yAccessor={accessor} xAccessor="ts" />
+            {#key timeRangeKey}
+              <g transition:fade|local={{ duration: scaleTweenDuration }}>
+                <WithTween
+                  value={dataCopy}
+                  let:output={tweenedData}
+                  tweenProps={lineTweenProps}
+                >
+                  <Area
+                    data={tweenedData}
+                    yAccessor={accessor}
+                    xAccessor="ts"
+                  />
+                  <g style:opacity={$opacityTween}>
+                    <Line
+                      data={tweenedData}
+                      yAccessor={accessor}
+                      xAccessor="ts"
+                    />
+                  </g>
+                </WithTween>
               </g>
-            </WithTween>
+            {/key}
           </g>
         {/key}
       </Body>
