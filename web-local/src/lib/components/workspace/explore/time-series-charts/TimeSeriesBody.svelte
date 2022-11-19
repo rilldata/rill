@@ -3,7 +3,7 @@
   import { interpolateArray } from "d3-interpolate";
   import { cubicOut, linear } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import { derived, get, writable } from "svelte/store";
+  import { get, writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
@@ -127,16 +127,6 @@
     };
   }
 
-  function delayedStoreValue(anotherStore, downtimeMS = 500) {
-    let tm;
-    return derived(anotherStore, ($currentValue, set) => {
-      if (tm) clearTimeout(tm);
-      tm = setTimeout(() => {
-        set($currentValue);
-      }, downtimeMS);
-    });
-  }
-
   const previousYMax = previousStoreValue(yms);
 
   const scaleTweenDuration = 300;
@@ -195,11 +185,6 @@
       interpolate: interpolateArray,
     };
   } else if (allZeros) {
-    /**
-     *
-     * case 1: all zeroes
-     *
-     */
     yMaxTweenProps = {
       duration: 100,
       delay: 0,
@@ -273,9 +258,6 @@
 </script>
 
 {#if timeRangeKey && dataCopy?.length}
-  <!-- {diffTimeGrains} -
-  {$previousYMax} -
-  {yMax} -->
   <div transition:fly|local={{ duration: 500, y: 10 }}>
     <SimpleDataGraphic
       shareYScale={false}
