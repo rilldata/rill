@@ -277,14 +277,14 @@
           <g
             opacity={$opacityTween}
             filter="grayscale({(1 - $opacityTween) * 100}%)"
-            in:scaleVertical={{
+            in:scaleVertical|local={{
               duration: scaleTweenDuration,
               delay: scaleTweenDuration,
               //diffTimeGrains && !differentTimeRanges ? scaleTweenDuration : 0,
               start: 0,
               scaleDown: diffTimeGrains,
             }}
-            out:scaleVertical={{
+            out:scaleVertical|local={{
               duration: scaleTweenDuration,
               delay: 0,
               start: 0,
