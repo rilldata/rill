@@ -2,7 +2,6 @@
   import { extent } from "d3-array";
   import { interpolateArray } from "d3-interpolate";
   import { cubicOut, linear } from "svelte/easing";
-  import { tweened } from "svelte/motion";
   import { get, writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
@@ -237,24 +236,13 @@
     };
   }
 
-  let opacityTween = tweened(1, { duration: fadeTweenDuration });
-  let opacityTweenTimeout;
-  $: if (yMax) {
-    if (opacityTweenTimeout) clearTimeout(opacityTweenTimeout);
-    setTimeout(() => {
-      opacityTween.set(1);
-    }, fadeDuration);
-    opacityTween.set(0.7);
-  }
-
   let timeout;
+  /** Clear out the previousKeyStore and previousTimeGrain */
   $: setTimeout(() => {
     clearTimeout(timeout);
     previousKeyStore.set($keyStore);
     previousTimeGrain.set($timeGrainStore);
   }, scaleTweenDuration * 2);
-
-  // $: console.log(timeRangeKey, dataCopy);
 </script>
 
 {#if timeRangeKey && dataCopy?.length}
@@ -275,8 +263,6 @@
             We typically only trigger scale changes when the date ranges change
           -->
           <g
-            opacity={$opacityTween}
-            filter="grayscale({(1 - $opacityTween) * 100}%)"
             in:scaleVertical|local={{
               duration: scaleTweenDuration,
               delay: scaleTweenDuration,
@@ -304,13 +290,11 @@
                     yAccessor={accessor}
                     xAccessor="ts"
                   />
-                  <g style:opacity={$opacityTween}>
-                    <Line
-                      data={tweenedData}
-                      yAccessor={accessor}
-                      xAccessor="ts"
-                    />
-                  </g>
+                  <Line
+                    data={tweenedData}
+                    yAccessor={accessor}
+                    xAccessor="ts"
+                  />
                 </WithTween>
               </g>
             {/key}
