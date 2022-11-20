@@ -81,8 +81,6 @@ func StartCmd() *cobra.Command {
 				GRPCPort:            grpcPort,
 				ConnectionCacheSize: 100,
 			}
-
-			// create server logger default to ErrorLevel if verbose is not true
 			server, err := server.NewServer(opts, metastore, serverLogger)
 			if err != nil {
 				return err
@@ -164,8 +162,6 @@ func StartCmd() *cobra.Command {
 			// Open the browser
 			if !disableUI {
 				uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
-				logger.Infof("opening browser on url: %s", uiURL)
-
 				err = browser.Open(uiURL)
 				if err != nil {
 					return fmt.Errorf("could not open browser: %v", err)
