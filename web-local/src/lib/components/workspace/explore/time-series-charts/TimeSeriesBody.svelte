@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { interpolateArray } from "d3-interpolate";
   import { cubicOut, linear } from "svelte/easing";
-  import { get, writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
   import { guidGenerator } from "../../../../util/guid";
   import {
@@ -65,33 +66,13 @@
 
   let keyStore = writable(timeRangeKey);
   $: keyStore.set(timeRangeKey);
-  let previousKeyStore = previousStoreValue(keyStore);
+  let previousKeyStore = previousValueStore(keyStore);
 
   // get previous time grain so we can track whether we animate transitions with a scale-down
   // or a fade.
   let timeGrainStore = writable(timeGrain);
   $: timeGrainStore.set(timeGrain);
-  let previousTimeGrain = previousStoreValue(timeGrainStore);
-
-  function previousStoreValue(anotherStore) {
-    let previousValue = get(anotherStore);
-
-    let store = writable(previousValue);
-    anotherStore.subscribe(($currentValue) => {
-      if (Array.isArray(previousValue)) {
-        store.set([...previousValue]);
-      } else if (typeof previousValue === "object" && previousValue !== null) {
-        store.set({ ...previousValue });
-      } else {
-        store.set(previousValue);
-      }
-      previousValue = $currentValue;
-    });
-    return {
-      subscribe: store.subscribe,
-      set: store.set,
-    };
-  }
+  let previousTimeGrain = previousValueStore(timeGrainStore);
 
   export function scaleVertical(
     node: Element,
@@ -126,11 +107,9 @@
     };
   }
 
-  const previousYMax = previousStoreValue(yms);
+  const previousYMax = previousValueStore(yms);
 
   const scaleTweenDuration = 300;
-  const fadeDuration = 0;
-  const fadeTweenDuration = 50;
 
   const lineTweenDuration = scaleTweenDuration;
   const lineTweenDelay = scaleTweenDuration * 1.3;
@@ -231,7 +210,7 @@
     };
   } else {
     lineTweenProps = {
-      duration: lineTweenDuration * 10,
+      duration: lineTweenDuration,
       interpolate: interpolateArray,
     };
   }
@@ -265,7 +244,7 @@
           <g
             in:scaleVertical|local={{
               duration: scaleTweenDuration,
-              delay: scaleTweenDuration,
+              delay: 0,
               //diffTimeGrains && !differentTimeRanges ? scaleTweenDuration : 0,
               start: 0,
               scaleDown: diffTimeGrains,
