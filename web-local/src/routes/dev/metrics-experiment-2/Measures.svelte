@@ -5,10 +5,9 @@
   import { slide } from "svelte/transition";
   import AddMeasure from "./AddMeasure.svelte";
   import { flip } from "./custom-flip";
-  import Measure from "./Measure2.svelte";
+  import Measure from "./Measure.svelte";
 
   let measureComponents = [];
-
   let duration = 200;
 
   interface Measure {
@@ -359,13 +358,6 @@
 <h1>Measures</h1>
 
 <div use:clickOutside={[[], clearSelections]} bind:this={container}>
-  mode: {mode}
-  <!-- <div style:margin-left="20px" class="flex items-center">
-    <div style:width="400px">Expression</div>
-    <div>Display Name</div>
-    <div>Description</div>
-    <div>Format Preset</div>
-  </div> -->
   {#each activeMeasures as measure, i (measure.id)}
     <div
       class="w-full"
