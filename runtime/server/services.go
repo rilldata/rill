@@ -31,7 +31,7 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 
 	// right now there is 1-1 mapping from instance to repo.
 	// TODO: support both instance and repo in this key
-	key := instId
+	key := instId + repoId
 
 	service, ok := c.catalogServices[key]
 	if ok {
@@ -56,18 +56,21 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 	}
 
 	repo, ok := registry.FindRepo(ctx, repoId)
-	if !ok {
+	if !ok && repoId != "" {
 		return nil, status.Errorf(codes.InvalidArgument, "repo '%s' not found", repoId)
 	}
 
-	repoConn, err := drivers.Open(repo.Driver, repo.DSN)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	var repoStore drivers.RepoStore
+	if ok {
+		repoConn, err := drivers.Open(repo.Driver, repo.DSN)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 
-	repoStore, ok := repoConn.RepoStore()
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "repo '%s' is not a valid repo store", repoId)
+		repoStore, ok = repoConn.RepoStore()
+		if !ok {
+			return nil, status.Errorf(codes.InvalidArgument, "repo '%s' is not a valid repo store", repoId)
+		}
 	}
 
 	service = catalog.NewService(catalogStore, repoStore, olap, repoId, instId)
