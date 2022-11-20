@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -14,7 +16,7 @@ import (
 
 // ListCatalogObjects implements RuntimeService
 func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObjectsRequest) (*api.ListCatalogObjectsResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.InstanceId) // TODO: Remove repo ID
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "") // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -29,7 +31,7 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 
 // GetCatalogObject implements RuntimeService
 func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObjectRequest) (*api.GetCatalogObjectResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.InstanceId) // TODO: Remove repo ID
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "") // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -44,26 +46,61 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 
 // TriggerRefresh implements RuntimeService
 func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequest) (*api.TriggerRefreshResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.InstanceId) // TODO: Remove repo ID
+	registry, _ := s.metastore.RegistryStore()
+	inst, found := registry.FindInstance(ctx, req.InstanceId)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	}
+
+	catalog, err := s.openCatalog(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	path, ok := service.NameToPath[req.Name]
-	if !ok {
-		return nil, status.Error(codes.NotFound, "artifact not found")
+	// Find object
+	obj, found := catalog.FindObject(ctx, req.InstanceId, req.Name)
+	if !found {
+		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}
 
-	resp, err := service.Migrate(ctx, catalog.MigrationConfig{
-		ChangedPaths: []string{path},
-		ForcedPaths:  []string{path},
-		Strict:       true,
-	})
+	// Check that it's a refreshable object
+	switch obj.Type {
+	case drivers.CatalogObjectTypeSource:
+	default:
+		return nil, status.Error(codes.InvalidArgument, "object is not refreshable")
+	}
+
+	// Parse SQL
+	source, err := sources.SqlToSource(obj.SQL)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get olap
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	if len(resp.Errors) > 0 {
-		return nil, status.Error(codes.Unknown, resp.Errors[0].Message)
+	olap, _ := conn.OLAPStore()
+
+	// Make connector env
+	// Since we're deprecating this code soon, this is just a hack to ingest sources from paths relative to pwd
+	env := &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}
+
+	// Ingest the source
+	err = olap.Ingest(ctx, env, source)
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	// Update object
+	obj.RefreshedOn = time.Now()
+	err = catalog.UpdateObject(ctx, req.InstanceId, obj)
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &api.TriggerRefreshResponse{}, nil
