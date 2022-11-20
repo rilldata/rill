@@ -203,13 +203,13 @@ export function createScrubAction({
 
       node.addEventListener(startEvent, onScrubStart);
       node.addEventListener(moveEvent, onScrub);
-      node.addEventListener(endEvent, onScrubEnd);
+      window.addEventListener(endEvent, onScrubEnd);
       window.addEventListener(endEvent, reset);
       return {
         destroy() {
           node.removeEventListener(startEvent, onScrubStart);
           node.removeEventListener(moveEvent, onScrub);
-          node.removeEventListener(endEvent, onScrubEnd);
+          window.removeEventListener(endEvent, onScrubEnd);
           window.removeEventListener(endEvent, reset);
         },
       };

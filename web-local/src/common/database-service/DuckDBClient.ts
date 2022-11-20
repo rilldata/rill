@@ -141,7 +141,7 @@ export class DuckDBClient {
       embed_catalog: true,
     });
 
-    this.instanceID = res["instanceId"];
+    this.instanceID = res.instance.instanceId;
 
     await this.execute(`
       INSTALL 'json';
