@@ -68,11 +68,9 @@
       </div>
     </h1>
     <!-- top right CTAs -->
-    <div>
+    <div style="flex-shrink: 0;">
       <Button type="secondary" on:click={() => viewMetrics(metricsDefId)}>
-        <div class="flex items-center gap-x-2">
-          Edit Metrics <MetricsIcon size="16px" />
-        </div>
+        Edit Metrics <MetricsIcon size="16px" />
       </Button>
     </div>
   </div>
