@@ -39,7 +39,8 @@ func StartCmd() *cobra.Command {
 	var httpPort int
 	var grpcPort int
 	var verbose bool
-	var disableUI bool
+	var noUI bool
+	var noOpen bool
 
 	var startCmd = &cobra.Command{
 		Use:   "start",
@@ -153,18 +154,18 @@ func StartCmd() *cobra.Command {
 			// Add UI, runtime and local/config handlers on HTTP server
 			localConfigHandler := localConfigHandler(localConfig)
 			mux := http.NewServeMux()
-			if !disableUI {
+			if !noUI {
 				mux.Handle("/", uiHandler)
 			}
 			mux.Handle("/v1/", runtimeHandler)
 			mux.Handle("/local/config", localConfigHandler)
 
 			// Open the browser
-			if !disableUI {
+			if !noUI && !noOpen {
 				uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
 				err = browser.Open(uiURL)
 				if err != nil {
-					return fmt.Errorf("could not open browser: %v", err)
+					logger.Warnf("could not open browser error: %v, copy and paste this URL into your browser: %s", err, uiURL)
 				}
 			}
 
@@ -195,7 +196,8 @@ func StartCmd() *cobra.Command {
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for the UI and runtime")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for the runtime's gRPC service")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	startCmd.Flags().BoolVar(&disableUI, "disable-ui", false, "Serve only the runtime")
+	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the runtime")
+	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Disable opening the browser window")
 
 	return startCmd
 }
