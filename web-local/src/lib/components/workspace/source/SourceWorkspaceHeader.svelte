@@ -11,6 +11,7 @@
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
+  import { fade } from "svelte/transition";
   import {
     dataModelerService,
     runtimeStore,
@@ -136,8 +137,11 @@
         Refreshing...
       {:else}
         <div class="flex items-center">
-          {#if $getSource.isSuccess}
-            <div class="ui-copy-muted">
+          {#if $getSource.isSuccess && $getSource.data?.object?.refreshedOn}
+            <div
+              class="ui-copy-muted"
+              transition:fade|local={{ duration: 200 }}
+            >
               Imported on {formatRefreshedOn(
                 $getSource.data?.object?.refreshedOn
               )}

@@ -31,7 +31,8 @@
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
       [$persistentModelStore.entities, $persistentTableStore.entities],
-      $runtimeStore
+      $runtimeStore,
+      persistentTableStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
