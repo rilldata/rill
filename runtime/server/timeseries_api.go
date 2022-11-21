@@ -404,11 +404,11 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: sql,
 	})
-	defer s.dropTempTable(ctx, request.InstanceId)
 	if err != nil {
 		return createErrResult(timeRange), err
 	}
-	rows.Close()
+	defer rows.Close()
+	defer s.dropTempTable(ctx, request.InstanceId)
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: "SELECT * from _ts_",
 	})
@@ -419,6 +419,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	if err != nil {
 		return createErrResultWithPartial(timeRange, results), err
 	}
+	defer rows.Close()
 	var spOp *api.TimeSeriesResponse_TimeSeriesValues
 	if request.Pixels != nil {
 		pixels := int(*request.Pixels)
@@ -442,7 +443,6 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.TimeSeriesValue, error) {
 	results := make([]*api.TimeSeriesValue, 0)
-	defer rows.Close()
 	var converr error
 	for rows.Next() {
 		value := api.TimeSeriesValue{}
@@ -494,10 +494,7 @@ func createErrResultWithPartial(timeRange *api.TimeSeriesTimeRange, results []*a
 }
 
 func (s *Server) dropTempTable(ctx context.Context, instanceId string) {
-	rs, er := s.query(ctx, instanceId, &drivers.Statement{
+	s.query(ctx, instanceId, &drivers.Statement{
 		Query: "DROP TABLE _ts_",
 	})
-	if er == nil {
-		rs.Close()
-	}
 }

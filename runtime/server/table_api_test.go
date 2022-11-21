@@ -17,7 +17,7 @@ func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
 		err := rows.Scan(&val)
 		require.NoError(t, err)
 	}
-	rows.Close()
+	defer rows.Close()
 	return val
 }
 
@@ -41,12 +41,12 @@ func createTable(server *Server, instanceId string, t *testing.T, tableName stri
 		Query: "create table " + quoteName(tableName) + " (a int, \"b\"\"b\" int)",
 	})
 	require.NoError(t, err)
-	result.Close()
+	defer result.Close()
 	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into " + quoteName(tableName) + " values (1, 10)",
 	})
 	require.NoError(t, err)
-	result.Close()
+	defer result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from " + quoteName(tableName),
 	})
@@ -57,7 +57,7 @@ func createTable(server *Server, instanceId string, t *testing.T, tableName stri
 func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	defer rows.Close()
 	cr, err := server.TableCardinality(context.Background(), &api.CardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
@@ -66,7 +66,7 @@ func TestServer_TableCardinality(t *testing.T) {
 	require.Equal(t, int64(1), cr.Cardinality)
 
 	rows = createTable(server, instanceId, t, "select")
-	rows.Close()
+	defer rows.Close()
 	cr, err = server.TableCardinality(context.Background(), &api.CardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "select",
@@ -78,7 +78,7 @@ func TestServer_TableCardinality(t *testing.T) {
 func TestServer_ProfileColumns(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	defer rows.Close()
 	cr, err := server.ProfileColumns(context.Background(), &api.ProfileColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
@@ -97,7 +97,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 func TestServer_TableRows(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	defer rows.Close()
 	cr, err := server.TableRows(context.Background(), &api.RowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
@@ -110,7 +110,7 @@ func TestServer_TableRows(t *testing.T) {
 func TestServer_RenameObject(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	defer rows.Close()
 	_, err := server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
 		InstanceId: instanceId,
 		Name:       "test",
@@ -131,7 +131,7 @@ func TestServer_RenameObject(t *testing.T) {
 func TestServer_EstimateRollupInterval(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	defer rows.Close()
 	var resp *api.EstimateRollupIntervalResponse
 	resp, err := server.EstimateRollupInterval(context.Background(), &api.EstimateRollupIntervalRequest{
 		InstanceId: instanceId,
