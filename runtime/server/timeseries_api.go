@@ -415,11 +415,11 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	if err != nil {
 		return createErrResult(timeRange), err
 	}
-	defer rows.Close()
 	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1)
 	if err != nil {
 		return createErrResultWithPartial(timeRange, results), err
 	}
+	defer rows.Close()
 	var spOp *api.TimeSeriesResponse_TimeSeriesValues
 	if request.Pixels != nil {
 		pixels := int(*request.Pixels)
