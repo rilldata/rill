@@ -71,7 +71,7 @@
     <div>
       <Button type="secondary" on:click={() => viewMetrics(metricsDefId)}>
         <div class="flex items-center gap-x-2">
-          Edit Metrics <MetricsIcon />
+          Edit Metrics <MetricsIcon size="16px" />
         </div>
       </Button>
     </div>
