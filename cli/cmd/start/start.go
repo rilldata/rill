@@ -165,7 +165,7 @@ func StartCmd() *cobra.Command {
 				uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
 				err = browser.Open(uiURL)
 				if err != nil {
-					logger.Warnf("could not open browser error: %v, copy and paste this URL into your browser: %s", err, uiURL)
+					logger.Warnf("could not open browser, error: %v, copy and paste this URL into your browser: %s", err, uiURL)
 				}
 			}
 

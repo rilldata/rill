@@ -2,23 +2,22 @@ package source
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-// addCmd represents the add command
+// addCmd represents the add command, it requires min 1 args as source name
 func AddCmd() *cobra.Command {
-	var sourcePath string
 	var addCmd = &cobra.Command{
-		Use:   "add",
+		Use:   "add <source path>",
 		Short: "Add source to the project",
 		Long:  `Add source to the project`,
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("add called")
+			fmt.Printf("add called with args:%s", strings.Join(args, " "))
 			return nil
 		},
 	}
-
-	addCmd.Flags().StringVarP(&sourcePath, "source-path", "p", ".", "Source path for Rill")
 	return addCmd
 }

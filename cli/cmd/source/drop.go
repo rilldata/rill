@@ -2,23 +2,23 @@ package source
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-// dropCmd represents the drop command
+// dropCmd represents the drop command, it requires min 1 args as source path
 func DropCmd() *cobra.Command {
-	var sourcePath string
 	var dropCmd = &cobra.Command{
-		Use:   "drop",
+		Use:   "drop <source>",
 		Short: "Drop source to the project",
 		Long:  `Drop source to the project.`,
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("drop called")
+			fmt.Printf("drop called with args:%s", strings.Join(args, " "))
 			return nil
 		},
 	}
 
-	dropCmd.Flags().StringVarP(&sourcePath, "source-path", "p", ".", "Source path for Rill")
 	return dropCmd
 }
