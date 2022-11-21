@@ -103,11 +103,6 @@ func (s *Server) Serve(ctx context.Context) error {
 	return group.Wait()
 }
 
-// Metrics APIs
-func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
-	return &api.EstimateRollupIntervalResponse{}, nil
-}
-
 // Ping implements RuntimeService
 func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
 	resp := &api.PingResponse{

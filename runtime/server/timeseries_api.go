@@ -143,9 +143,10 @@ func normaliseMeasures(measures *api.GenerateTimeSeriesRequest_BasicMeasures) *a
 	return measures
 }
 
-func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesTimeRange, error) {
+// Metrics/Timeseries APIs
+func (s *Server) EstimateRollupInterval(ctx context.Context, request *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
 	tableName := EscapeDoubleQuotes(request.TableName)
-	escapedColumnName := EscapeDoubleQuotes(request.TimestampColumnName)
+	escapedColumnName := EscapeDoubleQuotes(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: `SELECT
         	max(` + escapedColumnName + `) - min(` + escapedColumnName + `) as r,
@@ -193,6 +194,26 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 
 	start := min.Format(ISO_FORMAT)
 	end := max.Format(ISO_FORMAT)
+
+	return &api.EstimateRollupIntervalResponse{
+		Interval: rollupInterval,
+		Start:    start,
+		End:      end,
+	}, nil
+}
+
+func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesTimeRange, error) {
+	result, err := s.EstimateRollupInterval(ctx, &api.EstimateRollupIntervalRequest{
+		InstanceId: request.InstanceId,
+		TableName:  request.TableName,
+		ColumnName: request.TimestampColumnName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	start := result.Start
+	end := result.End
+	rollupInterval := result.Interval
 
 	rtr := request.TimeRange
 	if rtr == nil {

@@ -2529,15 +2529,14 @@
     "v1EstimateRollupIntervalResponse": {
       "type": "object",
       "properties": {
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
         "interval": {
-          "type": "string",
-          "format": "int64"
-        },
-        "min": {
-          "$ref": "#/definitions/v1Scalar"
-        },
-        "max": {
-          "$ref": "#/definitions/v1Scalar"
+          "$ref": "#/definitions/v1TimeGrain"
         }
       }
     },
@@ -3295,23 +3294,6 @@
         }
       }
     },
-    "v1Scalar": {
-      "type": "object",
-      "properties": {
-        "int64": {
-          "type": "string",
-          "format": "int64"
-        },
-        "double": {
-          "type": "number",
-          "format": "double"
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    },
     "v1Source": {
       "type": "object",
       "properties": {
@@ -3371,6 +3353,7 @@
     "v1TimeGrain": {
       "type": "string",
       "enum": [
+        "UNSPECIFIED",
         "MILLISECOND",
         "SECOND",
         "MINUTE",
@@ -3378,10 +3361,9 @@
         "DAY",
         "WEEK",
         "MONTH",
-        "YEAR",
-        "UNSPECIFIED"
+        "YEAR"
       ],
-      "default": "MILLISECOND"
+      "default": "UNSPECIFIED"
     },
     "v1TimeRangeName": {
       "type": "string",
