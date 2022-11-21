@@ -18,7 +18,7 @@ func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDataba
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	rows.Close()
 	return &api.RenameDatabaseObjectResponse{}, nil
 }
 
@@ -87,7 +87,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 				return nil, err
 			}
 		}
-		defer rows.Close()
+		rows.Close()
 	}
 
 	return &api.ProfileColumnsResponse{

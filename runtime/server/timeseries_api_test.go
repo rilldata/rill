@@ -20,12 +20,12 @@ func CreateSimpleTimeseriesTable(server *Server, instanceId string, t *testing.T
 		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)",
 	})
 	require.NoError(t, err)
-	defer result.Close()
+	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into " + quoteName(tableName) + " values (1.0, '2019-01-01 00:00:00', 'android'), (1.0, '2019-01-02 00:00:00', 'iphone')",
 	})
 	require.NoError(t, err)
-	defer result.Close()
+	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from " + quoteName(tableName),
 	})
@@ -38,7 +38,7 @@ func CreateTimeseriesTable(server *Server, instanceId string, t *testing.T, tabl
 		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)",
 	})
 	require.NoError(t, err)
-	defer result.Close()
+	result.Close()
 	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into " + quoteName(tableName) + ` values 
 		(1.0, '2019-01-01 00:00:00', 'android'), 
@@ -55,7 +55,7 @@ func CreateTimeseriesTable(server *Server, instanceId string, t *testing.T, tabl
 		`,
 	})
 	require.NoError(t, err)
-	defer result.Close()
+	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from " + quoteName(tableName),
 	})
@@ -285,7 +285,7 @@ func TestServer_RangeSanity(t *testing.T) {
 	server, instanceId := getTestServer(t)
 
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	defer result.Close()
+	result.Close()
 	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",
 	})
@@ -324,7 +324,7 @@ func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing
 		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)", // todo device is redundant - ie remove
 	})
 	require.NoError(t, err)
-	defer result.Close()
+	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into " + quoteName(tableName) + ` values 
 		(2.0, '2019-01-01T00:00:00Z', 'android'), 
@@ -341,7 +341,7 @@ func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing
 		`,
 	})
 	require.NoError(t, err)
-	defer result.Close()
+	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from " + quoteName(tableName),
 	})

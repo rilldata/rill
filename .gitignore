@@ -59,5 +59,3 @@ release.properties
 *.ipr
 *.iml
 *.iws
-
-demo.db.tmp/*
