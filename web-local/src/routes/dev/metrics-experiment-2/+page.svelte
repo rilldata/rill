@@ -1,5 +1,9 @@
 <script lang="ts">
-  import Measures from "./Measures.svelte";
+  import DimensionSet from "./dashboard-config/DimensionSet.svelte";
+  import MeasureSet from "./dashboard-config/MeasureSet.svelte";
 </script>
 
-<Measures />
+<MeasureSet />
+<DimensionSet />
+
+<!-- <Measures /> -->

@@ -21,10 +21,11 @@
 </script>
 
 <div
+  style:min-height="36px"
   class:sticky
   class:left-0={sticky}
   class:grow
-  class="border flex items-center {bg} {text} {border}"
+  class="border-r border-b flex items-center {bg} {text} {border}"
 >
   <slot />
 </div>

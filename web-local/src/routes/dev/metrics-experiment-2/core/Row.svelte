@@ -3,12 +3,20 @@ Row.svelte enables functionality around moving the row among other rows.
 
 -->
 <script lang="ts">
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { Callout } from "@rilldata/web-local/lib/components/callout";
   import { Divider, MenuItem } from "@rilldata/web-local/lib/components/menu";
   import { createEventDispatcher } from "svelte";
+  import { slide } from "svelte/transition";
   import WithDragHandle from "./WithDragHandle.svelte";
   export let mode = "unselected";
+  export let selected = false;
+
+  export let error: string = undefined;
 
   export let suppressTooltips = false;
+
+  let isEditing = false;
 
   const dispatch = createEventDispatcher();
 
@@ -18,6 +26,14 @@ Row.svelte enables functionality around moving the row among other rows.
 
   export function deactivateDragHandleMenu() {
     dragMenuActive = false;
+  }
+
+  function handleEdit(key) {
+    return (event) => dispatch("edit", { key, value: event.target.value });
+  }
+
+  function handleFocus() {
+    isEditing = true;
   }
 
   let dragMenuActive = false;
@@ -68,7 +84,23 @@ Row.svelte enables functionality around moving the row among other rows.
           }}>delete measure</MenuItem
         >
       </svelte:fragment>
-      <slot />
+      <div
+        class="w-full"
+        class:bg-gray-50={selected && !error}
+        class:bg-yellow-50={error}
+        class:ring-2={selected && !isEditing}
+        class:ring-1={(selected && isEditing) || error}
+        class:ring-yellow-500={error}
+      >
+        <slot {handleEdit} {handleFocus} />
+        {#if error}
+          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+            <Callout rounded={false} border={false} level="warning"
+              >{error}</Callout
+            >
+          </div>
+        {/if}
+      </div>
     </WithDragHandle>
   </div>
 </div>

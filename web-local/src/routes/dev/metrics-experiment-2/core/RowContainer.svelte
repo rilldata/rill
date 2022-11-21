@@ -1,65 +1,28 @@
 <script lang="ts">
   import { clickOutside } from "@rilldata/web-local/lib/components/actions/click-outside";
+  import Add from "@rilldata/web-local/lib/components/icons/Add.svelte";
   import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
-  import { onMount, tick } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import AddMeasure from "./AddMeasure.svelte";
-  import Measure from "./dashboard-config/Measure.svelte";
-  import { flip } from "./row-flip";
+  import { flip } from "../row-flip";
 
-  let measureComponents = [];
   let duration = 200;
 
-  interface Measure {
-    displayName?: string;
-    expression?: string;
-    description?: string;
-    id: string;
-    visible: boolean;
+  export let items: any[];
+  export let addItemText: string = undefined;
+
+  let draftItems = items;
+  /** refresh draftItems if items prop changes */
+  $: draftItems = items;
+
+  /** we utilize the  */
+  let itemComponents = [];
+
+  const dispatch = createEventDispatcher();
+
+  function submitUpdatedItems() {
+    dispatch("update-items", draftItems);
   }
-
-  let errorGUID = guidGenerator();
-
-  let measures: Measure[] = [
-    {
-      displayName: "Total Records",
-      expression: "count(*)",
-      id: guidGenerator(),
-      visible: true,
-    },
-    ...Array.from({ length: 0 }).map((_, i) => {
-      return {
-        displayName: "measure" + i,
-        expression: `count(${i})`,
-        id: guidGenerator(),
-        visible: true,
-      };
-    }),
-    {
-      displayName: "Revenue",
-      expression: "sum(revenue)",
-      id: errorGUID,
-      visible: true,
-    },
-    {
-      displayName: "Distinct Users",
-      expression: "count (distinct user_id)",
-      id: guidGenerator(),
-      visible: true,
-    },
-    {
-      displayName: "Distinct Non-Bot Users",
-      expression: "count (distinct sanitized_user_id)",
-      id: guidGenerator(),
-      visible: false,
-    },
-    {
-      displayName: "Total Sales",
-      expression: "sum(sales_price)",
-      id: guidGenerator(),
-      visible: true,
-    },
-  ];
 
   function newItem() {
     return {
@@ -71,44 +34,49 @@
   }
 
   function addItem() {
-    measures = [...measures, newItem()];
+    draftItems = [...draftItems, newItem()];
+    submitUpdatedItems();
   }
 
   function deleteItem(id: string) {
-    measures = [...measures.filter((measure) => measure.id !== id)];
+    draftItems = [...draftItems.filter((item) => item.id !== id)];
+    submitUpdatedItems();
   }
 
   function deactivateDragHandleMenus() {
-    measureComponents.forEach((component) =>
+    itemComponents.forEach((component) =>
       component?.deactivateDragHandleMenu()
     );
   }
 
   function moveUp(id: string) {
-    let i = measures.findIndex((measure) => measure.id === id);
+    let i = draftItems.findIndex((item) => item.id === id);
     if (i > 0 && selections.size < 2) {
       deactivateDragHandleMenus();
 
-      const thisMeasure = { ...measures[i] };
-      const otherMeasure = { ...measures[i - 1] };
+      const thisMeasure = { ...draftItems[i] };
+      const otherMeasure = { ...draftItems[i - 1] };
 
-      measures[i] = otherMeasure;
-      measures[i - 1] = thisMeasure;
-      measures = measures;
+      draftItems[i] = otherMeasure;
+      draftItems[i - 1] = thisMeasure;
+      // tell svelte to redraw
+      draftItems = draftItems;
+      submitUpdatedItems();
     }
   }
 
   async function moveDown(id: string) {
-    let i = measures.findIndex((measure) => measure.id === id);
-    if (i < measures.length - 1 && selections.size < 2) {
+    let i = draftItems.findIndex((item) => item.id === id);
+    if (i < draftItems.length - 1 && selections.size < 2) {
       deactivateDragHandleMenus();
 
-      const thisMeasure = { ...measures[i] };
-      const otherMeasure = { ...measures[i + 1] };
+      const thisMeasure = { ...draftItems[i] };
+      const otherMeasure = { ...draftItems[i + 1] };
 
-      measures[i] = otherMeasure;
-      measures[i + 1] = thisMeasure;
-      measures = measures;
+      draftItems[i] = otherMeasure;
+      draftItems[i + 1] = thisMeasure;
+      draftItems = draftItems;
+      submitUpdatedItems();
     }
   }
 
@@ -123,9 +91,11 @@
     return (event) => {
       let key = event.detail.key;
       let value = event.detail.value;
-      let measure = measures.find((measure) => measure.id === id);
-      measure[key] = value;
-      measures = measures;
+      console.log("hey", key, value);
+      let item = draftItems.find((item) => item.id === id);
+      item[key] = value;
+      draftItems = draftItems;
+      submitUpdatedItems();
     };
   }
 
@@ -145,9 +115,10 @@
 
   function handleToggleVisibility(id: string) {
     return () => {
-      let measure = measures.find((measure) => measure.id === id);
-      measure.visible = !measure.visible;
-      measures = measures;
+      let item = draftItems.find((item) => item.id === id);
+      item.visible = !item.visible;
+      draftItems = draftItems;
+      submitUpdatedItems();
     };
   }
 
@@ -156,37 +127,40 @@
       event.preventDefault();
       selections.forEach((id) => deleteItem(id));
       selections = new Set();
-      measures = measures;
+      draftItems = draftItems;
+      submitUpdatedItems();
     }
   }
 
   function handleCancelSelection(event) {
     if (event.key === "Escape" && selections.size > 0) {
       selections = new Set();
-      measureComponents.forEach((component) => component?.blurAllFields());
+      itemComponents.forEach((component) => component?.blurAllFields());
     }
   }
 
   function moveToBottom(id: string = undefined) {
-    measures = [
-      ...measures.filter((measure) =>
-        id ? measure.id !== id : !selections.has(measure.id)
+    draftItems = [
+      ...draftItems.filter((item) =>
+        id ? item.id !== id : !selections.has(item.id)
       ),
-      ...measures.filter((measure) =>
-        id ? measure.id === id : selections.has(measure.id)
+      ...draftItems.filter((item) =>
+        id ? item.id === id : selections.has(item.id)
       ),
     ];
+    submitUpdatedItems();
   }
 
   function moveToTop(id: string = undefined) {
-    measures = [
-      ...measures.filter((measure) =>
-        id ? measure.id === id : selections.has(measure.id)
+    draftItems = [
+      ...draftItems.filter((item) =>
+        id ? item.id === id : selections.has(item.id)
       ),
-      ...measures.filter((measure) =>
-        id ? measure.id !== id : !selections.has(measure.id)
+      ...draftItems.filter((item) =>
+        id ? item.id !== id : !selections.has(item.id)
       ),
     ];
+    submitUpdatedItems();
   }
 
   function handleMoveToOneSideOrOther(event) {
@@ -208,11 +182,11 @@
       if (event.key === "ArrowDown" && event.shiftKey) {
         event.preventDefault();
         moveDown(selectionID);
-        measureComponents.forEach((component) => component?.blurAllFields());
+        itemComponents.forEach((component) => component?.blurAllFields());
       } else if (event.key === "ArrowUp" && event.shiftKey) {
         event.preventDefault();
         moveUp(selectionID);
-        measureComponents.forEach((component) => component?.blurAllFields());
+        itemComponents.forEach((component) => component?.blurAllFields());
       }
     }
   }
@@ -234,10 +208,10 @@
     every += 1;
     if (isDragging && every % 5 === 0) {
       dragY = Math.max(0, event.clientY - containerTop);
-      let indexMap = (dragY / containerSize) * measures.length;
-      dragIndex = Math.min(measures.length - 1, ~~Math.round(indexMap));
-      let candidate = activeMeasures[dragIndex].id;
-      if (indexMap > measures.length - 1) {
+      let indexMap = (dragY / containerSize) * draftItems.length;
+      dragIndex = Math.min(draftItems.length - 1, ~~Math.round(indexMap));
+      let candidate = activeItems[dragIndex].id;
+      if (indexMap > draftItems.length - 1) {
         /** Set the candidate drag insertion point to be END_POINT; this will append
          * to the end of activeMeasures.
          */
@@ -250,11 +224,12 @@
 
   /** FIXME: how much of this can we deprecate */
   async function onMouseup() {
-    measures = activeMeasures;
+    draftItems = activeItems;
     isDragging = false;
     /** wait for the update before redrawing */
     dragID = undefined;
     candidateDragInsertionPoint = undefined;
+    submitUpdatedItems();
   }
 
   /** drag id */
@@ -295,7 +270,7 @@
   }
 
   $: if (mode === "multiselect")
-    measureComponents.forEach((component) => component?.blurAllFields());
+    itemComponents.forEach((component) => component?.blurAllFields());
 
   let showError = false;
 
@@ -316,7 +291,7 @@
    *
    */
   // always reset activeMeasures if measures change.
-  $: activeMeasures = measures;
+  $: activeItems = draftItems;
 
   function handleDragging(dragID, candidateDragInsertionPoint) {
     if (
@@ -324,21 +299,21 @@
       candidateDragInsertionPoint &&
       dragID !== candidateDragInsertionPoint
     ) {
-      let original = activeMeasures.find((measure) => measure.id === dragID);
-      let candidateActiveMeasures = [
-        ...activeMeasures.filter((measure) => measure.id !== original.id),
+      let original = activeItems.find((item) => item.id === dragID);
+      let candidateActiveItems = [
+        ...activeItems.filter((item) => item.id !== original.id),
       ];
       if (candidateDragInsertionPoint === END_POINT) {
-        candidateActiveMeasures.push({ ...original });
+        candidateActiveItems.push({ ...original });
       } else {
-        let insertionIndex = candidateActiveMeasures.findIndex(
-          (measure) => measure.id === candidateDragInsertionPoint
+        let insertionIndex = candidateActiveItems.findIndex(
+          (item) => item.id === candidateDragInsertionPoint
         );
 
-        candidateActiveMeasures.splice(insertionIndex, 0, { ...original });
+        candidateActiveItems.splice(insertionIndex, 0, { ...original });
       }
 
-      activeMeasures = candidateActiveMeasures;
+      activeItems = candidateActiveItems;
     }
   }
 
@@ -353,62 +328,54 @@
   on:mouseup={onMouseup}
 />
 
-<input type="checkbox" bind:checked={showError} />
-
-<h1>Measures</h1>
-
 <div use:clickOutside={[[], clearSelections]} bind:this={container}>
-  {#each activeMeasures as measure, i (measure.id)}
+  <!-- iterate over the active items and slot in each item's state & callbacks -->
+  {#each activeItems as item (item.id)}
     <div
       class="w-full"
       transition:slide|local={{ duration }}
       animate:flip={{
         duration,
-        activeElement: dragID
-          ? dragID === measure.id
-          : selections.has(measure.id),
+        activeElement: dragID ? dragID === item.id : selections.has(item.id),
       }}
     >
-      <Measure
-        error={showError && measure.id === errorGUID
-          ? "This is what an error would look like"
-          : undefined}
-        bind:this={measureComponents[i]}
-        visible={measure.visible}
-        expression={measure.expression}
-        displayName={measure.displayName}
-        description={measure.description}
-        selected={selections.has(measure.id)}
+      <slot
+        {item}
         {mode}
         {isDragging}
-        on:draghandle-mousedown={handleDragHandleMousedown(measure.id)}
-        on:select={handleSelect(measure.id)}
-        on:toggle-visibility={handleToggleVisibility(measure.id)}
-        on:edit={handleEdit(measure.id)}
-        on:delete={async () => {
+        selected={selections.has(item.id)}
+        edit={handleEdit(item.id)}
+        moveUp={() => {
+          moveUp(item.id);
+        }}
+        moveDown={() => {
+          moveDown(item.id);
+        }}
+        moveToTop={() => {
+          moveToTop(item.id);
+        }}
+        moveToBottom={() => {
+          moveToBottom(item.id);
+        }}
+        deleteItem={async () => {
           await wait(150);
-          deleteItem(measure.id);
+          deleteItem(item.id);
         }}
-        on:move-up={() => {
-          moveUp(measure.id);
-        }}
-        on:move-down={() => {
-          moveDown(measure.id);
-        }}
-        on:move-to-top={() => {
-          moveToTop(measure.id);
-        }}
-        on:move-to-bottom={() => {
-          moveToBottom(measure.id);
-        }}
+        select={handleSelect(item.id)}
+        toggleVisibility={handleToggleVisibility(item.id)}
+        dragHandleMousedown={handleDragHandleMousedown(item.id)}
       />
     </div>
   {/each}
+  {#if addItemText}
+    <button
+      style:margin-left="20px"
+      style:height="36px"
+      class="flex items-center p-1 hover:bg-gray-100 w-full block gap-x-2 rounded"
+      on:click
+    >
+      <Add />
+      {addItemText}
+    </button>
+  {/if}
 </div>
-<AddMeasure
-  on:click={async () => {
-    measureComponents.forEach((measure) => measure?.blurAllFields());
-    await tick();
-    addItem();
-  }}
-/>
