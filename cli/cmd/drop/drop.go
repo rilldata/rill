@@ -13,8 +13,7 @@ func DropCmd() *cobra.Command {
 		Short: "Drop source, models to the project",
 		Long:  `Drop source, models to the project.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("drop called")
-			return nil
+			return fmt.Errorf("Error: must also specify a sub commands like source or model")
 		},
 	}
 

@@ -12,7 +12,7 @@ func DropCmd() *cobra.Command {
 	var dropCmd = &cobra.Command{
 		Use:   "drop",
 		Short: "Drop source to the project",
-		Long:  `Add source to the project.`,
+		Long:  `Drop source to the project.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("drop called")
 			return nil

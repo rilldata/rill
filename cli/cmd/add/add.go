@@ -1,6 +1,8 @@
 package add
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -10,10 +12,9 @@ func AddCmd() *cobra.Command {
 		Use:   "add",
 		Short: "Add source, models to the project",
 		Long:  `Add source, models to the project`,
-		// RunE: func(cmd *cobra.Command, args []string) error {
-		// 	fmt.Println("add called")
-		// 	return nil
-		// },
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fmt.Errorf("Error: must also specify a sub commands like source or model")
+		},
 	}
 
 	addCmd.AddCommand(SourceCmd())
