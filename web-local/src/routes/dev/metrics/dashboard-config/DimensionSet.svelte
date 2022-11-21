@@ -44,6 +44,7 @@
 
 <RowContainer
   items={dimensions}
+  addItemText="Add Dimension"
   on:update-items={(event) => {
     dimensions = event.detail;
   }}
@@ -80,14 +81,3 @@
     on:move-to-bottom={moveToBottom}
   />
 </RowContainer>
-<!-- <AddMeasure
-  on:click={async () => {
-    measureComponents.forEach((measure) => measure?.blurAllFields());
-    await tick();
-    addItem();
-  }}
-/> -->
-
-<pre>
-  {JSON.stringify(dimensions, null, 2)}
-</pre>
