@@ -261,7 +261,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 			return nil, err
 		}
 		defer rows.Close()
-		results := make([]*api.TimeSeriesValue, (pixels+1)*4)
+		results := make([]*api.TimeSeriesValue, 0, (pixels+1)*4)
 		for rows.Next() {
 			var ts time.Time
 			var count float64
@@ -442,6 +442,8 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.TimeSeriesValue, error) {
 	results := make([]*api.TimeSeriesValue, 0)
+	defer rows.Close()
+	var converr error
 	for rows.Next() {
 		value := api.TimeSeriesValue{}
 		results = append(results, &value)
@@ -454,11 +456,23 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.
 		delete(row, "ts")
 		value.Records = make(map[string]float64, len(row))
 		for k, v := range row {
-			value.Records[k] = v.(float64)
+			switch x := v.(type) {
+			case int32:
+				value.Records[k] = float64(x)
+			case int64:
+				value.Records[k] = float64(x)
+			case float32:
+				value.Records[k] = float64(x)
+			case float64:
+				value.Records[k] = x
+			default:
+				if converr == nil {
+					converr = fmt.Errorf("unknown type %T ", v)
+				}
+			}
 		}
 	}
-	rows.Close()
-	return results, nil
+	return results, converr
 }
 
 func createErrResult(timeRange *api.TimeSeriesTimeRange) *api.TimeSeriesRollup {
