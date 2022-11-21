@@ -2,7 +2,7 @@
   import { clickOutside } from "@rilldata/web-local/lib/components/actions/click-outside";
   import Add from "@rilldata/web-local/lib/components/icons/Add.svelte";
   import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, onMount, tick } from "svelte";
   import { slide } from "svelte/transition";
   import { flip } from "../row-flip";
 
@@ -166,10 +166,16 @@
   function handleMoveToOneSideOrOther(event) {
     if (selections.size > 0) {
       if (event.metaKey && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         deactivateDragHandleMenus();
         moveToBottom();
       }
       if (event.metaKey && event.key === "ArrowUp") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         deactivateDragHandleMenus();
         moveToTop();
       }
@@ -181,10 +187,14 @@
       let selectionID = Array.from(selections)[0] as string;
       if (event.key === "ArrowDown" && event.shiftKey) {
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         moveDown(selectionID);
         itemComponents.forEach((component) => component?.blurAllFields());
       } else if (event.key === "ArrowUp" && event.shiftKey) {
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         moveUp(selectionID);
         itemComponents.forEach((component) => component?.blurAllFields());
       }
@@ -372,7 +382,11 @@
       style:margin-left="20px"
       style:height="36px"
       class="flex items-center p-1 hover:bg-gray-100 w-full block gap-x-2 rounded"
-      on:click
+      on:click={async () => {
+        // measureComponents.forEach((measure) => measure?.blurAllFields());
+        await tick();
+        addItem();
+      }}
     >
       <Add />
       {addItemText}
