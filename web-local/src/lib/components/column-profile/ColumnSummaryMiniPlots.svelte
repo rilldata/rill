@@ -1,30 +1,34 @@
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
-  import FormattedDataType from "../data-types/FormattedDataType.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import BarAndLabel from "../viz/BarAndLabel.svelte";
-
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import {
     CATEGORICALS,
     DATA_TYPE_COLORS,
     NUMERICS,
     TIMESTAMPS,
   } from "../../duckdb-data-types";
-  import {
-    formatCompactInteger,
-    formatInteger,
-    singleDigitPercentage,
-  } from "../../util/formatters";
+  import { formatCompactInteger, formatInteger } from "../../util/formatters";
+  import FormattedDataType from "../data-types/FormattedDataType.svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import BarAndLabel from "../viz/BarAndLabel.svelte";
 
-  import Histogram from "../viz/histogram/SmallHistogram.svelte";
+  import NullPercentageSpark from "./data-graphics/sparks/NullPercentageSpark.svelte";
+
+  import {
+    useRuntimeServiceGetNullCount,
+    useRuntimeServiceTableCardinality,
+  } from "@rilldata/web-common/runtime-client";
   import { convertTimestampPreview } from "../../util/convertTimestampPreview";
   import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
+  import Histogram from "../viz/histogram/SmallHistogram.svelte";
+
+  export let objectName: string;
+  export let columnName: string;
 
   export let type;
   export let summary;
-  export let totalRows: number;
-  export let nullCount;
+  // export let nullCount;
   export let example;
   export let view = "summaries"; // summaries, example
   export let containerWidth: number;
@@ -45,6 +49,35 @@
     containerWidth > COLUMN_PROFILE_CONFIG.compactBreakpoint
       ? formatInteger
       : formatCompactInteger;
+
+  /**
+   * Get the null counts for this profile.
+   */
+  let nullCountQuery;
+  $: if ($runtimeStore?.instanceId)
+    nullCountQuery = useRuntimeServiceGetNullCount(
+      $runtimeStore?.instanceId,
+      objectName,
+      columnName
+    );
+
+  let nullCount = 0;
+  // FIXME: count should not be a string. For now, let's patch it.
+  $: nullCount = +$nullCountQuery?.data?.count;
+
+  /**
+   * Get the total rows for this profile.
+   */
+  let totalRowsQuery;
+  $: if ($runtimeStore?.instanceId) {
+    totalRowsQuery = useRuntimeServiceTableCardinality(
+      $runtimeStore?.instanceId,
+      objectName
+    );
+  }
+  let totalRows = 0;
+  // FIXME: count should not be a string.
+  $: totalRows = +$totalRowsQuery?.data?.cardinality;
 </script>
 
 <div class="flex gap-2 items-center" class:hidden={view !== "summaries"}>
@@ -115,7 +148,8 @@
     class:hidden={hideNullPercentage}
   >
     {#if totalRows !== 0 && totalRows !== undefined && nullCount !== undefined}
-      <Tooltip location="right" alignment="center" distance={8}>
+      <NullPercentageSpark {objectName} {columnName} />
+      <!-- <Tooltip location="right" alignment="center" distance={8}>
         <BarAndLabel
           showBackground={nullCount !== 0}
           color={DATA_TYPE_COLORS[type]?.bgClass}
@@ -135,7 +169,7 @@
             no null values in this column
           {/if}
         </TooltipContent>
-      </Tooltip>
+      </Tooltip> -->
     {/if}
   </div>
 </div>

@@ -98,6 +98,7 @@
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
                 <ColumnProfile
                   indentLevel={1}
+                  objectName={sourceName}
                   cardinality={derivedTable?.cardinality ?? 0}
                   profile={derivedTable?.profile ?? []}
                   head={derivedTable?.preview ?? []}

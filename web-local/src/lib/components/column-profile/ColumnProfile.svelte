@@ -1,6 +1,13 @@
 <script lang="ts">
+  import {
+    useRuntimeServiceGetCardinalityOfColumn,
+    useRuntimeServiceGetNullCount,
+    useRuntimeServiceProfileColumns,
+  } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
+  import { derived, writable } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
   import ColumnProfileEntry from "./ColumnProfileEntry.svelte";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
@@ -8,21 +15,12 @@
   export let containerWidth = 0;
 
   export let cardinality: number;
-  export let profile: any;
+  export let objectName: string;
+  // export let profile: any;
   export let head: any; // FIXME
   export let entityId: string;
   export let showContextButton = true;
   export let indentLevel = 0;
-
-  let sortedProfile;
-  const sortByOriginalOrder = null;
-
-  let sortMethod = defaultSort;
-  $: if (sortMethod !== sortByOriginalOrder) {
-    sortedProfile = [...profile].sort(sortMethod);
-  } else {
-    sortedProfile = profile;
-  }
 
   let previewView = "summaries";
 
@@ -35,6 +33,62 @@
     observer.observe(container);
     return () => observer.unobserve(container);
   });
+
+  // get all column profiles.
+  let profileColumns;
+  $: profileColumns = useRuntimeServiceProfileColumns(
+    $runtimeStore?.instanceId,
+    objectName
+  );
+
+  function getSummaries(objectName, instanceId, profileColumnResults) {
+    return derived(
+      profileColumnResults.map((column) => {
+        return derived(
+          [
+            writable(column),
+            useRuntimeServiceGetNullCount(instanceId, objectName, column.name),
+            useRuntimeServiceGetCardinalityOfColumn(
+              instanceId,
+              objectName,
+              column.name
+            ),
+          ],
+          ([col, nullValues, cardinality]) => {
+            return {
+              ...col,
+              nullCount: +nullValues?.data?.count,
+              cardinality: +cardinality?.data?.cardinality,
+            };
+          }
+        );
+      }),
+
+      (combos) => {
+        return combos;
+      }
+    );
+  }
+
+  let nestedColumnProfileQuery;
+  $: if ($profileColumns?.data?.profileColumns) {
+    nestedColumnProfileQuery = getSummaries(
+      objectName,
+      $runtimeStore?.instanceId,
+      $profileColumns?.data?.profileColumns
+    );
+  }
+
+  $: profile = $nestedColumnProfileQuery;
+  let sortedProfile;
+  const sortByOriginalOrder = null;
+
+  let sortMethod = defaultSort;
+  $: if (profile && sortMethod !== sortByOriginalOrder) {
+    sortedProfile = [...profile].sort(sortMethod);
+  } else {
+    sortedProfile = profile;
+  }
 </script>
 
 <!-- pl-16 -->
@@ -80,7 +134,8 @@
         hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
         compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
         view={previewView}
-        name={column.name}
+        {objectName}
+        columnName={column.name}
         type={column.type}
         summary={column.summary}
         totalRows={cardinality}

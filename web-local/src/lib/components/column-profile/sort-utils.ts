@@ -1,16 +1,16 @@
 import {
   BOOLEANS,
   CATEGORICALS,
-  INTEGERS,
   FLOATS,
+  INTEGERS,
   TIMESTAMPS,
 } from "../../duckdb-data-types";
 
 export function sortByCardinality(a, b) {
   if (a.summary && b.summary) {
-    if (a.summary.cardinality < b.summary.cardinality) {
+    if (a.summary < b.cardinality) {
       return 1;
-    } else if (a.summary.cardinality > b.summary.cardinality) {
+    } else if (a.cardinality > b.cardinality) {
       return -1;
     } else {
       return sortByType(a, b);

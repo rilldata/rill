@@ -7,7 +7,8 @@
   import ColumnProfileTitle from "./ColumnProfileTitle.svelte";
   import ColumnSummaryMiniPlots from "./ColumnSummaryMiniPlots.svelte";
 
-  export let name;
+  export let objectName: string;
+  export let columnName;
   export let type;
   export let summary;
   export let totalRows;
@@ -47,21 +48,24 @@
 >
   <DataTypeIcon slot="icon" {type} />
 
-  <ColumnProfileTitle slot="left" {...{ name, type, totalRows, active }} />
+  <ColumnProfileTitle
+    slot="left"
+    {...{ objectName, columnName, type, totalRows, active }}
+  />
 
   <ColumnSummaryMiniPlots
     slot="right"
-    {...{
-      type,
-      summary,
-      totalRows,
-      nullCount,
-      example,
-      view,
-      containerWidth,
-      hideNullPercentage,
-      compactBreakpoint,
-    }}
+    {objectName}
+    {columnName}
+    {type}
+    {summary}
+    {totalRows}
+    {nullCount}
+    {example}
+    {view}
+    {containerWidth}
+    {hideNullPercentage}
+    {compactBreakpoint}
   />
 
   <svelte:fragment slot="context-button">
