@@ -26,8 +26,5 @@
       "package.json",
       "web-local/package.json"
     ]
-  },
-  "devDependencies": {
-    "yaml": "^2.1.3"
   }
 }

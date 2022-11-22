@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/utils";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";

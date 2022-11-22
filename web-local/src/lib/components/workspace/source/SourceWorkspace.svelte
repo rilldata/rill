@@ -36,7 +36,7 @@
     ]);
   };
 
-  $: switchToSource(currentSource?.id);
+  $: switchToSource(sourceName);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.

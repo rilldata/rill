@@ -1,12 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { parse } from "yaml";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
@@ -28,7 +26,10 @@
     sourceUpdated,
   } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/utils";
+  import {
+    useSourceFromYaml,
+    useSourceNames,
+  } from "@rilldata/web-local/lib/svelte-query/sources";
   import { createEventDispatcher, getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { getNextEntityName } from "../../../../common/utils/getNextEntityId";
@@ -53,7 +54,7 @@
   export let toggleMenu: () => void;
 
   $: sourceNames = useSourceNames($runtimeStore.repoId);
-  $: sourceData = useRuntimeServiceGetFile(
+  $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.repoId,
     `/sources/${sourceName}.yaml`
   );
@@ -91,45 +92,34 @@
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndMigrate();
 
-  const handleDeleteSource = (tableName: string) => {
-    $deleteSource.mutate(
-      {
+  const handleDeleteSource = async (tableName: string) => {
+    try {
+      await $deleteSource.mutateAsync({
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
           path: `sources/${tableName}.yaml`,
         },
-      },
-      {
-        onSuccess: () => {
-          if (
-            $rillAppStore.activeEntity.type === EntityType.Table &&
-            $rillAppStore.activeEntity.id === sourceName
-          ) {
-            const nextSourceName = getNextEntityName(
-              $sourceNames.data,
-              sourceName
-            );
-            if (nextSourceName) {
-              goto(`/source/${nextSourceName}`);
-            } else {
-              goto("/");
-            }
-          }
-          sourceUpdated(tableName);
-          return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-        },
-        onError: (error) => {
-          console.error(error);
-        },
-        onSettled: () => {
-          // onSettled gets triggered *after* both onSuccess and onError
-          toggleMenu();
-        },
+      });
+      if (
+        $rillAppStore.activeEntity.type === EntityType.Table &&
+        $rillAppStore.activeEntity.id === sourceName
+      ) {
+        const nextSourceName = getNextEntityName($sourceNames.data, sourceName);
+        if (nextSourceName) {
+          goto(`/source/${nextSourceName}`);
+        } else {
+          goto("/");
+        }
       }
-    );
+      sourceUpdated(tableName);
+      await queryClient.invalidateQueries(
+        getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+      );
+    } catch (err) {
+      console.error(err);
+    }
+    toggleMenu();
   };
 
   const createModel = (tableName: string) => {
@@ -170,17 +160,12 @@
   };
 
   const onRefreshSource = async (id: string, tableName: string) => {
-    let connector: string = $getSource?.data?.object?.source?.connector;
-    // if there is no catalog object, parse from yaml
+    const connector: string =
+      $getSource?.data?.object?.source?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
-      try {
-        const parsed = parse($sourceData.data.blob);
-        connector = parsed.type;
-      } catch (err) {
-        // if parse failed, we cannot refresh source
-        // TODO: show the import source modal with fixed tableName
-        return;
-      }
+      // if parse failed or there is no catalog object, we cannot refresh source
+      // TODO: show the import source modal with fixed tableName
+      return;
     }
 
     try {
