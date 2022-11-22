@@ -203,6 +203,13 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  name?: V1TimeRangeName;
+  start?: string;
+  end?: string;
+  interval?: string;
+}
+
 export interface V1TimeSeriesResponse {
   id?: string;
   results?: V1TimeSeriesValue[];
@@ -258,7 +265,7 @@ export interface V1TimeSeriesTimeRange {
   name?: V1TimeRangeName;
   start?: string;
   end?: string;
-  interval?: V1TimeGrain;
+  interval?: string;
 }
 
 export interface V1StructType {
