@@ -19,7 +19,7 @@ func CreateSimpleTimeseriesTable(server *Server, instanceId string, t *testing.T
 	})
 	require.NoError(t, err)
 	result.Close()
-	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into " + quoteName(tableName) + " values (1.0, '2019-01-01 00:00:00', 'android'), (1.0, '2019-01-02 00:00:00', 'iphone')",
 	})
 	require.NoError(t, err)
@@ -81,8 +81,8 @@ func TestServer_Timeseries(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-12-01",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
@@ -127,8 +127,8 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-12-01",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
@@ -169,8 +169,8 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-12-01",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
@@ -220,8 +220,8 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-01-02",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-02T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_DAY,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
@@ -237,6 +237,46 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 2, len(results))
+}
+
+func TestServer_Timeseries_1day_Count(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	cnt := "count"
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+				{
+					Expression: "count(*)",
+					SqlName:    &cnt,
+				},
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_DAY,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "device",
+					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 2, len(results))
+	require.Equal(t, 1.0, results[0].Records["count"])
 }
 
 func TestServer_RangeSanity(t *testing.T) {
@@ -257,7 +297,7 @@ func TestServer_RangeSanity(t *testing.T) {
 	require.Equal(t, int32(1), r.Days)
 }
 
-func TestServer_normaliseRanger(t *testing.T) {
+func TestServer_normaliseTimeRange(t *testing.T) {
 	server, instanceId := getTestServer(t)
 
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
@@ -272,9 +312,51 @@ func TestServer_normaliseRanger(t *testing.T) {
 		TimestampColumnName: "time",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "2019-01-01T00:00:00.000Z", r.Start)
-	require.Equal(t, "2019-01-02T00:00:00.000Z", r.End)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
 	require.Equal(t, runtimev1.TimeGrain_HOUR, r.Interval)
+}
+
+func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &runtimev1.TimeSeriesTimeRange{
+		Interval: runtimev1.TimeGrain_UNSPECIFIED,
+		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
+	}
+	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, runtimev1.TimeGrain_HOUR, r.Interval)
+}
+
+func TestServer_normaliseTimeRange_Specified(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &runtimev1.TimeSeriesTimeRange{
+		Interval: runtimev1.TimeGrain_YEAR,
+		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
+	}
+	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, runtimev1.TimeGrain_YEAR, r.Interval)
 }
 
 func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
@@ -283,7 +365,7 @@ func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing
 	})
 	require.NoError(t, err)
 	result.Close()
-	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
+	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "insert into " + quoteName(tableName) + ` values 
 		(2.0, '2019-01-01T00:00:00Z', 'android'), 
 		(3.0, '2019-01-02T00:00:00Z', 'iphone'),

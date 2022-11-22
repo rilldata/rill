@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/stretchr/testify/require"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServer_GetTopK(t *testing.T) {
@@ -130,11 +132,17 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.TimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, "2022-11-01 00:00:00 +0000 UTC", res.Min)
-	require.Equal(t, "2022-11-03 00:00:00 +0000 UTC", res.Max)
+	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.Min)
+	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.Max)
 	require.Equal(t, int32(0), res.Interval.Months)
 	require.Equal(t, int32(2), res.Interval.Days)
 	require.Equal(t, int64(0), res.Interval.Micros)
+}
+
+func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return timestamppb.New(ts)
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {

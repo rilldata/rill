@@ -973,20 +973,11 @@ message EstimateRollupIntervalRequest {
   string column_name = 3;
 }
 
-message Scalar {
-  oneof value {
-    int64 int64 = 1;
-    double double = 2;
-    google.protobuf.Timestamp timestamp = 3;
-  }
-}
-
 message EstimateRollupIntervalResponse {
-  int64 interval = 1;
-  Scalar min = 2;
-  Scalar max = 3;
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+  TimeGrain interval = 3;
 }
-
 
 message ProfileColumnSummary {
   oneof Case {
@@ -1011,8 +1002,8 @@ message NumericSummary {
 }
 
 message TimeRangeSummary {
-    string min = 1;
-    string max = 2;
+    google.protobuf.Timestamp min = 1;
+    google.protobuf.Timestamp max = 2;
     message Interval {
       int32 months = 1;
       int32 days = 2;
@@ -1088,15 +1079,15 @@ message EstimateSmallestTimeGrainRequest {
 }
 
 enum TimeGrain {
-  MILLISECOND = 0;
-  SECOND = 1;
-  MINUTE = 2;
-  HOUR = 3;
-  DAY = 4;
-  WEEK = 5;
-  MONTH = 6;
-  YEAR = 7;
-  UNSPECIFIED = 8;
+  UNSPECIFIED = 0;
+  MILLISECOND = 1;
+  SECOND = 2;
+  MINUTE = 3;
+  HOUR = 4;
+  DAY = 5;
+  WEEK = 6;
+  MONTH = 7;
+  YEAR = 8;
 }
 
 // Response for RuntimeService.EstimateSmallestTimeGrain
@@ -1167,8 +1158,8 @@ message BasicMeasureDefinition {
 
 message TimeSeriesTimeRange {
   TimeRangeName name = 1;
-  string start = 2;
-  string end = 3;
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
   TimeGrain interval = 4;
 }
 

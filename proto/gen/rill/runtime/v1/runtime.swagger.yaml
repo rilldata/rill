@@ -1528,13 +1528,14 @@ definitions:
   v1EstimateRollupIntervalResponse:
     type: object
     properties:
-      interval:
+      end:
         type: string
-        format: int64
-      max:
-        $ref: '#/definitions/v1Scalar'
-      min:
-        $ref: '#/definitions/v1Scalar'
+        format: date-time
+      interval:
+        $ref: '#/definitions/v1TimeGrain'
+      start:
+        type: string
+        format: date-time
   v1EstimateSmallestTimeGrainResponse:
     type: object
     properties:
@@ -2100,18 +2101,6 @@ definitions:
         type: array
         items:
           type: object
-  v1Scalar:
-    type: object
-    properties:
-      double:
-        type: number
-        format: double
-      int64:
-        type: string
-        format: int64
-      timestamp:
-        type: string
-        format: date-time
   v1Source:
     type: object
     properties:
@@ -2162,6 +2151,7 @@ definitions:
   v1TimeGrain:
     type: string
     enum:
+      - UNSPECIFIED
       - MILLISECOND
       - SECOND
       - MINUTE
@@ -2170,8 +2160,7 @@ definitions:
       - WEEK
       - MONTH
       - YEAR
-      - UNSPECIFIED
-    default: MILLISECOND
+    default: UNSPECIFIED
   v1TimeRangeName:
     type: string
     enum:
@@ -2197,8 +2186,10 @@ definitions:
         $ref: '#/definitions/TimeRangeSummaryInterval'
       max:
         type: string
+        format: date-time
       min:
         type: string
+        format: date-time
   v1TimeSeriesResponse:
     type: object
     properties:
@@ -2227,12 +2218,14 @@ definitions:
     properties:
       end:
         type: string
+        format: date-time
       interval:
         $ref: '#/definitions/v1TimeGrain'
       name:
         $ref: '#/definitions/v1TimeRangeName'
       start:
         type: string
+        format: date-time
   v1TimeSeriesValue:
     type: object
     properties:

@@ -10,6 +10,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func getExpressionColumnsFromMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
@@ -143,9 +144,10 @@ func normaliseMeasures(measures *runtimev1.GenerateTimeSeriesRequest_BasicMeasur
 	return measures
 }
 
-func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.TimeSeriesTimeRange, error) {
+// Metrics/Timeseries APIs
+func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.EstimateRollupIntervalRequest) (*runtimev1.EstimateRollupIntervalResponse, error) {
 	tableName := EscapeDoubleQuotes(request.TableName)
-	escapedColumnName := EscapeDoubleQuotes(request.TimestampColumnName)
+	escapedColumnName := EscapeDoubleQuotes(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: `SELECT
         	max(` + escapedColumnName + `) - min(` + escapedColumnName + `) as r,
@@ -191,26 +193,58 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.Gene
 		rollupInterval = runtimev1.TimeGrain_YEAR
 	}
 
-	start := min.Format(ISO_FORMAT)
-	end := max.Format(ISO_FORMAT)
+	return &runtimev1.EstimateRollupIntervalResponse{
+		Interval: rollupInterval,
+		Start:    timestamppb.New(min),
+		End:      timestamppb.New(max),
+	}, nil
+}
 
+func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.TimeSeriesTimeRange, error) {
 	rtr := request.TimeRange
 	if rtr == nil {
-		rtr = &runtimev1.TimeSeriesTimeRange{
-			Start: start,
-			End:   end,
+		rtr = &runtimev1.TimeSeriesTimeRange{}
+	}
+	var result runtimev1.TimeSeriesTimeRange
+	if rtr.Interval == runtimev1.TimeGrain_UNSPECIFIED {
+		r, err := s.EstimateRollupInterval(ctx, &runtimev1.EstimateRollupIntervalRequest{
+			InstanceId: request.InstanceId,
+			TableName:  request.TableName,
+			ColumnName: request.TimestampColumnName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = runtimev1.TimeSeriesTimeRange{
+			Interval: r.Interval,
+			Start:    r.Start,
+			End:      r.End,
+		}
+	} else if rtr.Start == nil || rtr.End == nil {
+		tr, err := s.GetTimeRangeSummary(ctx, &runtimev1.TimeRangeSummaryRequest{
+			InstanceId: request.InstanceId,
+			TableName:  request.TableName,
+			ColumnName: request.TimestampColumnName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = runtimev1.TimeSeriesTimeRange{
+			Interval: rtr.Interval,
+			Start:    tr.Min,
+			End:      tr.Max,
 		}
 	}
-	if rtr.Start == "" {
-		rtr.Start = start
+	if rtr.Start != nil {
+		result.Start = rtr.Start
 	}
-	if rtr.End == "" {
-		rtr.End = end
+	if rtr.End != nil {
+		result.End = rtr.End
 	}
-	if rtr.Interval == runtimev1.TimeGrain_UNSPECIFIED {
-		rtr.Interval = rollupInterval
+	if rtr.Interval != runtimev1.TimeGrain_UNSPECIFIED {
+		result.Interval = rtr.Interval
 	}
-	return rtr, nil
+	return &result, nil
 }
 
 const ISO_FORMAT string = "2006-01-02T15:04:05.000Z"
@@ -261,7 +295,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 			return nil, err
 		}
 		defer rows.Close()
-		results := make([]*runtimev1.TimeSeriesValue, (pixels+1)*4)
+		results := make([]*runtimev1.TimeSeriesValue, 0, (pixels+1)*4)
 		for rows.Next() {
 			var ts time.Time
 			var count float64
@@ -381,8 +415,8 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
             generate_series as ` + tsAlias + `
           FROM 
             generate_series(
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start + `'), 
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End + `'),
+              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(ISO_FORMAT) + `'), 
+              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End.AsTime().Format(ISO_FORMAT) + `'),
               interval '1 ` + timeGranularity + `')
         ),
         -- transform the original data, and optionally sample it.
@@ -442,6 +476,8 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runtimev1.TimeSeriesValue, error) {
 	results := make([]*runtimev1.TimeSeriesValue, 0)
+	defer rows.Close()
+	var converr error
 	for rows.Next() {
 		value := runtimev1.TimeSeriesValue{}
 		results = append(results, &value)
@@ -454,11 +490,21 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 		delete(row, "ts")
 		value.Records = make(map[string]float64, len(row))
 		for k, v := range row {
-			value.Records[k] = v.(float64)
+			switch x := v.(type) {
+			case int32:
+				value.Records[k] = float64(x)
+			case int64:
+				value.Records[k] = float64(x)
+			case float32:
+				value.Records[k] = float64(x)
+			case float64:
+				value.Records[k] = x
+			default:
+				return nil, fmt.Errorf("unknown type %T ", v)
+			}
 		}
 	}
-	rows.Close()
-	return results, nil
+	return results, converr
 }
 
 func createErrResult(timeRange *runtimev1.TimeSeriesTimeRange) *runtimev1.TimeSeriesRollup {
