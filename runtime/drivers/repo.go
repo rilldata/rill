@@ -10,7 +10,7 @@ import (
 type RepoStore interface {
 	Driver() string
 	DSN() string
-	ListRecursive(ctx context.Context, repoID string) ([]string, error)
+	ListRecursive(ctx context.Context, repoID string, glob string) ([]string, error)
 	Get(ctx context.Context, repoID string, path string) (string, error)
 	Stat(ctx context.Context, repoID string, path string) (*RepoObjectStat, error)
 	PutBlob(ctx context.Context, repoID string, path string, blob string) error
