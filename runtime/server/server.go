@@ -113,11 +113,6 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
-// Metrics APIs
-func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
-	return &api.EstimateRollupIntervalResponse{}, nil
-}
-
 // Ping implements RuntimeService
 func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
 	resp := &api.PingResponse{

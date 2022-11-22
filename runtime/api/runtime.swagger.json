@@ -2529,15 +2529,16 @@
     "v1EstimateRollupIntervalResponse": {
       "type": "object",
       "properties": {
-        "interval": {
+        "start": {
           "type": "string",
-          "format": "int64"
+          "format": "date-time"
         },
-        "min": {
-          "$ref": "#/definitions/v1Scalar"
+        "end": {
+          "type": "string",
+          "format": "date-time"
         },
-        "max": {
-          "$ref": "#/definitions/v1Scalar"
+        "interval": {
+          "$ref": "#/definitions/v1TimeGrain"
         }
       }
     },
@@ -3295,23 +3296,6 @@
         }
       }
     },
-    "v1Scalar": {
-      "type": "object",
-      "properties": {
-        "int64": {
-          "type": "string",
-          "format": "int64"
-        },
-        "double": {
-          "type": "number",
-          "format": "double"
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    },
     "v1Source": {
       "type": "object",
       "properties": {
@@ -3371,6 +3355,7 @@
     "v1TimeGrain": {
       "type": "string",
       "enum": [
+        "UNSPECIFIED",
         "MILLISECOND",
         "SECOND",
         "MINUTE",
@@ -3378,10 +3363,9 @@
         "DAY",
         "WEEK",
         "MONTH",
-        "YEAR",
-        "UNSPECIFIED"
+        "YEAR"
       ],
-      "default": "MILLISECOND"
+      "default": "UNSPECIFIED"
     },
     "v1TimeRangeName": {
       "type": "string",
@@ -3403,10 +3387,12 @@
       "type": "object",
       "properties": {
         "min": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "max": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
           "$ref": "#/definitions/TimeRangeSummaryInterval"
@@ -3455,10 +3441,12 @@
           "$ref": "#/definitions/v1TimeRangeName"
         },
         "start": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "end": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
           "$ref": "#/definitions/v1TimeGrain"

@@ -1,14 +1,15 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    RuntimeServiceListCatalogObjectsType,
-    useRuntimeServiceMigrateSingle,
+    getRuntimeServiceListFilesQueryKey,
+    useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
   import { Button } from "@rilldata/web-local/lib/components/button";
-  import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import {
     openFileUploadDialog,
@@ -26,7 +27,9 @@
   ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServiceMigrateSingle();
+  $: repoId = $runtimeStore.repoId;
+
+  const createSource = useRuntimeServicePutFileAndMigrate();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -36,31 +39,49 @@
     const uploadedFiles = uploadTableFiles(
       files,
       [$persistentModelStore.entities, $persistentTableStore.entities],
-      $runtimeStore
+      $runtimeStore,
+      // adding to match flow elsewhere
+      persistentTableStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
-        const sql = compileCreateSourceSql(
+        const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
             path: filePath,
           },
           "file"
         );
-        await $createSource.mutateAsync({
-          instanceId: runtimeInstanceId,
-          data: { sql, createOrReplace: true },
-        });
+        $createSource.mutate(
+          {
+            data: {
+              repoId,
+              instanceId: runtimeInstanceId,
+              path: `sources/${tableName}.yaml`,
+              blob: yaml,
+              create: true,
+              createOnly: true,
+              strict: true,
+            },
+          },
+          {
+            onSuccess: async () => {
+              dispatch("close");
+              goto(`/source/${tableName}`);
+              queryClient.invalidateQueries(
+                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+              );
+            },
+            onError: async () => {
+              overlay.set(null);
+              dispatch("close");
+            },
+          }
+        );
       } catch (err) {
         console.error(err);
       }
     }
-    dispatch("close");
-    return queryClient.invalidateQueries(
-      getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, {
-        type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
-      })
-    );
   }
 </script>
 

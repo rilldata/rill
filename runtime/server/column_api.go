@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const defaultK = 50
@@ -460,15 +461,15 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
-	for rows.Next() {
+	if rows.Next() {
 		summary := &api.TimeRangeSummary{}
 		rowMap := make(map[string]any)
 		err = rows.MapScan(rowMap)
 		if err != nil {
 			return nil, err
 		}
-		summary.Min = rowMap["min"].(time.Time).String()
-		summary.Max = rowMap["max"].(time.Time).String()
+		summary.Min = timestamppb.New(rowMap["min"].(time.Time))
+		summary.Max = timestamppb.New(rowMap["max"].(time.Time))
 		interval := rowMap["interval"].(duckdb.Interval)
 		summary.Interval = new(api.TimeRangeSummary_Interval)
 		summary.Interval.Days = interval.Days
@@ -485,10 +486,10 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.Cardin
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
 	})
-	defer rows.Close()
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		summary := &api.CategoricalSummary{}
 		err = rows.Scan(&summary.Cardinality)

@@ -89,7 +89,7 @@ export class RillDeveloper {
 
     await this.createRepo();
     // Enable this when we are only testing the new runtime
-    // await this.migrate();
+    await this.migrate();
 
     await this.duckDbConnection.init();
   }
