@@ -2,7 +2,6 @@ syntax = "proto3";
 package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
-import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/schema.proto";
 
 // Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
