@@ -474,6 +474,19 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	}, nil
 }
 
+func getFilterFromTimeRange(timestampColumn string, timeRange *api.TimeSeriesTimeRange) string {
+	var conditions []string
+	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
+	if timeRange.Start != nil {
+		conditions = append(conditions, escapedTimestampColumn+` >= TIMESTAMP '`+timeRange.Start.AsTime().Format(ISO_FORMAT)+`'`)
+	}
+	if timeRange.End != nil {
+		conditions = append(conditions, escapedTimestampColumn+` <= TIMESTAMP '`+timeRange.End.AsTime().Format(ISO_FORMAT)+`'`)
+	}
+
+	return strings.Join(conditions, " AND ")
+}
+
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.TimeSeriesValue, error) {
 	results := make([]*api.TimeSeriesValue, 0)
 	defer rows.Close()

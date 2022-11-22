@@ -791,22 +791,25 @@
             "schema": {
               "type": "object",
               "properties": {
-                "measureNames": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
+                },
+                "basicMeasures": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/v1BasicMeasureDefinition"
+                  }
                 },
                 "filter": {
                   "$ref": "#/definitions/v1MetricsViewFilter"
+                },
+                "timestampColumnName": {
+                  "type": "string"
                 }
               },
               "title": "Request message for RuntimeService.MetricsViewTotals"

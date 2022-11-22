@@ -343,7 +343,9 @@ service RuntimeService {
   }
 
   // Tablewide profiling APIs
-  rpc RenameDatabaseObject(RenameDatabaseObjectRequest) returns (RenameDatabaseObjectResponse) { // todo it's not a profiling endpoint - move smw else
+  rpc RenameDatabaseObject(RenameDatabaseObjectRequest) returns (RenameDatabaseObjectResponse) {
+    // todo it's not a profiling endpoint - move smw else
+
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/rename-object"
     };
@@ -498,8 +500,7 @@ message DeleteFileRequest {
 }
 
 // Response message for RuntimeService.DeleteFile
-message DeleteFileResponse {
-}
+message DeleteFileResponse {}
 
 // Request message for RuntimeService.RenameFile
 message RenameFileRequest {
@@ -523,7 +524,7 @@ message Instance {
   string instance_id = 1;
   // Name of OLAP infra driver ("druid" or "duckdb")
   string driver = 2;
-  // DSN for connection to the OLAP infra 
+  // DSN for connection to the OLAP infra
   string dsn = 3;
   // Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
   // Use it as an alternative to database schemas.
@@ -1027,10 +1028,11 @@ message MetricsViewTimeSeriesResponse {
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
-  repeated string measure_names = 3;
-  int64 time_start = 4;
-  int64 time_end = 5;
-  MetricsViewFilter filter = 7;
+  google.protobuf.Timestamp time_start = 3;
+  google.protobuf.Timestamp time_end = 4;
+  repeated BasicMeasureDefinition basic_measures = 5;
+  MetricsViewFilter filter = 6;
+  string timestamp_column_name = 7;
 }
 
 // Response message for RuntimeService.MetricsViewTotals
@@ -1103,14 +1105,14 @@ message NumericSummary {
 }
 
 message TimeRangeSummary {
-    google.protobuf.Timestamp min = 1;
-    google.protobuf.Timestamp max = 2;
-    message Interval {
-      int32 months = 1;
-      int32 days = 2;
-      int64 micros = 3;
-    }
-    Interval interval = 3;
+  google.protobuf.Timestamp min = 1;
+  google.protobuf.Timestamp max = 2;
+  message Interval {
+    int32 months = 1;
+    int32 days = 2;
+    int64 micros = 3;
+  }
+  Interval interval = 3;
 }
 
 message NumericOutliers {
@@ -1163,13 +1165,13 @@ message DescriptiveStatisticsRequest {
 
 // Response for RuntimeService.GetDescriptiveStatistics
 message NumericStatistics {
-    double min = 1;
-    double max = 2;
-    double mean = 3;
-    double q25 = 4;
-    double q50 = 5;
-    double q75 = 6;
-    double sd = 7;
+  double min = 1;
+  double max = 2;
+  double mean = 3;
+  double q25 = 4;
+  double q50 = 5;
+  double q75 = 6;
+  double sd = 7;
 }
 
 // Request for RuntimeService.GetEstimateSmallestTimeGrainRequest
@@ -1245,7 +1247,7 @@ message GenerateTimeSeriesRequest {
   optional int64 pixels = 7;
   optional int32 sample_size = 8;
   message BasicMeasures {
-    repeated BasicMeasureDefinition basicMeasures = 1;
+    repeated BasicMeasureDefinition basic_measures = 1;
   }
 }
 
@@ -1333,8 +1335,7 @@ message RenameDatabaseObjectRequest {
   optional DatabaseObjectType type = 4;
 }
 
-message RenameDatabaseObjectResponse {
-}
+message RenameDatabaseObjectResponse {}
 
 message CardinalityRequest {
   string instance_id = 1;

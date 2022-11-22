@@ -137,6 +137,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 }
 
 func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
+	fmt.Println("SQL:", sql)
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
@@ -238,21 +239,35 @@ func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, [
 
 func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest) (string, []any, error) {
 	// TODO: get from Catalog
-	timeField := "timestamp"
-	whereClause := fmt.Sprintf("%s >= epoch_ms(?) AND %s < epoch_ms(?) ", timeField, timeField)
-	args := []any{req.TimeStart, req.TimeEnd}
+	whereConditionClause := []string{}
+	if req.TimeStart != nil || req.TimeEnd != nil {
+		timeRangeClause := getFilterFromTimeRange(req.TimestampColumnName, &api.TimeSeriesTimeRange{
+			Start: req.TimeStart,
+			End:   req.TimeEnd,
+		})
+		whereConditionClause = append(whereConditionClause, timeRangeClause)
+	}
 
+	args := []any{}
 	if req.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(req.Filter)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		whereConditionClause = append(whereConditionClause, clause)
 		args = append(args, clauseArgs...)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
-		strings.Join(req.MeasureNames, ", "), req.MetricsViewName, whereClause)
+	whereClause := ""
+	if len(whereConditionClause) > 0 {
+		whereClause = "WHERE " + strings.Join(whereConditionClause, " AND ")
+	}
+	sql := fmt.Sprintf(
+		"SELECT %s FROM %s %s",
+		getExpressionColumnsFromMeasures(req.BasicMeasures),
+		req.MetricsViewName,
+		whereClause,
+	)
 	return sql, args, nil
 }
 
