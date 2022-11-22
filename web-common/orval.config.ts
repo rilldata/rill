@@ -2,7 +2,7 @@ import { defineConfig } from "orval";
 
 export default defineConfig({
   api: {
-    input: "../runtime/api/runtime.swagger.json",
+    input: "../proto/gen/rill/runtime/v1/runtime.swagger.yaml",
     output: {
       workspace: "./src/runtime-client/",
       target: "gen/index.ts",
