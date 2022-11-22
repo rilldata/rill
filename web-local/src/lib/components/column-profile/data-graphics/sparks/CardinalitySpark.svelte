@@ -19,20 +19,13 @@
   export let containerWidth: number = 500;
   // export let compactBreakpoint = 350;
 
-  // $: exampleWidth =
-  //   containerWidth > COLUMN_PROFILE_CONFIG.mediumCutoff
-  //     ? COLUMN_PROFILE_CONFIG.exampleWidth.medium
-  //     : COLUMN_PROFILE_CONFIG.exampleWidth.small;
-  // $: summaryWidthSize =
-  //   COLUMN_PROFILE_CONFIG.summaryVizWidth[
-  //     containerWidth < compactBreakpoint ? "small" : "medium"
-  //   ];
   $: cardinalityFormatter =
     containerWidth > COLUMN_PROFILE_CONFIG.compactBreakpoint
       ? formatInteger
       : formatCompactInteger;
 
   // FIXME: runtimeServiceGetCardinalityOfColumn seems to return a promise.
+  // I suspect that's because it hasn't been API-ified fully?
   let cardinalityQuery;
   let cardinality;
 
@@ -44,7 +37,6 @@
     ).then((result) => {
       cardinality = +result.cardinality;
     });
-  //$: if (cardinalityQuery) cardinality = +$cardinalityQuery?.data?.count;
 
   /**
    * Get the total rows for this profile.

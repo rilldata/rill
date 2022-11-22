@@ -23,6 +23,7 @@
   import { convertTimestampPreview } from "../../util/convertTimestampPreview";
   import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
   import Histogram from "../viz/histogram/SmallHistogram.svelte";
+  import NumericSpark from "./data-graphics/sparks/NumericSpark.svelte";
 
   export let objectName: string;
   export let columnName: string;
@@ -97,8 +98,9 @@
             {formatInteger(summary?.cardinality)} unique values
           </TooltipContent>
         </Tooltip> -->
-      {:else if NUMERICS.has(type) && summary?.histogram?.length}
-        <Tooltip location="right" alignment="center" distance={8}>
+      {:else if NUMERICS.has(type)}
+        <NumericSpark {objectName} {columnName} {containerWidth} />
+        <!-- <Tooltip location="right" alignment="center" distance={8}>
           <Histogram
             data={summary.histogram}
             width={summaryWidthSize}
@@ -109,7 +111,7 @@
           <TooltipContent slot="tooltip-content">
             the distribution of the values of this column
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> -->
       {:else if TIMESTAMPS.has(type) /** a legacy histogram type or a new rollup spark */ && (summary?.histogram?.length || summary?.rollup?.spark?.length)}
         <Tooltip location="right" alignment="center" distance={8}>
           {#if summary?.rollup?.spark}
