@@ -1,23 +1,33 @@
-# `runtime/api/`
+# `proto/`
 
-This directory contains gRPC (protocol buffer) definitions for the Runtime's external APIs. They're defined in `runtime.proto`, which generates the other files in this directory. The actual handlers are implemented in `runtime/server/`.
+This directory contains the protocol buffer definitions for all Rill components. Instead of placing `.proto` files in their respective sub-projects, we follow the convention of having a single `proto` folder to make cross-component imports and codegen easier.
 
-We use [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) to map the gRPC definitions to a RESTful API. The mappings are done inline in the `proto` file, using `google.api.http` annotations ([docs here](https://github.com/googleapis/googleapis/blob/master/google/api/http.proto#L44)). 
+We use [Buf](https://buf.build) to lint and generate protocol buffers. The layout and style of our `.proto` files follow their [style guide](https://docs.buf.build/best-practices/style-guide).
+
+## Defining APIs
+
+We define APIs as gRPC services. All APIs should be defined centrally in this directory, but implemented in their respective sub-package of the monorepo. 
+
+For all APIs, we setup [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) to map the gRPC definitions to a RESTful API. The mapping rules are done inline in the `proto` file, using `google.api.http` annotations ([docs here](https://github.com/googleapis/googleapis/blob/master/google/api/http.proto#L44)). 
 
 Using protocol buffers to define dual RPC and REST interfaces is a technique widely used at Google. We suggest taking a look at their excellent [API design guide](https://cloud.google.com/apis/design/resources), which describes this pattern (notice it's multiple pages).
 
 ## Generating
 
-After changing the `.proto` file, you can re-generate the bindings by running (from the repo root):
+After changing a `.proto` file, you should re-generate the bindings:
 
+1. Install Buf if you haven't already ([docs](https://docs.buf.build/installation))
+2. From the repo root, run:
 ```bash
-go generate ./runtime/api
+make proto.generate
 ```
 
-We also have a generated TypeScript client for the runtime in `web-common/src/runtime-client`. If relevant, you can re-generate it by running:
+### Typescript runtime client
+
+We separately have a generated TypeScript client for the runtime in `web-common/src/runtime-client`. If relevant, you can re-generate it by running:
 
 ```bash
 npm run generate:runtime-client -w web-common
 ```
 
-(This is not automated as the frontend may be pinned to an older version of the runtime.)
+(This is not automated as the frontend may currently be pinned to an older version of the runtime.)
