@@ -1,10 +1,11 @@
-name: proto-lint
+name: proto-check
 on:
   pull_request:
     paths:
       - "proto/**"
+name: Check .proto files
 jobs:
-  validate:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
