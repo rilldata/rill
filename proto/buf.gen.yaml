@@ -29,4 +29,3 @@ plugins:
       - output_format=yaml
       # - openapi_naming_strategy=simple
       # - simple_operation_ids=true
-

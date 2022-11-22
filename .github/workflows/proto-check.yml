@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - "proto/**"
-name: Check .proto files
+name: "Check .proto files"
 jobs:
   check:
     runs-on: ubuntu-latest
