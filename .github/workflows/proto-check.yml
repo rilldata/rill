@@ -1,9 +1,8 @@
-name: proto-check
+name: Check .proto files
 on:
   pull_request:
     paths:
       - "proto/**"
-name: "Check .proto files"
 jobs:
   check:
     runs-on: ubuntu-latest
