@@ -65,7 +65,7 @@
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader id={currentSource?.id} />
+      <SourceWorkspaceHeader id={currentSource?.id} name={sourceName} />
       <div
         style:overflow="auto"
         style:height="100%"

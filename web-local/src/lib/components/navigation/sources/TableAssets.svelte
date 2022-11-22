@@ -22,9 +22,16 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId, {
-    glob: "sources/*.{sql,yaml}",
-  });
+  $: getFiles = useRuntimeServiceListFiles(
+    $runtimeStore.repoId,
+    {
+      glob: "sources/*.{sql,yaml}",
+    },
+    {
+      query: { refetchInterval: 1000 },
+    }
+  );
+
   $: sourceNames = $getFiles?.data?.paths
     ?.filter((path) => path.includes("sources/"))
     .map((path) => path.replace("/sources/", "").replace(".yaml", ""));

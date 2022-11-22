@@ -28,13 +28,14 @@
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let id;
+  export let name: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
 
   $: currentSource = $persistentTableStore?.entities?.find(
-    (entity) => entity.id === id
+    (entity) => entity.id === id || entity.tableName === name
   );
 
   const renameSource = useRuntimeServiceRenameFileAndMigrate();
@@ -55,7 +56,7 @@
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
-          fromPath: `sources/${currentSource.tableName}.yaml`,
+          fromPath: `sources/${name}.yaml`,
           toPath: `sources/${e.target.value}.yaml`,
         },
       },
@@ -77,8 +78,6 @@
       }
     );
   };
-
-  $: titleInput = currentSource?.name;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
@@ -128,7 +127,10 @@
 </script>
 
 <div class="grid  items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
+  <WorkspaceHeader
+    {...{ titleInput: name, onChangeCallback }}
+    showStatus={false}
+  >
     <svelte:fragment slot="icon">
       <Source />
     </svelte:fragment>
