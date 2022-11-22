@@ -102,31 +102,29 @@ type RuntimeServiceClient interface {
 	EstimateRollupInterval(ctx context.Context, in *EstimateRollupIntervalRequest, opts ...grpc.CallOption) (*EstimateRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
 	// agg function and k are optional, defaults are count(*) and 50 respectively
-	GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*CategoricalSummary, error)
+	GetTopK(ctx context.Context, in *GetTopKRequest, opts ...grpc.CallOption) (*GetTopKResponse, error)
 	// Get the number of nulls in a column
-	GetNullCount(ctx context.Context, in *NullCountRequest, opts ...grpc.CallOption) (*NullCountResponse, error)
+	GetNullCount(ctx context.Context, in *GetNullCountRequest, opts ...grpc.CallOption) (*GetNullCountResponse, error)
 	// Get basic stats for a numeric column like min, max, mean, stddev, etc
-	GetDescriptiveStatistics(ctx context.Context, in *DescriptiveStatisticsRequest, opts ...grpc.CallOption) (*NumericSummary, error)
+	GetDescriptiveStatistics(ctx context.Context, in *GetDescriptiveStatisticsRequest, opts ...grpc.CallOption) (*GetDescriptiveStatisticsResponse, error)
 	// Estimates the smallest time grain present in the column
 	EstimateSmallestTimeGrain(ctx context.Context, in *EstimateSmallestTimeGrainRequest, opts ...grpc.CallOption) (*EstimateSmallestTimeGrainResponse, error)
 	// Get the histogram for values in a column
-	GetNumericHistogram(ctx context.Context, in *NumericHistogramRequest, opts ...grpc.CallOption) (*NumericSummary, error)
+	GetNumericHistogram(ctx context.Context, in *GetNumericHistogramRequest, opts ...grpc.CallOption) (*GetNumericHistogramResponse, error)
 	// Get outliers for a numeric column
-	GetRugHistogram(ctx context.Context, in *RugHistogramRequest, opts ...grpc.CallOption) (*NumericSummary, error)
+	GetRugHistogram(ctx context.Context, in *GetRugHistogramRequest, opts ...grpc.CallOption) (*GetRugHistogramResponse, error)
 	// Get the time range summaries (min, max) for a column
-	GetTimeRangeSummary(ctx context.Context, in *TimeRangeSummaryRequest, opts ...grpc.CallOption) (*TimeRangeSummary, error)
+	GetTimeRangeSummary(ctx context.Context, in *GetTimeRangeSummaryRequest, opts ...grpc.CallOption) (*GetTimeRangeSummaryResponse, error)
 	// Get cardinality for a column
-	GetCardinalityOfColumn(ctx context.Context, in *CardinalityOfColumnRequest, opts ...grpc.CallOption) (*CategoricalSummary, error)
+	GetCardinalityOfColumn(ctx context.Context, in *GetCardinalityOfColumnRequest, opts ...grpc.CallOption) (*GetCardinalityOfColumnResponse, error)
 	// Generate time series
 	GenerateTimeSeries(ctx context.Context, in *GenerateTimeSeriesRequest, opts ...grpc.CallOption) (*TimeSeriesRollup, error)
-	// Tablewide profiling APIs
-	RenameDatabaseObject(ctx context.Context, in *RenameDatabaseObjectRequest, opts ...grpc.CallOption) (*RenameDatabaseObjectResponse, error)
 	// TableCardinality (TODO: add description)
-	TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error)
+	GetTableCardinality(ctx context.Context, in *GetTableCardinalityRequest, opts ...grpc.CallOption) (*GetTableCardinalityResponse, error)
 	// ProfileColumns (TODO: add description)
 	ProfileColumns(ctx context.Context, in *ProfileColumnsRequest, opts ...grpc.CallOption) (*ProfileColumnsResponse, error)
 	// TableRows (TODO: add description)
-	TableRows(ctx context.Context, in *RowsRequest, opts ...grpc.CallOption) (*RowsResponse, error)
+	GetTableRows(ctx context.Context, in *GetTableRowsRequest, opts ...grpc.CallOption) (*GetTableRowsResponse, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
@@ -419,8 +417,8 @@ func (c *runtimeServiceClient) EstimateRollupInterval(ctx context.Context, in *E
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetTopK(ctx context.Context, in *TopKRequest, opts ...grpc.CallOption) (*CategoricalSummary, error) {
-	out := new(CategoricalSummary)
+func (c *runtimeServiceClient) GetTopK(ctx context.Context, in *GetTopKRequest, opts ...grpc.CallOption) (*GetTopKResponse, error) {
+	out := new(GetTopKResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetTopK", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -428,8 +426,8 @@ func (c *runtimeServiceClient) GetTopK(ctx context.Context, in *TopKRequest, opt
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetNullCount(ctx context.Context, in *NullCountRequest, opts ...grpc.CallOption) (*NullCountResponse, error) {
-	out := new(NullCountResponse)
+func (c *runtimeServiceClient) GetNullCount(ctx context.Context, in *GetNullCountRequest, opts ...grpc.CallOption) (*GetNullCountResponse, error) {
+	out := new(GetNullCountResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetNullCount", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -437,8 +435,8 @@ func (c *runtimeServiceClient) GetNullCount(ctx context.Context, in *NullCountRe
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetDescriptiveStatistics(ctx context.Context, in *DescriptiveStatisticsRequest, opts ...grpc.CallOption) (*NumericSummary, error) {
-	out := new(NumericSummary)
+func (c *runtimeServiceClient) GetDescriptiveStatistics(ctx context.Context, in *GetDescriptiveStatisticsRequest, opts ...grpc.CallOption) (*GetDescriptiveStatisticsResponse, error) {
+	out := new(GetDescriptiveStatisticsResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetDescriptiveStatistics", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -455,8 +453,8 @@ func (c *runtimeServiceClient) EstimateSmallestTimeGrain(ctx context.Context, in
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetNumericHistogram(ctx context.Context, in *NumericHistogramRequest, opts ...grpc.CallOption) (*NumericSummary, error) {
-	out := new(NumericSummary)
+func (c *runtimeServiceClient) GetNumericHistogram(ctx context.Context, in *GetNumericHistogramRequest, opts ...grpc.CallOption) (*GetNumericHistogramResponse, error) {
+	out := new(GetNumericHistogramResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetNumericHistogram", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -464,8 +462,8 @@ func (c *runtimeServiceClient) GetNumericHistogram(ctx context.Context, in *Nume
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetRugHistogram(ctx context.Context, in *RugHistogramRequest, opts ...grpc.CallOption) (*NumericSummary, error) {
-	out := new(NumericSummary)
+func (c *runtimeServiceClient) GetRugHistogram(ctx context.Context, in *GetRugHistogramRequest, opts ...grpc.CallOption) (*GetRugHistogramResponse, error) {
+	out := new(GetRugHistogramResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetRugHistogram", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -473,8 +471,8 @@ func (c *runtimeServiceClient) GetRugHistogram(ctx context.Context, in *RugHisto
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetTimeRangeSummary(ctx context.Context, in *TimeRangeSummaryRequest, opts ...grpc.CallOption) (*TimeRangeSummary, error) {
-	out := new(TimeRangeSummary)
+func (c *runtimeServiceClient) GetTimeRangeSummary(ctx context.Context, in *GetTimeRangeSummaryRequest, opts ...grpc.CallOption) (*GetTimeRangeSummaryResponse, error) {
+	out := new(GetTimeRangeSummaryResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetTimeRangeSummary", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -482,8 +480,8 @@ func (c *runtimeServiceClient) GetTimeRangeSummary(ctx context.Context, in *Time
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetCardinalityOfColumn(ctx context.Context, in *CardinalityOfColumnRequest, opts ...grpc.CallOption) (*CategoricalSummary, error) {
-	out := new(CategoricalSummary)
+func (c *runtimeServiceClient) GetCardinalityOfColumn(ctx context.Context, in *GetCardinalityOfColumnRequest, opts ...grpc.CallOption) (*GetCardinalityOfColumnResponse, error) {
+	out := new(GetCardinalityOfColumnResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetCardinalityOfColumn", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -500,18 +498,9 @@ func (c *runtimeServiceClient) GenerateTimeSeries(ctx context.Context, in *Gener
 	return out, nil
 }
 
-func (c *runtimeServiceClient) RenameDatabaseObject(ctx context.Context, in *RenameDatabaseObjectRequest, opts ...grpc.CallOption) (*RenameDatabaseObjectResponse, error) {
-	out := new(RenameDatabaseObjectResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameDatabaseObject", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) TableCardinality(ctx context.Context, in *CardinalityRequest, opts ...grpc.CallOption) (*CardinalityResponse, error) {
-	out := new(CardinalityResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/TableCardinality", in, out, opts...)
+func (c *runtimeServiceClient) GetTableCardinality(ctx context.Context, in *GetTableCardinalityRequest, opts ...grpc.CallOption) (*GetTableCardinalityResponse, error) {
+	out := new(GetTableCardinalityResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetTableCardinality", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -527,9 +516,9 @@ func (c *runtimeServiceClient) ProfileColumns(ctx context.Context, in *ProfileCo
 	return out, nil
 }
 
-func (c *runtimeServiceClient) TableRows(ctx context.Context, in *RowsRequest, opts ...grpc.CallOption) (*RowsResponse, error) {
-	out := new(RowsResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/TableRows", in, out, opts...)
+func (c *runtimeServiceClient) GetTableRows(ctx context.Context, in *GetTableRowsRequest, opts ...grpc.CallOption) (*GetTableRowsResponse, error) {
+	out := new(GetTableRowsResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetTableRows", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -629,31 +618,29 @@ type RuntimeServiceServer interface {
 	EstimateRollupInterval(context.Context, *EstimateRollupIntervalRequest) (*EstimateRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
 	// agg function and k are optional, defaults are count(*) and 50 respectively
-	GetTopK(context.Context, *TopKRequest) (*CategoricalSummary, error)
+	GetTopK(context.Context, *GetTopKRequest) (*GetTopKResponse, error)
 	// Get the number of nulls in a column
-	GetNullCount(context.Context, *NullCountRequest) (*NullCountResponse, error)
+	GetNullCount(context.Context, *GetNullCountRequest) (*GetNullCountResponse, error)
 	// Get basic stats for a numeric column like min, max, mean, stddev, etc
-	GetDescriptiveStatistics(context.Context, *DescriptiveStatisticsRequest) (*NumericSummary, error)
+	GetDescriptiveStatistics(context.Context, *GetDescriptiveStatisticsRequest) (*GetDescriptiveStatisticsResponse, error)
 	// Estimates the smallest time grain present in the column
 	EstimateSmallestTimeGrain(context.Context, *EstimateSmallestTimeGrainRequest) (*EstimateSmallestTimeGrainResponse, error)
 	// Get the histogram for values in a column
-	GetNumericHistogram(context.Context, *NumericHistogramRequest) (*NumericSummary, error)
+	GetNumericHistogram(context.Context, *GetNumericHistogramRequest) (*GetNumericHistogramResponse, error)
 	// Get outliers for a numeric column
-	GetRugHistogram(context.Context, *RugHistogramRequest) (*NumericSummary, error)
+	GetRugHistogram(context.Context, *GetRugHistogramRequest) (*GetRugHistogramResponse, error)
 	// Get the time range summaries (min, max) for a column
-	GetTimeRangeSummary(context.Context, *TimeRangeSummaryRequest) (*TimeRangeSummary, error)
+	GetTimeRangeSummary(context.Context, *GetTimeRangeSummaryRequest) (*GetTimeRangeSummaryResponse, error)
 	// Get cardinality for a column
-	GetCardinalityOfColumn(context.Context, *CardinalityOfColumnRequest) (*CategoricalSummary, error)
+	GetCardinalityOfColumn(context.Context, *GetCardinalityOfColumnRequest) (*GetCardinalityOfColumnResponse, error)
 	// Generate time series
 	GenerateTimeSeries(context.Context, *GenerateTimeSeriesRequest) (*TimeSeriesRollup, error)
-	// Tablewide profiling APIs
-	RenameDatabaseObject(context.Context, *RenameDatabaseObjectRequest) (*RenameDatabaseObjectResponse, error)
 	// TableCardinality (TODO: add description)
-	TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error)
+	GetTableCardinality(context.Context, *GetTableCardinalityRequest) (*GetTableCardinalityResponse, error)
 	// ProfileColumns (TODO: add description)
 	ProfileColumns(context.Context, *ProfileColumnsRequest) (*ProfileColumnsResponse, error)
 	// TableRows (TODO: add description)
-	TableRows(context.Context, *RowsRequest) (*RowsResponse, error)
+	GetTableRows(context.Context, *GetTableRowsRequest) (*GetTableRowsResponse, error)
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
@@ -757,44 +744,41 @@ func (UnimplementedRuntimeServiceServer) MetricsViewTotals(context.Context, *Met
 func (UnimplementedRuntimeServiceServer) EstimateRollupInterval(context.Context, *EstimateRollupIntervalRequest) (*EstimateRollupIntervalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EstimateRollupInterval not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetTopK(context.Context, *TopKRequest) (*CategoricalSummary, error) {
+func (UnimplementedRuntimeServiceServer) GetTopK(context.Context, *GetTopKRequest) (*GetTopKResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopK not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetNullCount(context.Context, *NullCountRequest) (*NullCountResponse, error) {
+func (UnimplementedRuntimeServiceServer) GetNullCount(context.Context, *GetNullCountRequest) (*GetNullCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNullCount not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetDescriptiveStatistics(context.Context, *DescriptiveStatisticsRequest) (*NumericSummary, error) {
+func (UnimplementedRuntimeServiceServer) GetDescriptiveStatistics(context.Context, *GetDescriptiveStatisticsRequest) (*GetDescriptiveStatisticsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDescriptiveStatistics not implemented")
 }
 func (UnimplementedRuntimeServiceServer) EstimateSmallestTimeGrain(context.Context, *EstimateSmallestTimeGrainRequest) (*EstimateSmallestTimeGrainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EstimateSmallestTimeGrain not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetNumericHistogram(context.Context, *NumericHistogramRequest) (*NumericSummary, error) {
+func (UnimplementedRuntimeServiceServer) GetNumericHistogram(context.Context, *GetNumericHistogramRequest) (*GetNumericHistogramResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNumericHistogram not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetRugHistogram(context.Context, *RugHistogramRequest) (*NumericSummary, error) {
+func (UnimplementedRuntimeServiceServer) GetRugHistogram(context.Context, *GetRugHistogramRequest) (*GetRugHistogramResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRugHistogram not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetTimeRangeSummary(context.Context, *TimeRangeSummaryRequest) (*TimeRangeSummary, error) {
+func (UnimplementedRuntimeServiceServer) GetTimeRangeSummary(context.Context, *GetTimeRangeSummaryRequest) (*GetTimeRangeSummaryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTimeRangeSummary not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetCardinalityOfColumn(context.Context, *CardinalityOfColumnRequest) (*CategoricalSummary, error) {
+func (UnimplementedRuntimeServiceServer) GetCardinalityOfColumn(context.Context, *GetCardinalityOfColumnRequest) (*GetCardinalityOfColumnResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCardinalityOfColumn not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GenerateTimeSeries(context.Context, *GenerateTimeSeriesRequest) (*TimeSeriesRollup, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateTimeSeries not implemented")
 }
-func (UnimplementedRuntimeServiceServer) RenameDatabaseObject(context.Context, *RenameDatabaseObjectRequest) (*RenameDatabaseObjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenameDatabaseObject not implemented")
-}
-func (UnimplementedRuntimeServiceServer) TableCardinality(context.Context, *CardinalityRequest) (*CardinalityResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TableCardinality not implemented")
+func (UnimplementedRuntimeServiceServer) GetTableCardinality(context.Context, *GetTableCardinalityRequest) (*GetTableCardinalityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTableCardinality not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ProfileColumns(context.Context, *ProfileColumnsRequest) (*ProfileColumnsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProfileColumns not implemented")
 }
-func (UnimplementedRuntimeServiceServer) TableRows(context.Context, *RowsRequest) (*RowsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
+func (UnimplementedRuntimeServiceServer) GetTableRows(context.Context, *GetTableRowsRequest) (*GetTableRowsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTableRows not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
@@ -1371,7 +1355,7 @@ func _RuntimeService_EstimateRollupInterval_Handler(srv interface{}, ctx context
 }
 
 func _RuntimeService_GetTopK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TopKRequest)
+	in := new(GetTopKRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1383,13 +1367,13 @@ func _RuntimeService_GetTopK_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetTopK",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetTopK(ctx, req.(*TopKRequest))
+		return srv.(RuntimeServiceServer).GetTopK(ctx, req.(*GetTopKRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RuntimeService_GetNullCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NullCountRequest)
+	in := new(GetNullCountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1401,13 +1385,13 @@ func _RuntimeService_GetNullCount_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetNullCount",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetNullCount(ctx, req.(*NullCountRequest))
+		return srv.(RuntimeServiceServer).GetNullCount(ctx, req.(*GetNullCountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RuntimeService_GetDescriptiveStatistics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DescriptiveStatisticsRequest)
+	in := new(GetDescriptiveStatisticsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1419,7 +1403,7 @@ func _RuntimeService_GetDescriptiveStatistics_Handler(srv interface{}, ctx conte
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetDescriptiveStatistics",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetDescriptiveStatistics(ctx, req.(*DescriptiveStatisticsRequest))
+		return srv.(RuntimeServiceServer).GetDescriptiveStatistics(ctx, req.(*GetDescriptiveStatisticsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1443,7 +1427,7 @@ func _RuntimeService_EstimateSmallestTimeGrain_Handler(srv interface{}, ctx cont
 }
 
 func _RuntimeService_GetNumericHistogram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NumericHistogramRequest)
+	in := new(GetNumericHistogramRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1455,13 +1439,13 @@ func _RuntimeService_GetNumericHistogram_Handler(srv interface{}, ctx context.Co
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetNumericHistogram",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetNumericHistogram(ctx, req.(*NumericHistogramRequest))
+		return srv.(RuntimeServiceServer).GetNumericHistogram(ctx, req.(*GetNumericHistogramRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RuntimeService_GetRugHistogram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RugHistogramRequest)
+	in := new(GetRugHistogramRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1473,13 +1457,13 @@ func _RuntimeService_GetRugHistogram_Handler(srv interface{}, ctx context.Contex
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetRugHistogram",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetRugHistogram(ctx, req.(*RugHistogramRequest))
+		return srv.(RuntimeServiceServer).GetRugHistogram(ctx, req.(*GetRugHistogramRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RuntimeService_GetTimeRangeSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TimeRangeSummaryRequest)
+	in := new(GetTimeRangeSummaryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1491,13 +1475,13 @@ func _RuntimeService_GetTimeRangeSummary_Handler(srv interface{}, ctx context.Co
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetTimeRangeSummary",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetTimeRangeSummary(ctx, req.(*TimeRangeSummaryRequest))
+		return srv.(RuntimeServiceServer).GetTimeRangeSummary(ctx, req.(*GetTimeRangeSummaryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RuntimeService_GetCardinalityOfColumn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CardinalityOfColumnRequest)
+	in := new(GetCardinalityOfColumnRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1509,7 +1493,7 @@ func _RuntimeService_GetCardinalityOfColumn_Handler(srv interface{}, ctx context
 		FullMethod: "/rill.runtime.v1.RuntimeService/GetCardinalityOfColumn",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetCardinalityOfColumn(ctx, req.(*CardinalityOfColumnRequest))
+		return srv.(RuntimeServiceServer).GetCardinalityOfColumn(ctx, req.(*GetCardinalityOfColumnRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1532,38 +1516,20 @@ func _RuntimeService_GenerateTimeSeries_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_RenameDatabaseObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenameDatabaseObjectRequest)
+func _RuntimeService_GetTableCardinality_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTableCardinalityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).RenameDatabaseObject(ctx, in)
+		return srv.(RuntimeServiceServer).GetTableCardinality(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/RenameDatabaseObject",
+		FullMethod: "/rill.runtime.v1.RuntimeService/GetTableCardinality",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).RenameDatabaseObject(ctx, req.(*RenameDatabaseObjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_TableCardinality_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CardinalityRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).TableCardinality(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/TableCardinality",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).TableCardinality(ctx, req.(*CardinalityRequest))
+		return srv.(RuntimeServiceServer).GetTableCardinality(ctx, req.(*GetTableCardinalityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1586,20 +1552,20 @@ func _RuntimeService_ProfileColumns_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_TableRows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RowsRequest)
+func _RuntimeService_GetTableRows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTableRowsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).TableRows(ctx, in)
+		return srv.(RuntimeServiceServer).GetTableRows(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/TableRows",
+		FullMethod: "/rill.runtime.v1.RuntimeService/GetTableRows",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).TableRows(ctx, req.(*RowsRequest))
+		return srv.(RuntimeServiceServer).GetTableRows(ctx, req.(*GetTableRowsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1790,20 +1756,16 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GenerateTimeSeries_Handler,
 		},
 		{
-			MethodName: "RenameDatabaseObject",
-			Handler:    _RuntimeService_RenameDatabaseObject_Handler,
-		},
-		{
-			MethodName: "TableCardinality",
-			Handler:    _RuntimeService_TableCardinality_Handler,
+			MethodName: "GetTableCardinality",
+			Handler:    _RuntimeService_GetTableCardinality_Handler,
 		},
 		{
 			MethodName: "ProfileColumns",
 			Handler:    _RuntimeService_ProfileColumns_Handler,
 		},
 		{
-			MethodName: "TableRows",
-			Handler:    _RuntimeService_TableRows_Handler,
+			MethodName: "GetTableRows",
+			Handler:    _RuntimeService_GetTableRows_Handler,
 		},
 		{
 			MethodName: "ListConnectors",

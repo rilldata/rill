@@ -56,5 +56,5 @@ func TestServer_MetricsViewTotals_2measures(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(r.Data.Fields))
 	require.Equal(t, 2.0, r.Data.Fields["cnt"].GetNumberValue())
-	require.Equal(t, 2.0, r.Data.Fields["max"].GetNumberValue())
+	require.Equal(t, 1.0, r.Data.Fields["max"].GetNumberValue())
 }

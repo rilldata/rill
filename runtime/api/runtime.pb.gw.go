@@ -1920,7 +1920,7 @@ func local_request_RuntimeService_EstimateRollupInterval_0(ctx context.Context, 
 }
 
 func request_RuntimeService_GetTopK_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq TopKRequest
+	var protoReq GetTopKRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -1974,7 +1974,7 @@ func request_RuntimeService_GetTopK_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func local_request_RuntimeService_GetTopK_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq TopKRequest
+	var protoReq GetTopKRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -2028,7 +2028,7 @@ func local_request_RuntimeService_GetTopK_0(ctx context.Context, marshaler runti
 }
 
 func request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NullCountRequest
+	var protoReq GetNullCountRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2074,7 +2074,7 @@ func request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler runtim
 }
 
 func local_request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NullCountRequest
+	var protoReq GetNullCountRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2120,7 +2120,7 @@ func local_request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler 
 }
 
 func request_RuntimeService_GetDescriptiveStatistics_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DescriptiveStatisticsRequest
+	var protoReq GetDescriptiveStatisticsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2166,7 +2166,7 @@ func request_RuntimeService_GetDescriptiveStatistics_0(ctx context.Context, mars
 }
 
 func local_request_RuntimeService_GetDescriptiveStatistics_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DescriptiveStatisticsRequest
+	var protoReq GetDescriptiveStatisticsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2304,7 +2304,7 @@ func local_request_RuntimeService_EstimateSmallestTimeGrain_0(ctx context.Contex
 }
 
 func request_RuntimeService_GetNumericHistogram_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NumericHistogramRequest
+	var protoReq GetNumericHistogramRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2350,7 +2350,7 @@ func request_RuntimeService_GetNumericHistogram_0(ctx context.Context, marshaler
 }
 
 func local_request_RuntimeService_GetNumericHistogram_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NumericHistogramRequest
+	var protoReq GetNumericHistogramRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2396,7 +2396,7 @@ func local_request_RuntimeService_GetNumericHistogram_0(ctx context.Context, mar
 }
 
 func request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RugHistogramRequest
+	var protoReq GetRugHistogramRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2442,7 +2442,7 @@ func request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshaler run
 }
 
 func local_request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RugHistogramRequest
+	var protoReq GetRugHistogramRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2488,7 +2488,7 @@ func local_request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshal
 }
 
 func request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq TimeRangeSummaryRequest
+	var protoReq GetTimeRangeSummaryRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2534,7 +2534,7 @@ func request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, marshaler
 }
 
 func local_request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq TimeRangeSummaryRequest
+	var protoReq GetTimeRangeSummaryRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2580,7 +2580,7 @@ func local_request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, mar
 }
 
 func request_RuntimeService_GetCardinalityOfColumn_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CardinalityOfColumnRequest
+	var protoReq GetCardinalityOfColumnRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2626,7 +2626,7 @@ func request_RuntimeService_GetCardinalityOfColumn_0(ctx context.Context, marsha
 }
 
 func local_request_RuntimeService_GetCardinalityOfColumn_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CardinalityOfColumnRequest
+	var protoReq GetCardinalityOfColumnRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2739,78 +2739,8 @@ func local_request_RuntimeService_GenerateTimeSeries_0(ctx context.Context, mars
 
 }
 
-var (
-	filter_RuntimeService_RenameDatabaseObject_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
-func request_RuntimeService_RenameDatabaseObject_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RenameDatabaseObjectRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["instance_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "instance_id")
-	}
-
-	protoReq.InstanceId, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "instance_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_RenameDatabaseObject_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := client.RenameDatabaseObject(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_RuntimeService_RenameDatabaseObject_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RenameDatabaseObjectRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["instance_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "instance_id")
-	}
-
-	protoReq.InstanceId, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "instance_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_RenameDatabaseObject_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := server.RenameDatabaseObject(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_RuntimeService_TableCardinality_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CardinalityRequest
+func request_RuntimeService_GetTableCardinality_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetTableCardinalityRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2840,13 +2770,13 @@ func request_RuntimeService_TableCardinality_0(ctx context.Context, marshaler ru
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
 	}
 
-	msg, err := client.TableCardinality(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetTableCardinality(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RuntimeService_TableCardinality_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CardinalityRequest
+func local_request_RuntimeService_GetTableCardinality_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetTableCardinalityRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2876,7 +2806,7 @@ func local_request_RuntimeService_TableCardinality_0(ctx context.Context, marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
 	}
 
-	msg, err := server.TableCardinality(ctx, &protoReq)
+	msg, err := server.GetTableCardinality(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -2954,11 +2884,11 @@ func local_request_RuntimeService_ProfileColumns_0(ctx context.Context, marshale
 }
 
 var (
-	filter_RuntimeService_TableRows_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_RuntimeService_GetTableRows_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_RuntimeService_TableRows_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RowsRequest
+func request_RuntimeService_GetTableRows_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetTableRowsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2991,17 +2921,17 @@ func request_RuntimeService_TableRows_0(ctx context.Context, marshaler runtime.M
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_TableRows_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetTableRows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.TableRows(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetTableRows(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RuntimeService_TableRows_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RowsRequest
+func local_request_RuntimeService_GetTableRows_0(ctx context.Context, marshaler runtime.Marshaler, server RuntimeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetTableRowsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -3034,11 +2964,11 @@ func local_request_RuntimeService_TableRows_0(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_TableRows_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetTableRows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.TableRows(ctx, &protoReq)
+	msg, err := server.GetTableRows(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -4027,19 +3957,19 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("POST", pattern_RuntimeService_RenameDatabaseObject_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RuntimeService_GetTableCardinality_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/RenameDatabaseObject", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/rename-object"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableCardinality", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RuntimeService_RenameDatabaseObject_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RuntimeService_GetTableCardinality_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -4047,35 +3977,11 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_RuntimeService_RenameDatabaseObject_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RuntimeService_GetTableCardinality_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_RuntimeService_TableCardinality_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/TableCardinality", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/cardinality"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_RuntimeService_TableCardinality_0(ctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_RuntimeService_TableCardinality_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -4099,19 +4005,19 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("GET", pattern_RuntimeService_TableRows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RuntimeService_GetTableRows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/TableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/rows"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/rows"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RuntimeService_TableRows_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RuntimeService_GetTableRows_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -4119,7 +4025,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_RuntimeService_TableRows_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RuntimeService_GetTableRows_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -5028,49 +4934,28 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("POST", pattern_RuntimeService_RenameDatabaseObject_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RuntimeService_GetTableCardinality_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/RenameDatabaseObject", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/rename-object"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableCardinality", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RuntimeService_RenameDatabaseObject_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RuntimeService_GetTableCardinality_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RuntimeService_RenameDatabaseObject_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RuntimeService_GetTableCardinality_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_RuntimeService_TableCardinality_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/TableCardinality", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/cardinality"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_RuntimeService_TableCardinality_0(ctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_RuntimeService_TableCardinality_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -5091,24 +4976,24 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("GET", pattern_RuntimeService_TableRows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RuntimeService_GetTableRows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/TableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/rows"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/rows"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RuntimeService_TableRows_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RuntimeService_GetTableRows_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RuntimeService_TableRows_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RuntimeService_GetTableRows_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -5217,13 +5102,11 @@ var (
 
 	pattern_RuntimeService_GenerateTimeSeries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "instances", "instance_id", "generate-timeseries"}, ""))
 
-	pattern_RuntimeService_RenameDatabaseObject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "instances", "instance_id", "rename-object"}, ""))
-
-	pattern_RuntimeService_TableCardinality_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "tables", "table_name", "cardinality"}, ""))
+	pattern_RuntimeService_GetTableCardinality_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "cardinality", "tables", "table_name"}, ""))
 
 	pattern_RuntimeService_ProfileColumns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "tables", "table_name", "profile-columns"}, ""))
 
-	pattern_RuntimeService_TableRows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "tables", "table_name", "rows"}, ""))
+	pattern_RuntimeService_GetTableRows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "tables", "table_name", "rows"}, ""))
 
 	pattern_RuntimeService_ListConnectors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "connectors", "meta"}, ""))
 )
@@ -5309,13 +5192,11 @@ var (
 
 	forward_RuntimeService_GenerateTimeSeries_0 = runtime.ForwardResponseMessage
 
-	forward_RuntimeService_RenameDatabaseObject_0 = runtime.ForwardResponseMessage
-
-	forward_RuntimeService_TableCardinality_0 = runtime.ForwardResponseMessage
+	forward_RuntimeService_GetTableCardinality_0 = runtime.ForwardResponseMessage
 
 	forward_RuntimeService_ProfileColumns_0 = runtime.ForwardResponseMessage
 
-	forward_RuntimeService_TableRows_0 = runtime.ForwardResponseMessage
+	forward_RuntimeService_GetTableRows_0 = runtime.ForwardResponseMessage
 
 	forward_RuntimeService_ListConnectors_0 = runtime.ForwardResponseMessage
 )

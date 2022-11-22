@@ -17,7 +17,7 @@ import (
 const defaultK = 50
 const defaultAgg = "count(*)"
 
-func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*api.CategoricalSummary, error) {
+func (s *Server) GetTopK(ctx context.Context, topKRequest *api.GetTopKRequest) (*api.GetTopKResponse, error) {
 	agg := defaultAgg
 	k := int32(defaultK)
 	if topKRequest.Agg != nil {
@@ -41,23 +41,25 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*ap
 	}
 	defer rows.Close()
 
-	topKResponse := api.TopKResponse{
-		Entries: make([]*api.TopKResponse_TopKEntry, 0),
+	topKResponse := api.TopK{
+		Entries: make([]*api.TopK_TopKEntry, 0),
 	}
 	for rows.Next() {
-		var topKEntry api.TopKResponse_TopKEntry
+		var topKEntry api.TopK_TopKEntry
 		err = rows.Scan(&topKEntry.Value, &topKEntry.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
 	}
-	return &api.CategoricalSummary{
-		TopKResponse: &topKResponse,
+	return &api.GetTopKResponse{
+		CategoricalSummary: &api.CategoricalSummary{
+			Topk: &topKResponse,
+		},
 	}, nil
 }
 
-func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.NullCountRequest) (*api.NullCountResponse, error) {
+func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.GetNullCountRequest) (*api.GetNullCountResponse, error) {
 	nullCountSql := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
 		nullCountRequest.TableName,
 		quoteName(nullCountRequest.ColumnName),
@@ -78,13 +80,12 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.NullCou
 		}
 	}
 
-	resp := &api.NullCountResponse{
+	return &api.GetNullCountResponse{
 		Count: count,
-	}
-	return resp, nil
+	}, nil
 }
 
-func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.DescriptiveStatisticsRequest) (*api.NumericSummary, error) {
+func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.GetDescriptiveStatisticsRequest) (*api.GetDescriptiveStatisticsResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
 		"min(%s) as min, "+
@@ -114,7 +115,9 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.Desc
 	resp := &api.NumericSummary{
 		NumericStatistics: stats,
 	}
-	return resp, nil
+	return &api.GetDescriptiveStatisticsResponse{
+		NumericSummary: resp,
+	}, nil
 }
 
 /**
@@ -256,7 +259,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *api.Est
 	return timeGrain, nil
 }
 
-func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHistogramRequest) (*api.NumericSummary, error) {
+func (s *Server) GetNumericHistogram(ctx context.Context, request *api.GetNumericHistogramRequest) (*api.GetNumericHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	sql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
 		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
@@ -354,14 +357,16 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 		}
 		histogramBins = append(histogramBins, bin)
 	}
-	return &api.NumericSummary{
-		NumericHistogramBins: &api.NumericHistogramBins{
-			Bins: histogramBins,
+	return &api.GetNumericHistogramResponse{
+		NumericSummary: &api.NumericSummary{
+			NumericHistogramBins: &api.NumericHistogramBins{
+				Bins: histogramBins,
+			},
 		},
 	}, nil
 }
 
-func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramRequest) (*api.NumericSummary, error) {
+func (s *Server) GetRugHistogram(ctx context.Context, request *api.GetRugHistogramRequest) (*api.GetRugHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -444,14 +449,16 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramR
 		outlierBins = append(outlierBins, outlier)
 	}
 
-	return &api.NumericSummary{
-		NumericOutliers: &api.NumericOutliers{
-			Outliers: outlierBins,
+	return &api.GetRugHistogramResponse{
+		NumericSummary: &api.NumericSummary{
+			NumericOutliers: &api.NumericOutliers{
+				Outliers: outlierBins,
+			},
 		},
 	}, nil
 }
 
-func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRangeSummaryRequest) (*api.TimeRangeSummary, error) {
+func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.GetTimeRangeSummaryRequest) (*api.GetTimeRangeSummaryResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
@@ -476,12 +483,14 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 		summary.Interval.Months = interval.Months
 		summary.Interval.Micros = interval.Micros
 
-		return summary, nil
+		return &api.GetTimeRangeSummaryResponse{
+			TimeRangeSummary: summary,
+		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
 }
 
-func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.CardinalityOfColumnRequest) (*api.CategoricalSummary, error) {
+func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.GetCardinalityOfColumnRequest) (*api.GetCardinalityOfColumnResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
@@ -496,7 +505,9 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.Cardin
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return summary, nil
+		return &api.GetCardinalityOfColumnResponse{
+			CategoricalSummary: summary,
+		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
 }

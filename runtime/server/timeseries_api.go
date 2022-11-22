@@ -221,7 +221,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 			End:      r.End,
 		}
 	} else if rtr.Start == nil || rtr.End == nil {
-		tr, err := s.GetTimeRangeSummary(ctx, &api.TimeRangeSummaryRequest{
+		tr, err := s.GetTimeRangeSummary(ctx, &api.GetTimeRangeSummaryRequest{
 			InstanceId: request.InstanceId,
 			TableName:  request.TableName,
 			ColumnName: request.TimestampColumnName,
@@ -231,8 +231,8 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 		}
 		result = api.TimeSeriesTimeRange{
 			Interval: rtr.Interval,
-			Start:    tr.Min,
-			End:      tr.Max,
+			Start:    tr.TimeRangeSummary.Min,
+			End:      tr.TimeRangeSummary.Max,
 		}
 	}
 	if rtr.Start != nil {
@@ -279,7 +279,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	pixels int,
 ) ([]*api.TimeSeriesValue, error) {
 	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
-	cardinality, err := s.TableCardinality(ctx, &api.CardinalityRequest{
+	cardinality, err := s.GetTableCardinality(ctx, &api.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  table,
 	})
