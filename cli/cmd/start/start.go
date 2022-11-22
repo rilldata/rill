@@ -10,7 +10,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/web"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -88,7 +88,7 @@ func StartCmd() *cobra.Command {
 			}
 
 			// Create instance and repo configured for local use
-			_, err = server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
+			_, err = server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
 				InstanceId:   localInstanceID,
 				Driver:       olapDriver,
 				Dsn:          olapDSN,
@@ -98,7 +98,7 @@ func StartCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_, err = server.CreateRepo(context.Background(), &api.CreateRepoRequest{
+			_, err = server.CreateRepo(context.Background(), &runtimev1.CreateRepoRequest{
 				RepoId: localRepoID,
 				Driver: "file",
 				Dsn:    repoDSN,
@@ -115,7 +115,7 @@ func StartCmd() *cobra.Command {
 
 			// Trigger a migration
 			logger.Infof("Hydrating project at '%s'", repoAbs)
-			res, err := server.Migrate(context.Background(), &api.MigrateRequest{
+			res, err := server.Migrate(context.Background(), &runtimev1.MigrateRequest{
 				InstanceId: localInstanceID,
 				RepoId:     localRepoID,
 			})
