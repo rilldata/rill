@@ -1,10 +1,11 @@
 package docs
 
 import (
-	"log"
-
+	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var docsUrl = "https://docs.rilldata.com"
@@ -16,23 +17,20 @@ func DocsCmd() *cobra.Command {
 		Short: "Show rill docs",
 		Long:  `A longer description`,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Create base logger
+			config := zap.NewDevelopmentEncoderConfig()
+			config.EncodeLevel = zapcore.CapitalColorLevelEncoder
+			logger := zap.New(zapcore.NewCore(
+				zapcore.NewConsoleEncoder(config),
+				zapcore.AddSync(colorable.NewColorableStdout()),
+				zapcore.DebugLevel,
+			))
+
 			err := browser.Open(docsUrl)
 			if err != nil {
-				log.Fatalf("Couldn't open browser: %v", err)
+				logger.Sugar().Warnf("could not open browser error: %v, copy and paste this URL into your browser: %s", err, docsUrl)
 			}
 		},
 	}
 	return docsCmd
-}
-
-func init() {
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// docsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// docsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
