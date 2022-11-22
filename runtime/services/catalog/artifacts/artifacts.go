@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -22,11 +22,11 @@ func Register(name string, artifact Artifact) {
 }
 
 type Artifact interface {
-	DeSerialise(ctx context.Context, filePath string, blob string) (*api.CatalogObject, error)
-	Serialise(ctx context.Context, catalogObject *api.CatalogObject) (string, error)
+	DeSerialise(ctx context.Context, filePath string, blob string) (*runtimev1.CatalogObject, error)
+	Serialise(ctx context.Context, catalogObject *runtimev1.CatalogObject) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, filePath string) (*api.CatalogObject, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, filePath string) (*runtimev1.CatalogObject, error) {
 	extension := filepath.Ext(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
@@ -47,7 +47,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, fileP
 	return catalog, nil
 }
 
-func Write(ctx context.Context, repoStore drivers.RepoStore, repoId string, catalog *api.CatalogObject) error {
+func Write(ctx context.Context, repoStore drivers.RepoStore, repoId string, catalog *runtimev1.CatalogObject) error {
 	extension := filepath.Ext(catalog.Path)
 	artifact, ok := Artifacts[extension]
 	if !ok {

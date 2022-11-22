@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -24,7 +24,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 		Name:    "bar",
 		Type:    drivers.CatalogObjectTypeSource,
 		SQL:     "CREATE SOURCE foo WITH connector = 'file', path = '/path/to/file.csv'",
-		Schema:  &api.StructType{Fields: []*api.StructType_Field{{Name: "a", Type: &api.Type{Code: api.Type_CODE_INT64}}}},
+		Schema:  &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{{Name: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}}}},
 		Managed: true,
 	}
 
@@ -32,7 +32,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 		Name:    "baz",
 		Type:    drivers.CatalogObjectTypeSource,
 		SQL:     "CREATE SOURCE foo WITH connector = 'file', path = '/path/to/file.csv'",
-		Schema:  &api.StructType{Fields: []*api.StructType_Field{{Name: "a", Type: &api.Type{Code: api.Type_CODE_INT64}}}},
+		Schema:  &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{{Name: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}}}},
 		Managed: true,
 	}
 
@@ -40,7 +40,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 		Name:    "foo",
 		Type:    drivers.CatalogObjectTypeTable,
 		SQL:     "",
-		Schema:  &api.StructType{Fields: []*api.StructType_Field{{Name: "a", Type: &api.Type{Code: api.Type_CODE_INT64}}}},
+		Schema:  &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{{Name: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}}}},
 		Managed: false,
 	}
 

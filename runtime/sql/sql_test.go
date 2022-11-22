@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/sql/rpc"
 	"github.com/stretchr/testify/require"
@@ -17,13 +17,13 @@ func TestTranspileSelect(t *testing.T) {
 		{
 			Name: "heroes",
 			Type: drivers.CatalogObjectTypeTable,
-			Schema: &api.StructType{
-				Fields: []*api.StructType_Field{
-					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
-					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
+			Schema: &runtimev1.StructType{
+				Fields: []*runtimev1.StructType_Field{
+					{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "birthday", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+					{Name: "power", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "level", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
 				},
 			},
 		},
@@ -45,13 +45,13 @@ func TestParseSelect(t *testing.T) {
 		{
 			Name: "heroes",
 			Type: drivers.CatalogObjectTypeTable,
-			Schema: &api.StructType{
-				Fields: []*api.StructType_Field{
-					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
-					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
+			Schema: &runtimev1.StructType{
+				Fields: []*runtimev1.StructType_Field{
+					{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "birthday", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+					{Name: "power", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "level", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
 				},
 			},
 		},
@@ -82,13 +82,13 @@ func TestParseMetricsView(t *testing.T) {
 		{
 			Name: "heroes",
 			Type: drivers.CatalogObjectTypeTable,
-			Schema: &api.StructType{
-				Fields: []*api.StructType_Field{
-					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
-					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
+			Schema: &runtimev1.StructType{
+				Fields: []*runtimev1.StructType_Field{
+					{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "birthday", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+					{Name: "power", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+					{Name: "level", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
 				},
 			},
 		},

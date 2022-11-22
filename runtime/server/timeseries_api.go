@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func getExpressionColumnsFromMeasures(measures []*api.BasicMeasureDefinition) string {
+func getExpressionColumnsFromMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
 	var result string
 	for i, measure := range measures {
 		result += measure.Expression + " as " + *measure.SqlName
@@ -23,7 +23,7 @@ func getExpressionColumnsFromMeasures(measures []*api.BasicMeasureDefinition) st
 	return result
 }
 
-func getCoalesceStatementsMeasures(measures []*api.BasicMeasureDefinition) string {
+func getCoalesceStatementsMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
 	var result string
 	for i, measure := range measures {
 		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, *measure.SqlName, *measure.SqlName)
@@ -39,7 +39,7 @@ func EscapeSingleQuotes(value string) string {
 }
 
 func getFilterFromDimensionValuesFilter(
-	dimensionValues []*api.MetricsViewDimensionValue,
+	dimensionValues []*runtimev1.MetricsViewDimensionValue,
 	prefix string,
 	dimensionJoiner string,
 ) string {
@@ -99,7 +99,7 @@ func getFilterFromDimensionValuesFilter(
 	return result
 }
 
-func getFilterFromMetricsViewFilters(filters *api.MetricsViewRequestFilter) string {
+func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) string {
 	includeFilters := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
 
 	excludeFilters := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
@@ -125,10 +125,10 @@ func getFallbackMeasureName(index int, sqlName *string) *string {
 
 var countName string = "count"
 
-func normaliseMeasures(measures *api.GenerateTimeSeriesRequest_BasicMeasures) *api.GenerateTimeSeriesRequest_BasicMeasures {
+func normaliseMeasures(measures *runtimev1.GenerateTimeSeriesRequest_BasicMeasures) *runtimev1.GenerateTimeSeriesRequest_BasicMeasures {
 	if measures == nil {
-		return &api.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*api.BasicMeasureDefinition{
+		return &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
 				{
 					Expression: "count(*)",
 					SqlName:    &countName,
@@ -143,7 +143,7 @@ func normaliseMeasures(measures *api.GenerateTimeSeriesRequest_BasicMeasures) *a
 	return measures
 }
 
-func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesTimeRange, error) {
+func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.TimeSeriesTimeRange, error) {
 	tableName := EscapeDoubleQuotes(request.TableName)
 	escapedColumnName := EscapeDoubleQuotes(request.TimestampColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
@@ -174,21 +174,21 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 		MICROS_DAY    = 1000 * 1000 * 60 * 60 * 24
 	)
 
-	var rollupInterval api.TimeGrain
+	var rollupInterval runtimev1.TimeGrain
 	if r.Days == 0 && r.Micros <= MICROS_MINUTE {
-		rollupInterval = api.TimeGrain_MILLISECOND
+		rollupInterval = runtimev1.TimeGrain_MILLISECOND
 	} else if r.Days == 0 && r.Micros > MICROS_MINUTE && r.Micros <= MICROS_HOUR {
-		rollupInterval = api.TimeGrain_SECOND
+		rollupInterval = runtimev1.TimeGrain_SECOND
 	} else if r.Days == 0 && r.Micros <= MICROS_DAY {
-		rollupInterval = api.TimeGrain_MINUTE
+		rollupInterval = runtimev1.TimeGrain_MINUTE
 	} else if r.Days <= 7 {
-		rollupInterval = api.TimeGrain_HOUR
+		rollupInterval = runtimev1.TimeGrain_HOUR
 	} else if r.Days <= 365*20 {
-		rollupInterval = api.TimeGrain_DAY
+		rollupInterval = runtimev1.TimeGrain_DAY
 	} else if r.Days <= 365*500 {
-		rollupInterval = api.TimeGrain_MONTH
+		rollupInterval = runtimev1.TimeGrain_MONTH
 	} else {
-		rollupInterval = api.TimeGrain_YEAR
+		rollupInterval = runtimev1.TimeGrain_YEAR
 	}
 
 	start := min.Format(ISO_FORMAT)
@@ -196,7 +196,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 
 	rtr := request.TimeRange
 	if rtr == nil {
-		rtr = &api.TimeSeriesTimeRange{
+		rtr = &runtimev1.TimeSeriesTimeRange{
 			Start: start,
 			End:   end,
 		}
@@ -207,7 +207,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTi
 	if rtr.End == "" {
 		rtr.End = end
 	}
-	if rtr.Interval == api.TimeGrain_UNSPECIFIED {
+	if rtr.Interval == runtimev1.TimeGrain_UNSPECIFIED {
 		rtr.Interval = rollupInterval
 	}
 	return rtr, nil
@@ -243,9 +243,9 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	timestampColumn string,
 	valueColumn string,
 	pixels int,
-) ([]*api.TimeSeriesValue, error) {
+) ([]*runtimev1.TimeSeriesValue, error) {
 	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
-	cardinality, err := s.TableCardinality(ctx, &api.CardinalityRequest{
+	cardinality, err := s.TableCardinality(ctx, &runtimev1.CardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  table,
 	})
@@ -261,7 +261,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 			return nil, err
 		}
 		defer rows.Close()
-		results := make([]*api.TimeSeriesValue, (pixels+1)*4)
+		results := make([]*runtimev1.TimeSeriesValue, (pixels+1)*4)
 		for rows.Next() {
 			var ts time.Time
 			var count float64
@@ -269,7 +269,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, &api.TimeSeriesValue{
+			results = append(results, &runtimev1.TimeSeriesValue{
 				Ts:      ts.Format(ISO_FORMAT),
 				Records: sMap("count", count),
 			})
@@ -316,7 +316,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 		return nil, err
 	}
 	defer rows.Close()
-	results := make([]*api.TimeSeriesValue, 0, (pixels+1)*4)
+	results := make([]*runtimev1.TimeSeriesValue, 0, (pixels+1)*4)
 	for rows.Next() {
 		var minT, maxT, argminVT, argmaxVT int64
 		var argminTV, argmaxTV, minV, maxV float64
@@ -325,24 +325,24 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, &api.TimeSeriesValue{
+		results = append(results, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(minT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", argminTV),
 		})
-		results = append(results, &api.TimeSeriesValue{
+		results = append(results, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argminVT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", minV),
 		})
 
-		results = append(results, &api.TimeSeriesValue{
+		results = append(results, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argmaxVT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", maxV),
 		})
 
-		results = append(results, &api.TimeSeriesValue{
+		results = append(results, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(maxT).Format(ISO_FORMAT),
 			Bin:     &bin,
 			Records: sMap("count", argmaxTV),
@@ -355,12 +355,12 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	return results, nil
 }
 
-func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesRollup, error) {
+func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.TimeSeriesRollup, error) {
 	timeRange, err := s.normaliseTimeRange(ctx, request)
 	if err != nil {
 		return createErrResult(request.TimeRange), err
 	}
-	var measures []*api.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
+	var measures []*runtimev1.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
 	var timestampColumn string = request.TimestampColumnName
 	var tableName string = request.TableName
 	var filter string = getFilterFromMetricsViewFilters(request.Filters)
@@ -419,20 +419,20 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	if err != nil {
 		return createErrResultWithPartial(timeRange, results), err
 	}
-	var spOp *api.TimeSeriesResponse_TimeSeriesValues
+	var spOp *runtimev1.TimeSeriesResponse_TimeSeriesValues
 	if request.Pixels != nil {
 		pixels := int(*request.Pixels)
 		sparkValues, er := s.createTimestampRollupReduction(ctx, request.InstanceId, "_ts_", "ts", "count", pixels)
 		if er != nil {
 			return createErrResultWithPartial(timeRange, results), er
 		}
-		spOp = &api.TimeSeriesResponse_TimeSeriesValues{
+		spOp = &runtimev1.TimeSeriesResponse_TimeSeriesValues{
 			Values: sparkValues,
 		}
 	}
 
-	return &api.TimeSeriesRollup{
-		Rollup: &api.TimeSeriesResponse{
+	return &runtimev1.TimeSeriesRollup{
+		Rollup: &runtimev1.TimeSeriesResponse{
 			Results:   results,
 			TimeRange: timeRange,
 			Spark:     spOp,
@@ -440,10 +440,10 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	}, nil
 }
 
-func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.TimeSeriesValue, error) {
-	results := make([]*api.TimeSeriesValue, 0)
+func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runtimev1.TimeSeriesValue, error) {
+	results := make([]*runtimev1.TimeSeriesValue, 0)
 	for rows.Next() {
-		value := api.TimeSeriesValue{}
+		value := runtimev1.TimeSeriesValue{}
 		results = append(results, &value)
 		row := make(map[string]interface{}, rowLength)
 		err := rows.MapScan(row)
@@ -461,18 +461,18 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.
 	return results, nil
 }
 
-func createErrResult(timeRange *api.TimeSeriesTimeRange) *api.TimeSeriesRollup {
-	return &api.TimeSeriesRollup{
-		Rollup: &api.TimeSeriesResponse{
-			Results:   []*api.TimeSeriesValue{},
+func createErrResult(timeRange *runtimev1.TimeSeriesTimeRange) *runtimev1.TimeSeriesRollup {
+	return &runtimev1.TimeSeriesRollup{
+		Rollup: &runtimev1.TimeSeriesResponse{
+			Results:   []*runtimev1.TimeSeriesValue{},
 			TimeRange: timeRange,
 		},
 	}
 }
 
-func createErrResultWithPartial(timeRange *api.TimeSeriesTimeRange, results []*api.TimeSeriesValue) *api.TimeSeriesRollup {
-	return &api.TimeSeriesRollup{
-		Rollup: &api.TimeSeriesResponse{
+func createErrResultWithPartial(timeRange *runtimev1.TimeSeriesTimeRange, results []*runtimev1.TimeSeriesValue) *runtimev1.TimeSeriesRollup {
+	return &runtimev1.TimeSeriesRollup{
+		Rollup: &runtimev1.TimeSeriesResponse{
 			Results:   results,
 			TimeRange: timeRange,
 		},

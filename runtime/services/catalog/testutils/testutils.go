@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -22,10 +22,10 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	err = artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err = artifacts.Write(ctx, s.Repo, s.RepoId, &runtimev1.CatalogObject{
 		Name: name,
-		Type: api.CatalogObject_TYPE_SOURCE,
-		Source: &api.Source{
+		Type: runtimev1.CatalogObject_TYPE_SOURCE,
+		Source: &runtimev1.Source{
 			Name:      name,
 			Connector: "file",
 			Properties: toProtoStruct(map[string]any{
@@ -42,13 +42,13 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 
 func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err := artifacts.Write(ctx, s.Repo, s.RepoId, &runtimev1.CatalogObject{
 		Name: name,
-		Type: api.CatalogObject_TYPE_MODEL,
-		Model: &api.Model{
+		Type: runtimev1.CatalogObject_TYPE_MODEL,
+		Model: &runtimev1.Model{
 			Name:    name,
 			Sql:     sql,
-			Dialect: api.Model_DIALECT_DUCKDB,
+			Dialect: runtimev1.Model_DIALECT_DUCKDB,
 		},
 		Path: path,
 	})
@@ -58,11 +58,11 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 	return blob
 }
 
-func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *api.MetricsView, path string) string {
+func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err := artifacts.Write(ctx, s.Repo, s.RepoId, &runtimev1.CatalogObject{
 		Name:        metricsView.Name,
-		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
+		Type:        runtimev1.CatalogObject_TYPE_METRICS_VIEW,
 		MetricsView: metricsView,
 		Path:        path,
 	})

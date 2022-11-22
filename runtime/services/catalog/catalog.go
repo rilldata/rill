@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"google.golang.org/grpc/codes"
@@ -51,10 +51,10 @@ func NewService(
 
 func (s *Service) ListObjects(
 	ctx context.Context,
-	typ api.CatalogObject_Type,
-) ([]*api.CatalogObject, error) {
+	typ runtimev1.CatalogObject_Type,
+) ([]*runtimev1.CatalogObject, error) {
 	objs := s.Catalog.FindObjects(ctx, s.InstId, catalogObjectTypeFromPB(typ))
-	pbs := make([]*api.CatalogObject, len(objs))
+	pbs := make([]*runtimev1.CatalogObject, len(objs))
 	var err error
 	for i, obj := range objs {
 		pbs[i], err = catalogObjectToPB(obj)
@@ -69,7 +69,7 @@ func (s *Service) ListObjects(
 func (s *Service) GetCatalogObject(
 	ctx context.Context,
 	name string,
-) (*api.CatalogObject, error) {
+) (*runtimev1.CatalogObject, error) {
 	obj, found := s.Catalog.FindObject(ctx, s.InstId, name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")

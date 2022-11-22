@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
@@ -21,13 +21,13 @@ import (
 type MigrationItem struct {
 	Name           string
 	Path           string
-	CatalogInFile  *api.CatalogObject
-	CatalogInStore *api.CatalogObject
+	CatalogInFile  *runtimev1.CatalogObject
+	CatalogInStore *runtimev1.CatalogObject
 	Type           int
 	FromName       string
 	FromPath       string
 	Dependencies   []string
-	Error          *api.MigrationError
+	Error          *runtimev1.MigrationError
 }
 
 func (i *MigrationItem) renameFrom(from *MigrationItem) {
@@ -52,20 +52,20 @@ type MigrationConfig struct {
 }
 
 type MigrationResult struct {
-	AddedObjects   []*api.CatalogObject
-	UpdatedObjects []*api.CatalogObject
-	DroppedObjects []*api.CatalogObject
+	AddedObjects   []*runtimev1.CatalogObject
+	UpdatedObjects []*runtimev1.CatalogObject
+	DroppedObjects []*runtimev1.CatalogObject
 	AffectedPaths  []string
-	Errors         []*api.MigrationError
+	Errors         []*runtimev1.MigrationError
 }
 
 func NewMigrationResult() *MigrationResult {
 	return &MigrationResult{
-		AddedObjects:   make([]*api.CatalogObject, 0),
-		UpdatedObjects: make([]*api.CatalogObject, 0),
-		DroppedObjects: make([]*api.CatalogObject, 0),
+		AddedObjects:   make([]*runtimev1.CatalogObject, 0),
+		UpdatedObjects: make([]*runtimev1.CatalogObject, 0),
+		DroppedObjects: make([]*runtimev1.CatalogObject, 0),
 		AffectedPaths:  make([]string, 0),
-		Errors:         make([]*api.MigrationError, 0),
+		Errors:         make([]*runtimev1.MigrationError, 0),
 	}
 }
 
@@ -193,8 +193,8 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 			} else {
 				errPath = item.Path
 			}
-			result.Errors = append(result.Errors, &api.MigrationError{
-				Code:     api.MigrationError_CODE_UNSPECIFIED,
+			result.Errors = append(result.Errors, &runtimev1.MigrationError{
+				Code:     runtimev1.MigrationError_CODE_UNSPECIFIED,
 				Message:  "item with same name exists",
 				FilePath: errPath,
 			})
@@ -316,8 +316,8 @@ func (s *Service) getMigrationItem(
 	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
 	if err != nil {
 		if err != artifacts.FileReadError {
-			item.Error = &api.MigrationError{
-				Code:     api.MigrationError_CODE_SYNTAX,
+			item.Error = &runtimev1.MigrationError{
+				Code:     runtimev1.MigrationError_CODE_SYNTAX,
 				Message:  err.Error(),
 				FilePath: repoPath,
 			}
@@ -501,16 +501,16 @@ func (s *Service) runMigrationItems(
 		}
 
 		if err != nil {
-			result.Errors = append(result.Errors, &api.MigrationError{
-				Code:     api.MigrationError_CODE_OLAP,
+			result.Errors = append(result.Errors, &runtimev1.MigrationError{
+				Code:     runtimev1.MigrationError_CODE_OLAP,
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
 			err := s.Catalog.DeleteObject(ctx, s.InstId, item.Name)
 			if err != nil {
 				// shouldn't ideally happen
-				result.Errors = append(result.Errors, &api.MigrationError{
-					Code:     api.MigrationError_CODE_OLAP,
+				result.Errors = append(result.Errors, &runtimev1.MigrationError{
+					Code:     runtimev1.MigrationError_CODE_OLAP,
 					Message:  err.Error(),
 					FilePath: item.Path,
 				})
@@ -519,8 +519,8 @@ func (s *Service) runMigrationItems(
 				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
 				if err != nil {
 					// shouldn't ideally happen
-					result.Errors = append(result.Errors, &api.MigrationError{
-						Code:     api.MigrationError_CODE_OLAP,
+					result.Errors = append(result.Errors, &runtimev1.MigrationError{
+						Code:     runtimev1.MigrationError_CODE_OLAP,
 						Message:  err.Error(),
 						FilePath: item.Path,
 					})

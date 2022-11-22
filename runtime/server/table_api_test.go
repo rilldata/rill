@@ -5,10 +5,9 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/require"
-
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/stretchr/testify/require"
 )
 
 func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
@@ -58,7 +57,7 @@ func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	cr, err := server.TableCardinality(context.Background(), &api.CardinalityRequest{
+	cr, err := server.TableCardinality(context.Background(), &runtimev1.CardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -67,7 +66,7 @@ func TestServer_TableCardinality(t *testing.T) {
 
 	rows = createTable(server, instanceId, t, "select")
 	rows.Close()
-	cr, err = server.TableCardinality(context.Background(), &api.CardinalityRequest{
+	cr, err = server.TableCardinality(context.Background(), &runtimev1.CardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "select",
 	})
@@ -79,7 +78,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	cr, err := server.ProfileColumns(context.Background(), &api.ProfileColumnsRequest{
+	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -98,7 +97,7 @@ func TestServer_TableRows(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	cr, err := server.TableRows(context.Background(), &api.RowsRequest{
+	cr, err := server.TableRows(context.Background(), &runtimev1.RowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,
@@ -111,19 +110,19 @@ func TestServer_RenameObject(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	_, err := server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
+	_, err := server.RenameDatabaseObject(context.Background(), &runtimev1.RenameDatabaseObjectRequest{
 		InstanceId: instanceId,
 		Name:       "test",
 		Newname:    "test2",
-		Type:       api.DatabaseObjectType_TABLE.Enum(),
+		Type:       runtimev1.DatabaseObjectType_TABLE.Enum(),
 	})
 	require.NoError(t, err)
 
-	_, err = server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
+	_, err = server.RenameDatabaseObject(context.Background(), &runtimev1.RenameDatabaseObjectRequest{
 		InstanceId: instanceId,
 		Name:       "test",
 		Newname:    "test2",
-		Type:       api.DatabaseObjectType_TABLE.Enum(),
+		Type:       runtimev1.DatabaseObjectType_TABLE.Enum(),
 	})
 	require.Error(t, err)
 }
@@ -132,8 +131,8 @@ func TestServer_EstimateRollupInterval(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	var resp *api.EstimateRollupIntervalResponse
-	resp, err := server.EstimateRollupInterval(context.Background(), &api.EstimateRollupIntervalRequest{
+	var resp *runtimev1.EstimateRollupIntervalResponse
+	resp, err := server.EstimateRollupInterval(context.Background(), &runtimev1.EstimateRollupIntervalRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		ColumnName: "a",

@@ -3,40 +3,40 @@ package server
 import (
 	"context"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // ListInstances implements RuntimeService
-func (s *Server) ListInstances(ctx context.Context, req *api.ListInstancesRequest) (*api.ListInstancesResponse, error) {
+func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	instances := registry.FindInstances(ctx)
 
-	pbs := make([]*api.Instance, len(instances))
+	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
 		pbs[i] = instanceToPB(inst)
 	}
 
-	return &api.ListInstancesResponse{Instances: pbs}, nil
+	return &runtimev1.ListInstancesResponse{Instances: pbs}, nil
 }
 
 // GetInstance implements RuntimeService
-func (s *Server) GetInstance(ctx context.Context, req *api.GetInstanceRequest) (*api.GetInstanceResponse, error) {
+func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
 	if !found {
 		return nil, status.Error(codes.NotFound, "instance not found")
 	}
 
-	return &api.GetInstanceResponse{
+	return &runtimev1.GetInstanceResponse{
 		Instance: instanceToPB(inst),
 	}, nil
 }
 
 // CreateInstance implements RuntimeService
-func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequest) (*api.CreateInstanceResponse, error) {
+func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
 	inst := &drivers.Instance{
 		ID:           req.InstanceId,
 		Driver:       req.Driver,
@@ -75,25 +75,25 @@ func (s *Server) CreateInstance(ctx context.Context, req *api.CreateInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.CreateInstanceResponse{
+	return &runtimev1.CreateInstanceResponse{
 		InstanceId: inst.ID,
 		Instance:   instanceToPB(inst),
 	}, nil
 }
 
 // DeleteInstance implements RuntimeService
-func (s *Server) DeleteInstance(ctx context.Context, req *api.DeleteInstanceRequest) (*api.DeleteInstanceResponse, error) {
+func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	err := registry.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.DeleteInstanceResponse{}, nil
+	return &runtimev1.DeleteInstanceResponse{}, nil
 }
 
-func instanceToPB(inst *drivers.Instance) *api.Instance {
-	return &api.Instance{
+func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
+	return &runtimev1.Instance{
 		InstanceId:   inst.ID,
 		Driver:       inst.Driver,
 		Dsn:          inst.DSN,

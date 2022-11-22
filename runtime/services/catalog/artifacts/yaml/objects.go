@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/copier"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -50,7 +50,7 @@ type Dimension struct {
 	Description string
 }
 
-func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
+func toSourceArtifact(catalog *runtimev1.CatalogObject) (*Source, error) {
 	source := &Source{
 		Version: Version,
 		Type:    catalog.Source.Connector,
@@ -73,7 +73,7 @@ func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
 	return source, nil
 }
 
-func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
+func toMetricsViewArtifact(catalog *runtimev1.CatalogObject) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
 	err := copier.Copy(metricsArtifact, catalog.MetricsView)
 	if err != nil {
@@ -84,7 +84,7 @@ func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
 	return metricsArtifact, nil
 }
 
-func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error) {
+func fromSourceArtifact(source *Source, path string) (*runtimev1.CatalogObject, error) {
 	props := map[string]interface{}{}
 	if source.Type == "file" {
 		props["path"] = source.Path
@@ -100,11 +100,11 @@ func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error)
 	}
 
 	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
-	return &api.CatalogObject{
+	return &runtimev1.CatalogObject{
 		Name: name,
-		Type: api.CatalogObject_TYPE_SOURCE,
+		Type: runtimev1.CatalogObject_TYPE_SOURCE,
 		Path: path,
-		Source: &api.Source{
+		Source: &runtimev1.Source{
 			Name:       name,
 			Connector:  source.Type,
 			Properties: propsPB,
@@ -112,8 +112,8 @@ func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error)
 	}, nil
 }
 
-func fromMetricsViewArtifact(metrics *MetricsView, path string) (*api.CatalogObject, error) {
-	apiMetrics := &api.MetricsView{}
+func fromMetricsViewArtifact(metrics *MetricsView, path string) (*runtimev1.CatalogObject, error) {
+	apiMetrics := &runtimev1.MetricsView{}
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
 		return nil, err
@@ -126,9 +126,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*api.CatalogObj
 
 	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
 	apiMetrics.Name = name
-	return &api.CatalogObject{
+	return &runtimev1.CatalogObject{
 		Name:        name,
-		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
+		Type:        runtimev1.CatalogObject_TYPE_METRICS_VIEW,
 		Path:        path,
 		MetricsView: apiMetrics,
 	}, nil

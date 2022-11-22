@@ -1,12 +1,11 @@
 syntax = "proto3";
-
 package rill.runtime.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-
-option go_package = "github.com/rilldata/rill/runtime/api;api";
+import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/schema.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
 // It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
@@ -230,14 +229,6 @@ service RuntimeService {
   }
 
   // Explore APIs
-
-  // MetricsViewMeta returns metadata about a metrics view.
-  // It's comparable to calling GetCatalogObject and will be deprecated in the future.
-  rpc MetricsViewMeta(MetricsViewMetaRequest) returns (MetricsViewMetaResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/meta"
-    };
-  }
 
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
   // It's a convenience API for querying a metrics view.
@@ -611,84 +602,6 @@ message CatalogObject {
   google.protobuf.Timestamp refreshed_on = 10;
 }
 
-// Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
-// scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
-// have managed = false.
-message Table {
-  // Table name
-  string name = 1;
-  // Table schema
-  StructType schema = 2;
-  // Managed is true if the table was created through a runtime migration, false if it was discovered in by
-  // scanning the database's information schema.
-  bool managed = 3;
-}
-
-// Source is the internal representation of a source definition
-message Source {
-  // Name of the source
-  string name = 1;
-  // Connector used by the source
-  string connector = 2;
-  // Connector properties assigned in the source
-  google.protobuf.Struct properties = 3;
-  // Detected schema of the source
-  StructType schema = 5;
-  // Used for the SQL statement for sources
-  // TODO: Remove when frontend sources code has been refactored
-  string sql = 20;
-}
-
-// Model is the internal representation of a model definition
-message Model {
-  // Dialects supported for models
-  enum Dialect {
-    DIALECT_UNSPECIFIED = 0;
-    DIALECT_DUCKDB = 1;
-  }
-  // Name of the model
-  string name = 1;
-  // SQL is a SELECT statement representing the model
-  string sql = 2;
-  // Dialect of the SQL statement
-  Dialect dialect = 3;
-  // Detected schema of the model
-  StructType schema = 4;
-}
-
-// Metrics view is the internal representation of a metrics view definition
-message MetricsView {
-  // Dimensions are columns to filter and group by
-  message Dimension {
-    string name = 1;
-    string label = 2;
-    string description = 3;
-    string enabled = 4;
-  }
-  // Measures are aggregated computed values
-  message Measure {
-    string name = 1;
-    string label = 2;
-    string expression = 3;
-    string description = 4;
-    string format = 5;
-    string enabled = 6;
-  }
-  // Name of the metrics view
-  string name = 1;
-  // Name of the source or model that the metrics view is based on
-  string from = 2;
-  // Name of the primary time dimension, used for rendering time series
-  string time_dimension = 3;
-  // Recommended granularities for rolling up the time dimension.
-  // Should be a valid SQL INTERVAL value.
-  repeated string time_grains = 4;
-  // Dimensions in the metrics view
-  repeated Dimension dimensions = 5;
-  // Measures in the metrics view
-  repeated Measure measures = 6;
-}
-
 // Request message for RuntimeService.ListCatalogObjects
 message ListCatalogObjectsRequest {
   string instance_id = 1;
@@ -971,20 +884,6 @@ message QueryDirectResponse {
 // **********
 // Explore APIs
 // **********
-
-// Request message for RuntimeService.MetricsViewMeta
-message MetricsViewMetaRequest {
-  string instance_id = 1;
-  string metrics_view_name = 2;
-}
-
-// Response message for RuntimeService.MetricsViewMeta
-message MetricsViewMetaResponse {
-  string metrics_view_name = 1;
-  string from_object = 2;
-  repeated MetricsView.Dimension dimensions = 3;
-  repeated MetricsView.Measure measures = 4;
-}
 
 // Request message for RuntimeService.MetricsViewToplist
 message MetricsViewToplistRequest {
@@ -1429,65 +1328,4 @@ message ListConnectorsRequest {}
 // Response message for RuntimeService.ListConnectors
 message ListConnectorsResponse {
   repeated Connector connectors = 1;
-}
-
-// **********
-// Common messages
-// **********
-
-// Type represents a data type in a schema
-message Type {
-  // Code enumerates all the types that can be represented in a schema
-  enum Code {
-    CODE_UNSPECIFIED = 0;
-    CODE_BOOL = 1;
-    CODE_INT8 = 2;
-    CODE_INT16 = 3;
-    CODE_INT32 = 4;
-    CODE_INT64 = 5;
-    CODE_INT128 = 6;
-    CODE_UINT8 = 7;
-    CODE_UINT16 = 8;
-    CODE_UINT32 = 9;
-    CODE_UINT64 = 10;
-    CODE_UINT128 = 11;
-    CODE_FLOAT32 = 12;
-    CODE_FLOAT64 = 13;
-    CODE_TIMESTAMP = 14;
-    CODE_DATE = 15;
-    CODE_TIME = 16;
-    CODE_STRING = 17;
-    CODE_BYTES = 18;
-    CODE_ARRAY = 19;
-    CODE_STRUCT = 20;
-    CODE_MAP = 21;
-    CODE_DECIMAL = 22;
-    CODE_JSON = 23;
-    CODE_UUID = 24;
-  }
-  // Code designates the type
-  Code code = 1;
-  // Nullable indicates whether null values are possible
-  bool nullable = 2;
-  // If code is CODE_ARRAY, array_element_type specifies the type of the array elements
-  Type array_element_type = 3;
-  // If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
-  StructType struct_type = 4;
-  // If code is CODE_MAP, map_type specifies the map's key and value types
-  MapType map_type = 5;
-}
-
-// StructType is a type composed of ordered, named and typed sub-fields
-message StructType {
-  message Field {
-    string name = 1;
-    Type type = 2;
-  }
-  repeated Field fields = 1;
-}
-
-// MapType is a complex type for mapping keys to values
-message MapType {
-  Type key_type = 1;
-  Type value_type = 2;
 }

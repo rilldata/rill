@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/proto"
 )
@@ -48,7 +48,7 @@ func (c *connection) findObjects(ctx context.Context, whereClause string, args .
 
 		// Parse schema protobuf
 		if schemaBlob != nil {
-			obj.Schema = &api.StructType{}
+			obj.Schema = &runtimev1.StructType{}
 			err = proto.Unmarshal(schemaBlob, obj.Schema)
 			if err != nil {
 				panic(err)

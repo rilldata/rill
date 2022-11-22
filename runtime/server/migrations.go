@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
@@ -15,7 +15,7 @@ import (
 )
 
 // Migrate implements RuntimeService
-func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.MigrateResponse, error) {
+func (s *Server) Migrate(ctx context.Context, req *runtimev1.MigrateRequest) (*runtimev1.MigrateResponse, error) {
 	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.RepoId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -30,7 +30,7 @@ func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.Mig
 		return nil, err
 	}
 
-	return &api.MigrateResponse{
+	return &runtimev1.MigrateResponse{
 		Errors:        resp.Errors,
 		AffectedPaths: resp.AffectedPaths,
 	}, nil
@@ -38,13 +38,13 @@ func (s *Server) Migrate(ctx context.Context, req *api.MigrateRequest) (*api.Mig
 
 // MigrateSingle implements RuntimeService
 // NOTE: Everything here is an initial implementation with many flaws.
-func (s *Server) MigrateSingle(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
+func (s *Server) MigrateSingle(ctx context.Context, req *runtimev1.MigrateSingleRequest) (*runtimev1.MigrateSingleResponse, error) {
 	// TODO: Handle all kinds of objects, not just sources
 	return s.migrateSingleSource(ctx, req)
 }
 
 // MigrateDelete implements RuntimeService
-func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteRequest) (*api.MigrateDeleteResponse, error) {
+func (s *Server) MigrateDelete(ctx context.Context, req *runtimev1.MigrateDeleteRequest) (*runtimev1.MigrateDeleteResponse, error) {
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
@@ -97,12 +97,12 @@ func (s *Server) MigrateDelete(ctx context.Context, req *api.MigrateDeleteReques
 		return nil, status.Errorf(codes.Unknown, "could not delete object: %s", err.Error())
 	}
 
-	return &api.MigrateDeleteResponse{}, nil
+	return &runtimev1.MigrateDeleteResponse{}, nil
 }
 
 // PutFileAndMigrate implements RuntimeService
-func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigrateRequest) (*api.PutFileAndMigrateResponse, error) {
-	_, err := s.PutFile(ctx, &api.PutFileRequest{
+func (s *Server) PutFileAndMigrate(ctx context.Context, req *runtimev1.PutFileAndMigrateRequest) (*runtimev1.PutFileAndMigrateResponse, error) {
+	_, err := s.PutFile(ctx, &runtimev1.PutFileRequest{
 		RepoId:     req.RepoId,
 		Path:       req.Path,
 		Blob:       req.Blob,
@@ -112,7 +112,7 @@ func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigra
 	if err != nil {
 		return nil, err
 	}
-	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+	migrateResp, err := s.Migrate(ctx, &runtimev1.MigrateRequest{
 		InstanceId:   req.InstanceId,
 		RepoId:       req.RepoId,
 		ChangedPaths: []string{req.Path},
@@ -122,14 +122,14 @@ func (s *Server) PutFileAndMigrate(ctx context.Context, req *api.PutFileAndMigra
 	if err != nil {
 		return nil, err
 	}
-	return &api.PutFileAndMigrateResponse{
+	return &runtimev1.PutFileAndMigrateResponse{
 		Errors:        migrateResp.Errors,
 		AffectedPaths: migrateResp.AffectedPaths,
 	}, nil
 }
 
-func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAndMigrateRequest) (*api.RenameFileAndMigrateResponse, error) {
-	_, err := s.RenameFile(ctx, &api.RenameFileRequest{
+func (s *Server) RenameFileAndMigrate(ctx context.Context, req *runtimev1.RenameFileAndMigrateRequest) (*runtimev1.RenameFileAndMigrateResponse, error) {
+	_, err := s.RenameFile(ctx, &runtimev1.RenameFileRequest{
 		RepoId:   req.RepoId,
 		FromPath: req.FromPath,
 		ToPath:   req.ToPath,
@@ -137,7 +137,7 @@ func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAn
 	if err != nil {
 		return nil, err
 	}
-	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+	migrateResp, err := s.Migrate(ctx, &runtimev1.MigrateRequest{
 		InstanceId:   req.InstanceId,
 		RepoId:       req.RepoId,
 		ChangedPaths: []string{req.FromPath, req.ToPath},
@@ -147,21 +147,21 @@ func (s *Server) RenameFileAndMigrate(ctx context.Context, req *api.RenameFileAn
 	if err != nil {
 		return nil, err
 	}
-	return &api.RenameFileAndMigrateResponse{
+	return &runtimev1.RenameFileAndMigrateResponse{
 		Errors:        migrateResp.Errors,
 		AffectedPaths: migrateResp.AffectedPaths,
 	}, nil
 }
 
-func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *api.DeleteFileAndMigrateRequest) (*api.DeleteFileAndMigrateResponse, error) {
-	_, err := s.DeleteFile(ctx, &api.DeleteFileRequest{
+func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *runtimev1.DeleteFileAndMigrateRequest) (*runtimev1.DeleteFileAndMigrateResponse, error) {
+	_, err := s.DeleteFile(ctx, &runtimev1.DeleteFileRequest{
 		RepoId: req.RepoId,
 		Path:   req.Path,
 	})
 	if err != nil {
 		return nil, err
 	}
-	migrateResp, err := s.Migrate(ctx, &api.MigrateRequest{
+	migrateResp, err := s.Migrate(ctx, &runtimev1.MigrateRequest{
 		InstanceId:   req.InstanceId,
 		RepoId:       req.RepoId,
 		ChangedPaths: []string{req.Path},
@@ -171,14 +171,14 @@ func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *api.DeleteFileAn
 	if err != nil {
 		return nil, err
 	}
-	return &api.DeleteFileAndMigrateResponse{
+	return &runtimev1.DeleteFileAndMigrateResponse{
 		Errors:        migrateResp.Errors,
 		AffectedPaths: migrateResp.AffectedPaths,
 	}, nil
 }
 
 // NOTE: This is an initial migration implementation with several flaws.
-func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingleRequest) (*api.MigrateSingleResponse, error) {
+func (s *Server) migrateSingleSource(ctx context.Context, req *runtimev1.MigrateSingleRequest) (*runtimev1.MigrateSingleResponse, error) {
 	// Parse SQL
 	source, err := sources.SqlToSource(req.Sql)
 	if err != nil {
@@ -243,7 +243,7 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 
 	// Stop execution now if it's just a dry run
 	if req.DryRun {
-		return &api.MigrateSingleResponse{}, nil
+		return &runtimev1.MigrateSingleResponse{}, nil
 	}
 
 	// Create the object to save
@@ -344,5 +344,5 @@ func (s *Server) migrateSingleSource(ctx context.Context, req *api.MigrateSingle
 	}
 
 	// Done
-	return &api.MigrateSingleResponse{}, nil
+	return &runtimev1.MigrateSingleResponse{}, nil
 }

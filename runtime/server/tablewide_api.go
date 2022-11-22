@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Table level profiling APIs
-func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDatabaseObjectRequest) (*api.RenameDatabaseObjectResponse, error) {
+func (s *Server) RenameDatabaseObject(ctx context.Context, req *runtimev1.RenameDatabaseObjectRequest) (*runtimev1.RenameDatabaseObjectResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("alter %s \"%s\" rename to \"%s\"", req.Type.String(), req.Name, req.Newname),
 	})
@@ -19,10 +19,10 @@ func (s *Server) RenameDatabaseObject(ctx context.Context, req *api.RenameDataba
 		return nil, err
 	}
 	rows.Close()
-	return &api.RenameDatabaseObjectResponse{}, nil
+	return &runtimev1.RenameDatabaseObjectResponse{}, nil
 }
 
-func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityRequest) (*api.CardinalityResponse, error) {
+func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.CardinalityRequest) (*runtimev1.CardinalityResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: "select count(*) from " + quoteName(req.TableName),
 	})
@@ -37,7 +37,7 @@ func (s *Server) TableCardinality(ctx context.Context, req *api.CardinalityReque
 			return nil, err
 		}
 	}
-	return &api.CardinalityResponse{
+	return &runtimev1.CardinalityResponse{
 		Cardinality: count,
 	}, nil
 }
@@ -54,7 +54,7 @@ func EscapeDoubleQuotes(column string) string {
 	return DoubleQuotesRegexp.ReplaceAllString(column, "\"\"")
 }
 
-func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
+func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
 		where table_name = '%s' and table_schema = current_schema()`, req.TableName),
@@ -63,10 +63,10 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 		return nil, err
 	}
 	defer rows.Close()
-	var pcs []*api.ProfileColumn
+	var pcs []*runtimev1.ProfileColumn
 	i := 0
 	for rows.Next() {
-		pc := api.ProfileColumn{}
+		pc := runtimev1.ProfileColumn{}
 		if err := rows.StructScan(&pc); err != nil {
 			return nil, err
 		}
@@ -90,12 +90,12 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 		rows.Close()
 	}
 
-	return &api.ProfileColumnsResponse{
+	return &runtimev1.ProfileColumnsResponse{
 		ProfileColumns: pcs[0:i],
 	}, nil
 }
 
-func (s *Server) TableRows(ctx context.Context, req *api.RowsRequest) (*api.RowsResponse, error) {
+func (s *Server) TableRows(ctx context.Context, req *runtimev1.RowsRequest) (*runtimev1.RowsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("select * from %s limit %d", req.TableName, req.Limit),
 	})
@@ -107,7 +107,7 @@ func (s *Server) TableRows(ctx context.Context, req *api.RowsRequest) (*api.Rows
 		return nil, err
 	}
 
-	return &api.RowsResponse{
+	return &runtimev1.RowsResponse{
 		Data: data,
 	}, nil
 }
