@@ -1075,8 +1075,8 @@ message EstimateRollupIntervalRequest {
 }
 
 message EstimateRollupIntervalResponse {
-  string start = 1;
-  string end = 2;
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
   TimeGrain interval = 3;
 }
 
@@ -1103,8 +1103,8 @@ message NumericSummary {
 }
 
 message TimeRangeSummary {
-    string min = 1;
-    string max = 2;
+    google.protobuf.Timestamp min = 1;
+    google.protobuf.Timestamp max = 2;
     message Interval {
       int32 months = 1;
       int32 days = 2;
@@ -1259,8 +1259,8 @@ message BasicMeasureDefinition {
 
 message TimeSeriesTimeRange {
   TimeRangeName name = 1;
-  string start = 2;
-  string end = 3;
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
   TimeGrain interval = 4;
 }
 

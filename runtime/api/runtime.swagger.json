@@ -2530,10 +2530,12 @@
       "type": "object",
       "properties": {
         "start": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "end": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
           "$ref": "#/definitions/v1TimeGrain"
@@ -3385,10 +3387,12 @@
       "type": "object",
       "properties": {
         "min": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "max": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
           "$ref": "#/definitions/TimeRangeSummaryInterval"
@@ -3437,10 +3441,12 @@
           "$ref": "#/definitions/v1TimeRangeName"
         },
         "start": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "end": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
           "$ref": "#/definitions/v1TimeGrain"

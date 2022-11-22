@@ -83,8 +83,8 @@ func TestServer_Timeseries(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &api.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-12-01",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: api.TimeGrain_YEAR,
 		},
 		Filters: &api.MetricsViewRequestFilter{
@@ -129,8 +129,8 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &api.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-12-01",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: api.TimeGrain_YEAR,
 		},
 		Filters: &api.MetricsViewRequestFilter{
@@ -171,8 +171,8 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &api.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-12-01",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: api.TimeGrain_YEAR,
 		},
 		Filters: &api.MetricsViewRequestFilter{
@@ -222,8 +222,8 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &api.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-01-02",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-02T00:00:00Z"),
 			Interval: api.TimeGrain_DAY,
 		},
 		Filters: &api.MetricsViewRequestFilter{
@@ -261,8 +261,8 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &api.TimeSeriesTimeRange{
-			Start:    "2019-01-01",
-			End:      "2019-01-02",
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-02T00:00:00Z"),
 			Interval: api.TimeGrain_DAY,
 		},
 		Filters: &api.MetricsViewRequestFilter{
@@ -299,7 +299,7 @@ func TestServer_RangeSanity(t *testing.T) {
 	require.Equal(t, int32(1), r.Days)
 }
 
-func TestServer_normaliseRanger(t *testing.T) {
+func TestServer_normaliseTimeRange(t *testing.T) {
 	server, instanceId := getTestServer(t)
 
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
@@ -314,9 +314,51 @@ func TestServer_normaliseRanger(t *testing.T) {
 		TimestampColumnName: "time",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "2019-01-01T00:00:00.000Z", r.Start)
-	require.Equal(t, "2019-01-02T00:00:00.000Z", r.End)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
 	require.Equal(t, api.TimeGrain_HOUR, r.Interval)
+}
+
+func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &api.TimeSeriesTimeRange{
+		Interval: api.TimeGrain_UNSPECIFIED,
+		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
+	}
+	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, api.TimeGrain_HOUR, r.Interval)
+}
+
+func TestServer_normaliseTimeRange_Specified(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &api.TimeSeriesTimeRange{
+		Interval: api.TimeGrain_YEAR,
+		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
+	}
+	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, api.TimeGrain_YEAR, r.Interval)
 }
 
 func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {

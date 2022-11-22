@@ -10,6 +10,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func getExpressionColumnsFromMeasures(measures []*api.BasicMeasureDefinition) string {
@@ -192,46 +193,58 @@ func (s *Server) EstimateRollupInterval(ctx context.Context, request *api.Estima
 		rollupInterval = api.TimeGrain_YEAR
 	}
 
-	start := min.Format(ISO_FORMAT)
-	end := max.Format(ISO_FORMAT)
-
 	return &api.EstimateRollupIntervalResponse{
 		Interval: rollupInterval,
-		Start:    start,
-		End:      end,
+		Start:    timestamppb.New(min),
+		End:      timestamppb.New(max),
 	}, nil
 }
 
 func (s *Server) normaliseTimeRange(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.TimeSeriesTimeRange, error) {
-	result, err := s.EstimateRollupInterval(ctx, &api.EstimateRollupIntervalRequest{
-		InstanceId: request.InstanceId,
-		TableName:  request.TableName,
-		ColumnName: request.TimestampColumnName,
-	})
-	if err != nil {
-		return nil, err
-	}
-	start := result.Start
-	end := result.End
-	rollupInterval := result.Interval
-
 	rtr := request.TimeRange
 	if rtr == nil {
-		rtr = &api.TimeSeriesTimeRange{
-			Start: start,
-			End:   end,
+		rtr = &api.TimeSeriesTimeRange{}
+	}
+	var result api.TimeSeriesTimeRange
+	if rtr.Interval == api.TimeGrain_UNSPECIFIED {
+		r, err := s.EstimateRollupInterval(ctx, &api.EstimateRollupIntervalRequest{
+			InstanceId: request.InstanceId,
+			TableName:  request.TableName,
+			ColumnName: request.TimestampColumnName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = api.TimeSeriesTimeRange{
+			Interval: r.Interval,
+			Start:    r.Start,
+			End:      r.End,
+		}
+	} else if rtr.Start == nil || rtr.End == nil {
+		tr, err := s.GetTimeRangeSummary(ctx, &api.TimeRangeSummaryRequest{
+			InstanceId: request.InstanceId,
+			TableName:  request.TableName,
+			ColumnName: request.TimestampColumnName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = api.TimeSeriesTimeRange{
+			Interval: rtr.Interval,
+			Start:    tr.Min,
+			End:      tr.Max,
 		}
 	}
-	if rtr.Start == "" {
-		rtr.Start = start
+	if rtr.Start != nil {
+		result.Start = rtr.Start
 	}
-	if rtr.End == "" {
-		rtr.End = end
+	if rtr.End != nil {
+		result.End = rtr.End
 	}
-	if rtr.Interval == api.TimeGrain_UNSPECIFIED {
-		rtr.Interval = rollupInterval
+	if rtr.Interval != api.TimeGrain_UNSPECIFIED {
+		result.Interval = rtr.Interval
 	}
-	return rtr, nil
+	return &result, nil
 }
 
 const ISO_FORMAT string = "2006-01-02T15:04:05.000Z"
@@ -402,8 +415,8 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
             generate_series as ` + tsAlias + `
           FROM 
             generate_series(
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start + `'), 
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End + `'),
+              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(ISO_FORMAT) + `'), 
+              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End.AsTime().Format(ISO_FORMAT) + `'),
               interval '1 ` + timeGranularity + `')
         ),
         -- transform the original data, and optionally sample it.
@@ -487,9 +500,7 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.
 			case float64:
 				value.Records[k] = x
 			default:
-				if converr == nil {
-					converr = fmt.Errorf("unknown type %T ", v)
-				}
+				return nil, fmt.Errorf("unknown type %T ", v)
 			}
 		}
 	}
