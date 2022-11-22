@@ -4,14 +4,17 @@
  * runtime.proto
  * OpenAPI spec version: version not set
  */
+export type RuntimeServiceRenameFileBody = {
+  fromPath?: string;
+  toPath?: string;
+};
+
 export type RuntimeServicePutFileBody = {
   blob?: string;
   create?: boolean;
   /** Will cause the operation to fail if the file already exists.
 It should only be set when create = true. */
   createOnly?: boolean;
-  /** Delete will remove the file. If true, the passed blob must be empty. */
-  delete?: boolean;
 };
 
 export type RuntimeServiceListFilesParams = { glob?: string };
@@ -30,8 +33,6 @@ export type RuntimeServiceGetTopKBody = {
 };
 
 export type RuntimeServiceTableRowsParams = { limit?: number };
-
-export type RuntimeServiceGetRugHistogramParams = { columnType?: string };
 
 export type RuntimeServiceRenameDatabaseObjectType =
   typeof RuntimeServiceRenameDatabaseObjectType[keyof typeof RuntimeServiceRenameDatabaseObjectType];
@@ -62,8 +63,6 @@ export type RuntimeServiceQueryBody = {
   priority?: string;
   dryRun?: boolean;
 };
-
-export type RuntimeServiceGetNumericHistogramParams = { columnType?: string };
 
 export type RuntimeServiceMigrateDeleteBody = {
   name?: string;
@@ -110,6 +109,16 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: string;
   filter?: V1MetricsViewFilter;
+};
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  tableName?: string;
+  measures?: GenerateTimeSeriesRequestBasicMeasures;
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  filters?: V1MetricsViewRequestFilter;
+  pixels?: string;
+  sampleSize?: number;
 };
 
 export type RuntimeServiceEstimateRollupIntervalBody = {
@@ -194,23 +203,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  name?: V1TimeRangeName;
-  start?: string;
-  end?: string;
-  interval?: string;
-}
-
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  tableName?: string;
-  measures?: GenerateTimeSeriesRequestBasicMeasures;
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewRequestFilter;
-  pixels?: string;
-  sampleSize?: number;
-};
-
 export interface V1TimeSeriesResponse {
   id?: string;
   results?: V1TimeSeriesValue[];
@@ -246,6 +238,28 @@ export const V1TimeRangeName = {
   Last60Days: "Last60Days",
   AllTime: "AllTime",
 } as const;
+
+export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1TimeGrain = {
+  MILLISECOND: "MILLISECOND",
+  SECOND: "SECOND",
+  MINUTE: "MINUTE",
+  HOUR: "HOUR",
+  DAY: "DAY",
+  WEEK: "WEEK",
+  MONTH: "MONTH",
+  YEAR: "YEAR",
+  UNSPECIFIED: "UNSPECIFIED",
+} as const;
+
+export interface V1TimeSeriesTimeRange {
+  name?: V1TimeRangeName;
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1StructType {
   fields?: StructTypeField[];
@@ -299,6 +313,30 @@ export interface V1Repo {
   dsn?: string;
 }
 
+export interface V1RenameFileResponse {
+  [key: string]: any;
+}
+
+export interface V1RenameFileAndMigrateResponse {
+  /** Errors encountered during the migration. If strict = false, any path in
+affected_paths without an error can be assumed to have been migrated succesfully. */
+  errors?: V1MigrationError[];
+  /** affected_paths lists all the file paths that were considered while
+executing the migration. For a PutFileAndMigrate, this includes the put file
+as well as any file artifacts that rely on objects declared in it. */
+  affectedPaths?: string[];
+}
+
+export interface V1RenameFileAndMigrateRequest {
+  repoId?: string;
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
+}
+
 export interface V1RenameDatabaseObjectResponse {
   [key: string]: any;
 }
@@ -340,8 +378,6 @@ export interface V1PutFileAndMigrateRequest {
   /** create_only will cause the operation to fail if a file already exists at path.
 It should only be set when create = true. */
   createOnly?: boolean;
-  /** Delete will remove the file. If true, the passed blob must be empty. */
-  delete?: boolean;
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
@@ -422,22 +458,6 @@ export const V1MigrationErrorCode = {
   CODE_SOURCE: "CODE_SOURCE",
 } as const;
 
-/**
- * MigrationError represents an error encountered while running Migrate.
- */
-export interface V1MigrationError {
-  code?: V1MigrationErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string;
-  startLocation?: MigrationErrorCharLocation;
-  endLocation?: MigrationErrorCharLocation;
-}
-
 export interface V1MigrateSingleResponse {
   [key: string]: any;
 }
@@ -465,7 +485,17 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
 export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewTimeSeriesResponseDataItem[];
+}
 
 export interface V1MetricsViewSort {
   name?: string;
@@ -500,16 +530,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewTimeSeriesResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -591,7 +611,7 @@ export interface V1GetCatalogObjectResponse {
 }
 
 export interface V1EstimateSmallestTimeGrainResponse {
-  timeGrain?: EstimateSmallestTimeGrainResponseTimeGrain;
+  timeGrain?: V1TimeGrain;
 }
 
 export interface V1EstimateRollupIntervalResponse {
@@ -606,6 +626,29 @@ export interface V1DeleteRepoResponse {
 
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
+}
+
+export interface V1DeleteFileResponse {
+  [key: string]: any;
+}
+
+export interface V1DeleteFileAndMigrateResponse {
+  /** Errors encountered during the migration. If strict = false, any path in
+affected_paths without an error can be assumed to have been migrated succesfully. */
+  errors?: V1MigrationError[];
+  /** affected_paths lists all the file paths that were considered while
+executing the migration. For a PutFileAndMigrate, this includes the put file
+as well as any file artifacts that rely on objects declared in it. */
+  affectedPaths?: string[];
+}
+
+export interface V1DeleteFileAndMigrateRequest {
+  repoId?: string;
+  instanceId?: string;
+  path?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 export type V1DatabaseObjectType =
@@ -623,6 +666,7 @@ export interface V1CreateRepoResponse {
 }
 
 export interface V1CreateRepoRequest {
+  repoId?: string;
   driver?: string;
   dsn?: string;
 }
@@ -752,14 +796,14 @@ export interface StructTypeField {
 }
 
 export interface NumericOutliersOutlier {
-  bucket?: number;
+  bucket?: string;
   low?: number;
   high?: number;
-  present?: number;
+  present?: boolean;
 }
 
 export interface NumericHistogramBinsBin {
-  bucket?: number;
+  bucket?: string;
   low?: number;
   high?: number;
   count?: string;
@@ -778,6 +822,22 @@ export interface MigrationErrorCharLocation {
   column?: number;
 }
 
+/**
+ * MigrationError represents an error encountered while running Migrate.
+ */
+export interface V1MigrationError {
+  code?: V1MigrationErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: MigrationErrorCharLocation;
+  endLocation?: MigrationErrorCharLocation;
+}
+
 export interface MetricsViewMeasure {
   name?: string;
   label?: string;
@@ -785,7 +845,6 @@ export interface MetricsViewMeasure {
   description?: string;
   format?: string;
   enabled?: string;
-  error?: string;
 }
 
 export interface MetricsViewFilterCond {
@@ -803,27 +862,11 @@ export interface MetricsViewDimension {
   label?: string;
   description?: string;
   enabled?: string;
-  error?: string;
 }
 
 export interface GenerateTimeSeriesRequestBasicMeasures {
   basicMeasures?: V1BasicMeasureDefinition[];
 }
-
-export type EstimateSmallestTimeGrainResponseTimeGrain =
-  typeof EstimateSmallestTimeGrainResponseTimeGrain[keyof typeof EstimateSmallestTimeGrainResponseTimeGrain];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const EstimateSmallestTimeGrainResponseTimeGrain = {
-  MILLISECONDS: "MILLISECONDS",
-  SECONDS: "SECONDS",
-  MINUTES: "MINUTES",
-  HOURS: "HOURS",
-  DAYS: "DAYS",
-  WEEKS: "WEEKS",
-  MONTHS: "MONTHS",
-  YEARS: "YEARS",
-} as const;
 
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
