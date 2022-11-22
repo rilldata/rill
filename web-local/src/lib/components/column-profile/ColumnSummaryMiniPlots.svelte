@@ -11,7 +11,8 @@
   import FormattedDataType from "../data-types/FormattedDataType.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import BarAndLabel from "../viz/BarAndLabel.svelte";
+
+  import CardinalitySpark from "./data-graphics/sparks/CardinalitySpark.svelte";
 
   import NullPercentageSpark from "./data-graphics/sparks/NullPercentageSpark.svelte";
 
@@ -83,8 +84,9 @@
 <div class="flex gap-2 items-center" class:hidden={view !== "summaries"}>
   <div class="flex items-center" style:width="{summaryWidthSize}px">
     {#if totalRows}
-      {#if CATEGORICALS.has(type) && summary?.cardinality}
-        <Tooltip location="right" alignment="center" distance={8}>
+      {#if CATEGORICALS.has(type)}
+        <CardinalitySpark {objectName} {columnName} />
+        <!-- <Tooltip location="right" alignment="center" distance={8}>
           <BarAndLabel
             color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
             value={summary?.cardinality / totalRows}
@@ -94,7 +96,7 @@
           <TooltipContent slot="tooltip-content">
             {formatInteger(summary?.cardinality)} unique values
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> -->
       {:else if NUMERICS.has(type) && summary?.histogram?.length}
         <Tooltip location="right" alignment="center" distance={8}>
           <Histogram

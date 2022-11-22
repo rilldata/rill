@@ -7,8 +7,8 @@ import {
 } from "../../duckdb-data-types";
 
 export function sortByCardinality(a, b) {
-  if (a.summary && b.summary) {
-    if (a.summary < b.cardinality) {
+  if (a.cardinality && b.cardinality) {
+    if (a.cardinality < b.cardinality) {
       return 1;
     } else if (a.cardinality > b.cardinality) {
       return -1;

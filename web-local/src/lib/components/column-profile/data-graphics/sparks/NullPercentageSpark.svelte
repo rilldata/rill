@@ -10,6 +10,7 @@
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
   import BarAndLabel from "../../../viz/BarAndLabel.svelte";
+  import { getColumn } from "../util";
 
   export let objectName: string;
   export let columnName: string;
@@ -18,12 +19,6 @@
    * Get the null counts for this profile.
    */
   let nullCountQuery;
-
-  function getColumn(profileColumns, columnName) {
-    return profileColumns?.data?.profileColumns?.find(
-      (column) => column.name === columnName
-    );
-  }
 
   $: profileColumns = useRuntimeServiceProfileColumns(
     $runtimeStore?.instanceId,

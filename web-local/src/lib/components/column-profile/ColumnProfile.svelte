@@ -9,7 +9,7 @@
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
-  import ColumnProfileEntry from "./ColumnProfileEntry.svelte";
+  import ColumnProfileRow from "./ColumnProfileRow.svelte";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
   export let containerWidth = 0;
@@ -41,6 +41,7 @@
     objectName
   );
 
+  /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
   function getSummaries(objectName, instanceId, profileColumnResults) {
     return derived(
       profileColumnResults.map((column) => {
@@ -84,7 +85,7 @@
   const sortByOriginalOrder = null;
 
   let sortMethod = defaultSort;
-  $: if (profile && sortMethod !== sortByOriginalOrder) {
+  $: if (profile?.length && sortMethod !== sortByOriginalOrder) {
     sortedProfile = [...profile].sort(sortMethod);
   } else {
     sortedProfile = profile;
@@ -124,7 +125,7 @@
 <div>
   {#if sortedProfile && head.length}
     {#each sortedProfile as column (column.name)}
-      <ColumnProfileEntry
+      <ColumnProfileRow
         {indentLevel}
         {entityId}
         example={head[0][column.name] || ""}
