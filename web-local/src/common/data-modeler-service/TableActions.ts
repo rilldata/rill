@@ -310,6 +310,9 @@ export class TableActions extends DataModelerActions {
     }
 
     const table = stateService.getById(tableId);
+    if (!table) {
+      return ActionResponseFactory.getEntityError("not found");
+    }
     const currentName = table.tableName;
 
     this.dataModelerStateService.dispatch("renameTableName", [

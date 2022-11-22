@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/utils";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -22,19 +22,7 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: getFiles = useRuntimeServiceListFiles(
-    $runtimeStore.repoId,
-    {
-      glob: "sources/*.{sql,yaml}",
-    },
-    {
-      query: { refetchInterval: 1000 },
-    }
-  );
-
-  $: sourceNames = $getFiles?.data?.paths
-    ?.filter((path) => path.includes("sources/"))
-    .map((path) => path.replace("/sources/", "").replace(".yaml", ""));
+  $: sourceNames = useSourceNames($runtimeStore.repoId);
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -87,9 +75,9 @@
 
 {#if showTables}
   <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#if sourceNames && $persistentTableStore?.entities && $derivedTableStore?.entities}
+    {#if $sourceNames?.data && $persistentTableStore?.entities && $derivedTableStore?.entities}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
-      {#each sourceNames as sourceName (sourceName)}
+      {#each $sourceNames.data as sourceName (sourceName)}
         {@const persistentTable = $persistentTableStore.entities.find(
           (t) => t["tableName"] == sourceName
         )}
@@ -125,10 +113,9 @@
             <svelte:fragment slot="menu-items" let:toggleMenu>
               <SourceMenuItems
                 {sourceName}
-                sourceID={persistentTable.id}
                 {toggleMenu}
                 on:rename-asset={() => {
-                  openRenameTableModal(persistentTable.id, sourceName);
+                  openRenameTableModal(persistentTable?.id, sourceName);
                 }}
               />
             </svelte:fragment>

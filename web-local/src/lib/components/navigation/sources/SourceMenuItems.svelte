@@ -1,10 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { parse } from "yaml";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
@@ -26,9 +28,10 @@
     sourceUpdated,
   } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/utils";
   import { createEventDispatcher, getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getNextEntityId } from "../../../../common/utils/getNextEntityId";
+  import { getNextEntityName } from "../../../../common/utils/getNextEntityId";
   import {
     dataModelerService,
     runtimeStore,
@@ -46,9 +49,14 @@
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
-  export let sourceID: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
+
+  $: sourceNames = useSourceNames($runtimeStore.repoId);
+  $: sourceData = useRuntimeServiceGetFile(
+    $runtimeStore.repoId,
+    `/sources/${sourceName}.yaml`
+  );
 
   const dispatch = createEventDispatcher();
 
@@ -69,20 +77,19 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   $: getSource = useRuntimeServiceGetCatalogObject(
     runtimeInstanceId,
-    persistentTable.tableName
+    sourceName
+  );
+
+  $: sourceID = $persistentTableStore.entities.find(
+    (entity) => entity.tableName === sourceName
+  );
+  $: derivedTable = $derivedTableStore?.entities?.find(
+    (source) => source.id === sourceID
   );
 
   const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndMigrate();
-
-  $: persistentTable = $persistentTableStore?.entities?.find(
-    (source) => source.id === sourceID
-  );
-
-  $: derivedTable = $derivedTableStore?.entities?.find(
-    (source) => source.id === sourceID
-  );
 
   const handleDeleteSource = (tableName: string) => {
     $deleteSource.mutate(
@@ -97,15 +104,12 @@
         onSuccess: () => {
           if (
             $rillAppStore.activeEntity.type === EntityType.Table &&
-            $rillAppStore.activeEntity.id === sourceID
+            $rillAppStore.activeEntity.id === sourceName
           ) {
-            const nextSourceId = getNextEntityId(
-              $persistentTableStore.entities,
-              sourceID
+            const nextSourceName = getNextEntityName(
+              $sourceNames.data,
+              sourceName
             );
-            const nextSourceName = $persistentTableStore.entities.find(
-              (source) => source.id === nextSourceId
-            ).tableName;
             if (nextSourceName) {
               goto(`/source/${nextSourceName}`);
             } else {
@@ -166,17 +170,32 @@
   };
 
   const onRefreshSource = async (id: string, tableName: string) => {
+    let connector: string = $getSource?.data?.object?.source?.connector;
+    // if there is no catalog object, parse from yaml
+    if (!connector) {
+      try {
+        const parsed = parse($sourceData.data.blob);
+        connector = parsed.type;
+      } catch (err) {
+        // if parse failed, we cannot refresh source
+        // TODO: show the import source modal with fixed tableName
+        return;
+      }
+    }
+
     try {
       await refreshSource(
-        $getSource.data.object.source.connector,
+        connector,
         tableName,
         $runtimeStore,
         $refreshSourceMutation,
         $createSource
       );
 
-      // invalidate the data preview (async)
-      dataModelerService.dispatch("collectTableInfo", [id]);
+      if (id) {
+        // invalidate the data preview (async)
+        dataModelerService.dispatch("collectTableInfo", [id]);
+      }
 
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
@@ -240,8 +259,8 @@
 <!-- FIXME: this should pop up an "are you sure?" modal -->
 <MenuItem
   icon
-  propogateSelect={false}
   on:select={() => handleDeleteSource(sourceName)}
+  propogateSelect={false}
 >
   <Cancel slot="icon" />
   delete</MenuItem
