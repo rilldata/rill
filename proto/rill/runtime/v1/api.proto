@@ -974,7 +974,7 @@ message EstimateRollupIntervalResponse {
 }
 
 message ProfileColumnSummary {
-  oneof Case {
+  oneof case {
     CategoricalSummary categorical_summary = 1;
     NumericSummary numeric_summary = 2;
     TimeRangeSummary time_range_summary = 3;
@@ -983,8 +983,8 @@ message ProfileColumnSummary {
 
 // Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
 message CategoricalSummary {
-  oneof Case {
-    TopK topK = 1;
+  oneof case {
+    TopK top_k = 1;
     int64 cardinality = 2;
   }
 }
@@ -1000,7 +1000,7 @@ message GetTopKResponse {
 // Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
 // Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
 message NumericSummary {
-  oneof Case {
+  oneof case {
     NumericHistogramBins numeric_histogram_bins = 1;
     NumericStatistics numeric_statistics = 2;
     NumericOutliers numeric_outliers = 3;
