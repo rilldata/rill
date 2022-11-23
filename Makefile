@@ -10,7 +10,7 @@ cli:
 	npm run build
 	mkdir -p cli/pkg/web/embed/dist
 	cp -r web-local/build/ cli/pkg/web/embed/dist
-	go build -o rill cli/main.go
+	# go build -o rill cli/main.go
 
 # These commands not working in local, need to look into this.
 # .PHONY: sysroot-pack
