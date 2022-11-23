@@ -13,6 +13,7 @@ import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 export interface ActiveEntity {
   type: EntityType;
   id: string;
+  name: string;
 }
 
 export enum ApplicationStatus {

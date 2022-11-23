@@ -646,11 +646,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeGranularity": {
                   "type": "string"
@@ -720,11 +720,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "limit": {
                   "type": "string",
@@ -799,11 +799,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "filter": {
                   "$ref": "#/definitions/v1MetricsViewFilter"
@@ -2032,20 +2032,6 @@
       "default": "TYPE_UNSPECIFIED",
       "title": "Type represents the field type"
     },
-    "EstimateSmallestTimeGrainResponseTimeGrain": {
-      "type": "string",
-      "enum": [
-        "MILLISECONDS",
-        "SECONDS",
-        "MINUTES",
-        "HOURS",
-        "DAYS",
-        "WEEKS",
-        "MONTHS",
-        "YEARS"
-      ],
-      "default": "MILLISECONDS"
-    },
     "GenerateTimeSeriesRequestBasicMeasures": {
       "type": "object",
       "properties": {
@@ -2543,15 +2529,16 @@
     "v1EstimateRollupIntervalResponse": {
       "type": "object",
       "properties": {
-        "interval": {
+        "start": {
           "type": "string",
-          "format": "int64"
+          "format": "date-time"
         },
-        "min": {
-          "$ref": "#/definitions/v1Scalar"
+        "end": {
+          "type": "string",
+          "format": "date-time"
         },
-        "max": {
-          "$ref": "#/definitions/v1Scalar"
+        "interval": {
+          "$ref": "#/definitions/v1TimeGrain"
         }
       }
     },
@@ -2559,7 +2546,7 @@
       "type": "object",
       "properties": {
         "timeGrain": {
-          "$ref": "#/definitions/EstimateSmallestTimeGrainResponseTimeGrain"
+          "$ref": "#/definitions/v1TimeGrain"
         }
       },
       "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
@@ -3309,23 +3296,6 @@
         }
       }
     },
-    "v1Scalar": {
-      "type": "object",
-      "properties": {
-        "int64": {
-          "type": "string",
-          "format": "int64"
-        },
-        "double": {
-          "type": "number",
-          "format": "double"
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    },
     "v1Source": {
       "type": "object",
       "properties": {
@@ -3382,6 +3352,21 @@
       },
       "description": "Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically\nscanning the database's information schema when the instance is created with exposed=true. Pre-existing tables\nhave managed = false."
     },
+    "v1TimeGrain": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "MILLISECOND",
+        "SECOND",
+        "MINUTE",
+        "HOUR",
+        "DAY",
+        "WEEK",
+        "MONTH",
+        "YEAR"
+      ],
+      "default": "UNSPECIFIED"
+    },
     "v1TimeRangeName": {
       "type": "string",
       "enum": [
@@ -3402,10 +3387,12 @@
       "type": "object",
       "properties": {
         "min": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "max": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
           "$ref": "#/definitions/TimeRangeSummaryInterval"
@@ -3454,13 +3441,15 @@
           "$ref": "#/definitions/v1TimeRangeName"
         },
         "start": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "end": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "interval": {
-          "type": "string"
+          "$ref": "#/definitions/v1TimeGrain"
         }
       }
     },

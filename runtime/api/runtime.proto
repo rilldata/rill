@@ -992,8 +992,8 @@ message MetricsViewToplistRequest {
   string metrics_view_name = 2;
   string dimension_name = 3;
   repeated string measure_names = 4;
-  int64 time_start = 5;
-  int64 time_end = 6;
+  google.protobuf.Timestamp time_start = 5;
+  google.protobuf.Timestamp time_end = 6;
   int64 limit = 7;
   int64 offset = 8;
   repeated MetricsViewSort sort = 9;
@@ -1011,8 +1011,8 @@ message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
-  int64 time_start = 4;
-  int64 time_end = 5;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
   string time_granularity = 6;
   MetricsViewFilter filter = 7;
 }
@@ -1028,8 +1028,8 @@ message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
-  int64 time_start = 4;
-  int64 time_end = 5;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
   MetricsViewFilter filter = 7;
 }
 
@@ -1074,20 +1074,11 @@ message EstimateRollupIntervalRequest {
   string column_name = 3;
 }
 
-message Scalar {
-  oneof value {
-    int64 int64 = 1;
-    double double = 2;
-    google.protobuf.Timestamp timestamp = 3;
-  }
-}
-
 message EstimateRollupIntervalResponse {
-  int64 interval = 1;
-  Scalar min = 2;
-  Scalar max = 3;
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+  TimeGrain interval = 3;
 }
-
 
 message ProfileColumnSummary {
   oneof Case {
@@ -1112,8 +1103,8 @@ message NumericSummary {
 }
 
 message TimeRangeSummary {
-    string min = 1;
-    string max = 2;
+    google.protobuf.Timestamp min = 1;
+    google.protobuf.Timestamp max = 2;
     message Interval {
       int32 months = 1;
       int32 days = 2;
@@ -1188,18 +1179,20 @@ message EstimateSmallestTimeGrainRequest {
   string column_name = 3;
 }
 
+enum TimeGrain {
+  UNSPECIFIED = 0;
+  MILLISECOND = 1;
+  SECOND = 2;
+  MINUTE = 3;
+  HOUR = 4;
+  DAY = 5;
+  WEEK = 6;
+  MONTH = 7;
+  YEAR = 8;
+}
+
 // Response for RuntimeService.EstimateSmallestTimeGrain
 message EstimateSmallestTimeGrainResponse {
-  enum TimeGrain {
-    MILLISECONDS = 0;
-    SECONDS = 1;
-    MINUTES = 2;
-    HOURS = 3;
-    DAYS = 4;
-    WEEKS = 5;
-    MONTHS = 6;
-    YEARS = 7;
-  }
   TimeGrain time_grain = 1;
 }
 
@@ -1266,9 +1259,9 @@ message BasicMeasureDefinition {
 
 message TimeSeriesTimeRange {
   TimeRangeName name = 1;
-  string start = 2;
-  string end = 3;
-  string interval = 4; // TODO: switch this to TimeGrain
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
+  TimeGrain interval = 4;
 }
 
 enum TimeRangeName {

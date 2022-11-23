@@ -799,6 +799,9 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
   return query;
 };
 
+/**
+ * @summary EstimateRollupInterval (TODO: add description)
+ */
 export const runtimeServiceEstimateRollupInterval = (
   instanceId: string,
   tableName: string,
@@ -1333,7 +1336,7 @@ export const useRuntimeServiceMigrate = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MigrateSingle applies a single `CREATE` statement.
+ * @summary DEPRECATED: MigrateSingle applies a single `CREATE` statement.
 It bypasses the reconciling migrations described in Migrate.
 We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
  */
@@ -1386,7 +1389,7 @@ export const useRuntimeServiceMigrateSingle = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MigrateDelete deletes a single object.
+ * @summary DEPRECATED: MigrateDelete deletes a single object.
 It bypasses the reconciling migrations described in Migrate.
 We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
  */
@@ -1604,7 +1607,7 @@ export const useRuntimeServiceGetNumericHistogram = <
 };
 
 /**
- * @summary Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
+ * @summary Query runs a SQL query against the instance's OLAP datastore.
  */
 export const runtimeServiceQuery = (
   instanceId: string,
@@ -1654,8 +1657,7 @@ export const useRuntimeServiceQuery = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-It bypasses Rill SQL and expects the query to use the underlying dialect.
+ * @summary DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
  */
 export const runtimeServiceQueryDirect = (
   instanceId: string,
@@ -1877,6 +1879,9 @@ export const useRuntimeServiceTriggerSync = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary TableCardinality (TODO: add description)
+ */
 export const runtimeServiceTableCardinality = (
   instanceId: string,
   tableName: string,
@@ -1948,6 +1953,9 @@ export const useRuntimeServiceTableCardinality = <
   return query;
 };
 
+/**
+ * @summary ProfileColumns (TODO: add description)
+ */
 export const runtimeServiceProfileColumns = (
   instanceId: string,
   tableName: string,
@@ -2019,6 +2027,9 @@ export const useRuntimeServiceProfileColumns = <
   return query;
 };
 
+/**
+ * @summary TableRows (TODO: add description)
+ */
 export const runtimeServiceTableRows = (
   instanceId: string,
   tableName: string,

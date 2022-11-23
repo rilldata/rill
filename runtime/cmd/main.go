@@ -18,13 +18,9 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/sync/errgroup"
 )
 
 type Config struct {
@@ -83,9 +79,12 @@ func main() {
 
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())
-	err = server.Serve(ctx)
+	group, cctx := errgroup.WithContext(ctx)
+	group.Go(func() error { return server.ServeGRPC(cctx) })
+	group.Go(func() error { return server.ServeHTTP(cctx) })
+	err = group.Wait()
 	if err != nil {
-		logger.Error("server crashed", zap.Error(err))
+		logger.Fatal("server crashed", zap.Error(err))
 	}
 
 	logger.Info("server shutdown gracefully")

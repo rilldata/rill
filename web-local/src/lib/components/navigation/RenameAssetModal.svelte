@@ -19,6 +19,7 @@
   import SubmissionError from "../forms/SubmissionError.svelte";
   import { Dialog } from "../modal/index";
   import notifications from "../notifications";
+  // TODO: get rid of entity id once model and metrics are moved over
   export let entityId = null;
 
   export let closeModal: () => void;

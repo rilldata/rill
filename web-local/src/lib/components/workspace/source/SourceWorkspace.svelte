@@ -36,7 +36,7 @@
     ]);
   };
 
-  $: switchToSource(currentSource?.id);
+  $: switchToSource(sourceName);
 
   /** check to see if we need to perform a migration.
    * We will deprecate this in a few versions from 0.8.
@@ -65,7 +65,7 @@
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader id={currentSource?.id} />
+      <SourceWorkspaceHeader id={currentSource?.id} name={sourceName} />
       <div
         style:overflow="auto"
         style:height="100%"

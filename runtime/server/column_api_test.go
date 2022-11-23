@@ -4,9 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"time"
+
 	"github.com/rilldata/rill/runtime/api"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/stretchr/testify/require"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServer_GetTopK(t *testing.T) {
@@ -90,7 +93,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 	res, err := server.EstimateSmallestTimeGrain(context.Background(), &api.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, "DAYS", res.TimeGrain.String())
+	require.Equal(t, "DAY", res.TimeGrain.String())
 }
 
 func TestServer_GetNumericHistogram(t *testing.T) {
@@ -119,7 +122,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, true, res.NumericOutliers.Outliers[0].Present)
 
 	// works only with numeric columns
-	res, err = server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	_, err = server.GetRugHistogram(context.Background(), &api.RugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.ErrorContains(t, err, "Conversion Error: Unimplemented type for cast (TIMESTAMP -> DOUBLE)")
 }
 
@@ -130,11 +133,17 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	res, err := server.GetTimeRangeSummary(context.Background(), &api.TimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, "2022-11-01 00:00:00 +0000 UTC", res.Min)
-	require.Equal(t, "2022-11-03 00:00:00 +0000 UTC", res.Max)
+	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.Min)
+	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.Max)
 	require.Equal(t, int32(0), res.Interval.Months)
 	require.Equal(t, int32(2), res.Interval.Days)
 	require.Equal(t, int64(0), res.Interval.Micros)
+}
+
+func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return timestamppb.New(ts)
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {

@@ -246,6 +246,28 @@ export const V1TimeRangeName = {
   AllTime: "AllTime",
 } as const;
 
+export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1TimeGrain = {
+  MILLISECOND: "MILLISECOND",
+  SECOND: "SECOND",
+  MINUTE: "MINUTE",
+  HOUR: "HOUR",
+  DAY: "DAY",
+  WEEK: "WEEK",
+  MONTH: "MONTH",
+  YEAR: "YEAR",
+  UNSPECIFIED: "UNSPECIFIED",
+} as const;
+
+export interface V1TimeSeriesTimeRange {
+  name?: V1TimeRangeName;
+  start?: string;
+  end?: string;
+  interval?: string;
+}
+
 export interface V1StructType {
   fields?: StructTypeField[];
 }
@@ -443,22 +465,6 @@ export const V1MigrationErrorCode = {
   CODE_SOURCE: "CODE_SOURCE",
 } as const;
 
-/**
- * MigrationError represents an error encountered while running Migrate.
- */
-export interface V1MigrationError {
-  code?: V1MigrationErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string;
-  startLocation?: MigrationErrorCharLocation;
-  endLocation?: MigrationErrorCharLocation;
-}
-
 export interface V1MigrateSingleResponse {
   [key: string]: any;
 }
@@ -612,7 +618,7 @@ export interface V1GetCatalogObjectResponse {
 }
 
 export interface V1EstimateSmallestTimeGrainResponse {
-  timeGrain?: EstimateSmallestTimeGrainResponseTimeGrain;
+  timeGrain?: V1TimeGrain;
 }
 
 export interface V1EstimateRollupIntervalResponse {
@@ -823,6 +829,22 @@ export interface MigrationErrorCharLocation {
   column?: number;
 }
 
+/**
+ * MigrationError represents an error encountered while running Migrate.
+ */
+export interface V1MigrationError {
+  code?: V1MigrationErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: MigrationErrorCharLocation;
+  endLocation?: MigrationErrorCharLocation;
+}
+
 export interface MetricsViewMeasure {
   name?: string;
   label?: string;
@@ -830,7 +852,6 @@ export interface MetricsViewMeasure {
   description?: string;
   format?: string;
   enabled?: string;
-  error?: string;
 }
 
 export interface MetricsViewFilterCond {
@@ -848,27 +869,11 @@ export interface MetricsViewDimension {
   label?: string;
   description?: string;
   enabled?: string;
-  error?: string;
 }
 
 export interface GenerateTimeSeriesRequestBasicMeasures {
   basicMeasures?: V1BasicMeasureDefinition[];
 }
-
-export type EstimateSmallestTimeGrainResponseTimeGrain =
-  typeof EstimateSmallestTimeGrainResponseTimeGrain[keyof typeof EstimateSmallestTimeGrainResponseTimeGrain];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const EstimateSmallestTimeGrainResponseTimeGrain = {
-  MILLISECONDS: "MILLISECONDS",
-  SECONDS: "SECONDS",
-  MINUTES: "MINUTES",
-  HOURS: "HOURS",
-  DAYS: "DAYS",
-  WEEKS: "WEEKS",
-  MONTHS: "MONTHS",
-  YEARS: "YEARS",
-} as const;
 
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];

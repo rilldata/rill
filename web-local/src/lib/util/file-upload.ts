@@ -41,7 +41,8 @@ export async function* uploadTableFiles(
     Array<PersistentModelEntity>,
     Array<PersistentTableEntity>
   ],
-  runtimeState: RuntimeState
+  runtimeState: RuntimeState,
+  persistentTableStore
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
@@ -66,6 +67,9 @@ export async function* uploadTableFiles(
     if (filePath) {
       lastTableName = resolvedTableName;
       yield { tableName: resolvedTableName, filePath };
+      // we are using waitForSource for other upload methods.
+      await waitForSource(resolvedTableName, persistentTableStore);
+      // FIXME: deprecate sourceUpdated once we no longer are using the existing profiling information
       await sourceUpdated(resolvedTableName);
     }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -18,60 +17,29 @@ import (
 
 // MetricsViewMeta implements RuntimeService
 func (s *Server) MetricsViewMeta(ctx context.Context, req *api.MetricsViewMetaRequest) (*api.MetricsViewMetaResponse, error) {
-	// Get instance
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	// Get catalog
-	catalog, err := s.openCatalog(ctx, inst)
+	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	// Find metrics view
-	obj, ok := catalog.FindObject(ctx, inst.ID, req.MetricsViewName)
-	if !ok {
-		return nil, status.Error(codes.NotFound, "metrics view not found")
-	}
-	if obj.Type != drivers.CatalogObjectTypeMetricsView {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", req.MetricsViewName)
-	}
-
-	// TODO: not implemented
-
-	return &api.MetricsViewMetaResponse{}, nil
+	return &api.MetricsViewMetaResponse{
+		MetricsViewName: mv.Name,
+		FromObject:      mv.From,
+		Dimensions:      mv.Dimensions,
+		Measures:        mv.Measures,
+	}, nil
 }
 
 // MetricsViewToplist implements RuntimeService
 func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewToplistRequest) (*api.MetricsViewToplistResponse, error) {
-	// Get instance
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	// Get catalog
-	catalog, err := s.openCatalog(ctx, inst)
+	// Prepare
+	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Find metrics view
-	obj, ok := catalog.FindObject(ctx, inst.ID, req.MetricsViewName)
-	if !ok {
-		return nil, status.Error(codes.NotFound, "metrics view not found")
-	}
-	if obj.Type != drivers.CatalogObjectTypeMetricsView {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", req.MetricsViewName)
+		return nil, err
 	}
 
 	// Build query
-	timeCol := "" // TODO: not implemented
-	sql, args, err := buildMetricsTopListSql(req, timeCol)
+	sql, args, err := buildMetricsTopListSql(req, mv)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
@@ -90,9 +58,12 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewTop
 
 // MetricsViewTimeSeries implements RuntimeService
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsViewTimeSeriesRequest) (*api.MetricsViewTimeSeriesResponse, error) {
-	// TODO: not implemented
+	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
 
-	sql, args, err := buildMetricsTimeSeriesSQL(req)
+	sql, args, err := buildMetricsTimeSeriesSQL(req, mv)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
@@ -112,9 +83,12 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsView
 
 // MetricsViewTotals implements RuntimeService
 func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTotalsRequest) (*api.MetricsViewTotalsResponse, error) {
-	// TODO: not implemented
+	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
 
-	sql, args, err := buildMetricsTotalsSql(req)
+	sql, args, err := buildMetricsTotalsSql(req, mv)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
@@ -136,6 +110,24 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 	return resp, nil
 }
 
+func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*api.MetricsView, error) {
+	catalog, err := s.serviceCache.createCatalogService(ctx, s, instanceID, instanceID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	obj, err := catalog.GetCatalogObject(ctx, name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if obj.Type != api.CatalogObject_TYPE_METRICS_VIEW {
+		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
+	}
+
+	return obj.MetricsView, nil
+}
+
 func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
@@ -155,19 +147,33 @@ func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
 }
 
-func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, timeCol string) (string, []any, error) {
-	selectCols := append([]string{req.DimensionName}, req.MeasureNames...)
+func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, mv *api.MetricsView) (string, []any, error) {
+	selectCols := []string{req.DimensionName}
+	for _, n := range req.MeasureNames {
+		found := false
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				selectCols = append(selectCols, expr)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
 
 	args := []any{}
-	whereClause := "WHERE 1=1"
-	if timeCol != "" {
-		if req.TimeStart != 0 {
-			whereClause += fmt.Sprintf(" AND %s >= ?", timeCol)
-			args = append(args, time.UnixMilli(req.TimeStart))
+	whereClause := "1=1"
+	if mv.TimeDimension != "" {
+		if req.TimeStart != nil {
+			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
+			args = append(args, req.TimeStart.AsTime())
 		}
-		if req.TimeEnd != 0 {
-			whereClause += fmt.Sprintf(" AND %s < ?", timeCol)
-			args = append(args, time.UnixMilli(req.TimeEnd))
+		if req.TimeEnd != nil {
+			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
+			args = append(args, req.TimeEnd.AsTime())
 		}
 	}
 
@@ -180,13 +186,9 @@ func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, timeCol string) 
 		args = append(args, clauseArgs...)
 	}
 
-	orderClause := ""
-	for i, s := range req.Sort {
-		if i == 0 {
-			orderClause += "ORDER BY "
-		} else {
-			orderClause += ", "
-		}
+	orderClause := "true"
+	for _, s := range req.Sort {
+		orderClause += ", "
 		orderClause += s.Name
 		if !s.Ascending {
 			orderClause += " DESC"
@@ -197,10 +199,11 @@ func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, timeCol string) 
 		req.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s %s %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
 		strings.Join(selectCols, ", "),
-		req.MetricsViewName,
+		mv.From,
 		whereClause,
+		req.DimensionName,
 		orderClause,
 		req.Limit,
 	)
@@ -208,14 +211,36 @@ func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, timeCol string) 
 	return sql, args, nil
 }
 
-func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, []any, error) {
-	// TODO: get from Catalog
-	timeField := "timestamp"
-	timeCol := fmt.Sprintf("DATE_TRUNC('%s', %s) AS %s", req.TimeGranularity, timeField, timeField)
-	selectCols := append([]string{timeCol}, req.MeasureNames...)
+func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest, mv *api.MetricsView) (string, []any, error) {
+	timeCol := fmt.Sprintf("DATE_TRUNC('%s', %s) AS %s", req.TimeGranularity, mv.TimeDimension, mv.TimeDimension)
+	selectCols := []string{timeCol}
+	for _, n := range req.MeasureNames {
+		found := false
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				selectCols = append(selectCols, expr)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
 
-	whereClause := fmt.Sprintf("%s >= epoch_ms(?) AND %s < epoch_ms(?) ", timeField, timeField)
-	args := []any{req.TimeStart, req.TimeEnd}
+	whereClause := "1=1"
+	args := []any{}
+	if mv.TimeDimension != "" {
+		if req.TimeStart != nil {
+			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
+			args = append(args, req.TimeStart.AsTime())
+		}
+		if req.TimeEnd != nil {
+			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
+			args = append(args, req.TimeEnd.AsTime())
+		}
+	}
 
 	if req.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(req.Filter)
@@ -227,20 +252,44 @@ func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest) (string, [
 	}
 
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s GROUP BY %s LIMIT 1000",
+		"SELECT %s FROM %s WHERE %s GROUP BY 1 ORDER BY %s LIMIT 1000",
 		strings.Join(selectCols, ", "),
-		req.MetricsViewName,
+		mv.From,
 		whereClause,
-		timeField,
+		mv.TimeDimension,
 	)
 	return sql, args, nil
 }
 
-func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest) (string, []any, error) {
-	// TODO: get from Catalog
-	timeField := "timestamp"
-	whereClause := fmt.Sprintf("%s >= epoch_ms(?) AND %s < epoch_ms(?) ", timeField, timeField)
-	args := []any{req.TimeStart, req.TimeEnd}
+func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest, mv *api.MetricsView) (string, []any, error) {
+	selectCols := []string{}
+	for _, n := range req.MeasureNames {
+		found := false
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				selectCols = append(selectCols, expr)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
+
+	whereClause := "1=1"
+	args := []any{}
+	if mv.TimeDimension != "" {
+		if req.TimeStart != nil {
+			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
+			args = append(args, req.TimeStart.AsTime())
+		}
+		if req.TimeEnd != nil {
+			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
+			args = append(args, req.TimeEnd.AsTime())
+		}
+	}
 
 	if req.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(req.Filter)
@@ -251,8 +300,12 @@ func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest) (string, []any, er
 		args = append(args, clauseArgs...)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
-		strings.Join(req.MeasureNames, ", "), req.MetricsViewName, whereClause)
+	sql := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s",
+		strings.Join(selectCols, ", "),
+		mv.From,
+		whereClause,
+	)
 	return sql, args, nil
 }
 

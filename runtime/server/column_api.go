@@ -3,13 +3,15 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math"
-	"time"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const defaultK = 50
@@ -220,35 +222,35 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *api.Est
 	switch timeGrainString {
 	case "milliseconds":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_MILLISECONDS,
+			TimeGrain: api.TimeGrain_MILLISECOND,
 		}
 	case "seconds":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_SECONDS,
+			TimeGrain: api.TimeGrain_SECOND,
 		}
 	case "minutes":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_MINUTES,
+			TimeGrain: api.TimeGrain_MINUTE,
 		}
 	case "hours":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_HOURS,
+			TimeGrain: api.TimeGrain_HOUR,
 		}
 	case "days":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_DAYS,
+			TimeGrain: api.TimeGrain_DAY,
 		}
 	case "weeks":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_WEEKS,
+			TimeGrain: api.TimeGrain_WEEK,
 		}
 	case "months":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_MONTHS,
+			TimeGrain: api.TimeGrain_MONTH,
 		}
 	case "years":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.EstimateSmallestTimeGrainResponse_YEARS,
+			TimeGrain: api.TimeGrain_YEAR,
 		}
 	}
 	return timeGrain, nil
@@ -459,15 +461,15 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
-	for rows.Next() {
+	if rows.Next() {
 		summary := &api.TimeRangeSummary{}
 		rowMap := make(map[string]any)
 		err = rows.MapScan(rowMap)
 		if err != nil {
 			return nil, err
 		}
-		summary.Min = rowMap["min"].(time.Time).String()
-		summary.Max = rowMap["max"].(time.Time).String()
+		summary.Min = timestamppb.New(rowMap["min"].(time.Time))
+		summary.Max = timestamppb.New(rowMap["max"].(time.Time))
 		interval := rowMap["interval"].(duckdb.Interval)
 		summary.Interval = new(api.TimeRangeSummary_Interval)
 		summary.Interval.Days = interval.Days
@@ -484,10 +486,10 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.Cardin
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
 	})
-	defer rows.Close()
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		summary := &api.CategoricalSummary{}
 		err = rows.Scan(&summary.Cardinality)

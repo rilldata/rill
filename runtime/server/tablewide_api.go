@@ -48,6 +48,12 @@ type ColumnInfo struct {
 	Unknown int
 }
 
+var DoubleQuotesRegexp *regexp.Regexp = regexp.MustCompile("\"")
+
+func EscapeDoubleQuotes(column string) string {
+	return DoubleQuotesRegexp.ReplaceAllString(column, "\"\"")
+}
+
 func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequest) (*api.ProfileColumnsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
@@ -57,20 +63,19 @@ func (s *Server) ProfileColumns(ctx context.Context, req *api.ProfileColumnsRequ
 		return nil, err
 	}
 	defer rows.Close()
-	pcs := make([]*api.ProfileColumn, 2)
+	var pcs []*api.ProfileColumn
 	i := 0
 	for rows.Next() {
 		pc := api.ProfileColumn{}
 		if err := rows.StructScan(&pc); err != nil {
 			return nil, err
 		}
-		pcs[i] = &pc
+		pcs = append(pcs, &pc)
 		i++
 	}
 
-	r := regexp.MustCompile("\"")
 	for _, pc := range pcs[0:i] {
-		columnName := r.ReplaceAllString(pc.Name, "\"\"")
+		columnName := EscapeDoubleQuotes(pc.Name)
 		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
 			Query: fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
 		})

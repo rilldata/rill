@@ -11,6 +11,7 @@
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
+  import { fade } from "svelte/transition";
   import {
     dataModelerService,
     runtimeStore,
@@ -27,13 +28,14 @@
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let id;
+  export let name: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
 
   $: currentSource = $persistentTableStore?.entities?.find(
-    (entity) => entity.id === id
+    (entity) => entity.id === id || entity.tableName === name
   );
 
   const renameSource = useRuntimeServiceRenameFileAndMigrate();
@@ -54,7 +56,7 @@
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
-          fromPath: `sources/${currentSource.tableName}.yaml`,
+          fromPath: `sources/${name}.yaml`,
           toPath: `sources/${e.target.value}.yaml`,
         },
       },
@@ -76,8 +78,6 @@
       }
     );
   };
-
-  $: titleInput = currentSource?.name;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
@@ -127,7 +127,10 @@
 </script>
 
 <div class="grid  items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
+  <WorkspaceHeader
+    {...{ titleInput: name, onChangeCallback }}
+    showStatus={false}
+  >
     <svelte:fragment slot="icon">
       <Source />
     </svelte:fragment>
@@ -136,8 +139,11 @@
         Refreshing...
       {:else}
         <div class="flex items-center">
-          {#if $getSource.isSuccess}
-            <div class="ui-copy-muted">
+          {#if $getSource.isSuccess && $getSource.data?.object?.refreshedOn}
+            <div
+              class="ui-copy-muted"
+              transition:fade|local={{ duration: 200 }}
+            >
               Imported on {formatRefreshedOn(
                 $getSource.data?.object?.refreshedOn
               )}
