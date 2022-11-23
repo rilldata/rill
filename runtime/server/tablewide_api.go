@@ -11,18 +11,7 @@ import (
 )
 
 // Table level profiling APIs
-func (s *Server) RenameDatabaseObject(ctx context.Context, req *runtimev1.RenameDatabaseObjectRequest) (*runtimev1.RenameDatabaseObjectResponse, error) {
-	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query: fmt.Sprintf("alter %s \"%s\" rename to \"%s\"", req.Type.String(), req.Name, req.Newname),
-	})
-	if err != nil {
-		return nil, err
-	}
-	rows.Close()
-	return &runtimev1.RenameDatabaseObjectResponse{}, nil
-}
-
-func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.CardinalityRequest) (*runtimev1.CardinalityResponse, error) {
+func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: "select count(*) from " + quoteName(req.TableName),
 	})
@@ -37,7 +26,7 @@ func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.Cardinalit
 			return nil, err
 		}
 	}
-	return &runtimev1.CardinalityResponse{
+	return &runtimev1.GetTableCardinalityResponse{
 		Cardinality: count,
 	}, nil
 }
@@ -95,7 +84,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 	}, nil
 }
 
-func (s *Server) TableRows(ctx context.Context, req *runtimev1.RowsRequest) (*runtimev1.RowsResponse, error) {
+func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("select * from %s limit %d", req.TableName, req.Limit),
 	})
@@ -107,7 +96,7 @@ func (s *Server) TableRows(ctx context.Context, req *runtimev1.RowsRequest) (*ru
 		return nil, err
 	}
 
-	return &runtimev1.RowsResponse{
+	return &runtimev1.GetTableRowsResponse{
 		Data: data,
 	}, nil
 }

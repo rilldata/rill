@@ -17,7 +17,7 @@ import (
 const defaultK = 50
 const defaultAgg = "count(*)"
 
-func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.TopKRequest) (*runtimev1.CategoricalSummary, error) {
+func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := defaultAgg
 	k := int32(defaultK)
 	if topKRequest.Agg != nil {
@@ -41,23 +41,28 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.TopKRequest
 	}
 	defer rows.Close()
 
-	topKResponse := runtimev1.TopKResponse{
-		Entries: make([]*runtimev1.TopKResponse_TopKEntry, 0),
+	topKResponse := runtimev1.TopK{
+		Entries: make([]*runtimev1.TopK_TopKEntry, 0),
 	}
 	for rows.Next() {
-		var topKEntry runtimev1.TopKResponse_TopKEntry
+		var topKEntry runtimev1.TopK_TopKEntry
 		err = rows.Scan(&topKEntry.Value, &topKEntry.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
 	}
-	return &runtimev1.CategoricalSummary{
-		TopKResponse: &topKResponse,
+
+	return &runtimev1.GetTopKResponse{
+		CategoricalSummary: &runtimev1.CategoricalSummary{
+			Case: &runtimev1.CategoricalSummary_TopK{
+				TopK: &topKResponse,
+			},
+		},
 	}, nil
 }
 
-func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.NullCountRequest) (*runtimev1.NullCountResponse, error) {
+func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
 	nullCountSql := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
 		nullCountRequest.TableName,
 		quoteName(nullCountRequest.ColumnName),
@@ -78,13 +83,12 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.N
 		}
 	}
 
-	resp := &runtimev1.NullCountResponse{
+	return &runtimev1.GetNullCountResponse{
 		Count: count,
-	}
-	return resp, nil
+	}, nil
 }
 
-func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev1.DescriptiveStatisticsRequest) (*runtimev1.NumericSummary, error) {
+func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
 		"min(%s) as min, "+
@@ -112,9 +116,13 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 		}
 	}
 	resp := &runtimev1.NumericSummary{
-		NumericStatistics: stats,
+		Case: &runtimev1.NumericSummary_NumericStatistics{
+			NumericStatistics: stats,
+		},
 	}
-	return resp, nil
+	return &runtimev1.GetDescriptiveStatisticsResponse{
+		NumericSummary: resp,
+	}, nil
 }
 
 /**
@@ -222,41 +230,41 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 	switch timeGrainString {
 	case "milliseconds":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_MILLISECOND,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
 		}
 	case "seconds":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_SECOND,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
 		}
 	case "minutes":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_MINUTE,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
 		}
 	case "hours":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_HOUR,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		}
 	case "days":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_DAY,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		}
 	case "weeks":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_WEEK,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
 		}
 	case "months":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_MONTH,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
 		}
 	case "years":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_YEAR,
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		}
 	}
 	return timeGrain, nil
 }
 
-func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.NumericHistogramRequest) (*runtimev1.NumericSummary, error) {
+func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	sql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
 		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
@@ -354,14 +362,18 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Num
 		}
 		histogramBins = append(histogramBins, bin)
 	}
-	return &runtimev1.NumericSummary{
-		NumericHistogramBins: &runtimev1.NumericHistogramBins{
-			Bins: histogramBins,
+	return &runtimev1.GetNumericHistogramResponse{
+		NumericSummary: &runtimev1.NumericSummary{
+			Case: &runtimev1.NumericSummary_NumericHistogramBins{
+				NumericHistogramBins: &runtimev1.NumericHistogramBins{
+					Bins: histogramBins,
+				},
+			},
 		},
 	}, nil
 }
 
-func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.RugHistogramRequest) (*runtimev1.NumericSummary, error) {
+func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugHistogramRequest) (*runtimev1.GetRugHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -444,14 +456,18 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.RugHist
 		outlierBins = append(outlierBins, outlier)
 	}
 
-	return &runtimev1.NumericSummary{
-		NumericOutliers: &runtimev1.NumericOutliers{
-			Outliers: outlierBins,
+	return &runtimev1.GetRugHistogramResponse{
+		NumericSummary: &runtimev1.NumericSummary{
+			Case: &runtimev1.NumericSummary_NumericOutliers{
+				NumericOutliers: &runtimev1.NumericOutliers{
+					Outliers: outlierBins,
+				},
+			},
 		},
 	}, nil
 }
 
-func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.TimeRangeSummaryRequest) (*runtimev1.TimeRangeSummary, error) {
+func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
@@ -476,12 +492,14 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Tim
 		summary.Interval.Months = interval.Months
 		summary.Interval.Micros = interval.Micros
 
-		return summary, nil
+		return &runtimev1.GetTimeRangeSummaryResponse{
+			TimeRangeSummary: summary,
+		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
 }
 
-func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.CardinalityOfColumnRequest) (*runtimev1.CategoricalSummary, error) {
+func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
@@ -490,13 +508,19 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
+	var count int64
 	for rows.Next() {
-		summary := &runtimev1.CategoricalSummary{}
-		err = rows.Scan(&summary.Cardinality)
+		err = rows.Scan(&count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return summary, nil
+		return &runtimev1.GetCardinalityOfColumnResponse{
+			CategoricalSummary: &runtimev1.CategoricalSummary{
+				Case: &runtimev1.CategoricalSummary_Cardinality{
+					Cardinality: count,
+				},
+			},
+		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
 }

@@ -83,7 +83,7 @@ func TestServer_Timeseries(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
-			Interval: runtimev1.TimeGrain_YEAR,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
 			Include: []*runtimev1.MetricsViewDimensionValue{
@@ -129,7 +129,7 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
-			Interval: runtimev1.TimeGrain_YEAR,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
 			Include: []*runtimev1.MetricsViewDimensionValue{
@@ -171,7 +171,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
-			Interval: runtimev1.TimeGrain_YEAR,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
 			Include: []*runtimev1.MetricsViewDimensionValue{
@@ -222,7 +222,7 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-01-02T00:00:00Z"),
-			Interval: runtimev1.TimeGrain_DAY,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
 			Include: []*runtimev1.MetricsViewDimensionValue{
@@ -261,7 +261,7 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-01-02T00:00:00Z"),
-			Interval: runtimev1.TimeGrain_DAY,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: &runtimev1.MetricsViewRequestFilter{
 			Include: []*runtimev1.MetricsViewDimensionValue{
@@ -303,7 +303,7 @@ func TestServer_normaliseTimeRange(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &runtimev1.TimeSeriesTimeRange{
-		Interval: runtimev1.TimeGrain_UNSPECIFIED,
+		Interval: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
 	}
 	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId:          instanceId,
@@ -314,7 +314,7 @@ func TestServer_normaliseTimeRange(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
-	require.Equal(t, runtimev1.TimeGrain_HOUR, r.Interval)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
 
 func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
@@ -323,7 +323,7 @@ func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &runtimev1.TimeSeriesTimeRange{
-		Interval: runtimev1.TimeGrain_UNSPECIFIED,
+		Interval: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
 		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
 	}
 	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
@@ -335,7 +335,7 @@ func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
-	require.Equal(t, runtimev1.TimeGrain_HOUR, r.Interval)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
 
 func TestServer_normaliseTimeRange_Specified(t *testing.T) {
@@ -344,7 +344,7 @@ func TestServer_normaliseTimeRange_Specified(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &runtimev1.TimeSeriesTimeRange{
-		Interval: runtimev1.TimeGrain_YEAR,
+		Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
 	}
 	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
@@ -356,7 +356,7 @@ func TestServer_normaliseTimeRange_Specified(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
-	require.Equal(t, runtimev1.TimeGrain_YEAR, r.Interval)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
 func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {

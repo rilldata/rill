@@ -269,7 +269,7 @@ service RuntimeService {
 
   // Get TopK elements from a table for a column given an agg function
   // agg function and k are optional, defaults are count(*) and 50 respectively
-  rpc GetTopK(TopKRequest) returns (CategoricalSummary) {
+  rpc GetTopK(GetTopKRequest) returns (GetTopKResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/topk/{table_name}/{column_name}",
       body: "*"
@@ -277,14 +277,14 @@ service RuntimeService {
   }
 
   // Get the number of nulls in a column
-  rpc GetNullCount(NullCountRequest) returns (NullCountResponse) {
+  rpc GetNullCount(GetNullCountRequest) returns (GetNullCountResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/null-count/{table_name}/{column_name}"
     };
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
-  rpc GetDescriptiveStatistics(DescriptiveStatisticsRequest) returns (NumericSummary) {
+  rpc GetDescriptiveStatistics(GetDescriptiveStatisticsRequest) returns (GetDescriptiveStatisticsResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/descriptive-statistics/{table_name}/{column_name}"
     };
@@ -298,35 +298,35 @@ service RuntimeService {
   }
 
   // Get the histogram for values in a column
-  rpc GetNumericHistogram(NumericHistogramRequest) returns (NumericSummary) {
+  rpc GetNumericHistogram(GetNumericHistogramRequest) returns (GetNumericHistogramResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/numeric-histogram/{table_name}/{column_name}"
     };
   }
 
   // Get outliers for a numeric column
-  rpc GetRugHistogram(RugHistogramRequest) returns (NumericSummary) {
+  rpc GetRugHistogram(GetRugHistogramRequest) returns (GetRugHistogramResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/rug-histogram/{table_name}/{column_name}"
     };
   }
 
   // Get the time range summaries (min, max) for a column
-  rpc GetTimeRangeSummary(TimeRangeSummaryRequest) returns (TimeRangeSummary) {
+  rpc GetTimeRangeSummary(GetTimeRangeSummaryRequest) returns (GetTimeRangeSummaryResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/time-range-summary/{table_name}/{column_name}"
     };
   }
 
   // Get cardinality for a column
-  rpc GetCardinalityOfColumn(CardinalityOfColumnRequest) returns (CategoricalSummary) {
+  rpc GetCardinalityOfColumn(GetCardinalityOfColumnRequest) returns (GetCardinalityOfColumnResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/cardinality-of-column/{table_name}/{column_name}"
     };
   }
 
   // Generate time series
-  rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (TimeSeriesRollup) {
+  rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (GenerateTimeSeriesResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/generate-timeseries",
       body: "*"
@@ -334,28 +334,23 @@ service RuntimeService {
   }
 
   // Tablewide profiling APIs
-  rpc RenameDatabaseObject(RenameDatabaseObjectRequest) returns (RenameDatabaseObjectResponse) { // todo it's not a profiling endpoint - move smw else
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/rename-object"
-    };
-  }
 
   // TableCardinality (TODO: add description)
-  rpc TableCardinality(CardinalityRequest) returns (CardinalityResponse) {
+  rpc GetTableCardinality(GetTableCardinalityRequest) returns (GetTableCardinalityResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/cardinality"
+      get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"
     };
   }
 
   // ProfileColumns (TODO: add description)
   rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
+      post: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
     };
   }
 
   // TableRows (TODO: add description)
-  rpc TableRows(RowsRequest) returns (RowsResponse) {
+  rpc GetTableRows(GetTableRowsRequest) returns (GetTableRowsResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
     };
@@ -489,8 +484,7 @@ message DeleteFileRequest {
 }
 
 // Response message for RuntimeService.DeleteFile
-message DeleteFileResponse {
-}
+message DeleteFileResponse {}
 
 // Request message for RuntimeService.RenameFile
 message RenameFileRequest {
@@ -514,7 +508,7 @@ message Instance {
   string instance_id = 1;
   // Name of OLAP infra driver ("druid" or "duckdb")
   string driver = 2;
-  // DSN for connection to the OLAP infra 
+  // DSN for connection to the OLAP infra
   string dsn = 3;
   // Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
   // Use it as an alternative to database schemas.
@@ -981,35 +975,63 @@ message EstimateRollupIntervalResponse {
 
 message ProfileColumnSummary {
   oneof Case {
-    CategoricalSummary categoricalSummary = 1;
-    NumericSummary numericSummary = 2;
-    TimeRangeSummary timeRangeSummary = 3;
+    CategoricalSummary categorical_summary = 1;
+    NumericSummary numeric_summary = 2;
+    TimeRangeSummary time_range_summary = 3;
   }
 }
 
 // Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
 message CategoricalSummary {
-  optional TopKResponse topKResponse = 1;
-  optional int64 cardinality = 2;
+  oneof Case {
+    TopK topK = 1;
+    int64 cardinality = 2;
+  }
+}
+
+message GetCardinalityOfColumnResponse {
+  CategoricalSummary categorical_summary = 1;
+}
+
+message GetTopKResponse {
+  CategoricalSummary categorical_summary = 1;
 }
 
 // Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
 // Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
 message NumericSummary {
-  optional NumericHistogramBins numericHistogramBins = 1;
-  optional NumericStatistics numericStatistics = 2;
-  optional NumericOutliers numericOutliers = 3;
+  oneof Case {
+    NumericHistogramBins numeric_histogram_bins = 1;
+    NumericStatistics numeric_statistics = 2;
+    NumericOutliers numeric_outliers = 3;
+  }
+}
+
+message GetRugHistogramResponse {
+  NumericSummary numeric_summary = 1;
+}
+
+message GetNumericHistogramResponse {
+  NumericSummary numeric_summary = 1;
+}
+
+message GetDescriptiveStatisticsResponse {
+  NumericSummary numeric_summary = 1;
+}
+
+message GetTimeRangeSummaryResponse {
+  TimeRangeSummary time_range_summary = 1;
 }
 
 message TimeRangeSummary {
-    google.protobuf.Timestamp min = 1;
-    google.protobuf.Timestamp max = 2;
-    message Interval {
-      int32 months = 1;
-      int32 days = 2;
-      int64 micros = 3;
-    }
-    Interval interval = 3;
+  google.protobuf.Timestamp min = 1;
+  google.protobuf.Timestamp max = 2;
+  message Interval {
+    int32 months = 1;
+    int32 days = 2;
+    int64 micros = 3;
+  }
+  Interval interval = 3;
 }
 
 message NumericOutliers {
@@ -1023,7 +1045,7 @@ message NumericOutliers {
 }
 
 // Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
-message TopKRequest {
+message GetTopKRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -1031,8 +1053,7 @@ message TopKRequest {
   optional int32 k = 5; // default is 50
 }
 
-// Response for RuntimeService.GetTopK.
-message TopKResponse {
+message TopK {
   message TopKEntry {
     // value is optional so that null values from the database can be represented.
     optional string value = 1;
@@ -1042,19 +1063,19 @@ message TopKResponse {
 }
 
 // Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
-message NullCountRequest {
+message GetNullCountRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
 }
 
 // Response for RuntimeService.GetNullCount
-message NullCountResponse {
+message GetNullCountResponse {
   int64 count = 1;
 }
 
-// Request for RuntimeService.GetDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
-message DescriptiveStatisticsRequest {
+// Request for RuntimeService.GetGetDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
+message GetDescriptiveStatisticsRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -1062,16 +1083,16 @@ message DescriptiveStatisticsRequest {
 
 // Response for RuntimeService.GetDescriptiveStatistics
 message NumericStatistics {
-    double min = 1;
-    double max = 2;
-    double mean = 3;
-    double q25 = 4;
-    double q50 = 5;
-    double q75 = 6;
-    double sd = 7;
+  double min = 1;
+  double max = 2;
+  double mean = 3;
+  double q25 = 4;
+  double q50 = 5;
+  double q75 = 6;
+  double sd = 7;
 }
 
-// Request for RuntimeService.GetEstimateSmallestTimeGrainRequest
+// Request for RuntimeService.EstimateSmallestTimeGrainRequest
 message EstimateSmallestTimeGrainRequest {
   string instance_id = 1;
   string table_name = 2;
@@ -1079,15 +1100,15 @@ message EstimateSmallestTimeGrainRequest {
 }
 
 enum TimeGrain {
-  UNSPECIFIED = 0;
-  MILLISECOND = 1;
-  SECOND = 2;
-  MINUTE = 3;
-  HOUR = 4;
-  DAY = 5;
-  WEEK = 6;
-  MONTH = 7;
-  YEAR = 8;
+  TIME_GRAIN_UNSPECIFIED = 0;
+  TIME_GRAIN_MILLISECOND = 1;
+  TIME_GRAIN_SECOND = 2;
+  TIME_GRAIN_MINUTE = 3;
+  TIME_GRAIN_HOUR = 4;
+  TIME_GRAIN_DAY = 5;
+  TIME_GRAIN_WEEK = 6;
+  TIME_GRAIN_MONTH = 7;
+  TIME_GRAIN_YEAR = 8;
 }
 
 // Response for RuntimeService.EstimateSmallestTimeGrain
@@ -1096,7 +1117,7 @@ message EstimateSmallestTimeGrainResponse {
 }
 
 // Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
-message NumericHistogramRequest {
+message GetNumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -1114,21 +1135,21 @@ message NumericHistogramBins {
 }
 
 // Request for RuntimeService.GetRugHistogram
-message RugHistogramRequest {
+message GetRugHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
 }
 
 // Request for RuntimeService.GetTimeRangeSummary
-message TimeRangeSummaryRequest {
+message GetTimeRangeSummaryRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
 }
 
 // Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
-message CardinalityOfColumnRequest {
+message GetCardinalityOfColumnRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -1144,7 +1165,7 @@ message GenerateTimeSeriesRequest {
   optional int64 pixels = 7;
   optional int32 sample_size = 8;
   message BasicMeasures {
-    repeated BasicMeasureDefinition basicMeasures = 1;
+    repeated BasicMeasureDefinition basic_measures = 1;
   }
 }
 
@@ -1157,23 +1178,23 @@ message BasicMeasureDefinition {
 }
 
 message TimeSeriesTimeRange {
-  TimeRangeName name = 1;
   google.protobuf.Timestamp start = 2;
   google.protobuf.Timestamp end = 3;
   TimeGrain interval = 4;
 }
 
 enum TimeRangeName {
-  LastHour = 0;
-  Last6Hours = 1;
-  LastDay = 2;
-  Last2Days = 3;
-  Last5Days = 4;
-  LastWeek = 5;
-  Last2Weeks = 6;
-  Last30Days = 7;
-  Last60Days = 8;
-  AllTime = 9;
+  TIME_RANGE_NAME_UNSPECIFIED = 0;
+  TIME_RANGE_NAME_LAST_HOUR = 1;
+  TIME_RANGE_NAME_LAST_6_HOUR = 2;
+  TIME_RANGE_NAME_LAST_DAY = 3;
+  TIME_RANGE_NAME_LAST_2_DAYS = 4;
+  TIME_RANGE_NAME_LAST_5_DAYS = 5;
+  TIME_RANGE_NAME_LAST_WEEK = 6;
+  TIME_RANGE_NAME_LAST_2_WEEKS = 7;
+  TIME_RANGE_NAME_LAST_30_DAYS = 8;
+  TIME_RANGE_NAME_LAST_60_DAYS = 9;
+  TIME_RANGE_NAME_ALL_TIME = 10;
   // Today
   // MonthToDate
   // CustomRange
@@ -1205,7 +1226,7 @@ message TimeSeriesResponse {
   }
 }
 
-message TimeSeriesRollup {
+message GenerateTimeSeriesResponse {
   TimeSeriesResponse rollup = 1;
 }
 
@@ -1220,27 +1241,27 @@ message TimeSeriesValue {
 // **********
 
 enum DatabaseObjectType {
-  TABLE = 0;
-  VIEW = 1;
-  FUNCTION = 2;
+  DATABASE_OBJECT_TYPE_UNSPECIFIED = 0;
+  DATABASE_OBJECT_TYPE_TABLE = 1;
+  DATABASE_OBJECT_TYPE_VIEW = 2;
+  DATABASE_OBJECT_TYPE_FUNCTION = 3;
 }
 
 message RenameDatabaseObjectRequest {
   string instance_id = 1;
   string name = 2;
-  string newname = 3;
+  string new_name = 3;
   optional DatabaseObjectType type = 4;
 }
 
-message RenameDatabaseObjectResponse {
-}
+message RenameDatabaseObjectResponse {}
 
-message CardinalityRequest {
+message GetTableCardinalityRequest {
   string instance_id = 1;
   string table_name = 2;
 }
 
-message CardinalityResponse {
+message GetTableCardinalityResponse {
   int64 cardinality = 1;
 }
 
@@ -1259,13 +1280,13 @@ message ProfileColumn {
   int32 largest_string_length = 3;
 }
 
-message RowsRequest {
+message GetTableRowsRequest {
   string instance_id = 1;
   string table_name = 2;
   int32 limit = 3;
 }
 
-message RowsResponse {
+message GetTableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
 

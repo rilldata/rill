@@ -139,7 +139,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1CategoricalSummary'
+            $ref: '#/definitions/v1GetCardinalityOfColumnResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -249,7 +249,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1NumericSummary'
+            $ref: '#/definitions/v1GetDescriptiveStatisticsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -337,7 +337,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TimeSeriesRollup'
+            $ref: '#/definitions/v1GenerateTimeSeriesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -660,7 +660,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1NullCountResponse'
+            $ref: '#/definitions/v1GetNullCountResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -688,7 +688,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1NumericSummary'
+            $ref: '#/definitions/v1GetNumericHistogramResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -703,6 +703,30 @@ paths:
           required: true
           type: string
         - name: columnName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}:
+    get:
+      summary: 'TableCardinality (TODO: add description)'
+      operationId: RuntimeService_GetTableCardinality
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTableCardinalityResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
           in: path
           required: true
           type: string
@@ -792,44 +816,6 @@ paths:
             title: Request message for RuntimeService.QueryDirect
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/rename-object:
-    post:
-      summary: Tablewide profiling APIs
-      description: todo it's not a profiling endpoint - move smw else
-      operationId: RuntimeService_RenameDatabaseObject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RenameDatabaseObjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: newname
-          in: query
-          required: false
-          type: string
-        - name: type
-          in: query
-          required: false
-          type: string
-          enum:
-            - TABLE
-            - VIEW
-            - FUNCTION
-          default: TABLE
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/rug-histogram/{tableName}/{columnName}:
     get:
       summary: Get outliers for a numeric column
@@ -838,7 +824,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1NumericSummary'
+            $ref: '#/definitions/v1GetRugHistogramResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -880,32 +866,8 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/tables/{tableName}/cardinality:
-    get:
-      summary: 'TableCardinality (TODO: add description)'
-      operationId: RuntimeService_TableCardinality
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CardinalityResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/tables/{tableName}/profile-columns:
-    get:
+    post:
       summary: 'ProfileColumns (TODO: add description)'
       operationId: RuntimeService_ProfileColumns
       responses:
@@ -931,12 +893,12 @@ paths:
   /v1/instances/{instanceId}/tables/{tableName}/rows:
     get:
       summary: 'TableRows (TODO: add description)'
-      operationId: RuntimeService_TableRows
+      operationId: RuntimeService_GetTableRows
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RowsResponse'
+            $ref: '#/definitions/v1GetTableRowsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -965,7 +927,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TimeRangeSummary'
+            $ref: '#/definitions/v1GetTimeRangeSummaryResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -995,7 +957,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1CategoricalSummary'
+            $ref: '#/definitions/v1GetTopKResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1482,7 +1444,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1TimeSeriesValue'
-  TopKResponseTopKEntry:
+  TopKTopKEntry:
     type: object
     properties:
       count:
@@ -1551,12 +1513,6 @@ definitions:
       sqlName:
         type: string
         title: optional user defined metadata
-  v1CardinalityResponse:
-    type: object
-    properties:
-      cardinality:
-        type: string
-        format: int64
   v1CatalogObject:
     type: object
     properties:
@@ -1599,8 +1555,8 @@ definitions:
       cardinality:
         type: string
         format: int64
-      topKResponse:
-        $ref: '#/definitions/v1TopKResponse'
+      topK:
+        $ref: '#/definitions/v1TopK'
     description: Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
   v1Connector:
     type: object
@@ -1664,13 +1620,6 @@ definitions:
       repo:
         $ref: '#/definitions/v1Repo'
     title: Response message for RuntimeService.CreateRepo
-  v1DatabaseObjectType:
-    type: string
-    enum:
-      - TABLE
-      - VIEW
-      - FUNCTION
-    default: TABLE
   v1DeleteFileAndMigrateRequest:
     type: object
     properties:
@@ -1736,12 +1685,27 @@ definitions:
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
     title: Response for RuntimeService.EstimateSmallestTimeGrain
+  v1GenerateTimeSeriesResponse:
+    type: object
+    properties:
+      rollup:
+        $ref: '#/definitions/v1TimeSeriesResponse'
+  v1GetCardinalityOfColumnResponse:
+    type: object
+    properties:
+      categoricalSummary:
+        $ref: '#/definitions/v1CategoricalSummary'
   v1GetCatalogObjectResponse:
     type: object
     properties:
       object:
         $ref: '#/definitions/v1CatalogObject'
     title: Response message for RuntimeService.GetCatalogObject
+  v1GetDescriptiveStatisticsResponse:
+    type: object
+    properties:
+      numericSummary:
+        $ref: '#/definitions/v1NumericSummary'
   v1GetFileResponse:
     type: object
     properties:
@@ -1757,12 +1721,52 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.GetInstance
+  v1GetNullCountResponse:
+    type: object
+    properties:
+      count:
+        type: string
+        format: int64
+    title: Response for RuntimeService.GetNullCount
+  v1GetNumericHistogramResponse:
+    type: object
+    properties:
+      numericSummary:
+        $ref: '#/definitions/v1NumericSummary'
   v1GetRepoResponse:
     type: object
     properties:
       repo:
         $ref: '#/definitions/v1Repo'
     title: Response message for RuntimeService.GetRepo
+  v1GetRugHistogramResponse:
+    type: object
+    properties:
+      numericSummary:
+        $ref: '#/definitions/v1NumericSummary'
+  v1GetTableCardinalityResponse:
+    type: object
+    properties:
+      cardinality:
+        type: string
+        format: int64
+  v1GetTableRowsResponse:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          type: object
+  v1GetTimeRangeSummaryResponse:
+    type: object
+    properties:
+      timeRangeSummary:
+        $ref: '#/definitions/v1TimeRangeSummary'
+  v1GetTopKResponse:
+    type: object
+    properties:
+      categoricalSummary:
+        $ref: '#/definitions/v1CategoricalSummary'
   v1Instance:
     type: object
     properties:
@@ -2057,13 +2061,6 @@ definitions:
         type: string
         title: SQL is a SELECT statement representing the model
     title: Model is the internal representation of a model definition
-  v1NullCountResponse:
-    type: object
-    properties:
-      count:
-        type: string
-        format: int64
-    title: Response for RuntimeService.GetNullCount
   v1NumericHistogramBins:
     type: object
     properties:
@@ -2225,8 +2222,6 @@ definitions:
         $ref: '#/definitions/v1StructType'
         title: Schema of result data
     title: Response message for RuntimeService.Query
-  v1RenameDatabaseObjectResponse:
-    type: object
   v1RenameFileAndMigrateRequest:
     type: object
     properties:
@@ -2288,13 +2283,6 @@ definitions:
       Repo represents a collection of file artifacts containing SQL statements.
       It will usually by represented as a folder on disk, but may also be backed by a
       database (for modelling in the cloud where no persistant file system is available).
-  v1RowsResponse:
-    type: object
-    properties:
-      data:
-        type: array
-        items:
-          type: object
   v1Source:
     type: object
     properties:
@@ -2345,34 +2333,16 @@ definitions:
   v1TimeGrain:
     type: string
     enum:
-      - UNSPECIFIED
-      - MILLISECOND
-      - SECOND
-      - MINUTE
-      - HOUR
-      - DAY
-      - WEEK
-      - MONTH
-      - YEAR
-    default: UNSPECIFIED
-  v1TimeRangeName:
-    type: string
-    enum:
-      - LastHour
-      - Last6Hours
-      - LastDay
-      - Last2Days
-      - Last5Days
-      - LastWeek
-      - Last2Weeks
-      - Last30Days
-      - Last60Days
-      - AllTime
-    default: LastHour
-    title: |-
-      - AllTime: Today
-       MonthToDate
-       CustomRange
+      - TIME_GRAIN_UNSPECIFIED
+      - TIME_GRAIN_MILLISECOND
+      - TIME_GRAIN_SECOND
+      - TIME_GRAIN_MINUTE
+      - TIME_GRAIN_HOUR
+      - TIME_GRAIN_DAY
+      - TIME_GRAIN_WEEK
+      - TIME_GRAIN_MONTH
+      - TIME_GRAIN_YEAR
+    default: TIME_GRAIN_UNSPECIFIED
   v1TimeRangeSummary:
     type: object
     properties:
@@ -2402,11 +2372,6 @@ definitions:
         $ref: '#/definitions/TimeSeriesResponseTimeSeriesValues'
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
-  v1TimeSeriesRollup:
-    type: object
-    properties:
-      rollup:
-        $ref: '#/definitions/v1TimeSeriesResponse'
   v1TimeSeriesTimeRange:
     type: object
     properties:
@@ -2415,8 +2380,6 @@ definitions:
         format: date-time
       interval:
         $ref: '#/definitions/v1TimeGrain'
-      name:
-        $ref: '#/definitions/v1TimeRangeName'
       start:
         type: string
         format: date-time
@@ -2433,14 +2396,13 @@ definitions:
           format: double
       ts:
         type: string
-  v1TopKResponse:
+  v1TopK:
     type: object
     properties:
       entries:
         type: array
         items:
-          $ref: '#/definitions/TopKResponseTopKEntry'
-    description: Response for RuntimeService.GetTopK.
+          $ref: '#/definitions/TopKTopKEntry'
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh
