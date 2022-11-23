@@ -17,7 +17,7 @@ builds:
       - CC=o64-clang
       - CXX=o64-clang++
     flags:
-      - '-mod=readonly'
+      - "-mod=readonly"
     ldflags:
       - >-
         -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
@@ -35,7 +35,7 @@ builds:
       - CC=oa64-clang
       - CXX=oa64-clang++
     flags:
-      - '-mod=readonly'
+      - "-mod=readonly"
     ldflags:
       - >-
         -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
@@ -55,7 +55,7 @@ builds:
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
       - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
     flags:
-      - '-mod=readonly'
+      - "-mod=readonly"
     ldflags:
       - >-
         -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
@@ -74,10 +74,10 @@ archives:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: '{{ incpatch .Version }}-next'
+  name_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - "^docs:"
+      - "^test:"
