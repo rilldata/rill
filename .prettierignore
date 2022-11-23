@@ -46,3 +46,5 @@ test/data/HistogramSummary.data.ts
 
 # a temporary fix until we refactor css classes
 *.css
+
+*.gz
