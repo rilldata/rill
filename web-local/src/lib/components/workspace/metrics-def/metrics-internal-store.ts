@@ -97,7 +97,9 @@ export class MetricsInternalRepresentation {
           temporaryRepresentation.deleteIn(["measures", i, "__ERROR__"]);
       });
 
-    this.internalYAML = temporaryRepresentation.toString();
+    this.internalYAML = temporaryRepresentation.toString({
+      collectionStyle: "block",
+    });
     this.internalRepresentation = this.internalRepresentationDocument.toJSON();
   }
 
