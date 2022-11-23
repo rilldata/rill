@@ -824,7 +824,7 @@
       }
     },
     "/v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}": {
-      "get": {
+      "post": {
         "summary": "ProfileColumns (TODO: add description)",
         "operationId": "RuntimeService_ProfileColumns",
         "responses": {

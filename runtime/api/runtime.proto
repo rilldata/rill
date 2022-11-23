@@ -354,7 +354,7 @@ service RuntimeService {
   // ProfileColumns (TODO: add description)
   rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"
+      post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"
     };
   }
 
