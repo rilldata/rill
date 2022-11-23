@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { renameEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import { fade } from "svelte/transition";
@@ -50,33 +50,17 @@
       return;
     }
 
-    dataModelerService.dispatch("updateTableName", [id, e.target.value]);
-    $renameSource.mutate(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: runtimeInstanceId,
-          fromPath: `sources/${name}.yaml`,
-          toPath: `sources/${e.target.value}.yaml`,
-        },
-      },
-      {
-        onSuccess: () => {
-          goto(`/source/${e.target.value}`, { replaceState: true });
-          return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-        },
-        onError: (err) => {
-          console.error(err.response.data.message);
-          // reset the new table name
-          dataModelerService.dispatch("updateTableName", [
-            currentSource?.id,
-            "",
-          ]);
-        },
-      }
-    );
+    try {
+      await renameEntity(
+        $runtimeStore,
+        name,
+        e.target.value,
+        EntityType.Table,
+        $renameSource
+      );
+    } catch (err) {
+      console.error(err.response.data.message);
+    }
   };
 
   $: runtimeInstanceId = $runtimeStore.instanceId;

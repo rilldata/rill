@@ -64,7 +64,7 @@
         sourceName: "", // avoids `values.sourceName` warning
       },
       validationSchema: yupSchema,
-      onSubmit: (values) => {
+      onSubmit: async (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
         const formValues = Object.fromEntries(
           Object.entries(values).map(([key, value]) => [
@@ -75,8 +75,8 @@
 
         const yaml = compileCreateSourceYAML(formValues, connector.name);
 
-        $createSource.mutate(
-          {
+        try {
+          await $createSource.mutateAsync({
             data: {
               repoId: $runtimeStore.repoId,
               instanceId: runtimeInstanceId,
@@ -86,24 +86,19 @@
               createOnly: true,
               strict: true,
             },
-          },
-          {
-            onSuccess: async () => {
-              waitingOnSourceImport = true;
-              await waitForSource(values.sourceName, persistentTableStore);
-              waitingOnSourceImport = false;
-              goto(`/source/${values.sourceName}`);
-              dispatch("close");
-              overlay.set(null);
-              return queryClient.invalidateQueries(
-                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-              );
-            },
-            onError: () => {
-              overlay.set(null);
-            },
-          }
-        );
+          });
+          waitingOnSourceImport = true;
+          await waitForSource(values.sourceName, persistentTableStore);
+          waitingOnSourceImport = false;
+          goto(`/source/${values.sourceName}`);
+          dispatch("close");
+          overlay.set(null);
+          return queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        } catch (err) {
+          overlay.set(null);
+        }
       },
     }));
 

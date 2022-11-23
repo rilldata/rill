@@ -54,12 +54,10 @@
   };
 
   let showRenameTableModal = false;
-  let renameTableID = null;
   let renameTableName = null;
 
-  const openRenameTableModal = (tableID: string, tableName: string) => {
+  const openRenameTableModal = (tableName: string) => {
     showRenameTableModal = true;
-    renameTableID = tableID;
     renameTableName = tableName;
   };
 </script>
@@ -115,7 +113,7 @@
                 {sourceName}
                 {toggleMenu}
                 on:rename-asset={() => {
-                  openRenameTableModal(persistentTable?.id, sourceName);
+                  openRenameTableModal(sourceName);
                 }}
               />
             </svelte:fragment>
@@ -137,7 +135,6 @@
   <RenameAssetModal
     entityType={EntityType.Table}
     closeModal={() => (showRenameTableModal = false)}
-    entityId={renameTableID}
     currentAssetName={renameTableName}
   />
 {/if}

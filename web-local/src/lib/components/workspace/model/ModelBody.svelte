@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import type {
     DerivedModelStore,
@@ -16,12 +15,12 @@
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
+  import { renameEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import notifications from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
@@ -72,28 +71,17 @@
       return;
     }
 
-    // CHECK: do I have to rename the entity in the Node backend too?
-    $renameModel.mutate(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: $runtimeStore.instanceId,
-          fromPath: `models/${modelName}.sql`,
-          toPath: `models/${e.target.value}.sql`,
-        },
-      },
-      {
-        onSuccess: () => {
-          goto(`/model/${e.target.value}`, { replaceState: true });
-          return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-        },
-        onError: (err) => {
-          console.error(err.response.data.message);
-        },
-      }
-    );
+    try {
+      await renameEntity(
+        $runtimeStore,
+        modelName,
+        e.target.value,
+        EntityType.Model,
+        $renameModel
+      );
+    } catch (err) {
+      console.error(err.response.data.message);
+    }
   };
 
   /** model body layout elements */
@@ -121,6 +109,21 @@
   const navVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Writable<number>;
+
+  async function updateModelContent(content: string) {
+    try {
+      await $updateModel.mutateAsync({
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: $runtimeStore.instanceId,
+          path: `models/${currentModel.tableName}.sql`,
+          blob: content,
+        },
+      });
+    } catch (err) {
+      console.error(err.response.data.message);
+    }
+  }
 </script>
 
 <svelte:window bind:innerHeight />
@@ -140,22 +143,7 @@
           <Editor
             content={currentModel.query}
             selections={$queryHighlight}
-            on:write={(evt) =>
-              $updateModel.mutate(
-                {
-                  data: {
-                    repoId: $runtimeStore.repoId,
-                    instanceId: $runtimeStore.instanceId,
-                    path: `models/${currentModel.tableName}.sql`,
-                    blob: evt.detail.content,
-                  },
-                },
-                {
-                  onError: (err) => {
-                    console.error(err.response.data.message);
-                  },
-                }
-              )}
+            on:write={(evt) => updateModelContent(evt.detail.content)}
           />
         {/key}
       </div>
@@ -167,9 +155,9 @@
       class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
       style:bottom="{$outputPosition}px"
       style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
-      style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
       style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
       style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
+      style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
       use:drag={{
         minSize: 200,
         maxSize: innerHeight - 200,

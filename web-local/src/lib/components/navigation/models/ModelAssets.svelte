@@ -1,22 +1,20 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceListFiles,
     useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-  import { getNextModelName } from "../../../../common/utils/incrementName";
+  import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "../../../application-state-stores/model-stores";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import ModelIcon from "../../icons/Model.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
@@ -30,7 +28,7 @@
     ?.filter((path) => path.includes("models/"))
     .map((path) => path.replace("/models/", "").replace(".sql", ""));
 
-  const createModel = useRuntimeServicePutFileAndMigrate();
+  const createModelMutation = useRuntimeServicePutFileAndMigrate();
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -42,41 +40,22 @@
   let showModels = true;
 
   async function handleAddModel() {
-    const newModelName = getNextModelName(modelNames);
-    $createModel.mutate(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: $runtimeStore.instanceId,
-          path: `models/${newModelName}.sql`,
-          blob: ``,
-          create: true,
-          createOnly: true,
-          strict: true,
-        },
-      },
-      {
-        onSuccess: () => {
-          goto(`/model/${newModelName}`);
-          queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-          // if the models are not visible in the assets list, show them.
-          if (!showModels) {
-            showModels = true;
-          }
-        },
-      }
+    await createModel(
+      $runtimeStore,
+      getName("model", modelNames),
+      $createModelMutation
     );
+    // if the models are not visible in the assets list, show them.
+    if (!showModels) {
+      showModels = true;
+    }
   }
 
   /** rename the model */
   let showRenameModelModal = false;
-  let renameModelID = null;
   let renameModelName = null;
-  const openRenameModelModal = (modelID: string, modelName: string) => {
+  const openRenameModelModal = (modelName: string) => {
     showRenameModelModal = true;
-    renameModelID = modelID;
     renameModelName = modelName;
   };
 </script>
@@ -130,7 +109,7 @@
               {modelName}
               {toggleMenu}
               on:rename-asset={() => {
-                openRenameModelModal(persistentModel?.id, modelName);
+                openRenameModelModal(modelName);
               }}
             />
           </svelte:fragment>
@@ -144,7 +123,6 @@
   <RenameAssetModal
     entityType={EntityType.Model}
     closeModal={() => (showRenameModelModal = false)}
-    entityId={renameModelID}
     currentAssetName={renameModelName.replace(".sql", "")}
   />
 {/if}

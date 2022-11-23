@@ -24,7 +24,7 @@
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Model,
-      model?.id,
+      modelName,
     ]);
   };
 

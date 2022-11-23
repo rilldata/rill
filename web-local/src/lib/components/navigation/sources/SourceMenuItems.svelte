@@ -1,10 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    getRuntimeServiceListFilesQueryKey,
-    RuntimeServiceListCatalogObjectsType,
     useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
@@ -23,11 +19,10 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    sourceUpdated,
-  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
+  import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
+  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     useSourceFromYaml,
@@ -35,7 +30,6 @@
   } from "@rilldata/web-local/lib/svelte-query/sources";
   import { createEventDispatcher, getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getNextEntityName } from "../../../../common/utils/getNextEntityId";
   import {
     dataModelerService,
     runtimeStore,
@@ -96,82 +90,42 @@
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndMigrate();
   $: modelNames = useModelNames($runtimeStore.repoId);
-  const createModel = useRuntimeServicePutFileAndMigrate();
+  const createModelMutation = useRuntimeServicePutFileAndMigrate();
 
   const handleDeleteSource = async (tableName: string) => {
+    await deleteEntity(
+      $runtimeStore,
+      tableName,
+      EntityType.Table,
+      $deleteSource,
+      $rillAppStore.activeEntity,
+      $sourceNames.data
+    );
+    toggleMenu();
+  };
+
+  const handleCreateModel = async (tableName: string) => {
+    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    const newModelName = getName(`${tableName}_model`, modelNames);
+
     try {
-      await $deleteSource.mutateAsync({
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: runtimeInstanceId,
-          path: `sources/${tableName}.yaml`,
-        },
-      });
-      if (
-        $rillAppStore.activeEntity.type === EntityType.Table &&
-        $rillAppStore.activeEntity.id === sourceName
-      ) {
-        const nextSourceName = getNextEntityName($sourceNames.data, sourceName);
-        if (nextSourceName) {
-          goto(`/source/${nextSourceName}`);
-        } else {
-          goto("/");
-        }
-      }
-      sourceUpdated(tableName);
-      await queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+      await createModel(
+        $runtimeStore,
+        newModelName,
+        $createModelMutation,
+        `select * from ${tableName}`
+      );
+
+      navigationEvent.fireEvent(
+        newModelName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Model
       );
     } catch (err) {
       console.error(err);
     }
-    toggleMenu();
-  };
-
-  const handleCreateModel = (tableName: string) => {
-    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    const newModelName = getName(`${tableName}_model`, modelNames);
-
-    $createModel.mutateAsync(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: $runtimeStore.instanceId,
-          path: `models/${newModelName}.sql`,
-          blob: `select * from ${tableName}`,
-          create: true,
-          createOnly: true,
-          strict: true,
-        },
-      },
-      {
-        onSuccess: (res) => {
-          if (res.errors) {
-            res.errors.forEach((error) => {
-              console.error(error);
-            });
-            return;
-          }
-
-          navigationEvent.fireEvent(
-            newModelName,
-            BehaviourEventMedium.Menu,
-            MetricsEventSpace.LeftPanel,
-            EntityTypeToScreenMap[previousActiveEntity],
-            MetricsEventScreenName.Model
-          );
-
-          queryClient.invalidateQueries(
-            getRuntimeServiceListCatalogObjectsQueryKey(
-              $runtimeStore.instanceId,
-              {
-                type: RuntimeServiceListCatalogObjectsType.TYPE_MODEL,
-              }
-            )
-          );
-        },
-      }
-    );
   };
 
   const bootstrapDashboard = async (id: string, tableName: string) => {

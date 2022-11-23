@@ -1,9 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import {
-    getRuntimeServiceListFilesQueryKey,
-    useRuntimeServiceDeleteFileAndMigrate,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceDeleteFileAndMigrate } from "@rilldata/web-common/runtime-client";
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -12,7 +8,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
@@ -23,10 +18,11 @@
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { createEventDispatcher, getContext } from "svelte";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -47,6 +43,8 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
   const applicationStore = getContext("rill:app:store") as ApplicationStore;
+
+  $: modelNames = useModelNames($runtimeStore.repoId);
 
   $: persistentModel = $persistentModelStore?.entities?.find(
     (model) => model.tableName === modelName
@@ -75,45 +73,17 @@
     });
   };
 
-  const handleDeleteModel = (modelName: string) => {
-    $deleteModel.mutate(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: $runtimeStore.instanceId,
-          path: `models/${modelName}.sql`,
-        },
-      },
-      {
-        onSuccess: () => {
-          if (
-            $applicationStore.activeEntity.type === EntityType.Model &&
-            $applicationStore.activeEntity.id === persistentModel.id
-          ) {
-            const nextModelId = getNextEntityId(
-              $persistentModelStore.entities,
-              persistentModel.id
-            );
-            const nextModelName = $persistentModelStore.entities.find(
-              (source) => source.id === nextModelId
-            ).tableName;
-            if (nextModelName) {
-              goto(`/model/${nextModelName}`);
-            } else {
-              goto("/");
-            }
-          }
-
-          queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-        },
-        onSettled: () => {
-          // onSettled gets triggered *after* both onSuccess and onError
-          toggleMenu();
-        },
-      }
+  const handleDeleteModel = async (modelName: string) => {
+    await deleteEntity(
+      $runtimeStore,
+      modelName,
+      EntityType.Table,
+      $deleteModel,
+      $applicationStore.activeEntity,
+      $modelNames.data
     );
+    // onSettled gets triggered *after* both onSuccess and onError
+    toggleMenu();
   };
 </script>
 
@@ -142,8 +112,8 @@
 </MenuItem>
 <MenuItem
   icon
-  propogateSelect={false}
   on:select={() => handleDeleteModel(modelName)}
+  propogateSelect={false}
 >
   <Cancel slot="icon" />
   delete

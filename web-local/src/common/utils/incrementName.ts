@@ -23,13 +23,3 @@ export function getName(name: string, others: string[]) {
 
   return result;
 }
-
-export function getNextModelName(existingNames: string[]) {
-  let i = 1;
-  let name = `model_${i}`;
-  while (existingNames.includes(name)) {
-    i++;
-    name = `model_${i}`;
-  }
-  return name;
-}
