@@ -129,7 +129,6 @@ func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name 
 }
 
 func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
-	fmt.Println("SQL:", sql)
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
@@ -292,13 +291,12 @@ func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest, mv *api.MetricsVie
 		}
 	}
 
-	args := []any{}
 	if req.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(req.Filter)
 		if err != nil {
 			return "", nil, err
 		}
-		whereConditionClause = append(whereConditionClause, clause)
+		whereClause += clause
 		args = append(args, clauseArgs...)
 	}
 
