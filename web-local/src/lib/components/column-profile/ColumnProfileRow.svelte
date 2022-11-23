@@ -74,6 +74,8 @@
 
   <ColumnProfileDetails
     slot="details"
+    {columnName}
+    {objectName}
     {...{
       active,
       type,

@@ -27,12 +27,11 @@
 
   $: type = getColumn($profileColumns, columnName)?.type;
 
-  $: if ($runtimeStore?.instanceId)
-    nullCountQuery = useRuntimeServiceGetNullCount(
-      $runtimeStore?.instanceId,
-      objectName,
-      columnName
-    );
+  $: nullCountQuery = useRuntimeServiceGetNullCount(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
 
   let nullCount;
   // FIXME: count should not be a string. For now, let's patch it.
@@ -42,12 +41,10 @@
    * Get the total rows for this profile.
    */
   let totalRowsQuery;
-  $: if ($runtimeStore?.instanceId) {
-    totalRowsQuery = useRuntimeServiceTableCardinality(
-      $runtimeStore?.instanceId,
-      objectName
-    );
-  }
+  $: totalRowsQuery = useRuntimeServiceTableCardinality(
+    $runtimeStore?.instanceId,
+    objectName
+  );
   let totalRows;
   // FIXME: count should not be a string.
   $: totalRows = +$totalRowsQuery?.data?.cardinality;

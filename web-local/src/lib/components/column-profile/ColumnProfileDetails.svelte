@@ -3,19 +3,17 @@
   import { slide } from "svelte/transition";
   import { dataModelerService } from "../../application-state-stores/application-store";
 
-  import {
-    CATEGORICALS,
-    DATA_TYPE_COLORS,
-    NUMERICS,
-    TIMESTAMPS,
-  } from "../../duckdb-data-types";
-  import TopKSummary from "../viz/TopKSummary.svelte";
+  import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "../../duckdb-data-types";
 
   import { LIST_SLIDE_DURATION } from "../../application-config";
   import { TimestampDetail } from "../data-graphic/compositions/timestamp-profile";
   import NumericHistogram from "../viz/histogram/NumericHistogram.svelte";
   import OutlierHistogram from "../viz/histogram/OutlierHistogram.svelte";
   import TimestampHistogram from "../viz/histogram/TimestampHistogram.svelte";
+  import TopK from "./data-graphics/details/TopK.svelte";
+
+  export let columnName: string;
+  export let objectName: string;
 
   export let type;
   export let summary;
@@ -44,17 +42,18 @@
 {#if active}
   <div
     transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
-    class="pt-3 pb-3  w-full"
+    class="w-full"
   >
-    {#if CATEGORICALS.has(type) && summary?.topK}
-      <div class="pl-{indentLevel === 1 ? 16 : 10} pr-4 w-full">
+    {#if CATEGORICALS.has(type)}
+      <div class="pr-4 w-full">
         <!-- pl-16 pl-8 -->
-        <TopKSummary
+        <TopK {columnName} {objectName} />
+        <!-- <TopKSummary
           {containerWidth}
           color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
           {totalRows}
           topK={summary.topK}
-        />
+        /> -->
       </div>
     {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram?.length}
       <div class="pl-{indentLevel === 1 ? 12 : 4}">

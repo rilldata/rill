@@ -7,12 +7,11 @@
     NUMERICS,
     TIMESTAMPS,
   } from "../../duckdb-data-types";
-  import { formatCompactInteger, formatInteger } from "../../util/formatters";
   import FormattedDataType from "../data-types/FormattedDataType.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
-  import CardinalitySpark from "./data-graphics/sparks/CardinalitySpark.svelte";
+  import ColumnCardinalitySpark from "./data-graphics/sparks/ColumnCardinalitySpark.svelte";
 
   import NullPercentageSpark from "./data-graphics/sparks/NullPercentageSpark.svelte";
 
@@ -47,21 +46,16 @@
     COLUMN_PROFILE_CONFIG.summaryVizWidth[
       containerWidth < compactBreakpoint ? "small" : "medium"
     ];
-  $: cardinalityFormatter =
-    containerWidth > COLUMN_PROFILE_CONFIG.compactBreakpoint
-      ? formatInteger
-      : formatCompactInteger;
 
   /**
    * Get the null counts for this profile.
    */
-  let nullCountQuery;
-  $: if ($runtimeStore?.instanceId)
-    nullCountQuery = useRuntimeServiceGetNullCount(
-      $runtimeStore?.instanceId,
-      objectName,
-      columnName
-    );
+
+  $: nullCountQuery = useRuntimeServiceGetNullCount(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
 
   let nullCount = 0;
   // FIXME: count should not be a string. For now, let's patch it.
@@ -70,13 +64,11 @@
   /**
    * Get the total rows for this profile.
    */
-  let totalRowsQuery;
-  $: if ($runtimeStore?.instanceId) {
-    totalRowsQuery = useRuntimeServiceTableCardinality(
-      $runtimeStore?.instanceId,
-      objectName
-    );
-  }
+
+  $: totalRowsQuery = useRuntimeServiceTableCardinality(
+    $runtimeStore?.instanceId,
+    objectName
+  );
   let totalRows = 0;
   // FIXME: count should not be a string.
   $: totalRows = +$totalRowsQuery?.data?.cardinality;
@@ -86,32 +78,9 @@
   <div class="flex items-center" style:width="{summaryWidthSize}px">
     {#if totalRows}
       {#if CATEGORICALS.has(type)}
-        <CardinalitySpark {objectName} {columnName} />
-        <!-- <Tooltip location="right" alignment="center" distance={8}>
-          <BarAndLabel
-            color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
-            value={summary?.cardinality / totalRows}
-          >
-            |{cardinalityFormatter(summary?.cardinality)}|
-          </BarAndLabel>
-          <TooltipContent slot="tooltip-content">
-            {formatInteger(summary?.cardinality)} unique values
-          </TooltipContent>
-        </Tooltip> -->
+        <ColumnCardinalitySpark {objectName} {columnName} />
       {:else if NUMERICS.has(type)}
         <NumericSpark {objectName} {columnName} {containerWidth} />
-        <!-- <Tooltip location="right" alignment="center" distance={8}>
-          <Histogram
-            data={summary.histogram}
-            width={summaryWidthSize}
-            height={18}
-            fillColor={DATA_TYPE_COLORS["DOUBLE"].vizFillClass}
-            baselineStrokeColor={DATA_TYPE_COLORS["DOUBLE"].vizStrokeClass}
-          />
-          <TooltipContent slot="tooltip-content">
-            the distribution of the values of this column
-          </TooltipContent>
-        </Tooltip> -->
       {:else if TIMESTAMPS.has(type) /** a legacy histogram type or a new rollup spark */ && (summary?.histogram?.length || summary?.rollup?.spark?.length)}
         <Tooltip location="right" alignment="center" distance={8}>
           {#if summary?.rollup?.spark}
@@ -153,27 +122,6 @@
   >
     {#if totalRows !== 0 && totalRows !== undefined && nullCount !== undefined}
       <NullPercentageSpark {objectName} {columnName} />
-      <!-- <Tooltip location="right" alignment="center" distance={8}>
-        <BarAndLabel
-          showBackground={nullCount !== 0}
-          color={DATA_TYPE_COLORS[type]?.bgClass}
-          value={nullCount / totalRows || 0}
-        >
-          <span class:text-gray-300={nullCount === 0}
-            >∅ {singleDigitPercentage(nullCount / totalRows)}</span
-          >
-        </BarAndLabel>
-        <TooltipContent slot="tooltip-content">
-          <svelte:fragment slot="title">
-            what percentage of values are null?
-          </svelte:fragment>
-          {#if nullCount > 0}
-            {singleDigitPercentage(nullCount / totalRows)} of the values are null
-          {:else}
-            no null values in this column
-          {/if}
-        </TooltipContent>
-      </Tooltip> -->
     {/if}
   </div>
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { runtimeServiceGetNumericHistogram } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceGetNumericHistogram } from "@rilldata/web-common/runtime-client";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
@@ -18,15 +18,14 @@
       containerWidth < compactBreakpoint ? "small" : "medium"
     ];
 
+  let histogramQuery;
   let histogram;
-  if ($runtimeStore?.instanceId) {
-    runtimeServiceGetNumericHistogram(
-      $runtimeStore?.instanceId,
-      objectName,
-      columnName
-    ).then((results) => (histogram = results.numericHistogramBins.bins));
-  }
-  $: console.log(histogram);
+  $: histogramQuery = useRuntimeServiceGetNumericHistogram(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
+  $: histogram = $histogramQuery?.data?.numericHistogramBins?.bins;
 </script>
 
 {#if histogram}
