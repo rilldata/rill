@@ -58,7 +58,7 @@ func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	cr, err := server.TableCardinality(context.Background(), &api.CardinalityRequest{
+	cr, err := server.GetTableCardinality(context.Background(), &api.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -67,7 +67,7 @@ func TestServer_TableCardinality(t *testing.T) {
 
 	rows = createTable(server, instanceId, t, "select")
 	rows.Close()
-	cr, err = server.TableCardinality(context.Background(), &api.CardinalityRequest{
+	cr, err = server.GetTableCardinality(context.Background(), &api.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "select",
 	})
@@ -98,32 +98,11 @@ func TestServer_TableRows(t *testing.T) {
 	server, instanceId := getTestServer(t)
 	rows := createTestTable(server, instanceId, t)
 	rows.Close()
-	cr, err := server.TableRows(context.Background(), &api.RowsRequest{
+	cr, err := server.GetTableRows(context.Background(), &api.GetTableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cr.Data))
-}
-
-func TestServer_RenameObject(t *testing.T) {
-	server, instanceId := getTestServer(t)
-	rows := createTestTable(server, instanceId, t)
-	rows.Close()
-	_, err := server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
-		InstanceId: instanceId,
-		Name:       "test",
-		Newname:    "test2",
-		Type:       api.DatabaseObjectType_TABLE.Enum(),
-	})
-	require.NoError(t, err)
-
-	_, err = server.RenameDatabaseObject(context.Background(), &api.RenameDatabaseObjectRequest{
-		InstanceId: instanceId,
-		Name:       "test",
-		Newname:    "test2",
-		Type:       api.DatabaseObjectType_TABLE.Enum(),
-	})
-	require.Error(t, err)
 }

@@ -24,16 +24,16 @@ import type {
   V1CreateInstanceRequest,
   V1GetInstanceResponse,
   V1DeleteInstanceResponse,
-  V1CategoricalSummary,
+  V1GetCardinalityOfColumnResponse,
   V1ListCatalogObjectsResponse,
   RuntimeServiceListCatalogObjectsParams,
   V1GetCatalogObjectResponse,
   V1TriggerRefreshResponse,
-  V1NumericSummary,
+  V1GetDescriptiveStatisticsResponse,
   V1EstimateRollupIntervalResponse,
   RuntimeServiceEstimateRollupIntervalBody,
   V1EstimateSmallestTimeGrainResponse,
-  V1TimeSeriesRollup,
+  V1GenerateTimeSeriesResponse,
   RuntimeServiceGenerateTimeSeriesBody,
   V1MetricsViewMetaResponse,
   V1MetricsViewTimeSeriesResponse,
@@ -48,19 +48,20 @@ import type {
   RuntimeServiceMigrateSingleBody,
   V1MigrateDeleteResponse,
   RuntimeServiceMigrateDeleteBody,
-  V1NullCountResponse,
+  V1GetNullCountResponse,
+  V1GetNumericHistogramResponse,
+  V1GetTableCardinalityResponse,
   V1QueryResponse,
   RuntimeServiceQueryBody,
   V1QueryDirectResponse,
   RuntimeServiceQueryDirectBody,
-  V1RenameDatabaseObjectResponse,
-  RuntimeServiceRenameDatabaseObjectParams,
+  V1GetRugHistogramResponse,
   V1TriggerSyncResponse,
-  V1CardinalityResponse,
   V1ProfileColumnsResponse,
-  V1RowsResponse,
-  RuntimeServiceTableRowsParams,
-  V1TimeRangeSummary,
+  V1GetTableRowsResponse,
+  RuntimeServiceGetTableRowsParams,
+  V1GetTimeRangeSummaryResponse,
+  V1GetTopKResponse,
   RuntimeServiceGetTopKBody,
   V1PingResponse,
   V1PutFileAndMigrateResponse,
@@ -434,7 +435,7 @@ export const runtimeServiceGetCardinalityOfColumn = (
   columnName: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1CategoricalSummary>({
+  return httpClient<V1GetCardinalityOfColumnResponse>({
     url: `/v1/instances/${instanceId}/cardinality-of-column/${tableName}/${columnName}`,
     method: "get",
     signal,
@@ -720,7 +721,7 @@ export const runtimeServiceGetDescriptiveStatistics = (
   columnName: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1NumericSummary>({
+  return httpClient<V1GetDescriptiveStatisticsResponse>({
     url: `/v1/instances/${instanceId}/descriptive-statistics/${tableName}/${columnName}`,
     method: "get",
     signal,
@@ -958,7 +959,7 @@ export const runtimeServiceGenerateTimeSeries = (
   instanceId: string,
   runtimeServiceGenerateTimeSeriesBody: RuntimeServiceGenerateTimeSeriesBody
 ) => {
-  return httpClient<V1TimeSeriesRollup>({
+  return httpClient<V1GenerateTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/generate-timeseries`,
     method: "post",
     headers: { "Content-Type": "application/json" },
@@ -1450,7 +1451,7 @@ export const runtimeServiceGetNullCount = (
   columnName: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1NullCountResponse>({
+  return httpClient<V1GetNullCountResponse>({
     url: `/v1/instances/${instanceId}/null-count/${tableName}/${columnName}`,
     method: "get",
     signal,
@@ -1527,7 +1528,7 @@ export const runtimeServiceGetNumericHistogram = (
   columnName: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1NumericSummary>({
+  return httpClient<V1GetNumericHistogramResponse>({
     url: `/v1/instances/${instanceId}/numeric-histogram/${tableName}/${columnName}`,
     method: "get",
     signal,
@@ -1596,6 +1597,80 @@ export const useRuntimeServiceGetNumericHistogram = <
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary TableCardinality (TODO: add description)
+ */
+export const runtimeServiceGetTableCardinality = (
+  instanceId: string,
+  tableName: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetTableCardinalityResponse>({
+    url: `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetTableCardinalityQueryKey = (
+  instanceId: string,
+  tableName: string
+) => [`/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`];
+
+export type RuntimeServiceGetTableCardinalityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
+>;
+export type RuntimeServiceGetTableCardinalityQueryError = RpcStatus;
+
+export const useRuntimeServiceGetTableCardinality = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetTableCardinalityQueryKey(instanceId, tableName);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
+  > = ({ signal }) =>
+    runtimeServiceGetTableCardinality(instanceId, tableName, signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
     TError,
     TData,
     QueryKey
@@ -1708,55 +1783,6 @@ export const useRuntimeServiceQueryDirect = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary Tablewide profiling APIs
- */
-export const runtimeServiceRenameDatabaseObject = (
-  instanceId: string,
-  params?: RuntimeServiceRenameDatabaseObjectParams
-) => {
-  return httpClient<V1RenameDatabaseObjectResponse>({
-    url: `/v1/instances/${instanceId}/rename-object`,
-    method: "post",
-    params,
-  });
-};
-
-export type RuntimeServiceRenameDatabaseObjectMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceRenameDatabaseObject>>
->;
-
-export type RuntimeServiceRenameDatabaseObjectMutationError = RpcStatus;
-
-export const useRuntimeServiceRenameDatabaseObject = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceRenameDatabaseObject>>,
-    TError,
-    { instanceId: string; params?: RuntimeServiceRenameDatabaseObjectParams },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceRenameDatabaseObject>>,
-    { instanceId: string; params?: RuntimeServiceRenameDatabaseObjectParams }
-  > = (props) => {
-    const { instanceId, params } = props ?? {};
-
-    return runtimeServiceRenameDatabaseObject(instanceId, params);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceRenameDatabaseObject>>,
-    TError,
-    { instanceId: string; params?: RuntimeServiceRenameDatabaseObjectParams },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary Get outliers for a numeric column
  */
 export const runtimeServiceGetRugHistogram = (
@@ -1765,7 +1791,7 @@ export const runtimeServiceGetRugHistogram = (
   columnName: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1NumericSummary>({
+  return httpClient<V1GetRugHistogramResponse>({
     url: `/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`,
     method: "get",
     signal,
@@ -1880,163 +1906,63 @@ export const useRuntimeServiceTriggerSync = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary TableCardinality (TODO: add description)
- */
-export const runtimeServiceTableCardinality = (
-  instanceId: string,
-  tableName: string,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1CardinalityResponse>({
-    url: `/v1/instances/${instanceId}/tables/${tableName}/cardinality`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getRuntimeServiceTableCardinalityQueryKey = (
-  instanceId: string,
-  tableName: string
-) => [`/v1/instances/${instanceId}/tables/${tableName}/cardinality`];
-
-export type RuntimeServiceTableCardinalityQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceTableCardinality>>
->;
-export type RuntimeServiceTableCardinalityQueryError = RpcStatus;
-
-export const useRuntimeServiceTableCardinality = <
-  TData = Awaited<ReturnType<typeof runtimeServiceTableCardinality>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  tableName: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceTableCardinality>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceTableCardinality>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceTableCardinalityQueryKey(instanceId, tableName);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceTableCardinality>>
-  > = ({ signal }) =>
-    runtimeServiceTableCardinality(instanceId, tableName, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceTableCardinality>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceTableCardinality>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
  * @summary ProfileColumns (TODO: add description)
  */
 export const runtimeServiceProfileColumns = (
   instanceId: string,
-  tableName: string,
-  signal?: AbortSignal
+  tableName: string
 ) => {
   return httpClient<V1ProfileColumnsResponse>({
     url: `/v1/instances/${instanceId}/tables/${tableName}/profile-columns`,
-    method: "get",
-    signal,
+    method: "post",
   });
 };
 
-export const getRuntimeServiceProfileColumnsQueryKey = (
-  instanceId: string,
-  tableName: string
-) => [`/v1/instances/${instanceId}/tables/${tableName}/profile-columns`];
-
-export type RuntimeServiceProfileColumnsQueryResult = NonNullable<
+export type RuntimeServiceProfileColumnsMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceProfileColumns>>
 >;
-export type RuntimeServiceProfileColumnsQueryError = RpcStatus;
+
+export type RuntimeServiceProfileColumnsMutationError = RpcStatus;
 
 export const useRuntimeServiceProfileColumns = <
-  TData = Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  tableName: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceProfileColumnsQueryKey(instanceId, tableName);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceProfileColumns>>
-  > = ({ signal }) =>
-    runtimeServiceProfileColumns(instanceId, tableName, signal);
-
-  const query = useQuery<
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
     TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
+    { instanceId: string; tableName: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
+    { instanceId: string; tableName: string }
+  > = (props) => {
+    const { instanceId, tableName } = props ?? {};
+
+    return runtimeServiceProfileColumns(instanceId, tableName);
+  };
+
+  return useMutation<
     Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
     TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
+    { instanceId: string; tableName: string },
+    TContext
+  >(mutationFn, mutationOptions);
 };
-
 /**
  * @summary TableRows (TODO: add description)
  */
-export const runtimeServiceTableRows = (
+export const runtimeServiceGetTableRows = (
   instanceId: string,
   tableName: string,
-  params?: RuntimeServiceTableRowsParams,
+  params?: RuntimeServiceGetTableRowsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1RowsResponse>({
+  return httpClient<V1GetTableRowsResponse>({
     url: `/v1/instances/${instanceId}/tables/${tableName}/rows`,
     method: "get",
     params,
@@ -2044,36 +1970,36 @@ export const runtimeServiceTableRows = (
   });
 };
 
-export const getRuntimeServiceTableRowsQueryKey = (
+export const getRuntimeServiceGetTableRowsQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: RuntimeServiceTableRowsParams
+  params?: RuntimeServiceGetTableRowsParams
 ) => [
   `/v1/instances/${instanceId}/tables/${tableName}/rows`,
   ...(params ? [params] : []),
 ];
 
-export type RuntimeServiceTableRowsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceTableRows>>
+export type RuntimeServiceGetTableRowsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetTableRows>>
 >;
-export type RuntimeServiceTableRowsQueryError = RpcStatus;
+export type RuntimeServiceGetTableRowsQueryError = RpcStatus;
 
-export const useRuntimeServiceTableRows = <
-  TData = Awaited<ReturnType<typeof runtimeServiceTableRows>>,
+export const useRuntimeServiceGetTableRows = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetTableRows>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: RuntimeServiceTableRowsParams,
+  params?: RuntimeServiceGetTableRowsParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceTableRows>>,
+      Awaited<ReturnType<typeof runtimeServiceGetTableRows>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceTableRows>>,
+  Awaited<ReturnType<typeof runtimeServiceGetTableRows>>,
   TError,
   TData,
   QueryKey
@@ -2082,22 +2008,22 @@ export const useRuntimeServiceTableRows = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceTableRowsQueryKey(instanceId, tableName, params);
+    getRuntimeServiceGetTableRowsQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceTableRows>>
+    Awaited<ReturnType<typeof runtimeServiceGetTableRows>>
   > = ({ signal }) =>
-    runtimeServiceTableRows(instanceId, tableName, params, signal);
+    runtimeServiceGetTableRows(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceTableRows>>,
+    Awaited<ReturnType<typeof runtimeServiceGetTableRows>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceTableRows>>,
+    Awaited<ReturnType<typeof runtimeServiceGetTableRows>>,
     TError,
     TData,
     QueryKey
@@ -2117,7 +2043,7 @@ export const runtimeServiceGetTimeRangeSummary = (
   columnName: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1TimeRangeSummary>({
+  return httpClient<V1GetTimeRangeSummaryResponse>({
     url: `/v1/instances/${instanceId}/time-range-summary/${tableName}/${columnName}`,
     method: "get",
     signal,
@@ -2206,7 +2132,7 @@ export const runtimeServiceGetTopK = (
   columnName: string,
   runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody
 ) => {
-  return httpClient<V1CategoricalSummary>({
+  return httpClient<V1GetTopKResponse>({
     url: `/v1/instances/${instanceId}/topk/${tableName}/${columnName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
