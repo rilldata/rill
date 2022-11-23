@@ -62,3 +62,4 @@ release.properties
 *.iws
 
 dist/*
+sysroots.tar.bz2
