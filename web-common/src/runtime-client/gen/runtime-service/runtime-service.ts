@@ -815,54 +815,78 @@ export const runtimeServiceEstimateRollupInterval = (
   });
 };
 
-export type RuntimeServiceEstimateRollupIntervalMutationResult = NonNullable<
+export const getRuntimeServiceEstimateRollupIntervalQueryKey = (
+  instanceId: string,
+  tableName: string,
+  runtimeServiceEstimateRollupIntervalBody: RuntimeServiceEstimateRollupIntervalBody
+) => [
+  `/v1/instances/${instanceId}/estimate-rollup-interval/${tableName}`,
+  runtimeServiceEstimateRollupIntervalBody,
+];
+
+export type RuntimeServiceEstimateRollupIntervalQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>
 >;
-export type RuntimeServiceEstimateRollupIntervalMutationBody =
-  RuntimeServiceEstimateRollupIntervalBody;
-export type RuntimeServiceEstimateRollupIntervalMutationError = RpcStatus;
+export type RuntimeServiceEstimateRollupIntervalQueryError = RpcStatus;
 
 export const useRuntimeServiceEstimateRollupInterval = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  runtimeServiceEstimateRollupIntervalBody: RuntimeServiceEstimateRollupIntervalBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceEstimateRollupIntervalQueryKey(
+      instanceId,
+      tableName,
+      runtimeServiceEstimateRollupIntervalBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>
+  > = () =>
+    runtimeServiceEstimateRollupInterval(
+      instanceId,
+      tableName,
+      runtimeServiceEstimateRollupIntervalBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>,
     TError,
-    {
-      instanceId: string;
-      tableName: string;
-      data: RuntimeServiceEstimateRollupIntervalBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>,
-    {
-      instanceId: string;
-      tableName: string;
-      data: RuntimeServiceEstimateRollupIntervalBody;
-    }
-  > = (props) => {
-    const { instanceId, tableName, data } = props ?? {};
-
-    return runtimeServiceEstimateRollupInterval(instanceId, tableName, data);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceEstimateRollupInterval>>,
     TError,
-    {
-      instanceId: string;
-      tableName: string;
-      data: RuntimeServiceEstimateRollupIntervalBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary Estimates the smallest time grain present in the column
  */
@@ -966,42 +990,74 @@ export const runtimeServiceGenerateTimeSeries = (
   });
 };
 
-export type RuntimeServiceGenerateTimeSeriesMutationResult = NonNullable<
+export const getRuntimeServiceGenerateTimeSeriesQueryKey = (
+  instanceId: string,
+  runtimeServiceGenerateTimeSeriesBody: RuntimeServiceGenerateTimeSeriesBody
+) => [
+  `/v1/instances/${instanceId}/generate-timeseries`,
+  runtimeServiceGenerateTimeSeriesBody,
+];
+
+export type RuntimeServiceGenerateTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>
 >;
-export type RuntimeServiceGenerateTimeSeriesMutationBody =
-  RuntimeServiceGenerateTimeSeriesBody;
-export type RuntimeServiceGenerateTimeSeriesMutationError = RpcStatus;
+export type RuntimeServiceGenerateTimeSeriesQueryError = RpcStatus;
 
 export const useRuntimeServiceGenerateTimeSeries = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  runtimeServiceGenerateTimeSeriesBody: RuntimeServiceGenerateTimeSeriesBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGenerateTimeSeriesQueryKey(
+      instanceId,
+      runtimeServiceGenerateTimeSeriesBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>
+  > = () =>
+    runtimeServiceGenerateTimeSeries(
+      instanceId,
+      runtimeServiceGenerateTimeSeriesBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateTimeSeriesBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,
-    { instanceId: string; data: RuntimeServiceGenerateTimeSeriesBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceGenerateTimeSeries(instanceId, data);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateTimeSeriesBody },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.
@@ -1845,41 +1901,64 @@ export const runtimeServiceProfileColumns = (
   });
 };
 
-export type RuntimeServiceProfileColumnsMutationResult = NonNullable<
+export const getRuntimeServiceProfileColumnsQueryKey = (
+  instanceId: string,
+  tableName: string
+) => [`/v1/instances/${instanceId}/tables/${tableName}/profile-columns`];
+
+export type RuntimeServiceProfileColumnsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceProfileColumns>>
 >;
-
-export type RuntimeServiceProfileColumnsMutationError = RpcStatus;
+export type RuntimeServiceProfileColumnsQueryError = RpcStatus;
 
 export const useRuntimeServiceProfileColumns = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceProfileColumnsQueryKey(instanceId, tableName);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceProfileColumns>>
+  > = () => runtimeServiceProfileColumns(instanceId, tableName);
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
     TError,
-    { instanceId: string; tableName: string },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
-    { instanceId: string; tableName: string }
-  > = (props) => {
-    const { instanceId, tableName } = props ?? {};
-
-    return runtimeServiceProfileColumns(instanceId, tableName);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
     TError,
-    { instanceId: string; tableName: string },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary TableRows (TODO: add description)
  */
@@ -2067,56 +2146,82 @@ export const runtimeServiceGetTopK = (
   });
 };
 
-export type RuntimeServiceGetTopKMutationResult = NonNullable<
+export const getRuntimeServiceGetTopKQueryKey = (
+  instanceId: string,
+  tableName: string,
+  columnName: string,
+  runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody
+) => [
+  `/v1/instances/${instanceId}/topk/${tableName}/${columnName}`,
+  runtimeServiceGetTopKBody,
+];
+
+export type RuntimeServiceGetTopKQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetTopK>>
 >;
-export type RuntimeServiceGetTopKMutationBody = RuntimeServiceGetTopKBody;
-export type RuntimeServiceGetTopKMutationError = RpcStatus;
+export type RuntimeServiceGetTopKQueryError = RpcStatus;
 
 export const useRuntimeServiceGetTopK = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  columnName: string,
+  runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetTopKQueryKey(
+      instanceId,
+      tableName,
+      columnName,
+      runtimeServiceGetTopKBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetTopK>>
+  > = () =>
+    runtimeServiceGetTopK(
+      instanceId,
+      tableName,
+      columnName,
+      runtimeServiceGetTopKBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
     TError,
-    {
-      instanceId: string;
-      tableName: string;
-      columnName: string;
-      data: RuntimeServiceGetTopKBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
-    {
-      instanceId: string;
-      tableName: string;
-      columnName: string;
-      data: RuntimeServiceGetTopKBody;
-    }
-  > = (props) => {
-    const { instanceId, tableName, columnName, data } = props ?? {};
-
-    return runtimeServiceGetTopK(instanceId, tableName, columnName, data);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName && columnName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
     TError,
-    {
-      instanceId: string;
-      tableName: string;
-      columnName: string;
-      data: RuntimeServiceGetTopKBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary Ping returns information about the runtime
  */

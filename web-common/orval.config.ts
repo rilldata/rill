@@ -27,22 +27,22 @@ export default defineConfig({
             query: {
               useQuery: true,
             }
-          }
+          },
           RuntimeService_GetTopK: {
             query: {
               useQuery: true,
             }
-          }
+          },
           RuntimeService_GenerateTimeSeries: {
             query: {
               useQuery: true,
             }
-          }
+          },
           RuntimeService_ProfileColumns: {
             query: {
               useQuery: true,
             }
-          }
+          },
         },
       },
     },
