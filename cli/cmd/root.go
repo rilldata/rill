@@ -4,12 +4,11 @@ import (
 	"context"
 	"os"
 
+	"github.com/rilldata/rill/cli/cmd/apply"
 	"github.com/rilldata/rill/cli/cmd/docs"
-	"github.com/rilldata/rill/cli/cmd/dropsource"
-	"github.com/rilldata/rill/cli/cmd/example"
-	"github.com/rilldata/rill/cli/cmd/importsource"
 	"github.com/rilldata/rill/cli/cmd/info"
 	"github.com/rilldata/rill/cli/cmd/initialize"
+	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/version"
 	"github.com/spf13/cobra"
@@ -38,14 +37,13 @@ func runCmd(ctx context.Context, ver string, commit string, buildDate string) er
 	v := version.Format(ver, commit, buildDate)
 	rootCmd.Version = v
 
-	rootCmd.AddCommand(initialize.InitCmd())
-	rootCmd.AddCommand(example.InitExampleCmd())
-	rootCmd.AddCommand(start.StartCmd())
-	rootCmd.AddCommand(info.InfoCmd())
-	rootCmd.AddCommand(importsource.ImportSourceCmd())
-	rootCmd.AddCommand(dropsource.DropSourceCmd())
 	rootCmd.AddCommand(version.VersionCmd(ver, commit, buildDate))
 	rootCmd.AddCommand(docs.DocsCmd())
+	rootCmd.AddCommand(initialize.InitCmd())
+	rootCmd.AddCommand(start.StartCmd())
+	rootCmd.AddCommand(apply.ApplyCmd())
+	rootCmd.AddCommand(source.SourceCmd())
+	rootCmd.AddCommand(info.InfoCmd())
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

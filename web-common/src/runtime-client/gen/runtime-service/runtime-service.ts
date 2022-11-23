@@ -16,6 +16,8 @@ import type {
 import type {
   V1ListConnectorsResponse,
   RpcStatus,
+  V1DeleteFileAndMigrateResponse,
+  V1DeleteFileAndMigrateRequest,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
   V1CreateInstanceResponse,
@@ -47,14 +49,12 @@ import type {
   V1MigrateDeleteResponse,
   RuntimeServiceMigrateDeleteBody,
   V1NullCountResponse,
-  RuntimeServiceGetNumericHistogramParams,
   V1QueryResponse,
   RuntimeServiceQueryBody,
   V1QueryDirectResponse,
   RuntimeServiceQueryDirectBody,
   V1RenameDatabaseObjectResponse,
   RuntimeServiceRenameDatabaseObjectParams,
-  RuntimeServiceGetRugHistogramParams,
   V1TriggerSyncResponse,
   V1CardinalityResponse,
   V1ProfileColumnsResponse,
@@ -65,6 +65,8 @@ import type {
   V1PingResponse,
   V1PutFileAndMigrateResponse,
   V1PutFileAndMigrateRequest,
+  V1RenameFileAndMigrateResponse,
+  V1RenameFileAndMigrateRequest,
   V1ListReposResponse,
   RuntimeServiceListReposParams,
   V1CreateRepoResponse,
@@ -74,8 +76,11 @@ import type {
   V1ListFilesResponse,
   RuntimeServiceListFilesParams,
   V1GetFileResponse,
+  V1DeleteFileResponse,
   V1PutFileResponse,
   RuntimeServicePutFileBody,
+  V1RenameFileResponse,
+  RuntimeServiceRenameFileBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -140,6 +145,56 @@ export const useRuntimeServiceListConnectors = <
   return query;
 };
 
+/**
+ * @summary DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+ */
+export const runtimeServiceDeleteFileAndMigrate = (
+  v1DeleteFileAndMigrateRequest: V1DeleteFileAndMigrateRequest
+) => {
+  return httpClient<V1DeleteFileAndMigrateResponse>({
+    url: `/v1/delete-and-migrate`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1DeleteFileAndMigrateRequest,
+  });
+};
+
+export type RuntimeServiceDeleteFileAndMigrateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>
+>;
+export type RuntimeServiceDeleteFileAndMigrateMutationBody =
+  V1DeleteFileAndMigrateRequest;
+export type RuntimeServiceDeleteFileAndMigrateMutationError = RpcStatus;
+
+export const useRuntimeServiceDeleteFileAndMigrate = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    TError,
+    { data: V1DeleteFileAndMigrateRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    { data: V1DeleteFileAndMigrateRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceDeleteFileAndMigrate(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    TError,
+    { data: V1DeleteFileAndMigrateRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListInstances lists all the instances currently managed by the runtime
  */
@@ -744,6 +799,9 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
   return query;
 };
 
+/**
+ * @summary EstimateRollupInterval (TODO: add description)
+ */
 export const runtimeServiceEstimateRollupInterval = (
   instanceId: string,
   tableName: string,
@@ -1278,7 +1336,7 @@ export const useRuntimeServiceMigrate = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MigrateSingle applies a single `CREATE` statement.
+ * @summary DEPRECATED: MigrateSingle applies a single `CREATE` statement.
 It bypasses the reconciling migrations described in Migrate.
 We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
  */
@@ -1331,7 +1389,7 @@ export const useRuntimeServiceMigrateSingle = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MigrateDelete deletes a single object.
+ * @summary DEPRECATED: MigrateDelete deletes a single object.
 It bypasses the reconciling migrations described in Migrate.
 We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
  */
@@ -1467,13 +1525,11 @@ export const runtimeServiceGetNumericHistogram = (
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetNumericHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1NumericSummary>({
     url: `/v1/instances/${instanceId}/numeric-histogram/${tableName}/${columnName}`,
     method: "get",
-    params,
     signal,
   });
 };
@@ -1481,11 +1537,9 @@ export const runtimeServiceGetNumericHistogram = (
 export const getRuntimeServiceGetNumericHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
-  params?: RuntimeServiceGetNumericHistogramParams
+  columnName: string
 ) => [
   `/v1/instances/${instanceId}/numeric-histogram/${tableName}/${columnName}`,
-  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetNumericHistogramQueryResult = NonNullable<
@@ -1500,7 +1554,6 @@ export const useRuntimeServiceGetNumericHistogram = <
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetNumericHistogramParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
@@ -1521,8 +1574,7 @@ export const useRuntimeServiceGetNumericHistogram = <
     getRuntimeServiceGetNumericHistogramQueryKey(
       instanceId,
       tableName,
-      columnName,
-      params
+      columnName
     );
 
   const queryFn: QueryFunction<
@@ -1532,7 +1584,6 @@ export const useRuntimeServiceGetNumericHistogram = <
       instanceId,
       tableName,
       columnName,
-      params,
       signal
     );
 
@@ -1556,7 +1607,7 @@ export const useRuntimeServiceGetNumericHistogram = <
 };
 
 /**
- * @summary Query runs a Rill SQL query by transpiling it and proxying it to the instance's OLAP datastore.
+ * @summary Query runs a SQL query against the instance's OLAP datastore.
  */
 export const runtimeServiceQuery = (
   instanceId: string,
@@ -1606,8 +1657,7 @@ export const useRuntimeServiceQuery = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-It bypasses Rill SQL and expects the query to use the underlying dialect.
+ * @summary DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
  */
 export const runtimeServiceQueryDirect = (
   instanceId: string,
@@ -1713,13 +1763,11 @@ export const runtimeServiceGetRugHistogram = (
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetRugHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1NumericSummary>({
     url: `/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`,
     method: "get",
-    params,
     signal,
   });
 };
@@ -1727,12 +1775,8 @@ export const runtimeServiceGetRugHistogram = (
 export const getRuntimeServiceGetRugHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
-  params?: RuntimeServiceGetRugHistogramParams
-) => [
-  `/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`,
-  ...(params ? [params] : []),
-];
+  columnName: string
+) => [`/v1/instances/${instanceId}/rug-histogram/${tableName}/${columnName}`];
 
 export type RuntimeServiceGetRugHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
@@ -1746,7 +1790,6 @@ export const useRuntimeServiceGetRugHistogram = <
   instanceId: string,
   tableName: string,
   columnName: string,
-  params?: RuntimeServiceGetRugHistogramParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
@@ -1764,23 +1807,12 @@ export const useRuntimeServiceGetRugHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetRugHistogramQueryKey(
-      instanceId,
-      tableName,
-      columnName,
-      params
-    );
+    getRuntimeServiceGetRugHistogramQueryKey(instanceId, tableName, columnName);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
   > = ({ signal }) =>
-    runtimeServiceGetRugHistogram(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetRugHistogram(instanceId, tableName, columnName, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
@@ -1847,6 +1879,9 @@ export const useRuntimeServiceTriggerSync = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary TableCardinality (TODO: add description)
+ */
 export const runtimeServiceTableCardinality = (
   instanceId: string,
   tableName: string,
@@ -1918,6 +1953,9 @@ export const useRuntimeServiceTableCardinality = <
   return query;
 };
 
+/**
+ * @summary ProfileColumns (TODO: add description)
+ */
 export const runtimeServiceProfileColumns = (
   instanceId: string,
   tableName: string,
@@ -1989,6 +2027,9 @@ export const useRuntimeServiceProfileColumns = <
   return query;
 };
 
+/**
+ * @summary TableRows (TODO: add description)
+ */
 export const runtimeServiceTableRows = (
   instanceId: string,
   tableName: string,
@@ -2324,6 +2365,56 @@ export const useRuntimeServicePutFileAndMigrate = <
     Awaited<ReturnType<typeof runtimeServicePutFileAndMigrate>>,
     TError,
     { data: V1PutFileAndMigrateRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+ */
+export const runtimeServiceRenameFileAndMigrate = (
+  v1RenameFileAndMigrateRequest: V1RenameFileAndMigrateRequest
+) => {
+  return httpClient<V1RenameFileAndMigrateResponse>({
+    url: `/v1/rename-and-migrate`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1RenameFileAndMigrateRequest,
+  });
+};
+
+export type RuntimeServiceRenameFileAndMigrateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>
+>;
+export type RuntimeServiceRenameFileAndMigrateMutationBody =
+  V1RenameFileAndMigrateRequest;
+export type RuntimeServiceRenameFileAndMigrateMutationError = RpcStatus;
+
+export const useRuntimeServiceRenameFileAndMigrate = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    TError,
+    { data: V1RenameFileAndMigrateRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    { data: V1RenameFileAndMigrateRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceRenameFileAndMigrate(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    TError,
+    { data: V1RenameFileAndMigrateRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -2702,6 +2793,51 @@ export const useRuntimeServiceGetFile = <
 };
 
 /**
+ * @summary DeleteFile deletes a file from a repo
+ */
+export const runtimeServiceDeleteFile = (repoId: string, path: string) => {
+  return httpClient<V1DeleteFileResponse>({
+    url: `/v1/repos/${repoId}/files/-/${path}`,
+    method: "delete",
+  });
+};
+
+export type RuntimeServiceDeleteFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
+>;
+
+export type RuntimeServiceDeleteFileMutationError = RpcStatus;
+
+export const useRuntimeServiceDeleteFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { repoId: string; path: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    { repoId: string; path: string }
+  > = (props) => {
+    const { repoId, path } = props ?? {};
+
+    return runtimeServiceDeleteFile(repoId, path);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { repoId: string; path: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary PutFile creates or updates a file in a repo
  */
 export const runtimeServicePutFile = (
@@ -2749,6 +2885,56 @@ export const useRuntimeServicePutFile = <
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
     TError,
     { repoId: string; path: string; data: RuntimeServicePutFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RenameFile renames a file in a repo
+ */
+export const runtimeServiceRenameFile = (
+  repoId: string,
+  runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody
+) => {
+  return httpClient<V1RenameFileResponse>({
+    url: `/v1/repos/${repoId}/files/rename`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRenameFileBody,
+  });
+};
+
+export type RuntimeServiceRenameFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenameFile>>
+>;
+export type RuntimeServiceRenameFileMutationBody = RuntimeServiceRenameFileBody;
+export type RuntimeServiceRenameFileMutationError = RpcStatus;
+
+export const useRuntimeServiceRenameFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    TError,
+    { repoId: string; data: RuntimeServiceRenameFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    { repoId: string; data: RuntimeServiceRenameFileBody }
+  > = (props) => {
+    const { repoId, data } = props ?? {};
+
+    return runtimeServiceRenameFile(repoId, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    TError,
+    { repoId: string; data: RuntimeServiceRenameFileBody },
     TContext
   >(mutationFn, mutationOptions);
 };

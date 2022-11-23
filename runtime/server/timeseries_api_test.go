@@ -361,6 +361,48 @@ func TestServer_normaliseTimeRange_Specified(t *testing.T) {
 	require.Equal(t, api.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
+func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &api.TimeSeriesTimeRange{
+		Interval: api.TimeGrain_UNSPECIFIED,
+		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
+	}
+	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, api.TimeGrain_HOUR, r.Interval)
+}
+
+func TestServer_normaliseTimeRange_Specified(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	r := &api.TimeSeriesTimeRange{
+		Interval: api.TimeGrain_YEAR,
+		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
+	}
+	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TimeRange:           r,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, api.TimeGrain_YEAR, r.Interval)
+}
+
 func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
 	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)", // todo device is redundant - ie remove

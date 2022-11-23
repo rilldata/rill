@@ -9,11 +9,12 @@ export class ApplicationStateActions extends StateActions {
   public async setActiveAsset(
     { draftState }: ApplicationStateActionArg,
     entityType: EntityType,
-    entityId: string
+    entityName: string
   ) {
     draftState.activeEntity = {
       type: entityType,
-      id: entityId,
+      id: entityName,
+      name: entityName,
     };
   }
 

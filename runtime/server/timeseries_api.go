@@ -437,7 +437,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
             generate_series as ` + tsAlias + `
           FROM 
             generate_series(
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'), 
+              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
               date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
               interval '1 ` + timeGranularity + `')
         ),

@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { createForm } from "svelte-forms-lib";
@@ -12,10 +14,12 @@
   } from "../../application-state-stores/application-store";
   import { updateMetricsDefsWrapperApi } from "../../redux-store/metrics-definition/metrics-definition-apis";
   import { store } from "../../redux-store/store-root";
+  import { queryClient } from "../../svelte-query/globalQueryClient";
   import Input from "../forms/Input.svelte";
   import SubmissionError from "../forms/SubmissionError.svelte";
   import { Dialog } from "../modal/index";
   import notifications from "../notifications";
+  // TODO: get rid of entity id once model and metrics are moved over
   export let entityId = null;
 
   export let closeModal: () => void;
@@ -29,7 +33,8 @@
     runtimeInstanceId,
     currentAssetName
   );
-  const renameSource = useRuntimeServiceMigrateSingle();
+
+  const renameSource = useRuntimeServiceRenameFileAndMigrate();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -49,29 +54,30 @@
       // TODO: remove this branching logic once we have a unified backend for all entities
       switch (entityType) {
         case EntityType.Table: {
-          const currentSql = $getCatalog.data.object.source.sql;
-          const newSql = currentSql.replace(
-            `CREATE SOURCE ${currentAssetName}`,
-            `CREATE SOURCE ${values.newName}`
-          );
+          // CHECK: Is this `updateTableName` API call necessary?
           dataModelerService.dispatch("updateTableName", [
             entityId,
             values.newName,
           ]);
           $renameSource.mutate(
             {
-              instanceId: runtimeInstanceId,
               data: {
-                sql: newSql,
-                renameFrom: currentAssetName,
+                repoId: $runtimeStore.repoId,
+                instanceId: runtimeInstanceId,
+                fromPath: `sources/${currentAssetName}.yaml`,
+                toPath: `sources/${values.newName}.yaml`,
               },
             },
             {
               onSuccess: () => {
                 closeModal();
+                goto(`/source/${values.newName}`, { replaceState: true });
                 notifications.send({
                   message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
                 });
+                return queryClient.invalidateQueries(
+                  getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                );
               },
               onError: (err) => {
                 error = err.response.data.message;

@@ -209,7 +209,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetCardinalityOfColumnResponse"
+              "$ref": "#/definitions/v1CategoricalSummary"
             }
           },
           "default": {
@@ -371,7 +371,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetDescriptiveStatisticsResponse"
+              "$ref": "#/definitions/v1NumericSummary"
             }
           },
           "default": {
@@ -507,7 +507,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GenerateTimeSeriesResponse"
+              "$ref": "#/definitions/v1TimeSeriesRollup"
             }
           },
           "default": {
@@ -646,11 +646,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeGranularity": {
                   "type": "string"
@@ -720,11 +720,11 @@
                 },
                 "timeStart": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "timeEnd": {
                   "type": "string",
-                  "format": "int64"
+                  "format": "date-time"
                 },
                 "limit": {
                   "type": "string",
@@ -791,6 +791,12 @@
             "schema": {
               "type": "object",
               "properties": {
+                "measureNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
                 "timeStart": {
                   "type": "string",
                   "format": "date-time"
@@ -799,17 +805,8 @@
                   "type": "string",
                   "format": "date-time"
                 },
-                "basicMeasures": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/v1BasicMeasureDefinition"
-                  }
-                },
                 "filter": {
                   "$ref": "#/definitions/v1MetricsViewFilter"
-                },
-                "timestampColumnName": {
-                  "type": "string"
                 }
               },
               "title": "Request message for RuntimeService.MetricsViewTotals"
@@ -997,7 +994,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetNullCountResponse"
+              "$ref": "#/definitions/v1NullCountResponse"
             }
           },
           "default": {
@@ -1040,7 +1037,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetNumericHistogramResponse"
+              "$ref": "#/definitions/v1NumericSummary"
             }
           },
           "default": {
@@ -1065,43 +1062,6 @@
           },
           {
             "name": "columnName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "RuntimeService"
-        ]
-      }
-    },
-    "/v1/instances/{instanceId}/queries/cardinality/tables/{tableName}": {
-      "get": {
-        "summary": "TableCardinality (TODO: add description)",
-        "operationId": "RuntimeService_GetTableCardinality",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1GetTableCardinalityResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "instanceId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "tableName",
             "in": "path",
             "required": true,
             "type": "string"
@@ -1234,6 +1194,61 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/rename-object": {
+      "post": {
+        "summary": "Tablewide profiling APIs",
+        "operationId": "RuntimeService_RenameDatabaseObject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RenameDatabaseObjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "newname",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "TABLE",
+              "VIEW",
+              "FUNCTION"
+            ],
+            "default": "TABLE"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/rug-histogram/{tableName}/{columnName}": {
       "get": {
         "summary": "Get outliers for a numeric column",
@@ -1242,7 +1257,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetRugHistogramResponse"
+              "$ref": "#/definitions/v1NumericSummary"
             }
           },
           "default": {
@@ -1308,8 +1323,45 @@
         ]
       }
     },
+    "/v1/instances/{instanceId}/tables/{tableName}/cardinality": {
+      "get": {
+        "summary": "TableCardinality (TODO: add description)",
+        "operationId": "RuntimeService_TableCardinality",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CardinalityResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "instanceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tableName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuntimeService"
+        ]
+      }
+    },
     "/v1/instances/{instanceId}/tables/{tableName}/profile-columns": {
-      "post": {
+      "get": {
         "summary": "ProfileColumns (TODO: add description)",
         "operationId": "RuntimeService_ProfileColumns",
         "responses": {
@@ -1348,12 +1400,12 @@
     "/v1/instances/{instanceId}/tables/{tableName}/rows": {
       "get": {
         "summary": "TableRows (TODO: add description)",
-        "operationId": "RuntimeService_GetTableRows",
+        "operationId": "RuntimeService_TableRows",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetTableRowsResponse"
+              "$ref": "#/definitions/v1RowsResponse"
             }
           },
           "default": {
@@ -1397,7 +1449,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetTimeRangeSummaryResponse"
+              "$ref": "#/definitions/v1TimeRangeSummary"
             }
           },
           "default": {
@@ -1440,7 +1492,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetTopKResponse"
+              "$ref": "#/definitions/v1CategoricalSummary"
             }
           },
           "default": {
@@ -2161,7 +2213,7 @@
         }
       }
     },
-    "TopKTopKEntry": {
+    "TopKResponseTopKEntry": {
       "type": "object",
       "properties": {
         "value": {
@@ -2251,6 +2303,15 @@
         }
       }
     },
+    "v1CardinalityResponse": {
+      "type": "object",
+      "properties": {
+        "cardinality": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "v1CatalogObject": {
       "type": "object",
       "properties": {
@@ -2304,8 +2365,8 @@
     "v1CategoricalSummary": {
       "type": "object",
       "properties": {
-        "topK": {
-          "$ref": "#/definitions/v1TopK"
+        "topKResponse": {
+          "$ref": "#/definitions/v1TopKResponse"
         },
         "cardinality": {
           "type": "string",
@@ -2400,6 +2461,15 @@
       },
       "title": "Response message for RuntimeService.CreateRepo"
     },
+    "v1DatabaseObjectType": {
+      "type": "string",
+      "enum": [
+        "TABLE",
+        "VIEW",
+        "FUNCTION"
+      ],
+      "default": "TABLE"
+    },
     "v1DeleteFileAndMigrateRequest": {
       "type": "object",
       "properties": {
@@ -2481,22 +2551,6 @@
       },
       "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
     },
-    "v1GenerateTimeSeriesResponse": {
-      "type": "object",
-      "properties": {
-        "rollup": {
-          "$ref": "#/definitions/v1TimeSeriesResponse"
-        }
-      }
-    },
-    "v1GetCardinalityOfColumnResponse": {
-      "type": "object",
-      "properties": {
-        "categoricalSummary": {
-          "$ref": "#/definitions/v1CategoricalSummary"
-        }
-      }
-    },
     "v1GetCatalogObjectResponse": {
       "type": "object",
       "properties": {
@@ -2505,14 +2559,6 @@
         }
       },
       "title": "Response message for RuntimeService.GetCatalogObject"
-    },
-    "v1GetDescriptiveStatisticsResponse": {
-      "type": "object",
-      "properties": {
-        "numericSummary": {
-          "$ref": "#/definitions/v1NumericSummary"
-        }
-      }
     },
     "v1GetFileResponse": {
       "type": "object",
@@ -2536,24 +2582,6 @@
       },
       "title": "Response message for RuntimeService.GetInstance"
     },
-    "v1GetNullCountResponse": {
-      "type": "object",
-      "properties": {
-        "count": {
-          "type": "string",
-          "format": "int64"
-        }
-      },
-      "title": "Response for RuntimeService.GetNullCount"
-    },
-    "v1GetNumericHistogramResponse": {
-      "type": "object",
-      "properties": {
-        "numericSummary": {
-          "$ref": "#/definitions/v1NumericSummary"
-        }
-      }
-    },
     "v1GetRepoResponse": {
       "type": "object",
       "properties": {
@@ -2562,50 +2590,6 @@
         }
       },
       "title": "Response message for RuntimeService.GetRepo"
-    },
-    "v1GetRugHistogramResponse": {
-      "type": "object",
-      "properties": {
-        "numericSummary": {
-          "$ref": "#/definitions/v1NumericSummary"
-        }
-      }
-    },
-    "v1GetTableCardinalityResponse": {
-      "type": "object",
-      "properties": {
-        "cardinality": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
-    "v1GetTableRowsResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        }
-      }
-    },
-    "v1GetTimeRangeSummaryResponse": {
-      "type": "object",
-      "properties": {
-        "timeRangeSummary": {
-          "$ref": "#/definitions/v1TimeRangeSummary"
-        }
-      }
-    },
-    "v1GetTopKResponse": {
-      "type": "object",
-      "properties": {
-        "categoricalSummary": {
-          "$ref": "#/definitions/v1CategoricalSummary"
-        }
-      }
     },
     "v1Instance": {
       "type": "object",
@@ -3006,6 +2990,16 @@
       },
       "title": "Model is the internal representation of a model definition"
     },
+    "v1NullCountResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Response for RuntimeService.GetNullCount"
+    },
     "v1NumericHistogramBins": {
       "type": "object",
       "properties": {
@@ -3218,6 +3212,9 @@
       },
       "title": "Response message for RuntimeService.Query"
     },
+    "v1RenameDatabaseObjectResponse": {
+      "type": "object"
+    },
     "v1RenameFileAndMigrateRequest": {
       "type": "object",
       "properties": {
@@ -3288,6 +3285,17 @@
       },
       "description": "Repo represents a collection of file artifacts containing SQL statements.\nIt will usually by represented as a folder on disk, but may also be backed by a\ndatabase (for modelling in the cloud where no persistant file system is available)."
     },
+    "v1RowsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
     "v1Source": {
       "type": "object",
       "properties": {
@@ -3347,17 +3355,33 @@
     "v1TimeGrain": {
       "type": "string",
       "enum": [
-        "TIME_GRAIN_UNSPECIFIED",
-        "TIME_GRAIN_MILLISECOND",
-        "TIME_GRAIN_SECOND",
-        "TIME_GRAIN_MINUTE",
-        "TIME_GRAIN_HOUR",
-        "TIME_GRAIN_DAY",
-        "TIME_GRAIN_WEEK",
-        "TIME_GRAIN_MONTH",
-        "TIME_GRAIN_YEAR"
+        "UNSPECIFIED",
+        "MILLISECOND",
+        "SECOND",
+        "MINUTE",
+        "HOUR",
+        "DAY",
+        "WEEK",
+        "MONTH",
+        "YEAR"
       ],
-      "default": "TIME_GRAIN_UNSPECIFIED"
+      "default": "UNSPECIFIED"
+    },
+    "v1TimeRangeName": {
+      "type": "string",
+      "enum": [
+        "LastHour",
+        "Last6Hours",
+        "LastDay",
+        "Last2Days",
+        "Last5Days",
+        "LastWeek",
+        "Last2Weeks",
+        "Last30Days",
+        "Last60Days",
+        "AllTime"
+      ],
+      "default": "LastHour"
     },
     "v1TimeRangeSummary": {
       "type": "object",
@@ -3402,9 +3426,20 @@
         }
       }
     },
+    "v1TimeSeriesRollup": {
+      "type": "object",
+      "properties": {
+        "rollup": {
+          "$ref": "#/definitions/v1TimeSeriesResponse"
+        }
+      }
+    },
     "v1TimeSeriesTimeRange": {
       "type": "object",
       "properties": {
+        "name": {
+          "$ref": "#/definitions/v1TimeRangeName"
+        },
         "start": {
           "type": "string",
           "format": "date-time"
@@ -3437,16 +3472,17 @@
         }
       }
     },
-    "v1TopK": {
+    "v1TopKResponse": {
       "type": "object",
       "properties": {
         "entries": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TopKTopKEntry"
+            "$ref": "#/definitions/TopKResponseTopKEntry"
           }
         }
-      }
+      },
+      "description": "Response for RuntimeService.GetTopK."
     },
     "v1TriggerRefreshResponse": {
       "type": "object",

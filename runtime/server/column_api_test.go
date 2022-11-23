@@ -147,6 +147,12 @@ func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
 	return timestamppb.New(ts)
 }
 
+func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return timestamppb.New(ts)
+}
+
 func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	server, instanceId := getTestServerWithData(t)
 

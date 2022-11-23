@@ -986,8 +986,8 @@ message MetricsViewToplistRequest {
   string metrics_view_name = 2;
   string dimension_name = 3;
   repeated string measure_names = 4;
-  int64 time_start = 5;
-  int64 time_end = 6;
+  google.protobuf.Timestamp time_start = 5;
+  google.protobuf.Timestamp time_end = 6;
   int64 limit = 7;
   int64 offset = 8;
   repeated MetricsViewSort sort = 9;
@@ -1005,8 +1005,8 @@ message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
-  int64 time_start = 4;
-  int64 time_end = 5;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
   string time_granularity = 6;
   MetricsViewFilter filter = 7;
 }
@@ -1021,11 +1021,10 @@ message MetricsViewTimeSeriesResponse {
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
-  google.protobuf.Timestamp time_start = 3;
-  google.protobuf.Timestamp time_end = 4;
-  repeated BasicMeasureDefinition basic_measures = 5;
-  MetricsViewFilter filter = 6;
-  string timestamp_column_name = 7;
+  repeated string measure_names = 3;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
+  MetricsViewFilter filter = 7;
 }
 
 // Response message for RuntimeService.MetricsViewTotals

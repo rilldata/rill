@@ -1,8 +1,8 @@
 import {
   runtimeServiceMigrateDelete,
-  runtimeServiceMigrateSingle,
+  runtimeServicePutFileAndMigrate,
 } from "@rilldata/web-common/runtime-client";
-import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
   FILE_EXTENSION_TO_TABLE_TYPE,
   ProfileColumn,
@@ -36,6 +36,7 @@ import { getName } from "../utils/incrementName";
 import { DataModelerActions } from ".//DataModelerActions";
 import { ActionResponse, ActionStatus } from "./response/ActionResponse";
 import { ActionResponseFactory } from "./response/ActionResponseFactory";
+import path from "node:path";
 
 export interface ImportTableOptions {
   csvDelimiter?: string;
@@ -70,23 +71,24 @@ export class TableActions extends DataModelerActions {
     tableSourceFile: string,
     tableName: string
   ) {
-    const sql = compileCreateSourceSql(
+    const yaml = compileCreateSourceYAML(
       {
         sourceName: tableName,
-        path: tableSourceFile,
+        path: path.resolve(tableSourceFile),
       },
       "file"
     );
-    await runtimeServiceMigrateSingle(
-      this.dataModelerService
+    await runtimeServicePutFileAndMigrate({
+      instanceId: this.dataModelerService
         .getDatabaseService()
         .getDatabaseClient()
         .getInstanceId(),
-      {
-        sql,
-        createOrReplace: true,
-      }
-    );
+      repoId: this.dataModelerStateService.getApplicationState().repoId,
+      path: `/sources/${tableName}.yaml`,
+      blob: yaml,
+      create: true,
+      strict: true,
+    });
 
     const existingTable = stateService.getByField("tableName", tableName);
     if (existingTable) {
@@ -310,6 +312,9 @@ export class TableActions extends DataModelerActions {
     }
 
     const table = stateService.getById(tableId);
+    if (!table) {
+      return ActionResponseFactory.getEntityError("not found");
+    }
     const currentName = table.tableName;
 
     this.dataModelerStateService.dispatch("renameTableName", [
