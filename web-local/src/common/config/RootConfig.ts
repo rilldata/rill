@@ -36,6 +36,7 @@ export class RootConfig extends Config<RootConfig> {
     [K in keyof NonFunctionProperties<RootConfig>]?: NonFunctionProperties<RootConfig>[K];
   }) {
     super(configJson);
+    this.setFields(configJson);
 
     this.prependProjectFolder();
   }
@@ -43,7 +44,7 @@ export class RootConfig extends Config<RootConfig> {
   private prependProjectFolder() {
     if (this.projectFolder === ".") return;
 
-    this.database?.prependProjectFolder(this.projectFolder);
-    this.state?.prependProjectFolder(this.projectFolder);
+    this.database.prependProjectFolder(this.projectFolder);
+    this.state.prependProjectFolder(this.projectFolder);
   }
 }

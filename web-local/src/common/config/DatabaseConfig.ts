@@ -25,6 +25,7 @@ export class DatabaseConfig extends Config<DatabaseConfig> {
     [K in keyof NonFunctionProperties<DatabaseConfig>]?: NonFunctionProperties<DatabaseConfig>[K];
   }) {
     super(configJson);
+    this.setFields(configJson);
 
     try {
       if (process.env.RILL_EXTERNAL_RUNTIME) {

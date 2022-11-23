@@ -50,6 +50,7 @@
           entityType,
           $renameAsset
         );
+        closeModal();
       } catch (err) {
         error = err.response.data.message;
       }
