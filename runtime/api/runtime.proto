@@ -1085,8 +1085,10 @@ message ProfileColumnSummary {
 
 // Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
 message CategoricalSummary {
-  optional TopK topk = 1;
-  optional int64 cardinality = 2;
+  oneof Case {
+    TopK topK = 1;
+    int64 cardinality = 2;
+  }
 }
 
 message GetCardinalityOfColumnResponse {
@@ -1100,9 +1102,11 @@ message GetTopKResponse {
 // Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
 // Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
 message NumericSummary {
-  optional NumericHistogramBins numeric_histogram_bins = 1;
-  optional NumericStatistics numeric_statistics = 2;
-  optional NumericOutliers numeric_outliers = 3;
+  oneof Case {
+    NumericHistogramBins numeric_histogram_bins = 1;
+    NumericStatistics numeric_statistics = 2;
+    NumericOutliers numeric_outliers = 3;
+  }
 }
 
 message GetRugHistogramResponse {
@@ -1198,15 +1202,15 @@ message EstimateSmallestTimeGrainRequest {
 }
 
 enum TimeGrain {
-  UNSPECIFIED = 0;
-  MILLISECOND = 1;
-  SECOND = 2;
-  MINUTE = 3;
-  HOUR = 4;
-  DAY = 5;
-  WEEK = 6;
-  MONTH = 7;
-  YEAR = 8;
+  TIME_GRAIN_UNSPECIFIED = 0;
+  TIME_GRAIN_MILLISECOND = 1;
+  TIME_GRAIN_SECOND = 2;
+  TIME_GRAIN_MINUTE = 3;
+  TIME_GRAIN_HOUR = 4;
+  TIME_GRAIN_DAY = 5;
+  TIME_GRAIN_WEEK = 6;
+  TIME_GRAIN_MONTH = 7;
+  TIME_GRAIN_YEAR = 8;
 }
 
 // Response for RuntimeService.EstimateSmallestTimeGrain
@@ -1283,16 +1287,17 @@ message TimeSeriesTimeRange {
 }
 
 enum TimeRangeName {
-  LastHour = 0;
-  Last6Hours = 1;
-  LastDay = 2;
-  Last2Days = 3;
-  Last5Days = 4;
-  LastWeek = 5;
-  Last2Weeks = 6;
-  Last30Days = 7;
-  Last60Days = 8;
-  AllTime = 9;
+  TIME_RANGE_NAME_UNSPECIFIED = 0;
+  TIME_RANGE_NAME_LAST_HOUR = 1;
+  TIME_RANGE_NAME_LAST_6_HOUR = 2;
+  TIME_RANGE_NAME_LAST_DAY = 3;
+  TIME_RANGE_NAME_LAST_2_DAYS = 4;
+  TIME_RANGE_NAME_LAST_5_DAYS = 5;
+  TIME_RANGE_NAME_LAST_WEEK = 6;
+  TIME_RANGE_NAME_LAST_2_WEEKS = 7;
+  TIME_RANGE_NAME_LAST_30_DAYS = 8;
+  TIME_RANGE_NAME_LAST_60_DAYS = 9;
+  TIME_RANGE_NAME_ALL_TIME = 10;
   // Today
   // MonthToDate
   // CustomRange
@@ -1339,15 +1344,16 @@ message TimeSeriesValue {
 // **********
 
 enum DatabaseObjectType {
-  TABLE = 0;
-  VIEW = 1;
-  FUNCTION = 2;
+  DATABASE_OBJECT_TYPE_UNSPECIFIED = 0;
+  DATABASE_OBJECT_TYPE_TABLE = 1;
+  DATABASE_OBJECT_TYPE_VIEW = 2;
+  DATABASE_OBJECT_TYPE_FUNCTION = 3;
 }
 
 message RenameDatabaseObjectRequest {
   string instance_id = 1;
   string name = 2;
-  string newname = 3;
+  string new_name = 3;
   optional DatabaseObjectType type = 4;
 }
 

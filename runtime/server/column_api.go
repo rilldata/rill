@@ -54,7 +54,9 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.GetTopKRequest) (
 	}
 	return &api.GetTopKResponse{
 		CategoricalSummary: &api.CategoricalSummary{
-			Topk: &topKResponse,
+			Case: &api.CategoricalSummary_TopK{
+				TopK: &topKResponse,
+			},
 		},
 	}, nil
 }
@@ -113,7 +115,9 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.GetD
 		}
 	}
 	resp := &api.NumericSummary{
-		NumericStatistics: stats,
+		Case: &api.NumericSummary_NumericStatistics{
+			NumericStatistics: stats,
+		},
 	}
 	return &api.GetDescriptiveStatisticsResponse{
 		NumericSummary: resp,
@@ -225,35 +229,35 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *api.Est
 	switch timeGrainString {
 	case "milliseconds":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_MILLISECOND,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_MILLISECOND,
 		}
 	case "seconds":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_SECOND,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_SECOND,
 		}
 	case "minutes":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_MINUTE,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_MINUTE,
 		}
 	case "hours":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_HOUR,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_HOUR,
 		}
 	case "days":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_DAY,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_DAY,
 		}
 	case "weeks":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_WEEK,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_WEEK,
 		}
 	case "months":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_MONTH,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_MONTH,
 		}
 	case "years":
 		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_YEAR,
+			TimeGrain: api.TimeGrain_TIME_GRAIN_YEAR,
 		}
 	}
 	return timeGrain, nil
@@ -359,8 +363,10 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.GetNumeri
 	}
 	return &api.GetNumericHistogramResponse{
 		NumericSummary: &api.NumericSummary{
-			NumericHistogramBins: &api.NumericHistogramBins{
-				Bins: histogramBins,
+			Case: &api.NumericSummary_NumericHistogramBins{
+				NumericHistogramBins: &api.NumericHistogramBins{
+					Bins: histogramBins,
+				},
 			},
 		},
 	}, nil
@@ -451,8 +457,10 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *api.GetRugHistogr
 
 	return &api.GetRugHistogramResponse{
 		NumericSummary: &api.NumericSummary{
-			NumericOutliers: &api.NumericOutliers{
-				Outliers: outlierBins,
+			Case: &api.NumericSummary_NumericOutliers{
+				NumericOutliers: &api.NumericOutliers{
+					Outliers: outlierBins,
+				},
 			},
 		},
 	}, nil
@@ -499,14 +507,18 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.GetCar
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
+	var count int64
 	for rows.Next() {
-		summary := &api.CategoricalSummary{}
-		err = rows.Scan(&summary.Cardinality)
+		err = rows.Scan(&count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &api.GetCardinalityOfColumnResponse{
-			CategoricalSummary: summary,
+			CategoricalSummary: &api.CategoricalSummary{
+				Case: &api.CategoricalSummary_Cardinality{
+					Cardinality: count,
+				},
+			},
 		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")

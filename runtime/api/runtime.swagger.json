@@ -507,7 +507,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1TimeSeriesRollup"
+              "$ref": "#/definitions/v1GenerateTimeSeriesResponse"
             }
           },
           "default": {
@@ -2304,7 +2304,7 @@
     "v1CategoricalSummary": {
       "type": "object",
       "properties": {
-        "topk": {
+        "topK": {
           "$ref": "#/definitions/v1TopK"
         },
         "cardinality": {
@@ -2480,6 +2480,14 @@
         }
       },
       "title": "Response for RuntimeService.EstimateSmallestTimeGrain"
+    },
+    "v1GenerateTimeSeriesResponse": {
+      "type": "object",
+      "properties": {
+        "rollup": {
+          "$ref": "#/definitions/v1TimeSeriesResponse"
+        }
+      }
     },
     "v1GetCardinalityOfColumnResponse": {
       "type": "object",
@@ -3339,33 +3347,34 @@
     "v1TimeGrain": {
       "type": "string",
       "enum": [
-        "UNSPECIFIED",
-        "MILLISECOND",
-        "SECOND",
-        "MINUTE",
-        "HOUR",
-        "DAY",
-        "WEEK",
-        "MONTH",
-        "YEAR"
+        "TIME_GRAIN_UNSPECIFIED",
+        "TIME_GRAIN_MILLISECOND",
+        "TIME_GRAIN_SECOND",
+        "TIME_GRAIN_MINUTE",
+        "TIME_GRAIN_HOUR",
+        "TIME_GRAIN_DAY",
+        "TIME_GRAIN_WEEK",
+        "TIME_GRAIN_MONTH",
+        "TIME_GRAIN_YEAR"
       ],
-      "default": "UNSPECIFIED"
+      "default": "TIME_GRAIN_UNSPECIFIED"
     },
     "v1TimeRangeName": {
       "type": "string",
       "enum": [
-        "LastHour",
-        "Last6Hours",
-        "LastDay",
-        "Last2Days",
-        "Last5Days",
-        "LastWeek",
-        "Last2Weeks",
-        "Last30Days",
-        "Last60Days",
-        "AllTime"
+        "TIME_RANGE_NAME_UNSPECIFIED",
+        "TIME_RANGE_NAME_LAST_HOUR",
+        "TIME_RANGE_NAME_LAST_6_HOUR",
+        "TIME_RANGE_NAME_LAST_DAY",
+        "TIME_RANGE_NAME_LAST_2_DAYS",
+        "TIME_RANGE_NAME_LAST_5_DAYS",
+        "TIME_RANGE_NAME_LAST_WEEK",
+        "TIME_RANGE_NAME_LAST_2_WEEKS",
+        "TIME_RANGE_NAME_LAST_30_DAYS",
+        "TIME_RANGE_NAME_LAST_60_DAYS",
+        "TIME_RANGE_NAME_ALL_TIME"
       ],
-      "default": "LastHour"
+      "default": "TIME_RANGE_NAME_UNSPECIFIED"
     },
     "v1TimeRangeSummary": {
       "type": "object",
@@ -3407,14 +3416,6 @@
         },
         "error": {
           "type": "string"
-        }
-      }
-    },
-    "v1TimeSeriesRollup": {
-      "type": "object",
-      "properties": {
-        "rollup": {
-          "$ref": "#/definitions/v1TimeSeriesResponse"
         }
       }
     },
