@@ -23,6 +23,26 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          RuntimeService_EstimateRollupInterval: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_GetTopK: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_GenerateTimeSeries: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_ProfileColumns: {
+            query: {
+              useQuery: true,
+            },
+          },
         },
       },
     },
