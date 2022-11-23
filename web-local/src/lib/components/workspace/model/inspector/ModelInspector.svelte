@@ -17,6 +17,6 @@
       containerWidth={$observedNode?.clientWidth}
     />
     <StickToHeaderDivider />
-    <ModelInspectorModelProfile />
+    <ModelInspectorModelProfile {modelName} />
   </div>
 {/key}

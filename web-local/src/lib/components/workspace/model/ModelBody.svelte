@@ -3,6 +3,7 @@
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
+    V1PutFileAndMigrateResponse,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
@@ -20,7 +21,10 @@
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
   import notifications from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
@@ -53,6 +57,7 @@
   let innerHeight;
 
   let showPreview = true;
+  let modelError = "";
 
   let titleInput = currentModel?.name;
   $: titleInput = currentModel?.name;
@@ -112,16 +117,26 @@
 
   async function updateModelContent(content: string) {
     try {
-      await $updateModel.mutateAsync({
+      // TODO: why is the response type not present?
+      const resp = (await $updateModel.mutateAsync({
         data: {
           repoId: $runtimeStore.repoId,
           instanceId: $runtimeStore.instanceId,
           path: `models/${currentModel.tableName}.sql`,
           blob: content,
         },
-      });
+      })) as V1PutFileAndMigrateResponse;
+      if (resp.errors.length) {
+        modelError = resp.errors[0].message;
+      } else {
+        modelError = "";
+        await dataModelerService.dispatch("updateModelQuery", [
+          currentModel.id,
+          content,
+        ]);
+      }
     } catch (err) {
-      console.error(err.response.data.message);
+      modelError = err.response.data.message;
     }
   }
 </script>
@@ -205,12 +220,12 @@
           </div>
         {/if}
       </div>
-      {#if currentDerivedModel?.error}
+      {#if modelError}
         <div
           transition:slide={{ duration: 200 }}
           class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
         >
-          {currentDerivedModel.error}
+          {modelError}
         </div>
       {/if}
     </div>

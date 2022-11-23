@@ -7,6 +7,7 @@ import {
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
+import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import {
   getFileFromName,
@@ -32,6 +33,7 @@ export async function renameEntity(
       toPath: getFileFromName(toName, type),
     },
   });
+  await dataModelerService.dispatch("renameEntity", [type, fromName, toName]);
   goto(getRouteFromName(toName, type), {
     replaceState: true,
   });
@@ -60,15 +62,13 @@ export async function deleteEntity(
       },
     });
     if (activeEntity.name === name) {
-      const nextSourceName = getNextEntityName(names, name);
-      if (nextSourceName) {
-        goto(`/source/${nextSourceName}`);
-      } else {
-        goto("/");
-      }
+      goto(getRouteFromName(getNextEntityName(names, name), type));
     }
+    // Temporary until nodejs is removed
+    await dataModelerService.dispatch("deleteEntity", [type, name]);
+
     // TODO: update all entities based on affected path
-    await queryClient.invalidateQueries(
+    return queryClient.invalidateQueries(
       getRuntimeServiceListFilesQueryKey(runtimeState.repoId)
     );
   } catch (err) {

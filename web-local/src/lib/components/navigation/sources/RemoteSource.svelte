@@ -1,31 +1,25 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServicePutFileAndMigrate,
     V1Connector,
+    V1MigrationError,
   } from "@rilldata/web-common/runtime-client";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
-  import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { Button } from "../../button";
   import InformationalField from "../../forms/InformationalField.svelte";
   import Input from "../../forms/Input.svelte";
   import SubmissionError from "../../forms/SubmissionError.svelte";
   import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import { humanReadableErrorMessage } from "./errors";
-  import {
-    compileCreateSourceYAML,
-    inferSourceName,
-    waitForSource,
-  } from "./sourceUtils";
+  import { compileCreateSourceYAML, inferSourceName } from "./sourceUtils";
   import {
     fromYupFriendlyKey,
     getYupSchema,
@@ -35,11 +29,7 @@
   export let connector: V1Connector;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServicePutFileAndMigrate();
-
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
+  const createSourceMutation = useRuntimeServicePutFileAndMigrate();
 
   const dispatch = createEventDispatcher();
 
@@ -54,6 +44,7 @@
   let handleSubmit: (event: Event) => any;
 
   let waitingOnSourceImport = false;
+  let error: V1MigrationError;
 
   function onConnectorChange(connector: V1Connector) {
     yupSchema = getYupSchema(connector);
@@ -75,30 +66,24 @@
 
         const yaml = compileCreateSourceYAML(formValues, connector.name);
 
+        waitingOnSourceImport = true;
         try {
-          await $createSource.mutateAsync({
-            data: {
-              repoId: $runtimeStore.repoId,
-              instanceId: runtimeInstanceId,
-              path: `sources/${values.sourceName}.yaml`,
-              blob: yaml,
-              create: true,
-              createOnly: true,
-              strict: true,
-            },
-          });
-          waitingOnSourceImport = true;
-          await waitForSource(values.sourceName, persistentTableStore);
-          waitingOnSourceImport = false;
-          goto(`/source/${values.sourceName}`);
-          dispatch("close");
-          overlay.set(null);
-          return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          const errors = await createSource(
+            $runtimeStore,
+            values.sourceName,
+            yaml,
+            $createSourceMutation
           );
+          error = errors[0];
+          if (!error) {
+            dispatch("close");
+          }
         } catch (err) {
-          overlay.set(null);
+          // TODO
+          console.error(err);
         }
+        waitingOnSourceImport = false;
+        overlay.set(null);
       },
     }));
 
@@ -142,12 +127,12 @@
       <a href="https://docs.rilldata.com/import-data" target="_blank">docs</a> for
       more information.
     </div>
-    {#if $createSource.isError}
+    {#if $createSourceMutation.isError || error}
       <SubmissionError
         message={humanReadableErrorMessage(
           connector.name,
-          $createSource.error.response.data.code,
-          $createSource.error.response.data.message
+          $createSourceMutation.error.response.data.code ?? 3,
+          $createSourceMutation.error.response.data.message ?? error.message
         )}
       />
     {/if}
@@ -194,7 +179,7 @@
           type="primary"
           submitForm
           form="remote-source-{connector.name}-form"
-          disabled={$createSource.isLoading || waitingOnSourceImport}
+          disabled={$createSourceMutation.isLoading || waitingOnSourceImport}
         >
           Add source
         </Button>

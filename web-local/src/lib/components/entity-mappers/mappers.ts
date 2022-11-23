@@ -16,6 +16,7 @@ export function getFileFromName(name: string, type: EntityType): string {
 }
 
 export function getRouteFromName(name: string, type: EntityType): string {
+  if (!name) return "/";
   switch (type) {
     case EntityType.Table:
       return `/source/${name}`;

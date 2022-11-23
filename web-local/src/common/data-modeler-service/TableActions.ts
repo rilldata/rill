@@ -153,7 +153,8 @@ export class TableActions extends DataModelerActions {
   @DataModelerActions.PersistentTableAction()
   public async addOrSyncTableFromDB(
     { stateService }: PersistentTableStateActionArg,
-    tableName?: string
+    tableName?: string,
+    asynchronous?: boolean
   ) {
     const existingTable = stateService.getByField("tableName", tableName);
     const table = existingTable ? { ...existingTable } : getNewTable();
@@ -161,7 +162,7 @@ export class TableActions extends DataModelerActions {
     table.name = table.tableName = tableName;
     table.sourceType = TableSourceType.DuckDB;
 
-    await this.addOrUpdateTable(table, !existingTable, true);
+    await this.addOrUpdateTable(table, !existingTable, true, asynchronous);
   }
 
   @DataModelerActions.DerivedTableAction()
@@ -448,7 +449,8 @@ export class TableActions extends DataModelerActions {
   private async addOrUpdateTable(
     table: PersistentTableEntity,
     isNew: boolean,
-    shouldProfile: boolean
+    shouldProfile: boolean,
+    asynchronous = false
   ): Promise<ActionResponse> {
     // get the original Table state if not new.
     let originalPersistentTable: PersistentTableEntity;
@@ -531,7 +533,13 @@ export class TableActions extends DataModelerActions {
     if (this.config.profileWithUpdate) {
       // this check should not hit else on false. hence it is nested
       if (shouldProfile) {
-        await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+        if (asynchronous) {
+          await this.dataModelerService.dispatch("collectTableInfo", [
+            table.id,
+          ]);
+        } else {
+          this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+        }
       }
     } else {
       this.dataModelerStateService.dispatch("markAsProfiled", [

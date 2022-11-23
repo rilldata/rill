@@ -34,12 +34,12 @@ export class DuckDbConnection extends DataConnection {
   public async init(): Promise<void> {
     if (this.config.database.databaseName === ":memory:") return;
 
-    await this.sync();
+    // await this.sync();
 
-    await this.dataModelerService.dispatch("loadModels", []);
+    // await this.dataModelerService.dispatch("loadModels", []);
 
     this.syncTimer = setInterval(() => {
-      this.sync();
+      // this.sync();
     }, DATABASE_POLLING_INTERVAL);
   }
 

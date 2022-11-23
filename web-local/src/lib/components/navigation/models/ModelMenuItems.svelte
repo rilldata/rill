@@ -77,7 +77,7 @@
     await deleteEntity(
       $runtimeStore,
       modelName,
-      EntityType.Table,
+      EntityType.Model,
       $deleteModel,
       $applicationStore.activeEntity,
       $modelNames.data
