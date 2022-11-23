@@ -60,7 +60,7 @@ export function sortByName(a, b) {
 export function defaultSort(a, b) {
   const byType = sortByType(a, b);
   if (byType !== 0) return byType;
-  if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type))
+  if (!CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type))
     return sortByNullity(b, a);
   return sortByCardinality(a, b);
 }

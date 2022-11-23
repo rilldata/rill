@@ -10,13 +10,10 @@
   // FIXME: figure out how to remove this requirement!
   export let objectName: string;
   export let columnName: string;
-  export let containerWidth: number = 300;
-  export let compactBreakpoint = 300;
+  export let compact = false;
 
   $: summaryWidthSize =
-    COLUMN_PROFILE_CONFIG.summaryVizWidth[
-      containerWidth < compactBreakpoint ? "small" : "medium"
-    ];
+    COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
 
   let histogram;
   $: histogramQuery = useRuntimeServiceGetNumericHistogram(

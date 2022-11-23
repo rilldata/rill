@@ -31,15 +31,11 @@
       dispatch("select");
     }}
   >
-    <div class="flex gap-2 grow items-baseline flex-1" style:min-width="0px">
+    <div class="flex gap-2 items-baseline" style:min-width="0px">
       <div class="self-center flex items-center ui-copy-icon-muted">
         <slot name="icon" />
       </div>
-      <div
-        class:font-bold={emphasize}
-        class="justify-items-stretch shrink w-full text-left flex-1"
-        style:min-width="0px"
-      >
+      <div class:font-bold={emphasize} class="text-left" style:min-width="0px">
         <slot name="left" />
       </div>
     </div>

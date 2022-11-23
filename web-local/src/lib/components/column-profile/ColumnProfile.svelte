@@ -8,20 +8,16 @@
   import { derived, writable } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
-  import { CATEGORICALS } from "../../duckdb-data-types";
   import { NATIVE_SELECT } from "../../util/component-classes";
-  import VarcharProfile from "./column-types/VarcharProfile.svelte";
-  import ColumnProfileRow from "./ColumnProfileRow.svelte";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
+
+  import { getColumnType } from "./column-types";
 
   export let containerWidth = 0;
 
-  export let cardinality: number;
   export let objectName: string;
   // export let profile: any;
   export let head: any; // FIXME
-  export let entityId: string;
-  export let showContextButton = true;
   export let indentLevel = 0;
 
   let previewView = "summaries";
@@ -42,7 +38,6 @@
     $runtimeStore?.instanceId,
     objectName
   );
-  $: console.log($profileColumns);
 
   /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
   function getSummaries(objectName, instanceId, profileColumnResults) {
@@ -93,6 +88,7 @@
   } else {
     sortedProfile = profile;
   }
+  $: if (profile?.length) console.log([...profile].sort(sortMethod));
 </script>
 
 <!-- pl-16 -->
@@ -133,33 +129,15 @@
         containerWidth < COLUMN_PROFILE_CONFIG.hideNullPercentage}
       {@const compact =
         containerWidth < COLUMN_PROFILE_CONFIG.compactBreakpoint}
-      {#if CATEGORICALS.has(column.type)}
-        <VarcharProfile
-          {objectName}
-          columnName={column.name}
-          {hideRight}
-          {hideNullPercentage}
-          {compact}
-        />
-      {:else}
-        <ColumnProfileRow
-          {indentLevel}
-          {entityId}
-          example={head[0][column.name] || ""}
-          {containerWidth}
-          hideNullPercentage={containerWidth <
-            COLUMN_PROFILE_CONFIG.hideNullPercentage}
-          hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
-          compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
-          view={previewView}
-          {objectName}
-          columnName={column.name}
-          type={column.type}
-          summary={column.summary}
-          totalRows={cardinality}
-          nullCount={column.nullCount}
-        />
-      {/if}
+      <svelte:component
+        this={getColumnType(column.type)}
+        type={column.type}
+        {objectName}
+        columnName={column.name}
+        {hideRight}
+        {hideNullPercentage}
+        {compact}
+      />
     {/each}
   {/if}
 </div>
