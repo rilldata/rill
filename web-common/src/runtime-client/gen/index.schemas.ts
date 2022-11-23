@@ -243,6 +243,7 @@ export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
+  UNSPECIFIED: "UNSPECIFIED",
   MILLISECOND: "MILLISECOND",
   SECOND: "SECOND",
   MINUTE: "MINUTE",
@@ -251,7 +252,6 @@ export const V1TimeGrain = {
   WEEK: "WEEK",
   MONTH: "MONTH",
   YEAR: "YEAR",
-  UNSPECIFIED: "UNSPECIFIED",
 } as const;
 
 export interface V1TimeSeriesTimeRange {
@@ -286,12 +286,6 @@ export interface V1Source {
   properties?: V1SourceProperties;
   schema?: V1StructType;
   sql?: string;
-}
-
-export interface V1Scalar {
-  double?: number;
-  int64?: string;
-  timestamp?: string;
 }
 
 export type V1RowsResponseDataItem = { [key: string]: any };
@@ -458,22 +452,6 @@ export const V1MigrationErrorCode = {
   CODE_SOURCE: "CODE_SOURCE",
 } as const;
 
-/**
- * MigrationError represents an error encountered while running Migrate.
- */
-export interface V1MigrationError {
-  code?: V1MigrationErrorCode;
-  endLocation?: MigrationErrorCharLocation;
-  filePath?: string;
-  message?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string;
-  startLocation?: MigrationErrorCharLocation;
-}
-
 export interface V1MigrateSingleResponse {
   [key: string]: any;
 }
@@ -500,11 +478,6 @@ export interface V1MetricsViewTotalsResponse {
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewToplistResponse {
-  data?: V1MetricsViewToplistResponseDataItem[];
-  meta?: V1MetricsViewColumn[];
-}
 
 export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
 
@@ -539,6 +512,11 @@ export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
+}
+
+export interface V1MetricsViewToplistResponse {
+  data?: V1MetricsViewToplistResponseDataItem[];
+  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {
@@ -624,9 +602,9 @@ export interface V1EstimateSmallestTimeGrainResponse {
 }
 
 export interface V1EstimateRollupIntervalResponse {
-  interval?: string;
-  max?: V1Scalar;
-  min?: V1Scalar;
+  end?: string;
+  interval?: V1TimeGrain;
+  start?: string;
 }
 
 export interface V1DeleteRepoResponse {
@@ -756,6 +734,12 @@ export interface Runtimev1Type {
   structType?: V1StructType;
 }
 
+export interface RpcStatus {
+  code?: number;
+  details?: ProtobufAny[];
+  message?: string;
+}
+
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -771,6 +755,11 @@ export type ProtobufNullValue =
 export const ProtobufNullValue = {
   NULL_VALUE: "NULL_VALUE",
 } as const;
+
+export interface ProtobufAny {
+  "@type"?: string;
+  [key: string]: unknown;
+}
 
 export interface TopKResponseTopKEntry {
   count?: number;
@@ -818,6 +807,22 @@ export const ModelDialect = {
 export interface MigrationErrorCharLocation {
   column?: number;
   line?: number;
+}
+
+/**
+ * MigrationError represents an error encountered while running Migrate.
+ */
+export interface V1MigrationError {
+  code?: V1MigrationErrorCode;
+  endLocation?: MigrationErrorCharLocation;
+  filePath?: string;
+  message?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: MigrationErrorCharLocation;
 }
 
 export interface MetricsViewMeasure {

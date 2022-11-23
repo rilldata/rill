@@ -15,6 +15,7 @@ import type {
 } from "@sveltestack/svelte-query";
 import type {
   V1ListConnectorsResponse,
+  RpcStatus,
   V1DeleteFileAndMigrateResponse,
   V1DeleteFileAndMigrateRequest,
   V1ListInstancesResponse,
@@ -101,11 +102,11 @@ export const getRuntimeServiceListConnectorsQueryKey = () => [
 export type RuntimeServiceListConnectorsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListConnectors>>
 >;
-export type RuntimeServiceListConnectorsQueryError = unknown;
+export type RuntimeServiceListConnectorsQueryError = RpcStatus;
 
 export const useRuntimeServiceListConnectors = <
   TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
-  TError = unknown
+  TError = RpcStatus
 >(options?: {
   query?: UseQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
@@ -162,10 +163,10 @@ export type RuntimeServiceDeleteFileAndMigrateMutationResult = NonNullable<
 >;
 export type RuntimeServiceDeleteFileAndMigrateMutationBody =
   V1DeleteFileAndMigrateRequest;
-export type RuntimeServiceDeleteFileAndMigrateMutationError = unknown;
+export type RuntimeServiceDeleteFileAndMigrateMutationError = RpcStatus;
 
 export const useRuntimeServiceDeleteFileAndMigrate = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -215,11 +216,11 @@ export const getRuntimeServiceListInstancesQueryKey = (
 export type RuntimeServiceListInstancesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListInstances>>
 >;
-export type RuntimeServiceListInstancesQueryError = unknown;
+export type RuntimeServiceListInstancesQueryError = RpcStatus;
 
 export const useRuntimeServiceListInstances = <
   TData = Awaited<ReturnType<typeof runtimeServiceListInstances>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   params?: RuntimeServiceListInstancesParams,
   options?: {
@@ -278,10 +279,10 @@ export type RuntimeServiceCreateInstanceMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceCreateInstance>>
 >;
 export type RuntimeServiceCreateInstanceMutationBody = V1CreateInstanceRequest;
-export type RuntimeServiceCreateInstanceMutationError = unknown;
+export type RuntimeServiceCreateInstanceMutationError = RpcStatus;
 
 export const useRuntimeServiceCreateInstance = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -330,11 +331,11 @@ export const getRuntimeServiceGetInstanceQueryKey = (instanceId: string) => [
 export type RuntimeServiceGetInstanceQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetInstance>>
 >;
-export type RuntimeServiceGetInstanceQueryError = unknown;
+export type RuntimeServiceGetInstanceQueryError = RpcStatus;
 
 export const useRuntimeServiceGetInstance = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetInstance>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   options?: {
@@ -392,10 +393,10 @@ export type RuntimeServiceDeleteInstanceMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>
 >;
 
-export type RuntimeServiceDeleteInstanceMutationError = unknown;
+export type RuntimeServiceDeleteInstanceMutationError = RpcStatus;
 
 export const useRuntimeServiceDeleteInstance = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -450,11 +451,11 @@ export const getRuntimeServiceGetCardinalityOfColumnQueryKey = (
 export type RuntimeServiceGetCardinalityOfColumnQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetCardinalityOfColumn>>
 >;
-export type RuntimeServiceGetCardinalityOfColumnQueryError = unknown;
+export type RuntimeServiceGetCardinalityOfColumnQueryError = RpcStatus;
 
 export const useRuntimeServiceGetCardinalityOfColumn = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetCardinalityOfColumn>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -535,11 +536,11 @@ export const getRuntimeServiceListCatalogObjectsQueryKey = (
 export type RuntimeServiceListCatalogObjectsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>
 >;
-export type RuntimeServiceListCatalogObjectsQueryError = unknown;
+export type RuntimeServiceListCatalogObjectsQueryError = RpcStatus;
 
 export const useRuntimeServiceListCatalogObjects = <
   TData = Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   params?: RuntimeServiceListCatalogObjectsParams,
@@ -609,11 +610,11 @@ export const getRuntimeServiceGetCatalogObjectQueryKey = (
 export type RuntimeServiceGetCatalogObjectQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>
 >;
-export type RuntimeServiceGetCatalogObjectQueryError = unknown;
+export type RuntimeServiceGetCatalogObjectQueryError = RpcStatus;
 
 export const useRuntimeServiceGetCatalogObject = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   name: string,
@@ -678,10 +679,10 @@ export type RuntimeServiceTriggerRefreshMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceTriggerRefresh>>
 >;
 
-export type RuntimeServiceTriggerRefreshMutationError = unknown;
+export type RuntimeServiceTriggerRefreshMutationError = RpcStatus;
 
 export const useRuntimeServiceTriggerRefresh = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -736,11 +737,11 @@ export const getRuntimeServiceGetDescriptiveStatisticsQueryKey = (
 export type RuntimeServiceGetDescriptiveStatisticsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetDescriptiveStatistics>>
 >;
-export type RuntimeServiceGetDescriptiveStatisticsQueryError = unknown;
+export type RuntimeServiceGetDescriptiveStatisticsQueryError = RpcStatus;
 
 export const useRuntimeServiceGetDescriptiveStatistics = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetDescriptiveStatistics>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -818,10 +819,10 @@ export type RuntimeServiceEstimateRollupIntervalMutationResult = NonNullable<
 >;
 export type RuntimeServiceEstimateRollupIntervalMutationBody =
   RuntimeServiceEstimateRollupIntervalBody;
-export type RuntimeServiceEstimateRollupIntervalMutationError = unknown;
+export type RuntimeServiceEstimateRollupIntervalMutationError = RpcStatus;
 
 export const useRuntimeServiceEstimateRollupInterval = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -888,11 +889,11 @@ export const getRuntimeServiceEstimateSmallestTimeGrainQueryKey = (
 export type RuntimeServiceEstimateSmallestTimeGrainQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceEstimateSmallestTimeGrain>>
 >;
-export type RuntimeServiceEstimateSmallestTimeGrainQueryError = unknown;
+export type RuntimeServiceEstimateSmallestTimeGrainQueryError = RpcStatus;
 
 export const useRuntimeServiceEstimateSmallestTimeGrain = <
   TData = Awaited<ReturnType<typeof runtimeServiceEstimateSmallestTimeGrain>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -969,10 +970,10 @@ export type RuntimeServiceGenerateTimeSeriesMutationResult = NonNullable<
 >;
 export type RuntimeServiceGenerateTimeSeriesMutationBody =
   RuntimeServiceGenerateTimeSeriesBody;
-export type RuntimeServiceGenerateTimeSeriesMutationError = unknown;
+export type RuntimeServiceGenerateTimeSeriesMutationError = RpcStatus;
 
 export const useRuntimeServiceGenerateTimeSeries = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1022,10 +1023,10 @@ export type RuntimeServiceMetricsViewTimeSeriesMutationResult = NonNullable<
 >;
 export type RuntimeServiceMetricsViewTimeSeriesMutationBody =
   RuntimeServiceMetricsViewTimeSeriesBody;
-export type RuntimeServiceMetricsViewTimeSeriesMutationError = unknown;
+export type RuntimeServiceMetricsViewTimeSeriesMutationError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTimeSeries = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1092,10 +1093,10 @@ export type RuntimeServiceMetricsViewToplistMutationResult = NonNullable<
 >;
 export type RuntimeServiceMetricsViewToplistMutationBody =
   RuntimeServiceMetricsViewToplistBody;
-export type RuntimeServiceMetricsViewToplistMutationError = unknown;
+export type RuntimeServiceMetricsViewToplistMutationError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewToplist = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1165,10 +1166,10 @@ export type RuntimeServiceMetricsViewTotalsMutationResult = NonNullable<
 >;
 export type RuntimeServiceMetricsViewTotalsMutationBody =
   RuntimeServiceMetricsViewTotalsBody;
-export type RuntimeServiceMetricsViewTotalsMutationError = unknown;
+export type RuntimeServiceMetricsViewTotalsMutationError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTotals = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1230,10 +1231,10 @@ export type RuntimeServiceMigrateMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMigrate>>
 >;
 export type RuntimeServiceMigrateMutationBody = RuntimeServiceMigrateBody;
-export type RuntimeServiceMigrateMutationError = unknown;
+export type RuntimeServiceMigrateMutationError = RpcStatus;
 
 export const useRuntimeServiceMigrate = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1283,10 +1284,10 @@ export type RuntimeServiceMigrateSingleMutationResult = NonNullable<
 >;
 export type RuntimeServiceMigrateSingleMutationBody =
   RuntimeServiceMigrateSingleBody;
-export type RuntimeServiceMigrateSingleMutationError = unknown;
+export type RuntimeServiceMigrateSingleMutationError = RpcStatus;
 
 export const useRuntimeServiceMigrateSingle = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1336,10 +1337,10 @@ export type RuntimeServiceMigrateDeleteMutationResult = NonNullable<
 >;
 export type RuntimeServiceMigrateDeleteMutationBody =
   RuntimeServiceMigrateDeleteBody;
-export type RuntimeServiceMigrateDeleteMutationError = unknown;
+export type RuntimeServiceMigrateDeleteMutationError = RpcStatus;
 
 export const useRuntimeServiceMigrateDelete = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1392,11 +1393,11 @@ export const getRuntimeServiceGetNullCountQueryKey = (
 export type RuntimeServiceGetNullCountQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetNullCount>>
 >;
-export type RuntimeServiceGetNullCountQueryError = unknown;
+export type RuntimeServiceGetNullCountQueryError = RpcStatus;
 
 export const useRuntimeServiceGetNullCount = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetNullCount>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -1471,11 +1472,11 @@ export const getRuntimeServiceGetNumericHistogramQueryKey = (
 export type RuntimeServiceGetNumericHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>
 >;
-export type RuntimeServiceGetNumericHistogramQueryError = unknown;
+export type RuntimeServiceGetNumericHistogramQueryError = RpcStatus;
 
 export const useRuntimeServiceGetNumericHistogram = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -1551,10 +1552,10 @@ export type RuntimeServiceQueryMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceQuery>>
 >;
 export type RuntimeServiceQueryMutationBody = RuntimeServiceQueryBody;
-export type RuntimeServiceQueryMutationError = unknown;
+export type RuntimeServiceQueryMutationError = RpcStatus;
 
 export const useRuntimeServiceQuery = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1602,10 +1603,10 @@ export type RuntimeServiceQueryDirectMutationResult = NonNullable<
 >;
 export type RuntimeServiceQueryDirectMutationBody =
   RuntimeServiceQueryDirectBody;
-export type RuntimeServiceQueryDirectMutationError = unknown;
+export type RuntimeServiceQueryDirectMutationError = RpcStatus;
 
 export const useRuntimeServiceQueryDirect = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1652,10 +1653,10 @@ export type RuntimeServiceRenameDatabaseObjectMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceRenameDatabaseObject>>
 >;
 
-export type RuntimeServiceRenameDatabaseObjectMutationError = unknown;
+export type RuntimeServiceRenameDatabaseObjectMutationError = RpcStatus;
 
 export const useRuntimeServiceRenameDatabaseObject = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1708,11 +1709,11 @@ export const getRuntimeServiceGetRugHistogramQueryKey = (
 export type RuntimeServiceGetRugHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
 >;
-export type RuntimeServiceGetRugHistogramQueryError = unknown;
+export type RuntimeServiceGetRugHistogramQueryError = RpcStatus;
 
 export const useRuntimeServiceGetRugHistogram = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -1775,10 +1776,10 @@ export type RuntimeServiceTriggerSyncMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceTriggerSync>>
 >;
 
-export type RuntimeServiceTriggerSyncMutationError = unknown;
+export type RuntimeServiceTriggerSyncMutationError = RpcStatus;
 
 export const useRuntimeServiceTriggerSync = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1829,11 +1830,11 @@ export const getRuntimeServiceTableCardinalityQueryKey = (
 export type RuntimeServiceTableCardinalityQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceTableCardinality>>
 >;
-export type RuntimeServiceTableCardinalityQueryError = unknown;
+export type RuntimeServiceTableCardinalityQueryError = RpcStatus;
 
 export const useRuntimeServiceTableCardinality = <
   TData = Awaited<ReturnType<typeof runtimeServiceTableCardinality>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -1903,11 +1904,11 @@ export const getRuntimeServiceProfileColumnsQueryKey = (
 export type RuntimeServiceProfileColumnsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceProfileColumns>>
 >;
-export type RuntimeServiceProfileColumnsQueryError = unknown;
+export type RuntimeServiceProfileColumnsQueryError = RpcStatus;
 
 export const useRuntimeServiceProfileColumns = <
   TData = Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -1983,11 +1984,11 @@ export const getRuntimeServiceTableRowsQueryKey = (
 export type RuntimeServiceTableRowsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceTableRows>>
 >;
-export type RuntimeServiceTableRowsQueryError = unknown;
+export type RuntimeServiceTableRowsQueryError = RpcStatus;
 
 export const useRuntimeServiceTableRows = <
   TData = Awaited<ReturnType<typeof runtimeServiceTableRows>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -2062,11 +2063,11 @@ export const getRuntimeServiceGetTimeRangeSummaryQueryKey = (
 export type RuntimeServiceGetTimeRangeSummaryQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetTimeRangeSummary>>
 >;
-export type RuntimeServiceGetTimeRangeSummaryQueryError = unknown;
+export type RuntimeServiceGetTimeRangeSummaryQueryError = RpcStatus;
 
 export const useRuntimeServiceGetTimeRangeSummary = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetTimeRangeSummary>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
@@ -2145,10 +2146,10 @@ export type RuntimeServiceGetTopKMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetTopK>>
 >;
 export type RuntimeServiceGetTopKMutationBody = RuntimeServiceGetTopKBody;
-export type RuntimeServiceGetTopKMutationError = unknown;
+export type RuntimeServiceGetTopKMutationError = RpcStatus;
 
 export const useRuntimeServiceGetTopK = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2203,11 +2204,11 @@ export const getRuntimeServicePingQueryKey = () => [`/v1/ping`];
 export type RuntimeServicePingQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServicePing>>
 >;
-export type RuntimeServicePingQueryError = unknown;
+export type RuntimeServicePingQueryError = RpcStatus;
 
 export const useRuntimeServicePing = <
   TData = Awaited<ReturnType<typeof runtimeServicePing>>,
-  TError = unknown
+  TError = RpcStatus
 >(options?: {
   query?: UseQueryOptions<
     Awaited<ReturnType<typeof runtimeServicePing>>,
@@ -2264,10 +2265,10 @@ export type RuntimeServicePutFileAndMigrateMutationResult = NonNullable<
 >;
 export type RuntimeServicePutFileAndMigrateMutationBody =
   V1PutFileAndMigrateRequest;
-export type RuntimeServicePutFileAndMigrateMutationError = unknown;
+export type RuntimeServicePutFileAndMigrateMutationError = RpcStatus;
 
 export const useRuntimeServicePutFileAndMigrate = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2314,10 +2315,10 @@ export type RuntimeServiceRenameFileAndMigrateMutationResult = NonNullable<
 >;
 export type RuntimeServiceRenameFileAndMigrateMutationBody =
   V1RenameFileAndMigrateRequest;
-export type RuntimeServiceRenameFileAndMigrateMutationError = unknown;
+export type RuntimeServiceRenameFileAndMigrateMutationError = RpcStatus;
 
 export const useRuntimeServiceRenameFileAndMigrate = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2367,11 +2368,11 @@ export const getRuntimeServiceListReposQueryKey = (
 export type RuntimeServiceListReposQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListRepos>>
 >;
-export type RuntimeServiceListReposQueryError = unknown;
+export type RuntimeServiceListReposQueryError = RpcStatus;
 
 export const useRuntimeServiceListRepos = <
   TData = Awaited<ReturnType<typeof runtimeServiceListRepos>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   params?: RuntimeServiceListReposParams,
   options?: {
@@ -2430,10 +2431,10 @@ export type RuntimeServiceCreateRepoMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceCreateRepo>>
 >;
 export type RuntimeServiceCreateRepoMutationBody = V1CreateRepoRequest;
-export type RuntimeServiceCreateRepoMutationError = unknown;
+export type RuntimeServiceCreateRepoMutationError = RpcStatus;
 
 export const useRuntimeServiceCreateRepo = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2479,11 +2480,11 @@ export const getRuntimeServiceGetRepoQueryKey = (repoId: string) => [
 export type RuntimeServiceGetRepoQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetRepo>>
 >;
-export type RuntimeServiceGetRepoQueryError = unknown;
+export type RuntimeServiceGetRepoQueryError = RpcStatus;
 
 export const useRuntimeServiceGetRepo = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetRepo>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   repoId: string,
   options?: {
@@ -2541,10 +2542,10 @@ export type RuntimeServiceDeleteRepoMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceDeleteRepo>>
 >;
 
-export type RuntimeServiceDeleteRepoMutationError = unknown;
+export type RuntimeServiceDeleteRepoMutationError = RpcStatus;
 
 export const useRuntimeServiceDeleteRepo = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2597,11 +2598,11 @@ export const getRuntimeServiceListFilesQueryKey = (
 export type RuntimeServiceListFilesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListFiles>>
 >;
-export type RuntimeServiceListFilesQueryError = unknown;
+export type RuntimeServiceListFilesQueryError = RpcStatus;
 
 export const useRuntimeServiceListFiles = <
   TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   repoId: string,
   params?: RuntimeServiceListFilesParams,
@@ -2670,11 +2671,11 @@ export const getRuntimeServiceGetFileQueryKey = (
 export type RuntimeServiceGetFileQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetFile>>
 >;
-export type RuntimeServiceGetFileQueryError = unknown;
+export type RuntimeServiceGetFileQueryError = RpcStatus;
 
 export const useRuntimeServiceGetFile = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = unknown
+  TError = RpcStatus
 >(
   repoId: string,
   path: string,
@@ -2733,10 +2734,10 @@ export type RuntimeServiceDeleteFileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
 >;
 
-export type RuntimeServiceDeleteFileMutationError = unknown;
+export type RuntimeServiceDeleteFileMutationError = RpcStatus;
 
 export const useRuntimeServiceDeleteFile = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2784,10 +2785,10 @@ export type RuntimeServicePutFileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServicePutFile>>
 >;
 export type RuntimeServicePutFileMutationBody = RuntimeServicePutFileBody;
-export type RuntimeServicePutFileMutationError = unknown;
+export type RuntimeServicePutFileMutationError = RpcStatus;
 
 export const useRuntimeServicePutFile = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2834,10 +2835,10 @@ export type RuntimeServiceRenameFileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceRenameFile>>
 >;
 export type RuntimeServiceRenameFileMutationBody = RuntimeServiceRenameFileBody;
-export type RuntimeServiceRenameFileMutationError = unknown;
+export type RuntimeServiceRenameFileMutationError = RpcStatus;
 
 export const useRuntimeServiceRenameFile = <
-  TError = unknown,
+  TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
