@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
@@ -15,7 +15,7 @@ import (
 )
 
 // ListCatalogObjects implements RuntimeService
-func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObjectsRequest) (*api.ListCatalogObjectsResponse, error) {
+func (s *Server) ListCatalogObjects(ctx context.Context, req *runtimev1.ListCatalogObjectsRequest) (*runtimev1.ListCatalogObjectsResponse, error) {
 	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "") // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -26,11 +26,11 @@ func (s *Server) ListCatalogObjects(ctx context.Context, req *api.ListCatalogObj
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.ListCatalogObjectsResponse{Objects: pbs}, nil
+	return &runtimev1.ListCatalogObjectsResponse{Objects: pbs}, nil
 }
 
 // GetCatalogObject implements RuntimeService
-func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObjectRequest) (*api.GetCatalogObjectResponse, error) {
+func (s *Server) GetCatalogObject(ctx context.Context, req *runtimev1.GetCatalogObjectRequest) (*runtimev1.GetCatalogObjectResponse, error) {
 	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "") // TODO: Remove repo ID
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -41,11 +41,11 @@ func (s *Server) GetCatalogObject(ctx context.Context, req *api.GetCatalogObject
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.GetCatalogObjectResponse{Object: pb}, nil
+	return &runtimev1.GetCatalogObjectResponse{Object: pb}, nil
 }
 
 // TriggerRefresh implements RuntimeService
-func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequest) (*api.TriggerRefreshResponse, error) {
+func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
 	if !found {
@@ -103,11 +103,11 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *api.TriggerRefreshRequ
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	return &api.TriggerRefreshResponse{}, nil
+	return &runtimev1.TriggerRefreshResponse{}, nil
 }
 
 // TriggerSync implements RuntimeService
-func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (*api.TriggerSyncResponse, error) {
+func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
 	// TODO: move to using migrate
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
@@ -198,7 +198,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *api.TriggerSyncRequest) (
 	}
 
 	// Done
-	return &api.TriggerSyncResponse{
+	return &runtimev1.TriggerSyncResponse{
 		ObjectsCount:        uint32(len(tables)),
 		ObjectsAddedCount:   uint32(added),
 		ObjectsUpdatedCount: uint32(updated),

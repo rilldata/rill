@@ -3,7 +3,7 @@ package catalog
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"google.golang.org/protobuf/proto"
@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
-	catalog := &api.CatalogObject{
+func catalogObjectToPB(obj *drivers.CatalogObject) (*runtimev1.CatalogObject, error) {
+	catalog := &runtimev1.CatalogObject{
 		Name:        obj.Name,
 		Path:        obj.Path,
 		CreatedOn:   timestamppb.New(obj.CreatedOn),
@@ -26,7 +26,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 		if err != nil {
 			return nil, err
 		}
-		catalog.Type = api.CatalogObject_TYPE_SOURCE
+		catalog.Type = runtimev1.CatalogObject_TYPE_SOURCE
 		catalog.Source = src
 
 	case drivers.CatalogObjectTypeModel:
@@ -34,7 +34,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 		if err != nil {
 			return nil, err
 		}
-		catalog.Type = api.CatalogObject_TYPE_MODEL
+		catalog.Type = runtimev1.CatalogObject_TYPE_MODEL
 		catalog.Model = model
 
 	case drivers.CatalogObjectTypeMetricsView:
@@ -42,7 +42,7 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 		if err != nil {
 			return nil, err
 		}
-		catalog.Type = api.CatalogObject_TYPE_METRICS_VIEW
+		catalog.Type = runtimev1.CatalogObject_TYPE_METRICS_VIEW
 		catalog.MetricsView = metricsView
 
 	default:
@@ -52,9 +52,9 @@ func catalogObjectToPB(obj *drivers.CatalogObject) (*api.CatalogObject, error) {
 	return catalog, nil
 }
 
-func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
+func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*runtimev1.Source, error) {
 	if obj.SQL == "" {
-		source := &api.Source{}
+		source := &runtimev1.Source{}
 		err := proto.Unmarshal(obj.Definition, source)
 		if err != nil {
 			return nil, err
@@ -72,7 +72,7 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
 		panic(err) // TODO: Should never happen, but maybe handle defensively?
 	}
 
-	return &api.Source{
+	return &runtimev1.Source{
 		Sql:        obj.SQL,
 		Name:       obj.Name,
 		Connector:  source.Connector,
@@ -80,16 +80,16 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
 	}, nil
 }
 
-func catalogObjectModelToPB(obj *drivers.CatalogObject) (*api.Model, error) {
-	return &api.Model{
+func catalogObjectModelToPB(obj *drivers.CatalogObject) (*runtimev1.Model, error) {
+	return &runtimev1.Model{
 		Name:    obj.Name,
 		Sql:     obj.SQL,
-		Dialect: api.Model_DIALECT_DUCKDB,
+		Dialect: runtimev1.Model_DIALECT_DUCKDB,
 	}, nil
 }
 
-func catalogObjectMetricsViewToPB(obj *drivers.CatalogObject) (*api.MetricsView, error) {
-	var metricsView api.MetricsView
+func catalogObjectMetricsViewToPB(obj *drivers.CatalogObject) (*runtimev1.MetricsView, error) {
+	var metricsView runtimev1.MetricsView
 	err := proto.Unmarshal(obj.Definition, &metricsView)
 	return &metricsView, err
 }

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -340,12 +340,12 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsModelRepoPath})
 	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
-	testutils.CreateMetricsView(t, s, &api.MetricsView{
+	testutils.CreateMetricsView(t, s, &runtimev1.MetricsView{
 		Name:          "AdBids_dashboard",
 		From:          "AdBids_model",
 		TimeDimension: "timestamp",
 		TimeGrains:    []string{"1 day", "1 month"},
-		Dimensions: []*api.MetricsView_Dimension{
+		Dimensions: []*runtimev1.MetricsView_Dimension{
 			{
 				Name:  "publisher",
 				Label: "Publisher",
@@ -355,7 +355,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 				Label: "Domain",
 			},
 		},
-		Measures: []*api.MetricsView_Measure{
+		Measures: []*runtimev1.MetricsView_Measure{
 			{
 				Expression: "count(*)",
 			},

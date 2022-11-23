@@ -2,17 +2,15 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	structpb "google.golang.org/protobuf/types/known/structpb"
-
-	"fmt"
-
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func CreateSimpleTimeseriesTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
@@ -70,11 +68,11 @@ func TestServer_Timeseries(t *testing.T) {
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
 	mx := "max"
-	response, err := server.GenerateTimeSeries(context.Background(), &api.GenerateTimeSeriesRequest{
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &api.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*api.BasicMeasureDefinition{
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
 				{
 					Expression: "max(clicks)",
 					SqlName:    &mx,
@@ -82,13 +80,13 @@ func TestServer_Timeseries(t *testing.T) {
 			},
 		},
 		TimestampColumnName: "time",
-		TimeRange: &api.TimeSeriesTimeRange{
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
-			Interval: api.TimeGrain_TIME_GRAIN_YEAR,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &api.MetricsViewRequestFilter{
-			Include: []*api.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -112,11 +110,11 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 
 	mx := "max"
 	sm := "sum"
-	response, err := server.GenerateTimeSeries(context.Background(), &api.GenerateTimeSeriesRequest{
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &api.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*api.BasicMeasureDefinition{
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
 				{
 					Expression: "max(clicks)",
 					SqlName:    &mx,
@@ -128,13 +126,13 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 			},
 		},
 		TimestampColumnName: "time",
-		TimeRange: &api.TimeSeriesTimeRange{
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
-			Interval: api.TimeGrain_TIME_GRAIN_YEAR,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &api.MetricsViewRequestFilter{
-			Include: []*api.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -158,11 +156,11 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
 	sm := "sum"
-	response, err := server.GenerateTimeSeries(context.Background(), &api.GenerateTimeSeriesRequest{
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &api.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*api.BasicMeasureDefinition{
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
 				{
 					Expression: "sum(clicks)",
 					SqlName:    &sm,
@@ -170,13 +168,13 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 			},
 		},
 		TimestampColumnName: "time",
-		TimeRange: &api.TimeSeriesTimeRange{
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
-			Interval: api.TimeGrain_TIME_GRAIN_YEAR,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &api.MetricsViewRequestFilter{
-			Include: []*api.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android")},
@@ -192,7 +190,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	require.Equal(t, 1.0, results[0].Records["sum"])
 }
 
-func printResults(results []*api.TimeSeriesValue) {
+func printResults(results []*runtimev1.TimeSeriesValue) {
 	for _, result := range results {
 		fmt.Printf("%v ", result.Ts)
 		for k, value := range result.Records {
@@ -209,11 +207,11 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
 	mx := "max"
-	response, err := server.GenerateTimeSeries(context.Background(), &api.GenerateTimeSeriesRequest{
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &api.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*api.BasicMeasureDefinition{
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
 				{
 					Expression: "max(clicks)",
 					SqlName:    &mx,
@@ -221,13 +219,13 @@ func TestServer_Timeseries_1day(t *testing.T) {
 			},
 		},
 		TimestampColumnName: "time",
-		TimeRange: &api.TimeSeriesTimeRange{
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-01-02T00:00:00Z"),
-			Interval: api.TimeGrain_TIME_GRAIN_DAY,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
-		Filters: &api.MetricsViewRequestFilter{
-			Include: []*api.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -248,11 +246,11 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
 	cnt := "count"
-	response, err := server.GenerateTimeSeries(context.Background(), &api.GenerateTimeSeriesRequest{
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &api.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*api.BasicMeasureDefinition{
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
 				{
 					Expression: "count(*)",
 					SqlName:    &cnt,
@@ -260,13 +258,13 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 			},
 		},
 		TimestampColumnName: "time",
-		TimeRange: &api.TimeSeriesTimeRange{
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
 			End:      parseTime(t, "2019-01-02T00:00:00Z"),
-			Interval: api.TimeGrain_TIME_GRAIN_DAY,
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
-		Filters: &api.MetricsViewRequestFilter{
-			Include: []*api.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -304,10 +302,10 @@ func TestServer_normaliseTimeRange(t *testing.T) {
 
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
-	r := &api.TimeSeriesTimeRange{
-		Interval: api.TimeGrain_TIME_GRAIN_UNSPECIFIED,
+	r := &runtimev1.TimeSeriesTimeRange{
+		Interval: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
 	}
-	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId:          instanceId,
 		TimeRange:           r,
 		TableName:           "timeseries",
@@ -316,7 +314,7 @@ func TestServer_normaliseTimeRange(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
-	require.Equal(t, api.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
 
 func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
@@ -324,11 +322,11 @@ func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
 
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
-	r := &api.TimeSeriesTimeRange{
-		Interval: api.TimeGrain_TIME_GRAIN_UNSPECIFIED,
+	r := &runtimev1.TimeSeriesTimeRange{
+		Interval: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
 		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
 	}
-	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId:          instanceId,
 		TimeRange:           r,
 		TableName:           "timeseries",
@@ -337,7 +335,7 @@ func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
-	require.Equal(t, api.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
 
 func TestServer_normaliseTimeRange_Specified(t *testing.T) {
@@ -345,11 +343,11 @@ func TestServer_normaliseTimeRange_Specified(t *testing.T) {
 
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
-	r := &api.TimeSeriesTimeRange{
-		Interval: api.TimeGrain_TIME_GRAIN_YEAR,
+	r := &runtimev1.TimeSeriesTimeRange{
+		Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
 	}
-	r, err := server.normaliseTimeRange(context.Background(), &api.GenerateTimeSeriesRequest{
+	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId:          instanceId,
 		TimeRange:           r,
 		TableName:           "timeseries",
@@ -358,7 +356,7 @@ func TestServer_normaliseTimeRange_Specified(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
-	require.Equal(t, api.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
 func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {

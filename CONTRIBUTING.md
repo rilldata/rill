@@ -10,7 +10,7 @@ This is a full list of development dependencies:
 - [Node.js 18](https://nodejs.org/en/) (we recommend installing it with [nvm](https://github.com/nvm-sh/nvm))
 - [Go 1.19](https://go.dev) (on macOS, install with `brew install go`)
 - [GraalVM](https://www.graalvm.org) and [Maven](https://maven.apache.org) for Java (we recommend installing both through [sdkman](https://sdkman.io))
-- [Protocol Buffers](https://grpc.io/docs/protoc-installation/) (`protoc`) (on macOS, install with `brew install protobuf`)
+- [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 
 ## Technologies
 
@@ -40,6 +40,7 @@ Here's a guide to the top-level structure of the repository:
 - `.github` and `.travis.yml` contain CI/CD workflows. We allow both, but the goal is to move fully to Github Actions.
 - `cli` is an implementation of a new CLI in Go (in progress, not launched yet).
 - `docs` contains the user-facing documentation that we deploy to [docs.rilldata.com](https://docs.rilldata.com).
+- `proto` contains protocol buffer definitions for all Rill components, which notably includes our API interfaces.
 - `runtime` is our data plane, responsible for querying and orchestrating data infra. It currently supports DuckDB and Druid.
 - `server-cloud` contains the backend control plane for a multi-user version of Rill (in progress, not launched yet).
 - `sql` contains our SQL parser and transpiler. It's based on Apache Calcite and is used heavily by the `runtime`.
