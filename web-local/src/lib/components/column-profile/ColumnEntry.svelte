@@ -1,6 +1,6 @@
 <script>
-  import { createEventDispatcher } from "svelte";
   import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();
@@ -34,7 +34,7 @@
     }}
   >
     <div class="flex gap-2 grow items-baseline flex-1" style:min-width="0px">
-      <div class="self-center flex items-center">
+      <div class="self-center flex items-center ui-copy-icon-muted">
         <slot name="icon" />
       </div>
       <div

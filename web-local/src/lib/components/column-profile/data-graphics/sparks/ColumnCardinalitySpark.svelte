@@ -3,7 +3,6 @@
     useRuntimeServiceGetCardinalityOfColumn,
     useRuntimeServiceGetTableCardinality,
   } from "@rilldata/web-common/runtime-client";
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
   import {
@@ -16,13 +15,10 @@
 
   export let objectName: string;
   export let columnName: string;
-  export let containerWidth: number = 500;
+  export let compact = false;
   // export let compactBreakpoint = 350;
 
-  $: cardinalityFormatter =
-    containerWidth > COLUMN_PROFILE_CONFIG.compactBreakpoint
-      ? formatInteger
-      : formatCompactInteger;
+  $: cardinalityFormatter = !compact ? formatInteger : formatCompactInteger;
 
   let cardinality;
 
@@ -31,7 +27,7 @@
     objectName,
     columnName
   );
-  $: cardinality = $cardinalityQuery?.data?.cardinality;
+  $: cardinality = $cardinalityQuery?.data?.categoricalSummary?.cardinality;
 
   /**
    * Get the total rows for this profile.

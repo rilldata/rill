@@ -45,15 +45,8 @@
     class="w-full"
   >
     {#if CATEGORICALS.has(type)}
-      <div class="pr-4 w-full">
-        <!-- pl-16 pl-8 -->
+      <div class="pr-4 w-full pl-{indentLevel === 1 ? 12 : 4}">
         <TopK {columnName} {objectName} />
-        <!-- <TopKSummary
-          {containerWidth}
-          color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
-          {totalRows}
-          topK={summary.topK}
-        /> -->
       </div>
     {:else if NUMERICS.has(type) && summary?.statistics && summary?.histogram?.length}
       <div class="pl-{indentLevel === 1 ? 12 : 4}">

@@ -18,14 +18,14 @@
       containerWidth < compactBreakpoint ? "small" : "medium"
     ];
 
-  let histogramQuery;
   let histogram;
   $: histogramQuery = useRuntimeServiceGetNumericHistogram(
     $runtimeStore?.instanceId,
     objectName,
     columnName
   );
-  $: histogram = $histogramQuery?.data?.numericHistogramBins?.bins;
+  $: histogram =
+    $histogramQuery?.data?.numericSummary?.numericHistogramBins?.bins;
 </script>
 
 {#if histogram}

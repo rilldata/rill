@@ -8,7 +8,9 @@
   import { derived, writable } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
+  import { CATEGORICALS } from "../../duckdb-data-types";
   import { NATIVE_SELECT } from "../../util/component-classes";
+  import VarcharProfile from "./column-types/VarcharProfile.svelte";
   import ColumnProfileRow from "./ColumnProfileRow.svelte";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
@@ -126,23 +128,38 @@
 <div>
   {#if sortedProfile && head.length}
     {#each sortedProfile as column (column.name)}
-      <ColumnProfileRow
-        {indentLevel}
-        {entityId}
-        example={head[0][column.name] || ""}
-        {containerWidth}
-        hideNullPercentage={containerWidth <
-          COLUMN_PROFILE_CONFIG.hideNullPercentage}
-        hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
-        compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
-        view={previewView}
-        {objectName}
-        columnName={column.name}
-        type={column.type}
-        summary={column.summary}
-        totalRows={cardinality}
-        nullCount={column.nullCount}
-      />
+      {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
+      {@const hideNullPercentage =
+        containerWidth < COLUMN_PROFILE_CONFIG.hideNullPercentage}
+      {@const compact =
+        containerWidth < COLUMN_PROFILE_CONFIG.compactBreakpoint}
+      {#if CATEGORICALS.has(column.type)}
+        <VarcharProfile
+          {objectName}
+          columnName={column.name}
+          {hideRight}
+          {hideNullPercentage}
+          {compact}
+        />
+      {:else}
+        <ColumnProfileRow
+          {indentLevel}
+          {entityId}
+          example={head[0][column.name] || ""}
+          {containerWidth}
+          hideNullPercentage={containerWidth <
+            COLUMN_PROFILE_CONFIG.hideNullPercentage}
+          hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
+          compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
+          view={previewView}
+          {objectName}
+          columnName={column.name}
+          type={column.type}
+          summary={column.summary}
+          totalRows={cardinality}
+          nullCount={column.nullCount}
+        />
+      {/if}
     {/each}
   {/if}
 </div>
