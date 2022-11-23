@@ -17,7 +17,7 @@
 
   import {
     useRuntimeServiceGetNullCount,
-    useRuntimeServiceTableCardinality,
+    useRuntimeServiceGetTableCardinality,
   } from "@rilldata/web-common/runtime-client";
   import { convertTimestampPreview } from "../../util/convertTimestampPreview";
   import { TimestampSpark } from "../data-graphic/compositions/timestamp-profile";
@@ -65,7 +65,7 @@
    * Get the total rows for this profile.
    */
 
-  $: totalRowsQuery = useRuntimeServiceTableCardinality(
+  $: totalRowsQuery = useRuntimeServiceGetTableCardinality(
     $runtimeStore?.instanceId,
     objectName
   );

@@ -1,8 +1,8 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetNullCount,
+    useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
-    useRuntimeServiceTableCardinality,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
@@ -41,7 +41,7 @@
    * Get the total rows for this profile.
    */
   let totalRowsQuery;
-  $: totalRowsQuery = useRuntimeServiceTableCardinality(
+  $: totalRowsQuery = useRuntimeServiceGetTableCardinality(
     $runtimeStore?.instanceId,
     objectName
   );

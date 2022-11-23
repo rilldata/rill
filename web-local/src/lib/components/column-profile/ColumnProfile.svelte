@@ -40,6 +40,7 @@
     $runtimeStore?.instanceId,
     objectName
   );
+  $: console.log($profileColumns);
 
   /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
   function getSummaries(objectName, instanceId, profileColumnResults) {
@@ -59,7 +60,7 @@
             return {
               ...col,
               nullCount: +nullValues?.data?.count,
-              cardinality: +cardinality?.data?.cardinality,
+              cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
             };
           }
         );
