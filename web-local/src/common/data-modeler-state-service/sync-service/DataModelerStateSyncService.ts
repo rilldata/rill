@@ -53,36 +53,12 @@ export class DataModelerStateSyncService {
     );
   }
 
-  public async init(): Promise<void> {
-    await Promise.all(
-      this.entityStateSyncServices.map((entityStateSyncService) =>
-        entityStateSyncService.init()
-      )
-    );
-  }
-
-  public async destroy(): Promise<void> {
-    await Promise.all(
-      this.entityStateSyncServices.map((entityStateSyncService) =>
-        entityStateSyncService.destroy()
-      )
-    );
-  }
-
   private static getEntityRepository(
     config: RootConfig,
     dataModelerService: DataModelerService,
     entityType: EntityType,
     stateType: StateType
   ): EntityRepository<EntityRecord> {
-    if (entityType === EntityType.Model && stateType === StateType.Persistent) {
-      return new PersistentModelRepository(
-        config.state,
-        dataModelerService,
-        entityType,
-        stateType
-      );
-    }
     return new EntityRepository(
       config.state,
       dataModelerService,
@@ -115,5 +91,21 @@ export class DataModelerStateSyncService {
       return new PersistentModelUpdateHandler(config, dataModelerService);
     }
     return new EntityStateUpdatesHandler(config, dataModelerService);
+  }
+
+  public async init(): Promise<void> {
+    await Promise.all(
+      this.entityStateSyncServices.map((entityStateSyncService) =>
+        entityStateSyncService.init()
+      )
+    );
+  }
+
+  public async destroy(): Promise<void> {
+    await Promise.all(
+      this.entityStateSyncServices.map((entityStateSyncService) =>
+        entityStateSyncService.destroy()
+      )
+    );
   }
 }

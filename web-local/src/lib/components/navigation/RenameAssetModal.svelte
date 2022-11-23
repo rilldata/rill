@@ -8,7 +8,10 @@
   import { renameEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { runtimeStore } from "../../application-state-stores/application-store";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../application-state-stores/application-store";
   import Input from "../forms/Input.svelte";
   import SubmissionError from "../forms/SubmissionError.svelte";
   import { Dialog } from "../modal/index";

@@ -84,7 +84,7 @@
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}
         {@const persistentTable = $persistentTableStore.entities.find(
-          (t) => t["tableName"] == sourceName
+          (t) => t["tableName"] === sourceName
         )}
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === persistentTable?.id

@@ -4,6 +4,7 @@ import {
   V1PutFileAndMigrateResponse,
 } from "@rilldata/web-common/runtime-client";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
+import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
@@ -32,6 +33,9 @@ export async function createModel(
     });
     throw new Error(res.errors[0].filePath);
   }
+  await dataModelerService.dispatch("addModel", [
+    { name: newModelName, query: sql, asynchronous: true },
+  ]);
   if (!setAsActive) return;
   goto(`/model/${newModelName}`);
   return queryClient.invalidateQueries(

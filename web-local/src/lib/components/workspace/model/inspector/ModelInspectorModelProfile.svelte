@@ -19,6 +19,8 @@
   import { slide } from "svelte/transition";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
+  export let modelName: string;
+
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
@@ -39,15 +41,16 @@
   let sourceTableReferences = [];
   let showColumns = true;
 
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $store?.activeEntity?.id;
-
   /** get current model */
   let currentModel: PersistentModelEntity;
   $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
+    modelName && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
       : undefined;
+
+  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+  $: activeEntityID = currentModel?.id;
+
   /** get current derived model*/
   let currentDerivedModel: DerivedModelEntity;
   $: currentDerivedModel =

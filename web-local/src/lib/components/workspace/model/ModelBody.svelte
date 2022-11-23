@@ -21,7 +21,10 @@
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
   import notifications from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
@@ -127,6 +130,10 @@
         modelError = resp.errors[0].message;
       } else {
         modelError = "";
+        await dataModelerService.dispatch("updateModelQuery", [
+          currentModel.id,
+          content,
+        ]);
       }
     } catch (err) {
       modelError = err.response.data.message;

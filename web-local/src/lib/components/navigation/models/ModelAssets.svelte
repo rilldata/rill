@@ -8,7 +8,10 @@
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import { getName } from "../../../../common/utils/incrementName";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -73,7 +76,7 @@
     {#if $modelNames?.data && $persistentModelStore?.entities && $derivedModelStore?.entities}
       {#each $modelNames.data as modelName (modelName)}
         {@const persistentModel = $persistentModelStore.entities.find(
-          (model) => model["name"] === modelName
+          (model) => model["tableName"] === modelName
         )}
         {@const derivedModel = $derivedModelStore.entities.find(
           (model) => model["id"] === persistentModel?.id
