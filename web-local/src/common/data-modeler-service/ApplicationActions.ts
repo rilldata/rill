@@ -61,20 +61,24 @@ export class ApplicationActions extends DataModelerActions {
 
     // upgrade profile priority of newly selected asset
     if (entityType === EntityType.Model) {
-      const columns = this.getEntityColumns(EntityType.Model, entityId);
+      try {
+        const columns = this.getEntityColumns(EntityType.Model, entityId);
 
-      columns.forEach((column) => {
-        Object.values(MetadataPriority).forEach((priority) => {
-          this.databaseActionQueue.updatePriority(
-            currentActiveAsset.id + column + priority,
-            getProfilePriority(
-              DatabaseActionQueuePriority.ActiveModelProfile,
-              DatabaseProfilesFieldPriority.NonFocused,
-              ProfileMetadataPriorityMap[priority]
-            )
-          );
+        columns?.forEach((column) => {
+          Object.values(MetadataPriority).forEach((priority) => {
+            this.databaseActionQueue.updatePriority(
+              currentActiveAsset.id + column + priority,
+              getProfilePriority(
+                DatabaseActionQueuePriority.ActiveModelProfile,
+                DatabaseProfilesFieldPriority.NonFocused,
+                ProfileMetadataPriorityMap[priority]
+              )
+            );
+          });
         });
-      });
+      } catch (e) {
+        // swallow error for now
+      }
     }
 
     this.dataModelerStateService.dispatch("setActiveAsset", [

@@ -60,12 +60,7 @@ export async function deleteEntity(
       },
     });
     if (activeEntity.name === name) {
-      const nextSourceName = getNextEntityName(names, name);
-      if (nextSourceName) {
-        goto(`/source/${nextSourceName}`);
-      } else {
-        goto("/");
-      }
+      goto(getRouteFromName(getNextEntityName(names, name), type));
     }
     // TODO: update all entities based on affected path
     await queryClient.invalidateQueries(
