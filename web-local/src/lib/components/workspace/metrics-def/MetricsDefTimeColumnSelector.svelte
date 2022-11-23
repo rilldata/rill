@@ -14,12 +14,12 @@
 
   $: instanceId = $runtimeStore.instanceId;
 
-  $: model_path = metricsInternalRep.getMetricKey("model_path");
+  $: model_path = $metricsInternalRep.getMetricKey("model_path");
   $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
   $: selectedModel = $getModel.data?.object?.model;
 
   $: timeColumnSelectedValue =
-    metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
+    $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
@@ -37,7 +37,7 @@
   }
 
   function updateMetricsDefinitionHandler(evt: Event) {
-    metricsInternalRep.updateMetricKey(
+    $metricsInternalRep.updateMetricKey(
       "timeseries",
       (<HTMLSelectElement>evt.target).value
     );

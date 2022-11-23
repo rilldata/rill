@@ -6,10 +6,10 @@
   export let metricsDefName;
   export let metricsInternalRep;
 
-  $: titleInput = metricsInternalRep.getMetricKey("display_name");
+  $: titleInput = $metricsInternalRep.getMetricKey("display_name");
 
   const onChangeCallback = async (e) => {
-    metricsInternalRep.updateMetricKey("display_name", e.target.value);
+    $metricsInternalRep.updateMetricKey("display_name", e.target.value);
   };
 
   $: metricsSourceSelectionError = false;

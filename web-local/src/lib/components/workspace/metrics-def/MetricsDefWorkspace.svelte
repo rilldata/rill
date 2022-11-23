@@ -20,7 +20,8 @@
     useRuntimeServiceGetCatalogObject,
     useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
-  import { MetricsInternalRepresentation } from "./metricsInternalRepresentation";
+  import { createInternalRepresentation } from "./metrics-internal-store";
+  // import { $metricsresentation } from "./$metricsresentation";
 
   export let metricsDefName;
   export let nonStandardError;
@@ -29,11 +30,13 @@
   export let yaml;
 
   // the local copy of the yaml string
-  let metricsInternalRep = new MetricsInternalRepresentation(yaml);
+  // let $metrics = new $metricsresentation(yaml);
+
+  let metrics = createInternalRepresentation(yaml);
 
   // reset internal representation in case of deviation from runtime YAML
-  $: if (yaml !== metricsInternalRep.internalYAML) {
-    metricsInternalRep = new MetricsInternalRepresentation(yaml);
+  $: if (yaml !== $metrics.internalYAML) {
+    metrics = createInternalRepresentation(yaml);
   }
 
   $: repoId = $runtimeStore.repoId;
@@ -46,36 +49,33 @@
         repoId,
         instanceId,
         path: `dashboards/${metricsDefName}.yaml`,
-        blob: metricsInternalRep.internalYAML,
+        blob: $metrics.internalYAML,
         create: false,
       },
     });
   }
 
-  $: measures = metricsInternalRep.getMeasures();
+  $: measures = $metrics.getMeasures();
 
   $: console.log("measures", measures);
-  $: dimensions = metricsInternalRep.getDimensions();
+  $: dimensions = $metrics.getDimensions();
 
-  $: model_path = metricsInternalRep.getMetricKey("model_path");
+  $: model_path = $metrics.getMetricKey("model_path");
   $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
   $: model = $getModel.data?.object?.model;
 
   function handleCreateMeasure() {
-    metricsInternalRep.addNewMeasure();
+    $metrics.addNewMeasure();
     callPutAndMigrate();
-    metricsInternalRep = metricsInternalRep;
   }
   function handleUpdateMeasure(index, name, value) {
-    metricsInternalRep.updateMeasure(index, name, value);
+    $metrics.updateMeasure(index, name, value);
     callPutAndMigrate();
-    metricsInternalRep = metricsInternalRep;
   }
 
   function handleDeleteMeasure(evt) {
-    metricsInternalRep.deleteMeasure(evt.detail);
+    $metrics.deleteMeasure(evt.detail);
     callPutAndMigrate();
-    metricsInternalRep = metricsInternalRep;
 
     // invalidateMetricsView(queryClient, metricsDefId);
   }
@@ -90,15 +90,15 @@
   }
 
   function handleCreateDimension() {
-    metricsInternalRep.addNewDimension();
+    $metrics.addNewDimension();
     callPutAndMigrate();
   }
   function handleUpdateDimension(index, name, value) {
-    metricsInternalRep.updateDimension(index, name, value);
+    $metrics.updateDimension(index, name, value);
     callPutAndMigrate();
   }
   function handleDeleteDimension(evt) {
-    metricsInternalRep.deleteDimension(evt.detail);
+    $metrics.deleteDimension(evt.detail);
     callPutAndMigrate();
     // invalidateMetricsView(queryClient, metricsDefId);
   }
@@ -140,7 +140,10 @@
 {#if measures && dimensions}
   <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
     <div slot="body">
-      <MetricsDefWorkspaceHeader {metricsDefName} {metricsInternalRep} />
+      <MetricsDefWorkspaceHeader
+        {metricsDefName}
+        metricsInternalRep={metrics}
+      />
 
       <div
         class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
@@ -148,8 +151,8 @@
       >
         <div class="flex-none flex flex-row">
           <div>
-            <MetricsDefModelSelector {metricsInternalRep} />
-            <MetricsDefTimeColumnSelector {metricsInternalRep} />
+            <MetricsDefModelSelector metricsInternalRep={metrics} />
+            <MetricsDefTimeColumnSelector metricsInternalRep={metrics} />
           </div>
           <div class="self-center pl-10">
             {#if metricsSourceSelectionError}

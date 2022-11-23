@@ -3,8 +3,10 @@
   import { page } from "$app/stores";
   import {
     getRuntimeServiceListFilesQueryKey,
+    useRuntimeServiceDeleteFileAndMigrate,
     useRuntimeServiceListFiles,
     useRuntimeServicePutFileAndMigrate,
+    useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -50,12 +52,14 @@
   $: instanceId = $runtimeStore.instanceId;
 
   $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
+
   $: dashboardNames = $getFiles?.data?.paths
     ?.filter((path) => path.includes("dashboards/"))
     .map((path) => path.replace("/dashboards/", "").replace(".yaml", ""));
 
   const createDashboard = useRuntimeServicePutFileAndMigrate();
-  // const deleteDashboard = useRuntimeServiceDeleteFileAndMigrate();
+  const deleteDashboard = useRuntimeServiceDeleteFileAndMigrate();
+  const renameDashboard = useRuntimeServiceRenameFileAndMigrate();
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -134,25 +138,41 @@
     );
   };
 
-  const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
-    const sourceModelId = metricsDef.sourceModelId;
+  const deleteMetricsDef = async (dashboardName: string) => {
+    const sourceModelName = undefined; //TODO fix later with model integration
 
-    notificationStore.send({
-      message: `Dashboard "${metricsDef.metricDefLabel}" deleted`,
-    });
-    store.dispatch(deleteMetricsDefsApi(metricsDef.id));
-
-    if (
-      ($applicationStore.activeEntity.type === EntityType.MetricsDefinition ||
-        $applicationStore.activeEntity.type === EntityType.MetricsExplorer) &&
-      $applicationStore.activeEntity.id === metricsDef.id
-    ) {
-      if (sourceModelId) {
-        goto(`/model/${sourceModelId}`);
-      } else {
-        goto("/");
+    await $deleteDashboard.mutate(
+      {
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: $runtimeStore.instanceId,
+          path: `dashboards/${dashboardName}.yaml`,
+        },
+      },
+      {
+        onSuccess: () => {
+          notificationStore.send({
+            message: `Dashboard "${dashboardName}" deleted`,
+          });
+          if (
+            ($applicationStore.activeEntity.type ===
+              EntityType.MetricsDefinition ||
+              $applicationStore.activeEntity.type ===
+                EntityType.MetricsExplorer) &&
+            $applicationStore.activeEntity.id === dashboardName
+          ) {
+            if (sourceModelName) {
+              goto(`/model/${sourceModelName}`);
+            } else {
+              goto("/");
+            }
+          }
+          queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        },
       }
-    }
+    );
   };
 
   onMount(() => {
@@ -194,12 +214,12 @@
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
         </svelte:fragment>
 
-        <!-- <svelte:fragment slot="menu-items">
-          {@const selectionError = MetricsSourceSelectionError(metricsDef)}
+        <svelte:fragment slot="menu-items">
+          <!-- {@const selectionError = MetricsSourceSelectionError(metricsDef)}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""}
-          <MenuItem
+            selectionError !== ""} -->
+          <!-- <MenuItem
             icon
             disabled={hasSourceError}
             on:select={() => editModel(metricsDef.sourceModelId)}
@@ -220,8 +240,8 @@
             <MetricsIcon slot="icon" />
             edit metrics
           </MenuItem>
-          <Divider />
-          <MenuItem
+          <Divider /> -->
+          <!-- <MenuItem
             icon
             on:select={() =>
               openRenameMetricsDefModal(
@@ -231,12 +251,12 @@
           >
             <EditIcon slot="icon" />
             rename...</MenuItem
-          >
-          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef)}>
+          > -->
+          <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
             delete</MenuItem
           >
-        </svelte:fragment> -->
+        </svelte:fragment>
       </NavigationEntry>
     {/each}
   </div>

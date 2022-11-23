@@ -7,14 +7,14 @@
   export let metricsInternalRep;
 
   $: sourceModelDisplayValue =
-    metricsInternalRep.getMetricKey("model_path") || "__DEFAULT_VALUE__";
+    $metricsInternalRep.getMetricKey("model_path") || "__DEFAULT_VALUE__";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
   function updateMetricsDefinitionHandler(sourceModelName) {
-    metricsInternalRep.updateMetricKey("model_path", sourceModelName);
+    $metricsInternalRep.updateMetricKey("model_path", sourceModelName);
   }
 </script>
 
