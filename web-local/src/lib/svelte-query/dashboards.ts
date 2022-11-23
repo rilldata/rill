@@ -1,6 +1,6 @@
 import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
 
-export function useModelNames(repoId: string) {
+export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
     repoId,
     {
@@ -11,8 +11,10 @@ export function useModelNames(repoId: string) {
         refetchInterval: 1000,
         select: (data) =>
           data.paths
-            ?.filter((path) => path.includes("models/"))
-            .map((path) => path.replace("/models/", "").replace(".sql", "")),
+            ?.filter((path) => path.includes("dashboards/"))
+            .map((path) =>
+              path.replace("/dashboards/", "").replace(".yaml", "")
+            ),
       },
     }
   );

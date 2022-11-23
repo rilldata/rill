@@ -13,7 +13,7 @@ export function useSourceNames(repoId: string) {
   return useRuntimeServiceListFiles(
     repoId,
     {
-      glob: "sources/*.yaml",
+      glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
     {
       query: {

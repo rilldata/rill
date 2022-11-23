@@ -5,7 +5,7 @@ import {
   V1RenameFileAndMigrateResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import {
@@ -59,7 +59,7 @@ export async function deleteEntity(
         path: getFileFromName(name, type),
       },
     });
-    if (activeEntity.type === EntityType.Table && activeEntity.name === name) {
+    if (activeEntity.name === name) {
       const nextSourceName = getNextEntityName(names, name);
       if (nextSourceName) {
         goto(`/source/${nextSourceName}`);

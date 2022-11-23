@@ -4,62 +4,49 @@
   import {
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndMigrate,
-    useRuntimeServiceListFiles,
     useRuntimeServicePutFileAndMigrate,
-    useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { getName } from "@rilldata/web-local/common/utils/incrementName";
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import notificationStore from "@rilldata/web-local/lib/components/notifications";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getContext, onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { ApplicationStore } from "../../../application-state-stores/application-store";
   import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import {
-    createMetricsDefsAndFocusApi,
-    deleteMetricsDefsApi,
     fetchManyMetricsDefsApi,
     validateSelectedSources,
   } from "../../../redux-store/metrics-definition/metrics-definition-apis";
   import { getAllMetricsDefinitionsReadable } from "../../../redux-store/metrics-definition/metrics-definition-readables";
   import { store } from "../../../redux-store/store-root";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
-  import EditIcon from "../../icons/EditIcon.svelte";
   import { default as Explore } from "../../icons/Explore.svelte";
-  import MetricsIcon from "../../icons/Metrics.svelte";
-  import Model from "../../icons/Model.svelte";
-  import { Divider, MenuItem } from "../../menu";
+  import { MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
   import { metricsTemplate } from "./metricsUtils";
-  import { getName } from "@rilldata/web-local/common/utils/incrementName";
 
   $: repoId = $runtimeStore.repoId;
   $: instanceId = $runtimeStore.instanceId;
 
-  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
-
-  $: dashboardNames = $getFiles?.data?.paths
-    ?.filter((path) => path.includes("dashboards/"))
-    .map((path) => path.replace("/dashboards/", "").replace(".yaml", ""));
+  $: dashboardNames = useDashboardNames($runtimeStore.repoId);
 
   const createDashboard = useRuntimeServicePutFileAndMigrate();
   const deleteDashboard = useRuntimeServiceDeleteFileAndMigrate();
-  const renameDashboard = useRuntimeServiceRenameFileAndMigrate();
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -71,7 +58,6 @@
   let showMetricsDefs = true;
 
   let showRenameMetricsDefinitionModal = false;
-  let renameMetricsDefId = null;
   let renameMetricsDefName = null;
 
   const openRenameMetricsDefModal = (
@@ -79,7 +65,6 @@
     metricsDefName: string
   ) => {
     showRenameMetricsDefinitionModal = true;
-    renameMetricsDefId = metricsDefId;
     renameMetricsDefName = metricsDefName;
   };
 
@@ -87,7 +72,7 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    const newDashboardName = getName("dashboard", dashboardNames);
+    const newDashboardName = getName("dashboard", $dashboardNames.data);
     const yaml = metricsTemplate;
     $createDashboard.mutate(
       {
@@ -139,39 +124,13 @@
   };
 
   const deleteMetricsDef = async (dashboardName: string) => {
-    const sourceModelName = undefined; //TODO fix later with model integration
-
-    await $deleteDashboard.mutate(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: $runtimeStore.instanceId,
-          path: `dashboards/${dashboardName}.yaml`,
-        },
-      },
-      {
-        onSuccess: () => {
-          notificationStore.send({
-            message: `Dashboard "${dashboardName}" deleted`,
-          });
-          if (
-            ($applicationStore.activeEntity.type ===
-              EntityType.MetricsDefinition ||
-              $applicationStore.activeEntity.type ===
-                EntityType.MetricsExplorer) &&
-            $applicationStore.activeEntity.id === dashboardName
-          ) {
-            if (sourceModelName) {
-              goto(`/model/${sourceModelName}`);
-            } else {
-              goto("/");
-            }
-          }
-          queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-        },
-      }
+    await deleteEntity(
+      $runtimeStore,
+      dashboardName,
+      EntityType.MetricsDefinition,
+      $deleteDashboard,
+      $applicationStore.activeEntity,
+      $dashboardNames.data
     );
   };
 
@@ -190,19 +149,19 @@
 
 <NavigationHeader
   bind:show={showMetricsDefs}
-  tooltipText="create a new dashboard"
   on:add={dispatchAddEmptyMetricsDef}
+  tooltipText="create a new dashboard"
 >
   <Explore size="16px" /> Dashboards
 </NavigationHeader>
 
-{#if showMetricsDefs && dashboardNames}
+{#if showMetricsDefs && $dashboardNames.data}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
-    {#each dashboardNames as dashboardName (dashboardName)}
+    {#each $dashboardNames.data as dashboardName (dashboardName)}
       <NavigationEntry
         notExpandable={true}
         name={dashboardName}
@@ -264,7 +223,6 @@
     <RenameAssetModal
       entityType={EntityType.MetricsDefinition}
       closeModal={() => (showRenameMetricsDefinitionModal = false)}
-      entityId={renameMetricsDefId}
       currentAssetName={renameMetricsDefName}
     />
   {/if}

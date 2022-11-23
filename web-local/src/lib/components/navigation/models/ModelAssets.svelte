@@ -1,12 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    useRuntimeServiceListFiles,
-    useRuntimeServicePutFileAndMigrate,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServicePutFileAndMigrate } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import { getName } from "../../../../common/utils/incrementName";
@@ -23,10 +21,7 @@
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
-  $: modelNames = $getFiles?.data?.paths
-    ?.filter((path) => path.includes("models/"))
-    .map((path) => path.replace("/models/", "").replace(".sql", ""));
+  $: modelNames = useModelNames($runtimeStore.repoId);
 
   const createModelMutation = useRuntimeServicePutFileAndMigrate();
 
@@ -42,7 +37,7 @@
   async function handleAddModel() {
     await createModel(
       $runtimeStore,
-      getName("model", modelNames),
+      getName("model", $modelNames.data),
       $createModelMutation
     );
     // if the models are not visible in the assets list, show them.
@@ -75,8 +70,8 @@
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
-    {#if modelNames && $persistentModelStore?.entities && $derivedModelStore?.entities}
-      {#each modelNames as modelName (modelName)}
+    {#if $modelNames?.data && $persistentModelStore?.entities && $derivedModelStore?.entities}
+      {#each $modelNames.data as modelName (modelName)}
         {@const persistentModel = $persistentModelStore.entities.find(
           (model) => model["name"] === modelName
         )}
