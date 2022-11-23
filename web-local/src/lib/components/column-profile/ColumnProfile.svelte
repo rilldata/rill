@@ -88,7 +88,6 @@
   } else {
     sortedProfile = profile;
   }
-  $: if (profile?.length) console.log([...profile].sort(sortMethod));
 </script>
 
 <!-- pl-16 -->
