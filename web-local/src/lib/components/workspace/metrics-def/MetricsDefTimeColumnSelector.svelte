@@ -14,9 +14,9 @@
 
   $: instanceId = $runtimeStore.instanceId;
 
-  $: model_path = $metricsInternalRep.getMetricKey("model_path");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model_path);
-  $: selectedModel = $getModel.data?.object?.model;
+  $: model = $metricsInternalRep.getMetricKey("from");
+  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model);
+  $: selectedModel = $getModel.data?.entry?.model;
 
   $: timeColumnSelectedValue =
     $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";

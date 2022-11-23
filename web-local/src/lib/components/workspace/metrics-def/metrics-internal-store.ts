@@ -1,5 +1,5 @@
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
-import { get, readable, Subscriber, writable } from "svelte/store";
+import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 
@@ -9,7 +9,7 @@ export interface MetricsConfig {
   timeseries: string;
   timegrains?: Array<string>;
   default_timegrain?: Array<string>;
-  model_path: string;
+  from: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
 }
@@ -39,15 +39,16 @@ export class MetricsInternalRepresentation {
   // String representation of Internal YAML document
   internalYAML: string;
 
-  // Svelte method to set store value
-  set?: Subscriber<MetricsInternalRepresentation>;
-
   updateStore: (instance: MetricsInternalRepresentation) => void;
 
-  constructor(yamlString: string) {
+  updateRuntime: (yamlString: string) => void;
+
+  constructor(yamlString: string, updateRuntime) {
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
+
+    this.updateRuntime = updateRuntime;
   }
 
   bindStore(updateStore: Subscriber<MetricsInternalRepresentation>) {
@@ -101,6 +102,12 @@ export class MetricsInternalRepresentation {
       collectionStyle: "block",
     });
     this.internalRepresentation = this.internalRepresentationDocument.toJSON();
+
+    // Update svelte store
+    this.updateStore(this);
+
+    // Update Runtime
+    this.updateRuntime(this.internalYAML);
   }
 
   getMetricKey(key) {
@@ -129,14 +136,11 @@ export class MetricsInternalRepresentation {
 
     this.internalRepresentationDocument.addIn(["measures"], measureNode);
     this.regenerateInternalYAML();
-
-    this.updateStore(this);
   }
 
   deleteMeasure(index: number) {
     this.internalRepresentationDocument.deleteIn(["measures", index]);
     this.regenerateInternalYAML();
-    this.updateStore(this);
   }
 
   updateMeasure(index: number, key: string, change) {
@@ -160,7 +164,6 @@ export class MetricsInternalRepresentation {
 
     this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
     this.regenerateInternalYAML();
-    this.updateStore(this);
   }
 
   updateDimension(index: number, key: string, change) {
@@ -174,29 +177,18 @@ export class MetricsInternalRepresentation {
   deleteDimension(index: number) {
     this.internalRepresentationDocument.deleteIn(["dimensions", index]);
     this.regenerateInternalYAML();
-    this.updateStore(this);
   }
 }
 
-export function createInternalRepresentation(yamlString) {
-  const metricRep = new MetricsInternalRepresentation(yamlString);
+export function createInternalRepresentation(yamlString, updateRuntime) {
+  const metricRep = new MetricsInternalRepresentation(
+    yamlString,
+    updateRuntime
+  );
 
-  const store = writable(metricRep);
-  metricRep.bindStore((instance) => {
-    store.update((_) => instance);
-
-    console.log(
-      "measures in store",
-      get(store).internalRepresentation.measures
-    );
+  return readable(metricRep, (set) => {
+    metricRep.bindStore((instance) => {
+      set(instance);
+    });
   });
-
-  return store;
-
-  // return readable(metricRep, (set) => {
-  //   metricRep.bindStore((instance) => {
-  //     console.log("Instance", instance);
-  //     set(instance);
-  //   });
-  // });
 }

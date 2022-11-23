@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
   import { Callout } from "../../callout";
 
-  import { getContext } from "svelte";
   import { CATEGORICALS } from "../../../duckdb-data-types";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
@@ -16,65 +14,67 @@
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
   import {
+    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { createInternalRepresentation } from "./metrics-internal-store";
-  // import { $metricsresentation } from "./$metricsresentation";
-
-  export let metricsDefName;
-  export let nonStandardError;
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 
   // the runtime yaml string
-  export let yaml;
-
-  // the local copy of the yaml string
-  // let $metrics = new $metricsresentation(yaml);
-
-  let metrics = createInternalRepresentation(yaml);
-
-  // reset internal representation in case of deviation from runtime YAML
-  $: if (yaml !== $metrics.internalYAML) {
-    metrics = createInternalRepresentation(yaml);
-  }
+  export let yaml: string;
+  export let metricsDefName: string;
+  export let nonStandardError;
 
   $: instanceId = $runtimeStore.instanceId;
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
-  function callPutAndMigrate() {
+  function callPutAndMigrate(internalYamlString) {
     $metricMigrate.mutate({
       data: {
         instanceId,
         path: `dashboards/${metricsDefName}.yaml`,
-        blob: $metrics.internalYAML,
+        blob: internalYamlString,
         create: false,
       },
     });
+
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetFileQueryKey(
+        instanceId,
+        `dashboards/${metricsDefName}.yaml`
+      )
+    );
   }
 
-  $: measures = $metrics.getMeasures();
+  let metricsInternalRep = createInternalRepresentation(
+    yaml,
+    callPutAndMigrate
+  );
 
-  $: console.log("measures", measures);
-  $: dimensions = $metrics.getDimensions();
+  // reset internal representation in case of deviation from runtime YAML
+  // $: if (yaml !== $metrics.internalYAML) {
+  //   metrics = createInternalRepresentation(yaml);
+  // }
 
-  $: model_path = $metrics.getMetricKey("model_path");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model_path);
-  $: model = $getModel.data?.object?.model;
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
+
+  $: modelName = $metricsInternalRep.getMetricKey("from");
+  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
+  $: model = $getModel.data?.entry?.model;
+
+  $: console.log(model);
 
   function handleCreateMeasure() {
-    $metrics.addNewMeasure();
-    callPutAndMigrate();
+    $metricsInternalRep.addNewMeasure();
   }
   function handleUpdateMeasure(index, name, value) {
-    $metrics.updateMeasure(index, name, value);
-    callPutAndMigrate();
+    $metricsInternalRep.updateMeasure(index, name, value);
   }
 
   function handleDeleteMeasure(evt) {
-    $metrics.deleteMeasure(evt.detail);
-    callPutAndMigrate();
-
-    // invalidateMetricsView(queryClient, metricsDefId);
+    $metricsInternalRep.deleteMeasure(evt.detail);
   }
   function handleMeasureExpressionValidation(index, name, value) {
     // store.dispatch(
@@ -87,24 +87,14 @@
   }
 
   function handleCreateDimension() {
-    $metrics.addNewDimension();
-    callPutAndMigrate();
+    $metricsInternalRep.addNewDimension();
   }
   function handleUpdateDimension(index, name, value) {
-    $metrics.updateDimension(index, name, value);
-    callPutAndMigrate();
+    $metricsInternalRep.updateDimension(index, name, value);
   }
   function handleDeleteDimension(evt) {
-    $metrics.deleteDimension(evt.detail);
-    callPutAndMigrate();
-    // invalidateMetricsView(queryClient, metricsDefId);
+    $metricsInternalRep.deleteDimension(evt.detail);
   }
-
-  // FIXME: the only data that is needed from the derived model store is the data types of the
-  // columns in this model. I need to make this available in the redux store.
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
 
   let validDimensionSelectorOption: SelectorOption[] = [];
   $: if (model) {
@@ -137,10 +127,7 @@
 {#if measures && dimensions}
   <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
     <div slot="body">
-      <MetricsDefWorkspaceHeader
-        {metricsDefName}
-        metricsInternalRep={metrics}
-      />
+      <MetricsDefWorkspaceHeader {metricsDefName} {metricsInternalRep} />
 
       <div
         class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
@@ -148,8 +135,8 @@
       >
         <div class="flex-none flex flex-row">
           <div>
-            <MetricsDefModelSelector metricsInternalRep={metrics} />
-            <MetricsDefTimeColumnSelector metricsInternalRep={metrics} />
+            <MetricsDefModelSelector {metricsInternalRep} />
+            <MetricsDefTimeColumnSelector {metricsInternalRep} />
           </div>
           <div class="self-center pl-10">
             {#if metricsSourceSelectionError}

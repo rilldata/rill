@@ -1,20 +1,25 @@
 <script lang="ts">
   import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { Readable } from "svelte/store";
   import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import ModelIcon from "../../icons/Model.svelte";
   import { getContext } from "svelte";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import type { MetricsInternalRepresentation } from "./metrics-internal-store";
 
-  export let metricsInternalRep;
+  export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
   $: sourceModelDisplayValue =
-    $metricsInternalRep.getMetricKey("model_path") || "__DEFAULT_VALUE__";
+    $metricsInternalRep.getMetricKey("from") || "__DEFAULT_VALUE__";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
+  $: allModels = useModelNames($runtimeStore.repoId);
   function updateMetricsDefinitionHandler(sourceModelName) {
-    $metricsInternalRep.updateMetricKey("model_path", sourceModelName);
+    $metricsInternalRep.updateMetricKey("from", sourceModelName);
   }
 </script>
 
@@ -28,14 +33,14 @@
       style="background-color: #FFF; width:18em"
       value={sourceModelDisplayValue}
       on:change={(evt) => {
-        updateMetricsDefinitionHandler({ sourceModelName: evt.target.value });
+        updateMetricsDefinitionHandler(evt.target?.value);
       }}
     >
       <option value="__DEFAULT_VALUE__" disabled selected
         >select a model...</option
       >
-      {#each $persistentModelStore?.entities || [] as entity}
-        <option value={entity.name}>{entity.name}</option>
+      {#each $allModels.data || [] as modelName}
+        <option value={modelName}>{modelName}</option>
       {/each}
     </select>
   </div>
