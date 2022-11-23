@@ -20,6 +20,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1ListConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
   /v1/delete-and-migrate:
@@ -31,6 +35,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1DeleteFileAndMigrateResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
           in: body
@@ -48,6 +56,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1ListInstancesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: pageSize
           in: query
@@ -68,6 +80,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1CreateInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
           in: body
@@ -85,6 +101,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1GetInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -100,6 +120,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1DeleteInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -116,6 +140,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1CategoricalSummary'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -140,6 +168,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1ListCatalogObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -167,6 +199,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1GetCatalogObjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -190,6 +226,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1TriggerRefreshResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -210,6 +250,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1NumericSummary'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -234,6 +278,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1EstimateRollupIntervalResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -262,6 +310,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1EstimateSmallestTimeGrainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -286,6 +338,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1TimeSeriesRollup'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -326,6 +382,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -369,6 +429,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1MetricsViewToplistResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -424,6 +488,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1MetricsViewTotalsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -467,6 +535,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1MigrateResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           description: Instance to migrate
@@ -513,6 +585,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1MigrateSingleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           description: Instance to migrate
@@ -554,6 +630,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1MigrateDeleteResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           description: Instance to migrate
@@ -581,6 +661,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1NullCountResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -605,6 +689,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1NumericSummary'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -629,6 +717,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1QueryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           description: Instance to query
@@ -667,6 +759,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1QueryDirectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           description: Instance to query
@@ -706,6 +802,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1RenameDatabaseObjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -739,6 +839,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1NumericSummary'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -765,6 +869,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1TriggerSyncResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -781,6 +889,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1CardinalityResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -801,6 +913,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1ProfileColumnsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -821,6 +937,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1RowsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -846,6 +966,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1TimeRangeSummary'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -872,6 +996,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1CategoricalSummary'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
           in: path
@@ -910,6 +1038,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1PingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
   /v1/put-and-migrate:
@@ -923,6 +1055,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1PutFileAndMigrateResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
           in: body
@@ -940,6 +1076,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1RenameFileAndMigrateResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
           in: body
@@ -957,6 +1097,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1ListReposResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: pageSize
           in: query
@@ -977,6 +1121,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1CreateRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
           in: body
@@ -994,6 +1142,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1GetRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1009,6 +1161,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1DeleteRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1027,6 +1183,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1ListFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1047,6 +1207,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1GetFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1067,6 +1231,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1DeleteFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1087,6 +1255,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1PutFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1125,6 +1297,10 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1RenameFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
       parameters:
         - name: repoId
           in: path
@@ -1315,6 +1491,12 @@ definitions:
       value:
         type: string
         description: value is optional so that null values from the database can be represented.
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
   protobufNullValue:
     type: string
     enum:
@@ -1327,6 +1509,18 @@ definitions:
        The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      details:
+        type: array
+        items:
+          $ref: '#/definitions/protobufAny'
+      message:
+        type: string
   runtimev1Type:
     type: object
     properties:

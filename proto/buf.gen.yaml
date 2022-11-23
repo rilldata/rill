@@ -24,8 +24,7 @@ plugins:
     out: gen
     opt:
       - logtostderr=true
-      - disable_default_errors=true
       - allow_merge=true,merge_file_name=rill/runtime/v1/runtime
       - output_format=yaml
-      # - openapi_naming_strategy=simple
-      # - simple_operation_ids=true
+      # - openapi_naming_strategy=simple # Removes "V1" prefix from types
+      # - simple_operation_ids=true # Removes "RuntimeService_" prefix from operations
