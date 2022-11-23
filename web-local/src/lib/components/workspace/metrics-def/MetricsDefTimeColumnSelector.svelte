@@ -4,11 +4,7 @@
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-
-  import { getContext } from "svelte";
-  import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
-  import type { ProfileColumn } from "../../../types";
-  import { selectTimestampColumnFromProfileEntity } from "../../../redux-store/source/source-selectors";
+  import { TIMESTAMPS } from "@rilldata/web-local/lib/duckdb-data-types";
 
   export let metricsInternalRep;
 
@@ -21,17 +17,12 @@
   $: timeColumnSelectedValue =
     $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  let derivedModelColumns: Array<ProfileColumn>;
-  $: if (selectedModel && $derivedModelStore?.entities) {
-    derivedModelColumns = selectTimestampColumnFromProfileEntity(
-      $derivedModelStore?.entities.find(
-        (model) => model.id === selectedModel.name // Use model name, this is temp
-      )
-    );
+  let derivedModelColumns: Array<string>;
+  $: if (selectedModel) {
+    const selectedMetricsDefModelProfile = selectedModel?.schema?.fields ?? [];
+    derivedModelColumns = selectedMetricsDefModelProfile
+      .filter((column) => TIMESTAMPS.has(column.type.code as string))
+      .map((column) => column.name);
   } else {
     derivedModelColumns = [];
   }
@@ -79,7 +70,7 @@
           >select a timestamp...</option
         >
         {#each derivedModelColumns as column}
-          <option value={column.name}>{column.name}</option>
+          <option value={column}>{column}</option>
         {/each}
       </select>
 
