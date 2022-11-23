@@ -2,31 +2,34 @@
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import { useRuntimeServiceGetCatalogObject } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
-  import { store } from "../../../redux-store/store-root";
   import { getContext } from "svelte";
   import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
   import type { ProfileColumn } from "../../../types";
-  import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
   import { selectTimestampColumnFromProfileEntity } from "../../../redux-store/source/source-selectors";
 
-  export let metricsDefId;
+  export let metricsInternalRep;
 
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  $: instanceId = $runtimeStore.instanceId;
+
+  $: model_path = $metricsInternalRep.getMetricKey("model_path");
+  $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
+  $: selectedModel = $getModel.data?.object?.model;
 
   $: timeColumnSelectedValue =
-    $selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
+    $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
   const derivedModelStore = getContext(
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
   let derivedModelColumns: Array<ProfileColumn>;
-  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
+  $: if (selectedModel && $derivedModelStore?.entities) {
     derivedModelColumns = selectTimestampColumnFromProfileEntity(
       $derivedModelStore?.entities.find(
-        (model) => model.id === $selectedMetricsDef.sourceModelId
+        (model) => model.id === selectedModel.name // Use model name, this is temp
       )
     );
   } else {
@@ -34,17 +37,15 @@
   }
 
   function updateMetricsDefinitionHandler(evt: Event) {
-    store.dispatch(
-      updateMetricsDefsWrapperApi({
-        id: metricsDefId,
-        changes: { timeDimension: (<HTMLSelectElement>evt.target).value },
-      })
+    $metricsInternalRep.updateMetricKey(
+      "timeseries",
+      (<HTMLSelectElement>evt.target).value
     );
   }
 
   let tooltipText = "";
   let dropdownDisabled = true;
-  $: if ($selectedMetricsDef?.sourceModelId === undefined) {
+  $: if (selectedModel?.name === undefined) {
     tooltipText = "select a model before selecting a timestamp column";
     dropdownDisabled = true;
   } else if (derivedModelColumns.length === 0) {

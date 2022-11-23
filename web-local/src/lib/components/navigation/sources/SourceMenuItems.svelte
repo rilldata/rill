@@ -13,6 +13,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { getName } from "@rilldata/web-local/common/utils/incrementName";
+
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
@@ -21,6 +22,7 @@
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
+
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";

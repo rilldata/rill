@@ -1,28 +1,10 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
   import { Callout } from "../../callout";
 
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
   import { CATEGORICALS } from "../../../duckdb-data-types";
-  import {
-    createDimensionsApi,
-    deleteDimensionsApi,
-    updateDimensionsWrapperApi,
-  } from "../../../redux-store/dimension-definition/dimension-definition-apis";
-  import { getDimensionsByMetricsId } from "../../../redux-store/dimension-definition/dimension-definition-readables";
-  import {
-    createMeasuresApi,
-    deleteMeasuresApi,
-    updateMeasuresWrapperApi,
-    validateMeasureExpressionApi,
-  } from "../../../redux-store/measure-definition/measure-definition-apis";
-  import { getMeasuresByMetricsId } from "../../../redux-store/measure-definition/measure-definition-readables";
-  import { bootstrapMetricsDefinition } from "../../../redux-store/metrics-definition/bootstrapMetricsDefinition";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../../redux-store/store-root";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
-  import { invalidateMetricsView } from "../../../svelte-query/queries/metrics-views/invalidation";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
@@ -34,54 +16,91 @@
 
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
-  export let metricsDefId;
+  import {
+    useRuntimeServiceGetCatalogObject,
+    useRuntimeServicePutFileAndMigrate,
+  } from "@rilldata/web-common/runtime-client";
+  import { createInternalRepresentation } from "./metrics-internal-store";
+  // import { $metricsresentation } from "./$metricsresentation";
+
+  export let metricsDefName;
   export let nonStandardError;
 
-  $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  // the runtime yaml string
+  export let yaml;
+
+  // the local copy of the yaml string
+  // let $metrics = new $metricsresentation(yaml);
+
+  let metrics = createInternalRepresentation(yaml);
+
+  // reset internal representation in case of deviation from runtime YAML
+  $: if (yaml !== $metrics.internalYAML) {
+    metrics = createInternalRepresentation(yaml);
+  }
+
+  $: repoId = $runtimeStore.repoId;
+  $: instanceId = $runtimeStore.instanceId;
+
+  const metricMigrate = useRuntimeServicePutFileAndMigrate();
+  function callPutAndMigrate() {
+    $metricMigrate.mutate({
+      data: {
+        repoId,
+        instanceId,
+        path: `dashboards/${metricsDefName}.yaml`,
+        blob: $metrics.internalYAML,
+        create: false,
+      },
+    });
+  }
+
+  $: measures = $metrics.getMeasures();
+
+  $: console.log("measures", measures);
+  $: dimensions = $metrics.getDimensions();
+
+  $: model_path = $metrics.getMetricKey("model_path");
+  $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
+  $: model = $getModel.data?.object?.model;
 
   function handleCreateMeasure() {
-    store.dispatch(createMeasuresApi({ metricsDefId }));
+    $metrics.addNewMeasure();
+    callPutAndMigrate();
   }
   function handleUpdateMeasure(index, name, value) {
-    store.dispatch(
-      updateMeasuresWrapperApi({
-        id: $measures[index].id,
-        changes: { [name]: value },
-      })
-    );
+    $metrics.updateMeasure(index, name, value);
+    callPutAndMigrate();
   }
+
   function handleDeleteMeasure(evt) {
-    store.dispatch(deleteMeasuresApi(evt.detail));
-    invalidateMetricsView(queryClient, metricsDefId);
+    $metrics.deleteMeasure(evt.detail);
+    callPutAndMigrate();
+
+    // invalidateMetricsView(queryClient, metricsDefId);
   }
   function handleMeasureExpressionValidation(index, name, value) {
-    store.dispatch(
-      validateMeasureExpressionApi({
-        metricsDefId: metricsDefId,
-        measureId: $measures[index].id,
-        expression: value,
-      })
-    );
+    // store.dispatch(
+    //   validateMeasureExpressionApi({
+    //     metricsDefId: metricsDefId,
+    //     measureId: $measures[index].id,
+    //     expression: value,
+    //   })
+    // );
   }
 
   function handleCreateDimension() {
-    store.dispatch(createDimensionsApi({ metricsDefId }));
+    $metrics.addNewDimension();
+    callPutAndMigrate();
   }
   function handleUpdateDimension(index, name, value) {
-    store.dispatch(
-      updateDimensionsWrapperApi({
-        id: $dimensions[index].id,
-        changes: {
-          [name]: value,
-        },
-      })
-    );
+    $metrics.updateDimension(index, name, value);
+    callPutAndMigrate();
   }
   function handleDeleteDimension(evt) {
-    store.dispatch(deleteDimensionsApi(evt.detail));
-    invalidateMetricsView(queryClient, metricsDefId);
+    $metrics.deleteDimension(evt.detail);
+    callPutAndMigrate();
+    // invalidateMetricsView(queryClient, metricsDefId);
   }
 
   // FIXME: the only data that is needed from the derived model store is the data types of the
@@ -91,13 +110,10 @@
   ) as DerivedModelStore;
 
   let validDimensionSelectorOption: SelectorOption[] = [];
-  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    const selectedMetricsDefModelProfile =
-      $derivedModelStore?.entities.find(
-        (model) => model.id === $selectedMetricsDef.sourceModelId
-      )?.profile ?? [];
+  $: if (model) {
+    const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
-      .filter((column) => CATEGORICALS.has(column.type))
+      .filter((column) => CATEGORICALS.has(column.type as string))
       .map((column) => ({ label: column.name, value: column.name }));
   } else {
     validDimensionSelectorOption = [];
@@ -112,21 +128,22 @@
     validDimensionSelectorOption
   );
 
-  $: metricsSourceSelectionError = $selectedMetricsDef
-    ? MetricsSourceSelectionError($selectedMetricsDef)
-    : nonStandardError
-    ? nonStandardError
-    : "";
+  // $: metricsSourceSelectionError = $selectedMetricsDef
+  //   ? MetricsSourceSelectionError($selectedMetricsDef)
+  //   : nonStandardError
+  //   ? nonStandardError
+  //   : "";
 
-  onMount(() => {
-    store.dispatch(bootstrapMetricsDefinition(metricsDefId));
-  });
+  $: metricsSourceSelectionError = nonStandardError ? nonStandardError : "";
 </script>
 
-{#if $selectedMetricsDef}
-  <WorkspaceContainer inspector={false} assetID={`${metricsDefId}-config`}>
+{#if measures && dimensions}
+  <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
     <div slot="body">
-      <MetricsDefWorkspaceHeader {metricsDefId} />
+      <MetricsDefWorkspaceHeader
+        {metricsDefName}
+        metricsInternalRep={metrics}
+      />
 
       <div
         class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
@@ -134,8 +151,8 @@
       >
         <div class="flex-none flex flex-row">
           <div>
-            <MetricsDefModelSelector {metricsDefId} />
-            <MetricsDefTimeColumnSelector {metricsDefId} />
+            <MetricsDefModelSelector metricsInternalRep={metrics} />
+            <MetricsDefTimeColumnSelector metricsInternalRep={metrics} />
           </div>
           <div class="self-center pl-10">
             {#if metricsSourceSelectionError}
@@ -143,7 +160,7 @@
                 {metricsSourceSelectionError}
               </Callout>
             {:else}
-              <MetricsDefinitionGenerateButton {metricsDefId} />
+              <!-- <MetricsDefinitionGenerateButton {metricsDefId} /> -->
             {/if}
           </div>
         </div>
@@ -160,7 +177,7 @@
               addEntityHandler={handleCreateMeasure}
               updateEntityHandler={handleUpdateMeasure}
               deleteEntityHandler={handleDeleteMeasure}
-              rows={$measures ?? []}
+              rows={measures ?? []}
               columnNames={MeasuresColumns}
               tooltipText={"add a new measure"}
               addButtonId={"add-measure-button"}
@@ -173,7 +190,7 @@
               addEntityHandler={handleCreateDimension}
               updateEntityHandler={handleUpdateDimension}
               deleteEntityHandler={handleDeleteDimension}
-              rows={$dimensions ?? []}
+              rows={dimensions ?? []}
               columnNames={DimensionColumns}
               tooltipText={"add a new dimension"}
               addButtonId={"add-dimension-button"}

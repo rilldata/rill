@@ -1,11 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
-    MetricsDefinitionEntity,
-    SourceModelValidationStatus,
-  } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+    getRuntimeServiceListFilesQueryKey,
+    useRuntimeServiceDeleteFileAndMigrate,
+    useRuntimeServiceListFiles,
+    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServiceRenameFileAndMigrate,
+  } from "@rilldata/web-common/runtime-client";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import type { MetricsDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
@@ -39,6 +45,21 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
+  import { metricsTemplate } from "./metricsUtils";
+  import { getName } from "@rilldata/web-local/common/utils/incrementName";
+
+  $: repoId = $runtimeStore.repoId;
+  $: instanceId = $runtimeStore.instanceId;
+
+  $: getFiles = useRuntimeServiceListFiles($runtimeStore.repoId);
+
+  $: dashboardNames = $getFiles?.data?.paths
+    ?.filter((path) => path.includes("dashboards/"))
+    .map((path) => path.replace("/dashboards/", "").replace(".yaml", ""));
+
+  const createDashboard = useRuntimeServicePutFileAndMigrate();
+  const deleteDashboard = useRuntimeServiceDeleteFileAndMigrate();
+  const renameDashboard = useRuntimeServiceRenameFileAndMigrate();
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -66,7 +87,29 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    await store.dispatch(createMetricsDefsAndFocusApi());
+    const newDashboardName = getName("dashboard", dashboardNames);
+    const yaml = metricsTemplate;
+    $createDashboard.mutate(
+      {
+        data: {
+          repoId,
+          instanceId,
+          path: `dashboards/${newDashboardName}.yaml`,
+          blob: yaml,
+          create: true,
+          createOnly: true,
+          strict: false,
+        },
+      },
+      {
+        onSuccess: async () => {
+          goto(`/dashboard/${newDashboardName}`);
+          queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        },
+      }
+    );
   };
 
   const editModel = (sourceModelId: string) => {
@@ -95,25 +138,41 @@
     );
   };
 
-  const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
-    const sourceModelId = metricsDef.sourceModelId;
+  const deleteMetricsDef = async (dashboardName: string) => {
+    const sourceModelName = undefined; //TODO fix later with model integration
 
-    notificationStore.send({
-      message: `Dashboard "${metricsDef.metricDefLabel}" deleted`,
-    });
-    store.dispatch(deleteMetricsDefsApi(metricsDef.id));
-
-    if (
-      ($applicationStore.activeEntity.type === EntityType.MetricsDefinition ||
-        $applicationStore.activeEntity.type === EntityType.MetricsExplorer) &&
-      $applicationStore.activeEntity.id === metricsDef.id
-    ) {
-      if (sourceModelId) {
-        goto(`/model/${sourceModelId}`);
-      } else {
-        goto("/");
+    await $deleteDashboard.mutate(
+      {
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: $runtimeStore.instanceId,
+          path: `dashboards/${dashboardName}.yaml`,
+        },
+      },
+      {
+        onSuccess: () => {
+          notificationStore.send({
+            message: `Dashboard "${dashboardName}" deleted`,
+          });
+          if (
+            ($applicationStore.activeEntity.type ===
+              EntityType.MetricsDefinition ||
+              $applicationStore.activeEntity.type ===
+                EntityType.MetricsExplorer) &&
+            $applicationStore.activeEntity.id === dashboardName
+          ) {
+            if (sourceModelName) {
+              goto(`/model/${sourceModelName}`);
+            } else {
+              goto("/");
+            }
+          }
+          queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        },
       }
-    }
+    );
   };
 
   onMount(() => {
@@ -137,30 +196,30 @@
   <Explore size="16px" /> Dashboards
 </NavigationHeader>
 
-{#if showMetricsDefs && $metricsDefinitions}
+{#if showMetricsDefs && dashboardNames}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
-    {#each $metricsDefinitions as metricsDef (metricsDef.id)}
+    {#each dashboardNames as dashboardName (dashboardName)}
       <NavigationEntry
         notExpandable={true}
-        name={metricsDef.metricDefLabel}
-        href={`/dashboard/${metricsDef.id}`}
-        open={$page.url.pathname === `/dashboard/${metricsDef.id}` ||
-          $page.url.pathname === `/dashboard/${metricsDef.id}/edit`}
+        name={dashboardName}
+        href={`/dashboard/${dashboardName}`}
+        open={$page.url.pathname === `/dashboard/${dashboardName}` ||
+          $page.url.pathname === `/dashboard/${dashboardName}/edit`}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
         </svelte:fragment>
 
         <svelte:fragment slot="menu-items">
-          {@const selectionError = MetricsSourceSelectionError(metricsDef)}
+          <!-- {@const selectionError = MetricsSourceSelectionError(metricsDef)}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""}
-          <MenuItem
+            selectionError !== ""} -->
+          <!-- <MenuItem
             icon
             disabled={hasSourceError}
             on:select={() => editModel(metricsDef.sourceModelId)}
@@ -181,8 +240,8 @@
             <MetricsIcon slot="icon" />
             edit metrics
           </MenuItem>
-          <Divider />
-          <MenuItem
+          <Divider /> -->
+          <!-- <MenuItem
             icon
             on:select={() =>
               openRenameMetricsDefModal(
@@ -192,8 +251,8 @@
           >
             <EditIcon slot="icon" />
             rename...</MenuItem
-          >
-          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef)}>
+          > -->
+          <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
             delete</MenuItem
           >
