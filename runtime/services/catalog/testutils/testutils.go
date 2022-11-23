@@ -81,7 +81,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 }
 
 func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
-	AssertInCatalogStore(t, s, name, path)
+	catalogObject := AssertInCatalogStore(t, s, name, path)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{
 		Query:    fmt.Sprintf("select count(*) as count from %s", name),
@@ -96,16 +96,28 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 	require.Greater(t, count, 1)
 	require.NoError(t, rows.Close())
 
+	var schema *api.StructType
+	switch catalogObject.Type {
+	case api.CatalogObject_TYPE_TABLE:
+		schema = catalogObject.Table.Schema
+	case api.CatalogObject_TYPE_SOURCE:
+		schema = catalogObject.Source.Schema
+	case api.CatalogObject_TYPE_MODEL:
+		schema = catalogObject.Model.Schema
+	}
+
 	table, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
 	require.NoError(t, err)
 	require.Equal(t, name, table.Name)
+	require.Equal(t, schema.Fields, table.Schema.Fields)
 }
 
-func AssertInCatalogStore(t *testing.T, s *catalog.Service, name string, path string) {
-	catalogObject, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
-	require.True(t, ok)
+func AssertInCatalogStore(t *testing.T, s *catalog.Service, name string, path string) *api.CatalogObject {
+	catalogObject, err := s.GetCatalogObject(context.Background(), name)
+	require.NoError(t, err)
 	require.Equal(t, name, catalogObject.Name)
 	require.Equal(t, path, catalogObject.Path)
+	return catalogObject
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {

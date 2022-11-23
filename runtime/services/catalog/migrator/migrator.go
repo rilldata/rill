@@ -115,6 +115,19 @@ func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.Cata
 	return migrator.ExistsInOlap(ctx, olap, catalog)
 }
 
+func GetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (*api.StructType, error) {
+	// TODO: do we too push this to individual implementations?
+	if catalog.Type == api.CatalogObject_TYPE_METRICS_VIEW {
+		return nil, nil
+	}
+
+	table, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
+	if err != nil {
+		return nil, err
+	}
+	return table.Schema, nil
+}
+
 func getMigrator(catalog *api.CatalogObject) (EntityMigrator, bool) {
 	var objType drivers.CatalogObjectType
 	// TODO: temporary for the merge with main
