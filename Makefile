@@ -8,5 +8,4 @@ cli:
 
 .PHONY: proto.generate
 proto.generate:
-	rm -rf proto/gen
 	cd proto && buf generate

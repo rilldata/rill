@@ -119,15 +119,15 @@ service RuntimeService {
 
   // Catalog
 
-  // ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
-  rpc ListCatalogObjects(ListCatalogObjectsRequest) returns (ListCatalogObjectsResponse) {
+  // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views) 
+  rpc ListCatalogEntries(ListCatalogEntriesRequest) returns (ListCatalogEntriesResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/catalog"
     };
   }
 
-  // GetCatalogObject returns information about a specific object in the catalog
-  rpc GetCatalogObject(GetCatalogObjectRequest) returns (GetCatalogObjectResponse) {
+  // GetCatalogEntry returns information about a specific entry in the catalog
+  rpc GetCatalogEntry(GetCatalogEntryRequest) returns (GetCatalogEntryResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/catalog/{name}"
     };
@@ -184,28 +184,6 @@ service RuntimeService {
   rpc RenameFileAndMigrate(RenameFileAndMigrateRequest) returns (RenameFileAndMigrateResponse) {
     option (google.api.http) = {
       post: "/v1/rename-and-migrate",
-      body: "*"
-    };
-  }
-
-  // Non-reconciling migrations (TODO: Remove once fully transitioned to Migrate)
-
-  // DEPRECATED: MigrateSingle applies a single `CREATE` statement.
-  // It bypasses the reconciling migrations described in Migrate.
-  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-  rpc MigrateSingle(MigrateSingleRequest) returns (MigrateSingleResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/migrate/single",
-      body: "*"
-    };
-  }
-
-  // DEPRECATED: MigrateDelete deletes a single object.
-  // It bypasses the reconciling migrations described in Migrate.
-  // We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-  rpc MigrateDelete(MigrateDeleteRequest) returns (MigrateDeleteResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/migrate/single/delete",
       body: "*"
     };
   }
@@ -575,47 +553,41 @@ message DeleteInstanceResponse {}
 // Catalog
 // **********
 
-// CatalogObject represents an object stored in the catalog
-message CatalogObject {
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    TYPE_TABLE = 1;
-    TYPE_SOURCE = 2;
-    TYPE_MODEL = 3;
-    TYPE_METRICS_VIEW = 4;
+// CatalogEntry contains information about an object in the catalog
+message CatalogEntry {
+  string name = 1;
+  oneof object {
+    Table table = 2;
+    Source source = 3;
+    Model model = 4;
+    MetricsView metrics_view = 5;
   }
-  Type type = 1;
-  Table table = 2;
-  Source source = 3;
-  Model model = 4;
-  MetricsView metrics_view = 5;
-  string name = 6;
-  string path = 7;
-  google.protobuf.Timestamp created_on = 8;
-  google.protobuf.Timestamp updated_on = 9;
-  google.protobuf.Timestamp refreshed_on = 10;
+  string path = 6;
+  google.protobuf.Timestamp created_on = 7;
+  google.protobuf.Timestamp updated_on = 8;
+  google.protobuf.Timestamp refreshed_on = 9;
 }
 
-// Request message for RuntimeService.ListCatalogObjects
-message ListCatalogObjectsRequest {
+// Request message for RuntimeService.ListCatalogEntries
+message ListCatalogEntriesRequest {
   string instance_id = 1;
-  CatalogObject.Type type = 2;
+  ObjectType type = 2;
 }
 
-// Response message for RuntimeService.ListCatalogObjects
-message ListCatalogObjectsResponse {
-  repeated CatalogObject objects = 1;
+// Response message for RuntimeService.ListCatalogEntries
+message ListCatalogEntriesResponse {
+  repeated CatalogEntry entries = 1;
 }
 
-// Request message for RuntimeService.GetCatalogObject
-message GetCatalogObjectRequest {
+// Request message for RuntimeService.GetCatalogEntry
+message GetCatalogEntryRequest {
   string instance_id = 1;
   string name = 2;
 }
 
-// Response message for RuntimeService.GetCatalogObject
-message GetCatalogObjectResponse {
-  CatalogObject object = 1;
+// Response message for RuntimeService.GetCatalogEntry
+message GetCatalogEntryResponse {
+  CatalogEntry entry = 1;
 }
 
 // Request message for RuntimeService.TriggerRefresh

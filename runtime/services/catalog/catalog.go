@@ -49,12 +49,9 @@ func NewService(
 	}
 }
 
-func (s *Service) ListObjects(
-	ctx context.Context,
-	typ runtimev1.CatalogObject_Type,
-) ([]*runtimev1.CatalogObject, error) {
-	objs := s.Catalog.FindObjects(ctx, s.InstId, catalogObjectTypeFromPB(typ))
-	pbs := make([]*runtimev1.CatalogObject, len(objs))
+func (s *Service) ListObjects(ctx context.Context, typ runtimev1.ObjectType) ([]*runtimev1.CatalogEntry, error) {
+	objs := s.Catalog.FindEntries(ctx, s.InstId, pbToObjectType(typ))
+	pbs := make([]*runtimev1.CatalogEntry, len(objs))
 	var err error
 	for i, obj := range objs {
 		pbs[i], err = catalogObjectToPB(obj)
@@ -69,8 +66,8 @@ func (s *Service) ListObjects(
 func (s *Service) GetCatalogObject(
 	ctx context.Context,
 	name string,
-) (*runtimev1.CatalogObject, error) {
-	obj, found := s.Catalog.FindObject(ctx, s.InstId, name)
+) (*runtimev1.CatalogEntry, error) {
+	obj, found := s.Catalog.FindEntry(ctx, s.InstId, name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")
 	}

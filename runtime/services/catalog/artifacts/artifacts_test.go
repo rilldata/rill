@@ -22,16 +22,16 @@ func TestSourceReadWrite(t *testing.T) {
 		// Adding explicit name and using it in the title,
 		// adds the run button on goland for each test case.
 		Name    string
-		Catalog *runtimev1.CatalogObject
+		Catalog *drivers.CatalogEntry
 		Raw     string
 	}{
 		{
 			"Source",
-			&runtimev1.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "Source",
 				Path: "sources/Source.yaml",
-				Type: runtimev1.CatalogObject_TYPE_SOURCE,
-				Source: &runtimev1.Source{
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
 					Name:      "Source",
 					Connector: "file",
 					Properties: toProtoStruct(map[string]any{
@@ -46,11 +46,11 @@ path: data/source.csv
 		},
 		{
 			"S3Source",
-			&runtimev1.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "S3Source",
 				Path: "sources/S3Source.yaml",
-				Type: runtimev1.CatalogObject_TYPE_SOURCE,
-				Source: &runtimev1.Source{
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
 					Name:      "S3Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
@@ -67,11 +67,11 @@ region: us-east-2
 		},
 		{
 			"Model",
-			&runtimev1.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "Model",
 				Path: "models/Model.sql",
-				Type: runtimev1.CatalogObject_TYPE_MODEL,
-				Model: &runtimev1.Model{
+				Type: drivers.ObjectTypeModel,
+				Object: &runtimev1.Model{
 					Name:    "Model",
 					Sql:     "select * from A",
 					Dialect: runtimev1.Model_DIALECT_DUCKDB,
@@ -81,11 +81,11 @@ region: us-east-2
 		},
 		{
 			"MetricsView",
-			&runtimev1.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "MetricsView",
 				Path: "dashboards/MetricsView.yaml",
-				Type: runtimev1.CatalogObject_TYPE_METRICS_VIEW,
-				MetricsView: &runtimev1.MetricsView{
+				Type: drivers.ObjectTypeMetricsView,
+				Object: &runtimev1.MetricsView{
 					Name:          "MetricsView",
 					From:          "Model",
 					TimeDimension: "time",
