@@ -1,3 +1,9 @@
+PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
+GOLANG_CROSS_VERSION  ?= v1.19.2
+
+SYSROOT_DIR     ?= sysroots
+SYSROOT_ARCHIVE ?= sysroots.tar.bz2
+
 .PHONY: cli
 cli: cli.prepare
 	go build -o rill cli/main.go 
