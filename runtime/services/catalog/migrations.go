@@ -651,5 +651,11 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 	// this will allow to not reprocess unchanged files
 	catalog.UpdatedOn = repoStat.LastUpdated
 	catalog.RefreshedOn = time.Now()
+
+	catalog.Schema, err = migrator.GetSchema(ctx, s.Olap, item.CatalogInFile)
+	if err != nil {
+		return nil, err
+	}
+
 	return catalog, nil
 }

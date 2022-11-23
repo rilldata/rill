@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/rilldata/rill/runtime/api"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -134,10 +133,6 @@ func TestMigrateRenames(t *testing.T) {
 
 			// write to a new file (should rename)
 			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsNewRepoPath)
-			err := os.Rename(path.Join(dir, AdBidsRepoPath), path.Join(dir, AdBidsNewRepoPath))
-			require.NoError(t, err)
-			err = os.Chtimes(path.Join(dir, AdBidsNewRepoPath), time.Now(), time.Now())
-			require.NoError(t, err)
 			testutils.CreateModel(t, s, "AdBids_model", "select * from AdBidsNew", AdBidsModelRepoPath)
 			result, err := s.Migrate(context.Background(), tt.config)
 			require.NoError(t, err)

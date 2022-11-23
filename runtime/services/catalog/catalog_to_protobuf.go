@@ -56,6 +56,7 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
 	if obj.SQL == "" {
 		source := &api.Source{}
 		err := proto.Unmarshal(obj.Definition, source)
+		source.Schema = obj.Schema
 		if err != nil {
 			return nil, err
 		}
@@ -77,6 +78,7 @@ func catalogObjectSourceToPB(obj *drivers.CatalogObject) (*api.Source, error) {
 		Name:       obj.Name,
 		Connector:  source.Connector,
 		Properties: propsPB,
+		Schema:     obj.Schema,
 	}, nil
 }
 
@@ -85,6 +87,7 @@ func catalogObjectModelToPB(obj *drivers.CatalogObject) (*api.Model, error) {
 		Name:    obj.Name,
 		Sql:     obj.SQL,
 		Dialect: api.Model_DIALECT_DUCKDB,
+		Schema:  obj.Schema,
 	}, nil
 }
 
