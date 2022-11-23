@@ -1280,7 +1280,6 @@ message BasicMeasureDefinition {
 }
 
 message TimeSeriesTimeRange {
-  TimeRangeName name = 1;
   google.protobuf.Timestamp start = 2;
   google.protobuf.Timestamp end = 3;
   TimeGrain interval = 4;

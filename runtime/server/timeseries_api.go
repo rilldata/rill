@@ -389,16 +389,38 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	return results, nil
 }
 
+func convertToDateTruncSpecifier(specifier api.TimeGrain) string {
+	switch specifier {
+	case api.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "MILLISECOND"
+	case api.TimeGrain_TIME_GRAIN_SECOND:
+		return "SECOND"
+	case api.TimeGrain_TIME_GRAIN_MINUTE:
+		return "MINUTE"
+	case api.TimeGrain_TIME_GRAIN_HOUR:
+		return "HOUR"
+	case api.TimeGrain_TIME_GRAIN_DAY:
+		return "DAY"
+	case api.TimeGrain_TIME_GRAIN_WEEK:
+		return "WEEK"
+	case api.TimeGrain_TIME_GRAIN_MONTH:
+		return "MONTH"
+	case api.TimeGrain_TIME_GRAIN_YEAR:
+		return "YEAR"
+	}
+	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
+}
+
 func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTimeSeriesRequest) (*api.GenerateTimeSeriesResponse, error) {
 	timeRange, err := s.normaliseTimeRange(ctx, request)
 	if err != nil {
-		return createErrResult(request.TimeRange), err
+		return nil, err
 	}
 	var measures []*api.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
 	var timestampColumn string = request.TimestampColumnName
 	var tableName string = request.TableName
 	var filter string = getFilterFromMetricsViewFilters(request.Filters)
-	var timeGranularity string = timeRange.Interval.Enum().String()
+	var timeGranularity string = convertToDateTruncSpecifier(timeRange.Interval)
 	var tsAlias string
 	if timestampColumn == "ts" {
 		tsAlias = "_ts"
@@ -440,25 +462,25 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *api.GenerateTi
 	})
 	defer s.dropTempTable(ctx, request.InstanceId)
 	if err != nil {
-		return createErrResult(timeRange), err
+		return nil, err
 	}
 	rows.Close()
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: "SELECT * from _ts_",
 	})
 	if err != nil {
-		return createErrResult(timeRange), err
+		return nil, err
 	}
 	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1)
 	if err != nil {
-		return createErrResultWithPartial(timeRange, results), err
+		return nil, err
 	}
 	var spOp *api.TimeSeriesResponse_TimeSeriesValues
 	if request.Pixels != nil {
 		pixels := int(*request.Pixels)
 		sparkValues, er := s.createTimestampRollupReduction(ctx, request.InstanceId, "_ts_", "ts", "count", pixels)
 		if er != nil {
-			return createErrResultWithPartial(timeRange, results), er
+			return nil, er
 		}
 		spOp = &api.TimeSeriesResponse_TimeSeriesValues{
 			Values: sparkValues,
@@ -518,24 +540,6 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*api.
 		}
 	}
 	return results, converr
-}
-
-func createErrResult(timeRange *api.TimeSeriesTimeRange) *api.GenerateTimeSeriesResponse {
-	return &api.GenerateTimeSeriesResponse{
-		Rollup: &api.TimeSeriesResponse{
-			Results:   []*api.TimeSeriesValue{},
-			TimeRange: timeRange,
-		},
-	}
-}
-
-func createErrResultWithPartial(timeRange *api.TimeSeriesTimeRange, results []*api.TimeSeriesValue) *api.GenerateTimeSeriesResponse {
-	return &api.GenerateTimeSeriesResponse{
-		Rollup: &api.TimeSeriesResponse{
-			Results:   results,
-			TimeRange: timeRange,
-		},
-	}
 }
 
 func (s *Server) dropTempTable(ctx context.Context, instanceId string) {

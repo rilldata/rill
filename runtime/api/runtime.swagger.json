@@ -3359,23 +3359,6 @@
       ],
       "default": "TIME_GRAIN_UNSPECIFIED"
     },
-    "v1TimeRangeName": {
-      "type": "string",
-      "enum": [
-        "TIME_RANGE_NAME_UNSPECIFIED",
-        "TIME_RANGE_NAME_LAST_HOUR",
-        "TIME_RANGE_NAME_LAST_6_HOUR",
-        "TIME_RANGE_NAME_LAST_DAY",
-        "TIME_RANGE_NAME_LAST_2_DAYS",
-        "TIME_RANGE_NAME_LAST_5_DAYS",
-        "TIME_RANGE_NAME_LAST_WEEK",
-        "TIME_RANGE_NAME_LAST_2_WEEKS",
-        "TIME_RANGE_NAME_LAST_30_DAYS",
-        "TIME_RANGE_NAME_LAST_60_DAYS",
-        "TIME_RANGE_NAME_ALL_TIME"
-      ],
-      "default": "TIME_RANGE_NAME_UNSPECIFIED"
-    },
     "v1TimeRangeSummary": {
       "type": "object",
       "properties": {
@@ -3422,9 +3405,6 @@
     "v1TimeSeriesTimeRange": {
       "type": "object",
       "properties": {
-        "name": {
-          "$ref": "#/definitions/v1TimeRangeName"
-        },
         "start": {
           "type": "string",
           "format": "date-time"
