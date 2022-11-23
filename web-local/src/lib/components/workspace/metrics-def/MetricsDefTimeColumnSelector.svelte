@@ -17,14 +17,14 @@
   $: timeColumnSelectedValue =
     $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
-  let derivedModelColumns: Array<string>;
+  let timestampColumns: Array<string>;
   $: if (selectedModel) {
     const selectedMetricsDefModelProfile = selectedModel?.schema?.fields ?? [];
-    derivedModelColumns = selectedMetricsDefModelProfile
+    timestampColumns = selectedMetricsDefModelProfile
       .filter((column) => TIMESTAMPS.has(column.type.code as string))
       .map((column) => column.name);
   } else {
-    derivedModelColumns = [];
+    timestampColumns = [];
   }
 
   function updateMetricsDefinitionHandler(evt: Event) {
@@ -39,7 +39,7 @@
   $: if (selectedModel?.name === undefined) {
     tooltipText = "select a model before selecting a timestamp column";
     dropdownDisabled = true;
-  } else if (derivedModelColumns.length === 0) {
+  } else if (timestampColumns.length === 0) {
     tooltipText = "the selected model has no timestamp columns";
     dropdownDisabled = true;
   } else {
@@ -69,7 +69,7 @@
         <option disabled hidden selected value="__DEFAULT_VALUE__"
           >select a timestamp...</option
         >
-        {#each derivedModelColumns as column}
+        {#each timestampColumns as column}
           <option value={column}>{column}</option>
         {/each}
       </select>

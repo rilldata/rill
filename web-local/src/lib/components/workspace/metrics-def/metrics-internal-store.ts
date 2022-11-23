@@ -110,11 +110,11 @@ export class MetricsInternalRepresentation {
     this.updateRuntime(this.internalYAML);
   }
 
-  getMetricKey(key) {
+  getMetricKey(key: keyof MetricsConfig) {
     return this.internalRepresentation[key];
   }
 
-  updateMetricKey(key, value) {
+  updateMetricKey(key: keyof MetricsConfig, value) {
     this.internalRepresentationDocument.set(key, value);
     this.regenerateInternalYAML();
   }

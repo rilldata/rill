@@ -144,7 +144,10 @@
                 {metricsSourceSelectionError}
               </Callout>
             {:else}
-              <!-- <MetricsDefinitionGenerateButton {metricsDefId} /> -->
+              <MetricsDefinitionGenerateButton
+                selectedModel={model}
+                {metricsInternalRep}
+              />
             {/if}
           </div>
         </div>
