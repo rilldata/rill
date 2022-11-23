@@ -32,23 +32,7 @@ export type RuntimeServiceGetTopKBody = {
   k?: number;
 };
 
-export type RuntimeServiceTableRowsParams = { limit?: number };
-
-export type RuntimeServiceRenameDatabaseObjectType =
-  typeof RuntimeServiceRenameDatabaseObjectType[keyof typeof RuntimeServiceRenameDatabaseObjectType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RuntimeServiceRenameDatabaseObjectType = {
-  TABLE: "TABLE",
-  VIEW: "VIEW",
-  FUNCTION: "FUNCTION",
-} as const;
-
-export type RuntimeServiceRenameDatabaseObjectParams = {
-  name?: string;
-  newname?: string;
-  type?: RuntimeServiceRenameDatabaseObjectType;
-};
+export type RuntimeServiceGetTableRowsParams = { limit?: number };
 
 export type RuntimeServiceQueryDirectBody = {
   sql?: string;
@@ -188,11 +172,8 @@ export interface V1TriggerRefreshResponse {
   [key: string]: any;
 }
 
-/**
- * Response for RuntimeService.GetTopK.
- */
-export interface V1TopKResponse {
-  entries?: TopKResponseTopKEntry[];
+export interface V1TopK {
+  entries?: TopKTopKEntry[];
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: number };
@@ -201,13 +182,6 @@ export interface V1TimeSeriesValue {
   ts?: string;
   bin?: number;
   records?: V1TimeSeriesValueRecords;
-}
-
-export interface V1TimeSeriesTimeRange {
-  name?: V1TimeRangeName;
-  start?: string;
-  end?: string;
-  interval?: string;
 }
 
 export interface V1TimeSeriesResponse {
@@ -219,53 +193,31 @@ export interface V1TimeSeriesResponse {
   error?: string;
 }
 
-export interface V1TimeSeriesRollup {
-  rollup?: V1TimeSeriesResponse;
-}
-
 export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
   interval?: TimeRangeSummaryInterval;
 }
 
-export type V1TimeRangeName =
-  typeof V1TimeRangeName[keyof typeof V1TimeRangeName];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1TimeRangeName = {
-  LastHour: "LastHour",
-  Last6Hours: "Last6Hours",
-  LastDay: "LastDay",
-  Last2Days: "Last2Days",
-  Last5Days: "Last5Days",
-  LastWeek: "LastWeek",
-  Last2Weeks: "Last2Weeks",
-  Last30Days: "Last30Days",
-  Last60Days: "Last60Days",
-  AllTime: "AllTime",
-} as const;
-
 export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
-  MILLISECOND: "MILLISECOND",
-  SECOND: "SECOND",
-  MINUTE: "MINUTE",
-  HOUR: "HOUR",
-  DAY: "DAY",
-  WEEK: "WEEK",
-  MONTH: "MONTH",
-  YEAR: "YEAR",
-  UNSPECIFIED: "UNSPECIFIED",
+  TIME_GRAIN_UNSPECIFIED: "TIME_GRAIN_UNSPECIFIED",
+  TIME_GRAIN_MILLISECOND: "TIME_GRAIN_MILLISECOND",
+  TIME_GRAIN_SECOND: "TIME_GRAIN_SECOND",
+  TIME_GRAIN_MINUTE: "TIME_GRAIN_MINUTE",
+  TIME_GRAIN_HOUR: "TIME_GRAIN_HOUR",
+  TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
+  TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
+  TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
+  TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
 export interface V1TimeSeriesTimeRange {
-  name?: V1TimeRangeName;
   start?: string;
   end?: string;
-  interval?: string;
+  interval?: V1TimeGrain;
 }
 
 export interface V1StructType {
@@ -293,18 +245,6 @@ export interface V1Source {
   properties?: V1SourceProperties;
   schema?: V1StructType;
   sql?: string;
-}
-
-export interface V1Scalar {
-  int64?: string;
-  double?: number;
-  timestamp?: string;
-}
-
-export type V1RowsResponseDataItem = { [key: string]: any };
-
-export interface V1RowsResponse {
-  data?: V1RowsResponseDataItem[];
 }
 
 /**
@@ -344,10 +284,6 @@ export interface V1RenameFileAndMigrateRequest {
   strict?: boolean;
 }
 
-export interface V1RenameDatabaseObjectResponse {
-  [key: string]: any;
-}
-
 export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
@@ -364,16 +300,6 @@ export interface V1QueryDirectResponse {
 
 export interface V1PutFileResponse {
   filePath?: string;
-}
-
-export interface V1PutFileAndMigrateResponse {
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
-  affectedPaths?: string[];
 }
 
 export interface V1PutFileAndMigrateRequest {
@@ -433,10 +359,6 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
-export interface V1NullCountResponse {
-  count?: string;
-}
-
 export interface V1Model {
   name?: string;
   sql?: string;
@@ -464,6 +386,32 @@ export const V1MigrationErrorCode = {
   CODE_OLAP: "CODE_OLAP",
   CODE_SOURCE: "CODE_SOURCE",
 } as const;
+
+/**
+ * MigrationError represents an error encountered while running Migrate.
+ */
+export interface V1MigrationError {
+  code?: V1MigrationErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: MigrationErrorCharLocation;
+  endLocation?: MigrationErrorCharLocation;
+}
+
+export interface V1PutFileAndMigrateResponse {
+  /** Errors encountered during the migration. If strict = false, any path in
+affected_paths without an error can be assumed to have been migrated succesfully. */
+  errors?: V1MigrationError[];
+  /** affected_paths lists all the file paths that were considered while
+executing the migration. For a PutFileAndMigrate, this includes the put file
+as well as any file artifacts that rely on objects declared in it. */
+  affectedPaths?: string[];
+}
 
 export interface V1MigrateSingleResponse {
   [key: string]: any;
@@ -560,11 +508,6 @@ export interface V1ListReposResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
 export interface V1ListFilesResponse {
   paths?: string[];
 }
@@ -600,8 +543,43 @@ only supported for the duckdb driver. */
   embedCatalog?: boolean;
 }
 
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
+}
+
+export interface V1GetTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1GetTimeRangeSummaryResponse {
+  timeRangeSummary?: V1TimeRangeSummary;
+}
+
+export type V1GetTableRowsResponseDataItem = { [key: string]: any };
+
+export interface V1GetTableRowsResponse {
+  data?: V1GetTableRowsResponseDataItem[];
+}
+
+export interface V1GetTableCardinalityResponse {
+  cardinality?: string;
+}
+
+export interface V1GetRugHistogramResponse {
+  numericSummary?: V1NumericSummary;
+}
+
 export interface V1GetRepoResponse {
   repo?: V1Repo;
+}
+
+export interface V1GetNumericHistogramResponse {
+  numericSummary?: V1NumericSummary;
+}
+
+export interface V1GetNullCountResponse {
+  count?: string;
 }
 
 export interface V1GetInstanceResponse {
@@ -613,8 +591,20 @@ export interface V1GetFileResponse {
   updatedOn?: string;
 }
 
+export interface V1GetDescriptiveStatisticsResponse {
+  numericSummary?: V1NumericSummary;
+}
+
 export interface V1GetCatalogObjectResponse {
   object?: V1CatalogObject;
+}
+
+export interface V1GetCardinalityOfColumnResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1GenerateTimeSeriesResponse {
+  rollup?: V1TimeSeriesResponse;
 }
 
 export interface V1EstimateSmallestTimeGrainResponse {
@@ -622,9 +612,9 @@ export interface V1EstimateSmallestTimeGrainResponse {
 }
 
 export interface V1EstimateRollupIntervalResponse {
-  interval?: string;
-  min?: V1Scalar;
-  max?: V1Scalar;
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
 }
 
 export interface V1DeleteRepoResponse {
@@ -657,16 +647,6 @@ export interface V1DeleteFileAndMigrateRequest {
   dry?: boolean;
   strict?: boolean;
 }
-
-export type V1DatabaseObjectType =
-  typeof V1DatabaseObjectType[keyof typeof V1DatabaseObjectType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1DatabaseObjectType = {
-  TABLE: "TABLE",
-  VIEW: "VIEW",
-  FUNCTION: "FUNCTION",
-} as const;
 
 export interface V1CreateRepoResponse {
   repo?: V1Repo;
@@ -707,7 +687,7 @@ export interface V1Connector {
  * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
-  topKResponse?: V1TopKResponse;
+  topK?: V1TopK;
   cardinality?: string;
 }
 
@@ -734,10 +714,6 @@ export interface V1CatalogObject {
   createdOn?: string;
   updatedOn?: string;
   refreshedOn?: string;
-}
-
-export interface V1CardinalityResponse {
-  cardinality?: string;
 }
 
 export interface V1BasicMeasureDefinition {
@@ -781,7 +757,7 @@ export interface ProtobufAny {
   [key: string]: unknown;
 }
 
-export interface TopKResponseTopKEntry {
+export interface TopKTopKEntry {
   /** value is optional so that null values from the database can be represented. */
   value?: string;
   count?: number;
@@ -827,22 +803,6 @@ export const ModelDialect = {
 export interface MigrationErrorCharLocation {
   line?: number;
   column?: number;
-}
-
-/**
- * MigrationError represents an error encountered while running Migrate.
- */
-export interface V1MigrationError {
-  code?: V1MigrationErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string;
-  startLocation?: MigrationErrorCharLocation;
-  endLocation?: MigrationErrorCharLocation;
 }
 
 export interface MetricsViewMeasure {
