@@ -3724,7 +3724,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateRollupInterval", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateRollupInterval", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3748,7 +3748,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTopK", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/topk/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTopK", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/topk/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3772,7 +3772,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNullCount", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/null-count/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNullCount", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3796,7 +3796,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetDescriptiveStatistics", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/descriptive-statistics/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetDescriptiveStatistics", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3820,7 +3820,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateSmallestTimeGrain", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/estimate-smallest-time-grain/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateSmallestTimeGrain", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3844,7 +3844,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNumericHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/numeric-histogram/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNumericHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3868,7 +3868,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRugHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/rug-histogram/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRugHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3892,7 +3892,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTimeRangeSummary", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/time-range-summary/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTimeRangeSummary", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3916,7 +3916,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetCardinalityOfColumn", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/cardinality-of-column/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetCardinalityOfColumn", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3940,7 +3940,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/generate-timeseries"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/timeseries"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3981,14 +3981,14 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("POST", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/ProfileColumns", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/profile-columns"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/ProfileColumns", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4012,7 +4012,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/rows"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/rows/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4729,7 +4729,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateRollupInterval", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateRollupInterval", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4750,7 +4750,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTopK", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/topk/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTopK", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/topk/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4771,7 +4771,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNullCount", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/null-count/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNullCount", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4792,7 +4792,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetDescriptiveStatistics", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/descriptive-statistics/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetDescriptiveStatistics", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4813,7 +4813,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateSmallestTimeGrain", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/estimate-smallest-time-grain/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/EstimateSmallestTimeGrain", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4834,7 +4834,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNumericHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/numeric-histogram/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetNumericHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4855,7 +4855,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRugHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/rug-histogram/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetRugHistogram", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4876,7 +4876,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTimeRangeSummary", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/time-range-summary/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTimeRangeSummary", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4897,7 +4897,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetCardinalityOfColumn", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/cardinality-of-column/{table_name}/{column_name}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetCardinalityOfColumn", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4918,7 +4918,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/generate-timeseries"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/timeseries"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4955,12 +4955,12 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("POST", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_RuntimeService_ProfileColumns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/ProfileColumns", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/profile-columns"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/ProfileColumns", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4981,7 +4981,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/tables/{table_name}/rows"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetTableRows", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/rows/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -5082,31 +5082,31 @@ var (
 
 	pattern_RuntimeService_MetricsViewTotals_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "metrics-views", "metrics_view_name", "totals"}, ""))
 
-	pattern_RuntimeService_EstimateRollupInterval_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "instances", "instance_id", "estimate-rollup-interval", "table_name"}, ""))
+	pattern_RuntimeService_EstimateRollupInterval_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "rollup-interval", "tables", "table_name"}, ""))
 
-	pattern_RuntimeService_GetTopK_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "topk", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetTopK_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "topk", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GetNullCount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "null-count", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetNullCount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "null-count", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GetDescriptiveStatistics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "descriptive-statistics", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetDescriptiveStatistics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "descriptive-statistics", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_EstimateSmallestTimeGrain_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "estimate-smallest-time-grain", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_EstimateSmallestTimeGrain_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "smallest-time-grain", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GetNumericHistogram_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "numeric-histogram", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetNumericHistogram_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "numeric-histogram", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GetRugHistogram_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "rug-histogram", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetRugHistogram_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "rug-histogram", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GetTimeRangeSummary_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "time-range-summary", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetTimeRangeSummary_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "time-range-summary", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GetCardinalityOfColumn_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"v1", "instances", "instance_id", "cardinality-of-column", "table_name", "column_name"}, ""))
+	pattern_RuntimeService_GetCardinalityOfColumn_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "cardinality", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GenerateTimeSeries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "instances", "instance_id", "generate-timeseries"}, ""))
+	pattern_RuntimeService_GenerateTimeSeries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "instances", "instance_id", "queries", "timeseries"}, ""))
 
 	pattern_RuntimeService_GetTableCardinality_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "cardinality", "tables", "table_name"}, ""))
 
-	pattern_RuntimeService_ProfileColumns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "tables", "table_name", "profile-columns"}, ""))
+	pattern_RuntimeService_ProfileColumns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "columns-profile", "tables", "table_name"}, ""))
 
-	pattern_RuntimeService_GetTableRows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "instances", "instance_id", "tables", "table_name", "rows"}, ""))
+	pattern_RuntimeService_GetTableRows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "rows", "tables", "table_name"}, ""))
 
 	pattern_RuntimeService_ListConnectors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "connectors", "meta"}, ""))
 )

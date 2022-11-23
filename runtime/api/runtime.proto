@@ -271,7 +271,7 @@ service RuntimeService {
   // EstimateRollupInterval (TODO: add description)
   rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
+      post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
       body: "*"
     };
   }
