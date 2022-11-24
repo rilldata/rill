@@ -4,22 +4,22 @@ GOLANG_CROSS_VERSION  ?= v1.19.2
 SYSROOT_DIR     ?= sysroots
 SYSROOT_ARCHIVE ?= sysroots.tar.bz2
 
-.PHONY: cli
-cli:
-	npm install
-	npm run build
-	mkdir -p cli/pkg/web/embed/dist
-	cp -r web-local/build/ cli/pkg/web/embed/dist
-	# go build -o rill cli/main.go
+# .PHONY: cli
+# cli:
+# 	npm install
+# 	npm run build
+# 	mkdir -p cli/pkg/web/embed/dist
+# 	cp -r web-local/build/ cli/pkg/web/embed/dist
+# 	# go build -o rill cli/main.go
 
 # These commands not working in local, need to look into this.
-.PHONY: sysroot-pack
-sysroot-pack:
-	@tar cf - $(SYSROOT_DIR) -P | pv -s $[$(du -sk $(SYSROOT_DIR) | awk '{print $1}') * 1024] | pbzip2 > $(SYSROOT_ARCHIVE)
+# .PHONY: sysroot-pack
+# sysroot-pack:
+# 	@tar cf - $(SYSROOT_DIR) -P | pv -s $[$(du -sk $(SYSROOT_DIR) | awk '{print $1}') * 1024] | pbzip2 > $(SYSROOT_ARCHIVE)
 
-.PHONY: sysroot-unpack
-sysroot-unpack:
-	@pv $(SYSROOT_ARCHIVE) | pbzip2 -cd | tar -xf -
+# .PHONY: sysroot-unpack
+# sysroot-unpack:
+# 	@pv $(SYSROOT_ARCHIVE) | pbzip2 -cd | tar -xf -
 
 .PHONY: release-dry-run
 release-dry-run:
@@ -51,7 +51,6 @@ release:
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist
-	go build -o rill cli/main.go 
 
 .PHONY: proto.generate
 proto.generate:
