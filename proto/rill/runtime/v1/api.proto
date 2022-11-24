@@ -121,40 +121,40 @@ service RuntimeService {
     };
   }
 
-  // Migrations
+  // Reconciliation
 
-  // Migrate applies a full set of artifacts from a repo to the catalog and infra.
+  // Reconcile applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
   // the desired state expressed in the artifacts. Any existing objects not described in the submitted
   // artifacts will be deleted.
-  rpc Migrate(MigrateRequest) returns (MigrateResponse) {
+  rpc Reconcile(ReconcileRequest) returns (ReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/migrate",
+      post: "/v1/instances/{instance_id}/reconcile",
       body: "*"
     };
   }
 
-  // PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+  // PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
   // It is equivalent to calling the two RPCs sequentially.
-  rpc PutFileAndMigrate(PutFileAndMigrateRequest) returns (PutFileAndMigrateResponse) {
+  rpc PutFileAndReconcile(PutFileAndReconcileRequest) returns (PutFileAndReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/put-and-migrate",
+      post: "/v1/put-and-reconcile",
       body: "*"
     };
   }
 
-  // DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-  rpc DeleteFileAndMigrate(DeleteFileAndMigrateRequest) returns (DeleteFileAndMigrateResponse) {
+  // DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+  rpc DeleteFileAndReconcile(DeleteFileAndReconcileRequest) returns (DeleteFileAndReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/delete-and-migrate",
+      post: "/v1/delete-and-reconcile",
       body: "*"
     };
   }
 
-  // RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-  rpc RenameFileAndMigrate(RenameFileAndMigrateRequest) returns (RenameFileAndMigrateResponse) {
+  // RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+  rpc RenameFileAndReconcile(RenameFileAndReconcileRequest) returns (RenameFileAndReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/rename-and-migrate",
+      post: "/v1/rename-and-reconcile",
       body: "*"
     };
   }
@@ -334,7 +334,7 @@ message PingResponse {
 
 // Instance represents a single data project, meaning one set of code artifacts,
 // one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-// metadata (such as migration status). Instances are the unit of isolation within
+// metadata (such as reconciliation state). Instances are the unit of isolation within
 // the runtime. They enable one runtime deployment to serve not only multiple data
 // projects, but also multiple tenants. On local, the runtime will usually have
 // just a single instance.
@@ -531,35 +531,35 @@ message TriggerSyncResponse {
 // Migrations
 // **********
 
-// Request message for RuntimeService.Migrate
-message MigrateRequest {
-  // Instance to migrate
+// Request message for RuntimeService.Reconcile
+message ReconcileRequest {
+  // Instance to reconcile
   string instance_id = 1;
   // Changed paths provides a way to "hint" what files have changed in the repo, enabling
-  // migrations to execute faster by not scanning all code artifacts for changes.
+  // reconciliation to execute faster by not scanning all code artifacts for changes.
   repeated string changed_paths = 2;
   // If true, will validate the file artifacts, but not actually execute any migrations
   bool dry = 3;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // artifacts that fail to validate.)
   bool strict = 4;
 }
 
-// Response message for RuntimeService.Migrate
-message MigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
+// Response message for RuntimeService.Reconcile
+message ReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
   // affected_paths lists all the file artifact paths that were considered while
-  // executing the migration. If changed_paths was empty, this will include all
+  // executing the reconciliation. If changed_paths was empty, this will include all
   // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
-// MigrationError represents an error encountered while running Migrate.
-message MigrationError {
-  // Code represents different categories of migration errors
+// ReconcileError represents an error encountered while running Reconcile.
+message ReconcileError {
+  // Code represents different categories of reconciliation errors
   enum Code {
     // Unspecified error
     CODE_UNSPECIFIED = 0;
@@ -598,8 +598,8 @@ message MigrationError {
   CharLocation end_location = 6;
 }
 
-message PutFileAndMigrateRequest {
-  // Instance to store file in and migrate
+message PutFileAndReconcileRequest {
+  // Instance to store file in and reconcile
   string instance_id = 1;
   // Path to store the file at
   string path = 2;
@@ -614,46 +614,46 @@ message PutFileAndMigrateRequest {
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 6;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // artifacts that fail to validate.)
   bool strict = 7;
 }
 
-message PutFileAndMigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
-  // affected_paths lists all the file paths that were considered while
-  // executing the migration. For a PutFileAndMigrate, this includes the put file
-  // as well as any file artifacts that rely on objects declared in it.
+message PutFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
-message DeleteFileAndMigrateRequest {
-  // Instance to store file in and migrate
+message DeleteFileAndReconcileRequest {
+  // Instance to store file in and reconcile
   string instance_id = 1;
   // Path to store the file at
   string path = 2;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 3;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // artifacts that fail to validate.)
   bool strict = 4;
 }
 
-message DeleteFileAndMigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
-  // affected_paths lists all the file paths that were considered while
-  // executing the migration. For a PutFileAndMigrate, this includes the put file
-  // as well as any file artifacts that rely on objects declared in it.
+message DeleteFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
-message RenameFileAndMigrateRequest {
-  // Instance to store file in and migrate
+message RenameFileAndReconcileRequest {
+  // Instance to store file in and reconcile
   string instance_id = 1;
   // Current path of the file
   string from_path = 2;
@@ -662,18 +662,18 @@ message RenameFileAndMigrateRequest {
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 4;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // artifacts that fail to validate.)
   bool strict = 5;
 }
 
-message RenameFileAndMigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
-  // affected_paths lists all the file paths that were considered while
-  // executing the migration. For a PutFileAndMigrate, this includes the put file
-  // as well as any file artifacts that rely on objects declared in it.
+message RenameFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 

@@ -4,8 +4,8 @@
     getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
-    useRuntimeServiceRenameFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRenameFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
@@ -38,7 +38,7 @@
     (entity) => entity.id === id || entity.tableName === name
   );
 
-  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+  const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -80,7 +80,7 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,

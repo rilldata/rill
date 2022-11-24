@@ -26,7 +26,7 @@ type MigrationItem struct {
 	FromName       string
 	FromPath       string
 	Dependencies   []string
-	Error          *runtimev1.MigrationError
+	Error          *runtimev1.ReconcileError
 }
 
 func (i *MigrationItem) renameFrom(from *MigrationItem) {
@@ -43,32 +43,32 @@ const (
 	MigrationDelete       = 4
 )
 
-type MigrationConfig struct {
+type ReconcileConfig struct {
 	DryRun       bool
 	Strict       bool
 	ChangedPaths []string
 	ForcedPaths  []string
 }
 
-type MigrationResult struct {
+type ReconcileResult struct {
 	AddedObjects   []*drivers.CatalogEntry
 	UpdatedObjects []*drivers.CatalogEntry
 	DroppedObjects []*drivers.CatalogEntry
 	AffectedPaths  []string
-	Errors         []*runtimev1.MigrationError
+	Errors         []*runtimev1.ReconcileError
 }
 
-func NewMigrationResult() *MigrationResult {
-	return &MigrationResult{
+func NewReconcileResult() *ReconcileResult {
+	return &ReconcileResult{
 		AddedObjects:   make([]*drivers.CatalogEntry, 0),
 		UpdatedObjects: make([]*drivers.CatalogEntry, 0),
 		DroppedObjects: make([]*drivers.CatalogEntry, 0),
 		AffectedPaths:  make([]string, 0),
-		Errors:         make([]*runtimev1.MigrationError, 0),
+		Errors:         make([]*runtimev1.ReconcileError, 0),
 	}
 }
 
-func (r *MigrationResult) collectAffectedPaths() {
+func (r *ReconcileResult) collectAffectedPaths() {
 	pathDuplicates := make(map[string]bool)
 	for _, added := range r.AddedObjects {
 		r.AffectedPaths = append(r.AffectedPaths, added.Path)
@@ -104,11 +104,8 @@ type ArtifactError struct {
 
 // TODO: support loading existing projects
 
-func (s *Service) Migrate(
-	ctx context.Context,
-	conf MigrationConfig,
-) (*MigrationResult, error) {
-	result := NewMigrationResult()
+func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
+	result := NewReconcileResult()
 
 	// collect repos and create migration items
 	migrationMap, err := s.collectRepos(ctx, conf, result)
@@ -136,7 +133,7 @@ func (s *Service) Migrate(
 
 // convert repo paths to MigrationItem
 
-func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result *MigrationResult) (map[string]*MigrationItem, error) {
+func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result *ReconcileResult) (map[string]*MigrationItem, error) {
 	// TODO: if the repo folder is source controlled we should leverage it to find changes
 	// TODO: ListRecursive needs some kind of cache or optimisation
 	repoPaths := conf.ChangedPaths
@@ -192,8 +189,8 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 			} else {
 				errPath = item.Path
 			}
-			result.Errors = append(result.Errors, &runtimev1.MigrationError{
-				Code:     runtimev1.MigrationError_CODE_UNSPECIFIED,
+			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
 				Message:  "item with same name exists",
 				FilePath: errPath,
 			})
@@ -311,8 +308,8 @@ func (s *Service) getMigrationItem(
 	catalog, err := artifacts.Read(ctx, s.Repo, s.InstId, repoPath)
 	if err != nil {
 		if err != artifacts.FileReadError {
-			item.Error = &runtimev1.MigrationError{
-				Code:     runtimev1.MigrationError_CODE_SYNTAX,
+			item.Error = &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_SYNTAX,
 				Message:  err.Error(),
 				FilePath: repoPath,
 			}
@@ -456,9 +453,9 @@ func (s *Service) collectMigrationItems(
 // runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type
 func (s *Service) runMigrationItems(
 	ctx context.Context,
-	conf MigrationConfig,
+	conf ReconcileConfig,
 	migrations []*MigrationItem,
-	result *MigrationResult,
+	result *ReconcileResult,
 ) error {
 	for _, item := range migrations {
 		var err error
@@ -492,16 +489,16 @@ func (s *Service) runMigrationItems(
 		}
 
 		if err != nil {
-			result.Errors = append(result.Errors, &runtimev1.MigrationError{
-				Code:     runtimev1.MigrationError_CODE_OLAP,
+			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_OLAP,
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
 			err := s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
 			if err != nil {
 				// shouldn't ideally happen
-				result.Errors = append(result.Errors, &runtimev1.MigrationError{
-					Code:     runtimev1.MigrationError_CODE_OLAP,
+				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+					Code:     runtimev1.ReconcileError_CODE_OLAP,
 					Message:  err.Error(),
 					FilePath: item.Path,
 				})
@@ -510,8 +507,8 @@ func (s *Service) runMigrationItems(
 				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
 				if err != nil {
 					// shouldn't ideally happen
-					result.Errors = append(result.Errors, &runtimev1.MigrationError{
-						Code:     runtimev1.MigrationError_CODE_OLAP,
+					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+						Code:     runtimev1.ReconcileError_CODE_OLAP,
 						Message:  err.Error(),
 						FilePath: item.Path,
 					})

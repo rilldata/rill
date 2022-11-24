@@ -54,18 +54,18 @@ type RuntimeServiceClient interface {
 	// TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
 	// If the instance has exposed=true, tables found in the information schema will be added to the catalog.
 	TriggerSync(ctx context.Context, in *TriggerSyncRequest, opts ...grpc.CallOption) (*TriggerSyncResponse, error)
-	// Migrate applies a full set of artifacts from a repo to the catalog and infra.
+	// Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
 	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
 	// artifacts will be deleted.
-	Migrate(ctx context.Context, in *MigrateRequest, opts ...grpc.CallOption) (*MigrateResponse, error)
-	// PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+	Reconcile(ctx context.Context, in *ReconcileRequest, opts ...grpc.CallOption) (*ReconcileResponse, error)
+	// PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
 	// It is equivalent to calling the two RPCs sequentially.
-	PutFileAndMigrate(ctx context.Context, in *PutFileAndMigrateRequest, opts ...grpc.CallOption) (*PutFileAndMigrateResponse, error)
-	// DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-	DeleteFileAndMigrate(ctx context.Context, in *DeleteFileAndMigrateRequest, opts ...grpc.CallOption) (*DeleteFileAndMigrateResponse, error)
-	// RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-	RenameFileAndMigrate(ctx context.Context, in *RenameFileAndMigrateRequest, opts ...grpc.CallOption) (*RenameFileAndMigrateResponse, error)
+	PutFileAndReconcile(ctx context.Context, in *PutFileAndReconcileRequest, opts ...grpc.CallOption) (*PutFileAndReconcileResponse, error)
+	// DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+	DeleteFileAndReconcile(ctx context.Context, in *DeleteFileAndReconcileRequest, opts ...grpc.CallOption) (*DeleteFileAndReconcileResponse, error)
+	// RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+	RenameFileAndReconcile(ctx context.Context, in *RenameFileAndReconcileRequest, opts ...grpc.CallOption) (*RenameFileAndReconcileResponse, error)
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	// DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
@@ -245,36 +245,36 @@ func (c *runtimeServiceClient) TriggerSync(ctx context.Context, in *TriggerSyncR
 	return out, nil
 }
 
-func (c *runtimeServiceClient) Migrate(ctx context.Context, in *MigrateRequest, opts ...grpc.CallOption) (*MigrateResponse, error) {
-	out := new(MigrateResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/Migrate", in, out, opts...)
+func (c *runtimeServiceClient) Reconcile(ctx context.Context, in *ReconcileRequest, opts ...grpc.CallOption) (*ReconcileResponse, error) {
+	out := new(ReconcileResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/Reconcile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) PutFileAndMigrate(ctx context.Context, in *PutFileAndMigrateRequest, opts ...grpc.CallOption) (*PutFileAndMigrateResponse, error) {
-	out := new(PutFileAndMigrateResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/PutFileAndMigrate", in, out, opts...)
+func (c *runtimeServiceClient) PutFileAndReconcile(ctx context.Context, in *PutFileAndReconcileRequest, opts ...grpc.CallOption) (*PutFileAndReconcileResponse, error) {
+	out := new(PutFileAndReconcileResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/PutFileAndReconcile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) DeleteFileAndMigrate(ctx context.Context, in *DeleteFileAndMigrateRequest, opts ...grpc.CallOption) (*DeleteFileAndMigrateResponse, error) {
-	out := new(DeleteFileAndMigrateResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/DeleteFileAndMigrate", in, out, opts...)
+func (c *runtimeServiceClient) DeleteFileAndReconcile(ctx context.Context, in *DeleteFileAndReconcileRequest, opts ...grpc.CallOption) (*DeleteFileAndReconcileResponse, error) {
+	out := new(DeleteFileAndReconcileResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) RenameFileAndMigrate(ctx context.Context, in *RenameFileAndMigrateRequest, opts ...grpc.CallOption) (*RenameFileAndMigrateResponse, error) {
-	out := new(RenameFileAndMigrateResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameFileAndMigrate", in, out, opts...)
+func (c *runtimeServiceClient) RenameFileAndReconcile(ctx context.Context, in *RenameFileAndReconcileRequest, opts ...grpc.CallOption) (*RenameFileAndReconcileResponse, error) {
+	out := new(RenameFileAndReconcileResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -488,18 +488,18 @@ type RuntimeServiceServer interface {
 	// TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
 	// If the instance has exposed=true, tables found in the information schema will be added to the catalog.
 	TriggerSync(context.Context, *TriggerSyncRequest) (*TriggerSyncResponse, error)
-	// Migrate applies a full set of artifacts from a repo to the catalog and infra.
+	// Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
 	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
 	// artifacts will be deleted.
-	Migrate(context.Context, *MigrateRequest) (*MigrateResponse, error)
-	// PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+	Reconcile(context.Context, *ReconcileRequest) (*ReconcileResponse, error)
+	// PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
 	// It is equivalent to calling the two RPCs sequentially.
-	PutFileAndMigrate(context.Context, *PutFileAndMigrateRequest) (*PutFileAndMigrateResponse, error)
-	// DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-	DeleteFileAndMigrate(context.Context, *DeleteFileAndMigrateRequest) (*DeleteFileAndMigrateResponse, error)
-	// RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-	RenameFileAndMigrate(context.Context, *RenameFileAndMigrateRequest) (*RenameFileAndMigrateResponse, error)
+	PutFileAndReconcile(context.Context, *PutFileAndReconcileRequest) (*PutFileAndReconcileResponse, error)
+	// DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+	DeleteFileAndReconcile(context.Context, *DeleteFileAndReconcileRequest) (*DeleteFileAndReconcileResponse, error)
+	// RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+	RenameFileAndReconcile(context.Context, *RenameFileAndReconcileRequest) (*RenameFileAndReconcileResponse, error)
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	// DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
@@ -592,17 +592,17 @@ func (UnimplementedRuntimeServiceServer) TriggerRefresh(context.Context, *Trigge
 func (UnimplementedRuntimeServiceServer) TriggerSync(context.Context, *TriggerSyncRequest) (*TriggerSyncResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerSync not implemented")
 }
-func (UnimplementedRuntimeServiceServer) Migrate(context.Context, *MigrateRequest) (*MigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Migrate not implemented")
+func (UnimplementedRuntimeServiceServer) Reconcile(context.Context, *ReconcileRequest) (*ReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Reconcile not implemented")
 }
-func (UnimplementedRuntimeServiceServer) PutFileAndMigrate(context.Context, *PutFileAndMigrateRequest) (*PutFileAndMigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PutFileAndMigrate not implemented")
+func (UnimplementedRuntimeServiceServer) PutFileAndReconcile(context.Context, *PutFileAndReconcileRequest) (*PutFileAndReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutFileAndReconcile not implemented")
 }
-func (UnimplementedRuntimeServiceServer) DeleteFileAndMigrate(context.Context, *DeleteFileAndMigrateRequest) (*DeleteFileAndMigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteFileAndMigrate not implemented")
+func (UnimplementedRuntimeServiceServer) DeleteFileAndReconcile(context.Context, *DeleteFileAndReconcileRequest) (*DeleteFileAndReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteFileAndReconcile not implemented")
 }
-func (UnimplementedRuntimeServiceServer) RenameFileAndMigrate(context.Context, *RenameFileAndMigrateRequest) (*RenameFileAndMigrateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenameFileAndMigrate not implemented")
+func (UnimplementedRuntimeServiceServer) RenameFileAndReconcile(context.Context, *RenameFileAndReconcileRequest) (*RenameFileAndReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RenameFileAndReconcile not implemented")
 }
 func (UnimplementedRuntimeServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
@@ -926,74 +926,74 @@ func _RuntimeService_TriggerSync_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_Migrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MigrateRequest)
+func _RuntimeService_Reconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReconcileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).Migrate(ctx, in)
+		return srv.(RuntimeServiceServer).Reconcile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/Migrate",
+		FullMethod: "/rill.runtime.v1.RuntimeService/Reconcile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).Migrate(ctx, req.(*MigrateRequest))
+		return srv.(RuntimeServiceServer).Reconcile(ctx, req.(*ReconcileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_PutFileAndMigrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PutFileAndMigrateRequest)
+func _RuntimeService_PutFileAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutFileAndReconcileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).PutFileAndMigrate(ctx, in)
+		return srv.(RuntimeServiceServer).PutFileAndReconcile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/PutFileAndMigrate",
+		FullMethod: "/rill.runtime.v1.RuntimeService/PutFileAndReconcile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).PutFileAndMigrate(ctx, req.(*PutFileAndMigrateRequest))
+		return srv.(RuntimeServiceServer).PutFileAndReconcile(ctx, req.(*PutFileAndReconcileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_DeleteFileAndMigrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteFileAndMigrateRequest)
+func _RuntimeService_DeleteFileAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteFileAndReconcileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).DeleteFileAndMigrate(ctx, in)
+		return srv.(RuntimeServiceServer).DeleteFileAndReconcile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/DeleteFileAndMigrate",
+		FullMethod: "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).DeleteFileAndMigrate(ctx, req.(*DeleteFileAndMigrateRequest))
+		return srv.(RuntimeServiceServer).DeleteFileAndReconcile(ctx, req.(*DeleteFileAndReconcileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_RenameFileAndMigrate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenameFileAndMigrateRequest)
+func _RuntimeService_RenameFileAndReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameFileAndReconcileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).RenameFileAndMigrate(ctx, in)
+		return srv.(RuntimeServiceServer).RenameFileAndReconcile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/RenameFileAndMigrate",
+		FullMethod: "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).RenameFileAndMigrate(ctx, req.(*RenameFileAndMigrateRequest))
+		return srv.(RuntimeServiceServer).RenameFileAndReconcile(ctx, req.(*RenameFileAndReconcileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1404,20 +1404,20 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_TriggerSync_Handler,
 		},
 		{
-			MethodName: "Migrate",
-			Handler:    _RuntimeService_Migrate_Handler,
+			MethodName: "Reconcile",
+			Handler:    _RuntimeService_Reconcile_Handler,
 		},
 		{
-			MethodName: "PutFileAndMigrate",
-			Handler:    _RuntimeService_PutFileAndMigrate_Handler,
+			MethodName: "PutFileAndReconcile",
+			Handler:    _RuntimeService_PutFileAndReconcile_Handler,
 		},
 		{
-			MethodName: "DeleteFileAndMigrate",
-			Handler:    _RuntimeService_DeleteFileAndMigrate_Handler,
+			MethodName: "DeleteFileAndReconcile",
+			Handler:    _RuntimeService_DeleteFileAndReconcile_Handler,
 		},
 		{
-			MethodName: "RenameFileAndMigrate",
-			Handler:    _RuntimeService_RenameFileAndMigrate_Handler,
+			MethodName: "RenameFileAndReconcile",
+			Handler:    _RuntimeService_RenameFileAndReconcile_Handler,
 		},
 		{
 			MethodName: "Query",

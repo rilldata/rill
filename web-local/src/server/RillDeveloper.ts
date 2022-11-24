@@ -80,7 +80,7 @@ export class RillDeveloper {
     }
 
     // Enable this when we are only testing the new runtime
-    await this.migrate();
+    await this.reconcile();
 
     await this.duckDbConnection.init();
   }
@@ -91,7 +91,7 @@ export class RillDeveloper {
     await this.dataModelerService.destroy();
   }
 
-  private async migrate() {
+  private async reconcile() {
     try {
       await axios.post(
         `${
@@ -99,7 +99,7 @@ export class RillDeveloper {
         }/v1/instances/${this.dataModelerService
           .getDatabaseService()
           .getDatabaseClient()
-          .getInstanceId()}/migrate`
+          .getInstanceId()}/reconcile`
       );
     } catch (err) {
       console.log(err.response.data);

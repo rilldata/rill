@@ -26,15 +26,15 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/delete-and-migrate:
+  /v1/delete-and-reconcile:
     post:
-      summary: DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-      operationId: RuntimeService_DeleteFileAndMigrate
+      summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+      operationId: RuntimeService_DeleteFileAndReconcile
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1DeleteFileAndMigrateResponse'
+            $ref: '#/definitions/v1DeleteFileAndReconcileResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -44,7 +44,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1DeleteFileAndMigrateRequest'
+            $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
   /v1/instances:
@@ -672,54 +672,6 @@ paths:
             title: Request message for RuntimeService.MetricsViewTotals
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/migrate:
-    post:
-      summary: |-
-        Migrate applies a full set of artifacts from a repo to the catalog and infra.
-        It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-        the desired state expressed in the artifacts. Any existing objects not described in the submitted
-        artifacts will be deleted.
-      operationId: RuntimeService_Migrate
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1MigrateResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to migrate
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              changedPaths:
-                type: array
-                items:
-                  type: string
-                description: |-
-                  Changed paths provides a way to "hint" what files have changed in the repo, enabling
-                  migrations to execute faster by not scanning all code artifacts for changes.
-              dry:
-                type: boolean
-                title: If true, will validate the file artifacts, but not actually execute any migrations
-              strict:
-                type: boolean
-                title: |-
-                  If true, will not execute any migrations if any artifact fails to validate.
-                  Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-                  that fail to validate.)
-            title: Request message for RuntimeService.Migrate
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/null-count/{tableName}/{columnName}:
     get:
       summary: Get the number of nulls in a column
@@ -882,6 +834,51 @@ paths:
                 type: string
                 title: SELECT statement
             title: Request message for RuntimeService.QueryDirect
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/reconcile:
+    post:
+      summary: |-
+        Reconcile applies a full set of artifacts from a repo to the catalog and infra.
+        It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+        the desired state expressed in the artifacts. Any existing objects not described in the submitted
+        artifacts will be deleted.
+      operationId: RuntimeService_Reconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance to reconcile
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              changedPaths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Changed paths provides a way to "hint" what files have changed in the repo, enabling
+                  reconciliation to execute faster by not scanning all code artifacts for changes.
+              dry:
+                type: boolean
+                title: If true, will validate the file artifacts, but not actually execute any migrations
+              strict:
+                type: boolean
+                title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+            title: Request message for RuntimeService.Reconcile
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/rug-histogram/{tableName}/{columnName}:
@@ -1074,17 +1071,17 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/put-and-migrate:
+  /v1/put-and-reconcile:
     post:
       summary: |-
-        PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+        PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
         It is equivalent to calling the two RPCs sequentially.
-      operationId: RuntimeService_PutFileAndMigrate
+      operationId: RuntimeService_PutFileAndReconcile
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1PutFileAndMigrateResponse'
+            $ref: '#/definitions/v1PutFileAndReconcileResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1094,18 +1091,18 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1PutFileAndMigrateRequest'
+            $ref: '#/definitions/v1PutFileAndReconcileRequest'
       tags:
         - RuntimeService
-  /v1/rename-and-migrate:
+  /v1/rename-and-reconcile:
     post:
-      summary: RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-      operationId: RuntimeService_RenameFileAndMigrate
+      summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+      operationId: RuntimeService_RenameFileAndReconcile
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RenameFileAndMigrateResponse'
+            $ref: '#/definitions/v1RenameFileAndReconcileResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1115,7 +1112,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1RenameFileAndMigrateRequest'
+            $ref: '#/definitions/v1RenameFileAndReconcileRequest'
       tags:
         - RuntimeService
 definitions:
@@ -1209,16 +1206,6 @@ definitions:
       name:
         type: string
     title: Measures are aggregated computed values
-  MigrationErrorCharLocation:
-    type: object
-    properties:
-      column:
-        type: integer
-        format: int64
-      line:
-        type: integer
-        format: int64
-    title: CharLocation is a line and column in a code artifact
   ModelDialect:
     type: string
     enum:
@@ -1255,6 +1242,16 @@ definitions:
         format: double
       present:
         type: boolean
+  ReconcileErrorCharLocation:
+    type: object
+    properties:
+      column:
+        type: integer
+        format: int64
+      line:
+        type: integer
+        format: int64
+    title: CharLocation is a line and column in a code artifact
   StructTypeField:
     type: object
     properties:
@@ -1428,7 +1425,7 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.CreateInstance
-  v1DeleteFileAndMigrateRequest:
+  v1DeleteFileAndReconcileRequest:
     type: object
     properties:
       dry:
@@ -1436,17 +1433,14 @@ definitions:
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
-        title: Instance to store file in and migrate
+        title: Instance to store file in and reconcile
       path:
         type: string
         title: Path to store the file at
       strict:
         type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-          that fail to validate.)
-  v1DeleteFileAndMigrateResponse:
+        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+  v1DeleteFileAndReconcileResponse:
     type: object
     properties:
       affectedPaths:
@@ -1454,16 +1448,16 @@ definitions:
         items:
           type: string
         description: |-
-          affected_paths lists all the file paths that were considered while
-          executing the migration. For a PutFileAndMigrate, this includes the put file
-          as well as any file artifacts that rely on objects declared in it.
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
       errors:
         type: array
         items:
-          $ref: '#/definitions/v1MigrationError'
+          $ref: '#/definitions/v1ReconcileError'
         description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -1591,7 +1585,7 @@ definitions:
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-      metadata (such as migration status). Instances are the unit of isolation within
+      metadata (such as reconciliation state). Instances are the unit of isolation within
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
@@ -1756,73 +1750,6 @@ definitions:
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
     title: Response message for RuntimeService.MetricsViewTotals
-  v1MigrateResponse:
-    type: object
-    properties:
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the migration. If changed_paths was empty, this will include all
-          code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1MigrationError'
-        description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
-    title: Response message for RuntimeService.Migrate
-  v1MigrationError:
-    type: object
-    properties:
-      code:
-        $ref: '#/definitions/v1MigrationErrorCode'
-        title: Code denotes the category of error
-      endLocation:
-        $ref: '#/definitions/MigrationErrorCharLocation'
-        description: |-
-          End location of the error in the code artifact (if any).
-          Only applicable if file_path and start_location is set.
-      filePath:
-        type: string
-        title: File path of the code artifact that this error relates to (if any)
-      message:
-        type: string
-        title: Message is a developer-friendly error message
-      propertyPath:
-        type: string
-        description: |-
-          Property path of the error in the code artifact (if any).
-          It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-          It only applies to structured code artifacts (i.e. YAML).
-          Only applicable if file_path is set.
-      startLocation:
-        $ref: '#/definitions/MigrationErrorCharLocation'
-        description: |-
-          Start location of the error in the code artifact (if any).
-          Only applicable if file_path is set.
-    description: MigrationError represents an error encountered while running Migrate.
-  v1MigrationErrorCode:
-    type: string
-    enum:
-      - CODE_UNSPECIFIED
-      - CODE_SYNTAX
-      - CODE_VALIDATION
-      - CODE_DEPENDENCY
-      - CODE_OLAP
-      - CODE_SOURCE
-    default: CODE_UNSPECIFIED
-    description: |-
-      - CODE_UNSPECIFIED: Unspecified error
-       - CODE_SYNTAX: Code artifact failed to parse
-       - CODE_VALIDATION: Code artifact has internal validation errors
-       - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
-       - CODE_OLAP: Error returned from the OLAP database
-       - CODE_SOURCE: Error encountered during source inspection or ingestion
-    title: Code represents different categories of migration errors
   v1Model:
     type: object
     properties:
@@ -1929,7 +1856,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1ProfileColumn'
-  v1PutFileAndMigrateRequest:
+  v1PutFileAndReconcileRequest:
     type: object
     properties:
       blob:
@@ -1948,17 +1875,14 @@ definitions:
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
-        title: Instance to store file in and migrate
+        title: Instance to store file in and reconcile
       path:
         type: string
         title: Path to store the file at
       strict:
         type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-          that fail to validate.)
-  v1PutFileAndMigrateResponse:
+        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+  v1PutFileAndReconcileResponse:
     type: object
     properties:
       affectedPaths:
@@ -1966,16 +1890,16 @@ definitions:
         items:
           type: string
         description: |-
-          affected_paths lists all the file paths that were considered while
-          executing the migration. For a PutFileAndMigrate, this includes the put file
-          as well as any file artifacts that rely on objects declared in it.
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
       errors:
         type: array
         items:
-          $ref: '#/definitions/v1MigrationError'
+          $ref: '#/definitions/v1ReconcileError'
         description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1PutFileResponse:
     type: object
     properties:
@@ -2007,7 +1931,74 @@ definitions:
         $ref: '#/definitions/v1StructType'
         title: Schema of result data
     title: Response message for RuntimeService.Query
-  v1RenameFileAndMigrateRequest:
+  v1ReconcileError:
+    type: object
+    properties:
+      code:
+        $ref: '#/definitions/v1ReconcileErrorCode'
+        title: Code denotes the category of error
+      endLocation:
+        $ref: '#/definitions/ReconcileErrorCharLocation'
+        description: |-
+          End location of the error in the code artifact (if any).
+          Only applicable if file_path and start_location is set.
+      filePath:
+        type: string
+        title: File path of the code artifact that this error relates to (if any)
+      message:
+        type: string
+        title: Message is a developer-friendly error message
+      propertyPath:
+        type: string
+        description: |-
+          Property path of the error in the code artifact (if any).
+          It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+          It only applies to structured code artifacts (i.e. YAML).
+          Only applicable if file_path is set.
+      startLocation:
+        $ref: '#/definitions/ReconcileErrorCharLocation'
+        description: |-
+          Start location of the error in the code artifact (if any).
+          Only applicable if file_path is set.
+    description: ReconcileError represents an error encountered while running Reconcile.
+  v1ReconcileErrorCode:
+    type: string
+    enum:
+      - CODE_UNSPECIFIED
+      - CODE_SYNTAX
+      - CODE_VALIDATION
+      - CODE_DEPENDENCY
+      - CODE_OLAP
+      - CODE_SOURCE
+    default: CODE_UNSPECIFIED
+    description: |-
+      - CODE_UNSPECIFIED: Unspecified error
+       - CODE_SYNTAX: Code artifact failed to parse
+       - CODE_VALIDATION: Code artifact has internal validation errors
+       - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
+       - CODE_OLAP: Error returned from the OLAP database
+       - CODE_SOURCE: Error encountered during source inspection or ingestion
+    title: Code represents different categories of reconciliation errors
+  v1ReconcileResponse:
+    type: object
+    properties:
+      affectedPaths:
+        type: array
+        items:
+          type: string
+        description: |-
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
+    title: Response message for RuntimeService.Reconcile
+  v1RenameFileAndReconcileRequest:
     type: object
     properties:
       dry:
@@ -2018,17 +2009,14 @@ definitions:
         title: Current path of the file
       instanceId:
         type: string
-        title: Instance to store file in and migrate
+        title: Instance to store file in and reconcile
       strict:
         type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-          that fail to validate.)
+        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
       toPath:
         type: string
         title: New path of the file
-  v1RenameFileAndMigrateResponse:
+  v1RenameFileAndReconcileResponse:
     type: object
     properties:
       affectedPaths:
@@ -2036,16 +2024,16 @@ definitions:
         items:
           type: string
         description: |-
-          affected_paths lists all the file paths that were considered while
-          executing the migration. For a PutFileAndMigrate, this includes the put file
-          as well as any file artifacts that rely on objects declared in it.
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
       errors:
         type: array
         items:
-          $ref: '#/definitions/v1MigrationError'
+          $ref: '#/definitions/v1ReconcileError'
         description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
