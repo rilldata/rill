@@ -165,15 +165,16 @@
         </CollapsibleSectionTitle>
       </div>
 
-      {#if currentDerivedModel?.profile && showColumns}
+      {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile
-            indentLevel={0}
-            cardinality={currentDerivedModel?.cardinality ?? 0}
-            profile={currentDerivedModel?.profile ?? []}
-            head={currentDerivedModel?.preview ?? []}
-            entityId={activeEntityID}
-          />
+          {#key currentModel?.query}
+            {currentModel?.query}
+            <ColumnProfile
+              objectName={currentModel?.tableName}
+              indentLevel={0}
+              head={currentDerivedModel?.preview ?? []}
+            />
+          {/key}
         </div>
       {/if}
     </div>

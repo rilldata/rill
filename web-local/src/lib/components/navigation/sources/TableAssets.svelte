@@ -99,10 +99,7 @@
                 <ColumnProfile
                   indentLevel={1}
                   objectName={sourceName}
-                  cardinality={derivedTable?.cardinality ?? 0}
-                  profile={derivedTable?.profile ?? []}
                   head={derivedTable?.preview ?? []}
-                  entityId={persistentTable.id}
                 />
               </div>
             </svelte:fragment>

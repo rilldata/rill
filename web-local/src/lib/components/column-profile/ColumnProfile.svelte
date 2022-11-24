@@ -38,7 +38,7 @@
     $runtimeStore?.instanceId,
     objectName
   );
-
+  $: console.log("here", objectName);
   /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
   function getSummaries(objectName, instanceId, profileColumnResults) {
     return derived(
