@@ -7,7 +7,7 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/server-cloud/database"
+	"github.com/rilldata/rill/admin/database"
 )
 
 func init() {

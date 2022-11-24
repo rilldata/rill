@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/rilldata/rill/server-cloud/api"
+	"github.com/rilldata/rill/admin/api"
 )
 
 // Sends an error as JSON

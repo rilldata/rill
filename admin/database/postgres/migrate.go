@@ -18,7 +18,7 @@ var migrationsFS embed.FS
 var migrationLockNumber = int64(5103805673824918) // random number
 
 // Name of the table that tracks migrations
-var migrationVersionTable = "cloud_migration_version"
+var migrationVersionTable = "admin_migration_version"
 
 // Migrate runs migrations. It's safe for concurrent invocations.
 // Adapted from: https://github.com/jackc/tern

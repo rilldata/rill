@@ -9,7 +9,7 @@ dist/
 node_modules/
 runtime/
 scripts/
-server-cloud/
+admin/
 state/
 static/
 temp/

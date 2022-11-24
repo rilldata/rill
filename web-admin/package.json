@@ -1,5 +1,5 @@
 {
-  "name": "web-cloud",
+  "name": "web-admin",
   "version": "0.0.1",
   "scripts": {
     "dev": "vite dev",
