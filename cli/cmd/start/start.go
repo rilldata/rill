@@ -105,9 +105,9 @@ func StartCmd() *cobra.Command {
 				return err
 			}
 
-			// Trigger a migration
+			// Trigger reconciliation
 			logger.Infof("Hydrating project at '%s'", repoAbs)
-			res, err := server.Migrate(context.Background(), &runtimev1.MigrateRequest{
+			res, err := server.Reconcile(context.Background(), &runtimev1.ReconcileRequest{
 				InstanceId: localInstanceID,
 			})
 			if err != nil {
@@ -117,7 +117,7 @@ func StartCmd() *cobra.Command {
 				logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 			}
 			for _, path := range res.AffectedPaths {
-				logger.Infof("Migrated: %s", path)
+				logger.Infof("Reconciled: %s", path)
 			}
 			logger.Infof("Hydration completed!")
 

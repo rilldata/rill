@@ -3,9 +3,9 @@
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServiceDeleteFileAndMigrate,
+    useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -88,9 +88,9 @@
     (source) => source.id === sourceID
   );
 
-  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     try {

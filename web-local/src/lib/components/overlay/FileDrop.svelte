@@ -2,7 +2,7 @@
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,
     RuntimeServiceListCatalogEntriesType,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
@@ -23,7 +23,7 @@
   ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;

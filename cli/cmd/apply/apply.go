@@ -16,8 +16,7 @@ func ApplyCmd() *cobra.Command {
 	var applyCmd = &cobra.Command{
 		Use:   "apply",
 		Short: "Apply the available artifacts and apply them Rill",
-		Long: `loads a folder of artifacts and apply them to local project and migrate the available sources, models
-	and dashboards`,
+		Long:  `loads a folder of artifacts and apply them to local project and reconciles the available sources, models and dashboards`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("apply called")
 			return nil

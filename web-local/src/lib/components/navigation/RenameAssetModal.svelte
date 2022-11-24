@@ -3,7 +3,7 @@
   import {
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceRenameFileAndMigrate,
+    useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { createForm } from "svelte-forms-lib";
@@ -34,7 +34,7 @@
     currentAssetName
   );
 
-  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+  const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {

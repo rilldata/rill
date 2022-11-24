@@ -14,6 +14,14 @@ export type RuntimeServiceGetTopKBody = {
 
 export type RuntimeServiceGetTableRowsParams = { limit?: number };
 
+export type RuntimeServiceReconcileBody = {
+  /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
+reconciliation to execute faster by not scanning all code artifacts for changes. */
+  changedPaths?: string[];
+  dry?: boolean;
+  strict?: boolean;
+};
+
 export type RuntimeServiceQueryDirectBody = {
   args?: unknown[];
   dryRun?: boolean;
@@ -26,14 +34,6 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
   priority?: string;
   sql?: string;
-};
-
-export type RuntimeServiceMigrateBody = {
-  /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
-migrations to execute faster by not scanning all code artifacts for changes. */
-  changedPaths?: string[];
-  dry?: boolean;
-  strict?: boolean;
 };
 
 export type RuntimeServiceMetricsViewTotalsBody = {
@@ -231,23 +231,70 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
-export interface V1RenameFileAndMigrateRequest {
+export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   fromPath?: string;
   instanceId?: string;
   strict?: boolean;
   toPath?: string;
+}
+
+/**
+ * - CODE_UNSPECIFIED: Unspecified error
+ - CODE_SYNTAX: Code artifact failed to parse
+ - CODE_VALIDATION: Code artifact has internal validation errors
+ - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
+ - CODE_OLAP: Error returned from the OLAP database
+ - CODE_SOURCE: Error encountered during source inspection or ingestion
+ */
+export type V1ReconcileErrorCode =
+  typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ReconcileErrorCode = {
+  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
+  CODE_SYNTAX: "CODE_SYNTAX",
+  CODE_VALIDATION: "CODE_VALIDATION",
+  CODE_DEPENDENCY: "CODE_DEPENDENCY",
+  CODE_OLAP: "CODE_OLAP",
+  CODE_SOURCE: "CODE_SOURCE",
+} as const;
+
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  endLocation?: ReconcileErrorCharLocation;
+  filePath?: string;
+  message?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1ReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -268,17 +315,17 @@ export interface V1PutFileResponse {
   filePath?: string;
 }
 
-export interface V1PutFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
+export interface V1PutFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
-export interface V1PutFileAndMigrateRequest {
+export interface V1PutFileAndReconcileRequest {
   blob?: string;
   create?: boolean;
   /** create_only will cause the operation to fail if a file already exists at path.
@@ -350,53 +397,6 @@ export interface V1Model {
   name?: string;
   schema?: V1StructType;
   sql?: string;
-}
-
-/**
- * - CODE_UNSPECIFIED: Unspecified error
- - CODE_SYNTAX: Code artifact failed to parse
- - CODE_VALIDATION: Code artifact has internal validation errors
- - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
- - CODE_OLAP: Error returned from the OLAP database
- - CODE_SOURCE: Error encountered during source inspection or ingestion
- */
-export type V1MigrationErrorCode =
-  typeof V1MigrationErrorCode[keyof typeof V1MigrationErrorCode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1MigrationErrorCode = {
-  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
-  CODE_SYNTAX: "CODE_SYNTAX",
-  CODE_VALIDATION: "CODE_VALIDATION",
-  CODE_DEPENDENCY: "CODE_DEPENDENCY",
-  CODE_OLAP: "CODE_OLAP",
-  CODE_SOURCE: "CODE_SOURCE",
-} as const;
-
-/**
- * MigrationError represents an error encountered while running Migrate.
- */
-export interface V1MigrationError {
-  code?: V1MigrationErrorCode;
-  endLocation?: MigrationErrorCharLocation;
-  filePath?: string;
-  message?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string;
-  startLocation?: MigrationErrorCharLocation;
-}
-
-export interface V1MigrateResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the migration. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
@@ -480,7 +480,7 @@ export interface V1ListCatalogEntriesResponse {
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
 one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as migration status). Instances are the unit of isolation within
+metadata (such as reconciliation state). Instances are the unit of isolation within
 the runtime. They enable one runtime deployment to serve not only multiple data
 projects, but also multiple tenants. On local, the runtime will usually have
 just a single instance.
@@ -567,17 +567,17 @@ export interface V1DeleteFileResponse {
   [key: string]: any;
 }
 
-export interface V1DeleteFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
+export interface V1DeleteFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
-export interface V1DeleteFileAndMigrateRequest {
+export interface V1DeleteFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   instanceId?: string;
@@ -703,6 +703,11 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
+export interface ReconcileErrorCharLocation {
+  column?: number;
+  line?: number;
+}
+
 export interface NumericOutliersOutlier {
   bucket?: number;
   high?: number;
@@ -724,11 +729,6 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
-
-export interface MigrationErrorCharLocation {
-  column?: number;
-  line?: number;
-}
 
 export interface MetricsViewMeasure {
   description?: string;

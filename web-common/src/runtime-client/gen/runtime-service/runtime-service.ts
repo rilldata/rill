@@ -16,8 +16,8 @@ import type {
 import type {
   V1ListConnectorsResponse,
   RpcStatus,
-  V1DeleteFileAndMigrateResponse,
-  V1DeleteFileAndMigrateRequest,
+  V1DeleteFileAndReconcileResponse,
+  V1DeleteFileAndReconcileRequest,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
   V1CreateInstanceResponse,
@@ -49,8 +49,6 @@ import type {
   RuntimeServiceMetricsViewToplistBody,
   V1MetricsViewTotalsResponse,
   RuntimeServiceMetricsViewTotalsBody,
-  V1MigrateResponse,
-  RuntimeServiceMigrateBody,
   V1GetNullCountResponse,
   V1GetNumericHistogramResponse,
   V1GetTableCardinalityResponse,
@@ -58,6 +56,8 @@ import type {
   RuntimeServiceQueryBody,
   V1QueryDirectResponse,
   RuntimeServiceQueryDirectBody,
+  V1ReconcileResponse,
+  RuntimeServiceReconcileBody,
   V1GetRugHistogramResponse,
   V1TriggerSyncResponse,
   V1ProfileColumnsResponse,
@@ -67,10 +67,10 @@ import type {
   V1GetTopKResponse,
   RuntimeServiceGetTopKBody,
   V1PingResponse,
-  V1PutFileAndMigrateResponse,
-  V1PutFileAndMigrateRequest,
-  V1RenameFileAndMigrateResponse,
-  V1RenameFileAndMigrateRequest,
+  V1PutFileAndReconcileResponse,
+  V1PutFileAndReconcileRequest,
+  V1RenameFileAndReconcileResponse,
+  V1RenameFileAndReconcileRequest,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -136,52 +136,52 @@ export const useRuntimeServiceListConnectors = <
 };
 
 /**
- * @summary DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+ * @summary DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
  */
-export const runtimeServiceDeleteFileAndMigrate = (
-  v1DeleteFileAndMigrateRequest: V1DeleteFileAndMigrateRequest
+export const runtimeServiceDeleteFileAndReconcile = (
+  v1DeleteFileAndReconcileRequest: V1DeleteFileAndReconcileRequest
 ) => {
-  return httpClient<V1DeleteFileAndMigrateResponse>({
-    url: `/v1/delete-and-migrate`,
+  return httpClient<V1DeleteFileAndReconcileResponse>({
+    url: `/v1/delete-and-reconcile`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: v1DeleteFileAndMigrateRequest,
+    data: v1DeleteFileAndReconcileRequest,
   });
 };
 
-export type RuntimeServiceDeleteFileAndMigrateMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>
+export type RuntimeServiceDeleteFileAndReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFileAndReconcile>>
 >;
-export type RuntimeServiceDeleteFileAndMigrateMutationBody =
-  V1DeleteFileAndMigrateRequest;
-export type RuntimeServiceDeleteFileAndMigrateMutationError = RpcStatus;
+export type RuntimeServiceDeleteFileAndReconcileMutationBody =
+  V1DeleteFileAndReconcileRequest;
+export type RuntimeServiceDeleteFileAndReconcileMutationError = RpcStatus;
 
-export const useRuntimeServiceDeleteFileAndMigrate = <
+export const useRuntimeServiceDeleteFileAndReconcile = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndReconcile>>,
     TError,
-    { data: V1DeleteFileAndMigrateRequest },
+    { data: V1DeleteFileAndReconcileRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
-    { data: V1DeleteFileAndMigrateRequest }
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndReconcile>>,
+    { data: V1DeleteFileAndReconcileRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return runtimeServiceDeleteFileAndMigrate(data);
+    return runtimeServiceDeleteFileAndReconcile(data);
   };
 
   return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndMigrate>>,
+    Awaited<ReturnType<typeof runtimeServiceDeleteFileAndReconcile>>,
     TError,
-    { data: V1DeleteFileAndMigrateRequest },
+    { data: V1DeleteFileAndReconcileRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1551,59 +1551,6 @@ export const useRuntimeServiceMetricsViewTotals = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary Migrate applies a full set of artifacts from a repo to the catalog and infra.
-It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-the desired state expressed in the artifacts. Any existing objects not described in the submitted
-artifacts will be deleted.
- */
-export const runtimeServiceMigrate = (
-  instanceId: string,
-  runtimeServiceMigrateBody: RuntimeServiceMigrateBody
-) => {
-  return httpClient<V1MigrateResponse>({
-    url: `/v1/instances/${instanceId}/migrate`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceMigrateBody,
-  });
-};
-
-export type RuntimeServiceMigrateMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceMigrate>>
->;
-export type RuntimeServiceMigrateMutationBody = RuntimeServiceMigrateBody;
-export type RuntimeServiceMigrateMutationError = RpcStatus;
-
-export const useRuntimeServiceMigrate = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMigrate>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceMigrateBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMigrate>>,
-    { instanceId: string; data: RuntimeServiceMigrateBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceMigrate(instanceId, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceMigrate>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceMigrateBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary Get the number of nulls in a column
  */
 export const runtimeServiceGetNullCount = (
@@ -1940,6 +1887,59 @@ export const useRuntimeServiceQueryDirect = <
     Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
     TError,
     { instanceId: string; data: RuntimeServiceQueryDirectBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary Reconcile applies a full set of artifacts from a repo to the catalog and infra.
+It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+the desired state expressed in the artifacts. Any existing objects not described in the submitted
+artifacts will be deleted.
+ */
+export const runtimeServiceReconcile = (
+  instanceId: string,
+  runtimeServiceReconcileBody: RuntimeServiceReconcileBody
+) => {
+  return httpClient<V1ReconcileResponse>({
+    url: `/v1/instances/${instanceId}/reconcile`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceReconcileBody,
+  });
+};
+
+export type RuntimeServiceReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceReconcile>>
+>;
+export type RuntimeServiceReconcileMutationBody = RuntimeServiceReconcileBody;
+export type RuntimeServiceReconcileMutationError = RpcStatus;
+
+export const useRuntimeServiceReconcile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceReconcile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceReconcileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceReconcile>>,
+    { instanceId: string; data: RuntimeServiceReconcileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceReconcile(instanceId, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceReconcile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceReconcileBody },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -2454,103 +2454,103 @@ export const useRuntimeServicePing = <
 };
 
 /**
- * @summary PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+ * @summary PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
 It is equivalent to calling the two RPCs sequentially.
  */
-export const runtimeServicePutFileAndMigrate = (
-  v1PutFileAndMigrateRequest: V1PutFileAndMigrateRequest
+export const runtimeServicePutFileAndReconcile = (
+  v1PutFileAndReconcileRequest: V1PutFileAndReconcileRequest
 ) => {
-  return httpClient<V1PutFileAndMigrateResponse>({
-    url: `/v1/put-and-migrate`,
+  return httpClient<V1PutFileAndReconcileResponse>({
+    url: `/v1/put-and-reconcile`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: v1PutFileAndMigrateRequest,
+    data: v1PutFileAndReconcileRequest,
   });
 };
 
-export type RuntimeServicePutFileAndMigrateMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServicePutFileAndMigrate>>
+export type RuntimeServicePutFileAndReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>
 >;
-export type RuntimeServicePutFileAndMigrateMutationBody =
-  V1PutFileAndMigrateRequest;
-export type RuntimeServicePutFileAndMigrateMutationError = RpcStatus;
+export type RuntimeServicePutFileAndReconcileMutationBody =
+  V1PutFileAndReconcileRequest;
+export type RuntimeServicePutFileAndReconcileMutationError = RpcStatus;
 
-export const useRuntimeServicePutFileAndMigrate = <
+export const useRuntimeServicePutFileAndReconcile = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServicePutFileAndMigrate>>,
+    Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
     TError,
-    { data: V1PutFileAndMigrateRequest },
+    { data: V1PutFileAndReconcileRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServicePutFileAndMigrate>>,
-    { data: V1PutFileAndMigrateRequest }
+    Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
+    { data: V1PutFileAndReconcileRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return runtimeServicePutFileAndMigrate(data);
+    return runtimeServicePutFileAndReconcile(data);
   };
 
   return useMutation<
-    Awaited<ReturnType<typeof runtimeServicePutFileAndMigrate>>,
+    Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
     TError,
-    { data: V1PutFileAndMigrateRequest },
+    { data: V1PutFileAndReconcileRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
+ * @summary RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
  */
-export const runtimeServiceRenameFileAndMigrate = (
-  v1RenameFileAndMigrateRequest: V1RenameFileAndMigrateRequest
+export const runtimeServiceRenameFileAndReconcile = (
+  v1RenameFileAndReconcileRequest: V1RenameFileAndReconcileRequest
 ) => {
-  return httpClient<V1RenameFileAndMigrateResponse>({
-    url: `/v1/rename-and-migrate`,
+  return httpClient<V1RenameFileAndReconcileResponse>({
+    url: `/v1/rename-and-reconcile`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: v1RenameFileAndMigrateRequest,
+    data: v1RenameFileAndReconcileRequest,
   });
 };
 
-export type RuntimeServiceRenameFileAndMigrateMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>
+export type RuntimeServiceRenameFileAndReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenameFileAndReconcile>>
 >;
-export type RuntimeServiceRenameFileAndMigrateMutationBody =
-  V1RenameFileAndMigrateRequest;
-export type RuntimeServiceRenameFileAndMigrateMutationError = RpcStatus;
+export type RuntimeServiceRenameFileAndReconcileMutationBody =
+  V1RenameFileAndReconcileRequest;
+export type RuntimeServiceRenameFileAndReconcileMutationError = RpcStatus;
 
-export const useRuntimeServiceRenameFileAndMigrate = <
+export const useRuntimeServiceRenameFileAndReconcile = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndReconcile>>,
     TError,
-    { data: V1RenameFileAndMigrateRequest },
+    { data: V1RenameFileAndReconcileRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
-    { data: V1RenameFileAndMigrateRequest }
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndReconcile>>,
+    { data: V1RenameFileAndReconcileRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return runtimeServiceRenameFileAndMigrate(data);
+    return runtimeServiceRenameFileAndReconcile(data);
   };
 
   return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
+    Awaited<ReturnType<typeof runtimeServiceRenameFileAndReconcile>>,
     TError,
-    { data: V1RenameFileAndMigrateRequest },
+    { data: V1RenameFileAndReconcileRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

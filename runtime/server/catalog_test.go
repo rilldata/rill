@@ -31,9 +31,9 @@ func TestServer_InitCatalogService(t *testing.T) {
 
 	testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	testutils.CreateModel(t, service, "AdBids_model", "select timestamp, publisher from AdBids", AdBidsModelRepoPath)
-	migrateResp, err := service.Migrate(ctx, catalog.MigrationConfig{})
+	res, err := service.Reconcile(ctx, catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, migrateResp, 0, 2, 0, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
+	testutils.AssertMigration(t, res, 0, 2, 0, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 	testutils.AssertTable(t, service, "AdBids", AdBidsRepoPath)
 	testutils.AssertTable(t, service, "AdBids_model", AdBidsModelRepoPath)
 
@@ -42,15 +42,16 @@ func TestServer_InitCatalogService(t *testing.T) {
 	service, err = server.serviceCache.createCatalogService(ctx, server, instId)
 	require.NoError(t, err)
 
-	// initial migrate to setup cache
-	migrateResp, err = service.Migrate(ctx, catalog.MigrationConfig{})
+	// initial reconcile to setup cache
+	_, err = service.Reconcile(ctx, catalog.ReconcileConfig{})
+	require.NoError(t, err)
 	// force update the source
-	migrateResp, err = service.Migrate(ctx, catalog.MigrationConfig{
+	res, err = service.Reconcile(ctx, catalog.ReconcileConfig{
 		ChangedPaths: []string{AdBidsRepoPath},
 		ForcedPaths:  []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, migrateResp, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
+	testutils.AssertMigration(t, res, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 }
 
 func createInstance(t *testing.T, server *Server, ctx context.Context, dir string) string {

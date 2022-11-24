@@ -26,7 +26,7 @@ const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
-func TestServer_PutFileAndMigrate(t *testing.T) {
+func TestServer_PutFileAndReconcile(t *testing.T) {
 	ctx := context.Background()
 	server, instanceId := getTestServer(t)
 
@@ -34,7 +34,7 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 	require.NoError(t, err)
 
 	artifact := testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
-	resp, err := server.PutFileAndMigrate(ctx, &runtimev1.PutFileAndMigrateRequest{
+	resp, err := server.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
 		InstanceId: instanceId,
 		Path:       AdBidsRepoPath,
 		Blob:       artifact,
@@ -45,7 +45,7 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 
 	// replace with same name different file
 	artifact = testutils.CreateSource(t, service, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
-	resp, err = server.PutFileAndMigrate(ctx, &runtimev1.PutFileAndMigrateRequest{
+	resp, err = server.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
 		InstanceId: instanceId,
 		Path:       AdBidsRepoPath,
 		Blob:       artifact,
@@ -56,7 +56,7 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 
 	// rename
 	testutils.CreateSource(t, service, "AdBidsNew", AdBidsCsvPath, AdBidsRepoPath)
-	renameResp, err := server.RenameFileAndMigrate(ctx, &runtimev1.RenameFileAndMigrateRequest{
+	renameResp, err := server.RenameFileAndReconcile(ctx, &runtimev1.RenameFileAndReconcileRequest{
 		InstanceId: instanceId,
 		FromPath:   AdBidsRepoPath,
 		ToPath:     AdBidsNewRepoPath,
@@ -67,7 +67,7 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 	testutils.AssertTable(t, service, "AdBidsNew", AdBidsNewRepoPath)
 
 	// delete
-	delResp, err := server.DeleteFileAndMigrate(ctx, &runtimev1.DeleteFileAndMigrateRequest{
+	delResp, err := server.DeleteFileAndReconcile(ctx, &runtimev1.DeleteFileAndReconcileRequest{
 		InstanceId: instanceId,
 		Path:       AdBidsNewRepoPath,
 	})

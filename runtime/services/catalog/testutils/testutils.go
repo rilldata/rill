@@ -130,7 +130,7 @@ func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
 
 func AssertMigration(
 	t *testing.T,
-	result *catalog.MigrationResult,
+	result *catalog.ReconcileResult,
 	errCount int,
 	addCount int,
 	updateCount int,

@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
@@ -28,7 +28,7 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());

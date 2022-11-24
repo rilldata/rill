@@ -108,7 +108,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 
 // TriggerSync implements RuntimeService
 func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
-	// TODO: move to using migrate
+	// TODO: move to using reconcile
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
