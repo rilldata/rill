@@ -8,9 +8,9 @@ import { parse } from "yaml";
  * Calls {@link useRuntimeServiceListFiles} using glob to select only sources.
  * Returns just the source names from the files.
  */
-export function useSourceNames(repoId: string) {
+export function useSourceNames(instanceId: string) {
   return useRuntimeServiceListFiles(
-    repoId,
+    instanceId,
     {
       glob: "sources/*.{sql,yaml}",
     },
@@ -26,8 +26,8 @@ export function useSourceNames(repoId: string) {
   );
 }
 
-export function useSourceFromYaml(repoId: string, filePath: string) {
-  return useRuntimeServiceGetFile(repoId, filePath, {
+export function useSourceFromYaml(instanceId: string, filePath: string) {
+  return useRuntimeServiceGetFile(instanceId, filePath, {
     query: {
       select: (data) => (data.blob ? parse(data.blob) : {}),
     },

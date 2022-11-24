@@ -45,7 +45,6 @@
         );
         await $createSource.mutateAsync({
           data: {
-            repoId: $runtimeStore.repoId,
             instanceId: runtimeInstanceId,
             path: `sources/${tableName}.yaml`,
             blob: yaml,

@@ -25,8 +25,8 @@ func TestServer_InitCatalogService(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 
-	instId, repoId := createInstanceAndRepo(t, server, ctx, dir)
-	service, err := server.serviceCache.createCatalogService(ctx, server, instId, repoId)
+	instId := createInstance(t, server, ctx, dir)
+	service, err := server.serviceCache.createCatalogService(ctx, server, instId)
 	require.NoError(t, err)
 
 	testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
@@ -38,8 +38,8 @@ func TestServer_InitCatalogService(t *testing.T) {
 	testutils.AssertTable(t, service, "AdBids_model", AdBidsModelRepoPath)
 
 	// create a new service and make sure DAG is generated
-	instId, repoId = createInstanceAndRepo(t, server, ctx, dir)
-	service, err = server.serviceCache.createCatalogService(ctx, server, instId, repoId)
+	instId = createInstance(t, server, ctx, dir)
+	service, err = server.serviceCache.createCatalogService(ctx, server, instId)
 	require.NoError(t, err)
 
 	// initial migrate to setup cache
@@ -53,21 +53,16 @@ func TestServer_InitCatalogService(t *testing.T) {
 	testutils.AssertMigration(t, migrateResp, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 }
 
-func createInstanceAndRepo(t *testing.T, server *Server, ctx context.Context, dir string) (string, string) {
+func createInstance(t *testing.T, server *Server, ctx context.Context, dir string) string {
 	instResp, err := server.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		Driver: "duckdb",
+		OlapDriver: "duckdb",
 		// use persistent file to test fresh load
-		Dsn:          filepath.Join(dir, "stage.db"),
-		Exposed:      true,
+		OlapDsn:      filepath.Join(dir, "stage.db"),
+		RepoDriver:   "file",
+		RepoDsn:      dir,
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
 
-	repoResp, err := server.CreateRepo(ctx, &runtimev1.CreateRepoRequest{
-		Driver: "file",
-		Dsn:    dir,
-	})
-	require.NoError(t, err)
-
-	return instResp.Instance.InstanceId, repoResp.Repo.RepoId
+	return instResp.Instance.InstanceId
 }

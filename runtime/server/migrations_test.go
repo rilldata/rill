@@ -27,22 +27,14 @@ const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
 func TestServer_PutFileAndMigrate(t *testing.T) {
+	ctx := context.Background()
 	server, instanceId := getTestServer(t)
 
-	ctx := context.Background()
-	dir := t.TempDir()
-
-	repoResp, err := server.CreateRepo(ctx, &runtimev1.CreateRepoRequest{
-		Driver: "file",
-		Dsn:    dir,
-	})
-	require.NoError(t, err)
-	service, err := server.serviceCache.createCatalogService(ctx, server, instanceId, repoResp.Repo.RepoId)
+	service, err := server.serviceCache.createCatalogService(ctx, server, instanceId)
 	require.NoError(t, err)
 
 	artifact := testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	resp, err := server.PutFileAndMigrate(ctx, &runtimev1.PutFileAndMigrateRequest{
-		RepoId:     repoResp.Repo.RepoId,
 		InstanceId: instanceId,
 		Path:       AdBidsRepoPath,
 		Blob:       artifact,
@@ -54,7 +46,6 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 	// replace with same name different file
 	artifact = testutils.CreateSource(t, service, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 	resp, err = server.PutFileAndMigrate(ctx, &runtimev1.PutFileAndMigrateRequest{
-		RepoId:     repoResp.Repo.RepoId,
 		InstanceId: instanceId,
 		Path:       AdBidsRepoPath,
 		Blob:       artifact,
@@ -66,7 +57,6 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 	// rename
 	testutils.CreateSource(t, service, "AdBidsNew", AdBidsCsvPath, AdBidsRepoPath)
 	renameResp, err := server.RenameFileAndMigrate(ctx, &runtimev1.RenameFileAndMigrateRequest{
-		RepoId:     repoResp.Repo.RepoId,
 		InstanceId: instanceId,
 		FromPath:   AdBidsRepoPath,
 		ToPath:     AdBidsNewRepoPath,
@@ -78,7 +68,6 @@ func TestServer_PutFileAndMigrate(t *testing.T) {
 
 	// delete
 	delResp, err := server.DeleteFileAndMigrate(ctx, &runtimev1.DeleteFileAndMigrateRequest{
-		RepoId:     repoResp.Repo.RepoId,
 		InstanceId: instanceId,
 		Path:       AdBidsNewRepoPath,
 	})

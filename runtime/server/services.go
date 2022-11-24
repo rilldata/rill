@@ -21,17 +21,14 @@ func newServicesCache() *servicesCache {
 	}
 }
 
-func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, instId string, repoId string) (*catalog.Service, error) {
+func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, instId string) (*catalog.Service, error) {
 	// TODO 1: opening a driver shouldn't take too long but we should still have an instance specific lock
 	// TODO 2: This is a cache on a cache, which may lead to undefined behavior
-	// TODO 3: This relies on a one-to-one coupling between instances and repos, which we could formalize by making repos part of instances
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	// right now there is 1-1 mapping from instance to repo.
-	// TODO: support both instance and repo in this key
-	key := instId + repoId
+	key := instId
 
 	service, ok := c.catalogServices[key]
 	if ok {
@@ -44,7 +41,7 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 		return nil, status.Error(codes.InvalidArgument, "instance not found")
 	}
 
-	olapConn, err := s.connCache.openAndMigrate(ctx, instId, inst.Driver, inst.DSN)
+	olapConn, err := s.connCache.openAndMigrate(ctx, instId, inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -55,25 +52,17 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	repo, ok := registry.FindRepo(ctx, repoId)
-	if !ok && repoId != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "repo '%s' not found", repoId)
+	repoConn, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var repoStore drivers.RepoStore
-	if ok {
-		repoConn, err := drivers.Open(repo.Driver, repo.DSN)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		repoStore, ok = repoConn.RepoStore()
-		if !ok {
-			return nil, status.Errorf(codes.InvalidArgument, "repo '%s' is not a valid repo store", repoId)
-		}
+	repoStore, ok := repoConn.RepoStore()
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "instance '%s' doesn't have a valid repo", instId)
 	}
 
-	service = catalog.NewService(catalogStore, repoStore, olap, repoId, instId)
+	service = catalog.NewService(catalogStore, repoStore, olap, instId)
 	c.catalogServices[key] = service
 	return service, nil
 }

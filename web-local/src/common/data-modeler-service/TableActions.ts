@@ -83,7 +83,6 @@ export class TableActions extends DataModelerActions {
         .getDatabaseService()
         .getDatabaseClient()
         .getInstanceId(),
-      repoId: this.dataModelerStateService.getApplicationState().repoId,
       path: `/sources/${tableName}.yaml`,
       blob: yaml,
       create: true,
