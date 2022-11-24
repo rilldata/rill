@@ -71,10 +71,12 @@ brews:
       owner: rilldata
       name: homebrew-rill-developer
       branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
     commit_author:
       name: "rilldata"
       email: rakesh.sharma@rilldata.com
     folder: Formula
+    skip_upload: false # For testing purpose
 archives:
   - replacements:
       darwin: Darwin
