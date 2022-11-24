@@ -86,8 +86,8 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 	// Make connector env
 	// Since we're deprecating this code soon, this is just a hack to ingest sources from paths relative to pwd
 	env := &connectors.Env{
-		RepoDriver: "file",
-		RepoDSN:    ".",
+		RepoDriver: inst.RepoDriver,
+		RepoDSN:    inst.RepoDSN,
 	}
 
 	// Ingest the source
