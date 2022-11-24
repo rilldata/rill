@@ -23,8 +23,8 @@ jobs:
       - name: build web-local and run cli
         run: |
           ls -lrt sysroot/
-      - name: release dry run
-        run: make release-dry-run
+#      - name: release dry run
+#        run: make release-dry-run
       - name: setup release environment
         run: |-
           echo 'GITHUB_TOKEN=${{secrets.GORELEASER_ACCESS_TOKEN}}' > .release-env

@@ -50,7 +50,7 @@ release:
 		-v `pwd`/sysroot:/sysroot \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release --rm-dist
+		release --rm-dist --snapshot
 
 .PHONY: proto.generate
 proto.generate:
