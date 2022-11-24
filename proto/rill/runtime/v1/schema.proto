@@ -1,0 +1,59 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+// Type represents a data type in a schema
+message Type {
+  // Code enumerates all the types that can be represented in a schema
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    CODE_BOOL = 1;
+    CODE_INT8 = 2;
+    CODE_INT16 = 3;
+    CODE_INT32 = 4;
+    CODE_INT64 = 5;
+    CODE_INT128 = 6;
+    CODE_UINT8 = 7;
+    CODE_UINT16 = 8;
+    CODE_UINT32 = 9;
+    CODE_UINT64 = 10;
+    CODE_UINT128 = 11;
+    CODE_FLOAT32 = 12;
+    CODE_FLOAT64 = 13;
+    CODE_TIMESTAMP = 14;
+    CODE_DATE = 15;
+    CODE_TIME = 16;
+    CODE_STRING = 17;
+    CODE_BYTES = 18;
+    CODE_ARRAY = 19;
+    CODE_STRUCT = 20;
+    CODE_MAP = 21;
+    CODE_DECIMAL = 22;
+    CODE_JSON = 23;
+    CODE_UUID = 24;
+  }
+  // Code designates the type
+  Code code = 1;
+  // Nullable indicates whether null values are possible
+  bool nullable = 2;
+  // If code is CODE_ARRAY, array_element_type specifies the type of the array elements
+  Type array_element_type = 3;
+  // If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
+  StructType struct_type = 4;
+  // If code is CODE_MAP, map_type specifies the map's key and value types
+  MapType map_type = 5;
+}
+
+// StructType is a type composed of ordered, named and typed sub-fields
+message StructType {
+  message Field {
+    string name = 1;
+    Type type = 2;
+  }
+  repeated Field fields = 1;
+}
+
+// MapType is a complex type for mapping keys to values
+message MapType {
+  Type key_type = 1;
+  Type value_type = 2;
+}

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -22,17 +22,17 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	err = artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err = artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
 		Name: name,
-		Type: api.CatalogObject_TYPE_SOURCE,
-		Source: &api.Source{
+		Type: drivers.ObjectTypeSource,
+		Path: path,
+		Object: &runtimev1.Source{
 			Name:      name,
 			Connector: "file",
 			Properties: toProtoStruct(map[string]any{
 				"path": absFile,
 			}),
 		},
-		Path: path,
 	})
 	require.NoError(t, err)
 	blob, err := s.Repo.Get(ctx, s.RepoId, path)
@@ -42,15 +42,15 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 
 func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err := artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
 		Name: name,
-		Type: api.CatalogObject_TYPE_MODEL,
-		Model: &api.Model{
+		Type: drivers.ObjectTypeModel,
+		Path: path,
+		Object: &runtimev1.Model{
 			Name:    name,
 			Sql:     sql,
-			Dialect: api.Model_DIALECT_DUCKDB,
+			Dialect: runtimev1.Model_DIALECT_DUCKDB,
 		},
-		Path: path,
 	})
 	require.NoError(t, err)
 	blob, err := s.Repo.Get(ctx, s.RepoId, path)
@@ -58,13 +58,13 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 	return blob
 }
 
-func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *api.MetricsView, path string) string {
+func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
-		Name:        metricsView.Name,
-		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
-		MetricsView: metricsView,
-		Path:        path,
+	err := artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
+		Name:   metricsView.Name,
+		Type:   drivers.ObjectTypeMetricsView,
+		Path:   path,
+		Object: metricsView,
 	})
 	require.NoError(t, err)
 	blob, err := s.Repo.Get(ctx, s.RepoId, path)
@@ -102,14 +102,14 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 }
 
 func AssertInCatalogStore(t *testing.T, s *catalog.Service, name string, path string) {
-	catalogObject, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
+	catalogObject, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
 	require.True(t, ok)
 	require.Equal(t, name, catalogObject.Name)
 	require.Equal(t, path, catalogObject.Path)
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
-	_, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
+	_, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
 	require.False(t, ok)
 
 	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)

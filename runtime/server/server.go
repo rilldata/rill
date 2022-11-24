@@ -13,15 +13,13 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/graceful"
 )
 
 type ServerOptions struct {
@@ -31,7 +29,7 @@ type ServerOptions struct {
 }
 
 type Server struct {
-	api.UnsafeRuntimeServiceServer
+	runtimev1.UnsafeRuntimeServiceServer
 	opts         *ServerOptions
 	metastore    drivers.Connection
 	logger       *zap.Logger
@@ -39,7 +37,7 @@ type Server struct {
 	serviceCache *servicesCache
 }
 
-var _ api.RuntimeServiceServer = (*Server)(nil)
+var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
 
 func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Logger) (*Server, error) {
 	_, ok := metastore.RegistryStore()
@@ -72,7 +70,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			recovery.UnaryServerInterceptor(),
 		),
 	)
-	api.RegisterRuntimeServiceServer(server, s)
+	runtimev1.RegisterRuntimeServiceServer(server, s)
 	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -95,7 +93,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux := gateway.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-	err := api.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -114,9 +112,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 }
 
 // Ping implements RuntimeService
-func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
-	resp := &api.PingResponse{
-		Version: runtime.Version,
+func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
+	resp := &runtimev1.PingResponse{
+		Version: "", // TODO: Return version
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-yaml/yaml"
-	"github.com/rilldata/rill/runtime/api"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
 
@@ -19,7 +19,7 @@ func init() {
 	artifacts.Register(".yaml", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*api.CatalogObject, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error) {
 	dir := filepath.Base(filepath.Dir(filePath))
 	switch dir {
 	case "sources":
@@ -41,9 +41,9 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string
 	return nil, NotSupported
 }
 
-func (r *artifact) Serialise(ctx context.Context, catalogObject *api.CatalogObject) (string, error) {
+func (r *artifact) Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error) {
 	switch catalogObject.Type {
-	case api.CatalogObject_TYPE_SOURCE:
+	case drivers.ObjectTypeSource:
 		source, err := toSourceArtifact(catalogObject)
 		if err != nil {
 			return "", err
@@ -53,7 +53,7 @@ func (r *artifact) Serialise(ctx context.Context, catalogObject *api.CatalogObje
 			return "", err
 		}
 		return string(out), nil
-	case api.CatalogObject_TYPE_METRICS_VIEW:
+	case drivers.ObjectTypeMetricsView:
 		metrics, err := toMetricsViewArtifact(catalogObject)
 		if err != nil {
 			return "", err
