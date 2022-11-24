@@ -20,7 +20,8 @@ jobs:
       - name: setup dependencies
         uses: actions/setup-go@v2
       - name: build web-local and run cli
-        run: ls -lrt sysroot/
+        run: |
+          ls -lrt sysroot/
       - name: release dry run
         run: make release-dry-run
       - name: setup release environment
