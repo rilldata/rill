@@ -1,13 +1,8 @@
 import { expect } from "@jest/globals";
-import type { DerivedModelState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-import type { PersistentModelState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
-import { asyncWaitUntil } from "@rilldata/web-local/common/utils/waitUtils";
-import treeKill from "tree-kill";
 import { FunctionalTestBase } from "./FunctionalTestBase";
 import { exec } from "node:child_process";
 import { promisify } from "util";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import {
   AdBidsColumnsTestData,
   AdImpressionColumnsTestData,
