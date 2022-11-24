@@ -75,7 +75,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.G
 	}
 	defer rows.Close()
 
-	var count int64
+	var count float64
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
@@ -508,7 +508,7 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
-	var count int64
+	var count float64
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
