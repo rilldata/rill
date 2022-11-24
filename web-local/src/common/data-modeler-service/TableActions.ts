@@ -1,5 +1,6 @@
 import {
-  runtimeServicePutFileAndMigrate,
+  runtimeServiceDeleteFileAndReconcile,
+  runtimeServicePutFileAndReconcile,
 } from "@rilldata/web-common/runtime-client";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
@@ -77,12 +78,11 @@ export class TableActions extends DataModelerActions {
       },
       "file"
     );
-    await runtimeServicePutFileAndMigrate({
+    await runtimeServicePutFileAndReconcile({
       instanceId: this.dataModelerService
         .getDatabaseService()
         .getDatabaseClient()
         .getInstanceId(),
-      repoId: this.dataModelerStateService.getApplicationState().repoId,
       path: `/sources/${tableName}.yaml`,
       blob: yaml,
       create: true,
@@ -375,17 +375,11 @@ export class TableActions extends DataModelerActions {
     args: PersistentTableStateActionArg,
     tableName: string
   ) {
-    // MigrateDelete has been deprecated. All migrations should go through reconciliation.
-    // Leaving this here to highlight if this code path still gets hit.
-    console.error("dropTableFromCLI called, but MigrateDelete was deprecated");
-
-    // await runtimeServiceMigrateDelete(
-    //   this.databaseService.getDatabaseClient().getInstanceId(),
-    //   {
-    //     name: tableName,
-    //   }
-    // );
-    // return this.dropTable(args, tableName);
+    await runtimeServiceDeleteFileAndReconcile({
+      instanceId: this.databaseService.getDatabaseClient().getInstanceId(),
+      path: `/sources/${tableName}.yaml`,
+    });
+    return this.dropTable(args, tableName);
   }
 
   @DataModelerActions.DerivedTableAction()

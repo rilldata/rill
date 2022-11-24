@@ -3,9 +3,9 @@
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServiceDeleteFileAndMigrate,
+    useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -53,9 +53,9 @@
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
-  $: sourceNames = useSourceNames($runtimeStore.repoId);
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: sourceFromYaml = useSourceFromYaml(
-    $runtimeStore.repoId,
+    $runtimeStore.instanceId,
     `/sources/${sourceName}.yaml`
   );
 
@@ -88,15 +88,14 @@
     (source) => source.id === sourceID
   );
 
-  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     try {
       await $deleteSource.mutateAsync({
         data: {
-          repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
           path: `sources/${tableName}.yaml`,
         },
@@ -114,7 +113,7 @@
       }
       sourceUpdated(tableName);
       await queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+        getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
       );
     } catch (err) {
       console.error(err);

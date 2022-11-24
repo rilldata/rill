@@ -1,15 +1,7 @@
-import type {
-  V1CreateRepoRequest,
-  V1CreateRepoResponse,
-} from "@rilldata/web-common/runtime-client";
 import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { DuckDbConnection } from "@rilldata/web-local/common/connection/DuckDbConnection";
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
-import {
-  EntityType,
-  StateType,
-} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
 import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
@@ -87,9 +79,8 @@ export class RillDeveloper {
       ]);
     }
 
-    await this.createRepo();
     // Enable this when we are only testing the new runtime
-    await this.migrate();
+    await this.reconcile();
 
     await this.duckDbConnection.init();
   }
@@ -100,28 +91,7 @@ export class RillDeveloper {
     await this.dataModelerService.destroy();
   }
 
-  private async createRepo() {
-    const resp = await axios.post(
-      `${this.config.database.runtimeUrl}/v1/repos`,
-      {
-        driver: "file",
-        dsn: this.config.projectFolder,
-      } as V1CreateRepoRequest
-    );
-    const repoResp: V1CreateRepoResponse = resp.data;
-    this.dataModelerStateService
-      .getEntityStateService(EntityType.Application, StateType.Derived)
-      .updateState(
-        (draft) => {
-          draft.repoId = repoResp.repo.repoId;
-        },
-        () => {
-          // no-op
-        }
-      );
-  }
-
-  private async migrate() {
+  private async reconcile() {
     try {
       await axios.post(
         `${
@@ -129,12 +99,7 @@ export class RillDeveloper {
         }/v1/instances/${this.dataModelerService
           .getDatabaseService()
           .getDatabaseClient()
-          .getInstanceId()}/migrate`,
-        {
-          repo_id: this.dataModelerService
-            .getStateService()
-            .getApplicationState().repoId,
-        } as V1CreateRepoRequest
+          .getInstanceId()}/reconcile`
       );
     } catch (err) {
       console.log(err.response.data);

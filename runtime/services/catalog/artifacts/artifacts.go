@@ -25,14 +25,14 @@ type Artifact interface {
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, filePath string) (*drivers.CatalogEntry, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, filePath string) (*drivers.CatalogEntry, error) {
 	extension := filepath.Ext(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
 		return nil, fmt.Errorf("no artifact found for %s", extension)
 	}
 
-	blob, err := repoStore.Get(ctx, repoId, filePath)
+	blob, err := repoStore.Get(ctx, instID, filePath)
 	if err != nil {
 		return nil, FileReadError
 	}
@@ -46,7 +46,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, repoId string, fileP
 	return catalog, nil
 }
 
-func Write(ctx context.Context, repoStore drivers.RepoStore, repoId string, catalog *drivers.CatalogEntry) error {
+func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, catalog *drivers.CatalogEntry) error {
 	extension := filepath.Ext(catalog.Path)
 	artifact, ok := Artifacts[extension]
 	if !ok {
@@ -58,5 +58,5 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, repoId string, cata
 		return err
 	}
 
-	return repoStore.PutBlob(ctx, repoId, catalog.Path, blob)
+	return repoStore.PutBlob(ctx, instID, catalog.Path, blob)
 }

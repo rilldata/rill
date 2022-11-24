@@ -114,6 +114,29 @@ func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.
 	return migrator.ExistsInOlap(ctx, olap, catalog)
 }
 
+func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+	// TODO: do we need too push this to individual implementations?
+	if catalog.Type == drivers.ObjectTypeMetricsView {
+		return nil
+	}
+
+	table, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
+	if err != nil {
+		return err
+	}
+
+	switch catalog.Type {
+	case drivers.ObjectTypeTable:
+		catalog.GetTable().Schema = table.Schema
+	case drivers.ObjectTypeSource:
+		catalog.GetSource().Schema = table.Schema
+	case drivers.ObjectTypeModel:
+		catalog.GetModel().Schema = table.Schema
+	}
+
+	return nil
+}
+
 func getMigrator(catalog *drivers.CatalogEntry) (EntityMigrator, bool) {
 	m, ok := Migrators[catalog.Type]
 	return m, ok

@@ -22,15 +22,16 @@ func getTestServer(t *testing.T) (*Server, string) {
 	require.NoError(t, err)
 
 	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
-		Driver:       "duckdb",
-		Dsn:          "",
-		Exposed:      true,
+		OlapDriver:   "duckdb",
+		OlapDsn:      "",
+		RepoDriver:   "file",
+		RepoDsn:      t.TempDir(),
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
-	require.NotEmpty(t, resp.InstanceId)
+	require.NotEmpty(t, resp.Instance.InstanceId)
 
-	return server, resp.InstanceId
+	return server, resp.Instance.InstanceId
 }
 
 func getTestServerWithData(t *testing.T) (*Server, string) {

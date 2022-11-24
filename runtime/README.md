@@ -47,42 +47,57 @@ To add a new endpoint:
 3. Copy the new handler signature from the `RuntimeServiceServer` interface in `proto/gen/rill/runtime/v1/api_grpc_pb.go`
 4. Paste the handler signature and implement it in a file in `runtime/server/`
 
-## Example: Creating an instance and ingesting a source
+## Example: Creating an instance and rehydrating from code artifacts
 
 ```bash
 # Start runtime
 go run ./runtime/cmd/main.go
 
-# Create instance (copy the resulting instance ID into the following queries)
-curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' --data '{ "driver": "duckdb", "dsn": "test.db?access_mode=read_write", "exposed": true, "embed_catalog": true, "instance_id": "default" }'
+# Create instance
+curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' \
+  --data '{
+    "instance_id": "default",
+    "olap_driver": "duckdb",
+    "olap_dsn": "test.db",
+    "repo_driver": "file",
+    "repo_dsn": "./examples/ad_bids",
+    "embed_catalog": true
+}'
 
-# Create table
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "create table foo(x int)"}'
-
-# Insert data into table
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "insert into foo(x) values (10,), (20,), (30,)"}'
+# Apply code artifacts
+curl --request POST --url http://localhost:8080/v1/instances/default/reconcile --header 'Content-Type: application/json'
 
 # Query data
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "select * from foo"}'
+curl --request POST --url http://localhost:8080/v1/instances/default/query --header 'Content-Type: application/json' \
+  --data '{ "sql": "select * from ad_bids limit 10" }'
+
+# Query explore API
+curl --request POST --url http://localhost:8080/v1/instances/default/metrics-views/ad_bids_metrics/toplist/domain --header 'Content-Type: application/json' \
+  --data '{
+    "measure_names": ["measure_0"],
+    "limit": 10,
+    "sort": [{ "name": "measure_0", "ascending": false }]
+}'
+
+# Query profiling API
+curl --request GET --url http://localhost:8080/v1/instances/default/null-count/ad_bids/publisher
+
+# Get catalog info
+curl --request GET --url http://localhost:8080/v1/instances/default/catalog
+
+# Refresh source named "ad_bids_source"
+curl --request POST --url http://localhost:8080/v1/instances/default/catalog/ad_bids_source/refresh
 
 # Get available connectors
 curl --request GET   --url http://localhost:8080/v1/connectors/meta
 
-# Create a source
-curl --request POST  --url http://localhost:8080/v1/instances/default/migrate/single  --header 'Content-Type: application/json'  --data "{\"sql\": \"create source bar with connector = 'file', path = './web-local/test/data/AdBids.csv' \"}"
+# List files in project
+curl --request GET --url http://localhost:8080/v1/instances/default/files
 
-# Select from source
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "select * from bar limit 100"}'
+# Fetch file in project
+curl --request GET --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql
 
-# Get info about all sources in catalog
-curl --request GET   --url http://localhost:8080/v1/instances/default/catalog
-
-# Get info about source named "bar" in catalog
-curl --request GET   --url http://localhost:8080/v1/instances/default/catalog/bar
-
-# Refresh source named "bar"
-curl --request POST --url http://localhost:8080/v1/instances/default/catalog/bar/refresh
-
-# Delete source named "bar"
-curl --request POST  --url http://localhost:8080/v1/instances/default/migrate/single/delete  --header 'Content-Type: application/json'  --data '{ "name": "bar"}'
+# Update file in project
+curl --request POST --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql --header 'Content-Type: application/json' \
+  --data '{ "blob": "select id, timestamp, publisher, domain, bid_price from ad_bids_source" }'
 ```

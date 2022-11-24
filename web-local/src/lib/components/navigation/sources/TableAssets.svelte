@@ -22,7 +22,7 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtimeStore.repoId);
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"

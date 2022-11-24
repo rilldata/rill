@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
@@ -27,9 +27,8 @@
   ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: repoId = $runtimeStore.repoId;
 
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -55,7 +54,6 @@
         $createSource.mutate(
           {
             data: {
-              repoId,
               instanceId: runtimeInstanceId,
               path: `sources/${tableName}.yaml`,
               blob: yaml,
@@ -69,7 +67,7 @@
               dispatch("close");
               goto(`/source/${tableName}`);
               queryClient.invalidateQueries(
-                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
               );
             },
             onError: async () => {

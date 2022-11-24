@@ -47,7 +47,7 @@ export async function* uploadTableFiles(
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  const tableUploadURL = `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`;
+  const tableUploadURL = `${config.database.runtimeUrl}/v1/instances/${runtimeState.instanceId}/files/upload`;
   let lastTableName: string;
 
   for (const validFile of validFiles) {
