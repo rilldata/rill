@@ -419,7 +419,10 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	var measures []*runtimev1.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
 	var timestampColumn string = request.TimestampColumnName
 	var tableName string = request.TableName
-	var filter string = getFilterFromMetricsViewFilters(request.Filters)
+	var filter string
+	if request.Filters != nil {
+		filter = getFilterFromMetricsViewFilters(request.Filters)
+	}
 	var timeGranularity string = convertToDateTruncSpecifier(timeRange.Interval)
 	var tsAlias string
 	if timestampColumn == "ts" {
@@ -494,19 +497,6 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 			Spark:     spOp,
 		},
 	}, nil
-}
-
-func getFilterFromTimeRange(timestampColumn string, timeRange *runtimev1.TimeSeriesTimeRange) string {
-	var conditions []string
-	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
-	if timeRange.Start != nil {
-		conditions = append(conditions, escapedTimestampColumn+` >= TIMESTAMP '`+timeRange.Start.AsTime().Format(IsoFormat)+`'`)
-	}
-	if timeRange.End != nil {
-		conditions = append(conditions, escapedTimestampColumn+` <= TIMESTAMP '`+timeRange.End.AsTime().Format(IsoFormat)+`'`)
-	}
-
-	return strings.Join(conditions, " AND ")
 }
 
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runtimev1.TimeSeriesValue, error) {
