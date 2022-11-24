@@ -633,12 +633,18 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 	}
 
 	// convert protobuf to database object
-	catalog := item.CatalogInFile
+	catalogEntry := item.CatalogInFile
 	// NOTE: Previously there was a copy here when using the API types. This might have to reverted.
 
 	// set the UpdatedOn as LastUpdated from the artifact file
 	// this will allow to not reprocess unchanged files
-	catalog.UpdatedOn = repoStat.LastUpdated
-	catalog.RefreshedOn = time.Now()
-	return catalog, nil
+	catalogEntry.UpdatedOn = repoStat.LastUpdated
+	catalogEntry.RefreshedOn = time.Now()
+
+	err = migrator.SetSchema(ctx, s.Olap, catalogEntry)
+	if err != nil {
+		return nil, err
+	}
+
+	return catalogEntry, nil
 }
