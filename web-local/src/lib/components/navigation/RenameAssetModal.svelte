@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -29,7 +29,7 @@
   let error: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getCatalog = useRuntimeServiceGetCatalogObject(
+  $: getCatalog = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentAssetName
   );

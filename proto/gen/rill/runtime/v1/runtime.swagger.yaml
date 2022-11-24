@@ -161,13 +161,13 @@ paths:
         - RuntimeService
   /v1/instances/{instanceId}/catalog:
     get:
-      summary: ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
-      operationId: RuntimeService_ListCatalogObjects
+      summary: ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
+      operationId: RuntimeService_ListCatalogEntries
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListCatalogObjectsResponse'
+            $ref: '#/definitions/v1ListCatalogEntriesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -182,23 +182,23 @@ paths:
           required: false
           type: string
           enum:
-            - TYPE_UNSPECIFIED
-            - TYPE_TABLE
-            - TYPE_SOURCE
-            - TYPE_MODEL
-            - TYPE_METRICS_VIEW
-          default: TYPE_UNSPECIFIED
+            - OBJECT_TYPE_UNSPECIFIED
+            - OBJECT_TYPE_TABLE
+            - OBJECT_TYPE_SOURCE
+            - OBJECT_TYPE_MODEL
+            - OBJECT_TYPE_METRICS_VIEW
+          default: OBJECT_TYPE_UNSPECIFIED
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/catalog/{name}:
     get:
-      summary: GetCatalogObject returns information about a specific object in the catalog
-      operationId: RuntimeService_GetCatalogObject
+      summary: GetCatalogEntry returns information about a specific entry in the catalog
+      operationId: RuntimeService_GetCatalogEntry
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetCatalogObjectResponse'
+            $ref: '#/definitions/v1GetCatalogEntryResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -571,85 +571,6 @@ paths:
                   Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
                   that fail to validate.)
             title: Request message for RuntimeService.Migrate
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/migrate/single:
-    post:
-      summary: |-
-        DEPRECATED: MigrateSingle applies a single `CREATE` statement.
-        It bypasses the reconciling migrations described in Migrate.
-        We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-      operationId: RuntimeService_MigrateSingle
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1MigrateSingleResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to migrate
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              createOrReplace:
-                type: boolean
-                title: If true, will replace existing definitions with the same name
-              dryRun:
-                type: boolean
-                title: If true, will validate the SQL, but not actually execute the migrations
-              renameFrom:
-                type: string
-                description: |-
-                  If provided, will attempt to rename an existing object and only recompute if necessary.
-                  NOTE: very questionable semantics here.
-              sql:
-                type: string
-                title: A CREATE statement
-            title: Request message for RuntimeService.MigrateSingle
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/migrate/single/delete:
-    post:
-      summary: |-
-        DEPRECATED: MigrateDelete deletes a single object.
-        It bypasses the reconciling migrations described in Migrate.
-        We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-      operationId: RuntimeService_MigrateDelete
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1MigrateDeleteResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to migrate
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-                title: Name of object to drop
-            title: Request message for RuntimeService.MigrateDelete
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/null-count/{tableName}/{columnName}:
@@ -1513,7 +1434,7 @@ definitions:
       sqlName:
         type: string
         title: optional user defined metadata
-  v1CatalogObject:
+  v1CatalogEntry:
     type: object
     properties:
       createdOn:
@@ -1534,21 +1455,10 @@ definitions:
         $ref: '#/definitions/v1Source'
       table:
         $ref: '#/definitions/v1Table'
-      type:
-        $ref: '#/definitions/v1CatalogObjectType'
       updatedOn:
         type: string
         format: date-time
-    title: CatalogObject represents an object stored in the catalog
-  v1CatalogObjectType:
-    type: string
-    enum:
-      - TYPE_UNSPECIFIED
-      - TYPE_TABLE
-      - TYPE_SOURCE
-      - TYPE_MODEL
-      - TYPE_METRICS_VIEW
-    default: TYPE_UNSPECIFIED
+    title: CatalogEntry contains information about an object in the catalog
   v1CategoricalSummary:
     type: object
     properties:
@@ -1695,12 +1605,12 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
-  v1GetCatalogObjectResponse:
+  v1GetCatalogEntryResponse:
     type: object
     properties:
-      object:
-        $ref: '#/definitions/v1CatalogObject'
-    title: Response message for RuntimeService.GetCatalogObject
+      entry:
+        $ref: '#/definitions/v1CatalogEntry'
+    title: Response message for RuntimeService.GetCatalogEntry
   v1GetDescriptiveStatisticsResponse:
     type: object
     properties:
@@ -1801,14 +1711,14 @@ definitions:
       Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
       Migrations and queries are issued against a specific instance. The concept of
       instances enables multiple data projects to be served by one runtime.
-  v1ListCatalogObjectsResponse:
+  v1ListCatalogEntriesResponse:
     type: object
     properties:
-      objects:
+      entries:
         type: array
         items:
-          $ref: '#/definitions/v1CatalogObject'
-    title: Response message for RuntimeService.ListCatalogObjects
+          $ref: '#/definitions/v1CatalogEntry'
+    title: Response message for RuntimeService.ListCatalogEntries
   v1ListConnectorsResponse:
     type: object
     properties:
@@ -1972,9 +1882,6 @@ definitions:
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
     title: Response message for RuntimeService.MetricsViewTotals
-  v1MigrateDeleteResponse:
-    type: object
-    title: Response message for RuntimeService.MigrateDelete
   v1MigrateResponse:
     type: object
     properties:
@@ -1994,9 +1901,6 @@ definitions:
           Errors encountered during the migration. If strict = false, any path in
           affected_paths without an error can be assumed to have been migrated succesfully.
     title: Response message for RuntimeService.Migrate
-  v1MigrateSingleResponse:
-    type: object
-    title: Response message for RuntimeService.MigrateSingle
   v1MigrationError:
     type: object
     properties:
@@ -2113,6 +2017,16 @@ definitions:
     description: |-
       Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
       Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+  v1ObjectType:
+    type: string
+    enum:
+      - OBJECT_TYPE_UNSPECIFIED
+      - OBJECT_TYPE_TABLE
+      - OBJECT_TYPE_SOURCE
+      - OBJECT_TYPE_MODEL
+      - OBJECT_TYPE_METRICS_VIEW
+    default: OBJECT_TYPE_UNSPECIFIED
+    title: ObjectType represents the different kinds of catalog objects
   v1PingResponse:
     type: object
     properties:
@@ -2298,11 +2212,6 @@ definitions:
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
-      sql:
-        type: string
-        title: |-
-          Used for the SQL statement for sources
-          TODO: Remove when frontend sources code has been refactored
     title: Source is the internal representation of a source definition
   v1StructType:
     type: object

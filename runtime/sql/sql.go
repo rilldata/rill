@@ -13,7 +13,7 @@ import (
 )
 
 // Transpile transpiles a Rill SQL statement to a target dialect
-func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (string, error) {
+func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogEntry) (string, error) {
 	res, err := getIsolate().Request(&rpc.Request{
 		Request: &rpc.Request_TranspileRequest{
 			TranspileRequest: &rpc.TranspileRequest{
@@ -41,7 +41,7 @@ func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject
 }
 
 // Parse parses and validates a Rill SQL statement
-func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (*ast.SqlNodeProto, error) {
+func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogEntry) (*ast.SqlNodeProto, error) {
 	res, err := getIsolate().Request(&rpc.Request{
 		Request: &rpc.Request_ParseRequest{
 			ParseRequest: &rpc.ParseRequest{
@@ -83,20 +83,29 @@ func getIsolate() *Isolate {
 
 // marshalCatalog serializes runtime catalog objects to the catalog format expected by the SQL library.
 // See sql/src/test/resources for schema example.
-func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
+func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogEntry) string {
 	var artifacts []map[string]any
 	var tables []map[string]any
 	for _, obj := range objs {
 		switch obj.Type {
-		case drivers.CatalogObjectTypeMetricsView:
-			artifacts = append(artifacts, map[string]any{
-				"name":    obj.Name,
-				"type":    "METRICS_VIEW",
-				"payload": obj.SQL,
-			})
-		case drivers.CatalogObjectTypeTable, drivers.CatalogObjectTypeSource:
-			columns := make([]map[string]any, len(obj.Schema.Fields))
-			for i, f := range obj.Schema.Fields {
+		case drivers.ObjectTypeMetricsView:
+			panic(fmt.Errorf("not implemented"))
+			// artifacts = append(artifacts, map[string]any{
+			// 	"name":    obj.Name,
+			// 	"type":    "METRICS_VIEW",
+			// 	"payload": obj.SQL,
+			// })
+		case drivers.ObjectTypeTable, drivers.ObjectTypeSource:
+			var schema *runtimev1.StructType
+			if obj.Type == drivers.ObjectTypeTable {
+				schema = obj.GetTable().Schema
+			} else if obj.Type == drivers.ObjectTypeSource {
+				schema = obj.GetSource().Schema
+			} else {
+				panic(fmt.Errorf("not reachable"))
+			}
+			columns := make([]map[string]any, len(schema.Fields))
+			for i, f := range schema.Fields {
 				columns[i] = map[string]any{
 					"name": f.Name,
 					"type": typeCodeToSQLType(f.Type.Code),
@@ -107,7 +116,7 @@ func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
 				"columns": columns,
 			})
 		default:
-			panic(fmt.Errorf("unhandled catalog type '%s'", obj.Type))
+			panic(fmt.Errorf("unhandled catalog type '%v'", obj.Type))
 		}
 	}
 
