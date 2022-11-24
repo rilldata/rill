@@ -1,4 +1,6 @@
-PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
+REPO=rilldata
+NAME=rill-developer
+# PACKAGE_NAME          := github.com/rilldata/rill-developer
 GOLANG_CROSS_VERSION  ?= v1.19.2
 
 SYSROOT_DIR     ?= sysroots
@@ -28,9 +30,9 @@ release-dry-run:
 		--privileged \
 		-e CGO_ENABLED=1 \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-v `pwd`:/go/src/$(REPO)/$(NAME) \
 		-v `pwd`/sysroot:/sysroot \
-		-w /go/src/$(PACKAGE_NAME) \
+		-w /go/src/$(REPO)/$(NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate --skip-publish
 
@@ -46,9 +48,9 @@ release:
 		-e CGO_ENABLED=1 \
 		--env-file .release-env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-v `pwd`:/go/src/$(REPO)/$(NAME) \
 		-v `pwd`/sysroot:/sysroot \
-		-w /go/src/$(PACKAGE_NAME) \
+		-w /go/src/$(REPO)/$(NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist --snapshot
 
