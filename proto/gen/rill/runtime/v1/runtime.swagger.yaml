@@ -358,8 +358,8 @@ paths:
               measures:
                 $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasures'
               pixels:
-                type: string
-                format: int64
+                type: integer
+                format: int32
               sampleSize:
                 type: integer
                 format: int32
@@ -1393,11 +1393,11 @@ definitions:
     type: object
     properties:
       bucket:
-        type: string
-        format: int64
+        type: integer
+        format: int32
       count:
-        type: string
-        format: int64
+        type: number
+        format: double
       high:
         type: number
         format: double
@@ -1408,8 +1408,8 @@ definitions:
     type: object
     properties:
       bucket:
-        type: string
-        format: int64
+        type: integer
+        format: int32
       high:
         type: number
         format: double
@@ -1553,8 +1553,8 @@ definitions:
     type: object
     properties:
       cardinality:
-        type: string
-        format: int64
+        type: number
+        format: double
       topK:
         $ref: '#/definitions/v1TopK'
     description: Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
@@ -1725,8 +1725,8 @@ definitions:
     type: object
     properties:
       count:
-        type: string
-        format: int64
+        type: number
+        format: double
     title: Response for RuntimeService.GetNullCount
   v1GetNumericHistogramResponse:
     type: object

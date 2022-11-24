@@ -109,7 +109,7 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
 export type RuntimeServiceGenerateTimeSeriesBody = {
   filters?: V1MetricsViewRequestFilter;
   measures?: GenerateTimeSeriesRequestBasicMeasures;
-  pixels?: string;
+  pixels?: number;
   sampleSize?: number;
   tableName?: string;
   timeRange?: V1TimeSeriesTimeRange;
@@ -572,7 +572,7 @@ export interface V1GetNumericHistogramResponse {
 }
 
 export interface V1GetNullCountResponse {
-  count?: string;
+  count?: number;
 }
 
 export interface V1GetInstanceResponse {
@@ -680,7 +680,7 @@ export interface V1Connector {
  * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
-  cardinality?: string;
+  cardinality?: number;
   topK?: V1TopK;
 }
 
@@ -772,15 +772,15 @@ export interface StructTypeField {
 }
 
 export interface NumericOutliersOutlier {
-  bucket?: string;
+  bucket?: number;
   high?: number;
   low?: number;
   present?: boolean;
 }
 
 export interface NumericHistogramBinsBin {
-  bucket?: string;
-  count?: string;
+  bucket?: number;
+  count?: number;
   high?: number;
   low?: number;
 }

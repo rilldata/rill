@@ -53,12 +53,12 @@ func TestServer_GetNullCount(t *testing.T) {
 	res, err := server.GetNullCount(context.Background(), &runtimev1.GetNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
-	require.Equal(t, int64(1), res.Count)
+	require.Equal(t, 1.0, res.Count)
 
 	res, err = server.GetNullCount(context.Background(), &runtimev1.GetNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, int64(0), res.Count)
+	require.Equal(t, 0.0, res.Count)
 }
 
 func TestServer_GetDescriptiveStatistics(t *testing.T) {
@@ -103,10 +103,10 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3, len(res.NumericSummary.GetNumericHistogramBins().Bins))
-	require.Equal(t, int64(0), res.NumericSummary.GetNumericHistogramBins().Bins[0].Bucket)
+	require.Equal(t, 0, int(res.NumericSummary.GetNumericHistogramBins().Bins[0].Bucket))
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Low)
 	require.Equal(t, 2.333333333333333, res.NumericSummary.GetNumericHistogramBins().Bins[0].High)
-	require.Equal(t, int64(2), res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
+	require.Equal(t, 2.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
 }
 
 func TestServer_GetCategoricalHistogram(t *testing.T) {
@@ -116,7 +116,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3, len(res.NumericSummary.GetNumericOutliers().Outliers))
-	require.Equal(t, int64(0), res.NumericSummary.GetNumericOutliers().Outliers[0].Bucket)
+	require.Equal(t, 0, int(res.NumericSummary.GetNumericOutliers().Outliers[0].Bucket))
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericOutliers().Outliers[0].Low)
 	require.Equal(t, 1.008, res.NumericSummary.GetNumericOutliers().Outliers[0].High)
 	require.Equal(t, true, res.NumericSummary.GetNumericOutliers().Outliers[0].Present)
@@ -153,15 +153,15 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	res, err := server.GetCardinalityOfColumn(context.Background(), &runtimev1.GetCardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, int64(3), res.CategoricalSummary.GetCardinality())
+	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 
 	res, err = server.GetCardinalityOfColumn(context.Background(), &runtimev1.GetCardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, int64(3), res.CategoricalSummary.GetCardinality())
+	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 
 	res, err = server.GetCardinalityOfColumn(context.Background(), &runtimev1.GetCardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, int64(2), res.CategoricalSummary.GetCardinality())
+	require.Equal(t, 2.0, res.CategoricalSummary.GetCardinality())
 }

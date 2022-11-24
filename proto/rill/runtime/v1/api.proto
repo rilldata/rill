@@ -985,7 +985,7 @@ message ProfileColumnSummary {
 message CategoricalSummary {
   oneof case {
     TopK top_k = 1;
-    int64 cardinality = 2;
+    double cardinality = 2;
   }
 }
 
@@ -1036,7 +1036,7 @@ message TimeRangeSummary {
 
 message NumericOutliers {
   message Outlier {
-    int64 bucket = 1;
+    int32 bucket = 1;
     double low = 2;
     double high = 3;
     bool present = 4;
@@ -1071,7 +1071,7 @@ message GetNullCountRequest {
 
 // Response for RuntimeService.GetNullCount
 message GetNullCountResponse {
-  int64 count = 1;
+  double count = 1;
 }
 
 // Request for RuntimeService.GetGetDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
@@ -1126,10 +1126,10 @@ message GetNumericHistogramRequest {
 // Response for RuntimeService.GetNumericHistogram
 message NumericHistogramBins {
   message Bin {
-    int64 bucket = 1;
+    int32 bucket = 1;
     double low = 2;
     double high = 3;
-    int64 count = 4;
+    double count = 4;
   }
   repeated Bin bins = 1;
 }
@@ -1162,7 +1162,7 @@ message GenerateTimeSeriesRequest {
   string timestamp_column_name = 4;
   optional TimeSeriesTimeRange time_range = 5;
   optional MetricsViewRequestFilter filters = 6;
-  optional int64 pixels = 7;
+  optional int32 pixels = 7;
   optional int32 sample_size = 8;
   message BasicMeasures {
     repeated BasicMeasureDefinition basic_measures = 1;
