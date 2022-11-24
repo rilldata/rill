@@ -1,8 +1,15 @@
 name: release
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - v*
+    branches: ["goreleaser-prototype"]
+    paths:
+      - ".github/workflows/cli-release.yml"
+      - "go.mod"
+      - "cli/**"
+  # push:
+  #   tags:
+  #     - v*
 jobs:
   release:
     name: Upload Assets to GitHub w/ goreleaser
@@ -15,6 +22,8 @@ jobs:
       - run: git fetch --prune --unshallow
       - name: setup dependencies
         uses: actions/setup-go@v2
+      - name: build web-local and run cli
+        run: make cli
       - name: release dry run
         run: make release-dry-run
       - name: setup release environment

@@ -13,13 +13,13 @@ cli:
 	# go build -o rill cli/main.go
 
 # These commands not working in local, need to look into this.
-# .PHONY: sysroot-pack
-# sysroot-pack:
-# 	@tar cf - $(SYSROOT_DIR) -P | pv -s $[$(du -sk $(SYSROOT_DIR) | awk '{print $1}') * 1024] | pbzip2 > $(SYSROOT_ARCHIVE)
+.PHONY: sysroot-pack
+sysroot-pack:
+	@tar cf - $(SYSROOT_DIR) -P | pv -s $[$(du -sk $(SYSROOT_DIR) | awk '{print $1}') * 1024] | pbzip2 > $(SYSROOT_ARCHIVE)
 
-# .PHONY: sysroot-unpack
-# sysroot-unpack:
-# 	@pv $(SYSROOT_ARCHIVE) | pbzip2 -cd | tar -xf -
+.PHONY: sysroot-unpack
+sysroot-unpack:
+	@pv $(SYSROOT_ARCHIVE) | pbzip2 -cd | tar -xf -
 
 .PHONY: release-dry-run
 release-dry-run:
