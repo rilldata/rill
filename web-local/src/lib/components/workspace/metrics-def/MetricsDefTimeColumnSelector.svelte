@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import { useRuntimeServiceGetCatalogObject } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
   import { getContext } from "svelte";
@@ -15,7 +15,7 @@
   $: instanceId = $runtimeStore.instanceId;
 
   $: model_path = $metricsInternalRep.getMetricKey("model_path");
-  $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
+  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model_path);
   $: selectedModel = $getModel.data?.object?.model;
 
   $: timeColumnSelectedValue =
@@ -63,19 +63,19 @@
   </div>
   <div>
     <Tooltip
-      location="right"
       alignment="middle"
       distance={16}
+      location="right"
       suppress={tooltipText === undefined}
     >
       <select
         class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:font-bold hover:border-gray-100"
+        disabled={dropdownDisabled}
+        on:change={updateMetricsDefinitionHandler}
         style="background-color: #FFF; width:18em;"
         value={timeColumnSelectedValue}
-        on:change={updateMetricsDefinitionHandler}
-        disabled={dropdownDisabled}
       >
-        <option value="__DEFAULT_VALUE__" disabled selected hidden
+        <option disabled hidden selected value="__DEFAULT_VALUE__"
           >select a timestamp...</option
         >
         {#each derivedModelColumns as column}

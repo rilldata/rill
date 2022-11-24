@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -22,17 +22,17 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	err = artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err = artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
 		Name: name,
-		Type: api.CatalogObject_TYPE_SOURCE,
-		Source: &api.Source{
+		Type: drivers.ObjectTypeSource,
+		Path: path,
+		Object: &runtimev1.Source{
 			Name:      name,
 			Connector: "file",
 			Properties: toProtoStruct(map[string]any{
 				"path": absFile,
 			}),
 		},
-		Path: path,
 	})
 	require.NoError(t, err)
 	blob, err := s.Repo.Get(ctx, s.RepoId, path)
@@ -42,15 +42,15 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 
 func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
+	err := artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
 		Name: name,
-		Type: api.CatalogObject_TYPE_MODEL,
-		Model: &api.Model{
+		Type: drivers.ObjectTypeModel,
+		Path: path,
+		Object: &runtimev1.Model{
 			Name:    name,
 			Sql:     sql,
-			Dialect: api.Model_DIALECT_DUCKDB,
+			Dialect: runtimev1.Model_DIALECT_DUCKDB,
 		},
-		Path: path,
 	})
 	require.NoError(t, err)
 	blob, err := s.Repo.Get(ctx, s.RepoId, path)
@@ -58,13 +58,13 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 	return blob
 }
 
-func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *api.MetricsView, path string) string {
+func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &api.CatalogObject{
-		Name:        metricsView.Name,
-		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
-		MetricsView: metricsView,
-		Path:        path,
+	err := artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
+		Name:   metricsView.Name,
+		Type:   drivers.ObjectTypeMetricsView,
+		Path:   path,
+		Object: metricsView,
 	})
 	require.NoError(t, err)
 	blob, err := s.Repo.Get(ctx, s.RepoId, path)
@@ -81,7 +81,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 }
 
 func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
-	catalogObject := AssertInCatalogStore(t, s, name, path)
+	catalogEntry := AssertInCatalogStore(t, s, name, path)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{
 		Query:    fmt.Sprintf("select count(*) as count from %s", name),
@@ -96,14 +96,14 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 	require.Greater(t, count, 1)
 	require.NoError(t, rows.Close())
 
-	var schema *api.StructType
-	switch catalogObject.Type {
-	case api.CatalogObject_TYPE_TABLE:
-		schema = catalogObject.Table.Schema
-	case api.CatalogObject_TYPE_SOURCE:
-		schema = catalogObject.Source.Schema
-	case api.CatalogObject_TYPE_MODEL:
-		schema = catalogObject.Model.Schema
+	var schema *runtimev1.StructType
+	switch catalogEntry.Type {
+	case drivers.ObjectTypeTable:
+		schema = catalogEntry.GetTable().Schema
+	case drivers.ObjectTypeSource:
+		schema = catalogEntry.GetSource().Schema
+	case drivers.ObjectTypeModel:
+		schema = catalogEntry.GetModel().Schema
 	}
 
 	table, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
@@ -112,16 +112,16 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 	require.Equal(t, schema.Fields, table.Schema.Fields)
 }
 
-func AssertInCatalogStore(t *testing.T, s *catalog.Service, name string, path string) *api.CatalogObject {
-	catalogObject, err := s.GetCatalogObject(context.Background(), name)
-	require.NoError(t, err)
-	require.Equal(t, name, catalogObject.Name)
-	require.Equal(t, path, catalogObject.Path)
-	return catalogObject
+func AssertInCatalogStore(t *testing.T, s *catalog.Service, name string, path string) *drivers.CatalogEntry {
+	catalogEntry, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
+	require.True(t, ok)
+	require.Equal(t, name, catalogEntry.Name)
+	require.Equal(t, path, catalogEntry.Path)
+	return catalogEntry
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
-	_, ok := s.Catalog.FindObject(context.Background(), s.InstId, name)
+	_, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
 	require.False(t, ok)
 
 	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)

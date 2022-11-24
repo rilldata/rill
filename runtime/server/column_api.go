@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,7 +17,7 @@ import (
 const defaultK = 50
 const defaultAgg = "count(*)"
 
-func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*api.CategoricalSummary, error) {
+func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := defaultAgg
 	k := int32(defaultK)
 	if topKRequest.Agg != nil {
@@ -41,23 +41,28 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *api.TopKRequest) (*ap
 	}
 	defer rows.Close()
 
-	topKResponse := api.TopKResponse{
-		Entries: make([]*api.TopKResponse_TopKEntry, 0),
+	topKResponse := runtimev1.TopK{
+		Entries: make([]*runtimev1.TopK_TopKEntry, 0),
 	}
 	for rows.Next() {
-		var topKEntry api.TopKResponse_TopKEntry
+		var topKEntry runtimev1.TopK_TopKEntry
 		err = rows.Scan(&topKEntry.Value, &topKEntry.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
 	}
-	return &api.CategoricalSummary{
-		TopKResponse: &topKResponse,
+
+	return &runtimev1.GetTopKResponse{
+		CategoricalSummary: &runtimev1.CategoricalSummary{
+			Case: &runtimev1.CategoricalSummary_TopK{
+				TopK: &topKResponse,
+			},
+		},
 	}, nil
 }
 
-func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.NullCountRequest) (*api.NullCountResponse, error) {
+func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
 	nullCountSql := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
 		nullCountRequest.TableName,
 		quoteName(nullCountRequest.ColumnName),
@@ -70,7 +75,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.NullCou
 	}
 	defer rows.Close()
 
-	var count int64
+	var count float64
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
@@ -78,13 +83,12 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *api.NullCou
 		}
 	}
 
-	resp := &api.NullCountResponse{
+	return &runtimev1.GetNullCountResponse{
 		Count: count,
-	}
-	return resp, nil
+	}, nil
 }
 
-func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.DescriptiveStatisticsRequest) (*api.NumericSummary, error) {
+func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
 		"min(%s) as min, "+
@@ -104,17 +108,21 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.Desc
 	}
 	defer rows.Close()
 
-	stats := new(api.NumericStatistics)
+	stats := new(runtimev1.NumericStatistics)
 	for rows.Next() {
 		err = rows.Scan(&stats.Min, &stats.Q25, &stats.Q50, &stats.Q75, &stats.Max, &stats.Mean, &stats.Sd)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	resp := &api.NumericSummary{
-		NumericStatistics: stats,
+	resp := &runtimev1.NumericSummary{
+		Case: &runtimev1.NumericSummary_NumericStatistics{
+			NumericStatistics: stats,
+		},
 	}
-	return resp, nil
+	return &runtimev1.GetDescriptiveStatisticsResponse{
+		NumericSummary: resp,
+	}, nil
 }
 
 /**
@@ -143,7 +151,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *api.Desc
  * we've thrown at it.
  */
 
-func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *api.EstimateSmallestTimeGrainRequest) (*api.EstimateSmallestTimeGrainResponse, error) {
+func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtimev1.EstimateSmallestTimeGrainRequest) (*runtimev1.EstimateSmallestTimeGrainResponse, error) {
 	sampleSize := int64(500000)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT count(*) as c FROM %s", request.TableName),
@@ -218,45 +226,45 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *api.Est
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	var timeGrain *api.EstimateSmallestTimeGrainResponse
+	var timeGrain *runtimev1.EstimateSmallestTimeGrainResponse
 	switch timeGrainString {
 	case "milliseconds":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_MILLISECOND,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
 		}
 	case "seconds":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_SECOND,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
 		}
 	case "minutes":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_MINUTE,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
 		}
 	case "hours":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_HOUR,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		}
 	case "days":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_DAY,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		}
 	case "weeks":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_WEEK,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
 		}
 	case "months":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_MONTH,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
 		}
 	case "years":
-		timeGrain = &api.EstimateSmallestTimeGrainResponse{
-			TimeGrain: api.TimeGrain_YEAR,
+		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
+			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		}
 	}
 	return timeGrain, nil
 }
 
-func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHistogramRequest) (*api.NumericSummary, error) {
+func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	sql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
 		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
@@ -345,23 +353,27 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *api.NumericHi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer histogramRows.Close()
-	histogramBins := make([]*api.NumericHistogramBins_Bin, 0)
+	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
 	for histogramRows.Next() {
-		bin := &api.NumericHistogramBins_Bin{}
+		bin := &runtimev1.NumericHistogramBins_Bin{}
 		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		histogramBins = append(histogramBins, bin)
 	}
-	return &api.NumericSummary{
-		NumericHistogramBins: &api.NumericHistogramBins{
-			Bins: histogramBins,
+	return &runtimev1.GetNumericHistogramResponse{
+		NumericSummary: &runtimev1.NumericSummary{
+			Case: &runtimev1.NumericSummary_NumericHistogramBins{
+				NumericHistogramBins: &runtimev1.NumericHistogramBins{
+					Bins: histogramBins,
+				},
+			},
 		},
 	}, nil
 }
 
-func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramRequest) (*api.NumericSummary, error) {
+func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugHistogramRequest) (*runtimev1.GetRugHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -434,9 +446,9 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramR
 	}
 	defer outlierResults.Close()
 
-	outlierBins := make([]*api.NumericOutliers_Outlier, 0)
+	outlierBins := make([]*runtimev1.NumericOutliers_Outlier, 0)
 	for outlierResults.Next() {
-		outlier := &api.NumericOutliers_Outlier{}
+		outlier := &runtimev1.NumericOutliers_Outlier{}
 		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -444,14 +456,18 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *api.RugHistogramR
 		outlierBins = append(outlierBins, outlier)
 	}
 
-	return &api.NumericSummary{
-		NumericOutliers: &api.NumericOutliers{
-			Outliers: outlierBins,
+	return &runtimev1.GetRugHistogramResponse{
+		NumericSummary: &runtimev1.NumericSummary{
+			Case: &runtimev1.NumericSummary_NumericOutliers{
+				NumericOutliers: &runtimev1.NumericOutliers{
+					Outliers: outlierBins,
+				},
+			},
 		},
 	}, nil
 }
 
-func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRangeSummaryRequest) (*api.TimeRangeSummary, error) {
+func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
@@ -462,7 +478,7 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 	}
 	defer rows.Close()
 	if rows.Next() {
-		summary := &api.TimeRangeSummary{}
+		summary := &runtimev1.TimeRangeSummary{}
 		rowMap := make(map[string]any)
 		err = rows.MapScan(rowMap)
 		if err != nil {
@@ -471,17 +487,19 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *api.TimeRange
 		summary.Min = timestamppb.New(rowMap["min"].(time.Time))
 		summary.Max = timestamppb.New(rowMap["max"].(time.Time))
 		interval := rowMap["interval"].(duckdb.Interval)
-		summary.Interval = new(api.TimeRangeSummary_Interval)
+		summary.Interval = new(runtimev1.TimeRangeSummary_Interval)
 		summary.Interval.Days = interval.Days
 		summary.Interval.Months = interval.Months
 		summary.Interval.Micros = interval.Micros
 
-		return summary, nil
+		return &runtimev1.GetTimeRangeSummaryResponse{
+			TimeRangeSummary: summary,
+		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
 }
 
-func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.CardinalityOfColumnRequest) (*api.CategoricalSummary, error) {
+func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
@@ -490,13 +508,19 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *api.Cardin
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
+	var count float64
 	for rows.Next() {
-		summary := &api.CategoricalSummary{}
-		err = rows.Scan(&summary.Cardinality)
+		err = rows.Scan(&count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return summary, nil
+		return &runtimev1.GetCardinalityOfColumnResponse{
+			CategoricalSummary: &runtimev1.CategoricalSummary{
+				Case: &runtimev1.CategoricalSummary_Cardinality{
+					Cardinality: count,
+				},
+			},
+		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
 }

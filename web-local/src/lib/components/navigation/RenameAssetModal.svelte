@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -8,10 +8,7 @@
   import { renameEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../application-state-stores/application-store";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import Input from "../forms/Input.svelte";
   import SubmissionError from "../forms/SubmissionError.svelte";
   import { Dialog } from "../modal/index";
@@ -23,7 +20,7 @@
   let error: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getCatalog = useRuntimeServiceGetCatalogObject(
+  $: getCatalog = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentAssetName
   );

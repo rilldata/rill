@@ -17,7 +17,7 @@
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
   import {
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { createInternalRepresentation } from "./metrics-internal-store";
@@ -61,7 +61,7 @@
   $: dimensions = $metrics.getDimensions();
 
   $: model_path = $metrics.getMetricKey("model_path");
-  $: getModel = useRuntimeServiceGetCatalogObject(instanceId, model_path);
+  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model_path);
   $: model = $getModel.data?.object?.model;
 
   function handleCreateMeasure() {

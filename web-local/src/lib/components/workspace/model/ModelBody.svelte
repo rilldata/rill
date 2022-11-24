@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
     V1PutFileAndMigrateResponse,
@@ -39,7 +39,7 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  $: getModel = useRuntimeServiceGetCatalogObject(
+  $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
     modelName
   );

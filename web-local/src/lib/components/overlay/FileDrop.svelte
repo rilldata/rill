@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    RuntimeServiceListCatalogObjectsType,
+    getRuntimeServiceListCatalogEntriesQueryKey,
+    RuntimeServiceListCatalogEntriesType,
     useRuntimeServicePutFileAndMigrate,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -55,8 +55,8 @@
       }
     }
     return queryClient.invalidateQueries(
-      getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, {
-        type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
+      getRuntimeServiceListCatalogEntriesQueryKey(runtimeInstanceId, {
+        type: RuntimeServiceListCatalogEntriesType.OBJECT_TYPE_SOURCE,
       })
     );
   };

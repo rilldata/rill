@@ -1,8 +1,8 @@
 <script lang="ts">
   import {
-    getRuntimeServiceGetCatalogObjectQueryKey,
+    getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceDeleteFileAndMigrate,
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
@@ -73,7 +73,7 @@
   ) as PersistentModelStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getSource = useRuntimeServiceGetCatalogObject(
+  $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -144,9 +144,9 @@
 
   const onRefreshSource = async (id: string, tableName: string) => {
     const connector: string =
-      $getSource?.data?.object?.source?.connector ?? $sourceFromYaml.data?.type;
+      $getSource?.data?.entry.source?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
-      // if parse failed or there is no catalog object, we cannot refresh source
+      // if parse failed or there is no catalog entry, we cannot refresh source
       // TODO: show the import source modal with fixed tableName
       return;
     }
@@ -166,7 +166,7 @@
       }
 
       // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,
         tableName
       );
@@ -197,7 +197,7 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.object?.source?.connector === "file"}
+{#if $getSource?.data?.entry?.source?.connector === "file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
     <svelte:fragment slot="icon">
       <Import />

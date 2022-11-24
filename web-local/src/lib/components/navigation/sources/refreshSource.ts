@@ -24,7 +24,7 @@ export async function refreshSource(
 
     overlay.set({ title: `Importing ${tableName}` });
     const filePath = await uploadFile(
-      `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`,
+      `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/files/upload`,
       files[0]
     );
     if (filePath) {

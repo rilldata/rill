@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/sql/rpc"
 	"github.com/stretchr/testify/require"
@@ -12,25 +12,23 @@ import (
 
 func TestTranspileSelect(t *testing.T) {
 	sql := fmt.Sprintf(`select %d as foo, 'hello' as bar, h1.id, h1."power", h2.name from main.heroes h1 join main.heroes h2 on h1.id = h2.id`, 10)
-
-	catalog := []*drivers.CatalogObject{
+	catalog := []*drivers.CatalogEntry{
 		{
 			Name: "heroes",
-			Type: drivers.CatalogObjectTypeTable,
-			Schema: &api.StructType{
-				Fields: []*api.StructType_Field{
-					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
-					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
+			Type: drivers.ObjectTypeTable,
+			Object: &runtimev1.Table{
+				Name:    "heroes",
+				Managed: false,
+				Schema: &runtimev1.StructType{
+					Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "birthday", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+						{Name: "power", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "level", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
+					},
 				},
 			},
-		},
-		{
-			Name: "MV",
-			Type: drivers.CatalogObjectTypeMetricsView,
-			SQL:  `Create Metrics View MV DIMENSIONS "power" Measures count(DISTINCT name) AS names FROM main.heroes`,
 		},
 	}
 
@@ -41,17 +39,21 @@ func TestTranspileSelect(t *testing.T) {
 
 func TestParseSelect(t *testing.T) {
 	sql := `select 10 as foo, 'hello' as bar, h1.id, h1."power", h2.name from main.heroes h1 join main.heroes h2 on h1.id = h2.id`
-	catalog := []*drivers.CatalogObject{
+	catalog := []*drivers.CatalogEntry{
 		{
 			Name: "heroes",
-			Type: drivers.CatalogObjectTypeTable,
-			Schema: &api.StructType{
-				Fields: []*api.StructType_Field{
-					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
-					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
+			Type: drivers.ObjectTypeTable,
+			Object: &runtimev1.Table{
+				Name:    "heroes",
+				Managed: false,
+				Schema: &runtimev1.StructType{
+					Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "birthday", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+						{Name: "power", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "level", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
+					},
 				},
 			},
 		},
@@ -78,17 +80,21 @@ func TestParseMetricsView(t *testing.T) {
 		FROM MAIN.HEROES
 	`
 
-	catalog := []*drivers.CatalogObject{
+	catalog := []*drivers.CatalogEntry{
 		{
 			Name: "heroes",
-			Type: drivers.CatalogObjectTypeTable,
-			Schema: &api.StructType{
-				Fields: []*api.StructType_Field{
-					{Name: "id", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "birthday", Type: &api.Type{Code: api.Type_CODE_TIMESTAMP}},
-					{Name: "power", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "name", Type: &api.Type{Code: api.Type_CODE_STRING}},
-					{Name: "level", Type: &api.Type{Code: api.Type_CODE_INT32}},
+			Type: drivers.ObjectTypeTable,
+			Object: &runtimev1.Table{
+				Name:    "heroes",
+				Managed: false,
+				Schema: &runtimev1.StructType{
+					Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "birthday", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+						{Name: "power", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+						{Name: "level", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
+					},
 				},
 			},
 		},

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func getTestServer(t *testing.T) (*Server, string) {
 	}, metastore, nil)
 	require.NoError(t, err)
 
-	resp, err := server.CreateInstance(context.Background(), &api.CreateInstanceRequest{
+	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
 		Driver:       "duckdb",
 		Dsn:          "",
 		Exposed:      true,
@@ -36,7 +36,7 @@ func getTestServer(t *testing.T) (*Server, string) {
 func getTestServerWithData(t *testing.T) (*Server, string) {
 	server, instanceId := getTestServer(t)
 
-	_, err := server.QueryDirect(context.Background(), &api.QueryDirectRequest{
+	_, err := server.QueryDirect(context.Background(), &runtimev1.QueryDirectRequest{
 		InstanceId: instanceId,
 		Sql: `CREATE TABLE test AS (
 			SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,23 +15,8 @@ import (
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
 // once the metrics view artifact representation is ready.
 
-// MetricsViewMeta implements RuntimeService
-func (s *Server) MetricsViewMeta(ctx context.Context, req *api.MetricsViewMetaRequest) (*api.MetricsViewMetaResponse, error) {
-	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.MetricsViewMetaResponse{
-		MetricsViewName: mv.Name,
-		FromObject:      mv.From,
-		Dimensions:      mv.Dimensions,
-		Measures:        mv.Measures,
-	}, nil
-}
-
 // MetricsViewToplist implements RuntimeService
-func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewToplistRequest) (*api.MetricsViewToplistResponse, error) {
+func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	// Prepare
 	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
@@ -50,14 +35,14 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *api.MetricsViewTop
 		return nil, err
 	}
 
-	return &api.MetricsViewToplistResponse{
+	return &runtimev1.MetricsViewToplistResponse{
 		Meta: meta,
 		Data: data,
 	}, nil
 }
 
 // MetricsViewTimeSeries implements RuntimeService
-func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsViewTimeSeriesRequest) (*api.MetricsViewTimeSeriesResponse, error) {
+func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
 	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
 		return nil, err
@@ -73,7 +58,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsView
 		return nil, err
 	}
 
-	resp := &api.MetricsViewTimeSeriesResponse{
+	resp := &runtimev1.MetricsViewTimeSeriesResponse{
 		Meta: meta,
 		Data: data,
 	}
@@ -82,7 +67,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *api.MetricsView
 }
 
 // MetricsViewTotals implements RuntimeService
-func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTotalsRequest) (*api.MetricsViewTotalsResponse, error) {
+func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
 	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
 		return nil, err
@@ -102,7 +87,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 		return nil, status.Errorf(codes.Internal, "no rows received from totals query")
 	}
 
-	resp := &api.MetricsViewTotalsResponse{
+	resp := &runtimev1.MetricsViewTotalsResponse{
 		Meta: meta,
 		Data: data[0],
 	}
@@ -110,7 +95,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *api.MetricsViewTota
 	return resp, nil
 }
 
-func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*api.MetricsView, error) {
+func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*runtimev1.MetricsView, error) {
 	catalog, err := s.serviceCache.createCatalogService(ctx, s, instanceID, instanceID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -121,14 +106,14 @@ func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if obj.Type != api.CatalogObject_TYPE_METRICS_VIEW {
+	if obj.GetMetricsView() == nil {
 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
 	}
 
-	return obj.MetricsView, nil
+	return obj.GetMetricsView(), nil
 }
 
-func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*api.MetricsViewColumn, []*structpb.Struct, error) {
+func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
@@ -147,7 +132,7 @@ func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
 }
 
-func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, mv *api.MetricsView) (string, []any, error) {
+func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtimev1.MetricsView) (string, []any, error) {
 	selectCols := []string{req.DimensionName}
 	for _, n := range req.MeasureNames {
 		found := false
@@ -211,7 +196,7 @@ func buildMetricsTopListSql(req *api.MetricsViewToplistRequest, mv *api.MetricsV
 	return sql, args, nil
 }
 
-func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest, mv *api.MetricsView) (string, []any, error) {
+func buildMetricsTimeSeriesSQL(req *runtimev1.MetricsViewTimeSeriesRequest, mv *runtimev1.MetricsView) (string, []any, error) {
 	timeCol := fmt.Sprintf("DATE_TRUNC('%s', %s) AS %s", req.TimeGranularity, mv.TimeDimension, mv.TimeDimension)
 	selectCols := []string{timeCol}
 	for _, n := range req.MeasureNames {
@@ -261,7 +246,7 @@ func buildMetricsTimeSeriesSQL(req *api.MetricsViewTimeSeriesRequest, mv *api.Me
 	return sql, args, nil
 }
 
-func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest, mv *api.MetricsView) (string, []any, error) {
+func buildMetricsTotalsSql(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev1.MetricsView) (string, []any, error) {
 	selectCols := []string{}
 	for _, n := range req.MeasureNames {
 		found := false
@@ -309,8 +294,8 @@ func buildMetricsTotalsSql(req *api.MetricsViewTotalsRequest, mv *api.MetricsVie
 	return sql, args, nil
 }
 
-// Builds clause and args for api.MetricsViewFilter
-func buildFilterClauseForMetricsViewFilter(filter *api.MetricsViewFilter) (string, []any, error) {
+// Builds clause and args for runtimev1.MetricsViewFilter
+func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) (string, []any, error) {
 	whereClause := ""
 	var args []any
 
@@ -335,7 +320,7 @@ func buildFilterClauseForMetricsViewFilter(filter *api.MetricsViewFilter) (strin
 	return whereClause, args, nil
 }
 
-func buildFilterClauseForConditions(conds []*api.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
+func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
 	clause := ""
 	var args []any
 
@@ -354,7 +339,7 @@ func buildFilterClauseForConditions(conds []*api.MetricsViewFilter_Cond, exclude
 	return clause, args, nil
 }
 
-func buildFilterClauseForCondition(cond *api.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
+func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -434,10 +419,10 @@ func protobufValueToAny(val *structpb.Value) (any, error) {
 	}
 }
 
-func structTypeToMetricsViewColumn(v *api.StructType) []*api.MetricsViewColumn {
-	res := make([]*api.MetricsViewColumn, len(v.Fields))
+func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.MetricsViewColumn {
+	res := make([]*runtimev1.MetricsViewColumn, len(v.Fields))
 	for i, f := range v.Fields {
-		res[i] = &api.MetricsViewColumn{
+		res[i] = &runtimev1.MetricsViewColumn{
 			Name:     f.Name,
 			Type:     f.Type.Code.String(),
 			Nullable: f.Type.Nullable,

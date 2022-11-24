@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndMigrate,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -57,7 +57,7 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
-  $: getSource = useRuntimeServiceGetCatalogObject(
+  $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentTable?.tableName
   );
@@ -150,9 +150,9 @@
   }
 
   $: connectorType = formatConnectorType(
-    $getSource.data?.object?.source?.connector
+    $getSource.data?.entry?.source?.connector
   );
-  $: fileExtension = getFileExtension($getSource.data?.object?.source);
+  $: fileExtension = getFileExtension($getSource.data?.entry?.source);
 
   /** get the current row count */
   $: {
