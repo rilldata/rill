@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
+  import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -57,7 +58,9 @@
   let innerHeight;
 
   let showPreview = true;
-  let modelError = "";
+  let modelPath: string;
+  $: modelPath = `/models/${modelName}.sql`;
+  $: modelError = $commonEntitiesStore.entities[modelPath]?.errors[0]?.message;
 
   let titleInput = currentModel?.name;
   $: titleInput = currentModel?.name;
@@ -116,27 +119,24 @@
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
-    try {
-      // TODO: why is the response type not present?
-      const resp = (await $updateModel.mutateAsync({
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: $runtimeStore.instanceId,
-          path: `models/${currentModel.tableName}.sql`,
-          blob: content,
-        },
-      })) as V1PutFileAndMigrateResponse;
-      if (resp.errors.length) {
-        modelError = resp.errors[0].message;
-      } else {
-        modelError = "";
-        await dataModelerService.dispatch("updateModelQuery", [
-          currentModel.id,
-          content,
-        ]);
-      }
-    } catch (err) {
-      modelError = err.response.data.message;
+    // TODO: why is the response type not present?
+    const resp = (await $updateModel.mutateAsync({
+      data: {
+        repoId: $runtimeStore.repoId,
+        instanceId: $runtimeStore.instanceId,
+        path: `models/${currentModel.tableName}.sql`,
+        blob: content,
+      },
+    })) as V1PutFileAndMigrateResponse;
+    commonEntitiesStore.consolidateMigrateResponse(
+      resp.affectedPaths,
+      resp.errors
+    );
+    if (!resp.errors.length) {
+      await dataModelerService.dispatch("updateModelQuery", [
+        currentModel.id,
+        content,
+      ]);
     }
   }
 </script>

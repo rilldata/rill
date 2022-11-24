@@ -66,8 +66,6 @@ export async function* uploadTableFiles(
     if (filePath) {
       lastTableName = resolvedTableName;
       yield { tableName: resolvedTableName, filePath };
-      // FIXME: deprecate sourceUpdated once we no longer are using the existing profiling information
-      await sourceUpdated(resolvedTableName);
     }
 
     importOverlayVisible.set(false);

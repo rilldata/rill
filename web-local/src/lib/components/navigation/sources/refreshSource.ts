@@ -1,5 +1,7 @@
+import type { V1PutFileAndMigrateResponse } from "@rilldata/web-common/runtime-client";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import { sourceUpdated } from "@rilldata/web-local/lib/redux-store/source/source-apis";
@@ -14,7 +16,7 @@ export async function refreshSource(
   tableName: string,
   runtimeState: RuntimeState,
   refreshSource: UseMutationResult,
-  createSource: UseMutationResult
+  createSource: UseMutationResult<V1PutFileAndMigrateResponse>
 ) {
   if (connector === "file") {
     const files = await openFileUploadDialog(false);
@@ -33,7 +35,7 @@ export async function refreshSource(
         },
         "file"
       );
-      await createSource.mutateAsync({
+      const resp = await createSource.mutateAsync({
         instanceId: runtimeState.instanceId,
         data: {
           repoId: runtimeState.repoId,
@@ -44,6 +46,10 @@ export async function refreshSource(
           strict: true,
         },
       });
+      commonEntitiesStore.consolidateMigrateResponse(
+        resp.affectedPaths,
+        resp.errors
+      );
     }
   } else {
     overlay.set({ title: `Importing ${tableName}` });
@@ -52,5 +58,4 @@ export async function refreshSource(
       name: tableName,
     });
   }
-  return sourceUpdated(tableName);
 }
