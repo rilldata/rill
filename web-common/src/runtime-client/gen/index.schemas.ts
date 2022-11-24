@@ -24,16 +24,6 @@ export type RuntimeServiceListReposParams = {
   pageToken?: string;
 };
 
-/**
- * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
- */
-export type RuntimeServiceGetTopKBody = {
-  agg?: string;
-  k?: number;
-};
-
-export type RuntimeServiceGetTableRowsParams = { limit?: number };
-
 export type RuntimeServiceQueryDirectBody = {
   args?: unknown[];
   dryRun?: boolean;
@@ -46,6 +36,30 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
   priority?: string;
   sql?: string;
+};
+
+/**
+ * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
+ */
+export type RuntimeServiceGetTopKBody = {
+  agg?: string;
+  k?: number;
+};
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  filters?: V1MetricsViewRequestFilter;
+  measures?: GenerateTimeSeriesRequestBasicMeasures;
+  pixels?: number;
+  sampleSize?: number;
+  tableName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
+
+export type RuntimeServiceGetTableRowsParams = { limit?: number };
+
+export type RuntimeServiceEstimateRollupIntervalBody = {
+  columnName?: string;
 };
 
 export type RuntimeServiceMigrateBody = {
@@ -86,20 +100,6 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: string;
   timeStart?: string;
-};
-
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewRequestFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasures;
-  pixels?: number;
-  sampleSize?: number;
-  tableName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
-
-export type RuntimeServiceEstimateRollupIntervalBody = {
-  columnName?: string;
 };
 
 export type RuntimeServiceListCatalogEntriesType =
