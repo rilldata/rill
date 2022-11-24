@@ -63,14 +63,14 @@ builds:
 universal_binaries:
   - replace: true
 brews:
-  - homepage: "https://github.com/rilldata/homebrew-tap/"
+  - homepage: "https://github.com/rilldata/homebrew-rill-developer/"
     description: "The Rill Data CLI"
     name: "rill"
     license: Apache 2.0
     tap:
       owner: rilldata
-      name: homebrew-tap
-      branch: goreleaser-prototype
+      name: homebrew-rill-developer
+      branch: main
     commit_author:
       name: "rilldata"
       email: rakesh.sharma@rilldata.com

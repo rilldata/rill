@@ -5,6 +5,7 @@ on:
     branches: ["goreleaser-prototype"]
     paths:
       - ".github/workflows/cli-release.yml"
+      - ".goreleaser.yaml"
       - "go.mod"
       - "cli/**"
 jobs:
