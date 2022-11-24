@@ -6,6 +6,7 @@ import {
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
@@ -16,7 +17,7 @@ export async function createModel(
   sql = "",
   setAsActive = true
 ) {
-  const res = await createModelMutation.mutateAsync({
+  const resp = await createModelMutation.mutateAsync({
     data: {
       repoId: runtimeState.repoId,
       instanceId: runtimeState.instanceId,
@@ -27,11 +28,15 @@ export async function createModel(
       strict: true,
     },
   });
-  if (res.errors?.length && sql !== "") {
-    res.errors.forEach((error) => {
+  commonEntitiesStore.consolidateMigrateResponse(
+    resp.affectedPaths,
+    resp.errors
+  );
+  if (resp.errors?.length && sql !== "") {
+    resp.errors.forEach((error) => {
       console.error(error);
     });
-    throw new Error(res.errors[0].filePath);
+    throw new Error(resp.errors[0].filePath);
   }
   await dataModelerService.dispatch("addModel", [
     { name: newModelName, query: sql, asynchronous: true },

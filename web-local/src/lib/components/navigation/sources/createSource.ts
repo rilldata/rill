@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
@@ -26,6 +27,10 @@ export async function createSource(
       strict: true,
     },
   });
+  commonEntitiesStore.consolidateMigrateResponse(
+    resp.affectedPaths,
+    resp.errors
+  );
   if (resp.errors.length) {
     // TODO: make sure to get the right error
     return resp.errors;

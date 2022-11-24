@@ -9,6 +9,7 @@ import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-s
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import {
   getFileFromName,
   getLabel,
@@ -25,7 +26,7 @@ export async function renameEntity(
   type: EntityType,
   renameMutation: UseMutationResult<V1RenameFileAndMigrateResponse>
 ) {
-  await renameMutation.mutateAsync({
+  const resp = await renameMutation.mutateAsync({
     data: {
       repoId: runtimeState.repoId,
       instanceId: runtimeState.instanceId,
@@ -33,6 +34,10 @@ export async function renameEntity(
       toPath: getFileFromName(toName, type),
     },
   });
+  commonEntitiesStore.consolidateMigrateResponse(
+    resp.affectedPaths,
+    resp.errors
+  );
   await dataModelerService.dispatch("renameEntity", [type, fromName, toName]);
   goto(getRouteFromName(toName, type), {
     replaceState: true,
@@ -54,13 +59,17 @@ export async function deleteEntity(
   names: Array<string>
 ) {
   try {
-    await deleteMutation.mutateAsync({
+    const resp = await deleteMutation.mutateAsync({
       data: {
         repoId: runtimeState.repoId,
         instanceId: runtimeState.instanceId,
         path: getFileFromName(name, type),
       },
     });
+    commonEntitiesStore.consolidateMigrateResponse(
+      resp.affectedPaths,
+      resp.errors
+    );
     if (activeEntity.name === name) {
       goto(getRouteFromName(getNextEntityName(names, name), type));
     }
