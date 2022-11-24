@@ -1,4 +1,0 @@
-
-[submodule "sysroot"]
-	path = sysroot
-	url = git@github.com:goreleaser/goreleaser-cross-example-sysroot.git
