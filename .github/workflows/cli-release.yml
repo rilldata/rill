@@ -7,9 +7,6 @@ on:
       - ".github/workflows/cli-release.yml"
       - "go.mod"
       - "cli/**"
-  # push:
-  #   tags:
-  #     - v*
 jobs:
   release:
     name: Upload Assets to GitHub w/ goreleaser
@@ -23,7 +20,9 @@ jobs:
       - name: setup dependencies
         uses: actions/setup-go@v2
       - name: build web-local and run cli
-        run: make cli
+        run: |
+          git clone git@github.com:goreleaser/goreleaser-cross-example-sysroot.git sysroot
+          ls -lrt sysroot/ 
       - name: release dry run
         run: make release-dry-run
       - name: setup release environment
