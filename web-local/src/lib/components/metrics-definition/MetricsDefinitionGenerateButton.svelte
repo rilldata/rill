@@ -2,14 +2,20 @@
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServicePutFileAndMigrate,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
   import type { DerivedModelStore } from "../../application-state-stores/model-stores";
   import { TIMESTAMPS } from "../../duckdb-data-types";
-  import { store } from "../../redux-store/store-root";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import type { MetricsInternalRepresentation } from "../workspace/metrics-def/metrics-internal-store";
+  import {
+    generateMeasuresAndDimension,
+    MetricsInternalRepresentation,
+  } from "../../application-state-stores/metrics-internal-store";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   $: measures = $metricsInternalRep.getMeasures();
@@ -17,11 +23,16 @@
 
   export let selectedModel: V1Model;
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
+  export let handlePutAndMigrate;
 
   const queryClient = useQueryClient();
 
   async function handleGenerateClick() {
     // await store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
+
+    const newYAMLString = generateMeasuresAndDimension(selectedModel);
+
+    handlePutAndMigrate(newYAMLString);
 
     if (
       !$metricsInternalRep.getMetricKey("timeseries") &&

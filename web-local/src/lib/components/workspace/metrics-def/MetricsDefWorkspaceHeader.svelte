@@ -24,6 +24,9 @@
   </WorkspaceHeader>
 
   {#if !metricsSourceSelectionError}
-    <MetricsDefinitionExploreMetricsButton metricsDefId={metricsDefName} />
+    <MetricsDefinitionExploreMetricsButton
+      {metricsDefName}
+      {metricsInternalRep}
+    />
   {/if}
 </div>

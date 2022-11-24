@@ -1,7 +1,40 @@
+import type {
+  StructTypeField,
+  V1Model,
+} from "@rilldata/web-common/runtime-client";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
+import { CATEGORICALS } from "../duckdb-data-types";
+
+export const metricsTemplate = `
+display_name: "Sample Dashboard"
+description: "a description that appears in the UI"
+
+# model
+#optional to declare this, otherwise it is the model.sql file in the same directory
+from: ""
+
+# populate with the first datetime type in the OBT
+timeseries: ""
+
+# default to opionated option around estimated timegrain,
+# first in order is default time grain
+timegrains:
+  - "DAY"
+# the timegrain that users will see when they first visit the dashboard.
+default_timegrain:
+  - "DAY"
+
+# measures
+# measures are presented in the order that they are written in this file.
+measures: []
+
+# dimensions
+# dimensions are presented in the order that they are written in this file.
+dimensions: []
+`;
 
 export interface MetricsConfig {
   display_name: string;
@@ -191,4 +224,39 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
       set(instance);
     });
   });
+}
+
+export function generateMeasuresAndDimension(model: V1Model) {
+  const fields = model.schema.fields;
+
+  const template = parseDocument(metricsTemplate);
+  template.set("from", model.name);
+
+  const measureNode = template.createNode({
+    label: "Total records",
+    expression: "count(*)",
+    description: "Total number of records present",
+    format_preset: "humanize",
+    visible: true,
+  });
+  template.addIn(["measures"], measureNode);
+
+  const diemensionSeq = fields
+    .filter((field) => {
+      return CATEGORICALS.has(field.type.code);
+    })
+    .map((field) => {
+      return {
+        label: "",
+        property: field.name,
+        description: "",
+        expression: "",
+        visible: true,
+      };
+    });
+
+  const dimensionNode = template.createNode(diemensionSeq);
+  template.set("dimensions", dimensionNode);
+
+  return template.toString({ collectionStyle: "block" });
 }

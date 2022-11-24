@@ -6,7 +6,7 @@
   import ModelIcon from "../../icons/Model.svelte";
   import { getContext } from "svelte";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import type { MetricsInternalRepresentation } from "./metrics-internal-store";
+  import type { MetricsInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 

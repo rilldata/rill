@@ -18,7 +18,7 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { createInternalRepresentation } from "./metrics-internal-store";
+  import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 
   // the runtime yaml string
@@ -63,8 +63,6 @@
   $: modelName = $metricsInternalRep.getMetricKey("from");
   $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
   $: model = $getModel.data?.entry?.model;
-
-  $: console.log(model);
 
   function handleCreateMeasure() {
     $metricsInternalRep.addNewMeasure();
@@ -145,6 +143,7 @@
               </Callout>
             {:else}
               <MetricsDefinitionGenerateButton
+                handlePutAndMigrate={callPutAndMigrate}
                 selectedModel={model}
                 {metricsInternalRep}
               />

@@ -17,6 +17,7 @@
   import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getContext, onMount } from "svelte";
@@ -38,7 +39,6 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
-  import { metricsTemplate } from "./metricsUtils";
 
   $: instanceId = $runtimeStore.instanceId;
 
