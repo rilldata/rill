@@ -152,8 +152,6 @@ github.com/aws/aws-sdk-go v1.44.118/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9 h1:I+BOl7G86I0PP6d7PmPFjUTZ0lSqqycMOuikp2hkVmw=
 github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9/go.mod h1:R9YlGqS8pPRnWAW1peGPpVax49XcujI7GLebaz9sOfk=
-github.com/begelundmuller/go-duckdb v0.0.0-20221117171428-8004b0828ebd h1:apwVqrZcjLCW0MLJvhUnpEpnkSyqi3N7eDOOtniYlNw=
-github.com/begelundmuller/go-duckdb v0.0.0-20221117171428-8004b0828ebd/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/beorn7/perks v0.0.0-20160804104726-4c0e84591b9a/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
@@ -856,6 +854,8 @@ github.com/mailru/easyjson v0.7.0/go.mod h1:KAzv3t3aY1NaHWoQz1+4F1ccyAH66Jk7yos7
 github.com/mailru/easyjson v0.7.6/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0=
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
+github.com/marcboeker/go-duckdb v1.0.6 h1:4v91A2yyVe4Fi1h/kXN6HRqfTWDePyTstincbRBAtvY=
+github.com/marcboeker/go-duckdb v1.0.6/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
 github.com/marstr/guid v1.1.0/go.mod h1:74gB1z2wpxxInTG6yaqA7KrtM0NZ+RbrcqDvYHefzho=
 github.com/matryer/moq v0.2.7/go.mod h1:kITsx543GOENm48TUAQyJ9+SAvFSr7iGQXPoth/VUBk=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
