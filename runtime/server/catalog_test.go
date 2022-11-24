@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
@@ -54,7 +54,7 @@ func TestServer_InitCatalogService(t *testing.T) {
 }
 
 func createInstanceAndRepo(t *testing.T, server *Server, ctx context.Context, dir string) (string, string) {
-	instResp, err := server.CreateInstance(ctx, &api.CreateInstanceRequest{
+	instResp, err := server.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		Driver: "duckdb",
 		// use persistent file to test fresh load
 		Dsn:          filepath.Join(dir, "stage.db"),
@@ -63,7 +63,7 @@ func createInstanceAndRepo(t *testing.T, server *Server, ctx context.Context, di
 	})
 	require.NoError(t, err)
 
-	repoResp, err := server.CreateRepo(ctx, &api.CreateRepoRequest{
+	repoResp, err := server.CreateRepo(ctx, &runtimev1.CreateRepoRequest{
 		Driver: "file",
 		Dsn:    dir,
 	})

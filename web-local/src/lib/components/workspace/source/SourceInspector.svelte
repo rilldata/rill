@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
@@ -57,7 +57,7 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
-  $: getSource = useRuntimeServiceGetCatalogObject(
+  $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -149,9 +149,9 @@
   }
 
   $: connectorType = formatConnectorType(
-    $getSource.data?.object?.source?.connector
+    $getSource.data?.entry?.source?.connector
   );
-  $: fileExtension = getFileExtension($getSource.data?.object?.source);
+  $: fileExtension = getFileExtension($getSource.data?.entry?.source);
 
   /** get the current row count */
   $: {

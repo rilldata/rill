@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
-    getRuntimeServiceGetCatalogObjectQueryKey,
+    getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServiceGetCatalogObject,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndMigrate,
     useRuntimeServiceRenameFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
@@ -83,12 +83,12 @@
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndMigrate();
 
-  $: getSource = useRuntimeServiceGetCatalogObject(
+  $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentSource?.tableName
   );
 
-  $: connector = $getSource.data?.object?.source.connector as string;
+  $: connector = $getSource.data?.entry?.source.connector as string;
 
   const onRefreshClick = async (tableName: string) => {
     try {
@@ -103,7 +103,7 @@
       dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,
         tableName
       );
@@ -139,13 +139,13 @@
         Refreshing...
       {:else}
         <div class="flex items-center">
-          {#if $getSource.isSuccess && $getSource.data?.object?.refreshedOn}
+          {#if $getSource.isSuccess && $getSource.data?.entry?.refreshedOn}
             <div
               class="ui-copy-muted"
               transition:fade|local={{ duration: 200 }}
             >
               Imported on {formatRefreshedOn(
-                $getSource.data?.object?.refreshedOn
+                $getSource.data?.entry?.refreshedOn
               )}
             </div>
           {/if}

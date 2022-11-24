@@ -1,5 +1,5 @@
 import {
-  runtimeServiceMigrateDelete,
+  runtimeServiceDeleteFileAndMigrate,
   runtimeServicePutFileAndMigrate,
 } from "@rilldata/web-common/runtime-client";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
@@ -376,12 +376,10 @@ export class TableActions extends DataModelerActions {
     args: PersistentTableStateActionArg,
     tableName: string
   ) {
-    await runtimeServiceMigrateDelete(
-      this.databaseService.getDatabaseClient().getInstanceId(),
-      {
-        name: tableName,
-      }
-    );
+    await runtimeServiceDeleteFileAndMigrate({
+      instanceId: this.databaseService.getDatabaseClient().getInstanceId(),
+      path: `/sources/${tableName}.yaml`,
+    });
     return this.dropTable(args, tableName);
   }
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
 )
@@ -51,7 +51,7 @@ func (c *connection) executeQuery(ctx context.Context, j *job) error {
 	return err
 }
 
-func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
+func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
 	}
@@ -61,7 +61,7 @@ func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
 		return nil, err
 	}
 
-	fields := make([]*api.StructType_Field, len(cts))
+	fields := make([]*runtimev1.StructType_Field, len(cts))
 	for i, ct := range cts {
 		nullable, ok := ct.Nullable()
 		if !ok {
@@ -73,11 +73,11 @@ func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
 			return nil, err
 		}
 
-		fields[i] = &api.StructType_Field{
+		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
 			Type: t,
 		}
 	}
 
-	return &api.StructType{Fields: fields}, nil
+	return &runtimev1.StructType{Fields: fields}, nil
 }
