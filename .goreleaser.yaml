@@ -67,12 +67,12 @@ brews:
     description: "The Rill Data CLI"
     name: "rill"
     license: Apache 2.0
-    tap: 
+    tap:
       owner: rilldata
       name: homebrew-tap
-      branch: main
+      branch: goreleaser-prototype
     commit_author:
-      name: rilldata
+      name: "rilldata"
       email: rakesh.sharma@rilldata.com
     folder: Formula
 archives:
