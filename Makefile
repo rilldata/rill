@@ -1,4 +1,6 @@
-PACKAGE_NAME          := github.com/goreleaser/goreleaser-cross-example
+REPO=rilldata
+NAME=rill-developer
+# PACKAGE_NAME          := github.com/rilldata/rill-developer
 GOLANG_CROSS_VERSION  ?= v1.19.2
 
 SYSROOT_DIR     ?= sysroots
