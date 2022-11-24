@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -190,14 +189,28 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	require.Equal(t, 1.0, results[0].Records["sum"])
 }
 
-func printResults(results []*runtimev1.TimeSeriesValue) {
-	for _, result := range results {
-		fmt.Printf("%v ", result.Ts)
-		for k, value := range result.Records {
-			fmt.Printf("%v:%v ", k, value)
-		}
-		fmt.Println()
-	}
+func TestServer_Timeseries_no_measures(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 2, len(results))
+	require.Equal(t, 1.0, results[0].Records["count"])
+
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
