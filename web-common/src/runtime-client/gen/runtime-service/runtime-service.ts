@@ -25,9 +25,9 @@ import type {
   V1GetInstanceResponse,
   V1DeleteInstanceResponse,
   V1GetCardinalityOfColumnResponse,
-  V1ListCatalogObjectsResponse,
-  RuntimeServiceListCatalogObjectsParams,
-  V1GetCatalogObjectResponse,
+  V1ListCatalogEntriesResponse,
+  RuntimeServiceListCatalogEntriesParams,
+  V1GetCatalogEntryResponse,
   V1TriggerRefreshResponse,
   V1GetDescriptiveStatisticsResponse,
   V1EstimateRollupIntervalResponse,
@@ -43,10 +43,6 @@ import type {
   RuntimeServiceMetricsViewTotalsBody,
   V1MigrateResponse,
   RuntimeServiceMigrateBody,
-  V1MigrateSingleResponse,
-  RuntimeServiceMigrateSingleBody,
-  V1MigrateDeleteResponse,
-  RuntimeServiceMigrateDeleteBody,
   V1GetNullCountResponse,
   V1GetNumericHistogramResponse,
   V1GetTableCardinalityResponse,
@@ -514,14 +510,14 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
 };
 
 /**
- * @summary ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
+ * @summary ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
  */
-export const runtimeServiceListCatalogObjects = (
+export const runtimeServiceListCatalogEntries = (
   instanceId: string,
-  params?: RuntimeServiceListCatalogObjectsParams,
+  params?: RuntimeServiceListCatalogEntriesParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1ListCatalogObjectsResponse>({
+  return httpClient<V1ListCatalogEntriesResponse>({
     url: `/v1/instances/${instanceId}/catalog`,
     method: "get",
     params,
@@ -529,31 +525,31 @@ export const runtimeServiceListCatalogObjects = (
   });
 };
 
-export const getRuntimeServiceListCatalogObjectsQueryKey = (
+export const getRuntimeServiceListCatalogEntriesQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceListCatalogObjectsParams
+  params?: RuntimeServiceListCatalogEntriesParams
 ) => [`/v1/instances/${instanceId}/catalog`, ...(params ? [params] : [])];
 
-export type RuntimeServiceListCatalogObjectsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>
+export type RuntimeServiceListCatalogEntriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>
 >;
-export type RuntimeServiceListCatalogObjectsQueryError = RpcStatus;
+export type RuntimeServiceListCatalogEntriesQueryError = RpcStatus;
 
-export const useRuntimeServiceListCatalogObjects = <
-  TData = Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
+export const useRuntimeServiceListCatalogEntries = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
   TError = RpcStatus
 >(
   instanceId: string,
-  params?: RuntimeServiceListCatalogObjectsParams,
+  params?: RuntimeServiceListCatalogEntriesParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
+      Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
+  Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
   TError,
   TData,
   QueryKey
@@ -562,22 +558,22 @@ export const useRuntimeServiceListCatalogObjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceListCatalogObjectsQueryKey(instanceId, params);
+    getRuntimeServiceListCatalogEntriesQueryKey(instanceId, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>
+    Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>
   > = ({ signal }) =>
-    runtimeServiceListCatalogObjects(instanceId, params, signal);
+    runtimeServiceListCatalogEntries(instanceId, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
+    Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!instanceId,
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceListCatalogObjects>>,
+    Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
     TError,
     TData,
     QueryKey
@@ -589,45 +585,45 @@ export const useRuntimeServiceListCatalogObjects = <
 };
 
 /**
- * @summary GetCatalogObject returns information about a specific object in the catalog
+ * @summary GetCatalogEntry returns information about a specific entry in the catalog
  */
-export const runtimeServiceGetCatalogObject = (
+export const runtimeServiceGetCatalogEntry = (
   instanceId: string,
   name: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetCatalogObjectResponse>({
+  return httpClient<V1GetCatalogEntryResponse>({
     url: `/v1/instances/${instanceId}/catalog/${name}`,
     method: "get",
     signal,
   });
 };
 
-export const getRuntimeServiceGetCatalogObjectQueryKey = (
+export const getRuntimeServiceGetCatalogEntryQueryKey = (
   instanceId: string,
   name: string
 ) => [`/v1/instances/${instanceId}/catalog/${name}`];
 
-export type RuntimeServiceGetCatalogObjectQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>
+export type RuntimeServiceGetCatalogEntryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>
 >;
-export type RuntimeServiceGetCatalogObjectQueryError = RpcStatus;
+export type RuntimeServiceGetCatalogEntryQueryError = RpcStatus;
 
-export const useRuntimeServiceGetCatalogObject = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>,
+export const useRuntimeServiceGetCatalogEntry = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
   TError = RpcStatus
 >(
   instanceId: string,
   name: string,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>,
+      Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>,
+  Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
   TError,
   TData,
   QueryKey
@@ -636,21 +632,21 @@ export const useRuntimeServiceGetCatalogObject = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetCatalogObjectQueryKey(instanceId, name);
+    getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>
-  > = ({ signal }) => runtimeServiceGetCatalogObject(instanceId, name, signal);
+    Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>
+  > = ({ signal }) => runtimeServiceGetCatalogEntry(instanceId, name, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>,
+    Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && name),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceGetCatalogObject>>,
+    Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
     TError,
     TData,
     QueryKey
@@ -1316,112 +1312,6 @@ export const useRuntimeServiceMigrate = <
     Awaited<ReturnType<typeof runtimeServiceMigrate>>,
     TError,
     { instanceId: string; data: RuntimeServiceMigrateBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary DEPRECATED: MigrateSingle applies a single `CREATE` statement.
-It bypasses the reconciling migrations described in Migrate.
-We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
- */
-export const runtimeServiceMigrateSingle = (
-  instanceId: string,
-  runtimeServiceMigrateSingleBody: RuntimeServiceMigrateSingleBody
-) => {
-  return httpClient<V1MigrateSingleResponse>({
-    url: `/v1/instances/${instanceId}/migrate/single`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceMigrateSingleBody,
-  });
-};
-
-export type RuntimeServiceMigrateSingleMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceMigrateSingle>>
->;
-export type RuntimeServiceMigrateSingleMutationBody =
-  RuntimeServiceMigrateSingleBody;
-export type RuntimeServiceMigrateSingleMutationError = RpcStatus;
-
-export const useRuntimeServiceMigrateSingle = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMigrateSingle>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceMigrateSingleBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMigrateSingle>>,
-    { instanceId: string; data: RuntimeServiceMigrateSingleBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceMigrateSingle(instanceId, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceMigrateSingle>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceMigrateSingleBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary DEPRECATED: MigrateDelete deletes a single object.
-It bypasses the reconciling migrations described in Migrate.
-We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
- */
-export const runtimeServiceMigrateDelete = (
-  instanceId: string,
-  runtimeServiceMigrateDeleteBody: RuntimeServiceMigrateDeleteBody
-) => {
-  return httpClient<V1MigrateDeleteResponse>({
-    url: `/v1/instances/${instanceId}/migrate/single/delete`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceMigrateDeleteBody,
-  });
-};
-
-export type RuntimeServiceMigrateDeleteMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>
->;
-export type RuntimeServiceMigrateDeleteMutationBody =
-  RuntimeServiceMigrateDeleteBody;
-export type RuntimeServiceMigrateDeleteMutationError = RpcStatus;
-
-export const useRuntimeServiceMigrateDelete = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceMigrateDeleteBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
-    { instanceId: string; data: RuntimeServiceMigrateDeleteBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceMigrateDelete(instanceId, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceMigrateDelete>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceMigrateDeleteBody },
     TContext
   >(mutationFn, mutationOptions);
 };
