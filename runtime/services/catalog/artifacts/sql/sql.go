@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
@@ -23,13 +24,13 @@ func init() {
 	artifacts.Register(".sql", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*runtimev1.CatalogObject, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error) {
 	ext := fileutil.FullExt(filePath)
 	fileName := path.Base(filePath)
 	name := strings.TrimSuffix(fileName, ext)
-	return &runtimev1.CatalogObject{
-		Type: runtimev1.CatalogObject_TYPE_MODEL,
-		Model: &runtimev1.Model{
+	return &drivers.CatalogEntry{
+		Type: drivers.ObjectTypeModel,
+		Object: &runtimev1.Model{
 			Name:    name,
 			Sql:     blob,
 			Dialect: runtimev1.Model_DIALECT_DUCKDB,
@@ -39,9 +40,9 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string
 	}, nil
 }
 
-func (r *artifact) Serialise(ctx context.Context, catalogObject *runtimev1.CatalogObject) (string, error) {
-	if catalogObject.Type != runtimev1.CatalogObject_TYPE_MODEL {
+func (r *artifact) Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error) {
+	if catalogObject.Type != drivers.ObjectTypeModel {
 		return "", NotSupported
 	}
-	return catalogObject.Model.Sql, nil
+	return catalogObject.GetModel().Sql, nil
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	migrator.Register(string(drivers.CatalogObjectTypeMetricsView), &metricsViewMigrator{})
+	migrator.Register(drivers.ObjectTypeMetricsView, &metricsViewMigrator{})
 }
 
 var SourceNotSelected = errors.New("metrics view source not selected")
@@ -21,34 +21,35 @@ var TimestampNotFound = errors.New("metrics view selected timestamp not found")
 
 type metricsViewMigrator struct{}
 
-func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *runtimev1.CatalogObject) error {
+func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *runtimev1.CatalogObject) error {
+func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *runtimev1.CatalogObject) error {
+func (m *metricsViewMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *runtimev1.CatalogObject) error {
+func (m *metricsViewMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) []string {
-	return []string{catalog.MetricsView.From}
+func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
+	return []string{catalog.GetMetricsView().From}
 }
 
-func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error {
-	if catalog.MetricsView.From == "" {
+func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+	mv := catalog.GetMetricsView()
+	if mv.From == "" {
 		return SourceNotSelected
 	}
-	if catalog.MetricsView.TimeDimension == "" {
+	if mv.TimeDimension == "" {
 		return TimestampNotSelected
 	}
-	model, err := olap.InformationSchema().Lookup(ctx, catalog.MetricsView.From)
+	model, err := olap.InformationSchema().Lookup(ctx, mv.From)
 	if err != nil {
 		if err == drivers.ErrNotFound {
 			return SourceNotFound
@@ -61,18 +62,18 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		fieldsMap[field.Name] = field
 	}
 
-	if _, ok := fieldsMap[catalog.MetricsView.TimeDimension]; !ok {
+	if _, ok := fieldsMap[mv.TimeDimension]; !ok {
 		return TimestampNotFound
 	}
 
-	for _, dimension := range catalog.MetricsView.Dimensions {
+	for _, dimension := range mv.Dimensions {
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, measure := range catalog.MetricsView.Measures {
+	for _, measure := range mv.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
 			return err
@@ -83,12 +84,12 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	return nil
 }
 
-func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *runtimev1.CatalogObject, cat2 *runtimev1.CatalogObject) bool {
+func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
 	// TODO: do we need a deep check here?
 	return false
 }
 
-func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) (bool, error) {
+func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	return true, nil
 }
 

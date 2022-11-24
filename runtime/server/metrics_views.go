@@ -106,11 +106,11 @@ func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name 
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if obj.Type != runtimev1.CatalogObject_TYPE_METRICS_VIEW {
+	if obj.GetMetricsView() == nil {
 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
 	}
 
-	return obj.MetricsView, nil
+	return obj.GetMetricsView(), nil
 }
 
 func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {

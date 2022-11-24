@@ -4,6 +4,15 @@ package rill.runtime.v1;
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/schema.proto";
 
+// ObjectType represents the different kinds of catalog objects
+enum ObjectType {
+  OBJECT_TYPE_UNSPECIFIED = 0;
+  OBJECT_TYPE_TABLE = 1;
+  OBJECT_TYPE_SOURCE = 2;
+  OBJECT_TYPE_MODEL = 3;
+  OBJECT_TYPE_METRICS_VIEW = 4;
+}
+
 // Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
 // scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
 // have managed = false.
@@ -27,9 +36,6 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
-  // Used for the SQL statement for sources
-  // TODO: Remove when frontend sources code has been refactored
-  string sql = 20;
 }
 
 // Model is the internal representation of a model definition

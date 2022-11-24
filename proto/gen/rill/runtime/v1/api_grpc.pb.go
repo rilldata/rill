@@ -51,10 +51,10 @@ type RuntimeServiceClient interface {
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
-	// ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
-	ListCatalogObjects(ctx context.Context, in *ListCatalogObjectsRequest, opts ...grpc.CallOption) (*ListCatalogObjectsResponse, error)
-	// GetCatalogObject returns information about a specific object in the catalog
-	GetCatalogObject(ctx context.Context, in *GetCatalogObjectRequest, opts ...grpc.CallOption) (*GetCatalogObjectResponse, error)
+	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
+	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
+	// GetCatalogEntry returns information about a specific entry in the catalog
+	GetCatalogEntry(ctx context.Context, in *GetCatalogEntryRequest, opts ...grpc.CallOption) (*GetCatalogEntryResponse, error)
 	// TriggerRefresh triggers a refresh of a refreshable catalog object.
 	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
 	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
@@ -74,14 +74,6 @@ type RuntimeServiceClient interface {
 	DeleteFileAndMigrate(ctx context.Context, in *DeleteFileAndMigrateRequest, opts ...grpc.CallOption) (*DeleteFileAndMigrateResponse, error)
 	// RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
 	RenameFileAndMigrate(ctx context.Context, in *RenameFileAndMigrateRequest, opts ...grpc.CallOption) (*RenameFileAndMigrateResponse, error)
-	// DEPRECATED: MigrateSingle applies a single `CREATE` statement.
-	// It bypasses the reconciling migrations described in Migrate.
-	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-	MigrateSingle(ctx context.Context, in *MigrateSingleRequest, opts ...grpc.CallOption) (*MigrateSingleResponse, error)
-	// DEPRECATED: MigrateDelete deletes a single object.
-	// It bypasses the reconciling migrations described in Migrate.
-	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-	MigrateDelete(ctx context.Context, in *MigrateDeleteRequest, opts ...grpc.CallOption) (*MigrateDeleteResponse, error)
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	// DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
@@ -261,18 +253,18 @@ func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteIns
 	return out, nil
 }
 
-func (c *runtimeServiceClient) ListCatalogObjects(ctx context.Context, in *ListCatalogObjectsRequest, opts ...grpc.CallOption) (*ListCatalogObjectsResponse, error) {
-	out := new(ListCatalogObjectsResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListCatalogObjects", in, out, opts...)
+func (c *runtimeServiceClient) ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error) {
+	out := new(ListCatalogEntriesResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListCatalogEntries", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetCatalogObject(ctx context.Context, in *GetCatalogObjectRequest, opts ...grpc.CallOption) (*GetCatalogObjectResponse, error) {
-	out := new(GetCatalogObjectResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetCatalogObject", in, out, opts...)
+func (c *runtimeServiceClient) GetCatalogEntry(ctx context.Context, in *GetCatalogEntryRequest, opts ...grpc.CallOption) (*GetCatalogEntryResponse, error) {
+	out := new(GetCatalogEntryResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetCatalogEntry", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -327,24 +319,6 @@ func (c *runtimeServiceClient) DeleteFileAndMigrate(ctx context.Context, in *Del
 func (c *runtimeServiceClient) RenameFileAndMigrate(ctx context.Context, in *RenameFileAndMigrateRequest, opts ...grpc.CallOption) (*RenameFileAndMigrateResponse, error) {
 	out := new(RenameFileAndMigrateResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameFileAndMigrate", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) MigrateSingle(ctx context.Context, in *MigrateSingleRequest, opts ...grpc.CallOption) (*MigrateSingleResponse, error) {
-	out := new(MigrateSingleResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/MigrateSingle", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) MigrateDelete(ctx context.Context, in *MigrateDeleteRequest, opts ...grpc.CallOption) (*MigrateDeleteResponse, error) {
-	out := new(MigrateDeleteResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/MigrateDelete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -555,10 +529,10 @@ type RuntimeServiceServer interface {
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
-	// ListCatalogObjects lists all the objects (like tables, sources or metrics views) registered in an instance's catalog
-	ListCatalogObjects(context.Context, *ListCatalogObjectsRequest) (*ListCatalogObjectsResponse, error)
-	// GetCatalogObject returns information about a specific object in the catalog
-	GetCatalogObject(context.Context, *GetCatalogObjectRequest) (*GetCatalogObjectResponse, error)
+	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
+	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
+	// GetCatalogEntry returns information about a specific entry in the catalog
+	GetCatalogEntry(context.Context, *GetCatalogEntryRequest) (*GetCatalogEntryResponse, error)
 	// TriggerRefresh triggers a refresh of a refreshable catalog object.
 	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
 	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
@@ -578,14 +552,6 @@ type RuntimeServiceServer interface {
 	DeleteFileAndMigrate(context.Context, *DeleteFileAndMigrateRequest) (*DeleteFileAndMigrateResponse, error)
 	// RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
 	RenameFileAndMigrate(context.Context, *RenameFileAndMigrateRequest) (*RenameFileAndMigrateResponse, error)
-	// DEPRECATED: MigrateSingle applies a single `CREATE` statement.
-	// It bypasses the reconciling migrations described in Migrate.
-	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-	MigrateSingle(context.Context, *MigrateSingleRequest) (*MigrateSingleResponse, error)
-	// DEPRECATED: MigrateDelete deletes a single object.
-	// It bypasses the reconciling migrations described in Migrate.
-	// We aim to deprecate this function once reconciling migrations are mature and adopted in the modeller.
-	MigrateDelete(context.Context, *MigrateDeleteRequest) (*MigrateDeleteResponse, error)
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	// DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
@@ -678,11 +644,11 @@ func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *Create
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
 }
-func (UnimplementedRuntimeServiceServer) ListCatalogObjects(context.Context, *ListCatalogObjectsRequest) (*ListCatalogObjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogObjects not implemented")
+func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetCatalogObject(context.Context, *GetCatalogObjectRequest) (*GetCatalogObjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCatalogObject not implemented")
+func (UnimplementedRuntimeServiceServer) GetCatalogEntry(context.Context, *GetCatalogEntryRequest) (*GetCatalogEntryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCatalogEntry not implemented")
 }
 func (UnimplementedRuntimeServiceServer) TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefresh not implemented")
@@ -701,12 +667,6 @@ func (UnimplementedRuntimeServiceServer) DeleteFileAndMigrate(context.Context, *
 }
 func (UnimplementedRuntimeServiceServer) RenameFileAndMigrate(context.Context, *RenameFileAndMigrateRequest) (*RenameFileAndMigrateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameFileAndMigrate not implemented")
-}
-func (UnimplementedRuntimeServiceServer) MigrateSingle(context.Context, *MigrateSingleRequest) (*MigrateSingleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MigrateSingle not implemented")
-}
-func (UnimplementedRuntimeServiceServer) MigrateDelete(context.Context, *MigrateDeleteRequest) (*MigrateDeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MigrateDelete not implemented")
 }
 func (UnimplementedRuntimeServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
@@ -1030,38 +990,38 @@ func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_ListCatalogObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListCatalogObjectsRequest)
+func _RuntimeService_ListCatalogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCatalogEntriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListCatalogObjects(ctx, in)
+		return srv.(RuntimeServiceServer).ListCatalogEntries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/ListCatalogObjects",
+		FullMethod: "/rill.runtime.v1.RuntimeService/ListCatalogEntries",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListCatalogObjects(ctx, req.(*ListCatalogObjectsRequest))
+		return srv.(RuntimeServiceServer).ListCatalogEntries(ctx, req.(*ListCatalogEntriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GetCatalogObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCatalogObjectRequest)
+func _RuntimeService_GetCatalogEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCatalogEntryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetCatalogObject(ctx, in)
+		return srv.(RuntimeServiceServer).GetCatalogEntry(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/GetCatalogObject",
+		FullMethod: "/rill.runtime.v1.RuntimeService/GetCatalogEntry",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetCatalogObject(ctx, req.(*GetCatalogObjectRequest))
+		return srv.(RuntimeServiceServer).GetCatalogEntry(ctx, req.(*GetCatalogEntryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1170,42 +1130,6 @@ func _RuntimeService_RenameFileAndMigrate_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).RenameFileAndMigrate(ctx, req.(*RenameFileAndMigrateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_MigrateSingle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MigrateSingleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).MigrateSingle(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/MigrateSingle",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).MigrateSingle(ctx, req.(*MigrateSingleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_MigrateDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MigrateDeleteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).MigrateDelete(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/MigrateDelete",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).MigrateDelete(ctx, req.(*MigrateDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1616,12 +1540,12 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_DeleteInstance_Handler,
 		},
 		{
-			MethodName: "ListCatalogObjects",
-			Handler:    _RuntimeService_ListCatalogObjects_Handler,
+			MethodName: "ListCatalogEntries",
+			Handler:    _RuntimeService_ListCatalogEntries_Handler,
 		},
 		{
-			MethodName: "GetCatalogObject",
-			Handler:    _RuntimeService_GetCatalogObject_Handler,
+			MethodName: "GetCatalogEntry",
+			Handler:    _RuntimeService_GetCatalogEntry_Handler,
 		},
 		{
 			MethodName: "TriggerRefresh",
@@ -1646,14 +1570,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenameFileAndMigrate",
 			Handler:    _RuntimeService_RenameFileAndMigrate_Handler,
-		},
-		{
-			MethodName: "MigrateSingle",
-			Handler:    _RuntimeService_MigrateSingle_Handler,
-		},
-		{
-			MethodName: "MigrateDelete",
-			Handler:    _RuntimeService_MigrateDelete_Handler,
 		},
 		{
 			MethodName: "Query",

@@ -1,47 +1,58 @@
 package catalog
 
 import (
+	"fmt"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func pbToCatalogObject(apiCatalog *runtimev1.CatalogObject) (*drivers.CatalogObject, error) {
-	catalog := &drivers.CatalogObject{
-		Name: apiCatalog.Name,
-		Path: apiCatalog.Path,
+func pbToObjectType(in runtimev1.ObjectType) drivers.ObjectType {
+	switch in {
+	case runtimev1.ObjectType_OBJECT_TYPE_UNSPECIFIED:
+		return drivers.ObjectTypeUnspecified
+	case runtimev1.ObjectType_OBJECT_TYPE_TABLE:
+		return drivers.ObjectTypeTable
+	case runtimev1.ObjectType_OBJECT_TYPE_SOURCE:
+		return drivers.ObjectTypeSource
+	case runtimev1.ObjectType_OBJECT_TYPE_MODEL:
+		return drivers.ObjectTypeModel
+	case runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW:
+		return drivers.ObjectTypeMetricsView
 	}
-
-	var err error
-	switch apiCatalog.Type {
-	case runtimev1.CatalogObject_TYPE_SOURCE:
-		catalog.SQL = apiCatalog.Source.Sql
-		catalog.Type = drivers.CatalogObjectTypeSource
-		catalog.Definition, err = proto.Marshal(apiCatalog.Source)
-	case runtimev1.CatalogObject_TYPE_MODEL:
-		catalog.SQL = apiCatalog.Model.Sql
-		catalog.Type = drivers.CatalogObjectTypeModel
-		catalog.Definition, err = proto.Marshal(apiCatalog.Model)
-	case runtimev1.CatalogObject_TYPE_METRICS_VIEW:
-		catalog.Type = drivers.CatalogObjectTypeMetricsView
-		catalog.Definition, err = proto.Marshal(apiCatalog.MetricsView)
-	}
-
-	return catalog, err
+	panic(fmt.Errorf("unhandled object type %s", in))
 }
 
-func catalogObjectTypeFromPB(t runtimev1.CatalogObject_Type) drivers.CatalogObjectType {
-	switch t {
-	case runtimev1.CatalogObject_TYPE_UNSPECIFIED:
-		return drivers.CatalogObjectTypeUnspecified
-	case runtimev1.CatalogObject_TYPE_TABLE:
-		return drivers.CatalogObjectTypeTable
-	case runtimev1.CatalogObject_TYPE_SOURCE:
-		return drivers.CatalogObjectTypeSource
-	case runtimev1.CatalogObject_TYPE_METRICS_VIEW:
-		return drivers.CatalogObjectTypeMetricsView
-	default:
-		// NOTE: Consider returning and handling an error instead
-		return drivers.CatalogObjectTypeUnspecified
+func catalogObjectToPB(obj *drivers.CatalogEntry) (*runtimev1.CatalogEntry, error) {
+	catalog := &runtimev1.CatalogEntry{
+		Name:        obj.Name,
+		Path:        obj.Path,
+		CreatedOn:   timestamppb.New(obj.CreatedOn),
+		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
+		RefreshedOn: timestamppb.New(obj.RefreshedOn),
 	}
+
+	switch obj.Type {
+	case drivers.ObjectTypeTable:
+		catalog.Object = &runtimev1.CatalogEntry_Table{
+			Table: obj.GetTable(),
+		}
+	case drivers.ObjectTypeSource:
+		catalog.Object = &runtimev1.CatalogEntry_Source{
+			Source: obj.GetSource(),
+		}
+	case drivers.ObjectTypeModel:
+		catalog.Object = &runtimev1.CatalogEntry_Model{
+			Model: obj.GetModel(),
+		}
+	case drivers.ObjectTypeMetricsView:
+		catalog.Object = &runtimev1.CatalogEntry_MetricsView{
+			MetricsView: obj.GetMetricsView(),
+		}
+	default:
+		panic("not implemented")
+	}
+
+	return catalog, nil
 }

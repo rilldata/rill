@@ -48,19 +48,6 @@ export type RuntimeServiceQueryBody = {
   sql?: string;
 };
 
-export type RuntimeServiceMigrateDeleteBody = {
-  name?: string;
-};
-
-export type RuntimeServiceMigrateSingleBody = {
-  createOrReplace?: boolean;
-  dryRun?: boolean;
-  /** If provided, will attempt to rename an existing object and only recompute if necessary.
-NOTE: very questionable semantics here. */
-  renameFrom?: string;
-  sql?: string;
-};
-
 export type RuntimeServiceMigrateBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 migrations to execute faster by not scanning all code artifacts for changes. */
@@ -70,23 +57,18 @@ migrations to execute faster by not scanning all code artifacts for changes. */
   strict?: boolean;
 };
 
+export interface V1MetricsViewFilter {
+  exclude?: MetricsViewFilterCond[];
+  include?: MetricsViewFilterCond[];
+  match?: string[];
+}
+
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
   timeEnd?: string;
   timeStart?: string;
 };
-
-export interface V1MetricsViewSort {
-  ascending?: boolean;
-  name?: string;
-}
-
-export interface V1MetricsViewFilter {
-  exclude?: MetricsViewFilterCond[];
-  include?: MetricsViewFilterCond[];
-  match?: string[];
-}
 
 export type RuntimeServiceMetricsViewToplistBody = {
   filter?: V1MetricsViewFilter;
@@ -120,20 +102,20 @@ export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
 };
 
-export type RuntimeServiceListCatalogObjectsType =
-  typeof RuntimeServiceListCatalogObjectsType[keyof typeof RuntimeServiceListCatalogObjectsType];
+export type RuntimeServiceListCatalogEntriesType =
+  typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RuntimeServiceListCatalogObjectsType = {
-  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
-  TYPE_TABLE: "TYPE_TABLE",
-  TYPE_SOURCE: "TYPE_SOURCE",
-  TYPE_MODEL: "TYPE_MODEL",
-  TYPE_METRICS_VIEW: "TYPE_METRICS_VIEW",
+export const RuntimeServiceListCatalogEntriesType = {
+  OBJECT_TYPE_UNSPECIFIED: "OBJECT_TYPE_UNSPECIFIED",
+  OBJECT_TYPE_TABLE: "OBJECT_TYPE_TABLE",
+  OBJECT_TYPE_SOURCE: "OBJECT_TYPE_SOURCE",
+  OBJECT_TYPE_MODEL: "OBJECT_TYPE_MODEL",
+  OBJECT_TYPE_METRICS_VIEW: "OBJECT_TYPE_METRICS_VIEW",
 } as const;
 
-export type RuntimeServiceListCatalogObjectsParams = {
-  type?: RuntimeServiceListCatalogObjectsType;
+export type RuntimeServiceListCatalogEntriesParams = {
+  type?: RuntimeServiceListCatalogEntriesType;
 };
 
 export type RuntimeServiceListInstancesParams = {
@@ -255,7 +237,6 @@ export interface V1Source {
   name?: string;
   properties?: V1SourceProperties;
   schema?: V1StructType;
-  sql?: string;
 }
 
 /**
@@ -313,6 +294,16 @@ export interface V1PutFileResponse {
   filePath?: string;
 }
 
+export interface V1PutFileAndMigrateResponse {
+  /** affected_paths lists all the file paths that were considered while
+executing the migration. For a PutFileAndMigrate, this includes the put file
+as well as any file artifacts that rely on objects declared in it. */
+  affectedPaths?: string[];
+  /** Errors encountered during the migration. If strict = false, any path in
+affected_paths without an error can be assumed to have been migrated succesfully. */
+  errors?: V1MigrationError[];
+}
+
 export interface V1PutFileAndMigrateRequest {
   blob?: string;
   create?: boolean;
@@ -341,6 +332,17 @@ export interface V1PingResponse {
   time?: string;
   version?: string;
 }
+
+export type V1ObjectType = typeof V1ObjectType[keyof typeof V1ObjectType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ObjectType = {
+  OBJECT_TYPE_UNSPECIFIED: "OBJECT_TYPE_UNSPECIFIED",
+  OBJECT_TYPE_TABLE: "OBJECT_TYPE_TABLE",
+  OBJECT_TYPE_SOURCE: "OBJECT_TYPE_SOURCE",
+  OBJECT_TYPE_MODEL: "OBJECT_TYPE_MODEL",
+  OBJECT_TYPE_METRICS_VIEW: "OBJECT_TYPE_METRICS_VIEW",
+} as const;
 
 export interface V1NumericStatistics {
   max?: number;
@@ -414,20 +416,6 @@ Only applicable if file_path is set. */
   startLocation?: MigrationErrorCharLocation;
 }
 
-export interface V1PutFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
-  affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
-}
-
-export interface V1MigrateSingleResponse {
-  [key: string]: any;
-}
-
 export interface V1MigrateResponse {
   /** affected_paths lists all the file artifact paths that were considered while
 executing the migration. If changed_paths was empty, this will include all
@@ -436,10 +424,6 @@ code artifacts in the repo. */
   /** Errors encountered during the migration. If strict = false, any path in
 affected_paths without an error can be assumed to have been migrated succesfully. */
   errors?: V1MigrationError[];
-}
-
-export interface V1MigrateDeleteResponse {
-  [key: string]: any;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
@@ -461,6 +445,11 @@ export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewTimeSeriesResponse {
   data?: V1MetricsViewTimeSeriesResponseDataItem[];
   meta?: V1MetricsViewColumn[];
+}
+
+export interface V1MetricsViewSort {
+  ascending?: boolean;
+  name?: string;
 }
 
 export interface V1MetricsViewDimensionValue {
@@ -509,8 +498,8 @@ export interface V1ListConnectorsResponse {
   connectors?: V1Connector[];
 }
 
-export interface V1ListCatalogObjectsResponse {
-  objects?: V1CatalogObject[];
+export interface V1ListCatalogEntriesResponse {
+  entries?: V1CatalogEntry[];
 }
 
 /**
@@ -588,8 +577,8 @@ export interface V1GetDescriptiveStatisticsResponse {
   numericSummary?: V1NumericSummary;
 }
 
-export interface V1GetCatalogObjectResponse {
-  object?: V1CatalogObject;
+export interface V1GetCatalogEntryResponse {
+  entry?: V1CatalogEntry;
 }
 
 export interface V1GetCardinalityOfColumnResponse {
@@ -684,19 +673,7 @@ export interface V1CategoricalSummary {
   topK?: V1TopK;
 }
 
-export type V1CatalogObjectType =
-  typeof V1CatalogObjectType[keyof typeof V1CatalogObjectType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1CatalogObjectType = {
-  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
-  TYPE_TABLE: "TYPE_TABLE",
-  TYPE_SOURCE: "TYPE_SOURCE",
-  TYPE_MODEL: "TYPE_MODEL",
-  TYPE_METRICS_VIEW: "TYPE_METRICS_VIEW",
-} as const;
-
-export interface V1CatalogObject {
+export interface V1CatalogEntry {
   createdOn?: string;
   metricsView?: V1MetricsView;
   model?: V1Model;
@@ -705,7 +682,6 @@ export interface V1CatalogObject {
   refreshedOn?: string;
   source?: V1Source;
   table?: V1Table;
-  type?: V1CatalogObjectType;
   updatedOn?: string;
 }
 

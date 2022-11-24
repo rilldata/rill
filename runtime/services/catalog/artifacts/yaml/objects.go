@@ -7,6 +7,7 @@ import (
 
 	"github.com/jinzhu/copier"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -50,16 +51,16 @@ type Dimension struct {
 	Description string
 }
 
-func toSourceArtifact(catalog *runtimev1.CatalogObject) (*Source, error) {
+func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 	source := &Source{
 		Version: Version,
-		Type:    catalog.Source.Connector,
+		Type:    catalog.GetSource().Connector,
 	}
 
-	props := catalog.Source.Properties.AsMap()
+	props := catalog.GetSource().Properties.AsMap()
 	path, ok := props["path"].(string)
 	if ok {
-		if catalog.Source.Connector == "file" {
+		if catalog.GetSource().Connector == "file" {
 			source.Path = path
 		} else {
 			source.URI = path
@@ -73,9 +74,9 @@ func toSourceArtifact(catalog *runtimev1.CatalogObject) (*Source, error) {
 	return source, nil
 }
 
-func toMetricsViewArtifact(catalog *runtimev1.CatalogObject) (*MetricsView, error) {
+func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
-	err := copier.Copy(metricsArtifact, catalog.MetricsView)
+	err := copier.Copy(metricsArtifact, catalog.Object)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func toMetricsViewArtifact(catalog *runtimev1.CatalogObject) (*MetricsView, erro
 	return metricsArtifact, nil
 }
 
-func fromSourceArtifact(source *Source, path string) (*runtimev1.CatalogObject, error) {
+func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, error) {
 	props := map[string]interface{}{}
 	if source.Type == "file" {
 		props["path"] = source.Path
@@ -100,11 +101,11 @@ func fromSourceArtifact(source *Source, path string) (*runtimev1.CatalogObject, 
 	}
 
 	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
-	return &runtimev1.CatalogObject{
+	return &drivers.CatalogEntry{
 		Name: name,
-		Type: runtimev1.CatalogObject_TYPE_SOURCE,
+		Type: drivers.ObjectTypeSource,
 		Path: path,
-		Source: &runtimev1.Source{
+		Object: &runtimev1.Source{
 			Name:       name,
 			Connector:  source.Type,
 			Properties: propsPB,
@@ -112,7 +113,7 @@ func fromSourceArtifact(source *Source, path string) (*runtimev1.CatalogObject, 
 	}, nil
 }
 
-func fromMetricsViewArtifact(metrics *MetricsView, path string) (*runtimev1.CatalogObject, error) {
+func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
 	apiMetrics := &runtimev1.MetricsView{}
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
@@ -126,10 +127,10 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*runtimev1.Cata
 
 	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
 	apiMetrics.Name = name
-	return &runtimev1.CatalogObject{
-		Name:        name,
-		Type:        runtimev1.CatalogObject_TYPE_METRICS_VIEW,
-		Path:        path,
-		MetricsView: apiMetrics,
+	return &drivers.CatalogEntry{
+		Name:   name,
+		Type:   drivers.ObjectTypeMetricsView,
+		Path:   path,
+		Object: apiMetrics,
 	}, nil
 }
