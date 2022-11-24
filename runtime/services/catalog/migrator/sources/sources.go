@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
@@ -18,7 +18,7 @@ func init() {
 
 type sourceMigrator struct{}
 
-func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *runtimev1.CatalogObject) error {
 	apiSource := catalogObj.Source
 	var source *connectors.Source
 	var err error
@@ -34,14 +34,20 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, cat
 			Properties: apiSource.Properties.AsMap(),
 		}
 	}
-	return olap.Ingest(ctx, source)
+
+	env := &connectors.Env{
+		RepoDriver: repo.Driver(),
+		RepoDSN:    repo.DSN(),
+	}
+
+	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
-	return m.Create(ctx, olap, catalogObj)
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *runtimev1.CatalogObject) error {
+	return m.Create(ctx, olap, repo, catalogObj)
 }
 
-func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *runtimev1.CatalogObject) error {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,
@@ -52,7 +58,7 @@ func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, fro
 	return rows.Close()
 }
 
-func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *runtimev1.CatalogObject) error {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", catalogObj.Name),
 		Priority: 100,
@@ -63,16 +69,16 @@ func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cat
 	return rows.Close()
 }
 
-func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) []string {
 	return []string{}
 }
 
-func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error {
 	// TODO
 	return nil
 }
 
-func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
+func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *runtimev1.CatalogObject, cat2 *runtimev1.CatalogObject) bool {
 	if cat1.Source.Connector != cat2.Source.Connector {
 		return false
 	}
@@ -85,7 +91,7 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, c
 	return s1.PropertiesEquals(s2)
 }
 
-func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) (bool, error) {
 	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
 	if err == drivers.ErrNotFound {
 		return false, nil

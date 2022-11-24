@@ -13,37 +13,31 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/graceful"
 )
 
 type ServerOptions struct {
-	HTTPPort             int
-	GRPCPort             int
-	ConnectionCacheSize  int
-	CatalogCacheSize     int
-	CatalogCacheDuration time.Duration
+	HTTPPort            int
+	GRPCPort            int
+	ConnectionCacheSize int
 }
 
 type Server struct {
-	api.UnsafeRuntimeServiceServer
+	runtimev1.UnsafeRuntimeServiceServer
 	opts         *ServerOptions
 	metastore    drivers.Connection
 	logger       *zap.Logger
 	connCache    *connectionCache
-	catalogCache *catalogCache
 	serviceCache *servicesCache
 }
 
-var _ api.RuntimeServiceServer = (*Server)(nil)
+var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
 
 func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Logger) (*Server, error) {
 	_, ok := metastore.RegistryStore()
@@ -56,66 +50,71 @@ func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Lo
 		metastore:    metastore,
 		logger:       logger,
 		connCache:    newConnectionCache(opts.ConnectionCacheSize),
-		catalogCache: newCatalogCache(opts.CatalogCacheSize, opts.CatalogCacheDuration),
 		serviceCache: newServicesCache(),
 	}, nil
 }
 
-func (s *Server) Serve(ctx context.Context) error {
-	group, cctx := errgroup.WithContext(ctx)
-
-	// Start the gRPC server
-	group.Go(func() error {
-		server := grpc.NewServer(
-			grpc.ChainStreamInterceptor(
-				tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
-				metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-				logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
-				recovery.StreamServerInterceptor(),
-			),
-			grpc.ChainUnaryInterceptor(
-				tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
-				metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-				logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
-				recovery.UnaryServerInterceptor(),
-			),
-		)
-		api.RegisterRuntimeServiceServer(server, s)
-		s.logger.Info("serving gRPC", zap.Int("port", s.opts.GRPCPort))
-		return graceful.ServeGRPC(cctx, server, s.opts.GRPCPort)
-	})
-
-	// Start the HTTP gateway targetting the gRPC server
-	group.Go(func() error {
-		mux := gateway.NewServeMux()
-		opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-		grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-		err := api.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
-		if err != nil {
-			return err
-		}
-		mux.HandlePath(
-			"POST",
-			"/v1/repos/{repo_id}/files/upload/-/{path=**}",
-			s.UploadMultipartFile,
-		)
-		handler := cors(mux)
-		server := &http.Server{Handler: handler}
-		s.logger.Info("serving HTTP", zap.Int("port", s.opts.HTTPPort))
-		return graceful.ServeHTTP(cctx, server, s.opts.HTTPPort)
-	})
-	return group.Wait()
+// Starts the gRPC server
+func (s *Server) ServeGRPC(ctx context.Context) error {
+	server := grpc.NewServer(
+		grpc.ChainStreamInterceptor(
+			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
+			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			recovery.StreamServerInterceptor(),
+		),
+		grpc.ChainUnaryInterceptor(
+			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
+			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			recovery.UnaryServerInterceptor(),
+		),
+	)
+	runtimev1.RegisterRuntimeServiceServer(server, s)
+	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
-// Metrics APIs
-func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
-	return &api.EstimateRollupIntervalResponse{}, nil
+// Starts the HTTP server
+func (s *Server) ServeHTTP(ctx context.Context) error {
+	handler, err := s.HTTPHandler(ctx)
+	if err != nil {
+		return err
+	}
+
+	server := &http.Server{Handler: handler}
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
+}
+
+// HTTP handler serving REST gateway
+func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
+	// Create REST gateway
+	mux := gateway.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
+	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// One-off REST-only path for multipart file upload
+	mux.HandlePath(
+		"POST",
+		"/v1/repos/{repo_id}/objects/file/-/{path=**}",
+		s.UploadMultipartFile,
+	)
+
+	// Register CORS
+	handler := cors(mux)
+
+	return handler, nil
 }
 
 // Ping implements RuntimeService
-func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
-	resp := &api.PingResponse{
-		Version: runtime.Version,
+func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
+	resp := &runtimev1.PingResponse{
+		Version: "", // TODO: Return version
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil

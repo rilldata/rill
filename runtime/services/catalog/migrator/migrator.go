@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -27,36 +27,36 @@ func Register(name string, artifact EntityMigrator) {
 }
 
 type EntityMigrator interface {
-	Create(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
-	Update(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
-	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *api.CatalogObject) error
-	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
-	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string
-	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
+	Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *runtimev1.CatalogObject) error
+	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *runtimev1.CatalogObject) error
+	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *runtimev1.CatalogObject) error
+	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error
+	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) []string
+	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error
 	// IsEqual checks everything but the name
-	IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool
-	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error)
+	IsEqual(ctx context.Context, cat1 *runtimev1.CatalogObject, cat2 *runtimev1.CatalogObject) bool
+	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) (bool, error)
 }
 
-func Create(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *runtimev1.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
 		return nil
 	}
-	return migrator.Create(ctx, olap, catalog)
+	return migrator.Create(ctx, olap, repo, catalog)
 }
 
-func Update(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *runtimev1.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
 		return nil
 	}
-	return migrator.Update(ctx, olap, catalog)
+	return migrator.Update(ctx, olap, repo, catalog)
 }
 
-func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *api.CatalogObject) error {
+func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *runtimev1.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -65,7 +65,7 @@ func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *a
 	return migrator.Rename(ctx, olap, from, catalog)
 }
 
-func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -74,7 +74,7 @@ func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObj
 	return migrator.Delete(ctx, olap, catalog)
 }
 
-func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) []string {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -84,7 +84,7 @@ func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.C
 }
 
 // Validate also returns list of dependents
-func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -94,7 +94,7 @@ func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogO
 }
 
 // IsEqual checks everything but the name
-func IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
+func IsEqual(ctx context.Context, cat1 *runtimev1.CatalogObject, cat2 *runtimev1.CatalogObject) bool {
 	if cat1.Type != cat2.Type {
 		return false
 	}
@@ -106,7 +106,7 @@ func IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObje
 	return migrator.IsEqual(ctx, cat1, cat2)
 }
 
-func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) (bool, error) {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -115,15 +115,15 @@ func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.Cata
 	return migrator.ExistsInOlap(ctx, olap, catalog)
 }
 
-func getMigrator(catalog *api.CatalogObject) (EntityMigrator, bool) {
+func getMigrator(catalog *runtimev1.CatalogObject) (EntityMigrator, bool) {
 	var objType drivers.CatalogObjectType
 	// TODO: temporary for the merge with main
 	switch catalog.Type {
-	case api.CatalogObject_TYPE_SOURCE:
+	case runtimev1.CatalogObject_TYPE_SOURCE:
 		objType = drivers.CatalogObjectTypeSource
-	case api.CatalogObject_TYPE_MODEL:
+	case runtimev1.CatalogObject_TYPE_MODEL:
 		objType = drivers.CatalogObjectTypeModel
-	case api.CatalogObject_TYPE_METRICS_VIEW:
+	case runtimev1.CatalogObject_TYPE_METRICS_VIEW:
 		objType = drivers.CatalogObjectTypeMetricsView
 	}
 

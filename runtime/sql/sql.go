@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/sql/ast"
 	"github.com/rilldata/rill/runtime/sql/rpc"
@@ -139,55 +139,55 @@ func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
 	return string(data)
 }
 
-func typeCodeToSQLType(t api.Type_Code) string {
+func typeCodeToSQLType(t runtimev1.Type_Code) string {
 	switch t {
-	case api.Type_CODE_BOOL:
+	case runtimev1.Type_CODE_BOOL:
 		return "BOOLEAN"
-	case api.Type_CODE_INT8:
+	case runtimev1.Type_CODE_INT8:
 		return "TINYINT"
-	case api.Type_CODE_INT16:
+	case runtimev1.Type_CODE_INT16:
 		return "SMALLINT"
-	case api.Type_CODE_INT32:
+	case runtimev1.Type_CODE_INT32:
 		return "INTEGER"
-	case api.Type_CODE_INT64:
+	case runtimev1.Type_CODE_INT64:
 		return "BIGINT"
-	case api.Type_CODE_INT128:
+	case runtimev1.Type_CODE_INT128:
 		return "HUGEINT"
-	case api.Type_CODE_UINT8:
+	case runtimev1.Type_CODE_UINT8:
 		return "UTINYINT"
-	case api.Type_CODE_UINT16:
+	case runtimev1.Type_CODE_UINT16:
 		return "USMALLINT"
-	case api.Type_CODE_UINT32:
+	case runtimev1.Type_CODE_UINT32:
 		return "UINTEGER"
-	case api.Type_CODE_UINT64:
+	case runtimev1.Type_CODE_UINT64:
 		return "UBIGINT"
-	case api.Type_CODE_UINT128:
+	case runtimev1.Type_CODE_UINT128:
 		return "HUGEINT"
-	case api.Type_CODE_FLOAT32:
+	case runtimev1.Type_CODE_FLOAT32:
 		return "FLOAT"
-	case api.Type_CODE_FLOAT64:
+	case runtimev1.Type_CODE_FLOAT64:
 		return "DOUBLE"
-	case api.Type_CODE_TIMESTAMP:
+	case runtimev1.Type_CODE_TIMESTAMP:
 		return "TIMESTAMP"
-	case api.Type_CODE_DATE:
+	case runtimev1.Type_CODE_DATE:
 		return "DATE"
-	case api.Type_CODE_TIME:
+	case runtimev1.Type_CODE_TIME:
 		return "TIME"
-	case api.Type_CODE_STRING:
+	case runtimev1.Type_CODE_STRING:
 		return "VARCHAR"
-	case api.Type_CODE_BYTES:
+	case runtimev1.Type_CODE_BYTES:
 		return "BLOB"
-	case api.Type_CODE_ARRAY:
+	case runtimev1.Type_CODE_ARRAY:
 		return "LIST"
-	case api.Type_CODE_STRUCT:
+	case runtimev1.Type_CODE_STRUCT:
 		return "STRUCT"
-	case api.Type_CODE_MAP:
+	case runtimev1.Type_CODE_MAP:
 		return "MAP"
-	case api.Type_CODE_DECIMAL:
+	case runtimev1.Type_CODE_DECIMAL:
 		return "DECIMAL"
-	case api.Type_CODE_JSON:
+	case runtimev1.Type_CODE_JSON:
 		return "VARCHAR"
-	case api.Type_CODE_UUID:
+	case runtimev1.Type_CODE_UUID:
 		return "VARCHAR"
 	default:
 		return "ANY" // TODO: verify

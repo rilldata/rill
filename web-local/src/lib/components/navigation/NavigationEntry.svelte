@@ -83,7 +83,7 @@
     </div>
 
     <a
-      class="ui-copy"
+      class="ui-copy  text-ellipsis overflow-hidden whitespace-nowrap"
       {href}
       on:click={() => {
         if (open) onShowDetails();

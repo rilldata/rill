@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/marcboeker/go-duckdb"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,12 +17,7 @@ import (
 )
 
 // Query implements RuntimeService
-func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method not implemented")
-}
-
-// QueryDirect implements RuntimeService
-func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (*api.QueryDirectResponse, error) {
+func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
 	args := make([]any, len(req.Args))
 	for i, arg := range req.Args {
 		args[i] = arg.AsInterface()
@@ -42,7 +37,7 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 	if req.DryRun {
 		// TODO: Return a meta object for dry-run queries
 		// NOTE: Currently, instance.Query return nil rows for succesful dry-run queries
-		return &api.QueryDirectResponse{}, nil
+		return &runtimev1.QueryResponse{}, nil
 	}
 
 	defer res.Close()
@@ -52,12 +47,32 @@ func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	resp := &api.QueryDirectResponse{
+	resp := &runtimev1.QueryResponse{
 		Meta: res.Schema,
 		Data: data,
 	}
 
 	return resp, nil
+}
+
+// QueryDirect implements RuntimeService
+func (s *Server) QueryDirect(ctx context.Context, req *runtimev1.QueryDirectRequest) (*runtimev1.QueryDirectResponse, error) {
+	// NOTE: Deprecated – just proxy to Query
+	res, err := s.Query(ctx, &runtimev1.QueryRequest{
+		InstanceId: req.InstanceId,
+		Sql:        req.Sql,
+		Args:       req.Args,
+		Priority:   req.Priority,
+		DryRun:     req.DryRun,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.QueryDirectResponse{
+		Meta: res.Meta,
+		Data: res.Data,
+	}, nil
 }
 
 func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {

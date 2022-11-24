@@ -1,20 +1,15 @@
+// Package yaml reads and writes artifacts that exactly mirror the internal representation
 package yaml
 
 import (
 	"context"
 	"errors"
-	"path"
-	"strings"
+	"path/filepath"
 
 	"github.com/go-yaml/yaml"
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/fileutil"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
-
-/**
- * yaml package is for reading and writing artifacts that exactly mirror the internal representation
- */
 
 type artifact struct{}
 
@@ -24,12 +19,8 @@ func init() {
 	artifacts.Register(".yaml", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*api.CatalogObject, error) {
-	ext := fileutil.FullExt(filePath)
-	fileName := path.Base(filePath)
-	dir := strings.Trim(path.Dir(filePath), "./")
-	name := strings.TrimSuffix(fileName, ext)
-
+func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*runtimev1.CatalogObject, error) {
+	dir := filepath.Base(filepath.Dir(filePath))
 	switch dir {
 	case "sources":
 		source := &Source{}
@@ -37,22 +28,22 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string
 		if err != nil {
 			return nil, err
 		}
-		return fromSourceArtifact(name, fileName, source)
+		return fromSourceArtifact(source, filePath)
 	case "dashboards":
 		metrics := &MetricsView{}
 		err := yaml.Unmarshal([]byte(blob), &metrics)
 		if err != nil {
 			return nil, err
 		}
-		return fromMetricsViewArtifact(name, fileName, metrics)
+		return fromMetricsViewArtifact(metrics, filePath)
 	}
 
 	return nil, NotSupported
 }
 
-func (r *artifact) Serialise(ctx context.Context, catalogObject *api.CatalogObject) (string, error) {
+func (r *artifact) Serialise(ctx context.Context, catalogObject *runtimev1.CatalogObject) (string, error) {
 	switch catalogObject.Type {
-	case api.CatalogObject_TYPE_SOURCE:
+	case runtimev1.CatalogObject_TYPE_SOURCE:
 		source, err := toSourceArtifact(catalogObject)
 		if err != nil {
 			return "", err
@@ -62,7 +53,7 @@ func (r *artifact) Serialise(ctx context.Context, catalogObject *api.CatalogObje
 			return "", err
 		}
 		return string(out), nil
-	case api.CatalogObject_TYPE_METRICS_VIEW:
+	case runtimev1.CatalogObject_TYPE_METRICS_VIEW:
 		metrics, err := toMetricsViewArtifact(catalogObject)
 		if err != nil {
 			return "", err

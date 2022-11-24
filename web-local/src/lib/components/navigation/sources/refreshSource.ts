@@ -1,7 +1,7 @@
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-import { compileCreateSourceSql } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import { sourceUpdated } from "@rilldata/web-local/lib/redux-store/source/source-apis";
 import {
   openFileUploadDialog,
@@ -26,7 +26,7 @@ export async function refreshSource(
       files[0]
     );
     if (filePath) {
-      const sql = compileCreateSourceSql(
+      const yaml = compileCreateSourceYAML(
         {
           sourceName: tableName,
           path: filePath,
@@ -35,7 +35,14 @@ export async function refreshSource(
       );
       await createSource.mutateAsync({
         instanceId: runtimeState.instanceId,
-        data: { sql, createOrReplace: true },
+        data: {
+          repoId: runtimeState.repoId,
+          instanceId: runtimeState.instanceId,
+          path: `sources/${tableName}.yaml`,
+          blob: yaml,
+          create: true,
+          strict: true,
+        },
       });
     }
   } else {

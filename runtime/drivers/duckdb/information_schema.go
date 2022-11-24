@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -30,7 +30,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		where t.table_schema = 'main' or t.table_schema = 'temp'
+		where t.table_schema = 'main'
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
@@ -61,7 +61,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
-		where (t.table_schema = 'main' or t.table_schema = 'temp') and t.table_name = ?
+		where t.table_schema = 'main' and t.table_name = ?
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
@@ -105,7 +105,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 			Database:       database,
 			DatabaseSchema: schema,
 			Name:           name,
-			Schema:         &api.StructType{},
+			Schema:         &runtimev1.StructType{},
 		}
 
 		// should NEVER happen, but just to be safe
@@ -121,7 +121,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				return nil, err
 			}
 
-			t.Schema.Fields = append(t.Schema.Fields, &api.StructType_Field{
+			t.Schema.Fields = append(t.Schema.Fields, &runtimev1.StructType_Field{
 				Name: colName.(string),
 				Type: colType,
 			})
@@ -137,66 +137,66 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
-	t := &api.Type{Nullable: nullable}
+func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+	t := &runtimev1.Type{Nullable: nullable}
 	match := true
 	switch dbt {
 	case "INVALID":
 		return nil, fmt.Errorf("encountered invalid duckdb type")
 	case "BOOLEAN":
-		t.Code = api.Type_CODE_BOOL
+		t.Code = runtimev1.Type_CODE_BOOL
 	case "TINYINT":
-		t.Code = api.Type_CODE_INT8
+		t.Code = runtimev1.Type_CODE_INT8
 	case "SMALLINT":
-		t.Code = api.Type_CODE_INT16
+		t.Code = runtimev1.Type_CODE_INT16
 	case "INTEGER":
-		t.Code = api.Type_CODE_INT32
+		t.Code = runtimev1.Type_CODE_INT32
 	case "BIGINT":
-		t.Code = api.Type_CODE_INT64
+		t.Code = runtimev1.Type_CODE_INT64
 	case "UTINYINT":
-		t.Code = api.Type_CODE_UINT8
+		t.Code = runtimev1.Type_CODE_UINT8
 	case "USMALLINT":
-		t.Code = api.Type_CODE_UINT16
+		t.Code = runtimev1.Type_CODE_UINT16
 	case "UINTEGER":
-		t.Code = api.Type_CODE_UINT32
+		t.Code = runtimev1.Type_CODE_UINT32
 	case "UBIGINT":
-		t.Code = api.Type_CODE_UINT64
+		t.Code = runtimev1.Type_CODE_UINT64
 	case "FLOAT":
-		t.Code = api.Type_CODE_FLOAT32
+		t.Code = runtimev1.Type_CODE_FLOAT32
 	case "DOUBLE":
-		t.Code = api.Type_CODE_FLOAT64
+		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "TIMESTAMP":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATE":
-		t.Code = api.Type_CODE_DATE
+		t.Code = runtimev1.Type_CODE_DATE
 	case "TIME":
-		t.Code = api.Type_CODE_TIME
+		t.Code = runtimev1.Type_CODE_TIME
 	case "INTERVAL":
-		t.Code = api.Type_CODE_UNSPECIFIED // TODO
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO
 	case "HUGEINT":
-		t.Code = api.Type_CODE_INT128
+		t.Code = runtimev1.Type_CODE_INT128
 	case "VARCHAR":
-		t.Code = api.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_STRING
 	case "BLOB":
-		t.Code = api.Type_CODE_BYTES
+		t.Code = runtimev1.Type_CODE_BYTES
 	case "TIMESTAMP_S":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "TIMESTAMP_MS":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "TIMESTAMP_NS":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "ENUM":
-		t.Code = api.Type_CODE_UNSPECIFIED // TODO
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO
 	case "UUID":
-		t.Code = api.Type_CODE_UUID
+		t.Code = runtimev1.Type_CODE_UUID
 	case "JSON":
-		t.Code = api.Type_CODE_JSON
+		t.Code = runtimev1.Type_CODE_JSON
 	case "CHAR":
-		t.Code = api.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_STRING
 	case "TIMESTAMP WITH TIME ZONE":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "TIME WITH TIME ZONE":
-		t.Code = api.Type_CODE_TIME
+		t.Code = runtimev1.Type_CODE_TIME
 	default:
 		match = false
 	}
@@ -214,7 +214,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
 			return nil, err
 		}
 
-		t.Code = api.Type_CODE_ARRAY
+		t.Code = runtimev1.Type_CODE_ARRAY
 		t.ArrayElementType = at
 		return t, nil
 	}
@@ -228,11 +228,11 @@ func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
 	switch base {
 	// Example: DECIMAL(10,20)
 	case "DECIMAL":
-		t.Code = api.Type_CODE_DECIMAL
+		t.Code = runtimev1.Type_CODE_DECIMAL
 	// Example: STRUCT(a INT, b INT)
 	case "STRUCT":
-		t.Code = api.Type_CODE_STRUCT
-		t.StructType = &api.StructType{}
+		t.Code = runtimev1.Type_CODE_STRUCT
+		t.StructType = &runtimev1.StructType{}
 
 		fieldStrs := splitCommasUnlessNestedInParens(args)
 		for _, fieldStr := range fieldStrs {
@@ -249,7 +249,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
 			}
 
 			// Add to fields
-			t.StructType.Fields = append(t.StructType.Fields, &api.StructType_Field{
+			t.StructType.Fields = append(t.StructType.Fields, &runtimev1.StructType_Field{
 				Name: fieldName,
 				Type: fieldType,
 			})
@@ -271,8 +271,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
 			return nil, err
 		}
 
-		t.Code = api.Type_CODE_MAP
-		t.MapType = &api.MapType{
+		t.Code = runtimev1.Type_CODE_MAP
+		t.MapType = &runtimev1.MapType{
 			KeyType:   keyType,
 			ValueType: valType,
 		}

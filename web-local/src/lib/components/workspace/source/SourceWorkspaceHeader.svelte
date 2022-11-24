@@ -1,13 +1,17 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogObjectQueryKey,
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServiceRenameFileAndMigrate,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
+  import { fade } from "svelte/transition";
   import {
     dataModelerService,
     runtimeStore,
@@ -18,29 +22,66 @@
   import Import from "../../icons/Import.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
+  import notifications from "../../notifications";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let id;
+  export let name: string;
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
 
   $: currentSource = $persistentTableStore?.entities?.find(
-    (entity) => entity.id === id
+    (entity) => entity.id === id || entity.tableName === name
   );
 
-  const onChangeCallback = async (e) => {
-    dataModelerService.dispatch("updateTableName", [id, e.target.value]);
-  };
+  const renameSource = useRuntimeServiceRenameFileAndMigrate();
 
-  $: titleInput = currentSource?.name;
+  const onChangeCallback = async (e) => {
+    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      notifications.send({
+        message:
+          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = currentSource.name; // resets the input
+      return;
+    }
+
+    dataModelerService.dispatch("updateTableName", [id, e.target.value]);
+    $renameSource.mutate(
+      {
+        data: {
+          repoId: $runtimeStore.repoId,
+          instanceId: runtimeInstanceId,
+          fromPath: `sources/${name}.yaml`,
+          toPath: `sources/${e.target.value}.yaml`,
+        },
+      },
+      {
+        onSuccess: () => {
+          goto(`/source/${e.target.value}`, { replaceState: true });
+          return queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+          );
+        },
+        onError: (err) => {
+          console.error(err.response.data.message);
+          // reset the new table name
+          dataModelerService.dispatch("updateTableName", [
+            currentSource?.id,
+            "",
+          ]);
+        },
+      }
+    );
+  };
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServiceMigrateSingle();
+  const createSource = useRuntimeServicePutFileAndMigrate();
 
   $: getSource = useRuntimeServiceGetCatalogObject(
     runtimeInstanceId,
@@ -59,7 +100,7 @@
         $createSource
       );
       // invalidate the data preview (async)
-      dataModelerService.dispatch("collectTableInfo", [currentSource.id]);
+      dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogObjectQueryKey(
@@ -86,7 +127,10 @@
 </script>
 
 <div class="grid  items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
+  <WorkspaceHeader
+    {...{ titleInput: name, onChangeCallback }}
+    showStatus={false}
+  >
     <svelte:fragment slot="icon">
       <Source />
     </svelte:fragment>
@@ -95,8 +139,11 @@
         Refreshing...
       {:else}
         <div class="flex items-center">
-          {#if $getSource.isSuccess}
-            <div class="ui-copy-muted">
+          {#if $getSource.isSuccess && $getSource.data?.object?.refreshedOn}
+            <div
+              class="ui-copy-muted"
+              transition:fade|local={{ duration: 200 }}
+            >
               Imported on {formatRefreshedOn(
                 $getSource.data?.object?.refreshedOn
               )}

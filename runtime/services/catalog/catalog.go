@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	dag2 "github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/dag"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,7 +21,7 @@ type Service struct {
 	// temporary information. should this be persisted into olap?
 	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
 	LastMigration time.Time
-	dag           *dag2.DAG
+	dag           *dag.DAG
 	// used to get path when we only have name. happens when we get name from DAG
 	// TODO: should we add path to the DAG instead
 	NameToPath map[string]string
@@ -43,7 +43,7 @@ func NewService(
 		RepoId:  repoId,
 		InstId:  instId,
 
-		dag:        dag2.NewDAG(),
+		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
 		PathToName: make(map[string]string),
 	}
@@ -51,10 +51,10 @@ func NewService(
 
 func (s *Service) ListObjects(
 	ctx context.Context,
-	typ api.CatalogObject_Type,
-) ([]*api.CatalogObject, error) {
+	typ runtimev1.CatalogObject_Type,
+) ([]*runtimev1.CatalogObject, error) {
 	objs := s.Catalog.FindObjects(ctx, s.InstId, catalogObjectTypeFromPB(typ))
-	pbs := make([]*api.CatalogObject, len(objs))
+	pbs := make([]*runtimev1.CatalogObject, len(objs))
 	var err error
 	for i, obj := range objs {
 		pbs[i], err = catalogObjectToPB(obj)
@@ -69,7 +69,7 @@ func (s *Service) ListObjects(
 func (s *Service) GetCatalogObject(
 	ctx context.Context,
 	name string,
-) (*api.CatalogObject, error) {
+) (*runtimev1.CatalogObject, error) {
 	obj, found := s.Catalog.FindObject(ctx, s.InstId, name)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "object not found")

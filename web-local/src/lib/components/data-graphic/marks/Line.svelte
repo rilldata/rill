@@ -3,13 +3,13 @@
     in the order they appear in the data.
 -->
 <script lang="ts">
-  import { getContext, onDestroy, onMount } from "svelte";
   import { extent } from "d3-array";
+  import { getContext, onDestroy, onMount } from "svelte";
 
-  import { lineFactory, pathDoesNotDropToZero } from "../utils";
   import { guidGenerator } from "../../../util/guid";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
+  import { lineFactory, pathDoesNotDropToZero } from "../utils";
 
   const markID = guidGenerator();
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,33 +14,33 @@ import (
 )
 
 // ListRepos implements RuntimeService
-func (s *Server) ListRepos(ctx context.Context, req *api.ListReposRequest) (*api.ListReposResponse, error) {
+func (s *Server) ListRepos(ctx context.Context, req *runtimev1.ListReposRequest) (*runtimev1.ListReposResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repos := registry.FindRepos(ctx)
 
-	pbs := make([]*api.Repo, len(repos))
+	pbs := make([]*runtimev1.Repo, len(repos))
 	for i, repo := range repos {
 		pbs[i] = repoToPB(repo)
 	}
 
-	return &api.ListReposResponse{Repos: pbs}, nil
+	return &runtimev1.ListReposResponse{Repos: pbs}, nil
 }
 
 // GetRepo implements RuntimeService
-func (s *Server) GetRepo(ctx context.Context, req *api.GetRepoRequest) (*api.GetRepoResponse, error) {
+func (s *Server) GetRepo(ctx context.Context, req *runtimev1.GetRepoRequest) (*runtimev1.GetRepoResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
 		return nil, status.Error(codes.NotFound, "repo not found")
 	}
 
-	return &api.GetRepoResponse{
+	return &runtimev1.GetRepoResponse{
 		Repo: repoToPB(repo),
 	}, nil
 }
 
 // CreateRepo implements RuntimeService
-func (s *Server) CreateRepo(ctx context.Context, req *api.CreateRepoRequest) (*api.CreateRepoResponse, error) {
+func (s *Server) CreateRepo(ctx context.Context, req *runtimev1.CreateRepoRequest) (*runtimev1.CreateRepoResponse, error) {
 	repo := &drivers.Repo{
 		ID:     req.RepoId,
 		Driver: req.Driver,
@@ -63,24 +63,24 @@ func (s *Server) CreateRepo(ctx context.Context, req *api.CreateRepoRequest) (*a
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.CreateRepoResponse{
+	return &runtimev1.CreateRepoResponse{
 		Repo: repoToPB(repo),
 	}, nil
 }
 
 // DeleteRepo implements RuntimeService
-func (s *Server) DeleteRepo(ctx context.Context, req *api.DeleteRepoRequest) (*api.DeleteRepoResponse, error) {
+func (s *Server) DeleteRepo(ctx context.Context, req *runtimev1.DeleteRepoRequest) (*runtimev1.DeleteRepoResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	err := registry.DeleteRepo(ctx, req.RepoId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.DeleteRepoResponse{}, nil
+	return &runtimev1.DeleteRepoResponse{}, nil
 }
 
 // ListFiles implements RuntimeService
-func (s *Server) ListFiles(ctx context.Context, req *api.ListFilesRequest) (*api.ListFilesResponse, error) {
+func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -92,17 +92,22 @@ func (s *Server) ListFiles(ctx context.Context, req *api.ListFilesRequest) (*api
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	glob := req.Glob
+	if glob == "" {
+		glob = "**"
+	}
+
 	repoStore, _ := conn.RepoStore()
-	paths, err := repoStore.ListRecursive(ctx, repo.ID) // TODO: use req.Glob
+	paths, err := repoStore.ListRecursive(ctx, repo.ID, glob)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	return &api.ListFilesResponse{Paths: paths}, nil
+	return &runtimev1.ListFilesResponse{Paths: paths}, nil
 }
 
 // GetFile implements RuntimeService
-func (s *Server) GetFile(ctx context.Context, req *api.GetFileRequest) (*api.GetFileResponse, error) {
+func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -126,11 +131,11 @@ func (s *Server) GetFile(ctx context.Context, req *api.GetFileRequest) (*api.Get
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(stat.LastUpdated)}, nil
+	return &runtimev1.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(stat.LastUpdated)}, nil
 }
 
 // PutFile implements RuntimeService
-func (s *Server) PutFile(ctx context.Context, req *api.PutFileRequest) (*api.PutFileResponse, error) {
+func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -149,11 +154,11 @@ func (s *Server) PutFile(ctx context.Context, req *api.PutFileRequest) (*api.Put
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.PutFileResponse{}, nil
+	return &runtimev1.PutFileResponse{}, nil
 }
 
 // DeleteFile implements RuntimeService
-func (s *Server) DeleteFile(ctx context.Context, req *api.DeleteFileRequest) (*api.DeleteFileResponse, error) {
+func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -171,11 +176,11 @@ func (s *Server) DeleteFile(ctx context.Context, req *api.DeleteFileRequest) (*a
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.DeleteFileResponse{}, nil
+	return &runtimev1.DeleteFileResponse{}, nil
 }
 
 // RenameFile implements RuntimeService
-func (s *Server) RenameFile(ctx context.Context, req *api.RenameFileRequest) (*api.RenameFileResponse, error) {
+func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
 	repo, found := registry.FindRepo(ctx, req.RepoId)
 	if !found {
@@ -193,7 +198,7 @@ func (s *Server) RenameFile(ctx context.Context, req *api.RenameFileRequest) (*a
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &api.RenameFileResponse{}, nil
+	return &runtimev1.RenameFileResponse{}, nil
 }
 
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
@@ -236,7 +241,7 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	res, err := protojson.Marshal(&api.PutFileResponse{
+	res, err := protojson.Marshal(&runtimev1.PutFileResponse{
 		FilePath: filePath,
 	})
 	if err != nil {
@@ -248,8 +253,8 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 	w.Write(res)
 }
 
-func repoToPB(repo *drivers.Repo) *api.Repo {
-	return &api.Repo{
+func repoToPB(repo *drivers.Repo) *runtimev1.Repo {
+	return &runtimev1.Repo{
 		RepoId: repo.ID,
 		Driver: repo.Driver,
 		Dsn:    repo.DSN,

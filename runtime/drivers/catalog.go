@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance
@@ -22,7 +22,7 @@ type CatalogObject struct {
 	Name    string
 	Type    CatalogObjectType
 	SQL     string
-	Schema  *api.StructType
+	Schema  *runtimev1.StructType
 	Managed bool
 
 	// artifact fields

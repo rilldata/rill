@@ -6,8 +6,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/fileutil"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 )
 
@@ -23,24 +23,24 @@ func init() {
 	artifacts.Register(".sql", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*api.CatalogObject, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*runtimev1.CatalogObject, error) {
 	ext := fileutil.FullExt(filePath)
 	fileName := path.Base(filePath)
 	name := strings.TrimSuffix(fileName, ext)
-	return &api.CatalogObject{
-		Type: api.CatalogObject_TYPE_MODEL,
-		Model: &api.Model{
+	return &runtimev1.CatalogObject{
+		Type: runtimev1.CatalogObject_TYPE_MODEL,
+		Model: &runtimev1.Model{
 			Name:    name,
 			Sql:     blob,
-			Dialect: api.Model_DIALECT_DUCKDB,
+			Dialect: runtimev1.Model_DIALECT_DUCKDB,
 		},
 		Name: name,
 		Path: filePath,
 	}, nil
 }
 
-func (r *artifact) Serialise(ctx context.Context, catalogObject *api.CatalogObject) (string, error) {
-	if catalogObject.Type != api.CatalogObject_TYPE_MODEL {
+func (r *artifact) Serialise(ctx context.Context, catalogObject *runtimev1.CatalogObject) (string, error) {
+	if catalogObject.Type != runtimev1.CatalogObject_TYPE_MODEL {
 		return "", NotSupported
 	}
 	return catalogObject.Model.Sql, nil

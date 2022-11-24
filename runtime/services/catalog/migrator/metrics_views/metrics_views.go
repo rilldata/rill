@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 )
@@ -21,27 +21,27 @@ var TimestampNotFound = errors.New("metrics view selected timestamp not found")
 
 type metricsViewMigrator struct{}
 
-func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *runtimev1.CatalogObject) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *runtimev1.CatalogObject) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *api.CatalogObject) error {
+func (m *metricsViewMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *runtimev1.CatalogObject) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *metricsViewMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *runtimev1.CatalogObject) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) []string {
 	return []string{catalog.MetricsView.From}
 }
 
-func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) error {
 	if catalog.MetricsView.From == "" {
 		return SourceNotSelected
 	}
@@ -56,7 +56,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		return err
 	}
 
-	fieldsMap := make(map[string]*api.StructType_Field)
+	fieldsMap := make(map[string]*runtimev1.StructType_Field)
 	for _, field := range model.Schema.Fields {
 		fieldsMap[field.Name] = field
 	}
@@ -68,18 +68,14 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	for _, dimension := range catalog.MetricsView.Dimensions {
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
-			dimension.Error = err.Error()
-		} else {
-			dimension.Error = ""
+			return err
 		}
 	}
 
 	for _, measure := range catalog.MetricsView.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
-			measure.Error = err.Error()
-		} else {
-			measure.Error = ""
+			return err
 		}
 	}
 
@@ -87,16 +83,16 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	return nil
 }
 
-func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
+func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *runtimev1.CatalogObject, cat2 *runtimev1.CatalogObject) bool {
 	// TODO: do we need a deep check here?
 	return false
 }
 
-func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *runtimev1.CatalogObject) (bool, error) {
 	return true, nil
 }
 
-func validateDimension(ctx context.Context, model *drivers.Table, dimension *api.MetricsView_Dimension) error {
+func validateDimension(ctx context.Context, model *drivers.Table, dimension *runtimev1.MetricsView_Dimension) error {
 	for _, field := range model.Schema.Fields {
 		// TODO: check type
 		if field.Name == dimension.Name {
@@ -107,7 +103,7 @@ func validateDimension(ctx context.Context, model *drivers.Table, dimension *api
 	return fmt.Errorf("dimension not found: %s", dimension.Name)
 }
 
-func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *api.MetricsView_Measure) error {
+func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *runtimev1.MetricsView_Measure) error {
 	_, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("SELECT %s from %s", measure.Expression, model.Name),
 		DryRun:   true,
