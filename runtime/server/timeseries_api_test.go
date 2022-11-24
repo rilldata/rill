@@ -398,6 +398,7 @@ func TestServer_SparkOnly(t *testing.T) {
 	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, "timeseries", "time", "clicks", 2.0)
 	require.NoError(t, err)
 
+	require.Equal(t, 12, len(values))
 	require.Equal(t, "2019-01-01T00:00:00.000Z", values[0].Ts)
 	require.Equal(t, "2019-01-02T00:00:00.000Z", values[1].Ts)
 	require.Equal(t, "2019-01-03T00:00:00.000Z", values[2].Ts)
@@ -406,6 +407,10 @@ func TestServer_SparkOnly(t *testing.T) {
 	require.Equal(t, "2019-01-06T00:00:00.000Z", values[5].Ts)
 	require.Equal(t, "2019-01-07T00:00:00.000Z", values[6].Ts)
 	require.Equal(t, "2019-01-08T00:00:00.000Z", values[7].Ts)
+	require.Equal(t, "2019-01-09T00:00:00.000Z", values[8].Ts)
+	require.Equal(t, "2019-01-09T00:00:00.000Z", values[9].Ts)
+	require.Equal(t, "2019-01-09T00:00:00.000Z", values[10].Ts)
+	require.Equal(t, "2019-01-09T00:00:00.000Z", values[11].Ts)
 
 	require.Equal(t, 0.0, *values[0].Bin)
 	require.Equal(t, 0.0, *values[1].Bin)
@@ -416,6 +421,9 @@ func TestServer_SparkOnly(t *testing.T) {
 	require.Equal(t, 1.0, *values[6].Bin)
 	require.Equal(t, 1.0, *values[7].Bin)
 	require.Equal(t, 2.0, *values[8].Bin)
+	require.Equal(t, 2.0, *values[9].Bin)
+	require.Equal(t, 2.0, *values[10].Bin)
+	require.Equal(t, 2.0, *values[11].Bin)
 
 	require.Equal(t, 2.0, values[0].Records["count"])
 	require.Equal(t, 3.0, values[1].Records["count"])
@@ -426,4 +434,36 @@ func TestServer_SparkOnly(t *testing.T) {
 	require.Equal(t, 4.0, values[6].Records["count"])
 	require.Equal(t, 3.0, values[7].Records["count"])
 	require.Equal(t, 1.0, values[8].Records["count"])
+	require.Equal(t, 1.0, values[9].Records["count"])
+	require.Equal(t, 1.0, values[10].Records["count"])
+	require.Equal(t, 1.0, values[11].Records["count"])
+}
+
+func TestServer_Timeseries_Spark(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
+	require.Equal(t, 9, getSingleValue(t, result.Rows))
+
+	cnt := "count"
+	pxls := int32(2)
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
+			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+				{
+					Expression: "count(*)",
+					SqlName:    &cnt,
+				},
+			},
+		},
+		TimestampColumnName: "time",
+		Pixels:              &pxls,
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 9, len(results))
+	require.Equal(t, 12, len(response.Rollup.Spark.Values))
 }
