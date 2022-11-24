@@ -370,8 +370,8 @@ export class TableActions extends DataModelerActions {
   // because DropTableCommand can be called without a runtime present.
   @DataModelerActions.PersistentTableAction()
   public async dropTableFromCLI(
-    args: PersistentTableStateActionArg,
-    tableName: string
+    _args: PersistentTableStateActionArg,
+    _tableName: string
   ) {
     // MigrateDelete has been deprecated. All migrations should go through reconciliation.
     // Leaving this here to highlight if this code path still gets hit.
