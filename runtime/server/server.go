@@ -101,7 +101,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// One-off REST-only path for multipart file upload
 	mux.HandlePath(
 		"POST",
-		"/v1/repos/{repo_id}/objects/file/-/{path=**}",
+		"/v1/instances/{instance_id}/files/upload/-/{path=**}",
 		s.UploadMultipartFile,
 	)
 

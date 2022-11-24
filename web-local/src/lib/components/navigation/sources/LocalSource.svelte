@@ -27,7 +27,6 @@
   ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: repoId = $runtimeStore.repoId;
 
   const createSource = useRuntimeServicePutFileAndMigrate();
 
@@ -55,7 +54,6 @@
         $createSource.mutate(
           {
             data: {
-              repoId,
               instanceId: runtimeInstanceId,
               path: `sources/${tableName}.yaml`,
               blob: yaml,
@@ -69,7 +67,7 @@
               dispatch("close");
               goto(`/source/${tableName}`);
               queryClient.invalidateQueries(
-                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
               );
             },
             onError: async () => {

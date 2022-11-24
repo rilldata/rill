@@ -33,6 +33,14 @@ import type {
   V1EstimateRollupIntervalResponse,
   RuntimeServiceEstimateRollupIntervalBody,
   V1EstimateSmallestTimeGrainResponse,
+  V1ListFilesResponse,
+  RuntimeServiceListFilesParams,
+  V1GetFileResponse,
+  V1DeleteFileResponse,
+  V1PutFileResponse,
+  RuntimeServicePutFileBody,
+  V1RenameFileResponse,
+  RuntimeServiceRenameFileBody,
   V1GenerateTimeSeriesResponse,
   RuntimeServiceGenerateTimeSeriesBody,
   V1MetricsViewTimeSeriesResponse,
@@ -63,20 +71,6 @@ import type {
   V1PutFileAndMigrateRequest,
   V1RenameFileAndMigrateResponse,
   V1RenameFileAndMigrateRequest,
-  V1ListReposResponse,
-  RuntimeServiceListReposParams,
-  V1CreateRepoResponse,
-  V1CreateRepoRequest,
-  V1GetRepoResponse,
-  V1DeleteRepoResponse,
-  V1ListFilesResponse,
-  RuntimeServiceListFilesParams,
-  V1GetFileResponse,
-  V1DeleteFileResponse,
-  V1PutFileResponse,
-  RuntimeServicePutFileBody,
-  V1RenameFileResponse,
-  RuntimeServiceRenameFileBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -971,6 +965,300 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
   return query;
 };
 
+/**
+ * @summary ListFiles lists all the files matching a glob in a repo.
+The files are sorted by their full path.
+ */
+export const runtimeServiceListFiles = (
+  instanceId: string,
+  params?: RuntimeServiceListFilesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListFilesResponse>({
+    url: `/v1/instances/${instanceId}/files`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceListFilesQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceListFilesParams
+) => [`/v1/instances/${instanceId}/files`, ...(params ? [params] : [])];
+
+export type RuntimeServiceListFilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListFiles>>
+>;
+export type RuntimeServiceListFilesQueryError = RpcStatus;
+
+export const useRuntimeServiceListFiles = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceListFilesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceListFiles>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceListFiles>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListFilesQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListFiles>>
+  > = ({ signal }) => runtimeServiceListFiles(instanceId, params, signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof runtimeServiceListFiles>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceListFiles>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetFile returns the contents of a specific file in a repo.
+ */
+export const runtimeServiceGetFile = (
+  instanceId: string,
+  path: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetFileResponse>({
+    url: `/v1/instances/${instanceId}/files/-/${path}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetFileQueryKey = (
+  instanceId: string,
+  path: string
+) => [`/v1/instances/${instanceId}/files/-/${path}`];
+
+export type RuntimeServiceGetFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetFile>>
+>;
+export type RuntimeServiceGetFileQueryError = RpcStatus;
+
+export const useRuntimeServiceGetFile = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  path: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetFileQueryKey(instanceId, path);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetFile>>
+  > = ({ signal }) => runtimeServiceGetFile(instanceId, path, signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && path),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceGetFile>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary DeleteFile deletes a file from a repo
+ */
+export const runtimeServiceDeleteFile = (instanceId: string, path: string) => {
+  return httpClient<V1DeleteFileResponse>({
+    url: `/v1/instances/${instanceId}/files/-/${path}`,
+    method: "delete",
+  });
+};
+
+export type RuntimeServiceDeleteFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
+>;
+
+export type RuntimeServiceDeleteFileMutationError = RpcStatus;
+
+export const useRuntimeServiceDeleteFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { instanceId: string; path: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    { instanceId: string; path: string }
+  > = (props) => {
+    const { instanceId, path } = props ?? {};
+
+    return runtimeServiceDeleteFile(instanceId, path);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
+    TError,
+    { instanceId: string; path: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary PutFile creates or updates a file in a repo
+ */
+export const runtimeServicePutFile = (
+  instanceId: string,
+  path: string,
+  runtimeServicePutFileBody: RuntimeServicePutFileBody
+) => {
+  return httpClient<V1PutFileResponse>({
+    url: `/v1/instances/${instanceId}/files/-/${path}`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServicePutFileBody,
+  });
+};
+
+export type RuntimeServicePutFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServicePutFile>>
+>;
+export type RuntimeServicePutFileMutationBody = RuntimeServicePutFileBody;
+export type RuntimeServicePutFileMutationError = RpcStatus;
+
+export const useRuntimeServicePutFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServicePutFile>>,
+    TError,
+    { instanceId: string; path: string; data: RuntimeServicePutFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServicePutFile>>,
+    { instanceId: string; path: string; data: RuntimeServicePutFileBody }
+  > = (props) => {
+    const { instanceId, path, data } = props ?? {};
+
+    return runtimeServicePutFile(instanceId, path, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServicePutFile>>,
+    TError,
+    { instanceId: string; path: string; data: RuntimeServicePutFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RenameFile renames a file in a repo
+ */
+export const runtimeServiceRenameFile = (
+  instanceId: string,
+  runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody
+) => {
+  return httpClient<V1RenameFileResponse>({
+    url: `/v1/instances/${instanceId}/files/rename`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRenameFileBody,
+  });
+};
+
+export type RuntimeServiceRenameFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenameFile>>
+>;
+export type RuntimeServiceRenameFileMutationBody = RuntimeServiceRenameFileBody;
+export type RuntimeServiceRenameFileMutationError = RpcStatus;
+
+export const useRuntimeServiceRenameFile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceRenameFileBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    { instanceId: string; data: RuntimeServiceRenameFileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceRenameFile(instanceId, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceRenameFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary Generate time series
  */
@@ -2263,526 +2551,6 @@ export const useRuntimeServiceRenameFileAndMigrate = <
     Awaited<ReturnType<typeof runtimeServiceRenameFileAndMigrate>>,
     TError,
     { data: V1RenameFileAndMigrateRequest },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary ListRepos lists all the repos currently managed by the runtime
- */
-export const runtimeServiceListRepos = (
-  params?: RuntimeServiceListReposParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1ListReposResponse>({
-    url: `/v1/repos`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getRuntimeServiceListReposQueryKey = (
-  params?: RuntimeServiceListReposParams
-) => [`/v1/repos`, ...(params ? [params] : [])];
-
-export type RuntimeServiceListReposQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceListRepos>>
->;
-export type RuntimeServiceListReposQueryError = RpcStatus;
-
-export const useRuntimeServiceListRepos = <
-  TData = Awaited<ReturnType<typeof runtimeServiceListRepos>>,
-  TError = RpcStatus
->(
-  params?: RuntimeServiceListReposParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceListRepos>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceListRepos>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceListReposQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceListRepos>>
-  > = ({ signal }) => runtimeServiceListRepos(params, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceListRepos>>,
-    TError,
-    TData
-  >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceListRepos>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary CreateRepo creates a new repo. See the Repo message for an explanation of repos.
- */
-export const runtimeServiceCreateRepo = (
-  v1CreateRepoRequest: V1CreateRepoRequest
-) => {
-  return httpClient<V1CreateRepoResponse>({
-    url: `/v1/repos`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: v1CreateRepoRequest,
-  });
-};
-
-export type RuntimeServiceCreateRepoMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceCreateRepo>>
->;
-export type RuntimeServiceCreateRepoMutationBody = V1CreateRepoRequest;
-export type RuntimeServiceCreateRepoMutationError = RpcStatus;
-
-export const useRuntimeServiceCreateRepo = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceCreateRepo>>,
-    TError,
-    { data: V1CreateRepoRequest },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceCreateRepo>>,
-    { data: V1CreateRepoRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return runtimeServiceCreateRepo(data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceCreateRepo>>,
-    TError,
-    { data: V1CreateRepoRequest },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary GetRepo returns info about a specific repo
- */
-export const runtimeServiceGetRepo = (repoId: string, signal?: AbortSignal) => {
-  return httpClient<V1GetRepoResponse>({
-    url: `/v1/repos/${repoId}`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getRuntimeServiceGetRepoQueryKey = (repoId: string) => [
-  `/v1/repos/${repoId}`,
-];
-
-export type RuntimeServiceGetRepoQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetRepo>>
->;
-export type RuntimeServiceGetRepoQueryError = RpcStatus;
-
-export const useRuntimeServiceGetRepo = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetRepo>>,
-  TError = RpcStatus
->(
-  repoId: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceGetRepo>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceGetRepo>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceGetRepoQueryKey(repoId);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetRepo>>
-  > = ({ signal }) => runtimeServiceGetRepo(repoId, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceGetRepo>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!repoId,
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceGetRepo>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary DeleteRepo deletes a repo
- */
-export const runtimeServiceDeleteRepo = (repoId: string) => {
-  return httpClient<V1DeleteRepoResponse>({
-    url: `/v1/repos/${repoId}`,
-    method: "delete",
-  });
-};
-
-export type RuntimeServiceDeleteRepoMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceDeleteRepo>>
->;
-
-export type RuntimeServiceDeleteRepoMutationError = RpcStatus;
-
-export const useRuntimeServiceDeleteRepo = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteRepo>>,
-    TError,
-    { repoId: string },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceDeleteRepo>>,
-    { repoId: string }
-  > = (props) => {
-    const { repoId } = props ?? {};
-
-    return runtimeServiceDeleteRepo(repoId);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceDeleteRepo>>,
-    TError,
-    { repoId: string },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary ListFiles lists all the files matching a glob in a repo.
-The files are sorted by their full path.
- */
-export const runtimeServiceListFiles = (
-  repoId: string,
-  params?: RuntimeServiceListFilesParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1ListFilesResponse>({
-    url: `/v1/repos/${repoId}/files`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getRuntimeServiceListFilesQueryKey = (
-  repoId: string,
-  params?: RuntimeServiceListFilesParams
-) => [`/v1/repos/${repoId}/files`, ...(params ? [params] : [])];
-
-export type RuntimeServiceListFilesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceListFiles>>
->;
-export type RuntimeServiceListFilesQueryError = RpcStatus;
-
-export const useRuntimeServiceListFiles = <
-  TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError = RpcStatus
->(
-  repoId: string,
-  params?: RuntimeServiceListFilesParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceListFilesQueryKey(repoId, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceListFiles>>
-  > = ({ signal }) => runtimeServiceListFiles(repoId, params, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!repoId,
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary GetFile returns the contents of a specific file in a repo.
- */
-export const runtimeServiceGetFile = (
-  repoId: string,
-  path: string,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1GetFileResponse>({
-    url: `/v1/repos/${repoId}/files/-/${path}`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getRuntimeServiceGetFileQueryKey = (
-  repoId: string,
-  path: string
-) => [`/v1/repos/${repoId}/files/-/${path}`];
-
-export type RuntimeServiceGetFileQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetFile>>
->;
-export type RuntimeServiceGetFileQueryError = RpcStatus;
-
-export const useRuntimeServiceGetFile = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = RpcStatus
->(
-  repoId: string,
-  path: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceGetFileQueryKey(repoId, path);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetFile>>
-  > = ({ signal }) => runtimeServiceGetFile(repoId, path, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(repoId && path),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary DeleteFile deletes a file from a repo
- */
-export const runtimeServiceDeleteFile = (repoId: string, path: string) => {
-  return httpClient<V1DeleteFileResponse>({
-    url: `/v1/repos/${repoId}/files/-/${path}`,
-    method: "delete",
-  });
-};
-
-export type RuntimeServiceDeleteFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
->;
-
-export type RuntimeServiceDeleteFileMutationError = RpcStatus;
-
-export const useRuntimeServiceDeleteFile = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    TError,
-    { repoId: string; path: string },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    { repoId: string; path: string }
-  > = (props) => {
-    const { repoId, path } = props ?? {};
-
-    return runtimeServiceDeleteFile(repoId, path);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    TError,
-    { repoId: string; path: string },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary PutFile creates or updates a file in a repo
- */
-export const runtimeServicePutFile = (
-  repoId: string,
-  path: string,
-  runtimeServicePutFileBody: RuntimeServicePutFileBody
-) => {
-  return httpClient<V1PutFileResponse>({
-    url: `/v1/repos/${repoId}/files/-/${path}`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServicePutFileBody,
-  });
-};
-
-export type RuntimeServicePutFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServicePutFile>>
->;
-export type RuntimeServicePutFileMutationBody = RuntimeServicePutFileBody;
-export type RuntimeServicePutFileMutationError = RpcStatus;
-
-export const useRuntimeServicePutFile = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    TError,
-    { repoId: string; path: string; data: RuntimeServicePutFileBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    { repoId: string; path: string; data: RuntimeServicePutFileBody }
-  > = (props) => {
-    const { repoId, path, data } = props ?? {};
-
-    return runtimeServicePutFile(repoId, path, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    TError,
-    { repoId: string; path: string; data: RuntimeServicePutFileBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary RenameFile renames a file in a repo
- */
-export const runtimeServiceRenameFile = (
-  repoId: string,
-  runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody
-) => {
-  return httpClient<V1RenameFileResponse>({
-    url: `/v1/repos/${repoId}/files/rename`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceRenameFileBody,
-  });
-};
-
-export type RuntimeServiceRenameFileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceRenameFile>>
->;
-export type RuntimeServiceRenameFileMutationBody = RuntimeServiceRenameFileBody;
-export type RuntimeServiceRenameFileMutationError = RpcStatus;
-
-export const useRuntimeServiceRenameFile = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
-    TError,
-    { repoId: string; data: RuntimeServiceRenameFileBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
-    { repoId: string; data: RuntimeServiceRenameFileBody }
-  > = (props) => {
-    const { repoId, data } = props ?? {};
-
-    return runtimeServiceRenameFile(repoId, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
-    TError,
-    { repoId: string; data: RuntimeServiceRenameFileBody },
     TContext
   >(mutationFn, mutationOptions);
 };

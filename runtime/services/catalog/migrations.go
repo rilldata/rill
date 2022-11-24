@@ -148,7 +148,7 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 		}
 	} else {
 		var err error
-		repoPaths, err = s.Repo.ListRecursive(ctx, s.RepoId, "{sources,models,dashboards}/*.{sql,yaml,yml}")
+		repoPaths, err = s.Repo.ListRecursive(ctx, s.InstId, "{sources,models,dashboards}/*.{sql,yaml,yml}")
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +308,7 @@ func (s *Service) getMigrationItem(
 		Path: repoPath,
 	}
 
-	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
+	catalog, err := artifacts.Read(ctx, s.Repo, s.InstId, repoPath)
 	if err != nil {
 		if err != artifacts.FileReadError {
 			item.Error = &runtimev1.MigrationError{
@@ -328,7 +328,7 @@ func (s *Service) getMigrationItem(
 		item.CatalogInFile = catalog
 
 		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
-		repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
+		repoStat, _ := s.Repo.Stat(ctx, s.InstId, repoPath)
 		item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
 		if repoStat.LastUpdated.After(s.LastMigration) {
 			// assume creation until we see a catalog object
@@ -627,7 +627,7 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
-	repoStat, err := s.Repo.Stat(ctx, s.RepoId, item.Path)
+	repoStat, err := s.Repo.Stat(ctx, s.InstId, item.Path)
 	if err != nil {
 		return nil, err
 	}

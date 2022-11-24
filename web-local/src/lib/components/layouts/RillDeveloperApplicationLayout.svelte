@@ -44,7 +44,6 @@
 
     runtimeStore.set({
       instanceId: instanceResp.instanceId,
-      repoId: instanceResp.repoId,
     });
 
     return initMetrics();

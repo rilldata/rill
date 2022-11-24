@@ -1,3 +1,4 @@
+import type { V1CreateInstanceRequest } from "@rilldata/web-common/runtime-client";
 import fetch from "isomorphic-unfetch";
 import type { ChildProcess } from "node:child_process";
 import childProcess from "node:child_process";
@@ -135,11 +136,12 @@ export class DuckDBClient {
     }
 
     const res = await this.request("/v1/instances", {
-      driver: "duckdb",
-      dsn: databaseName,
-      exposed: true,
+      olap_driver: "duckdb",
+      olap_dsn: databaseName,
+      repo_driver: "file",
+      repo_dsn: this.config.projectFolder,
       embed_catalog: true,
-    });
+    } as V1CreateInstanceRequest);
 
     this.instanceID = res.instance.instanceId;
 

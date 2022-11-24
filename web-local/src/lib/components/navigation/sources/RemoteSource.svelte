@@ -78,7 +78,6 @@
         $createSource.mutate(
           {
             data: {
-              repoId: $runtimeStore.repoId,
               instanceId: runtimeInstanceId,
               path: `sources/${values.sourceName}.yaml`,
               blob: yaml,
@@ -96,7 +95,7 @@
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
-                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
               );
             },
             onError: () => {

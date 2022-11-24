@@ -54,7 +54,6 @@
     $renameSource.mutate(
       {
         data: {
-          repoId: $runtimeStore.repoId,
           instanceId: runtimeInstanceId,
           fromPath: `sources/${name}.yaml`,
           toPath: `sources/${e.target.value}.yaml`,
@@ -64,7 +63,7 @@
         onSuccess: () => {
           goto(`/source/${e.target.value}`, { replaceState: true });
           return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
           );
         },
         onError: (err) => {

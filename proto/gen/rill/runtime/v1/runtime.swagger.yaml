@@ -86,6 +86,9 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
+          description: |-
+            Request message for RuntimeService.CreateInstance.
+            See message Instance for field descriptions.
           in: body
           required: true
           schema:
@@ -329,6 +332,153 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files:
+    get:
+      summary: |-
+        ListFiles lists all the files matching a glob in a repo.
+        The files are sorted by their full path.
+      operationId: RuntimeService_ListFiles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: glob
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/-/{path}:
+    get:
+      summary: GetFile returns the contents of a specific file in a repo.
+      operationId: RuntimeService_GetFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+      tags:
+        - RuntimeService
+    delete:
+      summary: DeleteFile deletes a file from a repo
+      operationId: RuntimeService_DeleteFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+      tags:
+        - RuntimeService
+    post:
+      summary: PutFile creates or updates a file in a repo
+      operationId: RuntimeService_PutFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PutFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              blob:
+                type: string
+              create:
+                type: boolean
+                title: Create indicates whether to create the file if it doesn't already exist
+              createOnly:
+                type: boolean
+                description: |-
+                  Will cause the operation to fail if the file already exists.
+                  It should only be set when create = true.
+            title: Request message for RuntimeService.PutFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/rename:
+    post:
+      summary: RenameFile renames a file in a repo
+      operationId: RuntimeService_RenameFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenameFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              fromPath:
+                type: string
+              toPath:
+                type: string
+            title: Request message for RuntimeService.RenameFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/generate-timeseries:
     post:
       summary: Generate time series
@@ -561,9 +711,6 @@ paths:
               dry:
                 type: boolean
                 title: If true, will validate the file artifacts, but not actually execute any migrations
-              repoId:
-                type: string
-                title: Contents of files containing one or more SQL DDL statements
               strict:
                 type: boolean
                 title: |-
@@ -971,237 +1118,6 @@ paths:
             $ref: '#/definitions/v1RenameFileAndMigrateRequest'
       tags:
         - RuntimeService
-  /v1/repos:
-    get:
-      summary: ListRepos lists all the repos currently managed by the runtime
-      operationId: RuntimeService_ListRepos
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListReposResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int32
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - RuntimeService
-    post:
-      summary: CreateRepo creates a new repo. See the Repo message for an explanation of repos.
-      operationId: RuntimeService_CreateRepo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateRepoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1CreateRepoRequest'
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}:
-    get:
-      summary: GetRepo returns info about a specific repo
-      operationId: RuntimeService_GetRepo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetRepoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-    delete:
-      summary: DeleteRepo deletes a repo
-      operationId: RuntimeService_DeleteRepo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteRepoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}/files:
-    get:
-      summary: |-
-        ListFiles lists all the files matching a glob in a repo.
-        The files are sorted by their full path.
-      operationId: RuntimeService_ListFiles
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListFilesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: glob
-          in: query
-          required: false
-          type: string
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}/files/-/{path}:
-    get:
-      summary: GetFile returns the contents of a specific file in a repo.
-      operationId: RuntimeService_GetFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-      tags:
-        - RuntimeService
-    delete:
-      summary: DeleteFile deletes a file from a repo
-      operationId: RuntimeService_DeleteFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-      tags:
-        - RuntimeService
-    post:
-      summary: PutFile creates or updates a file in a repo
-      operationId: RuntimeService_PutFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1PutFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              blob:
-                type: string
-              create:
-                type: boolean
-                title: Create indicates whether to create the file if it doesn't already exist
-              createOnly:
-                type: boolean
-                description: |-
-                  Will cause the operation to fail if the file already exists.
-                  It should only be set when create = true.
-            title: Request message for RuntimeService.PutFile
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}/files/rename:
-    post:
-      summary: RenameFile renames a file in a repo
-      operationId: RuntimeService_RenameFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RenameFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              fromPath:
-                type: string
-              toPath:
-                type: string
-            title: Request message for RuntimeService.RenameFile
-      tags:
-        - RuntimeService
 definitions:
   ConnectorProperty:
     type: object
@@ -1491,45 +1407,27 @@ definitions:
   v1CreateInstanceRequest:
     type: object
     properties:
-      driver:
-        type: string
-      dsn:
-        type: string
       embedCatalog:
-        type: boolean
-      exposed:
         type: boolean
       instanceId:
         type: string
-        title: See message Instance for field descriptions
-      objectPrefix:
+      olapDriver:
         type: string
-    title: Request message for RuntimeService.CreateInstance
+      olapDsn:
+        type: string
+      repoDriver:
+        type: string
+      repoDsn:
+        type: string
+    description: |-
+      Request message for RuntimeService.CreateInstance.
+      See message Instance for field descriptions.
   v1CreateInstanceResponse:
     type: object
     properties:
       instance:
         $ref: '#/definitions/v1Instance'
-      instanceId:
-        type: string
-        title: Temporary, for compatibility with local frontend
     title: Response message for RuntimeService.CreateInstance
-  v1CreateRepoRequest:
-    type: object
-    properties:
-      driver:
-        type: string
-      dsn:
-        type: string
-      repoId:
-        type: string
-    title: Request message for RuntimeService.CreateRepo
-  v1CreateRepoResponse:
-    type: object
-    properties:
-      repo:
-        $ref: '#/definitions/v1Repo'
-    title: Response message for RuntimeService.CreateRepo
   v1DeleteFileAndMigrateRequest:
     type: object
     properties:
@@ -1538,13 +1436,10 @@ definitions:
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
-        title: Instance to apply the migrations to
+        title: Instance to store file in and migrate
       path:
         type: string
         title: Path to store the file at
-      repoId:
-        type: string
-        title: Repo to store the file in
       strict:
         type: boolean
         title: |-
@@ -1575,9 +1470,6 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DeleteRepoResponse:
-    type: object
-    title: Response message for RuntimeService.DeleteRepo
   v1EstimateRollupIntervalResponse:
     type: object
     properties:
@@ -1643,12 +1535,6 @@ definitions:
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
-  v1GetRepoResponse:
-    type: object
-    properties:
-      repo:
-        $ref: '#/definitions/v1Repo'
-    title: Response message for RuntimeService.GetRepo
   v1GetRugHistogramResponse:
     type: object
     properties:
@@ -1680,37 +1566,35 @@ definitions:
   v1Instance:
     type: object
     properties:
-      driver:
-        type: string
-        title: Name of OLAP infra driver ("druid" or "duckdb")
-      dsn:
-        type: string
-        title: DSN for connection to the OLAP infra
       embedCatalog:
         type: boolean
         description: |-
-          If true, the runtime will store the instance's catalog data (such as sources and metrics views)
-          in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
-          only supported for the duckdb driver.
-      exposed:
-        type: boolean
-        description: |-
-          Indicates that the underlying infra may be manipulated directly by users.
-          If true, the runtime will continuously poll the infra's information schema
-          to discover tables not created through the runtime. They will be added to the
-          catalog as UnmanagedTables.
+          If true, the runtime will store the instance's catalog in its OLAP store instead
+          of in the runtime's metadata store. Currently only supported for the duckdb driver.
       instanceId:
         type: string
         title: Identifier (UUID)
-      objectPrefix:
+      olapDriver:
+        type: string
+        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
+      olapDsn:
+        type: string
+        title: DSN for connection to OLAP
+      repoDriver:
         type: string
         description: |-
-          Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
-          Use it as an alternative to database schemas.
+          Driver for reading/editing code artifacts (options: file, metastore).
+          This enables virtualizing a file system in a cloud setting.
+      repoDsn:
+        type: string
+        title: DSN for connecting to repo
     description: |-
-      Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
-      Migrations and queries are issued against a specific instance. The concept of
-      instances enables multiple data projects to be served by one runtime.
+      Instance represents a single data project, meaning one set of code artifacts,
+      one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+      metadata (such as migration status). Instances are the unit of isolation within
+      the runtime. They enable one runtime deployment to serve not only multiple data
+      projects, but also multiple tenants. On local, the runtime will usually have
+      just a single instance.
   v1ListCatalogEntriesResponse:
     type: object
     properties:
@@ -1745,16 +1629,6 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
-  v1ListReposResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      repos:
-        type: array
-        items:
-          $ref: '#/definitions/v1Repo'
-    title: Response message for RuntimeService.ListRepos
   v1MapType:
     type: object
     properties:
@@ -2074,13 +1948,10 @@ definitions:
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
-        title: Instance to apply the migrations to
+        title: Instance to store file in and migrate
       path:
         type: string
         title: Path to store the file at
-      repoId:
-        type: string
-        title: Repo to store the file in
       strict:
         type: boolean
         title: |-
@@ -2147,10 +2018,7 @@ definitions:
         title: Current path of the file
       instanceId:
         type: string
-        title: Instance to apply the migrations to
-      repoId:
-        type: string
-        title: Repo to store the file in
+        title: Instance to store file in and migrate
       strict:
         type: boolean
         title: |-
@@ -2181,22 +2049,6 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
-  v1Repo:
-    type: object
-    properties:
-      driver:
-        type: string
-        description: Driver for persisting artifacts. Supports "file" and "postgres".
-      dsn:
-        type: string
-        description: DSN for driver. If the driver is "file", this should be the path to the root directory.
-      repoId:
-        type: string
-        title: UUID identifier
-    description: |-
-      Repo represents a collection of file artifacts containing SQL statements.
-      It will usually by represented as a folder on disk, but may also be backed by a
-      database (for modelling in the cloud where no persistant file system is available).
   v1Source:
     type: object
     properties:

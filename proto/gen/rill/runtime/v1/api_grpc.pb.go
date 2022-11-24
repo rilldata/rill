@@ -24,14 +24,14 @@ const _ = grpc.SupportPackageIsVersion7
 type RuntimeServiceClient interface {
 	// Ping returns information about the runtime
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	// ListRepos lists all the repos currently managed by the runtime
-	ListRepos(ctx context.Context, in *ListReposRequest, opts ...grpc.CallOption) (*ListReposResponse, error)
-	// GetRepo returns info about a specific repo
-	GetRepo(ctx context.Context, in *GetRepoRequest, opts ...grpc.CallOption) (*GetRepoResponse, error)
-	// CreateRepo creates a new repo. See the Repo message for an explanation of repos.
-	CreateRepo(ctx context.Context, in *CreateRepoRequest, opts ...grpc.CallOption) (*CreateRepoResponse, error)
-	// DeleteRepo deletes a repo
-	DeleteRepo(ctx context.Context, in *DeleteRepoRequest, opts ...grpc.CallOption) (*DeleteRepoResponse, error)
+	// ListInstances lists all the instances currently managed by the runtime
+	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
+	// GetInstance returns information about a specific instance
+	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error)
+	// CreateInstance creates a new instance
+	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
+	// DeleteInstance deletes an instance
+	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
@@ -43,14 +43,6 @@ type RuntimeServiceClient interface {
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
-	// ListInstances lists all the instances currently managed by the runtime
-	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
-	// GetInstance returns information about a specific instance
-	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error)
-	// CreateInstance creates a new instance
-	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
-	// DeleteInstance deletes an instance
-	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -136,36 +128,36 @@ func (c *runtimeServiceClient) Ping(ctx context.Context, in *PingRequest, opts .
 	return out, nil
 }
 
-func (c *runtimeServiceClient) ListRepos(ctx context.Context, in *ListReposRequest, opts ...grpc.CallOption) (*ListReposResponse, error) {
-	out := new(ListReposResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListRepos", in, out, opts...)
+func (c *runtimeServiceClient) ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error) {
+	out := new(ListInstancesResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListInstances", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetRepo(ctx context.Context, in *GetRepoRequest, opts ...grpc.CallOption) (*GetRepoResponse, error) {
-	out := new(GetRepoResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetRepo", in, out, opts...)
+func (c *runtimeServiceClient) GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error) {
+	out := new(GetInstanceResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetInstance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) CreateRepo(ctx context.Context, in *CreateRepoRequest, opts ...grpc.CallOption) (*CreateRepoResponse, error) {
-	out := new(CreateRepoResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/CreateRepo", in, out, opts...)
+func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error) {
+	out := new(CreateInstanceResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/CreateInstance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *runtimeServiceClient) DeleteRepo(ctx context.Context, in *DeleteRepoRequest, opts ...grpc.CallOption) (*DeleteRepoResponse, error) {
-	out := new(DeleteRepoResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/DeleteRepo", in, out, opts...)
+func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error) {
+	out := new(DeleteInstanceResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/DeleteInstance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,42 +203,6 @@ func (c *runtimeServiceClient) DeleteFile(ctx context.Context, in *DeleteFileReq
 func (c *runtimeServiceClient) RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error) {
 	out := new(RenameFileResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/RenameFile", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error) {
-	out := new(ListInstancesResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/ListInstances", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error) {
-	out := new(GetInstanceResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/GetInstance", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error) {
-	out := new(CreateInstanceResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/CreateInstance", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error) {
-	out := new(DeleteInstanceResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/DeleteInstance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -502,14 +458,14 @@ func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConne
 type RuntimeServiceServer interface {
 	// Ping returns information about the runtime
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	// ListRepos lists all the repos currently managed by the runtime
-	ListRepos(context.Context, *ListReposRequest) (*ListReposResponse, error)
-	// GetRepo returns info about a specific repo
-	GetRepo(context.Context, *GetRepoRequest) (*GetRepoResponse, error)
-	// CreateRepo creates a new repo. See the Repo message for an explanation of repos.
-	CreateRepo(context.Context, *CreateRepoRequest) (*CreateRepoResponse, error)
-	// DeleteRepo deletes a repo
-	DeleteRepo(context.Context, *DeleteRepoRequest) (*DeleteRepoResponse, error)
+	// ListInstances lists all the instances currently managed by the runtime
+	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
+	// GetInstance returns information about a specific instance
+	GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error)
+	// CreateInstance creates a new instance
+	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
+	// DeleteInstance deletes an instance
+	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
@@ -521,14 +477,6 @@ type RuntimeServiceServer interface {
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error)
-	// ListInstances lists all the instances currently managed by the runtime
-	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
-	// GetInstance returns information about a specific instance
-	GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error)
-	// CreateInstance creates a new instance
-	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
-	// DeleteInstance deletes an instance
-	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -605,17 +553,17 @@ type UnimplementedRuntimeServiceServer struct {
 func (UnimplementedRuntimeServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedRuntimeServiceServer) ListRepos(context.Context, *ListReposRequest) (*ListReposResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListRepos not implemented")
+func (UnimplementedRuntimeServiceServer) ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetRepo(context.Context, *GetRepoRequest) (*GetRepoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRepo not implemented")
+func (UnimplementedRuntimeServiceServer) GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInstance not implemented")
 }
-func (UnimplementedRuntimeServiceServer) CreateRepo(context.Context, *CreateRepoRequest) (*CreateRepoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateRepo not implemented")
+func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateInstance not implemented")
 }
-func (UnimplementedRuntimeServiceServer) DeleteRepo(context.Context, *DeleteRepoRequest) (*DeleteRepoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteRepo not implemented")
+func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
@@ -631,18 +579,6 @@ func (UnimplementedRuntimeServiceServer) DeleteFile(context.Context, *DeleteFile
 }
 func (UnimplementedRuntimeServiceServer) RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameFile not implemented")
-}
-func (UnimplementedRuntimeServiceServer) ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetInstance not implemented")
-}
-func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateInstance not implemented")
-}
-func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
@@ -756,74 +692,74 @@ func _RuntimeService_Ping_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_ListRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListReposRequest)
+func _RuntimeService_ListInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListInstancesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListRepos(ctx, in)
+		return srv.(RuntimeServiceServer).ListInstances(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/ListRepos",
+		FullMethod: "/rill.runtime.v1.RuntimeService/ListInstances",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListRepos(ctx, req.(*ListReposRequest))
+		return srv.(RuntimeServiceServer).ListInstances(ctx, req.(*ListInstancesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GetRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRepoRequest)
+func _RuntimeService_GetInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetRepo(ctx, in)
+		return srv.(RuntimeServiceServer).GetInstance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/GetRepo",
+		FullMethod: "/rill.runtime.v1.RuntimeService/GetInstance",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetRepo(ctx, req.(*GetRepoRequest))
+		return srv.(RuntimeServiceServer).GetInstance(ctx, req.(*GetInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_CreateRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateRepoRequest)
+func _RuntimeService_CreateInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateInstanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).CreateRepo(ctx, in)
+		return srv.(RuntimeServiceServer).CreateInstance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/CreateRepo",
+		FullMethod: "/rill.runtime.v1.RuntimeService/CreateInstance",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).CreateRepo(ctx, req.(*CreateRepoRequest))
+		return srv.(RuntimeServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_DeleteRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteRepoRequest)
+func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteInstanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).DeleteRepo(ctx, in)
+		return srv.(RuntimeServiceServer).DeleteInstance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/DeleteRepo",
+		FullMethod: "/rill.runtime.v1.RuntimeService/DeleteInstance",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).DeleteRepo(ctx, req.(*DeleteRepoRequest))
+		return srv.(RuntimeServiceServer).DeleteInstance(ctx, req.(*DeleteInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -914,78 +850,6 @@ func _RuntimeService_RenameFile_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).RenameFile(ctx, req.(*RenameFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_ListInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListInstancesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListInstances(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/ListInstances",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListInstances(ctx, req.(*ListInstancesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_GetInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetInstanceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetInstance(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/GetInstance",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetInstance(ctx, req.(*GetInstanceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_CreateInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateInstanceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).CreateInstance(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/CreateInstance",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteInstanceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).DeleteInstance(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/DeleteInstance",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).DeleteInstance(ctx, req.(*DeleteInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1488,20 +1352,20 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_Ping_Handler,
 		},
 		{
-			MethodName: "ListRepos",
-			Handler:    _RuntimeService_ListRepos_Handler,
+			MethodName: "ListInstances",
+			Handler:    _RuntimeService_ListInstances_Handler,
 		},
 		{
-			MethodName: "GetRepo",
-			Handler:    _RuntimeService_GetRepo_Handler,
+			MethodName: "GetInstance",
+			Handler:    _RuntimeService_GetInstance_Handler,
 		},
 		{
-			MethodName: "CreateRepo",
-			Handler:    _RuntimeService_CreateRepo_Handler,
+			MethodName: "CreateInstance",
+			Handler:    _RuntimeService_CreateInstance_Handler,
 		},
 		{
-			MethodName: "DeleteRepo",
-			Handler:    _RuntimeService_DeleteRepo_Handler,
+			MethodName: "DeleteInstance",
+			Handler:    _RuntimeService_DeleteInstance_Handler,
 		},
 		{
 			MethodName: "ListFiles",
@@ -1522,22 +1386,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenameFile",
 			Handler:    _RuntimeService_RenameFile_Handler,
-		},
-		{
-			MethodName: "ListInstances",
-			Handler:    _RuntimeService_ListInstances_Handler,
-		},
-		{
-			MethodName: "GetInstance",
-			Handler:    _RuntimeService_GetInstance_Handler,
-		},
-		{
-			MethodName: "CreateInstance",
-			Handler:    _RuntimeService_CreateInstance_Handler,
-		},
-		{
-			MethodName: "DeleteInstance",
-			Handler:    _RuntimeService_DeleteInstance_Handler,
 		},
 		{
 			MethodName: "ListCatalogEntries",

@@ -4,26 +4,6 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-export type RuntimeServiceRenameFileBody = {
-  fromPath?: string;
-  toPath?: string;
-};
-
-export type RuntimeServicePutFileBody = {
-  blob?: string;
-  create?: boolean;
-  /** Will cause the operation to fail if the file already exists.
-It should only be set when create = true. */
-  createOnly?: boolean;
-};
-
-export type RuntimeServiceListFilesParams = { glob?: string };
-
-export type RuntimeServiceListReposParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
 /**
  * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
  */
@@ -53,15 +33,8 @@ export type RuntimeServiceMigrateBody = {
 migrations to execute faster by not scanning all code artifacts for changes. */
   changedPaths?: string[];
   dry?: boolean;
-  repoId?: string;
   strict?: boolean;
 };
-
-export interface V1MetricsViewFilter {
-  exclude?: MetricsViewFilterCond[];
-  include?: MetricsViewFilterCond[];
-  match?: string[];
-}
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
@@ -97,6 +70,21 @@ export type RuntimeServiceGenerateTimeSeriesBody = {
   timeRange?: V1TimeSeriesTimeRange;
   timestampColumnName?: string;
 };
+
+export type RuntimeServiceRenameFileBody = {
+  fromPath?: string;
+  toPath?: string;
+};
+
+export type RuntimeServicePutFileBody = {
+  blob?: string;
+  create?: boolean;
+  /** Will cause the operation to fail if the file already exists.
+It should only be set when create = true. */
+  createOnly?: boolean;
+};
+
+export type RuntimeServiceListFilesParams = { glob?: string };
 
 export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
@@ -239,19 +227,6 @@ export interface V1Source {
   schema?: V1StructType;
 }
 
-/**
- * Repo represents a collection of file artifacts containing SQL statements.
-It will usually by represented as a folder on disk, but may also be backed by a
-database (for modelling in the cloud where no persistant file system is available).
- */
-export interface V1Repo {
-  /** Driver for persisting artifacts. Supports "file" and "postgres". */
-  driver?: string;
-  /** DSN for driver. If the driver is "file", this should be the path to the root directory. */
-  dsn?: string;
-  repoId?: string;
-}
-
 export interface V1RenameFileResponse {
   [key: string]: any;
 }
@@ -271,7 +246,6 @@ export interface V1RenameFileAndMigrateRequest {
   dry?: boolean;
   fromPath?: string;
   instanceId?: string;
-  repoId?: string;
   strict?: boolean;
   toPath?: string;
 }
@@ -314,7 +288,6 @@ It should only be set when create = true. */
   dry?: boolean;
   instanceId?: string;
   path?: string;
-  repoId?: string;
   strict?: boolean;
 }
 
@@ -452,6 +425,12 @@ export interface V1MetricsViewSort {
   name?: string;
 }
 
+export interface V1MetricsViewFilter {
+  exclude?: MetricsViewFilterCond[];
+  include?: MetricsViewFilterCond[];
+  match?: string[];
+}
+
 export interface V1MetricsViewDimensionValue {
   in?: unknown[];
   like?: MetricsViewDimensionValueValues;
@@ -485,17 +464,13 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListReposResponse {
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
   nextPageToken?: string;
-  repos?: V1Repo[];
 }
 
 export interface V1ListFilesResponse {
   paths?: string[];
-}
-
-export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -503,35 +478,24 @@ export interface V1ListCatalogEntriesResponse {
 }
 
 /**
- * Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
-Migrations and queries are issued against a specific instance. The concept of
-instances enables multiple data projects to be served by one runtime.
+ * Instance represents a single data project, meaning one set of code artifacts,
+one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+metadata (such as migration status). Instances are the unit of isolation within
+the runtime. They enable one runtime deployment to serve not only multiple data
+projects, but also multiple tenants. On local, the runtime will usually have
+just a single instance.
  */
 export interface V1Instance {
-  driver?: string;
-  dsn?: string;
-  /** If true, the runtime will store the instance's catalog data (such as sources and metrics views)
-in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
-only supported for the duckdb driver. */
+  /** If true, the runtime will store the instance's catalog in its OLAP store instead
+of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
-  /** Indicates that the underlying infra may be manipulated directly by users.
-If true, the runtime will continuously poll the infra's information schema
-to discover tables not created through the runtime. They will be added to the
-catalog as UnmanagedTables. */
-  exposed?: boolean;
   instanceId?: string;
-  /** Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
-Use it as an alternative to database schemas. */
-  objectPrefix?: string;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
-export interface V1GetTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
+  olapDriver?: string;
+  olapDsn?: string;
+  /** Driver for reading/editing code artifacts (options: file, metastore).
+This enables virtualizing a file system in a cloud setting. */
+  repoDriver?: string;
+  repoDsn?: string;
 }
 
 export interface V1GetTimeRangeSummaryResponse {
@@ -550,10 +514,6 @@ export interface V1GetTableCardinalityResponse {
 
 export interface V1GetRugHistogramResponse {
   numericSummary?: V1NumericSummary;
-}
-
-export interface V1GetRepoResponse {
-  repo?: V1Repo;
 }
 
 export interface V1GetNumericHistogramResponse {
@@ -599,10 +559,6 @@ export interface V1EstimateRollupIntervalResponse {
   start?: string;
 }
 
-export interface V1DeleteRepoResponse {
-  [key: string]: any;
-}
-
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -626,32 +582,24 @@ export interface V1DeleteFileAndMigrateRequest {
   dry?: boolean;
   instanceId?: string;
   path?: string;
-  repoId?: string;
   strict?: boolean;
-}
-
-export interface V1CreateRepoResponse {
-  repo?: V1Repo;
-}
-
-export interface V1CreateRepoRequest {
-  driver?: string;
-  dsn?: string;
-  repoId?: string;
 }
 
 export interface V1CreateInstanceResponse {
   instance?: V1Instance;
-  instanceId?: string;
 }
 
+/**
+ * Request message for RuntimeService.CreateInstance.
+See message Instance for field descriptions.
+ */
 export interface V1CreateInstanceRequest {
-  driver?: string;
-  dsn?: string;
   embedCatalog?: boolean;
-  exposed?: boolean;
   instanceId?: string;
-  objectPrefix?: string;
+  olapDriver?: string;
+  olapDsn?: string;
+  repoDriver?: string;
+  repoDsn?: string;
 }
 
 /**
@@ -665,12 +613,20 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
+export interface V1ListConnectorsResponse {
+  connectors?: V1Connector[];
+}
+
 /**
  * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
   cardinality?: number;
   topK?: V1TopK;
+}
+
+export interface V1GetTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {

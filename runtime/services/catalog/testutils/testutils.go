@@ -22,7 +22,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	err = artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
+	err = artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeSource,
 		Path: path,
@@ -35,14 +35,14 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.RepoId, path)
+	blob, err := s.Repo.Get(ctx, s.InstId, path)
 	require.NoError(t, err)
 	return blob
 }
 
 func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
+	err := artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeModel,
 		Path: path,
@@ -53,21 +53,21 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.RepoId, path)
+	blob, err := s.Repo.Get(ctx, s.InstId, path)
 	require.NoError(t, err)
 	return blob
 }
 
 func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
 	ctx := context.Background()
-	err := artifacts.Write(ctx, s.Repo, s.RepoId, &drivers.CatalogEntry{
+	err := artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
 		Name:   metricsView.Name,
 		Type:   drivers.ObjectTypeMetricsView,
 		Path:   path,
 		Object: metricsView,
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.RepoId, path)
+	blob, err := s.Repo.Get(ctx, s.InstId, path)
 	require.NoError(t, err)
 	return blob
 }

@@ -62,7 +62,6 @@
           $renameSource.mutate(
             {
               data: {
-                repoId: $runtimeStore.repoId,
                 instanceId: runtimeInstanceId,
                 fromPath: `sources/${currentAssetName}.yaml`,
                 toPath: `sources/${values.newName}.yaml`,
@@ -76,7 +75,7 @@
                   message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
                 });
                 return queryClient.invalidateQueries(
-                  getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                  getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
                 );
               },
               onError: (err) => {
