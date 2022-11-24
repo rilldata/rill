@@ -184,7 +184,7 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 				// or if the existing has error whereas new one doest
 				(item.Error != nil && existing.Error != nil) ||
 				// or if the existing file was updated after new (this makes it so that the old one will be retained)
-				(item.Error == nil && !item.CatalogInFile.UpdatedOn.IsZero() && !existing.CatalogInFile.UpdatedOn.IsZero() &&
+				(item.Error == nil && item.CatalogInFile != nil && existing.CatalogInFile != nil &&
 					existing.CatalogInFile.UpdatedOn.After(item.CatalogInFile.UpdatedOn)) {
 				// replace the existing with new
 				migrationMap[item.Name] = item

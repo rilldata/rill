@@ -42,13 +42,14 @@ func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.
 }
 
 func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
-	if catalog.GetMetricsView().From == "" {
+	mv := catalog.GetMetricsView()
+	if mv.From == "" {
 		return SourceNotSelected
 	}
-	if catalog.GetMetricsView().TimeDimension == "" {
+	if mv.TimeDimension == "" {
 		return TimestampNotSelected
 	}
-	model, err := olap.InformationSchema().Lookup(ctx, catalog.GetMetricsView().From)
+	model, err := olap.InformationSchema().Lookup(ctx, mv.From)
 	if err != nil {
 		if err == drivers.ErrNotFound {
 			return SourceNotFound
@@ -61,18 +62,18 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		fieldsMap[field.Name] = field
 	}
 
-	if _, ok := fieldsMap[catalog.GetMetricsView().TimeDimension]; !ok {
+	if _, ok := fieldsMap[mv.TimeDimension]; !ok {
 		return TimestampNotFound
 	}
 
-	for _, dimension := range catalog.GetMetricsView().Dimensions {
+	for _, dimension := range mv.Dimensions {
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, measure := range catalog.GetMetricsView().Measures {
+	for _, measure := range mv.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
 			return err
