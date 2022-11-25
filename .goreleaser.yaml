@@ -6,8 +6,6 @@ release:
 before:
   hooks: null
 
-draft: true # testing
-
 builds:
   # macos amd64
   - id: darwin-amd64
@@ -74,7 +72,7 @@ builds:
 
 blobs:
   - provider: gs
-    bucket: goreleaser-bucket
+    bucket: pkg.rilldata.com
     folder: "rill/{{.Version}}"
 
 brews:
