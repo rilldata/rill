@@ -134,34 +134,6 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/cardinality-of-column/{tableName}/{columnName}:
-    get:
-      summary: Get cardinality for a column
-      operationId: RuntimeService_GetCardinalityOfColumn
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetCardinalityOfColumnResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/catalog:
     get:
       summary: ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
@@ -239,94 +211,6 @@ paths:
           required: true
           type: string
         - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/descriptive-statistics/{tableName}/{columnName}:
-    get:
-      summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
-      operationId: RuntimeService_GetDescriptiveStatistics
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetDescriptiveStatisticsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/estimate-rollup-interval/{tableName}:
-    post:
-      summary: 'EstimateRollupInterval (TODO: add description)'
-      operationId: RuntimeService_EstimateRollupInterval
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EstimateRollupIntervalResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              columnName:
-                type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/estimate-smallest-time-grain/{tableName}/{columnName}:
-    get:
-      summary: Estimates the smallest time grain present in the column
-      operationId: RuntimeService_EstimateSmallestTimeGrain
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EstimateSmallestTimeGrainResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
           in: path
           required: true
           type: string
@@ -477,48 +361,6 @@ paths:
               toPath:
                 type: string
             title: Request message for RuntimeService.RenameFile
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/generate-timeseries:
-    post:
-      summary: Generate time series
-      operationId: RuntimeService_GenerateTimeSeries
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GenerateTimeSeriesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              filters:
-                $ref: '#/definitions/v1MetricsViewRequestFilter'
-              measures:
-                $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasures'
-              pixels:
-                type: integer
-                format: int32
-              sampleSize:
-                type: integer
-                format: int32
-              tableName:
-                type: string
-              timeRange:
-                $ref: '#/definitions/v1TimeSeriesTimeRange'
-              timestampColumnName:
-                type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/metrics-views/{metricsViewName}/timeseries:
@@ -672,7 +514,111 @@ paths:
             title: Request message for RuntimeService.MetricsViewTotals
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/null-count/{tableName}/{columnName}:
+  /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}:
+    get:
+      summary: 'TableCardinality (TODO: add description)'
+      operationId: RuntimeService_GetTableCardinality
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTableCardinalityResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}/columns/{columnName}:
+    get:
+      summary: Get cardinality for a column
+      operationId: RuntimeService_GetCardinalityOfColumn
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCardinalityOfColumnResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
+    post:
+      summary: 'ProfileColumns (TODO: add description)'
+      operationId: RuntimeService_ProfileColumns
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProfileColumnsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}/columns/{columnName}:
+    get:
+      summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
+      operationId: RuntimeService_GetDescriptiveStatistics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDescriptiveStatisticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}/columns/{columnName}:
     get:
       summary: Get the number of nulls in a column
       operationId: RuntimeService_GetNullCount
@@ -700,7 +646,7 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/numeric-histogram/{tableName}/{columnName}:
+  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}/columns/{columnName}:
     get:
       summary: Get the histogram for values in a column
       operationId: RuntimeService_GetNumericHistogram
@@ -728,15 +674,15 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}:
-    get:
-      summary: 'TableCardinality (TODO: add description)'
-      operationId: RuntimeService_GetTableCardinality
+  /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
+    post:
+      summary: 'EstimateRollupInterval (TODO: add description)'
+      operationId: RuntimeService_EstimateRollupInterval
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetTableCardinalityResponse'
+            $ref: '#/definitions/v1EstimateRollupIntervalResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -750,6 +696,213 @@ paths:
           in: path
           required: true
           type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              columnName:
+                type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
+    get:
+      summary: 'TableRows (TODO: add description)'
+      operationId: RuntimeService_GetTableRows
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTableRowsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: limit
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}/columns/{columnName}:
+    get:
+      summary: Get outliers for a numeric column
+      operationId: RuntimeService_GetRugHistogram
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetRugHistogramResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}/columns/{columnName}:
+    get:
+      summary: Estimates the smallest time grain present in the column
+      operationId: RuntimeService_EstimateSmallestTimeGrain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EstimateSmallestTimeGrainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}/columns/{columnName}:
+    get:
+      summary: Get the time range summaries (min, max) for a column
+      operationId: RuntimeService_GetTimeRangeSummary
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTimeRangeSummaryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/timeseries:
+    post:
+      summary: Generate time series
+      operationId: RuntimeService_GenerateTimeSeries
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateTimeSeriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              filters:
+                $ref: '#/definitions/v1MetricsViewRequestFilter'
+              measures:
+                $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasures'
+              pixels:
+                type: integer
+                format: int32
+              sampleSize:
+                type: integer
+                format: int32
+              tableName:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeSeriesTimeRange'
+              timestampColumnName:
+                type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/topk/tables/{tableName}/columns/{columnName}:
+    post:
+      summary: |-
+        Get TopK elements from a table for a column given an agg function
+        agg function and k are optional, defaults are count(*) and 50 respectively
+      operationId: RuntimeService_GetTopK
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTopKResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              agg:
+                type: string
+                title: default is count(*)
+              k:
+                type: integer
+                format: int32
+                title: default is 50
+            description: Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/query:
@@ -881,34 +1034,6 @@ paths:
             title: Request message for RuntimeService.Reconcile
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/rug-histogram/{tableName}/{columnName}:
-    get:
-      summary: Get outliers for a numeric column
-      operationId: RuntimeService_GetRugHistogram
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetRugHistogramResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/sync:
     post:
       summary: |-
@@ -929,131 +1054,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/tables/{tableName}/profile-columns:
-    post:
-      summary: 'ProfileColumns (TODO: add description)'
-      operationId: RuntimeService_ProfileColumns
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ProfileColumnsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/tables/{tableName}/rows:
-    get:
-      summary: 'TableRows (TODO: add description)'
-      operationId: RuntimeService_GetTableRows
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetTableRowsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: limit
-          in: query
-          required: false
-          type: integer
-          format: int32
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/time-range-summary/{tableName}/{columnName}:
-    get:
-      summary: Get the time range summaries (min, max) for a column
-      operationId: RuntimeService_GetTimeRangeSummary
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetTimeRangeSummaryResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/topk/{tableName}/{columnName}:
-    post:
-      summary: |-
-        Get TopK elements from a table for a column given an agg function
-        agg function and k are optional, defaults are count(*) and 50 respectively
-      operationId: RuntimeService_GetTopK
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetTopKResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              agg:
-                type: string
-                title: default is count(*)
-              k:
-                type: integer
-                format: int32
-                title: default is 50
-            description: Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
         - RuntimeService
   /v1/ping:

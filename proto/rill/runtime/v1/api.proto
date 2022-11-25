@@ -211,7 +211,7 @@ service RuntimeService {
   // EstimateRollupInterval (TODO: add description)
   rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}",
+      post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
       body: "*"
     };
   }
@@ -220,7 +220,7 @@ service RuntimeService {
   // agg function and k are optional, defaults are count(*) and 50 respectively
   rpc GetTopK(GetTopKRequest) returns (GetTopKResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/topk/{table_name}/{column_name}",
+      post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}/columns/{column_name}",
       body: "*"
     };
   }
@@ -228,56 +228,56 @@ service RuntimeService {
   // Get the number of nulls in a column
   rpc GetNullCount(GetNullCountRequest) returns (GetNullCountResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/null-count/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
   rpc GetDescriptiveStatistics(GetDescriptiveStatisticsRequest) returns (GetDescriptiveStatisticsResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/descriptive-statistics/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Estimates the smallest time grain present in the column
   rpc EstimateSmallestTimeGrain(EstimateSmallestTimeGrainRequest) returns (EstimateSmallestTimeGrainResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/estimate-smallest-time-grain/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Get the histogram for values in a column
   rpc GetNumericHistogram(GetNumericHistogramRequest) returns (GetNumericHistogramResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/numeric-histogram/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Get outliers for a numeric column
   rpc GetRugHistogram(GetRugHistogramRequest) returns (GetRugHistogramResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/rug-histogram/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Get the time range summaries (min, max) for a column
   rpc GetTimeRangeSummary(GetTimeRangeSummaryRequest) returns (GetTimeRangeSummaryResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/time-range-summary/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Get cardinality for a column
   rpc GetCardinalityOfColumn(GetCardinalityOfColumnRequest) returns (GetCardinalityOfColumnResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/cardinality-of-column/{table_name}/{column_name}"
+      get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"
     };
   }
 
   // Generate time series
   rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (GenerateTimeSeriesResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate-timeseries",
+      post: "/v1/instances/{instance_id}/queries/timeseries",
       body: "*"
     };
   }
@@ -294,14 +294,14 @@ service RuntimeService {
   // ProfileColumns (TODO: add description)
   rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
+      post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"
     };
   }
 
   // TableRows (TODO: add description)
   rpc GetTableRows(GetTableRowsRequest) returns (GetTableRowsResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
+      get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"
     };
   }
 

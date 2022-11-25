@@ -4,16 +4,6 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-/**
- * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
- */
-export type RuntimeServiceGetTopKBody = {
-  agg?: string;
-  k?: number;
-};
-
-export type RuntimeServiceGetTableRowsParams = { limit?: number };
-
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -34,6 +24,30 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
   priority?: string;
   sql?: string;
+};
+
+/**
+ * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
+ */
+export type RuntimeServiceGetTopKBody = {
+  agg?: string;
+  k?: number;
+};
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  filters?: V1MetricsViewRequestFilter;
+  measures?: GenerateTimeSeriesRequestBasicMeasures;
+  pixels?: number;
+  sampleSize?: number;
+  tableName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
+
+export type RuntimeServiceGetTableRowsParams = { limit?: number };
+
+export type RuntimeServiceEstimateRollupIntervalBody = {
+  columnName?: string;
 };
 
 export type RuntimeServiceMetricsViewTotalsBody = {
@@ -61,16 +75,6 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   timeStart?: string;
 };
 
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewRequestFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasures;
-  pixels?: number;
-  sampleSize?: number;
-  tableName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
-
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
@@ -85,10 +89,6 @@ It should only be set when create = true. */
 };
 
 export type RuntimeServiceListFilesParams = { glob?: string };
-
-export type RuntimeServiceEstimateRollupIntervalBody = {
-  columnName?: string;
-};
 
 export type RuntimeServiceListCatalogEntriesType =
   typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
