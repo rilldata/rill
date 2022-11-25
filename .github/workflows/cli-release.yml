@@ -19,6 +19,9 @@ jobs:
         with:
           submodules: 'true'
 
+      - name: fetch tags
+        run: git fetch --prune --unshallow
+
       - name: setup release environment
         run: |-
           echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
