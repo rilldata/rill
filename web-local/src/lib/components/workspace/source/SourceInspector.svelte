@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
@@ -62,8 +62,8 @@
     currentTable?.tableName
   );
 
-  $: modelNames = useModelNames($runtimeStore.repoId);
-  const createModelMutation = useRuntimeServicePutFileAndMigrate();
+  $: modelNames = useModelNames(runtimeInstanceId);
+  const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
   let showColumns = true;
 
@@ -86,7 +86,7 @@
 
   const handleCreateModelFromSource = async () => {
     const modelName = await createModelFromSource(
-      $runtimeStore,
+      runtimeInstanceId,
       $modelNames.data,
       currentTable.tableName,
       $createModelMutation

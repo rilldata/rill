@@ -7,7 +7,6 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
-  import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
@@ -18,7 +17,7 @@
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { createInternalRepresentation } from "./metrics-internal-store";
   // import { $metricsresentation } from "./$metricsresentation";
@@ -39,14 +38,12 @@
     metrics = createInternalRepresentation(yaml);
   }
 
-  $: repoId = $runtimeStore.repoId;
   $: instanceId = $runtimeStore.instanceId;
 
-  const metricMigrate = useRuntimeServicePutFileAndMigrate();
+  const metricMigrate = useRuntimeServicePutFileAndReconcile();
   function callPutAndMigrate() {
     $metricMigrate.mutate({
       data: {
-        repoId,
         instanceId,
         path: `dashboards/${metricsDefName}.yaml`,
         blob: $metrics.internalYAML,

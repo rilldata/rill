@@ -25,49 +25,45 @@ func TestServer_InitCatalogService(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 
-	instId, repoId := createInstanceAndRepo(t, server, ctx, dir)
-	service, err := server.serviceCache.createCatalogService(ctx, server, instId, repoId)
+	instId := createInstance(t, server, ctx, dir)
+	service, err := server.serviceCache.createCatalogService(ctx, server, instId)
 	require.NoError(t, err)
 
 	testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	testutils.CreateModel(t, service, "AdBids_model", "select timestamp, publisher from AdBids", AdBidsModelRepoPath)
-	migrateResp, err := service.Migrate(ctx, catalog.MigrationConfig{})
+	res, err := service.Reconcile(ctx, catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, migrateResp, 0, 2, 0, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
+	testutils.AssertMigration(t, res, 0, 2, 0, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 	testutils.AssertTable(t, service, "AdBids", AdBidsRepoPath)
 	testutils.AssertTable(t, service, "AdBids_model", AdBidsModelRepoPath)
 
 	// create a new service and make sure DAG is generated
-	instId, repoId = createInstanceAndRepo(t, server, ctx, dir)
-	service, err = server.serviceCache.createCatalogService(ctx, server, instId, repoId)
+	instId = createInstance(t, server, ctx, dir)
+	service, err = server.serviceCache.createCatalogService(ctx, server, instId)
 	require.NoError(t, err)
 
-	// initial migrate to setup cache
-	migrateResp, err = service.Migrate(ctx, catalog.MigrationConfig{})
+	// initial reconcile to setup cache
+	_, err = service.Reconcile(ctx, catalog.ReconcileConfig{})
+	require.NoError(t, err)
 	// force update the source
-	migrateResp, err = service.Migrate(ctx, catalog.MigrationConfig{
+	res, err = service.Reconcile(ctx, catalog.ReconcileConfig{
 		ChangedPaths: []string{AdBidsRepoPath},
 		ForcedPaths:  []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, migrateResp, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
+	testutils.AssertMigration(t, res, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
 }
 
-func createInstanceAndRepo(t *testing.T, server *Server, ctx context.Context, dir string) (string, string) {
+func createInstance(t *testing.T, server *Server, ctx context.Context, dir string) string {
 	instResp, err := server.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		Driver: "duckdb",
+		OlapDriver: "duckdb",
 		// use persistent file to test fresh load
-		Dsn:          filepath.Join(dir, "stage.db"),
-		Exposed:      true,
+		OlapDsn:      filepath.Join(dir, "stage.db"),
+		RepoDriver:   "file",
+		RepoDsn:      dir,
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
 
-	repoResp, err := server.CreateRepo(ctx, &runtimev1.CreateRepoRequest{
-		Driver: "file",
-		Dsn:    dir,
-	})
-	require.NoError(t, err)
-
-	return instResp.Instance.InstanceId, repoResp.Repo.RepoId
+	return instResp.Instance.InstanceId
 }

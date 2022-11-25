@@ -1,14 +1,13 @@
 import { goto } from "$app/navigation";
 import {
   getRuntimeServiceListFilesQueryKey,
-  V1DeleteFileAndMigrateResponse,
-  V1RenameFileAndMigrateResponse,
+  V1DeleteFileAndReconcileResponse,
+  V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import {
   getFileFromName,
@@ -20,16 +19,15 @@ import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryCli
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
 export async function renameEntity(
-  runtimeState: RuntimeState,
+  instanceId: string,
   fromName: string,
   toName: string,
   type: EntityType,
-  renameMutation: UseMutationResult<V1RenameFileAndMigrateResponse>
+  renameMutation: UseMutationResult<V1RenameFileAndReconcileResponse>
 ) {
   const resp = await renameMutation.mutateAsync({
     data: {
-      repoId: runtimeState.repoId,
-      instanceId: runtimeState.instanceId,
+      instanceId,
       fromPath: getFileFromName(fromName, type),
       toPath: getFileFromName(toName, type),
     },
@@ -46,23 +44,22 @@ export async function renameEntity(
     message: `renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
   await queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(runtimeState.repoId)
+    getRuntimeServiceListFilesQueryKey(instanceId)
   );
 }
 
 export async function deleteEntity(
-  runtimeState: RuntimeState,
+  instanceId: string,
   name: string,
   type: EntityType,
-  deleteMutation: UseMutationResult<V1DeleteFileAndMigrateResponse>,
+  deleteMutation: UseMutationResult<V1DeleteFileAndReconcileResponse>,
   activeEntity: ActiveEntity,
   names: Array<string>
 ) {
   try {
     const resp = await deleteMutation.mutateAsync({
       data: {
-        repoId: runtimeState.repoId,
-        instanceId: runtimeState.instanceId,
+        instanceId,
         path: getFileFromName(name, type),
       },
     });
@@ -78,7 +75,7 @@ export async function deleteEntity(
 
     // TODO: update all entities based on affected path
     return queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(runtimeState.repoId)
+      getRuntimeServiceListFilesQueryKey(instanceId)
     );
   } catch (err) {
     console.error(err);

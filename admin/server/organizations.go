@@ -5,8 +5,8 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/labstack/echo/v4"
-	"github.com/rilldata/rill/server-cloud/api"
-	"github.com/rilldata/rill/server-cloud/database"
+	"github.com/rilldata/rill/admin/api"
+	"github.com/rilldata/rill/admin/database"
 )
 
 // (GET /v1/organizations)

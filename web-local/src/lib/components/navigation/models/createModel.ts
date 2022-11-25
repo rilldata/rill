@@ -1,11 +1,10 @@
 import { goto } from "$app/navigation";
 import {
   getRuntimeServiceListFilesQueryKey,
-  V1PutFileAndMigrateResponse,
+  V1PutFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
-import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
@@ -13,16 +12,15 @@ import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryCli
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
 export async function createModel(
-  runtimeState: RuntimeState,
+  instanceId: string,
   newModelName: string,
-  createModelMutation: UseMutationResult<V1PutFileAndMigrateResponse>, // TODO: type
+  createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
   sql = "",
   setAsActive = true
 ) {
   const resp = await createModelMutation.mutateAsync({
     data: {
-      repoId: runtimeState.repoId,
-      instanceId: runtimeState.instanceId,
+      instanceId,
       path: getFileFromName(newModelName, EntityType.Model),
       blob: sql,
       create: true,
@@ -46,20 +44,20 @@ export async function createModel(
   if (!setAsActive) return;
   goto(`/model/${newModelName}`);
   return queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(runtimeState.repoId)
+    getRuntimeServiceListFilesQueryKey(instanceId)
   );
 }
 
 export async function createModelFromSource(
-  runtimeState: RuntimeState,
+  instanceId: string,
   modelNames: Array<string>,
   sourceName: string,
-  createModelMutation: UseMutationResult<V1PutFileAndMigrateResponse>, // TODO: type
+  createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
   setAsActive = true
 ): Promise<string> {
   const newModelName = getName(`${sourceName}_model`, modelNames);
   await createModel(
-    runtimeState,
+    instanceId,
     newModelName,
     createModelMutation,
     `select * from ${sourceName}`,

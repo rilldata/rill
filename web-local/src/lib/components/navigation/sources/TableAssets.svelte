@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useRuntimeServicePutFileAndMigrate } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
@@ -10,12 +10,10 @@
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
-  import { createModelForSource } from "../../../redux-store/source/source-apis";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import Source from "../../icons/Source.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
@@ -25,10 +23,9 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtimeStore.repoId);
-
-  $: modelNames = useModelNames($runtimeStore.repoId);
-  const createModelMutation = useRuntimeServicePutFileAndMigrate();
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
+  $: modelNames = useModelNames($runtimeStore.instanceId);
+  const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -37,10 +34,6 @@
   const derivedTableStore = getContext(
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
 
   let showTables = true;
 
@@ -52,7 +45,7 @@
 
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
-      $runtimeStore,
+      $runtimeStore.instanceId,
       $modelNames.data,
       tableName,
       $createModelMutation

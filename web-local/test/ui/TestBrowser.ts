@@ -100,12 +100,12 @@ export class TestBrowser {
         duplicatePromise = this.clickModalButton("Replace Existing Source");
       }
       await Promise.all([
-        this.page.waitForResponse(/put-and-migrate/),
+        this.page.waitForResponse(/put-and-reconcile/),
         duplicatePromise,
       ]);
     } else {
       await Promise.all([
-        this.page.waitForResponse(/put-and-migrate/),
+        this.page.waitForResponse(/put-and-reconcile/),
         fileUploadPromise,
       ]);
       // if not duplicate wait and make sure `Duplicate source name` modal is not open
@@ -195,7 +195,7 @@ export class TestBrowser {
     // type new name and submit
     await this.page.locator(".portal input").fill(toName);
     await Promise.all([
-      this.page.waitForResponse(/rename-and-migrate/),
+      this.page.waitForResponse(/rename-and-reconcile/),
       this.clickModalButton("Change Name"),
     ]);
   }
@@ -209,7 +209,7 @@ export class TestBrowser {
     // open context menu and click rename
     await this.openEntityMenu(type, name);
     await Promise.all([
-      this.page.waitForResponse(/delete-and-migrate/),
+      this.page.waitForResponse(/delete-and-reconcile/),
       this.clickMenuButton("delete"),
     ]);
   }

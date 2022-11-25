@@ -3,8 +3,8 @@
   import { page } from "$app/stores";
   import {
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServiceDeleteFileAndMigrate,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -40,13 +40,12 @@
   import RenameAssetModal from "../RenameAssetModal.svelte";
   import { metricsTemplate } from "./metricsUtils";
 
-  $: repoId = $runtimeStore.repoId;
   $: instanceId = $runtimeStore.instanceId;
 
-  $: dashboardNames = useDashboardNames($runtimeStore.repoId);
+  $: dashboardNames = useDashboardNames(instanceId);
 
-  const createDashboard = useRuntimeServicePutFileAndMigrate();
-  const deleteDashboard = useRuntimeServiceDeleteFileAndMigrate();
+  const createDashboard = useRuntimeServicePutFileAndReconcile();
+  const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
 
   const metricsDefinitions = getAllMetricsDefinitionsReadable();
   const appStore = getContext("rill:app:store") as ApplicationStore;
@@ -77,7 +76,6 @@
     $createDashboard.mutate(
       {
         data: {
-          repoId,
           instanceId,
           path: `dashboards/${newDashboardName}.yaml`,
           blob: yaml,
@@ -90,7 +88,7 @@
         onSuccess: async () => {
           goto(`/dashboard/${newDashboardName}`);
           queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+            getRuntimeServiceListFilesQueryKey(instanceId)
           );
         },
       }
@@ -125,7 +123,7 @@
 
   const deleteMetricsDef = async (dashboardName: string) => {
     await deleteEntity(
-      $runtimeStore,
+      instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
       $deleteDashboard,

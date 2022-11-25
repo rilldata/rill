@@ -9,10 +9,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
+	"github.com/rilldata/rill/admin/database"
+	_ "github.com/rilldata/rill/admin/database/postgres"
+	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
-	"github.com/rilldata/rill/server-cloud/database"
-	_ "github.com/rilldata/rill/server-cloud/database/postgres"
-	"github.com/rilldata/rill/server-cloud/server"
 )
 
 type Config struct {
@@ -33,7 +33,7 @@ func main() {
 
 	// Init config
 	var conf Config
-	err := envconfig.Process("rill_cloud", &conf)
+	err := envconfig.Process("rill_admin", &conf)
 	if err != nil {
 		fmt.Printf("Failed to load config: %s", err.Error())
 		os.Exit(1)

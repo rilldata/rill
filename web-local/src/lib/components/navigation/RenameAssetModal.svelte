@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceRenameFileAndMigrate,
+    useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { getLabel } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
@@ -25,7 +25,7 @@
     currentAssetName
   );
 
-  const renameAsset = useRuntimeServiceRenameFileAndMigrate();
+  const renameAsset = useRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -44,7 +44,7 @@
     onSubmit: async (values) => {
       try {
         await renameEntity(
-          $runtimeStore,
+          runtimeInstanceId,
           currentAssetName,
           values.newName,
           entityType,

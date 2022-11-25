@@ -1,8 +1,8 @@
-import type { V1MigrationError } from "@rilldata/web-common/runtime-client";
+import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
 import { Readable, writable } from "svelte/store";
 
 export type CommonEntityData = {
-  errors: Array<V1MigrationError>;
+  errors: Array<V1ReconcileError>;
 };
 
 /**
@@ -32,7 +32,7 @@ const createOrUpdateEntity = (
 };
 
 const commonEntitiesReducers = {
-  setErrors(path: string, errors: Array<V1MigrationError>) {
+  setErrors(path: string, errors: Array<V1ReconcileError>) {
     createOrUpdateEntity(path, (entityData: CommonEntityData) => {
       entityData.errors = errors;
     });
@@ -40,9 +40,9 @@ const commonEntitiesReducers = {
 
   consolidateMigrateResponse(
     affectedPaths: Array<string>,
-    errors: Array<V1MigrationError>
+    errors: Array<V1ReconcileError>
   ) {
-    const errorsForPaths = new Map<string, Array<V1MigrationError>>();
+    const errorsForPaths = new Map<string, Array<V1ReconcileError>>();
     affectedPaths.forEach((affectedPath) =>
       errorsForPaths.set(correctFilePath(affectedPath), [])
     );

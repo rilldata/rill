@@ -2,9 +2,9 @@
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
     V1Connector,
-    V1MigrationError,
+    V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
   import { createEventDispatcher } from "svelte";
@@ -29,7 +29,7 @@
   export let connector: V1Connector;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSourceMutation = useRuntimeServicePutFileAndMigrate();
+  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
   const dispatch = createEventDispatcher();
 
@@ -44,7 +44,7 @@
   let handleSubmit: (event: Event) => any;
 
   let waitingOnSourceImport = false;
-  let error: V1MigrationError;
+  let error: V1ReconcileError;
 
   function onConnectorChange(connector: V1Connector) {
     yupSchema = getYupSchema(connector);
@@ -69,7 +69,7 @@
         waitingOnSourceImport = true;
         try {
           const errors = await createSource(
-            $runtimeStore,
+            runtimeInstanceId,
             values.sourceName,
             yaml,
             $createSourceMutation

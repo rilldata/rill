@@ -1,10 +1,8 @@
-import type { V1PutFileAndMigrateResponse } from "@rilldata/web-common/runtime-client";
-import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
-import { sourceUpdated } from "@rilldata/web-local/lib/redux-store/source/source-apis";
 import {
   openFileUploadDialog,
   uploadFile,
@@ -14,9 +12,9 @@ import type { UseMutationResult } from "@sveltestack/svelte-query";
 export async function refreshSource(
   connector: string,
   tableName: string,
-  runtimeState: RuntimeState,
+  instanceId: string,
   refreshSource: UseMutationResult,
-  createSource: UseMutationResult<V1PutFileAndMigrateResponse>
+  createSource: UseMutationResult<V1PutFileAndReconcileResponse>
 ) {
   if (connector === "file") {
     const files = await openFileUploadDialog(false);
@@ -24,7 +22,7 @@ export async function refreshSource(
 
     overlay.set({ title: `Importing ${tableName}` });
     const filePath = await uploadFile(
-      `${config.database.runtimeUrl}/v1/repos/${runtimeState.repoId}/objects/file`,
+      `${config.database.runtimeUrl}/v1/instances/${instanceId}/files/upload`,
       files[0]
     );
     if (filePath) {
@@ -36,10 +34,9 @@ export async function refreshSource(
         "file"
       );
       const resp = await createSource.mutateAsync({
-        instanceId: runtimeState.instanceId,
+        instanceId,
         data: {
-          repoId: runtimeState.repoId,
-          instanceId: runtimeState.instanceId,
+          instanceId,
           path: `sources/${tableName}.yaml`,
           blob: yaml,
           create: true,
@@ -54,7 +51,7 @@ export async function refreshSource(
   } else {
     overlay.set({ title: `Importing ${tableName}` });
     await refreshSource.mutateAsync({
-      instanceId: runtimeState.instanceId,
+      instanceId,
       name: tableName,
     });
   }

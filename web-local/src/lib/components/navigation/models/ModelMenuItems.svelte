@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useRuntimeServiceDeleteFileAndMigrate } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceDeleteFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -34,7 +34,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const deleteModel = useRuntimeServiceDeleteFileAndMigrate();
+  const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -44,7 +44,7 @@
   ) as DerivedModelStore;
   const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
-  $: modelNames = useModelNames($runtimeStore.repoId);
+  $: modelNames = useModelNames($runtimeStore.instanceId);
 
   $: persistentModel = $persistentModelStore?.entities?.find(
     (model) => model.tableName === modelName
@@ -75,7 +75,7 @@
 
   const handleDeleteModel = async (modelName: string) => {
     await deleteEntity(
-      $runtimeStore,
+      $runtimeStore.instanceId,
       modelName,
       EntityType.Model,
       $deleteModel,

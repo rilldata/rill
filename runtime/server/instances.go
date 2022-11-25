@@ -39,34 +39,49 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
 	inst := &drivers.Instance{
 		ID:           req.InstanceId,
-		Driver:       req.Driver,
-		DSN:          req.Dsn,
-		ObjectPrefix: req.ObjectPrefix,
-		Exposed:      req.Exposed,
+		OLAPDriver:   req.OlapDriver,
+		OLAPDSN:      req.OlapDsn,
+		RepoDriver:   req.RepoDriver,
+		RepoDSN:      req.RepoDsn,
 		EmbedCatalog: req.EmbedCatalog,
 	}
 
-	// Check that it's a valid driver for OLAP
-	conn, err := drivers.Open(inst.Driver, inst.DSN)
+	// Check OLAP connection
+	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	_, ok := conn.OLAPStore()
+	_, ok := olap.OLAPStore()
 	if !ok {
 		return nil, status.Error(codes.InvalidArgument, "not a valid OLAP driver")
 	}
 
+	// Check repo connection
+	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	_, ok = repo.RepoStore()
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "not a valid repo driver")
+	}
+
 	// Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		_, ok := conn.CatalogStore()
+		_, ok := olap.CatalogStore()
 		if !ok {
 			return nil, status.Error(codes.InvalidArgument, "driver does not support embedded catalogs")
 		}
 	}
 
-	err = conn.Migrate(ctx)
+	// Prepare connections for use
+	err = olap.Migrate(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to migrate instance: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to prepare instance: %s", err.Error())
+	}
+	err = repo.Migrate(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to prepare instance: %s", err.Error())
 	}
 
 	registry, _ := s.metastore.RegistryStore()
@@ -76,8 +91,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	return &runtimev1.CreateInstanceResponse{
-		InstanceId: inst.ID,
-		Instance:   instanceToPB(inst),
+		Instance: instanceToPB(inst),
 	}, nil
 }
 
@@ -95,10 +109,10 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
 		InstanceId:   inst.ID,
-		Driver:       inst.Driver,
-		Dsn:          inst.DSN,
-		ObjectPrefix: inst.ObjectPrefix,
-		Exposed:      inst.Exposed,
+		OlapDriver:   inst.OLAPDriver,
+		OlapDsn:      inst.OLAPDSN,
+		RepoDriver:   inst.RepoDriver,
+		RepoDsn:      inst.RepoDSN,
 		EmbedCatalog: inst.EmbedCatalog,
 	}
 }

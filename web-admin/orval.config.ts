@@ -2,7 +2,7 @@ import { defineConfig } from "orval";
 
 export default defineConfig({
   api: {
-    input: "../../server-cloud/api/openapi.yaml",
+    input: "../../admin/api/openapi.yaml",
     output: {
       workspace: "./src/client/",
       target: "gen/index.ts",

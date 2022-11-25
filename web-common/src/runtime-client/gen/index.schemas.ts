@@ -4,26 +4,6 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-export type RuntimeServiceRenameFileBody = {
-  fromPath?: string;
-  toPath?: string;
-};
-
-export type RuntimeServicePutFileBody = {
-  blob?: string;
-  create?: boolean;
-  /** Will cause the operation to fail if the file already exists.
-It should only be set when create = true. */
-  createOnly?: boolean;
-};
-
-export type RuntimeServiceListFilesParams = { glob?: string };
-
-export type RuntimeServiceListReposParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
 /**
  * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
  */
@@ -33,6 +13,14 @@ export type RuntimeServiceGetTopKBody = {
 };
 
 export type RuntimeServiceGetTableRowsParams = { limit?: number };
+
+export type RuntimeServiceReconcileBody = {
+  /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
+reconciliation to execute faster by not scanning all code artifacts for changes. */
+  changedPaths?: string[];
+  dry?: boolean;
+  strict?: boolean;
+};
 
 export type RuntimeServiceQueryDirectBody = {
   args?: unknown[];
@@ -47,21 +35,6 @@ export type RuntimeServiceQueryBody = {
   priority?: string;
   sql?: string;
 };
-
-export type RuntimeServiceMigrateBody = {
-  /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
-migrations to execute faster by not scanning all code artifacts for changes. */
-  changedPaths?: string[];
-  dry?: boolean;
-  repoId?: string;
-  strict?: boolean;
-};
-
-export interface V1MetricsViewFilter {
-  exclude?: MetricsViewFilterCond[];
-  include?: MetricsViewFilterCond[];
-  match?: string[];
-}
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
@@ -97,6 +70,21 @@ export type RuntimeServiceGenerateTimeSeriesBody = {
   timeRange?: V1TimeSeriesTimeRange;
   timestampColumnName?: string;
 };
+
+export type RuntimeServiceRenameFileBody = {
+  fromPath?: string;
+  toPath?: string;
+};
+
+export type RuntimeServicePutFileBody = {
+  blob?: string;
+  create?: boolean;
+  /** Will cause the operation to fail if the file already exists.
+It should only be set when create = true. */
+  createOnly?: boolean;
+};
+
+export type RuntimeServiceListFilesParams = { glob?: string };
 
 export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
@@ -239,41 +227,74 @@ export interface V1Source {
   schema?: V1StructType;
 }
 
-/**
- * Repo represents a collection of file artifacts containing SQL statements.
-It will usually by represented as a folder on disk, but may also be backed by a
-database (for modelling in the cloud where no persistant file system is available).
- */
-export interface V1Repo {
-  /** Driver for persisting artifacts. Supports "file" and "postgres". */
-  driver?: string;
-  /** DSN for driver. If the driver is "file", this should be the path to the root directory. */
-  dsn?: string;
-  repoId?: string;
-}
-
 export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
-export interface V1RenameFileAndMigrateRequest {
+export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   fromPath?: string;
   instanceId?: string;
-  repoId?: string;
   strict?: boolean;
   toPath?: string;
+}
+
+/**
+ * - CODE_UNSPECIFIED: Unspecified error
+ - CODE_SYNTAX: Code artifact failed to parse
+ - CODE_VALIDATION: Code artifact has internal validation errors
+ - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
+ - CODE_OLAP: Error returned from the OLAP database
+ - CODE_SOURCE: Error encountered during source inspection or ingestion
+ */
+export type V1ReconcileErrorCode =
+  typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ReconcileErrorCode = {
+  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
+  CODE_SYNTAX: "CODE_SYNTAX",
+  CODE_VALIDATION: "CODE_VALIDATION",
+  CODE_DEPENDENCY: "CODE_DEPENDENCY",
+  CODE_OLAP: "CODE_OLAP",
+  CODE_SOURCE: "CODE_SOURCE",
+} as const;
+
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  endLocation?: ReconcileErrorCharLocation;
+  filePath?: string;
+  message?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string;
+  startLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1ReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -294,17 +315,17 @@ export interface V1PutFileResponse {
   filePath?: string;
 }
 
-export interface V1PutFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
+export interface V1PutFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
-export interface V1PutFileAndMigrateRequest {
+export interface V1PutFileAndReconcileRequest {
   blob?: string;
   create?: boolean;
   /** create_only will cause the operation to fail if a file already exists at path.
@@ -314,7 +335,6 @@ It should only be set when create = true. */
   dry?: boolean;
   instanceId?: string;
   path?: string;
-  repoId?: string;
   strict?: boolean;
 }
 
@@ -379,53 +399,6 @@ export interface V1Model {
   sql?: string;
 }
 
-/**
- * - CODE_UNSPECIFIED: Unspecified error
- - CODE_SYNTAX: Code artifact failed to parse
- - CODE_VALIDATION: Code artifact has internal validation errors
- - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
- - CODE_OLAP: Error returned from the OLAP database
- - CODE_SOURCE: Error encountered during source inspection or ingestion
- */
-export type V1MigrationErrorCode =
-  typeof V1MigrationErrorCode[keyof typeof V1MigrationErrorCode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1MigrationErrorCode = {
-  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
-  CODE_SYNTAX: "CODE_SYNTAX",
-  CODE_VALIDATION: "CODE_VALIDATION",
-  CODE_DEPENDENCY: "CODE_DEPENDENCY",
-  CODE_OLAP: "CODE_OLAP",
-  CODE_SOURCE: "CODE_SOURCE",
-} as const;
-
-/**
- * MigrationError represents an error encountered while running Migrate.
- */
-export interface V1MigrationError {
-  code?: V1MigrationErrorCode;
-  endLocation?: MigrationErrorCharLocation;
-  filePath?: string;
-  message?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string;
-  startLocation?: MigrationErrorCharLocation;
-}
-
-export interface V1MigrateResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the migration. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -450,6 +423,12 @@ export interface V1MetricsViewTimeSeriesResponse {
 export interface V1MetricsViewSort {
   ascending?: boolean;
   name?: string;
+}
+
+export interface V1MetricsViewFilter {
+  exclude?: MetricsViewFilterCond[];
+  include?: MetricsViewFilterCond[];
+  match?: string[];
 }
 
 export interface V1MetricsViewDimensionValue {
@@ -485,17 +464,13 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListReposResponse {
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
   nextPageToken?: string;
-  repos?: V1Repo[];
 }
 
 export interface V1ListFilesResponse {
   paths?: string[];
-}
-
-export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -503,35 +478,24 @@ export interface V1ListCatalogEntriesResponse {
 }
 
 /**
- * Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
-Migrations and queries are issued against a specific instance. The concept of
-instances enables multiple data projects to be served by one runtime.
+ * Instance represents a single data project, meaning one set of code artifacts,
+one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+metadata (such as reconciliation state). Instances are the unit of isolation within
+the runtime. They enable one runtime deployment to serve not only multiple data
+projects, but also multiple tenants. On local, the runtime will usually have
+just a single instance.
  */
 export interface V1Instance {
-  driver?: string;
-  dsn?: string;
-  /** If true, the runtime will store the instance's catalog data (such as sources and metrics views)
-in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
-only supported for the duckdb driver. */
+  /** If true, the runtime will store the instance's catalog in its OLAP store instead
+of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
-  /** Indicates that the underlying infra may be manipulated directly by users.
-If true, the runtime will continuously poll the infra's information schema
-to discover tables not created through the runtime. They will be added to the
-catalog as UnmanagedTables. */
-  exposed?: boolean;
   instanceId?: string;
-  /** Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
-Use it as an alternative to database schemas. */
-  objectPrefix?: string;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
-export interface V1GetTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
+  olapDriver?: string;
+  olapDsn?: string;
+  /** Driver for reading/editing code artifacts (options: file, metastore).
+This enables virtualizing a file system in a cloud setting. */
+  repoDriver?: string;
+  repoDsn?: string;
 }
 
 export interface V1GetTimeRangeSummaryResponse {
@@ -550,10 +514,6 @@ export interface V1GetTableCardinalityResponse {
 
 export interface V1GetRugHistogramResponse {
   numericSummary?: V1NumericSummary;
-}
-
-export interface V1GetRepoResponse {
-  repo?: V1Repo;
 }
 
 export interface V1GetNumericHistogramResponse {
@@ -599,10 +559,6 @@ export interface V1EstimateRollupIntervalResponse {
   start?: string;
 }
 
-export interface V1DeleteRepoResponse {
-  [key: string]: any;
-}
-
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -611,47 +567,39 @@ export interface V1DeleteFileResponse {
   [key: string]: any;
 }
 
-export interface V1DeleteFileAndMigrateResponse {
-  /** affected_paths lists all the file paths that were considered while
-executing the migration. For a PutFileAndMigrate, this includes the put file
-as well as any file artifacts that rely on objects declared in it. */
+export interface V1DeleteFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during the migration. If strict = false, any path in
-affected_paths without an error can be assumed to have been migrated succesfully. */
-  errors?: V1MigrationError[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
-export interface V1DeleteFileAndMigrateRequest {
+export interface V1DeleteFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   instanceId?: string;
   path?: string;
-  repoId?: string;
   strict?: boolean;
-}
-
-export interface V1CreateRepoResponse {
-  repo?: V1Repo;
-}
-
-export interface V1CreateRepoRequest {
-  driver?: string;
-  dsn?: string;
-  repoId?: string;
 }
 
 export interface V1CreateInstanceResponse {
   instance?: V1Instance;
-  instanceId?: string;
 }
 
+/**
+ * Request message for RuntimeService.CreateInstance.
+See message Instance for field descriptions.
+ */
 export interface V1CreateInstanceRequest {
-  driver?: string;
-  dsn?: string;
   embedCatalog?: boolean;
-  exposed?: boolean;
   instanceId?: string;
-  objectPrefix?: string;
+  olapDriver?: string;
+  olapDsn?: string;
+  repoDriver?: string;
+  repoDsn?: string;
 }
 
 /**
@@ -665,12 +613,20 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
+export interface V1ListConnectorsResponse {
+  connectors?: V1Connector[];
+}
+
 /**
  * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
   cardinality?: number;
   topK?: V1TopK;
+}
+
+export interface V1GetTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {
@@ -747,6 +703,11 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
+export interface ReconcileErrorCharLocation {
+  column?: number;
+  line?: number;
+}
+
 export interface NumericOutliersOutlier {
   bucket?: number;
   high?: number;
@@ -768,11 +729,6 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
-
-export interface MigrationErrorCharLocation {
-  column?: number;
-  line?: number;
-}
 
 export interface MetricsViewMeasure {
   description?: string;

@@ -26,15 +26,15 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/delete-and-migrate:
+  /v1/delete-and-reconcile:
     post:
-      summary: DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-      operationId: RuntimeService_DeleteFileAndMigrate
+      summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+      operationId: RuntimeService_DeleteFileAndReconcile
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1DeleteFileAndMigrateResponse'
+            $ref: '#/definitions/v1DeleteFileAndReconcileResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -44,7 +44,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1DeleteFileAndMigrateRequest'
+            $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
   /v1/instances:
@@ -86,6 +86,9 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: body
+          description: |-
+            Request message for RuntimeService.CreateInstance.
+            See message Instance for field descriptions.
           in: body
           required: true
           schema:
@@ -329,6 +332,153 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files:
+    get:
+      summary: |-
+        ListFiles lists all the files matching a glob in a repo.
+        The files are sorted by their full path.
+      operationId: RuntimeService_ListFiles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: glob
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/-/{path}:
+    get:
+      summary: GetFile returns the contents of a specific file in a repo.
+      operationId: RuntimeService_GetFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+      tags:
+        - RuntimeService
+    delete:
+      summary: DeleteFile deletes a file from a repo
+      operationId: RuntimeService_DeleteFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+      tags:
+        - RuntimeService
+    post:
+      summary: PutFile creates or updates a file in a repo
+      operationId: RuntimeService_PutFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PutFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              blob:
+                type: string
+              create:
+                type: boolean
+                title: Create indicates whether to create the file if it doesn't already exist
+              createOnly:
+                type: boolean
+                description: |-
+                  Will cause the operation to fail if the file already exists.
+                  It should only be set when create = true.
+            title: Request message for RuntimeService.PutFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/rename:
+    post:
+      summary: RenameFile renames a file in a repo
+      operationId: RuntimeService_RenameFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenameFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              fromPath:
+                type: string
+              toPath:
+                type: string
+            title: Request message for RuntimeService.RenameFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/generate-timeseries:
     post:
       summary: Generate time series
@@ -522,57 +672,6 @@ paths:
             title: Request message for RuntimeService.MetricsViewTotals
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/migrate:
-    post:
-      summary: |-
-        Migrate applies a full set of artifacts from a repo to the catalog and infra.
-        It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-        the desired state expressed in the artifacts. Any existing objects not described in the submitted
-        artifacts will be deleted.
-      operationId: RuntimeService_Migrate
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1MigrateResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to migrate
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              changedPaths:
-                type: array
-                items:
-                  type: string
-                description: |-
-                  Changed paths provides a way to "hint" what files have changed in the repo, enabling
-                  migrations to execute faster by not scanning all code artifacts for changes.
-              dry:
-                type: boolean
-                title: If true, will validate the file artifacts, but not actually execute any migrations
-              repoId:
-                type: string
-                title: Contents of files containing one or more SQL DDL statements
-              strict:
-                type: boolean
-                title: |-
-                  If true, will not execute any migrations if any artifact fails to validate.
-                  Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-                  that fail to validate.)
-            title: Request message for RuntimeService.Migrate
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/null-count/{tableName}/{columnName}:
     get:
       summary: Get the number of nulls in a column
@@ -735,6 +834,51 @@ paths:
                 type: string
                 title: SELECT statement
             title: Request message for RuntimeService.QueryDirect
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/reconcile:
+    post:
+      summary: |-
+        Reconcile applies a full set of artifacts from a repo to the catalog and infra.
+        It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+        the desired state expressed in the artifacts. Any existing objects not described in the submitted
+        artifacts will be deleted.
+      operationId: RuntimeService_Reconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance to reconcile
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              changedPaths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Changed paths provides a way to "hint" what files have changed in the repo, enabling
+                  reconciliation to execute faster by not scanning all code artifacts for changes.
+              dry:
+                type: boolean
+                title: If true, will validate the file artifacts, but not actually execute any migrations
+              strict:
+                type: boolean
+                title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+            title: Request message for RuntimeService.Reconcile
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/rug-histogram/{tableName}/{columnName}:
@@ -927,17 +1071,17 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/put-and-migrate:
+  /v1/put-and-reconcile:
     post:
       summary: |-
-        PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+        PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
         It is equivalent to calling the two RPCs sequentially.
-      operationId: RuntimeService_PutFileAndMigrate
+      operationId: RuntimeService_PutFileAndReconcile
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1PutFileAndMigrateResponse'
+            $ref: '#/definitions/v1PutFileAndReconcileResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -947,18 +1091,18 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1PutFileAndMigrateRequest'
+            $ref: '#/definitions/v1PutFileAndReconcileRequest'
       tags:
         - RuntimeService
-  /v1/rename-and-migrate:
+  /v1/rename-and-reconcile:
     post:
-      summary: RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-      operationId: RuntimeService_RenameFileAndMigrate
+      summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+      operationId: RuntimeService_RenameFileAndReconcile
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RenameFileAndMigrateResponse'
+            $ref: '#/definitions/v1RenameFileAndReconcileResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -968,238 +1112,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1RenameFileAndMigrateRequest'
-      tags:
-        - RuntimeService
-  /v1/repos:
-    get:
-      summary: ListRepos lists all the repos currently managed by the runtime
-      operationId: RuntimeService_ListRepos
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListReposResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int32
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - RuntimeService
-    post:
-      summary: CreateRepo creates a new repo. See the Repo message for an explanation of repos.
-      operationId: RuntimeService_CreateRepo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateRepoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1CreateRepoRequest'
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}:
-    get:
-      summary: GetRepo returns info about a specific repo
-      operationId: RuntimeService_GetRepo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetRepoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-    delete:
-      summary: DeleteRepo deletes a repo
-      operationId: RuntimeService_DeleteRepo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteRepoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}/files:
-    get:
-      summary: |-
-        ListFiles lists all the files matching a glob in a repo.
-        The files are sorted by their full path.
-      operationId: RuntimeService_ListFiles
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListFilesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: glob
-          in: query
-          required: false
-          type: string
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}/files/-/{path}:
-    get:
-      summary: GetFile returns the contents of a specific file in a repo.
-      operationId: RuntimeService_GetFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-      tags:
-        - RuntimeService
-    delete:
-      summary: DeleteFile deletes a file from a repo
-      operationId: RuntimeService_DeleteFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-      tags:
-        - RuntimeService
-    post:
-      summary: PutFile creates or updates a file in a repo
-      operationId: RuntimeService_PutFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1PutFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: path
-          in: path
-          required: true
-          type: string
-          pattern: .+
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              blob:
-                type: string
-              create:
-                type: boolean
-                title: Create indicates whether to create the file if it doesn't already exist
-              createOnly:
-                type: boolean
-                description: |-
-                  Will cause the operation to fail if the file already exists.
-                  It should only be set when create = true.
-            title: Request message for RuntimeService.PutFile
-      tags:
-        - RuntimeService
-  /v1/repos/{repoId}/files/rename:
-    post:
-      summary: RenameFile renames a file in a repo
-      operationId: RuntimeService_RenameFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RenameFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: repoId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              fromPath:
-                type: string
-              toPath:
-                type: string
-            title: Request message for RuntimeService.RenameFile
+            $ref: '#/definitions/v1RenameFileAndReconcileRequest'
       tags:
         - RuntimeService
 definitions:
@@ -1293,16 +1206,6 @@ definitions:
       name:
         type: string
     title: Measures are aggregated computed values
-  MigrationErrorCharLocation:
-    type: object
-    properties:
-      column:
-        type: integer
-        format: int64
-      line:
-        type: integer
-        format: int64
-    title: CharLocation is a line and column in a code artifact
   ModelDialect:
     type: string
     enum:
@@ -1339,6 +1242,16 @@ definitions:
         format: double
       present:
         type: boolean
+  ReconcileErrorCharLocation:
+    type: object
+    properties:
+      column:
+        type: integer
+        format: int64
+      line:
+        type: integer
+        format: int64
+    title: CharLocation is a line and column in a code artifact
   StructTypeField:
     type: object
     properties:
@@ -1491,46 +1404,28 @@ definitions:
   v1CreateInstanceRequest:
     type: object
     properties:
-      driver:
-        type: string
-      dsn:
-        type: string
       embedCatalog:
-        type: boolean
-      exposed:
         type: boolean
       instanceId:
         type: string
-        title: See message Instance for field descriptions
-      objectPrefix:
+      olapDriver:
         type: string
-    title: Request message for RuntimeService.CreateInstance
+      olapDsn:
+        type: string
+      repoDriver:
+        type: string
+      repoDsn:
+        type: string
+    description: |-
+      Request message for RuntimeService.CreateInstance.
+      See message Instance for field descriptions.
   v1CreateInstanceResponse:
     type: object
     properties:
       instance:
         $ref: '#/definitions/v1Instance'
-      instanceId:
-        type: string
-        title: Temporary, for compatibility with local frontend
     title: Response message for RuntimeService.CreateInstance
-  v1CreateRepoRequest:
-    type: object
-    properties:
-      driver:
-        type: string
-      dsn:
-        type: string
-      repoId:
-        type: string
-    title: Request message for RuntimeService.CreateRepo
-  v1CreateRepoResponse:
-    type: object
-    properties:
-      repo:
-        $ref: '#/definitions/v1Repo'
-    title: Response message for RuntimeService.CreateRepo
-  v1DeleteFileAndMigrateRequest:
+  v1DeleteFileAndReconcileRequest:
     type: object
     properties:
       dry:
@@ -1538,20 +1433,14 @@ definitions:
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
-        title: Instance to apply the migrations to
+        title: Instance to store file in and reconcile
       path:
         type: string
         title: Path to store the file at
-      repoId:
-        type: string
-        title: Repo to store the file in
       strict:
         type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-          that fail to validate.)
-  v1DeleteFileAndMigrateResponse:
+        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+  v1DeleteFileAndReconcileResponse:
     type: object
     properties:
       affectedPaths:
@@ -1559,25 +1448,22 @@ definitions:
         items:
           type: string
         description: |-
-          affected_paths lists all the file paths that were considered while
-          executing the migration. For a PutFileAndMigrate, this includes the put file
-          as well as any file artifacts that rely on objects declared in it.
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
       errors:
         type: array
         items:
-          $ref: '#/definitions/v1MigrationError'
+          $ref: '#/definitions/v1ReconcileError'
         description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DeleteRepoResponse:
-    type: object
-    title: Response message for RuntimeService.DeleteRepo
   v1EstimateRollupIntervalResponse:
     type: object
     properties:
@@ -1643,12 +1529,6 @@ definitions:
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
-  v1GetRepoResponse:
-    type: object
-    properties:
-      repo:
-        $ref: '#/definitions/v1Repo'
-    title: Response message for RuntimeService.GetRepo
   v1GetRugHistogramResponse:
     type: object
     properties:
@@ -1680,37 +1560,35 @@ definitions:
   v1Instance:
     type: object
     properties:
-      driver:
-        type: string
-        title: Name of OLAP infra driver ("druid" or "duckdb")
-      dsn:
-        type: string
-        title: DSN for connection to the OLAP infra
       embedCatalog:
         type: boolean
         description: |-
-          If true, the runtime will store the instance's catalog data (such as sources and metrics views)
-          in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
-          only supported for the duckdb driver.
-      exposed:
-        type: boolean
-        description: |-
-          Indicates that the underlying infra may be manipulated directly by users.
-          If true, the runtime will continuously poll the infra's information schema
-          to discover tables not created through the runtime. They will be added to the
-          catalog as UnmanagedTables.
+          If true, the runtime will store the instance's catalog in its OLAP store instead
+          of in the runtime's metadata store. Currently only supported for the duckdb driver.
       instanceId:
         type: string
         title: Identifier (UUID)
-      objectPrefix:
+      olapDriver:
+        type: string
+        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
+      olapDsn:
+        type: string
+        title: DSN for connection to OLAP
+      repoDriver:
         type: string
         description: |-
-          Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
-          Use it as an alternative to database schemas.
+          Driver for reading/editing code artifacts (options: file, metastore).
+          This enables virtualizing a file system in a cloud setting.
+      repoDsn:
+        type: string
+        title: DSN for connecting to repo
     description: |-
-      Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
-      Migrations and queries are issued against a specific instance. The concept of
-      instances enables multiple data projects to be served by one runtime.
+      Instance represents a single data project, meaning one set of code artifacts,
+      one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+      metadata (such as reconciliation state). Instances are the unit of isolation within
+      the runtime. They enable one runtime deployment to serve not only multiple data
+      projects, but also multiple tenants. On local, the runtime will usually have
+      just a single instance.
   v1ListCatalogEntriesResponse:
     type: object
     properties:
@@ -1745,16 +1623,6 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
-  v1ListReposResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      repos:
-        type: array
-        items:
-          $ref: '#/definitions/v1Repo'
-    title: Response message for RuntimeService.ListRepos
   v1MapType:
     type: object
     properties:
@@ -1882,73 +1750,6 @@ definitions:
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
     title: Response message for RuntimeService.MetricsViewTotals
-  v1MigrateResponse:
-    type: object
-    properties:
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the migration. If changed_paths was empty, this will include all
-          code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1MigrationError'
-        description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
-    title: Response message for RuntimeService.Migrate
-  v1MigrationError:
-    type: object
-    properties:
-      code:
-        $ref: '#/definitions/v1MigrationErrorCode'
-        title: Code denotes the category of error
-      endLocation:
-        $ref: '#/definitions/MigrationErrorCharLocation'
-        description: |-
-          End location of the error in the code artifact (if any).
-          Only applicable if file_path and start_location is set.
-      filePath:
-        type: string
-        title: File path of the code artifact that this error relates to (if any)
-      message:
-        type: string
-        title: Message is a developer-friendly error message
-      propertyPath:
-        type: string
-        description: |-
-          Property path of the error in the code artifact (if any).
-          It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-          It only applies to structured code artifacts (i.e. YAML).
-          Only applicable if file_path is set.
-      startLocation:
-        $ref: '#/definitions/MigrationErrorCharLocation'
-        description: |-
-          Start location of the error in the code artifact (if any).
-          Only applicable if file_path is set.
-    description: MigrationError represents an error encountered while running Migrate.
-  v1MigrationErrorCode:
-    type: string
-    enum:
-      - CODE_UNSPECIFIED
-      - CODE_SYNTAX
-      - CODE_VALIDATION
-      - CODE_DEPENDENCY
-      - CODE_OLAP
-      - CODE_SOURCE
-    default: CODE_UNSPECIFIED
-    description: |-
-      - CODE_UNSPECIFIED: Unspecified error
-       - CODE_SYNTAX: Code artifact failed to parse
-       - CODE_VALIDATION: Code artifact has internal validation errors
-       - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
-       - CODE_OLAP: Error returned from the OLAP database
-       - CODE_SOURCE: Error encountered during source inspection or ingestion
-    title: Code represents different categories of migration errors
   v1Model:
     type: object
     properties:
@@ -2055,7 +1856,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1ProfileColumn'
-  v1PutFileAndMigrateRequest:
+  v1PutFileAndReconcileRequest:
     type: object
     properties:
       blob:
@@ -2074,20 +1875,14 @@ definitions:
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
-        title: Instance to apply the migrations to
+        title: Instance to store file in and reconcile
       path:
         type: string
         title: Path to store the file at
-      repoId:
-        type: string
-        title: Repo to store the file in
       strict:
         type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-          that fail to validate.)
-  v1PutFileAndMigrateResponse:
+        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+  v1PutFileAndReconcileResponse:
     type: object
     properties:
       affectedPaths:
@@ -2095,16 +1890,16 @@ definitions:
         items:
           type: string
         description: |-
-          affected_paths lists all the file paths that were considered while
-          executing the migration. For a PutFileAndMigrate, this includes the put file
-          as well as any file artifacts that rely on objects declared in it.
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
       errors:
         type: array
         items:
-          $ref: '#/definitions/v1MigrationError'
+          $ref: '#/definitions/v1ReconcileError'
         description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1PutFileResponse:
     type: object
     properties:
@@ -2136,7 +1931,74 @@ definitions:
         $ref: '#/definitions/v1StructType'
         title: Schema of result data
     title: Response message for RuntimeService.Query
-  v1RenameFileAndMigrateRequest:
+  v1ReconcileError:
+    type: object
+    properties:
+      code:
+        $ref: '#/definitions/v1ReconcileErrorCode'
+        title: Code denotes the category of error
+      endLocation:
+        $ref: '#/definitions/ReconcileErrorCharLocation'
+        description: |-
+          End location of the error in the code artifact (if any).
+          Only applicable if file_path and start_location is set.
+      filePath:
+        type: string
+        title: File path of the code artifact that this error relates to (if any)
+      message:
+        type: string
+        title: Message is a developer-friendly error message
+      propertyPath:
+        type: string
+        description: |-
+          Property path of the error in the code artifact (if any).
+          It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+          It only applies to structured code artifacts (i.e. YAML).
+          Only applicable if file_path is set.
+      startLocation:
+        $ref: '#/definitions/ReconcileErrorCharLocation'
+        description: |-
+          Start location of the error in the code artifact (if any).
+          Only applicable if file_path is set.
+    description: ReconcileError represents an error encountered while running Reconcile.
+  v1ReconcileErrorCode:
+    type: string
+    enum:
+      - CODE_UNSPECIFIED
+      - CODE_SYNTAX
+      - CODE_VALIDATION
+      - CODE_DEPENDENCY
+      - CODE_OLAP
+      - CODE_SOURCE
+    default: CODE_UNSPECIFIED
+    description: |-
+      - CODE_UNSPECIFIED: Unspecified error
+       - CODE_SYNTAX: Code artifact failed to parse
+       - CODE_VALIDATION: Code artifact has internal validation errors
+       - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
+       - CODE_OLAP: Error returned from the OLAP database
+       - CODE_SOURCE: Error encountered during source inspection or ingestion
+    title: Code represents different categories of reconciliation errors
+  v1ReconcileResponse:
+    type: object
+    properties:
+      affectedPaths:
+        type: array
+        items:
+          type: string
+        description: |-
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
+    title: Response message for RuntimeService.Reconcile
+  v1RenameFileAndReconcileRequest:
     type: object
     properties:
       dry:
@@ -2147,20 +2009,14 @@ definitions:
         title: Current path of the file
       instanceId:
         type: string
-        title: Instance to apply the migrations to
-      repoId:
-        type: string
-        title: Repo to store the file in
+        title: Instance to store file in and reconcile
       strict:
         type: boolean
-        title: |-
-          If true, will not execute any migrations if any artifact fails to validate.
-          Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-          that fail to validate.)
+        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
       toPath:
         type: string
         title: New path of the file
-  v1RenameFileAndMigrateResponse:
+  v1RenameFileAndReconcileResponse:
     type: object
     properties:
       affectedPaths:
@@ -2168,35 +2024,19 @@ definitions:
         items:
           type: string
         description: |-
-          affected_paths lists all the file paths that were considered while
-          executing the migration. For a PutFileAndMigrate, this includes the put file
-          as well as any file artifacts that rely on objects declared in it.
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
       errors:
         type: array
         items:
-          $ref: '#/definitions/v1MigrationError'
+          $ref: '#/definitions/v1ReconcileError'
         description: |-
-          Errors encountered during the migration. If strict = false, any path in
-          affected_paths without an error can be assumed to have been migrated succesfully.
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
-  v1Repo:
-    type: object
-    properties:
-      driver:
-        type: string
-        description: Driver for persisting artifacts. Supports "file" and "postgres".
-      dsn:
-        type: string
-        description: DSN for driver. If the driver is "file", this should be the path to the root directory.
-      repoId:
-        type: string
-        title: UUID identifier
-    description: |-
-      Repo represents a collection of file artifacts containing SQL statements.
-      It will usually by represented as a folder on disk, but may also be backed by a
-      database (for modelling in the cloud where no persistant file system is available).
   v1Source:
     type: object
     properties:

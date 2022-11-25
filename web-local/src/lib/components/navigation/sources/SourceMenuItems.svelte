@@ -1,9 +1,9 @@
 <script lang="ts">
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceDeleteFileAndMigrate,
+    useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -51,9 +51,9 @@
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
-  $: sourceNames = useSourceNames($runtimeStore.repoId);
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: sourceFromYaml = useSourceFromYaml(
-    $runtimeStore.repoId,
+    $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
   );
 
@@ -86,14 +86,14 @@
     (source) => source.id === sourceID
   );
 
-  const deleteSource = useRuntimeServiceDeleteFileAndMigrate();
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createEntityMutation = useRuntimeServicePutFileAndMigrate();
-  $: modelNames = useModelNames($runtimeStore.repoId);
+  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteEntity(
-      $runtimeStore,
+      runtimeInstanceId,
       tableName,
       EntityType.Table,
       $deleteSource,
@@ -107,7 +107,7 @@
     try {
       const previousActiveEntity = $rillAppStore?.activeEntity?.type;
       const newModelName = await createModelFromSource(
-        $runtimeStore,
+        runtimeInstanceId,
         $modelNames.data,
         tableName,
         $createEntityMutation
@@ -156,7 +156,7 @@
       await refreshSource(
         connector,
         tableName,
-        $runtimeStore,
+        runtimeInstanceId,
         $refreshSourceMutation,
         $createEntityMutation
       );

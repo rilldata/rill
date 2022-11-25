@@ -10,7 +10,7 @@ export async function load({ params }) {
   const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
   try {
     const dashboardMeta = await runtimeServiceGetFile(
-      instanceResp.repoId,
+      instanceResp.instanceId,
       params.name
     );
 

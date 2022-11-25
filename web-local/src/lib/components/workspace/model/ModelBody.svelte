@@ -1,9 +1,9 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
-    useRuntimeServiceRenameFileAndMigrate,
-    V1PutFileAndMigrateResponse,
+    useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRenameFileAndReconcile,
+    V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
@@ -40,12 +40,10 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
-    modelName
-  );
-  const updateModel = useRuntimeServicePutFileAndMigrate();
-  const renameModel = useRuntimeServiceRenameFileAndMigrate();
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: getModel = useRuntimeServiceGetCatalogEntry(runtimeInstanceId, modelName);
+  const updateModel = useRuntimeServicePutFileAndReconcile();
+  const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
   $: currentModel = $persistentModelStore?.entities
     ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
@@ -82,7 +80,7 @@
 
     try {
       await renameEntity(
-        $runtimeStore,
+        runtimeInstanceId,
         modelName,
         e.target.value,
         EntityType.Model,
@@ -123,12 +121,11 @@
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
-        repoId: $runtimeStore.repoId,
-        instanceId: $runtimeStore.instanceId,
+        instanceId: runtimeInstanceId,
         path: `models/${currentModel.tableName}.sql`,
         blob: content,
       },
-    })) as V1PutFileAndMigrateResponse;
+    })) as V1PutFileAndReconcileResponse;
     commonEntitiesStore.consolidateMigrateResponse(
       resp.affectedPaths,
       resp.errors

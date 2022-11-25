@@ -2,8 +2,8 @@
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
-    useRuntimeServiceRenameFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRenameFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -38,7 +38,18 @@
     (entity) => entity.id === id || entity.tableName === name
   );
 
-  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+  const renameSource = useRuntimeServiceRenameFileAndReconcile();
+
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
+  const createSource = useRuntimeServicePutFileAndReconcile();
+
+  $: getSource = useRuntimeServiceGetCatalogEntry(
+    runtimeInstanceId,
+    currentSource?.tableName
+  );
+
+  $: connector = $getSource.data?.entry?.source.connector as string;
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -52,7 +63,7 @@
 
     try {
       await renameEntity(
-        $runtimeStore,
+        runtimeInstanceId,
         name,
         e.target.value,
         EntityType.Table,
@@ -63,23 +74,12 @@
     }
   };
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServicePutFileAndMigrate();
-
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    currentSource?.tableName
-  );
-
-  $: connector = $getSource.data?.entry?.source.connector as string;
-
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
         connector,
         tableName,
-        $runtimeStore,
+        runtimeInstanceId,
         $refreshSourceMutation,
         $createSource
       );

@@ -1,8 +1,8 @@
 import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
 
-export function useModelNames(repoId: string) {
+export function useModelNames(instanceId: string) {
   return useRuntimeServiceListFiles(
-    repoId,
+    instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },

@@ -96,7 +96,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 }
 
 func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*runtimev1.MetricsView, error) {
-	catalog, err := s.serviceCache.createCatalogService(ctx, s, instanceID, instanceID)
+	catalog, err := s.serviceCache.createCatalogService(ctx, s, instanceID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
