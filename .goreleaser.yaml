@@ -2,6 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
+  disable: true # travis takes care of it as of now
 
 before:
   hooks: null
@@ -74,9 +75,6 @@ blobs:
   - provider: gs
     bucket: pkg.rilldata.com
     folder: "rill/{{.Version}}"
-
-release:
-  disable: true # travis takes care of it as of now
 
 brews:
   - homepage: "https://github.com/rilldata/rill-developer"
