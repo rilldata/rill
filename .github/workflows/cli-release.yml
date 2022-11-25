@@ -13,20 +13,32 @@ jobs:
     name: Upload Assets to GitHub w/ goreleaser
     runs-on: ubuntu-latest
     steps:
+
       - name: checkout code
         uses: actions/checkout@v2
         with:
           submodules: 'true'
+
       - run: git fetch --prune --unshallow
-      - name: setup dependencies
-        uses: actions/setup-go@v2
-      - name: build web-local and run cli
-        run: |
-          ls -lrt sysroot/
-#      - name: release dry run
-#        run: make release-dry-run
+
       - name: setup release environment
         run: |-
-          echo 'GITHUB_TOKEN=${{secrets.GORELEASER_ACCESS_TOKEN}}' > .release-env
+          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+
+          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
+          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
+
       - name: release publish
-        run: make release
+        run: |-
+          docker run \
+              --rm \
+              --privileged \
+              -e CGO_ENABLED=1 \
+              --env-file .release-env \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v `pwd`:/go/src/rilldata/rill-developer \
+              -v `pwd`/sysroot:/sysroot \
+              -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
+              -w /go/src/rilldata/rill-developer \
+              goreleaser/goreleaser-cross:v1.19.2 \
+              release --rm-dist --snapshot
