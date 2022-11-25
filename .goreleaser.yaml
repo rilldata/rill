@@ -75,6 +75,9 @@ blobs:
     bucket: pkg.rilldata.com
     folder: "rill/{{.Version}}"
 
+release:
+  disable: true # travis takes care of it as of now
+
 brews:
   - homepage: "https://github.com/rilldata/rill-developer"
     description: "The Rill Data CLI"
