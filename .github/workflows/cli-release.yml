@@ -2,7 +2,7 @@ name: release
 on:
   workflow_dispatch:
   push:
-    branches: ["goreleaser-prototype"]
+    branches: [ "goreleaser-prototype" ]
     paths:
       - ".github/workflows/cli-release.yml"
       - ".goreleaser.yaml"
@@ -17,7 +17,7 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v2
         with:
-          submodules: 'true'
+          submodules: "true"
 
       - name: fetch tags
         run: git fetch --prune --unshallow

@@ -63,3 +63,5 @@ release.properties
 
 dist/*
 sysroots.tar.bz2
+rill-binary-sa.json
+.release-env
