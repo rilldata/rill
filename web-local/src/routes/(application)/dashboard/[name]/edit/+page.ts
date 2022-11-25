@@ -24,7 +24,6 @@ export async function load({ params }) {
     if (dashboardYAML) {
       return {
         metricsDefName: params.name,
-        yaml: dashboardYAML,
       };
     }
   } catch (err) {
@@ -42,7 +41,7 @@ export async function load({ params }) {
       )
     ) {
       return {
-        metricsDefId: params.name,
+        metricsName: params.name,
       };
     } else {
       if (
@@ -53,7 +52,7 @@ export async function load({ params }) {
       }
       // Pass non standard error message to be shown in dialog
       return {
-        metricsDefId: params.name,
+        metricsName: params.name,
         error: err.message,
       };
     }

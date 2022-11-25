@@ -1,7 +1,37 @@
+import type { V1Model } from "@rilldata/web-common/runtime-client";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
-import { get, readable, Subscriber, writable } from "svelte/store";
+import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
+import { CATEGORICALS, TIMESTAMPS } from "../duckdb-data-types";
+
+export const metricsTemplate = `
+display_name: "Sample Dashboard"
+description: "a description that appears in the UI"
+
+# model
+#optional to declare this, otherwise it is the model.sql file in the same directory
+from: ""
+
+# populate with the first datetime type in the OBT
+timeseries: ""
+
+# default to opionated option around estimated timegrain,
+# first in order is default time grain
+timegrains:
+  - "DAY"
+# the timegrain that users will see when they first visit the dashboard.
+default_timegrain:
+  - "DAY"
+
+# measures
+# measures are presented in the order that they are written in this file.
+measures: []
+
+# dimensions
+# dimensions are presented in the order that they are written in this file.
+dimensions: []
+`;
 
 export interface MetricsConfig {
   display_name: string;
@@ -9,7 +39,7 @@ export interface MetricsConfig {
   timeseries: string;
   timegrains?: Array<string>;
   default_timegrain?: Array<string>;
-  model_path: string;
+  from: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
 }
@@ -39,15 +69,16 @@ export class MetricsInternalRepresentation {
   // String representation of Internal YAML document
   internalYAML: string;
 
-  // Svelte method to set store value
-  set?: Subscriber<MetricsInternalRepresentation>;
-
   updateStore: (instance: MetricsInternalRepresentation) => void;
 
-  constructor(yamlString: string) {
+  updateRuntime: (yamlString: string) => void;
+
+  constructor(yamlString: string, updateRuntime) {
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
+
+    this.updateRuntime = updateRuntime;
   }
 
   bindStore(updateStore: Subscriber<MetricsInternalRepresentation>) {
@@ -97,15 +128,23 @@ export class MetricsInternalRepresentation {
           temporaryRepresentation.deleteIn(["measures", i, "__ERROR__"]);
       });
 
-    this.internalYAML = temporaryRepresentation.toString();
+    this.internalYAML = temporaryRepresentation.toString({
+      collectionStyle: "block",
+    });
     this.internalRepresentation = this.internalRepresentationDocument.toJSON();
+
+    // Update svelte store
+    this.updateStore(this);
+
+    // Update Runtime
+    this.updateRuntime(this.internalYAML);
   }
 
-  getMetricKey(key) {
+  getMetricKey(key: keyof MetricsConfig) {
     return this.internalRepresentation[key];
   }
 
-  updateMetricKey(key, value) {
+  updateMetricKey(key: keyof MetricsConfig, value) {
     this.internalRepresentationDocument.set(key, value);
     this.regenerateInternalYAML();
   }
@@ -127,14 +166,11 @@ export class MetricsInternalRepresentation {
 
     this.internalRepresentationDocument.addIn(["measures"], measureNode);
     this.regenerateInternalYAML();
-
-    this.updateStore(this);
   }
 
   deleteMeasure(index: number) {
     this.internalRepresentationDocument.deleteIn(["measures", index]);
     this.regenerateInternalYAML();
-    this.updateStore(this);
   }
 
   updateMeasure(index: number, key: string, change) {
@@ -158,7 +194,6 @@ export class MetricsInternalRepresentation {
 
     this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
     this.regenerateInternalYAML();
-    this.updateStore(this);
   }
 
   updateDimension(index: number, key: string, change) {
@@ -172,29 +207,65 @@ export class MetricsInternalRepresentation {
   deleteDimension(index: number) {
     this.internalRepresentationDocument.deleteIn(["dimensions", index]);
     this.regenerateInternalYAML();
-    this.updateStore(this);
   }
 }
 
-export function createInternalRepresentation(yamlString) {
-  const metricRep = new MetricsInternalRepresentation(yamlString);
+export function createInternalRepresentation(yamlString, updateRuntime) {
+  const metricRep = new MetricsInternalRepresentation(
+    yamlString,
+    updateRuntime
+  );
 
-  const store = writable(metricRep);
-  metricRep.bindStore((instance) => {
-    store.update((_) => instance);
-
-    console.log(
-      "measures in store",
-      get(store).internalRepresentation.measures
-    );
+  return readable(metricRep, (set) => {
+    metricRep.bindStore((instance) => {
+      set(instance);
+    });
   });
+}
 
-  return store;
+export function generateMeasuresAndDimension(
+  model: V1Model,
+  timeseries?: string
+) {
+  const fields = model.schema.fields;
 
-  // return readable(metricRep, (set) => {
-  //   metricRep.bindStore((instance) => {
-  //     console.log("Instance", instance);
-  //     set(instance);
-  //   });
-  // });
+  const template = parseDocument(metricsTemplate);
+  template.set("from", model.name);
+
+  if (timeseries) {
+    template.set("timeseries", timeseries);
+  } else {
+    const timestampColumns = model.schema.fields
+      .filter((column) => TIMESTAMPS.has(column.type.code as string))
+      .map((column) => column.name);
+
+    template.set("timeseries", timestampColumns[0]);
+  }
+  const measureNode = template.createNode({
+    label: "Total records",
+    expression: "count(*)",
+    description: "Total number of records present",
+    format_preset: "humanize",
+    visible: true,
+  });
+  template.addIn(["measures"], measureNode);
+
+  const diemensionSeq = fields
+    .filter((field) => {
+      return CATEGORICALS.has(field.type.code);
+    })
+    .map((field) => {
+      return {
+        label: "",
+        property: field.name,
+        description: "",
+        expression: "",
+        visible: true,
+      };
+    });
+
+  const dimensionNode = template.createNode(diemensionSeq);
+  template.set("dimensions", dimensionNode);
+
+  return template.toString({ collectionStyle: "block" });
 }

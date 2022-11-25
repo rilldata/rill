@@ -15,25 +15,22 @@
   import { useMetaQuery } from "../../svelte-query/queries/metrics-views/metadata";
   import { getContext } from "svelte";
 
-  export let metricsDefId: string;
+  export let metricsInternalRep;
+  export let metricsDefName;
 
   const config = getContext<RootConfig>("config");
 
-  // query the `/meta` endpoint to get the valid measures and dimensions
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-  $: measures = $metaQuery.data?.measures;
-  $: dimensions = $metaQuery.data?.dimensions;
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
 
   let buttonDisabled = true;
   let buttonStatus = "OK";
 
-  const viewDashboard = (metricsDefId: string) => {
-    goto(`/dashboard/${metricsDefId}`);
+  const viewDashboard = () => {
+    goto(`/dashboard/${metricsDefName}`);
 
     navigationEvent.fireEvent(
-      metricsDefId,
+      metricsDefName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.MetricsDefinition,
@@ -42,8 +39,8 @@
   };
 
   $: if (
-    $selectedMetricsDef?.sourceModelId === undefined ||
-    $selectedMetricsDef?.timeDimension === undefined
+    $metricsInternalRep.getMetricKey("from") === "" ||
+    $metricsInternalRep.getMetricKey("timeseries") === ""
   ) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
@@ -60,7 +57,7 @@
   <Button
     type="primary"
     disabled={buttonDisabled}
-    on:click={() => viewDashboard(metricsDefId)}
+    on:click={() => viewDashboard()}
   >
     Go to Dashboard <ExploreIcon size="16px" />
   </Button>

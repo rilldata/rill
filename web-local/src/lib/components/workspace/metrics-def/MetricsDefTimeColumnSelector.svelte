@@ -4,36 +4,27 @@
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-
-  import { getContext } from "svelte";
-  import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
-  import type { ProfileColumn } from "../../../types";
-  import { selectTimestampColumnFromProfileEntity } from "../../../redux-store/source/source-selectors";
+  import { TIMESTAMPS } from "@rilldata/web-local/lib/duckdb-data-types";
 
   export let metricsInternalRep;
 
   $: instanceId = $runtimeStore.instanceId;
 
-  $: model_path = $metricsInternalRep.getMetricKey("model_path");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model_path);
-  $: selectedModel = $getModel.data?.object?.model;
+  $: model = $metricsInternalRep.getMetricKey("from");
+  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model);
+  $: selectedModel = $getModel.data?.entry?.model;
 
   $: timeColumnSelectedValue =
     $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  let derivedModelColumns: Array<ProfileColumn>;
-  $: if (selectedModel && $derivedModelStore?.entities) {
-    derivedModelColumns = selectTimestampColumnFromProfileEntity(
-      $derivedModelStore?.entities.find(
-        (model) => model.id === selectedModel.name // Use model name, this is temp
-      )
-    );
+  let timestampColumns: Array<string>;
+  $: if (selectedModel) {
+    const selectedMetricsDefModelProfile = selectedModel?.schema?.fields ?? [];
+    timestampColumns = selectedMetricsDefModelProfile
+      .filter((column) => TIMESTAMPS.has(column.type.code as string))
+      .map((column) => column.name);
   } else {
-    derivedModelColumns = [];
+    timestampColumns = [];
   }
 
   function updateMetricsDefinitionHandler(evt: Event) {
@@ -48,7 +39,7 @@
   $: if (selectedModel?.name === undefined) {
     tooltipText = "select a model before selecting a timestamp column";
     dropdownDisabled = true;
-  } else if (derivedModelColumns.length === 0) {
+  } else if (timestampColumns.length === 0) {
     tooltipText = "the selected model has no timestamp columns";
     dropdownDisabled = true;
   } else {
@@ -78,8 +69,8 @@
         <option disabled hidden selected value="__DEFAULT_VALUE__"
           >select a timestamp...</option
         >
-        {#each derivedModelColumns as column}
-          <option value={column.name}>{column.name}</option>
+        {#each timestampColumns as column}
+          <option value={column}>{column}</option>
         {/each}
       </select>
 

@@ -1,4 +1,8 @@
-import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
+import {
+  useRuntimeServiceGetFile,
+  useRuntimeServiceListFiles,
+} from "@rilldata/web-common/runtime-client";
+import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
