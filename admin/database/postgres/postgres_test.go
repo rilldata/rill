@@ -10,7 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/rilldata/rill/server-cloud/database"
+	"github.com/rilldata/rill/admin/database"
 )
 
 // TestPostgres starts Postgres using testcontainers and runs all other tests in

@@ -18,9 +18,9 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/labstack/echo-contrib/session"
+	"github.com/rilldata/rill/admin/api"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
-	"github.com/rilldata/rill/server-cloud/api"
-	"github.com/rilldata/rill/server-cloud/database"
 )
 
 type Server struct {

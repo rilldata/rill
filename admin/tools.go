@@ -1,6 +1,6 @@
 //go:build tools
 
-package server_cloud
+package admin
 
 // Tools installed with go install that `go mod tidy` should keep.
 import (
