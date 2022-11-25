@@ -19,8 +19,6 @@ jobs:
         with:
           submodules: 'true'
 
-      - run: git fetch --prune --unshallow
-
       - name: setup release environment
         run: |-
           echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
@@ -41,4 +39,4 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release --rm-dist --snapshot
+              release --rm-dist
