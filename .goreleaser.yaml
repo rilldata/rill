@@ -6,6 +6,8 @@ release:
 before:
   hooks: null
 
+draft: true # testing
+
 builds:
   # macos amd64
   - id: darwin-amd64
@@ -70,9 +72,6 @@ builds:
   #       -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
   #       main.BuildDate={{.Date}}
 
-universal_binaries:
-  - replace: true
-
 blobs:
   - provider: gs
     bucket: goreleaser-bucket
@@ -95,8 +94,6 @@ brews:
     commit_author:
       name: "rilldata"
       email: rakesh.sharma@rilldata.com
-    # folder: Formula
-    skip_upload: false # For testing purpose
 
 archives:
   - replacements:
