@@ -1,9 +1,13 @@
 project_name: rill
+
 release:
   prerelease: auto
+
 before:
   hooks: null
+
 builds:
+  # macos amd64
   - id: darwin-amd64
     main: ./cli/main.go
     binary: rill
@@ -22,6 +26,8 @@ builds:
       - >-
         -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
         main.BuildDate={{.Date}}
+
+  # macos arm64/m1
   - id: darwin-arm64
     main: ./cli/main.go
     binary: rill
@@ -40,7 +46,9 @@ builds:
       - >-
         -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
         main.BuildDate={{.Date}}
-    # Commenting just for testing 
+
+    # Commenting just for testing
+  # linux amd64
   # - id: linux-amd64
   #   main: ./cli/main.go
   #   binary: rill
@@ -61,8 +69,15 @@ builds:
   #     - >-
   #       -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
   #       main.BuildDate={{.Date}}
+
 universal_binaries:
   - replace: true
+
+blobs:
+  - provider: gs
+    bucket: goreleaser-bucket
+    folder: "rill/{{.Version}}"
+
 brews:
   - homepage: "https://github.com/rilldata/rill-developer"
     description: "The Rill Data CLI"
@@ -82,6 +97,7 @@ brews:
       email: rakesh.sharma@rilldata.com
     # folder: Formula
     skip_upload: false # For testing purpose
+
 archives:
   - replacements:
       darwin: Darwin
@@ -93,10 +109,13 @@ archives:
       - README.md
       - LICENSE*
     wrap_in_directory: true
+
 checksum:
   name_template: checksums.txt
+
 snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
+
 changelog:
   sort: asc
   filters:
