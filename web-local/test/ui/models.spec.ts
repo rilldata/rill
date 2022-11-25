@@ -1,7 +1,7 @@
 import { describe } from "@jest/globals";
 import path from "node:path";
 import { useInlineTestServer } from "../utils/useInlineTestServer";
-import { TestBrowser } from "./TestBrowser";
+import { TestBrowser, TestEntityType } from "./TestBrowser";
 
 const PORT = 8080;
 const DataPath = path.join(__dirname, "../data");
@@ -21,14 +21,20 @@ describe.skip("models", () => {
       "AdImpressions"
     );
 
-    await testBrowser.createModel("AdBids_model");
-    await testBrowser.waitForEntity("model", "AdBids_model", true);
+    await testBrowser.createModel("AdBids_model_t");
+    await testBrowser.waitForEntity(
+      TestEntityType.Model,
+      "AdBids_model_t",
+      true
+    );
     await testBrowser.updateModelSql("select * from AdBids");
     await testBrowser.modelHasError(false);
 
+    // Catalog error
     await testBrowser.updateModelSql("select * from AdBid");
     await testBrowser.modelHasError(true, "Catalog Error");
 
+    // Query parse error
     await testBrowser.updateModelSql("select from AdBids");
     await testBrowser.modelHasError(true, "Parser Error");
   });
@@ -39,23 +45,51 @@ describe.skip("models", () => {
 
     // rename
     await testBrowser.renameEntityUsingMenu(
-      "model",
+      TestEntityType.Model,
       "AdBids_rename_delete",
       "AdBids_rename_delete_new"
     );
-    await testBrowser.waitForEntity("model", "AdBids_rename_delete_new", true);
-    await testBrowser.entityNotPresent("model", "AdBids_rename_delete");
+    await testBrowser.waitForEntity(
+      TestEntityType.Model,
+      "AdBids_rename_delete_new",
+      true
+    );
+    await testBrowser.entityNotPresent(
+      TestEntityType.Model,
+      "AdBids_rename_delete"
+    );
 
     // delete
-    await testBrowser.deleteEntity("model", "AdBids_rename_delete_new");
-    await testBrowser.entityNotPresent("model", "AdBids_rename_delete_new");
-    await testBrowser.entityNotPresent("model", "AdBids_rename_delete");
+    await testBrowser.deleteEntity(
+      TestEntityType.Model,
+      "AdBids_rename_delete_new"
+    );
+    await testBrowser.entityNotPresent(
+      TestEntityType.Model,
+      "AdBids_rename_delete_new"
+    );
+    await testBrowser.entityNotPresent(
+      TestEntityType.Model,
+      "AdBids_rename_delete"
+    );
   });
 
   it("Create model from source", async () => {
     await testBrowser.createOrReplaceSource("AdBids.csv", "AdBids");
 
     await testBrowser.createModelFromSource("AdBids");
-    await testBrowser.waitForEntity("model", "AdBids_model", true);
+    await testBrowser.waitForEntity(TestEntityType.Model, "AdBids_model", true);
+
+    // navigate to another source
+    await testBrowser.createOrReplaceSource(
+      "AdImpressions.tsv",
+      "AdImpressions"
+    );
+    // delete the source of model
+    await testBrowser.deleteEntity(TestEntityType.Source, "AdBids");
+    // go to model
+    await testBrowser.gotoEntity(TestEntityType.Model, "AdBids_model");
+    // make sure error has propagated
+    await testBrowser.modelHasError(true, "Catalog Error");
   });
 });

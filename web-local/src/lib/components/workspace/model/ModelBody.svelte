@@ -13,6 +13,7 @@
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
+  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
@@ -59,7 +60,7 @@
 
   let showPreview = true;
   let modelPath: string;
-  $: modelPath = `/models/${modelName}.sql`;
+  $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $commonEntitiesStore.entities[modelPath]?.errors[0]?.message;
 
   let titleInput = currentModel?.name;
