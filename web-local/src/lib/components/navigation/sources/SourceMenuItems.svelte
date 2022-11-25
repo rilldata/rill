@@ -18,6 +18,7 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
@@ -53,7 +54,7 @@
   $: sourceNames = useSourceNames($runtimeStore.repoId);
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.repoId,
-    `/sources/${sourceName}.yaml`
+    getFileFromName(sourceName, EntityType.Table)
   );
 
   const dispatch = createEventDispatcher();

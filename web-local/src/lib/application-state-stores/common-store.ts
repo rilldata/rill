@@ -43,11 +43,17 @@ const commonEntitiesReducers = {
     errors: Array<V1MigrationError>
   ) {
     const errorsForPaths = new Map<string, Array<V1MigrationError>>();
+    affectedPaths.forEach((affectedPath) =>
+      errorsForPaths.set(correctFilePath(affectedPath), [])
+    );
+
     errors.forEach((error) => {
-      if (!errorsForPaths.has(error.filePath)) {
-        errorsForPaths.set(error.filePath, []);
+      const filePath = correctFilePath(error.filePath);
+
+      if (!errorsForPaths.has(filePath)) {
+        errorsForPaths.set(filePath, []);
       }
-      errorsForPaths.get(error.filePath).push(error);
+      errorsForPaths.get(filePath).push(error);
     });
 
     errorsForPaths.forEach((errors, path) => {
@@ -61,3 +67,11 @@ export const commonEntitiesStore: Readable<CommonEntityState> &
   subscribe,
   ...commonEntitiesReducers,
 };
+
+function correctFilePath(filePath: string) {
+  // TODO: why does affectedPaths not have the leading /
+  if (!filePath.startsWith("/")) {
+    filePath = "/" + filePath;
+  }
+  return filePath;
+}

@@ -10,6 +10,12 @@ import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
 import path from "node:path";
 import { Browser, chromium, Page } from "playwright";
 
+export enum TestEntityType {
+  Source = "source",
+  Model = "model",
+  Dashboard = "dashboard",
+}
+
 /**
  * Browser interaction abstraction.
  * Has our app specific actions like uploadFile and updateModelSql
@@ -78,18 +84,30 @@ export class TestBrowser {
       this.page.locator(".portal .flex-grow .grid button").click(),
     ]);
     // input the `file` after joining with `testDataPath`
-    await fileChooser.setFiles([path.join(this.testDataPath, file)]);
+    const fileUploadPromise = fileChooser.setFiles([
+      path.join(this.testDataPath, file),
+    ]);
 
     // TODO: infer duplicate
     if (isDuplicate) {
+      await fileUploadPromise;
+      let duplicatePromise;
       if (keepBoth) {
         // click on `Keep Both` if `isDuplicate`=true and `keepBoth`=true
-        await this.clickModalButton("Keep Both");
+        duplicatePromise = this.clickModalButton("Keep Both");
       } else {
         // else click on `Replace Existing Source`
-        await this.clickModalButton("Replace Existing Source");
+        duplicatePromise = this.clickModalButton("Replace Existing Source");
       }
+      await Promise.all([
+        this.page.waitForResponse(/put-and-migrate/),
+        duplicatePromise,
+      ]);
     } else {
+      await Promise.all([
+        this.page.waitForResponse(/put-and-migrate/),
+        fileUploadPromise,
+      ]);
       // if not duplicate wait and make sure `Duplicate source name` modal is not open
       await asyncWait(100);
       await playwrightExpect(
@@ -98,20 +116,20 @@ export class TestBrowser {
         })
       ).toBeHidden();
     }
-
-    await asyncWait(100);
   }
 
   public async createOrReplaceSource(file: string, name: string) {
     try {
-      await this.page.locator(`a[href='/source/${name}']`).waitFor({
-        timeout: 100,
-      });
+      await this.page
+        .locator(this.getEntityLink(TestEntityType.Source, name))
+        .waitFor({
+          timeout: 100,
+        });
       await this.uploadFile(file, true, false);
     } catch (err) {
       await this.uploadFile(file);
     }
-    await this.waitForEntity("source", name, true);
+    await this.waitForEntity(TestEntityType.Source, name, true);
   }
 
   // model action helpers
@@ -119,13 +137,13 @@ export class TestBrowser {
   public async createModel(name: string) {
     // add model button
     await this.page.locator("button#create-model-button").click();
-    await this.waitForEntity("model", "model", true);
+    await this.waitForEntity(TestEntityType.Model, "model", true);
     await this.renameEntityUsingTitle(name);
-    await this.waitForEntity("model", name, true);
+    await this.waitForEntity(TestEntityType.Model, name, true);
   }
 
   public async createModelFromSource(source: string) {
-    await this.openEntityMenu("source", source);
+    await this.openEntityMenu(TestEntityType.Source, source);
     await this.clickMenuButton("create new model");
   }
 
@@ -137,10 +155,29 @@ export class TestBrowser {
     await this.page.keyboard.insertText(sql);
   }
 
+  public async modelHasError(hasError: boolean, error = "") {
+    // TODO: better check
+    try {
+      const errorLocator = this.page.locator(".editor-pane .error");
+      await errorLocator.waitFor({
+        timeout: 100,
+      });
+      expect(hasError).toBeTruthy();
+      const actualError = await errorLocator.textContent();
+      expect(actualError).toMatch(error);
+    } catch (err) {
+      expect(hasError).toBeFalsy();
+    }
+  }
+
   // common action helpers
 
+  public async gotoEntity(type: TestEntityType, name: string) {
+    await this.page.locator(this.getEntityLink(type, name)).click();
+  }
+
   public async renameEntityUsingMenu(
-    type: string,
+    type: TestEntityType,
     name: string,
     toName: string
   ) {
@@ -157,7 +194,10 @@ export class TestBrowser {
 
     // type new name and submit
     await this.page.locator(".portal input").fill(toName);
-    await this.clickModalButton("Change Name");
+    await Promise.all([
+      this.page.waitForResponse(/rename-and-migrate/),
+      this.clickModalButton("Change Name"),
+    ]);
   }
 
   public async renameEntityUsingTitle(toName: string) {
@@ -165,45 +205,37 @@ export class TestBrowser {
     await this.page.keyboard.press("Enter");
   }
 
-  public async deleteEntity(type: string, name: string) {
+  public async deleteEntity(type: TestEntityType, name: string) {
     // open context menu and click rename
     await this.openEntityMenu(type, name);
-    await this.clickMenuButton("delete");
-  }
-
-  public async modelHasError(hasError: boolean, error = "") {
-    try {
-      const errorLocator = this.page.locator(".editor-pane .error");
-      await errorLocator.waitFor({
-        timeout: 100,
-      });
-      expect(hasError).toBeTruthy();
-      const actualError = await errorLocator.textContent();
-      expect(actualError).toMatch(error);
-    } catch (err) {
-      expect(hasError).toBeFalsy();
-    }
+    await Promise.all([
+      this.page.waitForResponse(/delete-and-migrate/),
+      this.clickMenuButton("delete"),
+    ]);
   }
 
   // wait helpers
 
-  public async waitForEntity(type: string, name: string, navigated: boolean) {
-    await this.page.locator(`a[href='/${type}/${name}']`).waitFor();
+  public async waitForEntity(
+    type: TestEntityType,
+    name: string,
+    navigated: boolean
+  ) {
+    await this.page.locator(this.getEntityLink(type, name)).waitFor();
     if (navigated) {
-      await this.page.locator("input#model-title-input").waitFor();
       await this.page.waitForURL(`${this.appUrl}/${type}/${name}`);
     }
   }
 
-  public async entityNotPresent(type: string, name: string) {
+  public async entityNotPresent(type: TestEntityType, name: string) {
     await asyncWait(100);
     await playwrightExpect(
-      this.page.locator(`a[href='/${type}/${name}']`)
+      this.page.locator(this.getEntityLink(type, name))
     ).toBeHidden();
   }
 
-  private async openEntityMenu(type: string, name: string) {
-    const entityLocator = this.page.locator(`a[href='/${type}/${name}']`);
+  private async openEntityMenu(type: TestEntityType, name: string) {
+    const entityLocator = this.page.locator(this.getEntityLink(type, name));
     await entityLocator.hover();
     await this.page
       // get the navigation entry for the entity
@@ -228,5 +260,9 @@ export class TestBrowser {
         hasText: new RegExp(text),
       })
       .click();
+  }
+
+  private getEntityLink(type: TestEntityType, name: string): string {
+    return `a[href='/${type}/${name}']`;
   }
 }

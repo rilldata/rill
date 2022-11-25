@@ -3,10 +3,12 @@ import {
   getRuntimeServiceListFilesQueryKey,
   V1PutFileAndMigrateResponse,
 } from "@rilldata/web-common/runtime-client";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
-import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
+import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
@@ -21,7 +23,7 @@ export async function createModel(
     data: {
       repoId: runtimeState.repoId,
       instanceId: runtimeState.instanceId,
-      path: `models/${newModelName}.sql`,
+      path: getFileFromName(newModelName, EntityType.Model),
       blob: sql,
       create: true,
       createOnly: true,
