@@ -9,10 +9,10 @@
   export let data;
 
   $: metricsDefName = data.metricsDefName;
-  $: repoId = $runtimeStore.repoId;
+  $: instanceId = $runtimeStore.instanceId;
 
   $: dashboardYAML = useRuntimeServiceGetFile(
-    repoId,
+    instanceId,
     `dashboards/${metricsDefName}.yaml`
   );
 

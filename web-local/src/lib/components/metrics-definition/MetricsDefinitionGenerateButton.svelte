@@ -1,15 +1,8 @@
 <script lang="ts">
-  import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import {
-    useRuntimeServicePutFileAndMigrate,
-    V1Model,
-  } from "@rilldata/web-common/runtime-client";
-  import type { DerivedModelStore } from "../../application-state-stores/model-stores";
+  import type { V1Model } from "@rilldata/web-common/runtime-client";
   import { TIMESTAMPS } from "../../duckdb-data-types";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import {
@@ -28,20 +21,11 @@
   const queryClient = useQueryClient();
 
   async function handleGenerateClick() {
-    // await store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
-
-    const newYAMLString = generateMeasuresAndDimension(selectedModel);
-
+    const newYAMLString = generateMeasuresAndDimension(
+      selectedModel,
+      $metricsInternalRep.getMetricKey("timeseries")
+    );
     handlePutAndMigrate(newYAMLString);
-
-    if (
-      !$metricsInternalRep.getMetricKey("timeseries") &&
-      timestampColumns.length > 0
-    ) {
-      // select the first available timestamp column if one has not been
-      // selected and there are some available
-      $metricsInternalRep.updateMetricKey("timeseries", timestampColumns[0]);
-    }
 
     // invalidateMetricsView(queryClient, metricsDefId);
     // // In `svelte-query/totals.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
@@ -53,10 +37,6 @@
 
     closeModal();
   }
-
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {

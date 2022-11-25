@@ -10,6 +10,7 @@
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
+  import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
 
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
@@ -29,8 +30,8 @@
   $: instanceId = $runtimeStore.instanceId;
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
-  function callPutAndMigrate(internalYamlString) {
-    $metricMigrate.mutate({
+  async function callPutAndMigrate(internalYamlString) {
+    await $metricMigrate.mutateAsync({
       data: {
         instanceId,
         path: `dashboards/${metricsDefName}.yaml`,
@@ -53,9 +54,9 @@
   );
 
   // reset internal representation in case of deviation from runtime YAML
-  // $: if (yaml !== $metrics.internalYAML) {
-  //   metrics = createInternalRepresentation(yaml);
-  // }
+  $: if (yaml !== $metricsInternalRep.internalYAML) {
+    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+  }
 
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();

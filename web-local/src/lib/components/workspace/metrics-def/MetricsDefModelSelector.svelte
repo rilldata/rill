@@ -17,7 +17,7 @@
     "rill:app:persistent-model-store"
   ) as PersistentModelStore;
 
-  $: allModels = useModelNames($runtimeStore.repoId);
+  $: allModels = useModelNames($runtimeStore.instanceId);
   function updateMetricsDefinitionHandler(sourceModelName) {
     $metricsInternalRep.updateMetricKey("from", sourceModelName);
   }

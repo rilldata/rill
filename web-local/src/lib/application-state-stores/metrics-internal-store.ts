@@ -1,12 +1,9 @@
-import type {
-  StructTypeField,
-  V1Model,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Model } from "@rilldata/web-common/runtime-client";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
-import { CATEGORICALS } from "../duckdb-data-types";
+import { CATEGORICALS, TIMESTAMPS } from "../duckdb-data-types";
 
 export const metricsTemplate = `
 display_name: "Sample Dashboard"
@@ -226,12 +223,24 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
   });
 }
 
-export function generateMeasuresAndDimension(model: V1Model) {
+export function generateMeasuresAndDimension(
+  model: V1Model,
+  timeseries?: string
+) {
   const fields = model.schema.fields;
 
   const template = parseDocument(metricsTemplate);
   template.set("from", model.name);
 
+  if (timeseries) {
+    template.set("timeseries", timeseries);
+  } else {
+    const timestampColumns = model.schema.fields
+      .filter((column) => TIMESTAMPS.has(column.type.code as string))
+      .map((column) => column.name);
+
+    template.set("timeseries", timestampColumns[0]);
+  }
   const measureNode = template.createNode({
     label: "Total records",
     expression: "count(*)",
