@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 REPO=rilldata
 NAME=rill-developer
 # PACKAGE_NAME          := github.com/rilldata/rill-developer
@@ -20,8 +21,20 @@ cli.prepare:
 	rm -rf cli/pkg/examples/embed/dist || true
 	mkdir -p cli/pkg/examples/embed/dist
 	cp -r examples/ cli/pkg/examples/embed/dist/
+=======
+.PHONY: cli
+cli:
+	npm install
+	npm run build
+	mkdir -p cli/pkg/web/embed/dist
+	cp -r web-local/build/ cli/pkg/web/embed/dist
+	go build -o rill cli/main.go 
+>>>>>>> c8a47306 (adding back the makefile for cli and proto)
 
 .PHONY: proto.generate
 proto.generate:
 	cd proto && buf generate
+<<<<<<< HEAD
 	npm run generate:runtime-client -w web-common
+=======
+>>>>>>> c8a47306 (adding back the makefile for cli and proto)
