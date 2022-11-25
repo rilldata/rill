@@ -29,7 +29,6 @@ import (
 )
 
 var localInstanceID = "default"
-var localRepoID = "default"
 
 // StartCmd represents the start command
 func StartCmd() *cobra.Command {
@@ -90,21 +89,14 @@ func StartCmd() *cobra.Command {
 			// Create instance and repo configured for local use
 			_, err = server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
 				InstanceId:   localInstanceID,
-				Driver:       olapDriver,
-				Dsn:          olapDSN,
-				Exposed:      true,
+				OlapDriver:   olapDriver,
+				OlapDsn:      olapDSN,
+				RepoDriver:   "file",
+				RepoDsn:      repoDSN,
 				EmbedCatalog: olapDriver == "duckdb",
 			})
 			if err != nil {
 				return err
-			}
-			_, err = server.CreateRepo(context.Background(), &runtimev1.CreateRepoRequest{
-				RepoId: localRepoID,
-				Driver: "file",
-				Dsn:    repoDSN,
-			})
-			if err != nil {
-				return fmt.Errorf("could not create repo: %v", err)
 			}
 
 			// Get full path to repo for logging
@@ -113,11 +105,10 @@ func StartCmd() *cobra.Command {
 				return err
 			}
 
-			// Trigger a migration
+			// Trigger reconciliation
 			logger.Infof("Hydrating project at '%s'", repoAbs)
-			res, err := server.Migrate(context.Background(), &runtimev1.MigrateRequest{
+			res, err := server.Reconcile(context.Background(), &runtimev1.ReconcileRequest{
 				InstanceId: localInstanceID,
-				RepoId:     localRepoID,
 			})
 			if err != nil {
 				return err
@@ -126,14 +117,13 @@ func StartCmd() *cobra.Command {
 				logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 			}
 			for _, path := range res.AffectedPaths {
-				logger.Infof("Migrated: %s", path)
+				logger.Infof("Reconciled: %s", path)
 			}
 			logger.Infof("Hydration completed!")
 
 			// Create config object to serve on /local/config
 			localConfig := map[string]any{
 				"instance_id": localInstanceID,
-				"repo_id":     localRepoID,
 				"grpc_port":   grpcPort,
 			}
 

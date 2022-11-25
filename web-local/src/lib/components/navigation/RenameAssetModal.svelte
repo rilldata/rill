@@ -3,7 +3,7 @@
   import {
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceRenameFileAndMigrate,
+    useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { createForm } from "svelte-forms-lib";
@@ -34,7 +34,7 @@
     currentAssetName
   );
 
-  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+  const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -62,7 +62,6 @@
           $renameSource.mutate(
             {
               data: {
-                repoId: $runtimeStore.repoId,
                 instanceId: runtimeInstanceId,
                 fromPath: `sources/${currentAssetName}.yaml`,
                 toPath: `sources/${values.newName}.yaml`,
@@ -76,7 +75,7 @@
                   message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
                 });
                 return queryClient.invalidateQueries(
-                  getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                  getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
                 );
               },
               onError: (err) => {

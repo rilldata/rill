@@ -35,9 +35,9 @@ type CatalogEntry struct {
 	Type        ObjectType
 	Object      proto.Message
 	Path        string
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
-	RefreshedOn time.Time `db:"refreshed_on"`
+	CreatedOn   time.Time
+	UpdatedOn   time.Time
+	RefreshedOn time.Time
 }
 
 func (e *CatalogEntry) GetTable() *runtimev1.Table {

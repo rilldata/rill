@@ -4,7 +4,7 @@
     ConnectorProperty,
     ConnectorPropertyType,
     getRuntimeServiceListFilesQueryKey,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
@@ -35,7 +35,7 @@
   export let connector: V1Connector;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSource = useRuntimeServicePutFileAndReconcile();
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -78,7 +78,6 @@
         $createSource.mutate(
           {
             data: {
-              repoId: $runtimeStore.repoId,
               instanceId: runtimeInstanceId,
               path: `sources/${values.sourceName}.yaml`,
               blob: yaml,
@@ -96,7 +95,7 @@
               dispatch("close");
               overlay.set(null);
               return queryClient.invalidateQueries(
-                getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
+                getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
               );
             },
             onError: () => {

@@ -1,6 +1,6 @@
 import {
-  runtimeServiceDeleteFileAndMigrate,
-  runtimeServicePutFileAndMigrate,
+  runtimeServiceDeleteFileAndReconcile,
+  runtimeServicePutFileAndReconcile,
 } from "@rilldata/web-common/runtime-client";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
@@ -78,12 +78,11 @@ export class TableActions extends DataModelerActions {
       },
       "file"
     );
-    await runtimeServicePutFileAndMigrate({
+    await runtimeServicePutFileAndReconcile({
       instanceId: this.dataModelerService
         .getDatabaseService()
         .getDatabaseClient()
         .getInstanceId(),
-      repoId: this.dataModelerStateService.getApplicationState().repoId,
       path: `/sources/${tableName}.yaml`,
       blob: yaml,
       create: true,
@@ -376,7 +375,7 @@ export class TableActions extends DataModelerActions {
     args: PersistentTableStateActionArg,
     tableName: string
   ) {
-    await runtimeServiceDeleteFileAndMigrate({
+    await runtimeServiceDeleteFileAndReconcile({
       instanceId: this.databaseService.getDatabaseClient().getInstanceId(),
       path: `/sources/${tableName}.yaml`,
     });

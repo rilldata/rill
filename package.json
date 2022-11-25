@@ -4,7 +4,7 @@
   "type": "module",
   "workspaces": [
     "runtime",
-    "web-cloud",
+    "web-admin",
     "web-common",
     "web-local"
   ],
