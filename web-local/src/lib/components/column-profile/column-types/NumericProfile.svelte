@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
 
@@ -10,19 +9,11 @@
   export let columnName: string;
   export let objectName: string;
   export let type: string;
+  export let mode = "summary";
 
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
-
-  let columns: string;
-  $: summarySize =
-    COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
-  $: if (hideNullPercentage) {
-    columns = `${summarySize}px`;
-  } else {
-    columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
-  }
 
   let active = false;
 </script>
@@ -36,18 +27,13 @@
   {active}
   emphasize={active}
   {hideRight}
+  {hideNullPercentage}
+  {compact}
 >
   <DataTypeIcon {type} slot="icon" />
-  <div slot="left">{columnName}</div>
-  <div slot="right" class="grid" style:grid-template-columns={columns}>
-    <div>
-      <NumericSpark {compact} {objectName} {columnName} />
-    </div>
-    {#if !hideNullPercentage}
-      <NullPercentageSpark {objectName} {columnName} />
-    {/if}
-  </div>
-
+  <svelte:fragment slot="left">{columnName}</svelte:fragment>
+  <NumericSpark slot="summary" {compact} {objectName} {columnName} />
+  <NullPercentageSpark slot="nullity" {objectName} {columnName} />
   <div slot="details" class="px-4">
     <NumericPlot {objectName} {columnName} />
   </div>

@@ -12,14 +12,15 @@
    */
   import { guidGenerator } from "../../../../util/guid";
   import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithParentClientRect } from "../../../data-graphic/functional-components";
   import { Area, Line } from "../../../data-graphic/marks";
 
   const plotID = guidGenerator();
 
   //export let data;
 
-  export let width = 360;
-  export let height = 120;
+  export let width = undefined;
+  export let height = undefined;
   export let curve = "curveLinear";
   export let area = false;
   export let color = "hsl(217, 10%, 50%)";
@@ -71,29 +72,30 @@
   );
 </script>
 
-<SimpleDataGraphic
-  xType="date"
-  yType="number"
-  {width}
-  {height}
-  {bottom}
-  {top}
-  {left}
-  {right}
-  bodyBuffer={0}
-  marginBuffer={0}
-  let:config
->
-  <Line {data} {xAccessor} {yAccessor} />
-  <Area {data} {xAccessor} {yAccessor} />
-  <line
-    x1={config.plotLeft}
-    x2={config.plotRight}
-    y1={config.plotBottom}
-    y2={config.plotBottom}
-    stroke="black"
-  />
-  <!-- {#if zoomPreviewWidth}
+<WithParentClientRect let:rect>
+  <SimpleDataGraphic
+    xType="date"
+    yType="number"
+    width={width || rect?.width || 400}
+    height={height || rect?.height}
+    {bottom}
+    {top}
+    {left}
+    {right}
+    bodyBuffer={0}
+    marginBuffer={0}
+    let:config
+  >
+    <Line {data} {xAccessor} {yAccessor} />
+    <Area {data} {xAccessor} {yAccessor} />
+    <line
+      x1={config.plotLeft}
+      x2={config.plotRight}
+      y1={config.plotBottom}
+      y2={config.plotBottom}
+      stroke="black"
+    />
+    <!-- {#if zoomPreviewWidth}
   <g transition:fade={{ duration: 100 }}>
     <rect
       x={zoomPreviewX}
@@ -120,4 +122,5 @@
     />
   </g>
 {/if} -->
-</SimpleDataGraphic>
+  </SimpleDataGraphic>
+</WithParentClientRect>

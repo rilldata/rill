@@ -1,9 +1,4 @@
-<script context="module">
-  let times = 0;
-</script>
-
 <script lang="ts">
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import TimestampSpark from "../data-graphics/sparks/TimestampSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
@@ -21,21 +16,8 @@
   export let hideNullPercentage = false;
 
   let columns: string;
-  $: summarySize =
-    COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
-  $: if (hideNullPercentage) {
-    columns = `${summarySize}px`;
-  } else {
-    columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
-  }
 
   let active = false;
-
-  let ok = false;
-  if (times === 0) {
-    ok = true;
-    times += 1;
-  }
 </script>
 
 <ProfileContainer
@@ -47,28 +29,25 @@
   {active}
   emphasize={active}
   {hideRight}
+  {compact}
+  {hideNullPercentage}
 >
   <DataTypeIcon type="TIMESTAMP" slot="icon" />
   <div slot="left">{columnName}</div>
-  <div slot="right" class="grid" style:grid-template-columns={columns}>
-    <div>
-      <!-- {#if ok} -->
-      <TimestampSpark
-        width={summarySize}
-        height={18}
-        top={4}
-        bottom={4}
-        xAccessor="ts"
-        yAccessor="count"
-        {objectName}
-        {columnName}
-      />
-      <!-- {/if} -->
-    </div>
-    {#if !hideNullPercentage}
-      <NullPercentageSpark {objectName} {columnName} />
-    {/if}
+
+  <!-- wrap in div to get size of grid item -->
+  <div slot="summary">
+    <TimestampSpark
+      height={18}
+      top={4}
+      bottom={4}
+      xAccessor="ts"
+      yAccessor="count"
+      {objectName}
+      {columnName}
+    />
   </div>
+  <NullPercentageSpark slot="nullity" {objectName} {columnName} />
 
   <div slot="details">
     <TopK {objectName} {columnName} />

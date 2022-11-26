@@ -1,20 +1,37 @@
-<script>
+<script lang="ts">
   import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../application-config";
+  import {
+    COLUMN_PROFILE_CONFIG,
+    LIST_SLIDE_DURATION,
+  } from "../../application-config";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();
 
   export let active = false;
   export let emphasize = false;
+
   export let hideRight = false;
+  export let compact = false;
+  export let hideNullPercentage = false;
+
+  let columns: string;
+  $: summarySize =
+    COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
+  $: if (hideNullPercentage) {
+    columns = `${summarySize}px`;
+  } else {
+    columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
+  }
+  $: console.log(columns);
 </script>
 
 <div>
   <button
     class="
+        px-4
         select-none	
         flex 
         space-between 
@@ -31,19 +48,31 @@
       dispatch("select");
     }}
   >
-    <div class="flex gap-2 items-baseline" style:min-width="0px">
+    <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">
       <div class="self-center flex items-center ui-copy-icon-muted">
         <slot name="icon" />
       </div>
-      <div class:font-bold={emphasize} class="text-left" style:min-width="0px">
+      <div
+        class:font-bold={emphasize}
+        class="text-left w-full text-left text-ellipsis overflow-hidden whitespace-nowrap"
+      >
         <slot name="left" />
       </div>
     </div>
-    <div class:hidden={hideRight} class="flex gap-x-2 items-center">
-      <slot name="right" />
-      <slot name="context-button" />
-    </div>
-  </button>
+    <div
+      class:hidden={hideRight}
+      class="grid gap-x-2 "
+      style:grid-template-columns={columns}
+    >
+      <slot name="summary" />
+      {#if !hideNullPercentage}
+        <slot name="nullity" />
+      {/if}
+      <div>
+        <slot name="context-button" />
+      </div>
+    </div></button
+  >
   {#if active && $$slots["details"]}
     <div
       class="w-full"

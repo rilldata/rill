@@ -1,10 +1,10 @@
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
 
+  import TopK from "../data-graphics/details/TopK.svelte";
   import ColumnCardinalitySpark from "../data-graphics/sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
-  import TopK from "../data-graphics/details/TopK.svelte";
 
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { DataTypeIcon } from "../../data-types";
@@ -40,26 +40,12 @@
   {hideRight}
 >
   <DataTypeIcon type="VARCHAR" slot="icon" />
-  <div slot="left">{columnName}</div>
-  <div
-    slot="right"
-    class="grid"
-    style:hidden={hideRight}
-    style:grid-template-columns={mode === "summary" ? columns : "auto"}
-  >
-    {#if mode === "summary"}
-      <div>
-        <ColumnCardinalitySpark {compact} {objectName} {columnName} />
-      </div>
-      {#if !hideNullPercentage}
-        <NullPercentageSpark {objectName} {columnName} />
-      {/if}
-    {:else}
-      example
-    {/if}
-  </div>
+  <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
-  <div slot="details">
+  <ColumnCardinalitySpark slot="summary" {compact} {objectName} {columnName} />
+  <NullPercentageSpark slot="nullity" {objectName} {columnName} />
+
+  <div slot="details" class="px-4">
     <TopK {objectName} {columnName} />
   </div>
 </ProfileContainer>
