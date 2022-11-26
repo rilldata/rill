@@ -6,16 +6,20 @@
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
   } from "../../application-config";
+  import { FormattedDataType } from "../data-types";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();
 
   export let active = false;
   export let emphasize = false;
+  export let type;
+  export let example;
 
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
+  export let mode = "summaries";
 
   let columns: string;
   $: summarySize =
@@ -25,7 +29,6 @@
   } else {
     columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
   }
-  $: console.log(columns);
 </script>
 
 <div>
@@ -60,19 +63,36 @@
       </div>
     </div>
     <div
-      class:hidden={hideRight}
+      class:hidden={hideRight || mode !== "summaries"}
       class="grid gap-x-2 "
       style:grid-template-columns={columns}
     >
-      <slot name="summary" />
-      {#if !hideNullPercentage}
-        <slot name="nullity" />
+      {#if mode === "summaries"}
+        <div>
+          <slot name="summary" />
+        </div>
+        {#if !hideNullPercentage}
+          <div>
+            <slot name="nullity" />
+          </div>
+        {/if}
       {/if}
       <div>
         <slot name="context-button" />
       </div>
-    </div></button
-  >
+    </div>
+    <div
+      class:hidden={mode !== "example" || hideRight}
+      class="pl-8 text-ellipsis overflow-hidden whitespace-nowrap text-right"
+      style:max-width="240px"
+    >
+      <FormattedDataType
+        {type}
+        isNull={example === null || example === ""}
+        value={example}
+      />
+    </div>
+  </button>
   {#if active && $$slots["details"]}
     <div
       class="w-full"

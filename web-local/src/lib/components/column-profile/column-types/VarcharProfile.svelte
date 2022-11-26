@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
-
   import TopK from "../data-graphics/details/TopK.svelte";
   import ColumnCardinalitySpark from "../data-graphics/sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
@@ -10,21 +8,15 @@
   import { DataTypeIcon } from "../../data-types";
   export let columnName: string;
   export let objectName: string;
+  export let example;
+  export let type;
 
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
-  export let mode: "example" | "summary" = "summary";
+  export let mode: "example" | "summaries" = "summaries";
 
   let columns: string;
-
-  $: summarySize =
-    COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
-  $: if (hideNullPercentage) {
-    columns = `${summarySize}px`;
-  } else {
-    columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
-  }
 
   let active = false;
 </script>
@@ -38,6 +30,10 @@
   {active}
   emphasize={active}
   {hideRight}
+  {hideNullPercentage}
+  {mode}
+  {example}
+  {type}
 >
   <DataTypeIcon type="VARCHAR" slot="icon" />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>

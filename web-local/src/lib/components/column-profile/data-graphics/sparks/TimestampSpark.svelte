@@ -72,30 +72,31 @@
   );
 </script>
 
-<WithParentClientRect let:rect>
-  <SimpleDataGraphic
-    xType="date"
-    yType="number"
-    width={width || rect?.width || 400}
-    height={height || rect?.height}
-    {bottom}
-    {top}
-    {left}
-    {right}
-    bodyBuffer={0}
-    marginBuffer={0}
-    let:config
-  >
-    <Line {data} {xAccessor} {yAccessor} />
-    <Area {data} {xAccessor} {yAccessor} />
-    <line
-      x1={config.plotLeft}
-      x2={config.plotRight}
-      y1={config.plotBottom}
-      y2={config.plotBottom}
-      stroke="black"
-    />
-    <!-- {#if zoomPreviewWidth}
+{#if data.length}
+  <WithParentClientRect let:rect>
+    <SimpleDataGraphic
+      xType="date"
+      yType="number"
+      width={width || rect?.width || 400}
+      height={height || rect?.height}
+      {bottom}
+      {top}
+      {left}
+      {right}
+      bodyBuffer={0}
+      marginBuffer={0}
+      let:config
+    >
+      <Line {data} {xAccessor} {yAccessor} />
+      <Area {data} {xAccessor} {yAccessor} />
+      <line
+        x1={config.plotLeft}
+        x2={config.plotRight}
+        y1={config.plotBottom}
+        y2={config.plotBottom}
+        stroke="black"
+      />
+      <!-- {#if zoomPreviewWidth}
   <g transition:fade={{ duration: 100 }}>
     <rect
       x={zoomPreviewX}
@@ -122,5 +123,6 @@
     />
   </g>
 {/if} -->
-  </SimpleDataGraphic>
-</WithParentClientRect>
+    </SimpleDataGraphic>
+  </WithParentClientRect>
+{/if}

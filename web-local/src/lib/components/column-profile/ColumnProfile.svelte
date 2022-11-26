@@ -2,6 +2,7 @@
   import {
     useRuntimeServiceGetCardinalityOfColumn,
     useRuntimeServiceGetNullCount,
+    useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
@@ -20,7 +21,7 @@
   export let head: any; // FIXME
   export let indentLevel = 0;
 
-  let previewView = "summaries";
+  let mode = "summaries";
 
   let container;
 
@@ -38,7 +39,16 @@
     $runtimeStore?.instanceId,
     objectName
   );
-  $: console.log("here", objectName);
+
+  /** get single example */
+  let exampleValue;
+  $: exampleValue = useRuntimeServiceGetTableRows(
+    $runtimeStore?.instanceId,
+    objectName,
+    { limit: 1 }
+  );
+  $: console.log($exampleValue);
+
   /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
   function getSummaries(objectName, instanceId, profileColumnResults) {
     return derived(
@@ -110,7 +120,7 @@
   </select>
   <select
     style:transform="translateX(4px)"
-    bind:value={previewView}
+    bind:value={mode}
     class={NATIVE_SELECT}
     class:hidden={containerWidth < 325}
   >
@@ -133,6 +143,8 @@
         type={column.type}
         {objectName}
         columnName={column.name}
+        example={$exampleValue?.data?.data?.[0]?.[column.name]}
+        {mode}
         {hideRight}
         {hideNullPercentage}
         {compact}

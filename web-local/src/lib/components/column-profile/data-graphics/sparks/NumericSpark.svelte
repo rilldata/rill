@@ -25,19 +25,17 @@
     $histogramQuery?.data?.numericSummary?.numericHistogramBins?.bins;
 </script>
 
-<div>
-  {#if histogram}
-    <Tooltip location="right" alignment="center" distance={8}>
-      <Histogram
-        data={histogram}
-        width={summaryWidthSize}
-        height={18}
-        fillColor={DATA_TYPE_COLORS["DOUBLE"].vizFillClass}
-        baselineStrokeColor={DATA_TYPE_COLORS["DOUBLE"].vizStrokeClass}
-      />
-      <TooltipContent slot="tooltip-content">
-        the distribution of the values of this column
-      </TooltipContent>
-    </Tooltip>
-  {/if}
-</div>
+{#if histogram}
+  <Tooltip location="right" alignment="center" distance={8}>
+    <Histogram
+      data={histogram}
+      width={summaryWidthSize}
+      height={18}
+      fillColor={DATA_TYPE_COLORS["DOUBLE"].vizFillClass}
+      baselineStrokeColor={DATA_TYPE_COLORS["DOUBLE"].vizStrokeClass}
+    />
+    <TooltipContent slot="tooltip-content">
+      the distribution of the values of this column
+    </TooltipContent>
+  </Tooltip>
+{/if}

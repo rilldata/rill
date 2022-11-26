@@ -9,7 +9,8 @@
   export let columnName: string;
   export let objectName: string;
   export let type: string;
-  export let mode = "summary";
+  export let mode = "summaries";
+  export let example: any;
 
   export let hideRight = false;
   export let compact = false;
@@ -29,6 +30,9 @@
   {hideRight}
   {hideNullPercentage}
   {compact}
+  {mode}
+  {example}
+  {type}
 >
   <DataTypeIcon {type} slot="icon" />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>

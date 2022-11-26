@@ -10,6 +10,8 @@
   export let columnName: string;
   export let objectName: string;
   export let type: string;
+  export let mode = "summaries";
+  export let example: any;
 
   export let hideRight = false;
   export let compact = false;
@@ -31,6 +33,9 @@
   {hideRight}
   {compact}
   {hideNullPercentage}
+  {mode}
+  {example}
+  {type}
 >
   <DataTypeIcon type="TIMESTAMP" slot="icon" />
   <div slot="left">{columnName}</div>
