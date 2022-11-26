@@ -5,7 +5,8 @@ release:
   disable: true # travis takes care of it as of now
 
 before:
-  hooks: null
+  hooks:
+    - make cli
 
 builds:
   # macos amd64
@@ -24,9 +25,7 @@ builds:
     flags:
       - "-mod=readonly"
     ldflags:
-      - >-
-        -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
-        main.BuildDate={{.Date}}
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
   # macos arm64/m1
   - id: darwin-arm64
@@ -44,11 +43,9 @@ builds:
     flags:
       - "-mod=readonly"
     ldflags:
-      - >-
-        -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
-        main.BuildDate={{.Date}}
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
-    # Commenting just for testing
+  # Commenting just for testing
   # linux amd64
   # - id: linux-amd64
   #   main: ./cli/main.go
@@ -67,9 +64,7 @@ builds:
   #   flags:
   #     - "-mod=readonly"
   #   ldflags:
-  #     - >-
-  #       -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X
-  #       main.BuildDate={{.Date}}
+  #     - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
 blobs:
   - provider: gs
@@ -78,7 +73,7 @@ blobs:
 
 brews:
   - homepage: "https://github.com/rilldata/rill-developer"
-    description: "The Rill Data CLI"
+    description: "The Rill CLI"
     name: "rill"
     license: Apache 2.0
     tap:
@@ -92,7 +87,7 @@ brews:
       bin.install "rill"
     commit_author:
       name: "rilldata"
-      email: rakesh.sharma@rilldata.com
+      email: support@rilldata.com
 
 archives:
   - replacements:
