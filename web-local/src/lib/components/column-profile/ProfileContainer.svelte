@@ -39,7 +39,7 @@
         <slot name="left" />
       </div>
     </div>
-    <div class:hidden={hideRight} class="flex gap-2 items-center">
+    <div class:hidden={hideRight} class="flex gap-x-2 items-center">
       <slot name="right" />
       <slot name="context-button" />
     </div>

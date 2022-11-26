@@ -11,6 +11,7 @@
 
   export let objectName: string;
   export let columnName: string;
+  export let plotPad = 24;
 
   // DELETE THESE
   let containerWidth = 200;
@@ -42,7 +43,7 @@
 <WithParentClientRect let:rect>
   {#if histogram && summary}
     <NumericHistogram
-      width={rect?.width || 400}
+      width={(rect?.width || 400) - plotPad}
       height={65}
       data={histogram}
       min={summary?.min}
@@ -55,7 +56,7 @@
   {/if}
   {#if outliers && outliers?.length}
     <OutlierHistogram
-      width={(rect?.width || 400) - (indentLevel === 1 ? 20 + 24 + 44 : 32)}
+      width={(rect?.width || 400) - plotPad}
       height={15}
       data={outliers}
       mean={summary?.mean}

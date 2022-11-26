@@ -1,3 +1,7 @@
+<script context="module">
+  let times = 0;
+</script>
+
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
@@ -26,6 +30,12 @@
   }
 
   let active = false;
+
+  let ok = false;
+  if (times === 0) {
+    ok = true;
+    times += 1;
+  }
 </script>
 
 <ProfileContainer
@@ -42,12 +52,18 @@
   <div slot="left">{columnName}</div>
   <div slot="right" class="grid" style:grid-template-columns={columns}>
     <div>
+      <!-- {#if ok} -->
       <TimestampSpark
         width={summarySize}
         height={18}
+        top={4}
+        bottom={4}
+        xAccessor="ts"
+        yAccessor="count"
         {objectName}
         {columnName}
       />
+      <!-- {/if} -->
     </div>
     {#if !hideNullPercentage}
       <NullPercentageSpark {objectName} {columnName} />

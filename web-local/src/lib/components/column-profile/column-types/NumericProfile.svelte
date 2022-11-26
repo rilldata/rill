@@ -3,8 +3,6 @@
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
 
-  import TopK from "../data-graphics/details/TopK.svelte";
-
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { DataTypeIcon } from "../../data-types";
   import NumericPlot from "../data-graphics/details/NumericPlot.svelte";
@@ -50,8 +48,7 @@
     {/if}
   </div>
 
-  <div slot="details">
+  <div slot="details" class="px-4">
     <NumericPlot {objectName} {columnName} />
-    <TopK {objectName} {columnName} />
   </div>
 </ProfileContainer>
