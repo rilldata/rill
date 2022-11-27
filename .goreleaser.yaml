@@ -31,6 +31,7 @@ builds:
     goarch:
       - amd64
     env:
+      - CGO_ENABLED=1
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
       - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
       - CC=o64-clang
@@ -49,6 +50,7 @@ builds:
     goarch:
       - arm64
     env:
+      - CGO_ENABLED=1
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
       - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
       - CC=oa64-clang
