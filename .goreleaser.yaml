@@ -7,8 +7,9 @@ release:
 before:
   hooks:
     - echo "Installing npm on goreleaser docker image..."
-    - apt-get update
-    - apt install -y nodejs npm
+    - apt update
+    - curl -sL https://deb.nodesource.com/setup_16.x | bash -
+    - apt install -y nodejs
     - echo "Building npm workspaces..."
     - make cli
 
