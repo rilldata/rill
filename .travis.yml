@@ -4,6 +4,9 @@ node_js:
   - 16
 os: linux
 
+git:
+  submodules: false
+
 branches:
   only:
   - /^main$/
