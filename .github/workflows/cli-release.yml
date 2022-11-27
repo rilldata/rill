@@ -29,17 +29,26 @@ jobs:
           echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
 
-      - name: release publish
-        run: |-
-          docker run \
-              --rm \
-              --privileged \
-              -e CGO_ENABLED=1 \
-              --env-file .release-env \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v `pwd`:/go/src/rilldata/rill-developer \
-              -v `pwd`/sysroot:/sysroot \
-              -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
-              -w /go/src/rilldata/rill-developer \
-              goreleaser/goreleaser-cross:v1.19.2 \
-              release --rm-dist --skip-validate
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          distribution: goreleaser
+          version: ${{ env.GITHUB_REF_NAME }}
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+
+      # - name: release publish
+      #   run: |-
+      #     docker run \
+      #         --rm \
+      #         --privileged \
+      #         -e CGO_ENABLED=1 \
+      #         --env-file .release-env \
+      #         -v /var/run/docker.sock:/var/run/docker.sock \
+      #         -v `pwd`:/go/src/rilldata/rill-developer \
+      #         -v `pwd`/sysroot:/sysroot \
+      #         -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
+      #         -w /go/src/rilldata/rill-developer \
+      #         goreleaser/goreleaser-cross:v1.19.2 \
+      #         release --rm-dist --skip-validate
