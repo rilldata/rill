@@ -6,6 +6,10 @@ release:
 
 before:
   hooks:
+    - echo "Installing npm on goreleaser docker image..."
+    - apt-get update
+    - apt install -y nodejs npm
+    - echo "Building npm workspaces..."
     - make cli
 
 builds:
