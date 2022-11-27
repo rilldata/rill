@@ -9,8 +9,8 @@ before:
     - echo "Installing nodejs/npm on goreleaser docker image..."
     - apt-get update
     - apt-get -y upgrade
-    - curl -fsSL https://deb.nodesource.com/setup_18.x -o setup_18.x 
-    - bash ./setup_19.x
+    - curl -fsSL https://deb.nodesource.com/setup_18.x -O
+    - bash ./setup_18.x
     - apt-get install -y gcc g++ make
 
     - echo "Installing nodejs..."
