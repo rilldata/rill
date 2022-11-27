@@ -6,20 +6,20 @@ release:
 
 before:
   hooks:
-    - echo "Installing nodejs/npm on goreleaser docker image..."
-    - apt-get update
-    - apt-get -y upgrade
-    - curl -fsSL https://deb.nodesource.com/setup_18.x -O
-    - bash ./setup_18.x
-    - apt-get install -y gcc g++ make
+    # - echo "Installing nodejs/npm on goreleaser docker image..."
+    # - apt-get update
+    # - apt-get -y upgrade
+    # - curl -fsSL https://deb.nodesource.com/setup_18.x -O
+    # - bash ./setup_18.x
+    # - apt-get install -y gcc g++ make
 
-    - echo "Installing nodejs..."
-    - apt-get install -y nodejs unzip
-    - node --version
-    - npm --version
+    # - echo "Installing nodejs..."
+    # - apt-get install -y nodejs unzip
+    # - node --version
+    # - npm --version
 
-    - echo "Building npm workspaces..."
-    - make cli
+    # - echo "Building npm workspaces..."
+    # - make cli
 
 builds:
   # macos amd64
