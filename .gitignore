@@ -26,7 +26,7 @@ export/
 *.db
 *.wal
 *.parquet
-*.csv
+./*.csv
 *.tsv
 /*_state.json
 /state
