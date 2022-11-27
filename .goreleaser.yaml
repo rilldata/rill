@@ -86,7 +86,7 @@ brews:
       branch: main
       token: "{{ .Env.GITHUB_TOKEN }}"
     test: |
-         system "#{bin}/rill --version"
+      system "#{bin}/rill --version"
     install: |
       bin.install "rill"
     commit_author:
