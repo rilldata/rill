@@ -11,7 +11,7 @@ on:
 jobs:
   release:
     name: Upload Assets to GitHub w/ goreleaser
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
 
       - name: checkout code
