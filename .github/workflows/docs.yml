@@ -15,10 +15,8 @@ jobs:
         name: ["docs", "docs-enterprise"]
         include:
         - name: docs
-          publish-dir: "./docs/dist"
           site-id: NETLIFY_DOCS_SITE_ID
         - name: docs-enterprise
-          publish-dir: "./enterprise/dist"
           site-id: NETLIFY_ENTERPRISE_SITE_ID
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +34,7 @@ jobs:
       - name: Deploy ${{ matrix.name }} to Netlify
         uses: nwtgck/actions-netlify@v1.2
         with:
-          publish-dir: ${{ matrix.publish-dir }}
+          publish-dir: ./${{ matrix.name }}/dist
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Deploy ${{ matrix.name }} from GitHub Actions"
           enable-pull-request-comment: false
