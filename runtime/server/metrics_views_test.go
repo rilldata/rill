@@ -27,7 +27,7 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 		OlapDriver:   "duckdb",
 		OlapDsn:      "",
 		RepoDriver:   "file",
-		RepoDsn:      "../testproject/ad_bids",
+		RepoDsn:      "../testdata/ad_bids",
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
