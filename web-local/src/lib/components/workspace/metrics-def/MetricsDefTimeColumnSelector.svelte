@@ -1,28 +1,22 @@
 <script lang="ts">
-  import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
+  import type { V1Model } from "@rilldata/web-common/runtime-client";
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { TIMESTAMPS } from "@rilldata/web-local/lib/duckdb-data-types";
+  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
 
   export let metricsInternalRep;
-
-  $: instanceId = $runtimeStore.instanceId;
-
-  $: model = $metricsInternalRep.getMetricKey("from");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, model);
-  $: selectedModel = $getModel.data?.entry?.model;
+  export let selectedModel: V1Model;
 
   $: timeColumnSelectedValue =
     $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {
-    const selectedMetricsDefModelProfile = selectedModel?.schema?.fields ?? [];
-    timestampColumns = selectedMetricsDefModelProfile
-      .filter((column) => TIMESTAMPS.has(column.type.code as string))
-      .map((column) => column.name);
+    timestampColumns = selectTimestampColumnFromModelSchema(
+      selectedModel?.schema
+    );
   } else {
     timestampColumns = [];
   }

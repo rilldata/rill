@@ -135,7 +135,10 @@
         <div class="flex-none flex flex-row">
           <div>
             <MetricsDefModelSelector {metricsInternalRep} />
-            <MetricsDefTimeColumnSelector {metricsInternalRep} />
+            <MetricsDefTimeColumnSelector
+              selectedModel={model}
+              {metricsInternalRep}
+            />
           </div>
           <div class="self-center pl-10">
             {#if metricsSourceSelectionError}

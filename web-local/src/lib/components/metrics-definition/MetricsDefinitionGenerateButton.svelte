@@ -1,8 +1,6 @@
 <script lang="ts">
   import type { Readable } from "svelte/store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { TIMESTAMPS } from "../../duckdb-data-types";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import {
@@ -10,6 +8,7 @@
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
+  import { selectTimestampColumnFromModelSchema } from "../../redux-store/source/source-selectors";
 
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();
@@ -18,13 +17,10 @@
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
   export let handlePutAndMigrate;
 
-  const queryClient = useQueryClient();
-
   async function handleGenerateClick() {
-    const newYAMLString = generateMeasuresAndDimension(
-      selectedModel,
-      $metricsInternalRep.getMetricKey("timeseries")
-    );
+    const newYAMLString = generateMeasuresAndDimension(selectedModel, {
+      timeseries: $metricsInternalRep.getMetricKey("timeseries"),
+    });
     handlePutAndMigrate(newYAMLString);
 
     // invalidateMetricsView(queryClient, metricsDefId);
@@ -40,10 +36,9 @@
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {
-    const selectedMetricsDefModelProfile = selectedModel?.schema?.fields ?? [];
-    timestampColumns = selectedMetricsDefModelProfile
-      .filter((column) => TIMESTAMPS.has(column.type.code as string))
-      .map((column) => column.name);
+    timestampColumns = selectTimestampColumnFromModelSchema(
+      selectedModel?.schema
+    );
   } else {
     timestampColumns = [];
   }
