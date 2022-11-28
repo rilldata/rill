@@ -10,10 +10,20 @@ on:
       - "cli/**"
 jobs:
   release:
-    name: Upload Assets to GitHub w/ goreleaser
+    name: Buid w/ goreleaser
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+            name: macos-amd64
+            ext: ""
+          - os: darwin
+            arch: arm64
+            name: macos-arm64
+            ext: ""
     runs-on: macos-latest
     steps:
-
       - name: checkout code
         uses: actions/checkout@v2
         with:
@@ -43,6 +53,7 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+          CGO_ENABLED: 1
 
       # - name: release publish
       #   run: |-
