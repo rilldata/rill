@@ -4,5 +4,6 @@ select
     publisher,
     domain,
     bid_price,
-    volume
+    volume,
+    impressions
 from ad_bids_source

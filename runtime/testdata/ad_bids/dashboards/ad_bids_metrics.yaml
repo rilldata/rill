@@ -27,3 +27,7 @@ measures:
     expression: sum(volume)
     description: ""
     format_preset: ""
+  - label: "Total impressions"
+    expression: sum(impressions)
+    description: ""
+    format_preset: ""

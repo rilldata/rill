@@ -37,7 +37,9 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 		InstanceId: resp.Instance.InstanceId,
 	})
 	require.NoError(t, err)
-	require.Equal(t, 0, len(rr.Errors))
+	if len(rr.Errors) > 0 {
+		t.Error(rr.Errors[0].Message)
+	}
 
 	return server, resp.Instance.InstanceId
 }
@@ -47,7 +49,7 @@ func TestServer_LookupMetricsView(t *testing.T) {
 
 	mv, err := server.lookupMetricsView(context.Background(), instanceId, "ad_bids_metrics")
 	require.NoError(t, err)
-	require.Equal(t, 2, len(mv.Measures))
+	require.Equal(t, 3, len(mv.Measures))
 	require.Equal(t, 2, len(mv.Dimensions))
 }
 
@@ -98,6 +100,21 @@ func TestServer_MetricsViewTotals_TimeEnd(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
+		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_TimeStart_TimeEnd(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		TimeStart:       parseTime(t, "2022-01-01T00:00:00Z"),
 		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
 	})
 	require.NoError(t, err)
@@ -319,4 +336,115 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data.Fields))
 	require.Equal(t, 0.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewToplist(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name: "measure_2",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[1].Fields))
+
+	require.Equal(t, "msn.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 2.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, "yahoo.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewToplist_asc(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_2",
+				Ascending: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[1].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_2",
+				Ascending: true,
+			},
+		},
+		Limit: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewToplist_2measures(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_0",
+				Ascending: true,
+			},
+			{
+				Name:      "measure_2",
+				Ascending: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+	require.Equal(t, 3, len(tr.Data[0].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
 }
