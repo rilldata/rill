@@ -1,0 +1,39 @@
+name: Build and Deploy to Netlify
+on:
+  push:
+    tags:
+      - "*"
+    branches: ["netlify"]
+    paths:
+      - ".github/workflows/docs.yml"
+      - "docs/**"
+      - "enterprise/**"
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+        - name: docs
+          publish-dir: "./docs/dist"
+          site-id: ${{ secrets.NETLIFY_DOCS_SITE_ID }}
+        - name: enterprise
+          publish-dir: "./enterprise/dist"
+          site-id: ${{ secrets.NETLIFY_ENTERPRISE_SITE_ID }}
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy ${{ matrix.name }} to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: ${{ matrix.publish-dir }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy ${{ matrix.name }} from GitHub Actions"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ matrix.site-id }}
+        timeout-minutes: 1
