@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/marcboeker/go-duckdb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -43,19 +44,19 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequ
 	defer rows.Close()
 
 	topKResponse := runtimev1.TopK{
-		Entries: make([]*runtimev1.TopK_TopKEntry, 0),
+		Entries: make([]*runtimev1.TopK_Entry, 0),
 	}
 	for rows.Next() {
-		var topKEntry runtimev1.TopK_TopKEntry
-		var value interface{}
+		var topKEntry runtimev1.TopK_Entry
+		var value sql.NullString
 		err = rows.Scan(&value, &topKEntry.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if value == nil {
-			topKEntry.Value = structpb.NewNullValue()
+		if value.Valid {
+			topKEntry.Value = structpb.NewStringValue(value.String)
 		} else {
-			topKEntry.Value = structpb.NewStringValue(value.(string))
+			topKEntry.Value = structpb.NewNullValue()
 		}
 		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
 	}

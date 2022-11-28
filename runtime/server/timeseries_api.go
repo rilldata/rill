@@ -14,7 +14,7 @@ import (
 )
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getExpressionColumnsFromMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
+func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
 		result += measure.Expression + " as " + measure.SqlName
@@ -26,7 +26,7 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.BasicMeasureDefiniti
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getCoalesceStatementsMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
+func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
 		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, measure.SqlName, measure.SqlName)
@@ -127,9 +127,9 @@ func getFallbackMeasureName(index int, sqlName string) string {
 
 var countName = "count"
 
-func normaliseMeasures(measures []*runtimev1.BasicMeasureDefinition) []*runtimev1.BasicMeasureDefinition {
+func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
 	if len(measures) == 0 {
-		return []*runtimev1.BasicMeasureDefinition{
+		return []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "count(*)",
 				SqlName:    countName,
@@ -415,7 +415,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	if err != nil {
 		return nil, err
 	}
-	var measures = normaliseMeasures(request.BasicMeasures)
+	var measures = normaliseMeasures(request.Measures)
 	var timestampColumn = request.TimestampColumnName
 	var tableName = request.TableName
 	var filter string

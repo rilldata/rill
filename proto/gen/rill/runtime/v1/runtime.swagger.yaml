@@ -843,12 +843,12 @@ paths:
           schema:
             type: object
             properties:
-              basicMeasures:
-                type: array
-                items:
-                  $ref: '#/definitions/v1BasicMeasureDefinition'
               filters:
                 $ref: '#/definitions/v1MetricsViewRequestFilter'
+              measures:
+                type: array
+                items:
+                  $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasure'
               pixels:
                 type: integer
                 format: int32
@@ -1156,6 +1156,17 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
+  GenerateTimeSeriesRequestBasicMeasure:
+    type: object
+    properties:
+      expression:
+        type: string
+        title: mandatory user defined metadata
+      id:
+        type: string
+      sqlName:
+        type: string
+        title: optional user defined metadata
   MetricsViewDimension:
     type: object
     properties:
@@ -1260,7 +1271,7 @@ definitions:
       months:
         type: integer
         format: int32
-  TopKTopKEntry:
+  TopKEntry:
     type: object
     properties:
       count:
@@ -1316,17 +1327,6 @@ definitions:
         $ref: '#/definitions/v1StructType'
         title: If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
     title: Type represents a data type in a schema
-  v1BasicMeasureDefinition:
-    type: object
-    properties:
-      expression:
-        type: string
-        title: mandatory user defined metadata
-      id:
-        type: string
-      sqlName:
-        type: string
-        title: optional user defined metadata
   v1CatalogEntry:
     type: object
     properties:
@@ -2130,7 +2130,7 @@ definitions:
       entries:
         type: array
         items:
-          $ref: '#/definitions/TopKTopKEntry'
+          $ref: '#/definitions/TopKEntry'
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh

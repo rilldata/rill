@@ -904,11 +904,11 @@ message GetTopKRequest {
 }
 
 message TopK {
-  message TopKEntry {
+  repeated Entry entries = 1;
+  message Entry {
     google.protobuf.Value value = 1;
     double count = 2;
   }
-  repeated TopKEntry entries = 1;
 }
 
 // Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
@@ -1007,20 +1007,19 @@ message GetCardinalityOfColumnRequest {
 message GenerateTimeSeriesRequest {
   string instance_id = 1;
   string table_name = 2;
-  repeated BasicMeasureDefinition basic_measures = 3;
+  repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
   TimeSeriesTimeRange time_range = 5;
   MetricsViewRequestFilter filters = 6;
   int32 pixels = 7;
   int32 sample_size = 8;
-}
-
-message BasicMeasureDefinition {
-  string id = 1;
-  // mandatory user defined metadata
-  string expression = 2;
-  // optional user defined metadata
-  string sql_name = 3;
+  message BasicMeasure {
+    string id = 1;
+    // mandatory user defined metadata
+    string expression = 2;
+    // optional user defined metadata
+    string sql_name = 3;
+  }
 }
 
 message TimeSeriesTimeRange {

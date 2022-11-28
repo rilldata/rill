@@ -70,7 +70,7 @@ func TestServer_Timeseries(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
 				SqlName:    mx,
@@ -108,7 +108,7 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
 				SqlName:    mx,
@@ -142,7 +142,7 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
 				SqlName:    mx,
@@ -172,7 +172,7 @@ func TestServer_Timeseries_No_Measures(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId:          instanceId,
 		TableName:           "timeseries",
-		BasicMeasures:       []*runtimev1.BasicMeasureDefinition{},
+		Measures:            []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
@@ -223,7 +223,7 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
 				SqlName:    mx,
@@ -266,7 +266,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "sum(clicks)",
 				SqlName:    sm,
@@ -328,7 +328,7 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
 				SqlName:    mx,
@@ -365,7 +365,7 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "count(*)",
 				SqlName:    cnt,
@@ -564,7 +564,7 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		BasicMeasures: []*runtimev1.BasicMeasureDefinition{
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "count(*)",
 				SqlName:    cnt,
