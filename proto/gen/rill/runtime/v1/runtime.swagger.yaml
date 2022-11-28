@@ -843,10 +843,12 @@ paths:
           schema:
             type: object
             properties:
+              basicMeasures:
+                type: array
+                items:
+                  $ref: '#/definitions/v1BasicMeasureDefinition'
               filters:
                 $ref: '#/definitions/v1MetricsViewRequestFilter'
-              measures:
-                $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasures'
               pixels:
                 type: integer
                 format: int32
@@ -1154,13 +1156,6 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
-  GenerateTimeSeriesRequestBasicMeasures:
-    type: object
-    properties:
-      basicMeasures:
-        type: array
-        items:
-          $ref: '#/definitions/v1BasicMeasureDefinition'
   MetricsViewDimension:
     type: object
     properties:
@@ -1173,12 +1168,6 @@ definitions:
       name:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewDimensionValueValues:
-    type: object
-    properties:
-      values:
-        type: array
-        items: {}
   MetricsViewFilterCond:
     type: object
     properties:
@@ -1271,22 +1260,13 @@ definitions:
       months:
         type: integer
         format: int32
-  TimeSeriesResponseTimeSeriesValues:
-    type: object
-    properties:
-      values:
-        type: array
-        items:
-          $ref: '#/definitions/v1TimeSeriesValue'
   TopKTopKEntry:
     type: object
     properties:
       count:
         type: number
         format: double
-      value:
-        type: string
-        description: value is optional so that null values from the database can be represented.
+      value: {}
   protobufAny:
     type: object
     properties:
@@ -1678,7 +1658,8 @@ definitions:
         type: array
         items: {}
       like:
-        $ref: '#/definitions/MetricsViewDimensionValueValues'
+        type: array
+        items: {}
       name:
         type: string
   v1MetricsViewFilter:
@@ -2106,10 +2087,6 @@ definitions:
   v1TimeSeriesResponse:
     type: object
     properties:
-      error:
-        type: string
-      id:
-        type: string
       results:
         type: array
         items:
@@ -2118,7 +2095,9 @@ definitions:
         type: integer
         format: int32
       spark:
-        $ref: '#/definitions/TimeSeriesResponseTimeSeriesValues'
+        type: array
+        items:
+          $ref: '#/definitions/v1TimeSeriesValue'
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
   v1TimeSeriesTimeRange:

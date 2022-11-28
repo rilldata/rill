@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"google.golang.org/protobuf/types/known/structpb"
 	"testing"
 	"time"
 
@@ -19,31 +20,31 @@ func TestServer_GetTopK(t *testing.T) {
 	require.NotEmpty(t, res)
 	topk := res.CategoricalSummary.GetTopK()
 	require.Equal(t, 3, len(topk.Entries))
-	require.Equal(t, "abc", *topk.Entries[0].Value)
+	require.Equal(t, "abc", topk.Entries[0].Value.GetStringValue())
 	require.Equal(t, 2, int(topk.Entries[0].Count))
-	require.Equal(t, "def", *topk.Entries[1].Value)
+	require.Equal(t, "def", topk.Entries[1].Value.GetStringValue())
 	require.Equal(t, 1, int(topk.Entries[1].Count))
-	require.Nil(t, topk.Entries[2].Value)
+	require.Equal(t, structpb.NewNullValue(), topk.Entries[2].Value)
 	require.Equal(t, 1, int(topk.Entries[2].Count))
 
 	agg := "sum(val)"
-	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: &agg})
+	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: agg})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 3, len(res.CategoricalSummary.GetTopK().Entries))
-	require.Equal(t, "def", *res.CategoricalSummary.GetTopK().Entries[0].Value)
+	require.Equal(t, "def", res.CategoricalSummary.GetTopK().Entries[0].Value.GetStringValue())
 	require.Equal(t, 5, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
-	require.Equal(t, "abc", *res.CategoricalSummary.GetTopK().Entries[1].Value)
+	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[1].Value.GetStringValue())
 	require.Equal(t, 4, int(res.CategoricalSummary.GetTopK().Entries[1].Count))
-	require.Nil(t, res.CategoricalSummary.GetTopK().Entries[2].Value)
+	require.Equal(t, structpb.NewNullValue(), res.CategoricalSummary.GetTopK().Entries[2].Value)
 	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[2].Count))
 
 	k := int32(1)
-	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: &k})
+	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: k})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 1, len(res.CategoricalSummary.GetTopK().Entries))
-	require.Equal(t, "abc", *res.CategoricalSummary.GetTopK().Entries[0].Value)
+	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[0].Value.GetStringValue())
 	require.Equal(t, 2, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
 }
 
