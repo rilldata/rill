@@ -29,7 +29,7 @@ jobs:
           node-version: 18
 
       - name: Build ${{ matrix.name }}
-        run: npm install -w ${{ matrix.name }}
+        run: npm install -w ${{ matrix.name }} && npm run build -w ${{ matrix.name }}
 
       - name: Deploy ${{ matrix.name }} to Netlify
         uses: nwtgck/actions-netlify@v1.2
