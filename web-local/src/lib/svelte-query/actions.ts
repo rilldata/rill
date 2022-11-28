@@ -41,7 +41,7 @@ export async function renameEntity(
     replaceState: true,
   });
   notifications.send({
-    message: `renamed ${getLabel(type)} ${fromName} to ${toName}`,
+    message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
   await queryClient.invalidateQueries(
     getRuntimeServiceListFilesQueryKey(instanceId)
@@ -72,6 +72,8 @@ export async function deleteEntity(
     }
     // Temporary until nodejs is removed
     await dataModelerService.dispatch("deleteEntity", [type, name]);
+
+    notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
     // TODO: update all entities based on affected path
     return queryClient.invalidateQueries(

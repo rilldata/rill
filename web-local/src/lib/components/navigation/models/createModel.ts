@@ -10,6 +10,7 @@ import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-s
 import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
+import notifications from "../../notifications";
 
 export async function createModel(
   instanceId: string,
@@ -63,5 +64,8 @@ export async function createModelFromSource(
     `select * from ${sourceName}`,
     setAsActive
   );
+  notifications.send({
+    message: `Queried ${sourceName} in workspace`,
+  });
   return newModelName;
 }

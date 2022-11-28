@@ -10,6 +10,7 @@ import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-s
 import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
+import notifications from "../../notifications";
 
 export async function createSource(
   instanceId: string,
@@ -40,5 +41,6 @@ export async function createSource(
   await queryClient.invalidateQueries(
     getRuntimeServiceListFilesQueryKey(instanceId)
   );
+  notifications.send({ message: `Created source ${tableName}` });
   return [];
 }
