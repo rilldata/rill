@@ -846,7 +846,9 @@ paths:
               filters:
                 $ref: '#/definitions/v1MetricsViewRequestFilter'
               measures:
-                $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasures'
+                type: array
+                items:
+                  $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasure'
               pixels:
                 type: integer
                 format: int32
@@ -1154,13 +1156,17 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
-  GenerateTimeSeriesRequestBasicMeasures:
+  GenerateTimeSeriesRequestBasicMeasure:
     type: object
     properties:
-      basicMeasures:
-        type: array
-        items:
-          $ref: '#/definitions/v1BasicMeasureDefinition'
+      expression:
+        type: string
+        title: mandatory user defined metadata
+      id:
+        type: string
+      sqlName:
+        type: string
+        title: optional user defined metadata
   MetricsViewDimension:
     type: object
     properties:
@@ -1173,12 +1179,6 @@ definitions:
       name:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewDimensionValueValues:
-    type: object
-    properties:
-      values:
-        type: array
-        items: {}
   MetricsViewFilterCond:
     type: object
     properties:
@@ -1271,22 +1271,13 @@ definitions:
       months:
         type: integer
         format: int32
-  TimeSeriesResponseTimeSeriesValues:
-    type: object
-    properties:
-      values:
-        type: array
-        items:
-          $ref: '#/definitions/v1TimeSeriesValue'
-  TopKTopKEntry:
+  TopKEntry:
     type: object
     properties:
       count:
         type: number
         format: double
-      value:
-        type: string
-        description: value is optional so that null values from the database can be represented.
+      value: {}
   protobufAny:
     type: object
     properties:
@@ -1336,17 +1327,6 @@ definitions:
         $ref: '#/definitions/v1StructType'
         title: If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
     title: Type represents a data type in a schema
-  v1BasicMeasureDefinition:
-    type: object
-    properties:
-      expression:
-        type: string
-        title: mandatory user defined metadata
-      id:
-        type: string
-      sqlName:
-        type: string
-        title: optional user defined metadata
   v1CatalogEntry:
     type: object
     properties:
@@ -1678,7 +1658,8 @@ definitions:
         type: array
         items: {}
       like:
-        $ref: '#/definitions/MetricsViewDimensionValueValues'
+        type: array
+        items: {}
       name:
         type: string
   v1MetricsViewFilter:
@@ -2106,10 +2087,6 @@ definitions:
   v1TimeSeriesResponse:
     type: object
     properties:
-      error:
-        type: string
-      id:
-        type: string
       results:
         type: array
         items:
@@ -2118,7 +2095,9 @@ definitions:
         type: integer
         format: int32
       spark:
-        $ref: '#/definitions/TimeSeriesResponseTimeSeriesValues'
+        type: array
+        items:
+          $ref: '#/definitions/v1TimeSeriesValue'
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
   v1TimeSeriesTimeRange:
@@ -2151,7 +2130,7 @@ definitions:
       entries:
         type: array
         items:
-          $ref: '#/definitions/TopKTopKEntry'
+          $ref: '#/definitions/TopKEntry'
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh

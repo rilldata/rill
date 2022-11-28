@@ -899,17 +899,16 @@ message GetTopKRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  optional string agg = 4; // default is count(*)
-  optional int32 k = 5; // default is 50
+  string agg = 4; // default is count(*)
+  int32 k = 5; // default is 50
 }
 
 message TopK {
-  message TopKEntry {
-    // value is optional so that null values from the database can be represented.
-    optional string value = 1;
+  repeated Entry entries = 1;
+  message Entry {
+    google.protobuf.Value value = 1;
     double count = 2;
   }
-  repeated TopKEntry entries = 1;
 }
 
 // Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
@@ -1008,23 +1007,19 @@ message GetCardinalityOfColumnRequest {
 message GenerateTimeSeriesRequest {
   string instance_id = 1;
   string table_name = 2;
-  optional BasicMeasures measures = 3;
+  repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
-  optional TimeSeriesTimeRange time_range = 5;
-  optional MetricsViewRequestFilter filters = 6;
-  optional int32 pixels = 7;
-  optional int32 sample_size = 8;
-  message BasicMeasures {
-    repeated BasicMeasureDefinition basic_measures = 1;
+  TimeSeriesTimeRange time_range = 5;
+  MetricsViewRequestFilter filters = 6;
+  int32 pixels = 7;
+  int32 sample_size = 8;
+  message BasicMeasure {
+    string id = 1;
+    // mandatory user defined metadata
+    string expression = 2;
+    // optional user defined metadata
+    string sql_name = 3;
   }
-}
-
-message BasicMeasureDefinition {
-  string id = 1;
-  // mandatory user defined metadata
-  string expression = 2;
-  // optional user defined metadata
-  optional string sql_name = 3;
 }
 
 message TimeSeriesTimeRange {
@@ -1053,10 +1048,7 @@ enum TimeRangeName {
 message MetricsViewDimensionValue {
   string name = 1;
   repeated google.protobuf.Value in = 2;
-  optional Values like = 3;
-  message Values {
-    repeated google.protobuf.Value values = 1;
-  }
+  repeated google.protobuf.Value like = 3;
 }
 
 message MetricsViewRequestFilter {
@@ -1065,15 +1057,10 @@ message MetricsViewRequestFilter {
 }
 
 message TimeSeriesResponse {
-  optional string id = 1;
-  repeated TimeSeriesValue results = 2;
-  optional TimeSeriesValues spark = 3;
-  optional TimeSeriesTimeRange time_range = 4;
-  int32 sample_size = 5;
-  optional string error = 6;
-  message TimeSeriesValues {
-    repeated TimeSeriesValue values = 1;
-  }
+  repeated TimeSeriesValue results = 1;
+  repeated TimeSeriesValue spark = 2;
+  TimeSeriesTimeRange time_range = 3;
+  int32 sample_size = 4;
 }
 
 message GenerateTimeSeriesResponse {
@@ -1096,15 +1083,6 @@ enum DatabaseObjectType {
   DATABASE_OBJECT_TYPE_VIEW = 2;
   DATABASE_OBJECT_TYPE_FUNCTION = 3;
 }
-
-message RenameDatabaseObjectRequest {
-  string instance_id = 1;
-  string name = 2;
-  string new_name = 3;
-  optional DatabaseObjectType type = 4;
-}
-
-message RenameDatabaseObjectResponse {}
 
 message GetTableCardinalityRequest {
   string instance_id = 1;
