@@ -58,3 +58,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
+        id: linux-amd64
+        goos: linux
+        goarch: amd64
