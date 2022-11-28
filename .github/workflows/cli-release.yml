@@ -54,9 +54,6 @@ jobs:
           distribution: goreleaser
           version: ${{ env.GITHUB_REF_NAME }}
           args: release --rm-dist
-        id: darwin-amd64
-        goos: darwin
-        goarch: amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
@@ -100,6 +97,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
-        id: linux-amd64
-        goos: linux
-        goarch: amd64
