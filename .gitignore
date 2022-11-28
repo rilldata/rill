@@ -19,6 +19,7 @@ export/
 /runtime/release
 /cli/pkg/web/embed/dist
 /rill
+/cli/pkg/examples
 
 # data files
 *.duckdb
