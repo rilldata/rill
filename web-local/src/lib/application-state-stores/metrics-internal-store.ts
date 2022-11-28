@@ -3,10 +3,11 @@ import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
-import { CATEGORICALS, TIMESTAMPS } from "../duckdb-data-types";
+import { CATEGORICALS } from "../duckdb-data-types";
+import { selectTimestampColumnFromModelSchema } from "../redux-store/source/source-selectors";
 
 export const metricsTemplate = `
-display_name: "Sample Dashboard"
+display_name: "Dashboard"
 description: "a description that appears in the UI"
 
 # model
@@ -140,11 +141,14 @@ export class MetricsInternalRepresentation {
     this.updateRuntime(this.internalYAML);
   }
 
-  getMetricKey(key: keyof MetricsConfig) {
+  getMetricKey<K extends keyof MetricsConfig>(key: K): MetricsConfig[K] {
     return this.internalRepresentation[key];
   }
 
-  updateMetricKey(key: keyof MetricsConfig, value) {
+  updateMetricKey<K extends keyof MetricsConfig>(
+    key: K,
+    value: MetricsConfig[K]
+  ) {
     this.internalRepresentationDocument.set(key, value);
     this.regenerateInternalYAML();
   }
@@ -225,20 +229,19 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
 
 export function generateMeasuresAndDimension(
   model: V1Model,
-  timeseries?: string
+  options?: { [key: string]: string }
 ) {
   const fields = model.schema.fields;
 
   const template = parseDocument(metricsTemplate);
   template.set("from", model.name);
 
-  if (timeseries) {
-    template.set("timeseries", timeseries);
+  if (options?.timeseries) {
+    template.set("timeseries", options.timeseries);
   } else {
-    const timestampColumns = model.schema.fields
-      .filter((column) => TIMESTAMPS.has(column.type.code as string))
-      .map((column) => column.name);
-
+    const timestampColumns = selectTimestampColumnFromModelSchema(
+      model?.schema
+    );
     template.set("timeseries", timestampColumns[0]);
   }
   const measureNode = template.createNode({

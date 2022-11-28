@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { useRuntimeServiceDeleteFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServicePutFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
@@ -9,11 +12,11 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import { autoCreateMetricsDefinitionForModel } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import {
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
@@ -54,23 +57,33 @@
     (model) => model.id === persistentModel?.id
   );
 
+  const metricMigrate = useRuntimeServicePutFileAndReconcile();
+
   /** functionality for bootstrapping a dashboard */
-  const bootstrapDashboard = (derivedModel: DerivedModelEntity) => {
+  const bootstrapDashboard = (modelName: string) => {
     const previousActiveEntity = $applicationStore?.activeEntity?.type;
 
-    autoCreateMetricsDefinitionForModel(
-      modelName,
-      persistentModel?.id,
-      selectTimestampColumnFromProfileEntity(derivedModel)[0].name
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
-        MetricsEventScreenName.Dashboard
-      );
-    });
+    // const metricsLabel = `${modelName}_dashboard`;
+    // const generatedYAML = generateMeasuresAndDimension(model, {
+    //   display_name: metricsLabel,
+    // });
+
+    // await $metricMigrate.mutateAsync({
+    //   data: {
+    //     instanceId: $runtimeStore.instanceId,
+    //     path: `dashboards/${metricsLabel}.yaml`,
+    //     blob: generatedYAML,
+    //     create: false,
+    //   },
+    // });
+
+    // navigationEvent.fireEvent(
+    //     createdMetricsId,
+    //     BehaviourEventMedium.Menu,
+    //     MetricsEventSpace.LeftPanel,
+    //     EntityTypeToScreenMap[previousActiveEntity],
+    //     MetricsEventScreenName.Dashboard
+    //   );
   };
 
   const handleDeleteModel = async (modelName: string) => {
@@ -90,7 +103,7 @@
 <MenuItem
   disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
   icon
-  on:select={() => bootstrapDashboard(derivedModel)}
+  on:select={() => bootstrapDashboard(modelName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard

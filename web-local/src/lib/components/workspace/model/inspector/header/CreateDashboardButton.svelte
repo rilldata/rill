@@ -1,67 +1,62 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { goto } from "$app/navigation";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServicePutFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { autoCreateMetricsDefinitionForModel } from "@rilldata/web-local/lib/redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { getContext } from "svelte";
+  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
 
   export let modelName: string;
   export let hasError = false;
   export let width = undefined;
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
+  );
+  $: model = $getModel.data?.entry?.model;
+  $: timestampColumns = selectTimestampColumnFromModelSchema(model?.schema);
 
-  $: currentPersistentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.name === modelName)
-    : undefined;
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find(
-        (q) => q.id === currentPersistentModel?.id
-      )
-    : undefined;
+  const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
-  $: timestampColumns =
-    selectTimestampColumnFromProfileEntity(currentDerivedModel);
-
-  const handleCreateMetric = () => {
-    // A side effect of the createMetricsDefsApi is we switch active assets to
-    // the newly created metrics definition. So, this'll bring us to the
-    // MetricsDefinition page. (The logic for this is contained in the
-    // not-pictured async thunk.)
-    autoCreateMetricsDefinitionForModel(
-      modelName,
-      currentPersistentModel?.id,
-      timestampColumns[0].name
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Button,
-        MetricsEventSpace.RightPanel,
-        MetricsEventScreenName.Model,
-        MetricsEventScreenName.Dashboard
-      );
+  async function handleCreateMetric() {
+    const metricsLabel = `${model?.name}_dashboard`;
+    const generatedYAML = generateMeasuresAndDimension(model, {
+      display_name: metricsLabel,
     });
-  };
+
+    await $metricMigrate.mutateAsync({
+      data: {
+        instanceId: $runtimeStore.instanceId,
+        path: `dashboards/${metricsLabel}.yaml`,
+        blob: generatedYAML,
+        create: false,
+      },
+    });
+
+    navigationEvent.fireEvent(
+      metricsLabel,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Model,
+      MetricsEventScreenName.Dashboard
+    );
+
+    goto(`/dashboard/${metricsLabel}/edit`);
+  }
 </script>
 
 <Tooltip location="bottom" alignment="right" distance={16}>
