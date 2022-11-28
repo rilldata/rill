@@ -3,11 +3,10 @@ on:
   push:
     tags:
       - "*"
-    branches: ["netlify"]
     paths:
       - ".github/workflows/docs.yml"
       - "docs/**"
-      - "enterprise/**"
+      - "docs-enterprise/**"
 jobs:
   build:
     strategy:
