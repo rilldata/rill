@@ -96,7 +96,6 @@ func TestServer_Timeseries(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	// printResults(results)
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records["max"])
 }

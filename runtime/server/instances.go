@@ -49,7 +49,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	// Check OLAP connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not connect to driver '%s': %w", inst.OLAPDriver, err)
+		return nil, status.Errorf(codes.InvalidArgument, "could not connect to driver '%s': %s", inst.OLAPDriver, err.Error())
 	}
 	_, ok := olap.OLAPStore()
 	if !ok {
