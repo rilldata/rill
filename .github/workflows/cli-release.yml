@@ -34,6 +34,12 @@ jobs:
           submodules: "true"
       - name: fetch tags
         run: git fetch --prune --unshallow
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Build UI
+        run: make cli
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
