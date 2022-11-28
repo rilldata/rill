@@ -23,13 +23,13 @@ before:
 
 builds:
   # macos amd64
-  - id: darwin-amd64
+  - #id: darwin-amd64
     main: ./cli/main.go
     binary: rill
-    goos:
-      - darwin
-    goarch:
-      - amd64
+    # goos:
+    #   - darwin
+    # goarch:
+    #   - amd64
     env:
       - CGO_ENABLED=1
       # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
@@ -42,23 +42,23 @@ builds:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
   # macos arm64/m1
-  - id: darwin-arm64
-    main: ./cli/main.go
-    binary: rill
-    goos:
-      - darwin
-    goarch:
-      - arm64
-    env:
-      - CGO_ENABLED=1
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      # - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-      # - CC=oa64-clang
-      # - CXX=oa64-clang++
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+  # - id: darwin-arm64
+  #   main: ./cli/main.go
+  #   binary: rill
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - arm64
+  #   env:
+  #     - CGO_ENABLED=1
+  #     # - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+  #     # - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+  #     # - CC=oa64-clang
+  #     # - CXX=oa64-clang++
+  #   flags:
+  #     - "-mod=readonly"
+  #   ldflags:
+  #     - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
   # Commenting just for testing
   # linux amd64
