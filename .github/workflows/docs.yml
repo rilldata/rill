@@ -25,6 +25,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Build ${{ matrix.name }}
+        run: npm install -w ${{ matrix.name }}
+
       - name: Deploy ${{ matrix.name }} to Netlify
         uses: nwtgck/actions-netlify@v1.2
         with:
