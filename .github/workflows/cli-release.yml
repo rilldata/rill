@@ -22,7 +22,11 @@ jobs:
             arch: arm64
             name: macos-arm64
             ext: ""
-    runs-on: macos-latest
+          - os: linux
+            arch: amd64
+            name: linux-amd64
+            ext: ""
+    runs-on: ubuntu-latest
     steps:
       - name: checkout code
         uses: actions/checkout@v2
