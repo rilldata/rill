@@ -9,9 +9,9 @@ export class RillIntakeClient {
     // this is the format rill-intake expects.
     this.authHeader =
       "Basic " +
-      Buffer.from(
+      btoa(
         `${config.metrics.rillIntakeUser}:${config.metrics.rillIntakePassword}`
-      ).toString("base64");
+      );
   }
 
   public async fireEvent(event: MetricsEvent) {

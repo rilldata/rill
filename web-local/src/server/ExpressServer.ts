@@ -124,5 +124,20 @@ export class ExpressServer {
         },
       })
     );
+
+    // Temporary mirror to test before new CLI is merged
+    this.app.get("/local/config", (req: Request, res: Response) =>
+      res.json({
+        instanceId: this.dataModelerService
+          .getDatabaseService()
+          .getDatabaseClient()
+          .getInstanceId(),
+        install_id: this.config.local.installId,
+        project_id: this.dataModelerService
+          .getStateService()
+          .getApplicationState().projectId,
+        is_dev: this.config.local.isDev,
+      })
+    );
   }
 }

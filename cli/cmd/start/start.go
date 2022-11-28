@@ -2,11 +2,16 @@ package start
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"path"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/web"
@@ -81,13 +86,18 @@ func StartCmd() *cobra.Command {
 				GRPCPort:            grpcPort,
 				ConnectionCacheSize: 100,
 			}
-			server, err := server.NewServer(opts, metastore, serverLogger)
+			srv, err := server.NewServer(opts, metastore, serverLogger)
 			if err != nil {
 				return err
 			}
 
+			// create dir if it doesn't exist
+			err = os.MkdirAll(repoDSN, os.ModePerm)
+			if err != nil {
+				return err
+			}
 			// Create instance and repo configured for local use
-			_, err = server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
+			_, err = srv.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
 				InstanceId:   localInstanceID,
 				OlapDriver:   olapDriver,
 				OlapDsn:      olapDSN,
@@ -107,7 +117,7 @@ func StartCmd() *cobra.Command {
 
 			// Trigger reconciliation
 			logger.Infof("Hydrating project at '%s'", repoAbs)
-			res, err := server.Reconcile(context.Background(), &runtimev1.ReconcileRequest{
+			res, err := srv.Reconcile(context.Background(), &runtimev1.ReconcileRequest{
 				InstanceId: localInstanceID,
 			})
 			if err != nil {
@@ -116,15 +126,24 @@ func StartCmd() *cobra.Command {
 			for _, merr := range res.Errors {
 				logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 			}
-			for _, path := range res.AffectedPaths {
-				logger.Infof("Reconciled: %s", path)
+			for _, p := range res.AffectedPaths {
+				logger.Infof("Reconciled: %s", p)
 			}
 			logger.Infof("Hydration completed!")
 
+			installId, err := initGlobalConfig()
+			if err != nil {
+				return err
+			}
+			_, isDev := os.LookupEnv("RILL_IS_DEV")
 			// Create config object to serve on /local/config
 			localConfig := map[string]any{
 				"instance_id": localInstanceID,
 				"grpc_port":   grpcPort,
+				"install_id":  installId,
+				// TODO: do we need to only get the last folder?
+				"project_id": fmt.Sprintf("%x", md5.Sum([]byte(olapDSN))),
+				"is_dev":     isDev,
 			}
 
 			// Prepare errgroup with graceful shutdown
@@ -136,7 +155,7 @@ func StartCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			runtimeHandler, err := server.HTTPHandler(ctx)
+			runtimeHandler, err := srv.HTTPHandler(ctx)
 			if err != nil {
 				return fmt.Errorf("could not create runtime http handler:%v", err)
 			}
@@ -162,12 +181,12 @@ func StartCmd() *cobra.Command {
 			// Start the gRPC and combined UI/REST servers
 			group.Go(func() error {
 				logger.Debugf("Serving runtime gRPC on http://localhost:%d", opts.GRPCPort)
-				return server.ServeGRPC(ctx)
+				return srv.ServeGRPC(ctx)
 			})
 			group.Go(func() error {
-				server := &http.Server{Handler: mux}
+				srv := &http.Server{Handler: mux}
 				logger.Infof("Serving Rill on: http://localhost:%d", opts.HTTPPort)
-				return graceful.ServeHTTP(ctx, server, opts.HTTPPort)
+				return graceful.ServeHTTP(ctx, srv, opts.HTTPPort)
 			})
 
 			err = group.Wait()
@@ -202,4 +221,69 @@ func localConfigHandler(localConfig map[string]any) http.Handler {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(data)
 	})
+}
+
+func initGlobalConfig() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	confFolder := path.Join(home, ".rill")
+	_, err = os.Stat(confFolder)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// create folder if not exists
+			err := os.MkdirAll(confFolder, os.ModePerm)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			// unknown error
+			return "", err
+		}
+	}
+
+	globalConf := map[string]any{}
+	var installId string
+
+	confFile := path.Join(confFolder, "local.json")
+	_, err = os.Stat(confFile)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			// return if unknown error
+			return "", err
+		}
+	} else {
+		// read file if exists
+		conf, err := os.ReadFile(confFile)
+		if err != nil {
+			return "", err
+		}
+		err = json.Unmarshal(conf, &globalConf)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// installId was used in nodejs.
+	// keeping it as is to retain the same ID for existing users
+	installIdAny, ok := globalConf["installId"]
+	if !ok {
+		// create install id if not exists
+		installId = uuid.New().String()
+		globalConf["installId"] = installId
+		globalConfJson, err := json.Marshal(&globalConf)
+		if err != nil {
+			return "", err
+		}
+		err = os.WriteFile(confFile, globalConfJson, 0644)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		installId = installIdAny.(string)
+	}
+
+	return installId, nil
 }

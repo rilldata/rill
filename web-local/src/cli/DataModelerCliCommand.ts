@@ -33,6 +33,44 @@ export abstract class DataModelerCliCommand {
 
   protected rillDeveloper: RillDeveloper;
 
+  public async run(
+    cliRunArgs: CliRunArgs,
+    ...args: Array<unknown>
+  ): Promise<void> {
+    await this.init(cliRunArgs);
+    await this.sendActions(...args);
+    await this.teardown();
+  }
+
+  public abstract getCommand(): Command;
+
+  protected async teardown(): Promise<void> {
+    if (this.isClient) {
+      await this.dataModelerService.destroy();
+    } else {
+      await this.rillDeveloper.destroy();
+    }
+  }
+
+  protected abstract sendActions(...args: Array<unknown>): Promise<void>;
+
+  protected applyCommonSettings(
+    command: Command,
+    description: string
+  ): Command {
+    return (
+      command
+        .description(description)
+        // override default help text to add capital D for display
+        .helpOption("-h, --help", "Displays help for each command.")
+        // common across all commands
+        .option(
+          "--project <projectPath>",
+          "Optionally indicate the path to your project. This path defaults to the current directory."
+        )
+    );
+  }
+
   private async init(cliRunArgs: CliRunArgs): Promise<void> {
     this.projectPath = cliRunArgs.projectPath ?? process.cwd();
     cliRunArgs.shouldInitState ??= true;
@@ -70,14 +108,6 @@ export abstract class DataModelerCliCommand {
     this.isClient = isServerRunning;
   }
 
-  protected async teardown(): Promise<void> {
-    if (this.isClient) {
-      await this.dataModelerService.destroy();
-    } else {
-      await this.rillDeveloper.destroy();
-    }
-  }
-
   private async initServerInstances() {
     this.rillDeveloper = RillDeveloper.getRillDeveloper(this.config);
 
@@ -91,41 +121,11 @@ export abstract class DataModelerCliCommand {
   }
 
   private async initClientInstances() {
-    const { dataModelerService, dataModelerStateService, metricsService } =
-      clientFactory(this.config);
+    const { dataModelerService, dataModelerStateService } = clientFactory(
+      this.config
+    );
     this.dataModelerService = dataModelerService;
     this.dataModelerStateService = dataModelerStateService;
-    this.metricsService = metricsService;
     await dataModelerService.init();
   }
-
-  public async run(
-    cliRunArgs: CliRunArgs,
-    ...args: Array<unknown>
-  ): Promise<void> {
-    await this.init(cliRunArgs);
-    await this.sendActions(...args);
-    await this.teardown();
-  }
-
-  protected abstract sendActions(...args: Array<unknown>): Promise<void>;
-
-  protected applyCommonSettings(
-    command: Command,
-    description: string
-  ): Command {
-    return (
-      command
-        .description(description)
-        // override default help text to add capital D for display
-        .helpOption("-h, --help", "Displays help for each command.")
-        // common across all commands
-        .option(
-          "--project <projectPath>",
-          "Optionally indicate the path to your project. This path defaults to the current directory."
-        )
-    );
-  }
-
-  public abstract getCommand(): Command;
 }

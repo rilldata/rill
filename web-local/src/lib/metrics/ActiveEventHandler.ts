@@ -1,7 +1,6 @@
 import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { CommonUserFields } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
 import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import { sendTelemetryEvent } from "./sendTelemetryEvent";
 
 export class ActiveEventHandler {
   private isInFocus = true;
@@ -41,12 +40,11 @@ export class ActiveEventHandler {
     }
 
     if (this.focusCount > 0) {
-      sendTelemetryEvent(
-        "activeEvent",
+      return this.metricsService.dispatch("activeEvent", [
         this.commonUserMetrics,
         this.focusDuration,
-        this.focusCount
-      );
+        this.focusCount,
+      ]);
     }
 
     this.focusCount = 0;

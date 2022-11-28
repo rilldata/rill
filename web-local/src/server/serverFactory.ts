@@ -90,16 +90,11 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
   );
 }
 
-export function metricsServiceFactory(
-  config: RootConfig,
-  dataModelerStateService: DataModelerStateService
-) {
-  return new MetricsService(
-    config,
-    dataModelerStateService,
-    new RillIntakeClient(config),
-    [new ProductHealthEventFactory(config), new BehaviourEventFactory(config)]
-  );
+export function metricsServiceFactory(config: RootConfig) {
+  return new MetricsService(config, new RillIntakeClient(config), [
+    new ProductHealthEventFactory(config),
+    new BehaviourEventFactory(config),
+  ]);
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
@@ -116,7 +111,7 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
   const dataModelerStateService = dataModelerStateServiceFactory(config);
 
-  const metricsService = metricsServiceFactory(config, dataModelerStateService);
+  const metricsService = metricsServiceFactory(config);
 
   const notificationService = new SocketNotificationService();
 

@@ -142,7 +142,7 @@ export class ActiveEventHandlerDisabled extends TestBase {
     const dataModelerStateService = dataModelerStateServiceFactory(this.config);
     const activeEventHandler = new ActiveEventHandler(
       this.config,
-      metricsServiceFactory(this.config, dataModelerStateService),
+      metricsServiceFactory(this.config),
       CommonUserMetricsData
     );
     return { dataModelerStateService, activeEventHandler };

@@ -11,7 +11,7 @@ export class MetricsSocketService extends MetricsService {
   private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
   public constructor(config: RootConfig) {
-    super(config, null, null, []);
+    super(config, null, []);
   }
 
   public setSocket(socket: Socket<ServerToClientEvents, ClientToServerEvents>) {

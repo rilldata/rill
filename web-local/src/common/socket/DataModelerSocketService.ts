@@ -10,7 +10,6 @@ import type {
 } from "./SocketInterfaces";
 import type { ActionResponse } from "../data-modeler-service/response/ActionResponse";
 import type { MetricsActionDefinition } from "../metrics-service/MetricsService";
-import type { MetricsSocketService } from "./MetricsSocketService";
 
 /**
  * {@link DataModelerService} implementation that sits on the client side.
@@ -22,10 +21,9 @@ export class DataModelerSocketService extends DataModelerService {
 
   public constructor(
     dataModelerStateManager: DataModelerStateService,
-    metricsServer: MetricsSocketService,
     private readonly serverConfig: ServerConfig
   ) {
-    super(dataModelerStateManager, null, null, metricsServer, []);
+    super(dataModelerStateManager, null, null, null, []);
   }
 
   public getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
@@ -35,7 +33,6 @@ export class DataModelerSocketService extends DataModelerService {
   public async init(): Promise<void> {
     await super.init();
     this.socket = io(this.serverConfig.socketUrl);
-    (this.metricsService as MetricsSocketService).setSocket(this.socket);
 
     this.socket.on("patch", (entityType, stateType, patches) =>
       this.dataModelerStateService.applyPatches(entityType, stateType, patches)
