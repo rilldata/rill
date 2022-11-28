@@ -61,7 +61,7 @@ func TestReconcile(t *testing.T) {
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsAffectedPaths)
-			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[1].Message)
+			require.Equal(t, metrics_views.SourceNotFound, result.Errors[1].Message)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
@@ -223,7 +223,7 @@ func TestInterdependentModel(t *testing.T) {
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
-			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[2].Message)
+			require.Equal(t, metrics_views.SourceNotFound, result.Errors[2].Message)
 			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
@@ -316,13 +316,17 @@ func TestReconcileMetricsView(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	// dropping the timestamp column gives a different error
-	require.Equal(t, metrics_views.TimestampNotFound.Error(), result.Errors[0].Message)
+	require.Equal(t, metrics_views.TimestampNotFound, result.Errors[0].Message)
 
+	// some invalid parts still creates an entry in catalog for dashboard APIs to work
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
+	testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	require.Equal(t, `dimension not found: domain`, result.Errors[0].Message)
+	require.Equal(t, "Dimensions[1]", result.Errors[0].PropertyPath)
+	require.Contains(t, result.Errors[1].Message, `Binder Error: Referenced column "bid_price" not found`)
+	require.Equal(t, "Measures[1]", result.Errors[1].PropertyPath)
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {

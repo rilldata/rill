@@ -31,7 +31,7 @@ type MetricsView struct {
 	DisplayName      string `yaml:"display_name"`
 	Description      string
 	From             string
-	TimeDimension    string `yaml:"time_dimension"`
+	TimeDimension    string `yaml:"timeseries"`
 	TimeGrains       []string
 	DefaultTimeGrain string `yaml:"default_timegrain"`
 	Dimensions       []*Dimension

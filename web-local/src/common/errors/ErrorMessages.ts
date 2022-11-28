@@ -1,3 +1,4 @@
+import type { CommonEntityData } from "@rilldata/web-local/lib/application-state-stores/common-store";
 import type { MetricsDefinitionEntity } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { SourceModelValidationStatus } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
@@ -14,35 +15,37 @@ export const ExplorerTimeDimensionDoesntExist =
 export const ExplorerSourceColumnDoesntExist = "not found in FROM clause!"; // the full DuckDB error message is `Binder Error: Referenced column "COLUMN_NAME" not found in FROM clause!`
 
 export const MetricsSourceSelectionError = (
-  metricsDefinition: MetricsDefinitionEntity
+  metricsDefinition: CommonEntityData
 ): string => {
-  if (
-    metricsDefinition.sourceModelValidationStatus !==
-    SourceModelValidationStatus.OK
-  ) {
-    switch (metricsDefinition.sourceModelValidationStatus) {
-      case SourceModelValidationStatus.EMPTY:
-        return ""; // nothing as of now
-      case SourceModelValidationStatus.INVALID:
-        return ExplorerSourceModelIsInvalid;
-      case SourceModelValidationStatus.MISSING:
-        return ExplorerSourceModelDoesntExist;
-    }
-  }
+  console.log(metricsDefinition);
 
-  if (
-    metricsDefinition.timeDimensionValidationStatus !==
-    SourceModelValidationStatus.OK
-  ) {
-    switch (metricsDefinition.timeDimensionValidationStatus) {
-      case SourceModelValidationStatus.EMPTY:
-        return ""; // nothing as of now
-      case SourceModelValidationStatus.INVALID:
-        return ExplorerSourceModelIsInvalid;
-      case SourceModelValidationStatus.MISSING:
-        return ExplorerTimeDimensionDoesntExist;
-    }
-  }
+  // if (
+  //   metricsDefinition.sourceModelValidationStatus !==
+  //   SourceModelValidationStatus.OK
+  // ) {
+  //   switch (metricsDefinition.sourceModelValidationStatus) {
+  //     case SourceModelValidationStatus.EMPTY:
+  //       return ""; // nothing as of now
+  //     case SourceModelValidationStatus.INVALID:
+  //       return ExplorerSourceModelIsInvalid;
+  //     case SourceModelValidationStatus.MISSING:
+  //       return ExplorerSourceModelDoesntExist;
+  //   }
+  // }
+  //
+  // if (
+  //   metricsDefinition.timeDimensionValidationStatus !==
+  //   SourceModelValidationStatus.OK
+  // ) {
+  //   switch (metricsDefinition.timeDimensionValidationStatus) {
+  //     case SourceModelValidationStatus.EMPTY:
+  //       return ""; // nothing as of now
+  //     case SourceModelValidationStatus.INVALID:
+  //       return ExplorerSourceModelIsInvalid;
+  //     case SourceModelValidationStatus.MISSING:
+  //       return ExplorerTimeDimensionDoesntExist;
+  //   }
+  // }
 
   return "";
 };

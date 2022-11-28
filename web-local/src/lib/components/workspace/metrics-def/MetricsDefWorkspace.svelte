@@ -1,26 +1,30 @@
 <script lang="ts">
-  import { Callout } from "../../callout";
-
-  import { CATEGORICALS } from "../../../duckdb-data-types";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
-  import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
-  import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
-  import type { SelectorOption } from "../../table-editable/ColumnConfig";
-  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
-  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
-  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
-  import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
-
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
-  import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
   import {
     getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
+    V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
+  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
+
+  import { CATEGORICALS } from "../../../duckdb-data-types";
+  import { Callout } from "../../callout";
+  import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
+  import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
+  import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
+  import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
+  import type { SelectorOption } from "../../table-editable/ColumnConfig";
+
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
+  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
+  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
+  import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
 
   // the runtime yaml string
   export let yaml: string;
@@ -31,20 +35,25 @@
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
   async function callPutAndMigrate(internalYamlString) {
-    await $metricMigrate.mutateAsync({
+    const filePath = getFileFromName(
+      metricsDefName,
+      EntityType.MetricsDefinition
+    );
+    const resp = (await $metricMigrate.mutateAsync({
       data: {
         instanceId,
-        path: `dashboards/${metricsDefName}.yaml`,
+        path: filePath,
         blob: internalYamlString,
         create: false,
       },
-    });
+    })) as V1PutFileAndReconcileResponse;
+    commonEntitiesStore.consolidateMigrateResponse(
+      resp.affectedPaths,
+      resp.errors
+    );
 
     queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey(
-        instanceId,
-        `dashboards/${metricsDefName}.yaml`
-      )
+      getRuntimeServiceGetFileQueryKey(instanceId, filePath)
     );
   }
 

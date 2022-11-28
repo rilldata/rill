@@ -458,13 +458,19 @@ func (s *Service) runMigrationItems(
 	result *ReconcileResult,
 ) error {
 	for _, item := range migrations {
-		var err error
+		var validationErrors []*runtimev1.ReconcileError
 
 		if item.CatalogInFile != nil {
-			err = migrator.Validate(ctx, s.Olap, item.CatalogInFile)
+			validationErrors = migrator.Validate(ctx, s.Olap, item.CatalogInFile)
 		}
 
-		if err == nil {
+		var err error
+		failed := false
+		if len(validationErrors) > 0 {
+			// do not run migration if validation failed
+			result.Errors = append(result.Errors, validationErrors...)
+			failed = true
+		} else {
 			switch item.Type {
 			case MigrationNoChange:
 				if _, ok := s.PathToName[item.Path]; !ok {
@@ -494,6 +500,11 @@ func (s *Service) runMigrationItems(
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
+			failed = true
+		}
+
+		if failed {
+			// remove entity from catalog and OLAP if it failed validation or during migration
 			err := s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
 			if err != nil {
 				// shouldn't ideally happen
