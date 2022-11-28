@@ -28,7 +28,7 @@ jobs:
 #            ext: ""
     runs-on: macos-latest
     steps:
-      - name: checkout code
+      - name: Checkout code
         uses: actions/checkout@v2
         with:
           submodules: "true"
@@ -58,18 +58,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
-
-      # - name: release publish
-      #   run: |-
-      #     docker run \
-      #         --rm \
-      #         --privileged \
-      #         -e CGO_ENABLED=1 \
-      #         --env-file .release-env \
-      #         -v /var/run/docker.sock:/var/run/docker.sock \
-      #         -v `pwd`:/go/src/rilldata/rill-developer \
-      #         -v `pwd`/sysroot:/sysroot \
-      #         -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
-      #         -w /go/src/rilldata/rill-developer \
-      #         goreleaser/goreleaser-cross:v1.19.2 \
-      #         release --rm-dist --skip-validate
