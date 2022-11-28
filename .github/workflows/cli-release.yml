@@ -57,7 +57,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
-        GOOS: darwin
   release_linux:
     name: Buid w/ goreleaser
     strategy:
@@ -98,4 +97,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
-        GOOS: linux
