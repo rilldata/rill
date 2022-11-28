@@ -16,10 +16,10 @@ jobs:
         include:
         - name: docs
           publish-dir: "./docs/dist"
-          site-id: ${{ secrets.NETLIFY_DOCS_SITE_ID }}
+          site-id: NETLIFY_DOCS_SITE_ID
         - name: enterprise
           publish-dir: "./enterprise/dist"
-          site-id: ${{ secrets.NETLIFY_ENTERPRISE_SITE_ID }}
+          site-id: NETLIFY_ENTERPRISE_SITE_ID
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout code
@@ -36,5 +36,5 @@ jobs:
           overwrites-pull-request-comment: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ matrix.site-id }}
+          NETLIFY_SITE_ID: ${{ secrets[matrix.site-id] }}
         timeout-minutes: 1
