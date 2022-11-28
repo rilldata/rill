@@ -4,8 +4,10 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
+    V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
   import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
@@ -123,13 +125,15 @@
     validDimensionSelectorOption
   );
 
-  // $: metricsSourceSelectionError = $selectedMetricsDef
-  //   ? MetricsSourceSelectionError($selectedMetricsDef)
-  //   : nonStandardError
-  //   ? nonStandardError
-  //   : "";
+  let errors: Array<V1ReconcileError>;
+  $: errors =
+    $commonEntitiesStore.entities[
+      getFileFromName(metricsDefName, EntityType.MetricsDefinition)
+    ]?.errors;
 
-  $: metricsSourceSelectionError = nonStandardError ? nonStandardError : "";
+  $: metricsSourceSelectionError = nonStandardError
+    ? nonStandardError
+    : MetricsSourceSelectionError(errors);
 </script>
 
 {#if measures && dimensions}

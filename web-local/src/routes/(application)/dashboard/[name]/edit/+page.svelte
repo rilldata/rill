@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    runtimeServiceGetFile,
-    useRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { MetricsDefinitionWorkspace } from "@rilldata/web-local/lib/components/workspace";
 
