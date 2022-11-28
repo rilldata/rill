@@ -17,7 +17,7 @@ func InitCmd() *cobra.Command {
 		Long:  `Initializing the example project`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := pkg.InitExample(projectName, projectDir)
-			if err != nil{
+			if err != nil {
 				fmt.Println("Example project not found, Project Name:", projectName)
 				return err
 			}
