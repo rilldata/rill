@@ -11,6 +11,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/google/uuid"
 )
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
@@ -272,7 +274,7 @@ func sMap(k string, v float64) map[string]float64 {
 func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	ctx context.Context,
 	instanceId string,
-	table string,
+	tableName string,
 	timestampColumn string,
 	valueColumn string,
 	pixels int,
@@ -280,7 +282,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
 	cardinality, err := s.GetTableCardinality(ctx, &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
-		TableName:  table,
+		TableName:  tableName,
 	})
 	if err != nil {
 		return nil, err
@@ -288,7 +290,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 
 	if cardinality.Cardinality < int64(pixels*4) {
 		rows, err := s.query(ctx, instanceId, &drivers.Statement{
-			Query: `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + table + `"`,
+			Query: `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 		})
 		if err != nil {
 			return nil, err
@@ -312,7 +314,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 
 	sql := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + table + `"
+        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
@@ -432,7 +434,8 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	if filter != "" {
 		filter = "WHERE " + filter
 	}
-	sql := `CREATE TEMPORARY TABLE _ts_ AS (
+	temporaryTableName := "_ts_" + uuid.New().String()
+	sql := `CREATE TEMPORARY TABLE "` + temporaryTableName + `" AS (
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
@@ -462,13 +465,13 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: sql,
 	})
-	defer s.dropTempTable(ctx, request.InstanceId)
+	defer s.dropTempTable(ctx, request.InstanceId, temporaryTableName)
 	if err != nil {
 		return nil, err
 	}
 	rows.Close()
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: "SELECT * from _ts_",
+		Query: `SELECT * from "` + temporaryTableName + `"`,
 	})
 	if err != nil {
 		return nil, err
@@ -480,7 +483,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	var sparkValues []*runtimev1.TimeSeriesValue
 	if request.Pixels != 0 {
 		pixels := int(request.Pixels)
-		sparkValues, err = s.createTimestampRollupReduction(ctx, request.InstanceId, "_ts_", "ts", "count", pixels)
+		sparkValues, err = s.createTimestampRollupReduction(ctx, request.InstanceId, temporaryTableName, "ts", "count", pixels)
 		if err != nil {
 			return nil, err
 		}
@@ -528,9 +531,9 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 	return results, converr
 }
 
-func (s *Server) dropTempTable(ctx context.Context, instanceId string) {
+func (s *Server) dropTempTable(ctx context.Context, instanceId string, tableName string) {
 	rs, er := s.query(ctx, instanceId, &drivers.Statement{
-		Query: "DROP TABLE _ts_",
+		Query: `DROP TABLE "` + tableName + `"`,
 	})
 	if er == nil {
 		rs.Close()
