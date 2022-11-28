@@ -12,12 +12,12 @@ jobs:
   build:
     strategy:
       matrix:
-        name: ["docs", "enterprise"]
+        name: ["docs", "docs-enterprise"]
         include:
         - name: docs
           publish-dir: "./docs/dist"
           site-id: NETLIFY_DOCS_SITE_ID
-        - name: enterprise
+        - name: docs-enterprise
           publish-dir: "./enterprise/dist"
           site-id: NETLIFY_ENTERPRISE_SITE_ID
     runs-on: ubuntu-18.04
