@@ -47,6 +47,8 @@ func getTestServerWithData(t *testing.T) (*Server, string) {
 			SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
 			UNION ALL 
 			SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+			UNION ALL 
+			SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
 			)`,
 		Args: nil,
 	})

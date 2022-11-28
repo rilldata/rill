@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/marcboeker/go-duckdb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"math"
 	"time"
 
-	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
@@ -20,11 +22,11 @@ const defaultAgg = "count(*)"
 func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := defaultAgg
 	k := int32(defaultK)
-	if topKRequest.Agg != nil {
-		agg = *topKRequest.Agg
+	if topKRequest.Agg != "" {
+		agg = topKRequest.Agg
 	}
-	if topKRequest.K != nil {
-		k = *topKRequest.K
+	if topKRequest.K != 0 {
+		k = topKRequest.K
 	}
 	topKSql := fmt.Sprintf("SELECT %s as value, %s AS count from %s GROUP BY %s ORDER BY count desc LIMIT %d",
 		quoteName(topKRequest.ColumnName),
@@ -42,13 +44,19 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequ
 	defer rows.Close()
 
 	topKResponse := runtimev1.TopK{
-		Entries: make([]*runtimev1.TopK_TopKEntry, 0),
+		Entries: make([]*runtimev1.TopK_Entry, 0),
 	}
 	for rows.Next() {
-		var topKEntry runtimev1.TopK_TopKEntry
-		err = rows.Scan(&topKEntry.Value, &topKEntry.Count)
+		var topKEntry runtimev1.TopK_Entry
+		var value sql.NullString
+		err = rows.Scan(&value, &topKEntry.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if value.Valid {
+			topKEntry.Value = structpb.NewStringValue(value.String)
+		} else {
+			topKEntry.Value = structpb.NewNullValue()
 		}
 		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
 	}
