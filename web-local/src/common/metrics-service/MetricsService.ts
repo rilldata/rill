@@ -50,16 +50,20 @@ export class MetricsService
       `${this.config.server.serverUrl}/local/config`,
       "GET"
     );
-    this.commonFields = {
-      app_name: this.config.metrics.appName,
-      install_id: localConfig.install_id,
-      // @ts-ignore
-      build_id: RILL_COMMIT,
-      // @ts-ignore
-      version: RILL_VERSION,
-      is_dev: localConfig.is_dev,
-      project_id: localConfig.project_id,
-    };
+    try {
+      this.commonFields = {
+        app_name: this.config.metrics.appName,
+        install_id: localConfig.install_id,
+        // @ts-ignore
+        build_id: RILL_COMMIT,
+        // @ts-ignore
+        version: RILL_VERSION,
+        is_dev: localConfig.is_dev,
+        project_id: localConfig.project_id,
+      };
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   public async dispatch<Action extends keyof MetricsActionDefinition>(

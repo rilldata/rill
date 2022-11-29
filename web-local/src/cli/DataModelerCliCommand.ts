@@ -7,7 +7,6 @@ import type { SocketNotificationService } from "@rilldata/web-local/common/socke
 import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
 import { clientFactory } from "@rilldata/web-local/common/clientFactory";
 import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
-import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import { RillDeveloper } from "@rilldata/web-local/server/RillDeveloper";
 import { ProjectConfig } from "@rilldata/web-local/common/config/ProjectConfig";
 import { LocalConfig } from "@rilldata/web-local/common/config/LocalConfig";
@@ -26,7 +25,6 @@ export abstract class DataModelerCliCommand {
   protected dataModelerService: DataModelerService;
   protected dataModelerStateService: DataModelerStateService;
   protected notificationService: SocketNotificationService;
-  protected metricsService: MetricsService;
   protected projectPath: string;
   protected config: RootConfig;
   protected isClient: boolean;
@@ -115,7 +113,6 @@ export abstract class DataModelerCliCommand {
     this.dataModelerStateService = this.rillDeveloper.dataModelerStateService;
     this.notificationService = this.rillDeveloper
       .notificationService as SocketNotificationService;
-    this.metricsService = this.rillDeveloper.metricsService;
 
     await this.rillDeveloper.init();
   }

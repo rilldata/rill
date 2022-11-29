@@ -25,7 +25,7 @@ const CLI_STATE_FOLDER = `${CLI_TEST_FOLDER}/state`;
 const CLI_TEST_FOLDER_ARG = `--project ${CLI_TEST_FOLDER}`;
 
 @FunctionalTestBase.Suite
-export class CLIDisabled extends FunctionalTestBase {
+export class CLISpec extends FunctionalTestBase {
   @FunctionalTestBase.BeforeSuite()
   public async setup() {
     // override parent method to stop it from starting local server
