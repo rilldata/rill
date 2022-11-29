@@ -138,6 +138,16 @@ func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cat
 	return nil
 }
 
+func CreateValidationError(filePath string, message string) []*runtimev1.ReconcileError {
+	return []*runtimev1.ReconcileError{
+		{
+			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
+			FilePath: filePath,
+			Message:  message,
+		},
+	}
+}
+
 func getMigrator(catalog *drivers.CatalogEntry) (EntityMigrator, bool) {
 	m, ok := Migrators[catalog.Type]
 	return m, ok

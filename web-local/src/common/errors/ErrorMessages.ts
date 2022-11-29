@@ -15,7 +15,9 @@ export const ExplorerSourceColumnDoesntExist = "not found in FROM clause!"; // t
 export const MetricsSourceSelectionError = (
   errors: Array<V1ReconcileError>
 ): string => {
-  return errors?.find((error) => error.propertyPath === "")?.message ?? "";
+  return (
+    errors?.find((error) => error.propertyPath.length === 0)?.message ?? ""
+  );
 
   // if (
   //   metricsDefinition.sourceModelValidationStatus !==

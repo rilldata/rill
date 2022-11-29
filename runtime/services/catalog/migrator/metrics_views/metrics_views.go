@@ -3,6 +3,7 @@ package metrics_views
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -43,41 +44,17 @@ func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.
 func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	mv := catalog.GetMetricsView()
 	if mv.From == "" {
-		return []*runtimev1.ReconcileError{
-			{
-				Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-				Message:  SourceNotSelected,
-				FilePath: catalog.Path,
-			},
-		}
+		return migrator.CreateValidationError(catalog.Path, SourceNotSelected)
 	}
 	if mv.TimeDimension == "" {
-		return []*runtimev1.ReconcileError{
-			{
-				Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-				Message:  TimestampNotSelected,
-				FilePath: catalog.Path,
-			},
-		}
+		return migrator.CreateValidationError(catalog.Path, TimestampNotSelected)
 	}
 	model, err := olap.InformationSchema().Lookup(ctx, mv.From)
 	if err != nil {
 		if err == drivers.ErrNotFound {
-			return []*runtimev1.ReconcileError{
-				{
-					Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-					Message:  SourceNotFound,
-					FilePath: catalog.Path,
-				},
-			}
+			return migrator.CreateValidationError(catalog.Path, SourceNotFound)
 		}
-		return []*runtimev1.ReconcileError{
-			{
-				Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
-				Message:  err.Error(),
-				FilePath: catalog.Path,
-			},
-		}
+		return migrator.CreateValidationError(catalog.Path, err.Error())
 	}
 
 	fieldsMap := make(map[string]*runtimev1.StructType_Field)
@@ -86,13 +63,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	}
 
 	if _, ok := fieldsMap[mv.TimeDimension]; !ok {
-		return []*runtimev1.ReconcileError{
-			{
-				Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-				Message:  TimestampNotFound,
-				FilePath: catalog.Path,
-			},
-		}
+		return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
 	}
 
 	var validationErrors []*runtimev1.ReconcileError
@@ -104,7 +75,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
 				Message:      err.Error(),
-				PropertyPath: fmt.Sprintf("Dimensions[%d]", i),
+				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 		}
 	}
@@ -116,7 +87,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
 				Message:      err.Error(),
-				PropertyPath: fmt.Sprintf("Measures[%d]", i),
+				PropertyPath: []string{"Measures", strconv.Itoa(i)},
 			})
 		}
 	}
