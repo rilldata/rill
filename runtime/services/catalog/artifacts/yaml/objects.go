@@ -100,7 +100,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		return nil, err
 	}
 
-	name := fileutil.GetFileName(path)
+	name := fileutil.Stem(path)
 	return &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeSource,
@@ -125,7 +125,7 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
-	name := fileutil.GetFileName(path)
+	name := fileutil.Stem(path)
 	apiMetrics.Name = name
 	return &drivers.CatalogEntry{
 		Name:   name,

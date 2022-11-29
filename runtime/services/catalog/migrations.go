@@ -319,7 +319,7 @@ func (s *Service) getMigrationItem(
 		if ok {
 			item.Name = name
 		} else {
-			item.Name = fileutil.GetFileName(repoPath)
+			item.Name = fileutil.Stem(repoPath)
 		}
 
 		item.Type = MigrationDelete

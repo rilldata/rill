@@ -23,7 +23,7 @@ func init() {
 }
 
 func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error) {
-	name := fileutil.GetFileName(filePath)
+	name := fileutil.Stem(filePath)
 	return &drivers.CatalogEntry{
 		Type: drivers.ObjectTypeModel,
 		Object: &runtimev1.Model{

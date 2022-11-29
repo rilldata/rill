@@ -27,9 +27,9 @@ func FullExt(path string) string {
 	return fullExt
 }
 
-// GetFileName returns the file name after removing directory and all extensions.
+// Stem returns the file name after removing directory and all extensions.
 // Uses FullExt to strip extensions.
-func GetFileName(path string) string {
+func Stem(path string) string {
 	return strings.TrimSuffix(filepath.Base(path), FullExt(path))
 }
 

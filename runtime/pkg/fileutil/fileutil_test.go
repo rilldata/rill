@@ -39,7 +39,7 @@ func TestGetFileName(t *testing.T) {
 	}
 	for _, tt := range variations {
 		t.Run(tt.Path, func(t *testing.T) {
-			ext := GetFileName(tt.Path)
+			ext := Stem(tt.Path)
 			require.Equal(t, ext, tt.ExpectedName)
 		})
 	}

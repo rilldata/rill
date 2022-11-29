@@ -44,7 +44,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, fileP
 		return nil, err
 	}
 
-	if !isValidName(fileutil.GetFileName(filePath)) {
+	if !isValidName(fileutil.Stem(filePath)) {
 		return nil, InvalidFileName
 	}
 
