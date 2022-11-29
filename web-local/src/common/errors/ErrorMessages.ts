@@ -1,6 +1,4 @@
-import type { FileArtifactsData } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import type { MetricsDefinitionEntity } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { SourceModelValidationStatus } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
 
 // Unified location for error messages
 // TODO: move all errors here.
@@ -15,9 +13,9 @@ export const ExplorerTimeDimensionDoesntExist =
 export const ExplorerSourceColumnDoesntExist = "not found in FROM clause!"; // the full DuckDB error message is `Binder Error: Referenced column "COLUMN_NAME" not found in FROM clause!`
 
 export const MetricsSourceSelectionError = (
-  metricsDefinition: FileArtifactsData
+  errors: Array<V1ReconcileError>
 ): string => {
-  console.log(metricsDefinition);
+  return errors?.find((error) => error.propertyPath === "")?.message;
 
   // if (
   //   metricsDefinition.sourceModelValidationStatus !==

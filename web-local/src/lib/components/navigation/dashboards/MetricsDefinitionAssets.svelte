@@ -160,10 +160,12 @@
         </svelte:fragment>
 
         <svelte:fragment slot="menu-items">
-          {@const selectionError = MetricsSourceSelectionError(dashboardData)}
+          {@const selectionError = MetricsSourceSelectionError(
+            dashboardData.errors
+          )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""} -->
+            selectionError !== ""}
           <MenuItem
             icon
             disabled={hasSourceError}
