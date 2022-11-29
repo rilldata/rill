@@ -3,7 +3,7 @@ package initialize
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg"
+	example "github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ func InitCmd() *cobra.Command {
 		Short: "Initializing the example project",
 		Long:  `Initializing the example project`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := pkg.InitExample(projectName, projectDir)
+			err := example.InitExample(projectName, projectDir)
 			if err != nil {
 				fmt.Println("Example project not found, Project Name:", projectName)
 				return err
