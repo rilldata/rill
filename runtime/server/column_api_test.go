@@ -145,6 +145,20 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
+func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
+	server, instanceId := getTestServerWithData(t)
+
+	// Get Time Range Summary works with timestamp columns
+	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min)
+	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
+	require.Equal(t, int32(1551), res.TimeRangeSummary.Interval.Days)
+	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
+}
+
 func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
