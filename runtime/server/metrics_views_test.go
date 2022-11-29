@@ -449,6 +449,36 @@ func TestServer_MetricsViewToplist_2measures(t *testing.T) {
 	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
 }
 
+func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics_full",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_0",
+				Ascending: true,
+			},
+		},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "publisher",
+					In: []*structpb.Value{
+						structpb.NewStringValue("Yahoo"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, len(tr.Data) > 1)
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+}
+
 func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	server, instanceId := createServerWithMetricsView(t)
 
@@ -469,4 +499,33 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	require.Equal(t, "2022-01-02T00:00:00Z", tr.Data[1].Fields["timestamp"].GetStringValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics_full",
+		TimeGranularity: "DAY",
+		MeasureNames:    []string{"measure_0", "measure_1"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "domain",
+					In: []*structpb.Value{
+						structpb.NewStringValue("msn.com"),
+					},
+					Like: []*structpb.Value{
+						structpb.NewStringValue("%yahoo%"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, len(tr.Data) > 0)
+	require.Equal(t, 3, len(tr.Data[0].Fields))
+	require.True(t, tr.Data[0].Fields["measure_0"].GetNumberValue() > 0)
+	require.True(t, tr.Data[0].Fields["measure_1"].GetNumberValue() > 0)
 }
