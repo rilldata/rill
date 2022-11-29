@@ -161,7 +161,7 @@
 
         <svelte:fragment slot="menu-items">
           {@const selectionError = MetricsSourceSelectionError(
-            dashboardData.errors
+            dashboardData?.errors
           )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
