@@ -14,7 +14,7 @@ import {
   getLabel,
   getRouteFromName,
 } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
-import notifications from "@rilldata/web-local/lib/components/notifications";
+import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 

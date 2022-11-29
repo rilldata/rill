@@ -1,6 +1,6 @@
 <script lang="ts">
-  import notificationStore from "./index";
   import Notification from "./Notification.svelte";
+  import notificationStore from "./notificationStore";
   import PersistedNotification from "./PersistedNotification.svelte";
 </script>
 

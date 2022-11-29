@@ -5,7 +5,7 @@ import {
   createPersistentModelStore,
 } from "@rilldata/web-local/lib/application-state-stores/model-stores";
 import { createQueryHighlightStore } from "@rilldata/web-local/lib/application-state-stores/query-highlight-store";
-import notificationStore from "@rilldata/web-local/lib/components/notifications/";
+import notificationStore from "@rilldata/web-local/lib/components/notifications/notificationStore";
 import type { ApplicationMetadata } from "@rilldata/web-local/lib/types";
 import { setContext } from "svelte";
 import { createStore } from "../application-state-stores/application-store";
