@@ -124,6 +124,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, 0, int(res.NumericSummary.GetNumericOutliers().Outliers[0].Bucket))
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericOutliers().Outliers[0].Low)
 	require.Equal(t, 1.008, res.NumericSummary.GetNumericOutliers().Outliers[0].High)
+	require.Equal(t, 2, res.NumericSummary.GetNumericOutliers().Outliers[0].Count)
 	require.Equal(t, true, res.NumericSummary.GetNumericOutliers().Outliers[0].Present)
 
 	// works only with numeric columns

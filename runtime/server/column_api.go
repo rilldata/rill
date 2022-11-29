@@ -442,6 +442,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
             bucket,
             low,
             high,
+						count,
             CASE WHEN count>0 THEN true ELSE false END AS present
           FROM histrogram_with_edge
           WHERE present=true`, selectColumn, sanitizedColumnName, request.TableName, outlierPseudoBucketSize)
