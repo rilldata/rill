@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/marcboeker/go-duckdb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"math"
 	"time"
+
+	"github.com/marcboeker/go-duckdb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -442,7 +443,8 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
             bucket,
             low,
             high,
-            CASE WHEN count>0 THEN true ELSE false END AS present
+            CASE WHEN count>0 THEN true ELSE false END AS present,
+			count
           FROM histrogram_with_edge
           WHERE present=true`, selectColumn, sanitizedColumnName, request.TableName, outlierPseudoBucketSize)
 
@@ -457,7 +459,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 	outlierBins := make([]*runtimev1.NumericOutliers_Outlier, 0)
 	for outlierResults.Next() {
 		outlier := &runtimev1.NumericOutliers_Outlier{}
-		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
+		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present, &outlier.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

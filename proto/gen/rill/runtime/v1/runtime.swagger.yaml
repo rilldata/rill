@@ -1032,7 +1032,10 @@ paths:
                 title: If true, will validate the file artifacts, but not actually execute any migrations
               strict:
                 type: boolean
-                title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+                title: |-
+                  If true, will not execute any migrations if any artifact fails to validate.
+                  Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+                  artifacts that fail to validate.)
             title: Request message for RuntimeService.Reconcile
       tags:
         - RuntimeService
@@ -1254,6 +1257,9 @@ definitions:
       bucket:
         type: integer
         format: int32
+      count:
+        type: integer
+        format: int32
       high:
         type: number
         format: double
@@ -1439,7 +1445,10 @@ definitions:
         title: Path to store the file at
       strict:
         type: boolean
-        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
   v1DeleteFileAndReconcileResponse:
     type: object
     properties:
@@ -1882,7 +1891,10 @@ definitions:
         title: Path to store the file at
       strict:
         type: boolean
-        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
   v1PutFileAndReconcileResponse:
     type: object
     properties:
@@ -2051,7 +2063,10 @@ definitions:
         title: Instance to store file in and reconcile
       strict:
         type: boolean
-        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
       toPath:
         type: string
         title: New path of the file

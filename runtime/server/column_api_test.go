@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"google.golang.org/protobuf/types/known/structpb"
 	"testing"
 	"time"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -125,6 +126,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericOutliers().Outliers[0].Low)
 	require.Equal(t, 1.008, res.NumericSummary.GetNumericOutliers().Outliers[0].High)
 	require.Equal(t, true, res.NumericSummary.GetNumericOutliers().Outliers[0].Present)
+	require.True(t, res.NumericSummary.GetNumericOutliers().Outliers[0].Count > 0)
 
 	// works only with numeric columns
 	_, err = server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
