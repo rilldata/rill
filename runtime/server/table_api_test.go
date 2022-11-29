@@ -7,23 +7,12 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
 
-func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
-	var val int
-	for rows.Next() {
-		err := rows.Scan(&val)
-		require.NoError(t, err)
-	}
-	rows.Close()
-	return val
-}
-
 func TestServer_Database(t *testing.T) {
-	server, instanceId := getTestServer(t)
-	result := createTestTable(server, instanceId, t)
-	require.Equal(t, 1, getSingleValue(t, result.Rows))
+	server, instanceId := getTableTestServer(t)
 	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
 		Query: "select count(*) from test",
 	})
@@ -31,53 +20,18 @@ func TestServer_Database(t *testing.T) {
 	require.Equal(t, 1, getSingleValue(t, result.Rows))
 }
 
-func createTestTable(server *Server, instanceId string, t *testing.T) *drivers.Result {
-	return createTable(server, instanceId, t, "test")
-}
-
-func createTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table " + quoteName(tableName) + " (a int, \"b\"\"b\" int)",
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into " + quoteName(tableName) + " values (1, 10)",
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from " + quoteName(tableName),
-	})
-	require.NoError(t, err)
-	return result
-}
-
 func TestServer_TableCardinality(t *testing.T) {
-	server, instanceId := getTestServer(t)
-	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	server, instanceId := getTableTestServer(t)
 	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(1), cr.Cardinality)
-
-	rows = createTable(server, instanceId, t, "select")
-	rows.Close()
-	cr, err = server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
-		InstanceId: instanceId,
-		TableName:  "select",
-	})
-	require.NoError(t, err)
-	require.Equal(t, int64(1), cr.Cardinality)
 }
 
 func TestServer_ProfileColumns(t *testing.T) {
-	server, instanceId := getTestServer(t)
-	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	server, instanceId := getTableTestServer(t)
 	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
@@ -94,9 +48,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 }
 
 func TestServer_TableRows(t *testing.T) {
-	server, instanceId := getTestServer(t)
-	rows := createTestTable(server, instanceId, t)
-	rows.Close()
+	server, instanceId := getTableTestServer(t)
 	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
@@ -104,4 +56,25 @@ func TestServer_TableRows(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cr.Data))
+}
+
+func getTableTestServer(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 1::int AS a, 10::int AS "b""b"
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
+	var val int
+	if rows.Next() {
+		err := rows.Scan(&val)
+		require.NoError(t, err)
+	}
+	rows.Close()
+	return val
 }

@@ -947,48 +947,6 @@ paths:
             title: Request message for RuntimeService.Query
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/query/direct:
-    post:
-      summary: 'DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance''s OLAP datastore.'
-      operationId: RuntimeService_QueryDirect
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1QueryDirectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to query
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              args:
-                type: array
-                items: {}
-                title: Args to interpolate into the statement
-              dryRun:
-                type: boolean
-                title: If true, will only validate the query, not execute it
-              priority:
-                type: string
-                format: int64
-                title: Query priority (not supported by all backends)
-              sql:
-                type: string
-                title: SELECT statement
-            title: Request message for RuntimeService.QueryDirect
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/reconcile:
     post:
       summary: |-
@@ -1907,18 +1865,6 @@ definitions:
         type: string
         title: 'TODO: Redundant, should be removed (but frontend currently uses it)'
     title: Response message for RuntimeService.PutFile
-  v1QueryDirectResponse:
-    type: object
-    properties:
-      data:
-        type: array
-        items:
-          type: object
-        title: Result data
-      meta:
-        $ref: '#/definitions/v1StructType'
-        title: Schema of result data
-    title: Response message for RuntimeService.QueryDirect
   v1QueryResponse:
     type: object
     properties:

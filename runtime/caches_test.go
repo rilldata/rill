@@ -1,4 +1,4 @@
-package server
+package runtime
 
 import (
 	"context"
@@ -14,15 +14,15 @@ func TestConnectionCache(t *testing.T) {
 	id := uuid.NewString()
 
 	c := newConnectionCache(10)
-	conn1, err := c.openAndMigrate(ctx, id, "sqlite", ":memory:")
+	conn1, err := c.get(ctx, id, "sqlite", ":memory:")
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
-	conn2, err := c.openAndMigrate(ctx, id, "sqlite", ":memory:")
+	conn2, err := c.get(ctx, id, "sqlite", ":memory:")
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
-	conn3, err := c.openAndMigrate(ctx, uuid.NewString(), "sqlite", ":memory:")
+	conn3, err := c.get(ctx, uuid.NewString(), "sqlite", ":memory:")
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 

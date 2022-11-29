@@ -12,13 +12,6 @@ reconciliation to execute faster by not scanning all code artifacts for changes.
   strict?: boolean;
 };
 
-export type RuntimeServiceQueryDirectBody = {
-  args?: unknown[];
-  dryRun?: boolean;
-  priority?: string;
-  sql?: string;
-};
-
 export type RuntimeServiceQueryBody = {
   args?: unknown[];
   dryRun?: boolean;
@@ -49,6 +42,12 @@ export type RuntimeServiceGetTableRowsParams = { limit?: number };
 export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
 };
+
+export interface V1MetricsViewFilter {
+  exclude?: MetricsViewFilterCond[];
+  include?: MetricsViewFilterCond[];
+  match?: string[];
+}
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
@@ -304,13 +303,6 @@ export interface V1QueryResponse {
   meta?: V1StructType;
 }
 
-export type V1QueryDirectResponseDataItem = { [key: string]: any };
-
-export interface V1QueryDirectResponse {
-  data?: V1QueryDirectResponseDataItem[];
-  meta?: V1StructType;
-}
-
 export interface V1PutFileResponse {
   filePath?: string;
 }
@@ -423,12 +415,6 @@ export interface V1MetricsViewTimeSeriesResponse {
 export interface V1MetricsViewSort {
   ascending?: boolean;
   name?: string;
-}
-
-export interface V1MetricsViewFilter {
-  exclude?: MetricsViewFilterCond[];
-  include?: MetricsViewFilterCond[];
-  match?: string[];
 }
 
 export interface V1MetricsViewDimensionValue {

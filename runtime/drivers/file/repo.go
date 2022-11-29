@@ -105,27 +105,26 @@ func (c *connection) PutBlob(ctx context.Context, instID string, filePath string
 }
 
 // PutReader implements drivers.RepoStore
-func (c *connection) PutReader(ctx context.Context, instID string, filePath string, reader io.Reader) (string, error) {
-	originalPath := filePath
+func (c *connection) PutReader(ctx context.Context, instID string, filePath string, reader io.Reader) error {
 	filePath = filepath.Join(c.root, filePath)
 
 	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	f, err := os.Create(filePath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, reader)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return originalPath, nil
+	return nil
 }
 
 // Rename implements drivers.RepoStore

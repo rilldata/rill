@@ -8110,7 +8110,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x53, 0x45, 0x5f, 0x4f, 0x42, 0x4a, 0x45, 0x43, 0x54, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x56,
 	0x49, 0x45, 0x57, 0x10, 0x02, 0x12, 0x21, 0x0a, 0x1d, 0x44, 0x41, 0x54, 0x41, 0x42, 0x41, 0x53,
 	0x45, 0x5f, 0x4f, 0x42, 0x4a, 0x45, 0x43, 0x54, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x46, 0x55,
-	0x4e, 0x43, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x03, 0x32, 0xf3, 0x2f, 0x0a, 0x0e, 0x52, 0x75, 0x6e,
+	0x4e, 0x43, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x03, 0x32, 0xe3, 0x2e, 0x0a, 0x0e, 0x52, 0x75, 0x6e,
 	0x74, 0x69, 0x6d, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x55, 0x0a, 0x04, 0x50,
 	0x69, 0x6e, 0x67, 0x12, 0x1c, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
 	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
@@ -8274,16 +8274,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2c, 0x82, 0xd3, 0xe4,
 	0x93, 0x02, 0x26, 0x3a, 0x01, 0x2a, 0x22, 0x21, 0x2f, 0x76, 0x31, 0x2f, 0x69, 0x6e, 0x73, 0x74,
 	0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x7b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f,
-	0x69, 0x64, 0x7d, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x12, 0x8d, 0x01, 0x0a, 0x0b, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x12, 0x23, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
-	0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24,
-	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x33, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2d, 0x3a, 0x01, 0x2a, 0x22,
-	0x28, 0x2f, 0x76, 0x31, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x7b,
-	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x71, 0x75, 0x65,
-	0x72, 0x79, 0x2f, 0x64, 0x69, 0x72, 0x65, 0x63, 0x74, 0x12, 0xd0, 0x01, 0x0a, 0x12, 0x4d, 0x65,
+	0x69, 0x64, 0x7d, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x12, 0xd0, 0x01, 0x0a, 0x12, 0x4d, 0x65,
 	0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x6f, 0x70, 0x6c, 0x69, 0x73, 0x74,
 	0x12, 0x2a, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e,
 	0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x6f,
@@ -8762,63 +8753,61 @@ var file_rill_runtime_v1_api_proto_depIdxs = []int32{
 	40,  // 111: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
 	42,  // 112: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
 	44,  // 113: rill.runtime.v1.RuntimeService.Query:input_type -> rill.runtime.v1.QueryRequest
-	46,  // 114: rill.runtime.v1.RuntimeService.QueryDirect:input_type -> rill.runtime.v1.QueryDirectRequest
-	48,  // 115: rill.runtime.v1.RuntimeService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
-	50,  // 116: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
-	52,  // 117: rill.runtime.v1.RuntimeService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
-	57,  // 118: rill.runtime.v1.RuntimeService.EstimateRollupInterval:input_type -> rill.runtime.v1.EstimateRollupIntervalRequest
-	70,  // 119: rill.runtime.v1.RuntimeService.GetTopK:input_type -> rill.runtime.v1.GetTopKRequest
-	72,  // 120: rill.runtime.v1.RuntimeService.GetNullCount:input_type -> rill.runtime.v1.GetNullCountRequest
-	74,  // 121: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:input_type -> rill.runtime.v1.GetDescriptiveStatisticsRequest
-	76,  // 122: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:input_type -> rill.runtime.v1.EstimateSmallestTimeGrainRequest
-	78,  // 123: rill.runtime.v1.RuntimeService.GetNumericHistogram:input_type -> rill.runtime.v1.GetNumericHistogramRequest
-	80,  // 124: rill.runtime.v1.RuntimeService.GetRugHistogram:input_type -> rill.runtime.v1.GetRugHistogramRequest
-	81,  // 125: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:input_type -> rill.runtime.v1.GetTimeRangeSummaryRequest
-	82,  // 126: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:input_type -> rill.runtime.v1.GetCardinalityOfColumnRequest
-	83,  // 127: rill.runtime.v1.RuntimeService.GenerateTimeSeries:input_type -> rill.runtime.v1.GenerateTimeSeriesRequest
-	93,  // 128: rill.runtime.v1.RuntimeService.GetTableCardinality:input_type -> rill.runtime.v1.GetTableCardinalityRequest
-	95,  // 129: rill.runtime.v1.RuntimeService.ProfileColumns:input_type -> rill.runtime.v1.ProfileColumnsRequest
-	98,  // 130: rill.runtime.v1.RuntimeService.GetTableRows:input_type -> rill.runtime.v1.GetTableRowsRequest
-	101, // 131: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
-	6,   // 132: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
-	9,   // 133: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
-	11,  // 134: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
-	13,  // 135: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
-	15,  // 136: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
-	17,  // 137: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
-	19,  // 138: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
-	21,  // 139: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
-	23,  // 140: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
-	25,  // 141: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
-	28,  // 142: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
-	30,  // 143: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
-	32,  // 144: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
-	34,  // 145: rill.runtime.v1.RuntimeService.TriggerSync:output_type -> rill.runtime.v1.TriggerSyncResponse
-	36,  // 146: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
-	39,  // 147: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
-	41,  // 148: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
-	43,  // 149: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
-	45,  // 150: rill.runtime.v1.RuntimeService.Query:output_type -> rill.runtime.v1.QueryResponse
-	47,  // 151: rill.runtime.v1.RuntimeService.QueryDirect:output_type -> rill.runtime.v1.QueryDirectResponse
-	49,  // 152: rill.runtime.v1.RuntimeService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
-	51,  // 153: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
-	53,  // 154: rill.runtime.v1.RuntimeService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
-	58,  // 155: rill.runtime.v1.RuntimeService.EstimateRollupInterval:output_type -> rill.runtime.v1.EstimateRollupIntervalResponse
-	62,  // 156: rill.runtime.v1.RuntimeService.GetTopK:output_type -> rill.runtime.v1.GetTopKResponse
-	73,  // 157: rill.runtime.v1.RuntimeService.GetNullCount:output_type -> rill.runtime.v1.GetNullCountResponse
-	66,  // 158: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:output_type -> rill.runtime.v1.GetDescriptiveStatisticsResponse
-	77,  // 159: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:output_type -> rill.runtime.v1.EstimateSmallestTimeGrainResponse
-	65,  // 160: rill.runtime.v1.RuntimeService.GetNumericHistogram:output_type -> rill.runtime.v1.GetNumericHistogramResponse
-	64,  // 161: rill.runtime.v1.RuntimeService.GetRugHistogram:output_type -> rill.runtime.v1.GetRugHistogramResponse
-	67,  // 162: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:output_type -> rill.runtime.v1.GetTimeRangeSummaryResponse
-	61,  // 163: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:output_type -> rill.runtime.v1.GetCardinalityOfColumnResponse
-	89,  // 164: rill.runtime.v1.RuntimeService.GenerateTimeSeries:output_type -> rill.runtime.v1.GenerateTimeSeriesResponse
-	94,  // 165: rill.runtime.v1.RuntimeService.GetTableCardinality:output_type -> rill.runtime.v1.GetTableCardinalityResponse
-	96,  // 166: rill.runtime.v1.RuntimeService.ProfileColumns:output_type -> rill.runtime.v1.ProfileColumnsResponse
-	99,  // 167: rill.runtime.v1.RuntimeService.GetTableRows:output_type -> rill.runtime.v1.GetTableRowsResponse
-	102, // 168: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
-	132, // [132:169] is the sub-list for method output_type
-	95,  // [95:132] is the sub-list for method input_type
+	48,  // 114: rill.runtime.v1.RuntimeService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
+	50,  // 115: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
+	52,  // 116: rill.runtime.v1.RuntimeService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
+	57,  // 117: rill.runtime.v1.RuntimeService.EstimateRollupInterval:input_type -> rill.runtime.v1.EstimateRollupIntervalRequest
+	70,  // 118: rill.runtime.v1.RuntimeService.GetTopK:input_type -> rill.runtime.v1.GetTopKRequest
+	72,  // 119: rill.runtime.v1.RuntimeService.GetNullCount:input_type -> rill.runtime.v1.GetNullCountRequest
+	74,  // 120: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:input_type -> rill.runtime.v1.GetDescriptiveStatisticsRequest
+	76,  // 121: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:input_type -> rill.runtime.v1.EstimateSmallestTimeGrainRequest
+	78,  // 122: rill.runtime.v1.RuntimeService.GetNumericHistogram:input_type -> rill.runtime.v1.GetNumericHistogramRequest
+	80,  // 123: rill.runtime.v1.RuntimeService.GetRugHistogram:input_type -> rill.runtime.v1.GetRugHistogramRequest
+	81,  // 124: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:input_type -> rill.runtime.v1.GetTimeRangeSummaryRequest
+	82,  // 125: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:input_type -> rill.runtime.v1.GetCardinalityOfColumnRequest
+	83,  // 126: rill.runtime.v1.RuntimeService.GenerateTimeSeries:input_type -> rill.runtime.v1.GenerateTimeSeriesRequest
+	93,  // 127: rill.runtime.v1.RuntimeService.GetTableCardinality:input_type -> rill.runtime.v1.GetTableCardinalityRequest
+	95,  // 128: rill.runtime.v1.RuntimeService.ProfileColumns:input_type -> rill.runtime.v1.ProfileColumnsRequest
+	98,  // 129: rill.runtime.v1.RuntimeService.GetTableRows:input_type -> rill.runtime.v1.GetTableRowsRequest
+	101, // 130: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
+	6,   // 131: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
+	9,   // 132: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
+	11,  // 133: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
+	13,  // 134: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
+	15,  // 135: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
+	17,  // 136: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
+	19,  // 137: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
+	21,  // 138: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
+	23,  // 139: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
+	25,  // 140: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
+	28,  // 141: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
+	30,  // 142: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
+	32,  // 143: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
+	34,  // 144: rill.runtime.v1.RuntimeService.TriggerSync:output_type -> rill.runtime.v1.TriggerSyncResponse
+	36,  // 145: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
+	39,  // 146: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
+	41,  // 147: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
+	43,  // 148: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
+	45,  // 149: rill.runtime.v1.RuntimeService.Query:output_type -> rill.runtime.v1.QueryResponse
+	49,  // 150: rill.runtime.v1.RuntimeService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
+	51,  // 151: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
+	53,  // 152: rill.runtime.v1.RuntimeService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
+	58,  // 153: rill.runtime.v1.RuntimeService.EstimateRollupInterval:output_type -> rill.runtime.v1.EstimateRollupIntervalResponse
+	62,  // 154: rill.runtime.v1.RuntimeService.GetTopK:output_type -> rill.runtime.v1.GetTopKResponse
+	73,  // 155: rill.runtime.v1.RuntimeService.GetNullCount:output_type -> rill.runtime.v1.GetNullCountResponse
+	66,  // 156: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:output_type -> rill.runtime.v1.GetDescriptiveStatisticsResponse
+	77,  // 157: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:output_type -> rill.runtime.v1.EstimateSmallestTimeGrainResponse
+	65,  // 158: rill.runtime.v1.RuntimeService.GetNumericHistogram:output_type -> rill.runtime.v1.GetNumericHistogramResponse
+	64,  // 159: rill.runtime.v1.RuntimeService.GetRugHistogram:output_type -> rill.runtime.v1.GetRugHistogramResponse
+	67,  // 160: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:output_type -> rill.runtime.v1.GetTimeRangeSummaryResponse
+	61,  // 161: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:output_type -> rill.runtime.v1.GetCardinalityOfColumnResponse
+	89,  // 162: rill.runtime.v1.RuntimeService.GenerateTimeSeries:output_type -> rill.runtime.v1.GenerateTimeSeriesResponse
+	94,  // 163: rill.runtime.v1.RuntimeService.GetTableCardinality:output_type -> rill.runtime.v1.GetTableCardinalityResponse
+	96,  // 164: rill.runtime.v1.RuntimeService.ProfileColumns:output_type -> rill.runtime.v1.ProfileColumnsResponse
+	99,  // 165: rill.runtime.v1.RuntimeService.GetTableRows:output_type -> rill.runtime.v1.GetTableRowsResponse
+	102, // 166: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
+	131, // [131:167] is the sub-list for method output_type
+	95,  // [95:131] is the sub-list for method input_type
 	95,  // [95:95] is the sub-list for extension type_name
 	95,  // [95:95] is the sub-list for extension extendee
 	0,   // [0:95] is the sub-list for field type_name

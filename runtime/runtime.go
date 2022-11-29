@@ -1,0 +1,50 @@
+package runtime
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
+)
+
+type Options struct {
+	ConnectionCacheSize int
+	MetastoreDriver     string
+	MetastoreDSN        string
+}
+
+type Runtime struct {
+	opts         *Options
+	metastore    drivers.Connection
+	logger       *zap.Logger
+	connCache    *connectionCache
+	catalogCache *catalogCache
+}
+
+func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
+	// Open metadata db connection
+	metastore, err := drivers.Open(opts.MetastoreDriver, opts.MetastoreDSN)
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
+	}
+	err = metastore.Migrate(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("metadata db migration: %w", err)
+	}
+	_, ok := metastore.RegistryStore()
+	if !ok {
+		return nil, fmt.Errorf("server metastore must be a valid registry")
+	}
+
+	return &Runtime{
+		opts:         opts,
+		metastore:    metastore,
+		logger:       logger,
+		connCache:    newConnectionCache(opts.ConnectionCacheSize),
+		catalogCache: newCatalogCache(),
+	}, nil
+}
+
+var ErrInstanceNotFound = errors.New("instance not found")

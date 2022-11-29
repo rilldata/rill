@@ -8,67 +8,17 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-func CreateSimpleTimeseriesTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)",
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into " + quoteName(tableName) + " values (1.0, '2019-01-01 00:00:00', 'android'), (1.0, '2019-01-02 00:00:00', 'iphone')",
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from " + quoteName(tableName),
-	})
-	require.NoError(t, err)
-	return result
-}
-
-func CreateTimeseriesTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)",
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, _ = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into " + quoteName(tableName) + ` values 
-		(1.0, '2019-01-01 00:00:00', 'android'), 
-		(1.0, '2019-01-02 00:00:00', 'iphone'),
-		(1.0, '2019-01-02 00:00:00', 'android'), 
-		(1.0, '2019-01-03 00:00:00', 'iphone'),
-		(1.0, '2019-01-04 00:00:00', 'android'), 
-
-		(1.0, '2019-01-05 00:00:00', 'iphone'),
-		(1.0, '2019-01-06 00:00:00', 'android'), 
-		(1.0, '2019-01-07 00:00:00', 'iphone'),
-		(1.0, '2019-01-07 00:00:00', 'android'), 
-		(1.0, '2019-01-08 00:00:00', 'iphone'),
-		`,
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from " + quoteName(tableName),
-	})
-	require.NoError(t, err)
-	return result
-}
-
 func TestServer_Timeseries(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId: instanceId,
+		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
 			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
@@ -96,21 +46,17 @@ func TestServer_Timeseries(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	// printResults(results)
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records["max"])
 }
 
 func TestServer_Timeseries_2measures(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
 	sm := "sum"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId: instanceId,
+		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
 			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
@@ -142,21 +88,17 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	// printResults(results)
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records["max"])
 	require.Equal(t, 2.0, results[0].Records["sum"])
 }
 
 func TestServer_Timeseries_1dim(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	server, instanceID := getTimeseriesTestServer(t)
 
 	sm := "sum"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId: instanceId,
+		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
 			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
@@ -184,19 +126,15 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	// printResults(results)
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records["sum"])
 }
 
 func TestServer_Timeseries_no_measures(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId:          instanceId,
+		InstanceId:          instanceID,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -214,14 +152,11 @@ func TestServer_Timeseries_no_measures(t *testing.T) {
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId: instanceId,
+		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
 			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
@@ -253,14 +188,11 @@ func TestServer_Timeseries_1day(t *testing.T) {
 }
 
 func TestServer_Timeseries_1day_Count(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
+	server, instanceID := getTimeseriesTestServer(t)
 
 	cnt := "count"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId: instanceId,
+		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
 			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
@@ -293,11 +225,9 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 }
 
 func TestServer_RangeSanity(t *testing.T) {
-	server, instanceId := getTestServer(t)
+	server, instanceID := getTimeseriesTestServer(t)
 
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	result.Close()
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
+	result, err := server.query(context.Background(), instanceID, &drivers.Statement{
 		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",
 	})
 	require.NoError(t, err)
@@ -311,15 +241,13 @@ func TestServer_RangeSanity(t *testing.T) {
 }
 
 func TestServer_normaliseTimeRange(t *testing.T) {
-	server, instanceId := getTestServer(t)
+	server, instanceID := getTimeseriesTestServer(t)
 
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &runtimev1.TimeSeriesTimeRange{
 		Interval: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
 	}
 	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId:          instanceId,
+		InstanceId:          instanceID,
 		TimeRange:           r,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
@@ -331,16 +259,14 @@ func TestServer_normaliseTimeRange(t *testing.T) {
 }
 
 func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
-	server, instanceId := getTestServer(t)
+	server, instanceID := getTimeseriesTestServer(t)
 
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &runtimev1.TimeSeriesTimeRange{
 		Interval: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
 		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
 	}
 	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId:          instanceId,
+		InstanceId:          instanceID,
 		TimeRange:           r,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
@@ -352,16 +278,14 @@ func TestServer_normaliseTimeRange_NoEnd(t *testing.T) {
 }
 
 func TestServer_normaliseTimeRange_Specified(t *testing.T) {
-	server, instanceId := getTestServer(t)
+	server, instanceID := getTimeseriesTestServer(t)
 
-	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
-	require.Equal(t, 2, getSingleValue(t, result.Rows))
 	r := &runtimev1.TimeSeriesTimeRange{
 		Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		Start:    parseTime(t, "2018-01-01T00:00:00Z"),
 	}
 	r, err := server.normaliseTimeRange(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId:          instanceId,
+		InstanceId:          instanceID,
 		TimeRange:           r,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
@@ -372,43 +296,12 @@ func TestServer_normaliseTimeRange_Specified(t *testing.T) {
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
-func CreateAggregatedTableForSpark(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)", // todo device is redundant - ie remove
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into " + quoteName(tableName) + ` values 
-		(2.0, '2019-01-01T00:00:00Z', 'android'), 
-		(3.0, '2019-01-02T00:00:00Z', 'iphone'),
-		(1.0, '2019-01-03T00:00:00Z', 'iphone'),
-		(2.0, '2019-01-04T00:00:00Z', 'android'), 
-
-		(2.0, '2019-01-05T00:00:00Z', 'iphone'),
-		(1.0, '2019-01-06T00:00:00Z', 'android'), 
-		(4.0, '2019-01-07T00:00:00Z', 'android'), 
-		(3, '2019-01-08T00:00:00Z', 'iphone'),
-
-		(1.0, '2019-01-09T00:00:00Z', 'iphone'),
-		`,
-	})
-	require.NoError(t, err)
-	result.Close()
-	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from " + quoteName(tableName),
-	})
-	require.NoError(t, err)
-	return result
-}
-
 func TestServer_SparkOnly(t *testing.T) {
 	time.Local = time.UTC
-	server, instanceId := getTestServer(t)
 
-	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
-	require.Equal(t, 9, getSingleValue(t, result.Rows))
-	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, "timeseries", "time", "clicks", 2.0)
+	server, instanceID := getSparkTimeseriesTestServer(t)
+
+	values, err := server.createTimestampRollupReduction(context.Background(), instanceID, "timeseries", "time", "clicks", 2.0)
 	require.NoError(t, err)
 
 	require.Equal(t, 12, len(values))
@@ -453,15 +346,12 @@ func TestServer_SparkOnly(t *testing.T) {
 }
 
 func TestServer_Timeseries_Spark(t *testing.T) {
-	server, instanceId := getTestServer(t)
-
-	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
-	require.Equal(t, 9, getSingleValue(t, result.Rows))
+	server, instanceID := getSparkTimeseriesTestServer(t)
 
 	cnt := "count"
 	pxls := int32(2)
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
-		InstanceId: instanceId,
+		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
 			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
@@ -479,4 +369,44 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	results := response.GetRollup().Results
 	require.Equal(t, 9, len(results))
 	require.Equal(t, 12, len(response.Rollup.Spark.Values))
+}
+
+func getTimeseriesTestServer(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
+		SELECT 1.0::DOUBLE AS clicks, '2019-01-01 00:00:00'::TIMESTAMP AS time, 'android'::VARCHAR AS device
+		UNION ALL
+		SELECT 1.0::DOUBLE AS clicks, '2019-01-02 00:00:00'::TIMESTAMP AS time, 'iphone'::VARCHAR AS device
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getSparkTimeseriesTestServer(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
+		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 3.0 AS clicks, TIMESTAMP '2019-01-02T00:00:00Z' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-03T00:00:00Z' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-04T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-05T00:00:00Z' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-06T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 4.0 AS clicks, TIMESTAMP '2019-01-07T00:00:00Z' AS time, 'android' AS device
+		UNION ALL
+		SELECT 3.0 AS clicks, TIMESTAMP '2019-01-08T00:00:00Z' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-09T00:00:00Z' AS time, 'iphone' AS device
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	return server, instanceID
 }

@@ -68,8 +68,6 @@ type RuntimeServiceClient interface {
 	RenameFileAndReconcile(ctx context.Context, in *RenameFileAndReconcileRequest, opts ...grpc.CallOption) (*RenameFileAndReconcileResponse, error)
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
-	// DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-	QueryDirect(ctx context.Context, in *QueryDirectRequest, opts ...grpc.CallOption) (*QueryDirectResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
@@ -290,15 +288,6 @@ func (c *runtimeServiceClient) Query(ctx context.Context, in *QueryRequest, opts
 	return out, nil
 }
 
-func (c *runtimeServiceClient) QueryDirect(ctx context.Context, in *QueryDirectRequest, opts ...grpc.CallOption) (*QueryDirectResponse, error) {
-	out := new(QueryDirectResponse)
-	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/QueryDirect", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error) {
 	out := new(MetricsViewToplistResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/MetricsViewToplist", in, out, opts...)
@@ -502,8 +491,6 @@ type RuntimeServiceServer interface {
 	RenameFileAndReconcile(context.Context, *RenameFileAndReconcileRequest) (*RenameFileAndReconcileResponse, error)
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
-	// DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-	QueryDirect(context.Context, *QueryDirectRequest) (*QueryDirectResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
@@ -606,9 +593,6 @@ func (UnimplementedRuntimeServiceServer) RenameFileAndReconcile(context.Context,
 }
 func (UnimplementedRuntimeServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
-}
-func (UnimplementedRuntimeServiceServer) QueryDirect(context.Context, *QueryDirectRequest) (*QueryDirectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryDirect not implemented")
 }
 func (UnimplementedRuntimeServiceServer) MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewToplist not implemented")
@@ -1016,24 +1000,6 @@ func _RuntimeService_Query_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_QueryDirect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryDirectRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).QueryDirect(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.runtime.v1.RuntimeService/QueryDirect",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).QueryDirect(ctx, req.(*QueryDirectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_MetricsViewToplist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MetricsViewToplistRequest)
 	if err := dec(in); err != nil {
@@ -1422,10 +1388,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _RuntimeService_Query_Handler,
-		},
-		{
-			MethodName: "QueryDirect",
-			Handler:    _RuntimeService_QueryDirect_Handler,
 		},
 		{
 			MethodName: "MetricsViewToplist",

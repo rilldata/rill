@@ -6,24 +6,27 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServer_GetTopK(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	topk := res.CategoricalSummary.GetTopK()
+	t.Logf("HERE %v", topk)
 	require.Equal(t, 3, len(topk.Entries))
 	require.Equal(t, "abc", *topk.Entries[0].Value)
 	require.Equal(t, 2, int(topk.Entries[0].Count))
-	require.Equal(t, "def", *topk.Entries[1].Value)
+	require.Nil(t, topk.Entries[1].Value)
 	require.Equal(t, 1, int(topk.Entries[1].Count))
-	require.Nil(t, topk.Entries[2].Value)
+	require.Equal(t, "def", *topk.Entries[2].Value)
 	require.Equal(t, 1, int(topk.Entries[2].Count))
 
 	agg := "sum(val)"
@@ -48,7 +51,7 @@ func TestServer_GetTopK(t *testing.T) {
 }
 
 func TestServer_GetNullCount(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetNullCount(context.Background(), &runtimev1.GetNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
@@ -62,7 +65,7 @@ func TestServer_GetNullCount(t *testing.T) {
 }
 
 func TestServer_GetDescriptiveStatistics(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	_, err := server.GetDescriptiveStatistics(context.Background(), &runtimev1.GetDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	if err != nil {
@@ -83,7 +86,7 @@ func TestServer_GetDescriptiveStatistics(t *testing.T) {
 }
 
 func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	_, err := server.EstimateSmallestTimeGrain(context.Background(), &runtimev1.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
@@ -97,7 +100,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
@@ -110,7 +113,7 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 }
 
 func TestServer_GetCategoricalHistogram(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
@@ -127,7 +130,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	// Get Time Range Summary works with timestamp columns
 	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
@@ -147,7 +150,7 @@ func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	// Get Cardinality of Column works with all columns
 	res, err := server.GetCardinalityOfColumn(context.Background(), &runtimev1.GetCardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -164,4 +167,35 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 2.0, res.CategoricalSummary.GetCardinality())
+}
+
+func getColumnTestServer(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 
+		UNION ALL 
+		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times
+		UNION ALL 
+		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+		UNION ALL 
+		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	olap, err := rt.OLAP(context.Background(), instanceID)
+	require.NoError(t, err)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
+	require.NoError(t, err)
+
+	defer res.Close()
+	var n int
+	for res.Next() {
+		err := res.Scan(&n)
+		require.NoError(t, err)
+	}
+	require.Equal(t, 4, n)
+
+	return server, instanceID
 }

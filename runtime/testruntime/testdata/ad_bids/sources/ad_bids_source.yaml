@@ -1,0 +1,4 @@
+version: 0.0.1
+
+type: file
+path: data/AdBids.csv.gz

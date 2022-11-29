@@ -7,10 +7,10 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
-	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -56,23 +56,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Open metadata db connection
-	metastore, err := drivers.Open(conf.DatabaseDriver, conf.DatabaseURL)
-	if err != nil {
-		logger.Fatal("error: could not connect to metadata db", zap.Error(err))
+	// Init runtime
+	opts := &runtime.Options{
+		ConnectionCacheSize: 100,
+		MetastoreDriver:     conf.DatabaseDriver,
+		MetastoreDSN:        conf.DatabaseURL,
 	}
-	err = metastore.Migrate(context.Background())
+	rt, err := runtime.New(opts, logger)
 	if err != nil {
-		logger.Fatal("error: metadata db migration", zap.Error(err))
+		logger.Fatal("error: could not create runtime", zap.Error(err))
 	}
 
 	// Init server
-	opts := &server.ServerOptions{
-		HTTPPort:            conf.HTTPPort,
-		GRPCPort:            conf.GRPCPort,
-		ConnectionCacheSize: 100,
+	srvOpts := &server.Options{
+		HTTPPort: conf.HTTPPort,
+		GRPCPort: conf.GRPCPort,
 	}
-	server, err := server.NewServer(opts, metastore, logger)
+	server, err := server.NewServer(srvOpts, rt, logger)
 	if err != nil {
 		logger.Fatal("error: could not create server", zap.Error(err))
 	}

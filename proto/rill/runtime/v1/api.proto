@@ -169,14 +169,6 @@ service RuntimeService {
     };
   }
 
-  // DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-  rpc QueryDirect(QueryDirectRequest) returns (QueryDirectResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/query/direct",
-      body: "*"
-    };
-  }
-
   // Explore APIs
 
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.

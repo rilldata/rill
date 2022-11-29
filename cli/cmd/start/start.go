@@ -10,7 +10,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/web"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -61,40 +61,30 @@ func StartCmd() *cobra.Command {
 				cliLevel = zap.DebugLevel
 				serverLevel = zap.DebugLevel
 			}
-			logger := l.WithOptions(zap.IncreaseLevel(cliLevel)).Sugar()
+			logger := l.WithOptions(zap.IncreaseLevel(cliLevel))
 			serverLogger := l.WithOptions(zap.IncreaseLevel(serverLevel))
 
-			// Create an in-memory metastore
-			metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
-			if err != nil {
-				return fmt.Errorf("error: could not connect to metadata db: %s", err)
-			}
-
-			err = metastore.Migrate(context.Background())
-			if err != nil {
-				return fmt.Errorf("error: metadata db migration: %s", err)
-			}
-
-			// Create the local runtime server
-			opts := &server.ServerOptions{
-				HTTPPort:            httpPort,
-				GRPCPort:            grpcPort,
+			// Create local runtime
+			rtOpts := &runtime.Options{
 				ConnectionCacheSize: 100,
+				MetastoreDriver:     "sqlite",
+				MetastoreDSN:        "file:rill?mode=memory&cache=shared",
 			}
-			server, err := server.NewServer(opts, metastore, serverLogger)
+			rt, err := runtime.New(rtOpts, logger)
 			if err != nil {
 				return err
 			}
 
 			// Create instance and repo configured for local use
-			_, err = server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
-				InstanceId:   localInstanceID,
-				OlapDriver:   olapDriver,
-				OlapDsn:      olapDSN,
+			inst := &drivers.Instance{
+				ID:           localInstanceID,
+				OLAPDriver:   olapDriver,
+				OLAPDSN:      olapDSN,
 				RepoDriver:   "file",
-				RepoDsn:      repoDSN,
+				RepoDSN:      repoDSN,
 				EmbedCatalog: olapDriver == "duckdb",
-			})
+			}
+			err = rt.CreateInstance(context.Background(), inst)
 			if err != nil {
 				return err
 			}
@@ -106,20 +96,28 @@ func StartCmd() *cobra.Command {
 			}
 
 			// Trigger reconciliation
-			logger.Infof("Hydrating project at '%s'", repoAbs)
-			res, err := server.Reconcile(context.Background(), &runtimev1.ReconcileRequest{
-				InstanceId: localInstanceID,
-			})
+			logger.Sugar().Infof("Hydrating project at '%s'", repoAbs)
+			res, err := rt.Reconcile(context.Background(), inst.ID, nil, false, false)
 			if err != nil {
 				return err
 			}
 			for _, merr := range res.Errors {
-				logger.Errorf("%s: %s", merr.FilePath, merr.Message)
+				logger.Sugar().Errorf("%s: %s", merr.FilePath, merr.Message)
 			}
 			for _, path := range res.AffectedPaths {
-				logger.Infof("Reconciled: %s", path)
+				logger.Sugar().Infof("Reconciled: %s", path)
 			}
-			logger.Infof("Hydration completed!")
+			logger.Sugar().Infof("Hydration completed!")
+
+			// Create the local runtime server
+			srvOpts := &server.Options{
+				HTTPPort: httpPort,
+				GRPCPort: grpcPort,
+			}
+			server, err := server.NewServer(srvOpts, rt, serverLogger)
+			if err != nil {
+				return err
+			}
 
 			// Create config object to serve on /local/config
 			localConfig := map[string]any{
@@ -155,19 +153,19 @@ func StartCmd() *cobra.Command {
 				uiURL := fmt.Sprintf("http://localhost:%d", httpPort)
 				err = browser.Open(uiURL)
 				if err != nil {
-					logger.Warnf("could not open browser, error: %v, copy and paste this URL into your browser: %s", err, uiURL)
+					logger.Sugar().Warnf("could not open browser, error: %v, copy and paste this URL into your browser: %s", err, uiURL)
 				}
 			}
 
 			// Start the gRPC and combined UI/REST servers
 			group.Go(func() error {
-				logger.Debugf("Serving runtime gRPC on http://localhost:%d", opts.GRPCPort)
+				logger.Sugar().Debugf("Serving runtime gRPC on http://localhost:%d", srvOpts.GRPCPort)
 				return server.ServeGRPC(ctx)
 			})
 			group.Go(func() error {
 				server := &http.Server{Handler: mux}
-				logger.Infof("Serving Rill on: http://localhost:%d", opts.HTTPPort)
-				return graceful.ServeHTTP(ctx, server, opts.HTTPPort)
+				logger.Sugar().Infof("Serving Rill on: http://localhost:%d", srvOpts.HTTPPort)
+				return graceful.ServeHTTP(ctx, server, srvOpts.HTTPPort)
 			})
 
 			err = group.Wait()

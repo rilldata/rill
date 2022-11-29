@@ -37,6 +37,7 @@ export/
 !/web-local/test/data/*.parquet
 !/web-local/test/data/*.csv
 !/web-local/test/data/*.tsv
+!/runtime/**/*.tsv
 
 # generated content
 log

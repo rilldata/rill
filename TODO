@@ -1,0 +1,155 @@
+## Introduction
+
+Refactors:
+- Need universal test project for testing
+- Need logic de-coupled from server into a runtime struct
+- Need queries extracted to separate module + caching + benchmarking + druid
+- Need reconciliations cleaned up
+
+## Insight about separation of duties
+
+- Server may pass extra args based on auth
+- Server needs ability to do auth – specifically:
+    - Parse JWT with secret and propagate claims
+    - Connect to external authority for claims for key
+- We'll need statefulness for:
+    - Imagine 100 runtimes horizontally scaled
+    - Each instance is owned by three machines
+    - One of those machines owns write (reconcile) access
+    - Where does the statefulness go?
+        - Service layer: The server is dumb and just calls in here. The service does service discovery. 
+            - Then makes sense to have: runtime service (distributed) -> instance service (local)
+            - Or it we could just introduce: broker service (distributed) -> runtime service (local)
+        - Server layer: The server is the entrypoint. It also manages peer connectivity. 
+    - Imagine stateful modelling:
+        - Keystroke-by-keystroke: put and migrate, profile --> DAG and errors in memory
+            - Each call goes to server (gateway), then proxied to write-responsible machine
+    - What if we wanted locality for DuckDB:
+        - Layer of gateway servers with broker
+        - Layer of worker servers with N instances
+
+## Distributed problems 
+
+- Distribution:
+    - Client -> Server: req (forward=true)
+    - Server -(internal)-> Broker: resolve instance
+    - Broker -(internal)-> Server: resolved DNS (may be self)
+    - Server --> DNS: req (forward=false)
+    - Rules:
+        - On calls to server, by default, forward=true
+        - Server has broker that resolves instances
+- Roles
+    - Anyone
+    - Instance reader (N = 5)
+    - Instance writer (N = 1)
+- Forwarding rules:
+    - Catalog reads (not embedded): anyone if not embedded
+    - Catalog reads (embedded): instance reader
+    - Repo writes: instance writer (for buffering)
+    - Repo reads: instance writer (to respect buffer)
+    - Queries: instance reader
+    - Reconciles: instance writer
+
+## Insight about single and multi instance infra
+
+- A datastore can be multi-instance or single-instance
+	- Multi-instance are configured on boot
+	- Single-instance are overrides
+	- When creating instance:
+		- Tell to use shared
+		- Or override with specific ones (*these dont always have multi-support)
+
+
+## Part 1: Proper safety and flexibility around single vs. multi instance
+
+Refactor runtime and instances for these settings:
+
+```
+type runtime.Options struct {
+	SharedInfra: {
+		Assignments: {
+			Registry: "metastore",
+			Repo: "metastore",
+		}
+		Connections: {
+			{Name: "metastore", DSN: "..."},
+		}
+	}
+}
+
+NewInstance{
+	Infra: {
+		Assignments: {
+			OLAP: "olap",
+			Catalog: "olap",
+			Repo: "repo",
+		}
+		Connections: {
+			{Name: "olap", Driver: "duckdb", DSN: ""},
+			{Name: "repo", Driver: "file", DSN: "."},
+		}
+	},
+}
+```
+
+(This stinks from a persistance perspective flat columns)
+
+Then:
+
+- Add "shared" option to drivers.Open
+- Pass to drivers. They should only resolve interfaces if they support shared.
+- Pass instance ID to catalog, repo, olap. Then not in sub-interfaces.
+
+## Part 2: Proper service abstraction
+
+Should we try one big one?
+
+## Part 3: Query benchmarking and caching
+
+- We have queries/
+- The service has:
+```
+s.Query(ctx, instance, query Query)
+
+type Query interface {
+	Resolve(ctx, runtime, priority)
+	CacheKey() string
+	CacheDeps() []string
+}
+
+```
+
+
+- A query example:
+
+```
+type ColumnNullCount struct {
+	TableName string
+	ColumnName string
+}
+
+func (q *Resolve) Resolve(ctx, runtime, priority)
+
+func (q *ColumnNullCount) CacheKey() string {
+	return q.TableName + ":" + q.ColumnName
+}
+
+func (q *CacheDeps) []string {
+	return []string{q.TableName}
+}
+```
+
+- Query challenges
+	- Work for multiple dialects
+	- Benchmarking
+	- One query can (cache-read) another
+	- Invalidate caches during migration
+	- Seed cache after migration
+
+
+## Benchmarking
+
+
+
+
+

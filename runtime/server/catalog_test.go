@@ -6,64 +6,64 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	"github.com/rilldata/rill/runtime/services/catalog"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
 
-func TestServer_InitCatalogService(t *testing.T) {
-	server, _ := getTestServer(t)
-
+func TestServer_PutFileAndReconcile(t *testing.T) {
 	ctx := context.Background()
-	dir := t.TempDir()
-
-	instId := createInstance(t, server, ctx, dir)
-	service, err := server.serviceCache.createCatalogService(ctx, server, instId)
+	rt, instanceID := testruntime.NewInstance(t)
+	srv, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)
 
-	testutils.CreateSource(t, service, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
-	testutils.CreateModel(t, service, "AdBids_model", "select timestamp, publisher from AdBids", AdBidsModelRepoPath)
-	res, err := service.Reconcile(ctx, catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, res, 0, 2, 0, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
-	testutils.AssertTable(t, service, "AdBids", AdBidsRepoPath)
-	testutils.AssertTable(t, service, "AdBids_model", AdBidsModelRepoPath)
-
-	// create a new service and make sure DAG is generated
-	instId = createInstance(t, server, ctx, dir)
-	service, err = server.serviceCache.createCatalogService(ctx, server, instId)
+	cat, err := rt.Catalog(ctx, instanceID)
 	require.NoError(t, err)
 
-	// initial reconcile to setup cache
-	_, err = service.Reconcile(ctx, catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	// force update the source
-	res, err = service.Reconcile(ctx, catalog.ReconcileConfig{
-		ChangedPaths: []string{AdBidsRepoPath},
-		ForcedPaths:  []string{AdBidsRepoPath},
+	sourcePath := "/sources/ad_bids_source.yaml"
+	csvPath := filepath.Join("../testruntime/testdata/ad_bids/data", "AdBids.csv.gz")
+	tsvPath := filepath.Join("../testruntime/testdata/ad_bids/data", "AdImpressions.tsv")
+
+	artifact := testutils.CreateSource(t, cat, "ad_bids_source", csvPath, sourcePath)
+	resp, err := srv.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
+		InstanceId: instanceID,
+		Path:       sourcePath,
+		Blob:       artifact,
 	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, res, 0, 0, 2, 0, []string{AdBidsRepoPath, AdBidsModelRepoPath})
-}
+	require.Len(t, resp.Errors, 0)
+	testutils.AssertTable(t, cat, "ad_bids_source", sourcePath)
 
-func createInstance(t *testing.T, server *Server, ctx context.Context, dir string) string {
-	instResp, err := server.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		OlapDriver: "duckdb",
-		// use persistent file to test fresh load
-		OlapDsn:      filepath.Join(dir, "stage.db"),
-		RepoDriver:   "file",
-		RepoDsn:      dir,
-		EmbedCatalog: true,
+	// replace with same name different file
+	artifact = testutils.CreateSource(t, cat, "ad_bids_source", tsvPath, sourcePath)
+	resp, err = srv.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
+		InstanceId: instanceID,
+		Path:       sourcePath,
+		Blob:       artifact,
 	})
 	require.NoError(t, err)
+	require.Len(t, resp.Errors, 0)
+	testutils.AssertTable(t, cat, "ad_bids_source", sourcePath)
 
-	return instResp.Instance.InstanceId
+	// rename
+	testutils.CreateSource(t, cat, "ad_bids_new", csvPath, sourcePath)
+	renameResp, err := srv.RenameFileAndReconcile(ctx, &runtimev1.RenameFileAndReconcileRequest{
+		InstanceId: instanceID,
+		FromPath:   sourcePath,
+		ToPath:     "/sources/ad_bids_new.yaml",
+	})
+	require.NoError(t, err)
+	require.Len(t, renameResp.Errors, 0)
+	testutils.AssertTableAbsence(t, cat, "ad_bids_source")
+	testutils.AssertTable(t, cat, "ad_bids_new", "/sources/ad_bids_new.yaml")
+
+	// delete
+	delResp, err := srv.DeleteFileAndReconcile(ctx, &runtimev1.DeleteFileAndReconcileRequest{
+		InstanceId: instanceID,
+		Path:       "/sources/ad_bids_new.yaml",
+	})
+	require.NoError(t, err)
+	require.Len(t, delResp.Errors, 0)
+	testutils.AssertTableAbsence(t, cat, "ad_bids_source")
+	testutils.AssertTableAbsence(t, cat, "ad_bids_new")
 }

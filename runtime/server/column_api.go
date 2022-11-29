@@ -17,23 +17,23 @@ import (
 const defaultK = 50
 const defaultAgg = "count(*)"
 
-func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
+func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := defaultAgg
 	k := int32(defaultK)
-	if topKRequest.Agg != nil {
-		agg = *topKRequest.Agg
+	if req.Agg != nil {
+		agg = *req.Agg
 	}
-	if topKRequest.K != nil {
-		k = *topKRequest.K
+	if req.K != nil {
+		k = *req.K
 	}
-	topKSql := fmt.Sprintf("SELECT %s as value, %s AS count from %s GROUP BY %s ORDER BY count desc LIMIT %d",
-		quoteName(topKRequest.ColumnName),
+	topKSql := fmt.Sprintf("SELECT %s as value, %s AS count from %s GROUP BY %s ORDER BY count desc, value asc LIMIT %d",
+		quoteName(req.ColumnName),
 		agg,
-		topKRequest.TableName,
-		quoteName(topKRequest.ColumnName),
+		req.TableName,
+		quoteName(req.ColumnName),
 		k,
 	)
-	rows, err := s.query(ctx, topKRequest.InstanceId, &drivers.Statement{
+	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: topKSql,
 	})
 	if err != nil {

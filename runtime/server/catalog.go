@@ -3,26 +3,28 @@ package server
 import (
 	"context"
 	"fmt"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListCatalogEntries implements RuntimeService
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
+	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	pbs, err := service.ListObjects(ctx, req.Type)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	pbs := make([]*runtimev1.CatalogEntry, len(entries))
+	for i, obj := range entries {
+		var err error
+		pbs[i], err = catalogObjectToPB(obj)
+		if err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
 	}
 
 	return &runtimev1.ListCatalogEntriesResponse{Entries: pbs}, nil
@@ -30,77 +32,94 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 
 // GetCatalogEntry implements RuntimeService
 func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
+	entry, err := s.runtime.GetCatalogEntry(ctx, req.InstanceId, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	pb, err := service.GetCatalogObject(ctx, req.Name)
+	pb, err := catalogObjectToPB(entry)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
 }
 
-// TriggerRefresh implements RuntimeService
-func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	catalog, err := s.openCatalog(ctx, inst)
+// Reconcile implements RuntimeService
+func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Find object
-	obj, found := catalog.FindEntry(ctx, req.InstanceId, req.Name)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "object not found")
-	}
+	return &runtimev1.ReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
 
-	// Check that it's a refreshable object
-	switch obj.Type {
-	case drivers.ObjectTypeSource:
-	default:
-		return nil, status.Error(codes.InvalidArgument, "object is not refreshable")
-	}
-
-	// Parse SQL
-	source := &connectors.Source{
-		Name:       obj.GetSource().Name,
-		Connector:  obj.GetSource().Connector,
-		Properties: obj.GetSource().Properties.AsMap(),
-	}
-
-	// Get olap
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+// PutFileAndReconcile implements RuntimeService
+func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
+	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, req.Blob, req.Create, req.CreateOnly)
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-	olap, _ := conn.OLAPStore()
-
-	// Make connector env
-	// Since we're deprecating this code soon, this is just a hack to ingest sources from paths relative to pwd
-	env := &connectors.Env{
-		RepoDriver: inst.RepoDriver,
-		RepoDSN:    inst.RepoDSN,
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Ingest the source
-	err = olap.Ingest(ctx, env, source)
+	changedPaths := []string{req.Path}
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, req.Dry, req.Strict)
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Update object
-	obj.RefreshedOn = time.Now()
-	err = catalog.UpdateEntry(ctx, req.InstanceId, obj)
+	return &runtimev1.PutFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
+
+// RenameFileAndReconcile implements RuntimeService
+func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
+	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	changedPaths := []string{req.FromPath, req.ToPath}
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, req.Dry, req.Strict)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.RenameFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
+
+// DeleteFileAndReconcile implements RuntimeService
+func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
+	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	changedPaths := []string{req.Path}
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, req.Dry, req.Strict)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.DeleteFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
+
+// TriggerRefresh implements RuntimeService
+func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
+	err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
+	if err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return &runtimev1.TriggerRefreshResponse{}, nil
@@ -108,126 +127,61 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 
 // TriggerSync implements RuntimeService
 func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
-	// TODO: move to using reconcile
-	// Get instance
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
-	}
-
-	// Get OLAP
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+	err := s.runtime.SyncExistingTables(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-	olap, _ := conn.OLAPStore()
-
-	// Get catalog
-	catalogStore, err := s.openCatalog(ctx, inst)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	// Get full catalog
-	objs := catalogStore.FindEntries(ctx, req.InstanceId, drivers.ObjectTypeUnspecified)
-
-	// Get information schema
-	tables, err := olap.InformationSchema().All(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, err.Error())
-	}
-
-	// Index objects for lookup
-	objMap := make(map[string]*drivers.CatalogEntry)
-	objSeen := make(map[string]bool)
-	for _, obj := range objs {
-		objMap[obj.Name] = obj
-		objSeen[obj.Name] = false
-	}
-
-	// Process tables in information schema
-	added := 0
-	updated := 0
-	for _, t := range tables {
-		obj, ok := objMap[t.Name]
-
-		// Track that the object still exists
-		if ok {
-			objSeen[t.Name] = true
-		}
-
-		// Create or update in catalog if relevant
-		if ok && obj.Type == drivers.ObjectTypeTable && !obj.GetTable().Managed {
-			// If the table has already been synced, update the schema if it has changed
-			tbl := obj.GetTable()
-			if !proto.Equal(t.Schema, tbl.Schema) {
-				tbl.Schema = t.Schema
-				err := catalogStore.UpdateEntry(ctx, inst.ID, obj)
-				if err != nil {
-					return nil, status.Errorf(codes.FailedPrecondition, err.Error())
-				}
-				updated++
-			}
-		} else if !ok {
-			// If we haven't seen this table before, add it
-			err := catalogStore.CreateEntry(ctx, inst.ID, &drivers.CatalogEntry{
-				Name: t.Name,
-				Type: drivers.ObjectTypeTable,
-				Object: &runtimev1.Table{
-					Name:    t.Name,
-					Schema:  t.Schema,
-					Managed: false,
-				},
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.FailedPrecondition, err.Error())
-			}
-			added++
-		}
-		// Defensively do nothing in all other cases
-	}
-
-	// Remove non-managed tables not found in information schema
-	removed := 0
-	for name, seen := range objSeen {
-		obj := objMap[name]
-		if !seen && obj.Type == drivers.ObjectTypeTable && !obj.GetTable().Managed {
-			err := catalogStore.DeleteEntry(ctx, inst.ID, name)
-			if err != nil {
-				return nil, status.Errorf(codes.FailedPrecondition, err.Error())
-			}
-			removed++
-		}
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	// Done
-	return &runtimev1.TriggerSyncResponse{
-		ObjectsCount:        uint32(len(tables)),
-		ObjectsAddedCount:   uint32(added),
-		ObjectsUpdatedCount: uint32(updated),
-		ObjectsRemovedCount: uint32(removed),
-	}, nil
+	// TODO: This should return stats about synced tables. However, it will be refactored into reconcile, so no need to fix this now.
+	return &runtimev1.TriggerSyncResponse{}, nil
 }
 
-func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drivers.CatalogStore, error) {
-	if !inst.EmbedCatalog {
-		catalogStore, ok := s.metastore.CatalogStore()
-		if !ok {
-			return nil, fmt.Errorf("metastore cannot serve as catalog")
+func pbToObjectType(in runtimev1.ObjectType) drivers.ObjectType {
+	switch in {
+	case runtimev1.ObjectType_OBJECT_TYPE_UNSPECIFIED:
+		return drivers.ObjectTypeUnspecified
+	case runtimev1.ObjectType_OBJECT_TYPE_TABLE:
+		return drivers.ObjectTypeTable
+	case runtimev1.ObjectType_OBJECT_TYPE_SOURCE:
+		return drivers.ObjectTypeSource
+	case runtimev1.ObjectType_OBJECT_TYPE_MODEL:
+		return drivers.ObjectTypeModel
+	case runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW:
+		return drivers.ObjectTypeMetricsView
+	}
+	panic(fmt.Errorf("unhandled object type %s", in))
+}
+
+func catalogObjectToPB(obj *drivers.CatalogEntry) (*runtimev1.CatalogEntry, error) {
+	catalog := &runtimev1.CatalogEntry{
+		Name:        obj.Name,
+		Path:        obj.Path,
+		CreatedOn:   timestamppb.New(obj.CreatedOn),
+		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
+		RefreshedOn: timestamppb.New(obj.RefreshedOn),
+	}
+
+	switch obj.Type {
+	case drivers.ObjectTypeTable:
+		catalog.Object = &runtimev1.CatalogEntry_Table{
+			Table: obj.GetTable(),
 		}
-		return catalogStore, nil
+	case drivers.ObjectTypeSource:
+		catalog.Object = &runtimev1.CatalogEntry_Source{
+			Source: obj.GetSource(),
+		}
+	case drivers.ObjectTypeModel:
+		catalog.Object = &runtimev1.CatalogEntry_Model{
+			Model: obj.GetModel(),
+		}
+	case drivers.ObjectTypeMetricsView:
+		catalog.Object = &runtimev1.CatalogEntry_MetricsView{
+			MetricsView: obj.GetMetricsView(),
+		}
+	default:
+		panic("not implemented")
 	}
 
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
-	if err != nil {
-		return nil, err
-	}
-
-	catalogStore, ok := conn.CatalogStore()
-	if !ok {
-		return nil, fmt.Errorf("instance cannot embed catalog")
-	}
-
-	return catalogStore, nil
+	return catalog, nil
 }
