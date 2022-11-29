@@ -229,16 +229,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
@@ -246,6 +236,14 @@ export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   strict?: boolean;
   toPath?: string;
+}
+
+export interface V1RefreshAndReconcileRequest {
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  instanceId?: string;
+  path?: string;
+  strict?: boolean;
 }
 
 /**
@@ -281,8 +279,28 @@ export interface V1ReconcileError {
 It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
-  propertyPath?: string;
+  propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export interface V1ReconcileResponse {
@@ -720,11 +738,11 @@ export const ModelDialect = {
 
 export interface MetricsViewMeasure {
   description?: string;
-  enabled?: string;
   expression?: string;
   format?: string;
   label?: string;
   name?: string;
+  visible?: boolean;
 }
 
 export interface MetricsViewFilterCond {
@@ -735,9 +753,9 @@ export interface MetricsViewFilterCond {
 
 export interface MetricsViewDimension {
   description?: string;
-  enabled?: string;
   label?: string;
   name?: string;
+  visible?: boolean;
 }
 
 export interface GenerateTimeSeriesRequestBasicMeasure {

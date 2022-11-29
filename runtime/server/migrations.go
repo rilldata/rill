@@ -46,8 +46,8 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 	res, err := s.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   req.InstanceId,
 		ChangedPaths: []string{req.Path},
-		Dry:          false,
-		Strict:       false,
+		Dry:          req.Dry,
+		Strict:       req.Strict,
 	})
 	if err != nil {
 		return nil, err
@@ -70,8 +70,8 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 	res, err := s.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   req.InstanceId,
 		ChangedPaths: []string{req.FromPath, req.ToPath},
-		Dry:          false,
-		Strict:       false,
+		Dry:          req.Dry,
+		Strict:       req.Strict,
 	})
 	if err != nil {
 		return nil, err
@@ -93,13 +93,33 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 	res, err := s.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   req.InstanceId,
 		ChangedPaths: []string{req.Path},
-		Dry:          false,
-		Strict:       false,
+		Dry:          req.Dry,
+		Strict:       req.Strict,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &runtimev1.DeleteFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	res, err := service.Reconcile(ctx, catalog.ReconcileConfig{
+		ChangedPaths: []string{req.Path},
+		ForcedPaths:  []string{req.Path},
+		DryRun:       req.Dry,
+		Strict:       req.Strict,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.RefreshAndReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
 	}, nil

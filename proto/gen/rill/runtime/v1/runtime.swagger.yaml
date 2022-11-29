@@ -1099,6 +1099,26 @@ paths:
             $ref: '#/definitions/v1PutFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/refresh-and-reconcile:
+    post:
+      operationId: RuntimeService_RefreshAndReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RefreshAndReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1RefreshAndReconcileRequest'
+      tags:
+        - RuntimeService
   /v1/rename-and-reconcile:
     post:
       summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
@@ -1175,12 +1195,12 @@ definitions:
     properties:
       description:
         type: string
-      enabled:
-        type: string
       label:
         type: string
       name:
         type: string
+      visible:
+        type: boolean
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
@@ -1198,8 +1218,6 @@ definitions:
     properties:
       description:
         type: string
-      enabled:
-        type: string
       expression:
         type: string
       format:
@@ -1208,6 +1226,8 @@ definitions:
         type: string
       name:
         type: string
+      visible:
+        type: boolean
     title: Measures are aggregated computed values
   ModelDialect:
     type: string
@@ -1942,7 +1962,9 @@ definitions:
         type: string
         title: Message is a developer-friendly error message
       propertyPath:
-        type: string
+        type: array
+        items:
+          type: string
         description: |-
           Property path of the error in the code artifact (if any).
           It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
@@ -1991,6 +2013,42 @@ definitions:
           Errors encountered during reconciliation. If strict = false, any path in
           affected_paths without an error can be assumed to have been reconciled succesfully.
     title: Response message for RuntimeService.Reconcile
+  v1RefreshAndReconcileRequest:
+    type: object
+    properties:
+      dry:
+        type: boolean
+        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+      instanceId:
+        type: string
+        title: Instance to store file in and reconcile
+      path:
+        type: string
+        title: Current path of the file
+      strict:
+        type: boolean
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
+  v1RefreshAndReconcileResponse:
+    type: object
+    properties:
+      affectedPaths:
+        type: array
+        items:
+          type: string
+        description: |-
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1RenameFileAndReconcileRequest:
     type: object
     properties:
