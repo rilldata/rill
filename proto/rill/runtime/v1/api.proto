@@ -890,6 +890,7 @@ message NumericOutliers {
     double low = 2;
     double high = 3;
     bool present = 4;
+    int32 count = 5;
   }
   repeated Outlier outliers = 1;
 }
