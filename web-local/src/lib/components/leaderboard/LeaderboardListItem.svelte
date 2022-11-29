@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import Cancel from "../icons/Cancel.svelte";
   import Check from "../icons/Check.svelte";
@@ -8,16 +9,21 @@
   export let color = "bg-blue-200 dark:bg-blue-600";
   export let isActive = false;
   export let excluded = false;
+  export let showIcon = true;
 
   /** compact mode is used in e.g. profiles */
   export let compact = false;
 
+  const dispatch = createEventDispatcher();
+
   let hovered = false;
   const onHover = () => {
     hovered = true;
+    dispatch("focus");
   };
   const onLeave = () => {
     hovered = false;
+    dispatch("blur");
   };
   /** used for overly-large bar values */
   let zigZag =
@@ -40,15 +46,17 @@
   on:click
   class="block flex flex-row w-full text-left transition-color"
 >
-  <div style:width="22px" style:height class="grid place-items-center">
-    {#if isActive && !excluded}
-      <Check size="20px" />
-    {:else if isActive && excluded}
-      <Cancel size="20px" />
-    {:else}
-      <Spacer />
-    {/if}
-  </div>
+  {#if showIcon}
+    <div style:width="22px" style:height class="grid place-items-center">
+      {#if isActive && !excluded}
+        <Check size="20px" />
+      {:else if isActive && excluded}
+        <Cancel size="20px" />
+      {:else}
+        <Spacer />
+      {/if}
+    </div>
+  {/if}
   <BarAndLabel
     {color}
     {value}

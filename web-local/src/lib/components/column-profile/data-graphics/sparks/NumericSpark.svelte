@@ -24,7 +24,7 @@
       marginBuffer={0}
       left={1}
       right={1}
-      top={1}
+      top={4}
       bottom={1}
       let:config
     >
@@ -47,6 +47,7 @@
           lineThickness={0.5}
           separator={0}
           color="currentColor"
+          stopOpacity={0.5}
         />
       </g>
     </SimpleDataGraphic>

@@ -41,6 +41,7 @@
             y1={rowHeight / 2 - 8}
             y2={-(rowHeight * (values.length - i - 1))}
             stroke="red"
+            opacity={0.5}
           />
           <DynamicallyPlacedLabel
             dy=".35em"

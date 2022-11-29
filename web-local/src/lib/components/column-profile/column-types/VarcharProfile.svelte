@@ -17,8 +17,6 @@
   export let hideNullPercentage = false;
   export let mode: "example" | "summaries" = "summaries";
 
-  let columns: string;
-
   let active = false;
 
   $: nulls = getNullPercentage(
@@ -66,12 +64,9 @@
     {type}
   />
 
-  <div slot="details" class="px-4">
-    <TopK
-      topK={$topK}
-      totalRows={$columnCardinality?.totalRows}
-      {objectName}
-      {columnName}
-    />
+  <div slot="details" class="pl-10 pr-4 py-4">
+    <div>
+      <TopK topK={$topK} totalRows={$columnCardinality?.totalRows} />
+    </div>
   </div>
 </ProfileContainer>

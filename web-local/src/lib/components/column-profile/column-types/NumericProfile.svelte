@@ -12,6 +12,7 @@
     getNullPercentage,
     getNumericHistogram,
     getRugPlotData,
+    getTopK,
   } from "../queries";
   export let columnName: string;
   export let objectName: string;
@@ -37,6 +38,8 @@
     columnName
   );
   $: rug = getRugPlotData($runtimeStore?.instanceId, objectName, columnName);
+
+  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
   $: summary = derived(
     useRuntimeServiceGetDescriptiveStatistics(
@@ -74,7 +77,13 @@
     totalRows={$nulls?.totalRows}
     {type}
   />
-  <div slot="details" class="px-4">
-    <NumericPlot data={$numericHistogram} rug={$rug} summary={$summary} />
+  <div slot="details" class="pl-10 pr-4 py-4">
+    <NumericPlot
+      data={$numericHistogram}
+      rug={$rug}
+      summary={$summary}
+      topK={$topK}
+      totalRows={$nulls?.totalRows}
+    />
   </div>
 </ProfileContainer>

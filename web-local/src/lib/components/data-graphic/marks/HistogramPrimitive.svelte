@@ -7,6 +7,8 @@ it to do any automatic binning of data, which is done server-side.
   import { guidGenerator } from "$lib/util/guid";
   import { extent, max, min } from "d3-array";
   import { getContext, onDestroy } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { tweened } from "svelte/motion";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { barplotPolyline } from "../utils";
@@ -30,6 +32,7 @@ it to do any automatic binning of data, which is done server-side.
 
   export let outlineColor = "hsla(1,40%, 60%, .9)";
   export let color = "hsla(1,70%, 80%, .4)";
+  export let stopOpacity = 0.3;
 
   const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
   const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
@@ -60,6 +63,9 @@ it to do any automatic binning of data, which is done server-side.
     if (inferYExtent) yMaxStore.removeKey(markID);
   });
 
+  const inflator = tweened(0, { duration: 800, easing: cubicOut });
+  $: inflator.set(1);
+
   $: d = barplotPolyline(
     data,
     xLowAccessor,
@@ -68,7 +74,8 @@ it to do any automatic binning of data, which is done server-side.
     $xScale,
     $yScale,
     separator,
-    closeBottom
+    closeBottom,
+    $inflator
   );
 </script>
 
@@ -76,7 +83,7 @@ it to do any automatic binning of data, which is done server-side.
   <defs>
     <linearGradient id="gradient-{markID}" x1="0" x2="0" y1="0" y2="1">
       <stop offset="5%" stop-color={color} />
-      <stop offset="95%" stop-color={color} stop-opacity={0.3} />
+      <stop offset="95%" stop-color={color} stop-opacity={stopOpacity} />
     </linearGradient>
   </defs>
   <path {d} fill="url(#gradient-{markID})" />

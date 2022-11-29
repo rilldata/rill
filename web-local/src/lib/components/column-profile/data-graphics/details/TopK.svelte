@@ -13,18 +13,20 @@
     createShiftClickAction,
   } from "@rilldata/web-local/lib/util/shift-click-action";
   import { format } from "d3-format";
+  import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import Shortcut from "../../../tooltip/Shortcut.svelte";
   import StackingWord from "../../../tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
-  export let objectName: string;
-  export let columnName: string;
+  export let colorClass = "bg-blue-200";
 
   const { shiftClickAction } = createShiftClickAction();
 
   export let topK;
   export let totalRows: number;
   let sliceAmount = 15;
+
+  const dispatch = createEventDispatcher();
 
   $: smallestPercentage =
     topK && topK.length
@@ -44,16 +46,31 @@
   }
 
   let tooltipProps = { location: "right", distance: 16 };
+
+  function handleFocus(value) {
+    return () => dispatch("focus-top-k", value);
+  }
+
+  function handleBlur(value) {
+    return () => dispatch("blur-top-k", value);
+  }
 </script>
 
 {#if topK && totalRows}
-  <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }} class="py-4">
+  <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#each topK.slice(0, sliceAmount) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"
         : formatPercentage(item.count / totalRows)}
-      <LeaderboardListItem compact value={item.count / totalRows}>
+      <LeaderboardListItem
+        compact
+        value={item.count / totalRows}
+        color={colorClass}
+        showIcon={false}
+        on:focus={handleFocus(item)}
+        on:blur={handleBlur(item)}
+      >
         <svelte:fragment slot="title">
           <Tooltip {...tooltipProps}>
             <div
@@ -72,7 +89,9 @@
             </div>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
-                <svelte:fragment slot="name">{columnName}</svelte:fragment>
+                <svelte:fragment slot="name"
+                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
+                >
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
                 >
@@ -105,7 +124,9 @@
             </div>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
-                <svelte:fragment slot="name">{columnName}</svelte:fragment>
+                <svelte:fragment slot="name"
+                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
+                >
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
                 >

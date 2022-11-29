@@ -20,6 +20,7 @@
 
   export let color = "hsla(217,70%, 80%, .4)";
   export let alpha = 1;
+  export let stopOpacity = 0.3;
 
   export let xMin = undefined;
   export let xMax = undefined;
@@ -67,7 +68,7 @@
   <defs>
     <linearGradient id="gradient-{markID}" x1="0" x2="0" y1="0" y2="1">
       <stop offset="5%" stop-color={color} />
-      <stop offset="95%" stop-color={color} stop-opacity={0.3} />
+      <stop offset="95%" stop-color={color} stop-opacity={stopOpacity} />
     </linearGradient>
   </defs>
   <path
