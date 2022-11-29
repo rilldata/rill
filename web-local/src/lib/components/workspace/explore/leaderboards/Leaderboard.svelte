@@ -11,7 +11,7 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
 
-  import { createEventDispatcher, getContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import {
     useMetaDimension,
     useMetaMappedFilters,

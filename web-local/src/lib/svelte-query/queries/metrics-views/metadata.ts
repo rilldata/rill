@@ -1,15 +1,6 @@
-import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-import type {
-  MetricsViewMetaResponse,
-  MetricsViewRequestFilter,
-} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
-import type { UseQueryOptions } from "@sveltestack/svelte-query/dist/types";
+import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import {
   useRuntimeServiceGetCatalogEntry,
-  V1GetCatalogEntryResponse,
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 

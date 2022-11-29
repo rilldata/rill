@@ -1,31 +1,16 @@
 <script lang="ts">
-  import {
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { useRuntimeServiceDeleteFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import {
-    derivedProfileEntityHasTimestampColumn,
-    selectTimestampColumnFromProfileEntity,
-  } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { createEventDispatcher, getContext } from "svelte";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { navigationEvent } from "../../../metrics/initMetrics";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -57,17 +42,15 @@
     (model) => model.id === persistentModel?.id
   );
 
-  const metricMigrate = useRuntimeServicePutFileAndReconcile();
+  // const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
   /** functionality for bootstrapping a dashboard */
-  const bootstrapDashboard = (modelName: string) => {
-    const previousActiveEntity = $applicationStore?.activeEntity?.type;
-
+  const bootstrapDashboard = (_: string) => {
+    // const previousActiveEntity = $applicationStore?.activeEntity?.type;
     // const metricsLabel = `${modelName}_dashboard`;
     // const generatedYAML = generateMeasuresAndDimension(model, {
     //   display_name: metricsLabel,
     // });
-
     // await $metricMigrate.mutateAsync({
     //   data: {
     //     instanceId: $runtimeStore.instanceId,
@@ -76,7 +59,6 @@
     //     create: false,
     //   },
     // });
-
     // navigationEvent.fireEvent(
     //     createdMetricsId,
     //     BehaviourEventMedium.Menu,

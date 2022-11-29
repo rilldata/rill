@@ -3,7 +3,6 @@
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
 
   export let metricsInternalRep;

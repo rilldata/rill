@@ -1,5 +1,4 @@
-import { rmdirSync, rmSync } from "fs";
-import { execSync } from "node:child_process";
+import { rmSync } from "fs";
 import { getTestConfig } from "./getTestConfig";
 import { InlineTestServer } from "./InlineTestServer";
 import type { TestServer } from "./TestServer";

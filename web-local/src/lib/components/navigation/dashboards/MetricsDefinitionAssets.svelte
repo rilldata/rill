@@ -23,7 +23,6 @@
     FileArtifactsData,
   } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers.js";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";

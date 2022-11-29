@@ -17,7 +17,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { getContext } from "svelte";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -149,12 +148,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 <div class="flex flex-row">
   <TimeRangeNameSelector
     {metricsDefId}
-    {selectedTimeRangeName}
     on:select-time-range-name={setSelectedTimeRangeName}
+    {selectedTimeRangeName}
   />
   <TimeGrainSelector
-    {selectedTimeGrain}
-    {selectableTimeGrains}
     on:select-time-grain={setSelectedTimeGrain}
+    {selectableTimeGrains}
+    {selectedTimeGrain}
   />
 </div>

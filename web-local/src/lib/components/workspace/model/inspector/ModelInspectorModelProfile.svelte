@@ -2,7 +2,6 @@
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -34,7 +33,6 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
   // get source tables?

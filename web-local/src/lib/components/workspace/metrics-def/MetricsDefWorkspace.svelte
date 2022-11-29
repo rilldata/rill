@@ -87,7 +87,7 @@
   function handleDeleteMeasure(evt) {
     $metricsInternalRep.deleteMeasure(evt.detail);
   }
-  function handleMeasureExpressionValidation(index, name, value) {
+  function handleMeasureExpressionValidation(_index, _name, _value) {
     // store.dispatch(
     //   validateMeasureExpressionApi({
     //     metricsDefId: metricsDefId,
