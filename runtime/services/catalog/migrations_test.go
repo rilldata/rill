@@ -38,10 +38,6 @@ var AdBidsNewAffectedPaths = []string{AdBidsNewRepoPath, AdBidsModelRepoPath, Ad
 var AdBidsDashboardAffectedPaths = []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath}
 
 func TestReconcile(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -110,10 +106,6 @@ func TestReconcile(t *testing.T) {
 }
 
 func TestReconcileRenames(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -155,10 +147,6 @@ func TestReconcileRenames(t *testing.T) {
 }
 
 func TestRefreshSource(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -187,10 +175,6 @@ func TestRefreshSource(t *testing.T) {
 }
 
 func TestInterdependentModel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -239,10 +223,6 @@ func TestInterdependentModel(t *testing.T) {
 }
 
 func TestModelRename(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	var AdBidsRenameModelRepoPath = "/models/AdBidsRename.sql"
 	var AdBidsRenameNewModelRepoPath = "/models/AdBidsRenameNew.sql"
 
@@ -281,10 +261,6 @@ func TestModelRename(t *testing.T) {
 }
 
 func TestModelVariations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	s, _ := initBasicService(t)
 
 	// update to invalid model
@@ -305,10 +281,6 @@ func TestModelVariations(t *testing.T) {
 }
 
 func TestReconcileMetricsView(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	s, _ := initBasicService(t)
 
 	testutils.CreateModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
@@ -329,10 +301,6 @@ func TestReconcileMetricsView(t *testing.T) {
 }
 
 func TestInvalidFiles(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
