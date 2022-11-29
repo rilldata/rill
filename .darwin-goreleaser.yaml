@@ -1,0 +1,86 @@
+project_name: rill
+
+release:
+  prerelease: auto
+  disable: true # travis takes care of it as of now
+
+before:
+  hooks:
+
+builds:
+  # macos amd64
+  - id: darwin-amd64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+  # macos arm64/m1
+  - id: darwin-arm64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+blobs:
+  - provider: gs
+    bucket: pkg.rilldata.com
+    folder: "rill/{{.Version}}"
+
+brews:
+  - homepage: "https://github.com/rilldata/rill-developer"
+    description: "The Rill CLI"
+    name: "rill"
+    license: Apache 2.0
+    tap:
+      owner: rilldata
+      name: homebrew-rill-developer
+      branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    test: |
+      system "#{bin}/rill --version"
+    install: |
+      bin.install "rill"
+    commit_author:
+      name: "rilldata"
+      email: support@rilldata.com
+
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE*
+    wrap_in_directory: true
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
