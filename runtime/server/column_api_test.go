@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"google.golang.org/protobuf/types/known/structpb"
 	"testing"
 	"time"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -125,6 +126,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericOutliers().Outliers[0].Low)
 	require.Equal(t, 1.008, res.NumericSummary.GetNumericOutliers().Outliers[0].High)
 	require.Equal(t, true, res.NumericSummary.GetNumericOutliers().Outliers[0].Present)
+	require.True(t, res.NumericSummary.GetNumericOutliers().Outliers[0].Count > 0)
 
 	// works only with numeric columns
 	_, err = server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
@@ -142,6 +144,20 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max)
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(2), res.TimeRangeSummary.Interval.Days)
+	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
+}
+
+func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
+	server, instanceId := getTestServerWithData(t)
+
+	// Test Get Time Range Summary with Date type column
+	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min)
+	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
+	require.Equal(t, int32(1551), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 

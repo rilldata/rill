@@ -22,6 +22,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 	require.NoError(t, err)
 
 	ctx := context.Background()
+	time.Sleep(time.Millisecond * 10)
 	err = artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeSource,
@@ -42,6 +43,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 
 func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
 	ctx := context.Background()
+	time.Sleep(time.Millisecond * 10)
 	err := artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeModel,
@@ -60,6 +62,7 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 
 func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
 	ctx := context.Background()
+	time.Sleep(time.Millisecond * 10)
 	err := artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
 		Name:   metricsView.Name,
 		Type:   drivers.ObjectTypeMetricsView,

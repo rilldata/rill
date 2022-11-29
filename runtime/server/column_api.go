@@ -4,16 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/marcboeker/go-duckdb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"math"
 	"time"
+
+	"github.com/marcboeker/go-duckdb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const defaultK = 50
@@ -386,7 +387,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
-	sql := fmt.Sprintf(`WITH data_table AS (
+	rugSql := fmt.Sprintf(`WITH data_table AS (
             SELECT %[1]s as %[2]s
             FROM %[3]s
             WHERE %[2]s IS NOT NULL
@@ -442,12 +443,13 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
             bucket,
             low,
             high,
-            CASE WHEN count>0 THEN true ELSE false END AS present
+            CASE WHEN count>0 THEN true ELSE false END AS present,
+			count
           FROM histrogram_with_edge
           WHERE present=true`, selectColumn, sanitizedColumnName, request.TableName, outlierPseudoBucketSize)
 
 	outlierResults, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: sql,
+		Query: rugSql,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -457,7 +459,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 	outlierBins := make([]*runtimev1.NumericOutliers_Outlier, 0)
 	for outlierResults.Next() {
 		outlier := &runtimev1.NumericOutliers_Outlier{}
-		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
+		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present, &outlier.Count)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -494,17 +496,34 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 		}
 		summary.Min = timestamppb.New(rowMap["min"].(time.Time))
 		summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-		interval := rowMap["interval"].(duckdb.Interval)
-		summary.Interval = new(runtimev1.TimeRangeSummary_Interval)
-		summary.Interval.Days = interval.Days
-		summary.Interval.Months = interval.Months
-		summary.Interval.Micros = interval.Micros
-
+		summary.Interval, err = handleInterval(rowMap["interval"])
+		if err != nil {
+			return nil, err
+		}
 		return &runtimev1.GetTimeRangeSummaryResponse{
 			TimeRangeSummary: summary,
 		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
+}
+
+func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
+	switch interval.(type) {
+	case duckdb.Interval:
+		duckDbInterval := interval.(duckdb.Interval)
+		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result.Days = duckDbInterval.Days
+		result.Months = duckDbInterval.Months
+		result.Micros = duckDbInterval.Micros
+		return result, nil
+	case int64:
+		// for date type column interval is difference in num days for two dates
+		days := interval.(int64)
+		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result.Days = int32(days)
+		return result, nil
+	}
+	return nil, fmt.Errorf("cannot handle interval type %T", interval)
 }
 
 func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
