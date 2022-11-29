@@ -148,7 +148,7 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
 	server, instanceId := getTestServerWithData(t)
 
-	// Get Time Range Summary works with timestamp columns
+	// Test Get Time Range Summary with Date type column
 	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
 	require.NoError(t, err)
 	require.NotNil(t, res)

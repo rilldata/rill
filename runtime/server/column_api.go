@@ -515,6 +515,7 @@ func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) 
 		result.Micros = duckDbInterval.Micros
 		return result, nil
 	case int64:
+		// for date type column interval is difference in num days for two dates
 		days := interval.(int64)
 		var result = new(runtimev1.TimeRangeSummary_Interval)
 		result.Days = int32(days)
