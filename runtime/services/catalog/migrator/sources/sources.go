@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
@@ -64,7 +65,7 @@ func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPS
 	return []string{}
 }
 
-func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	// TODO
 	return nil
 }

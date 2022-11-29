@@ -159,6 +159,13 @@ service RuntimeService {
     };
   }
 
+  rpc RefreshAndReconcile(RefreshAndReconcileRequest) returns (RefreshAndReconcileResponse) {
+    option (google.api.http) = {
+      post: "/v1/refresh-and-reconcile",
+      body: "*"
+    };
+  }
+
   // Queries
 
   // Query runs a SQL query against the instance's OLAP datastore.
@@ -589,7 +596,7 @@ message ReconcileError {
   // It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
   // It only applies to structured code artifacts (i.e. YAML).
   // Only applicable if file_path is set.
-  string property_path = 4;
+  repeated string property_path = 4;
   // Start location of the error in the code artifact (if any).
   // Only applicable if file_path is set.
   CharLocation start_location = 5;
@@ -668,6 +675,29 @@ message RenameFileAndReconcileRequest {
 }
 
 message RenameFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
+  repeated string affected_paths = 2;
+}
+
+message RefreshAndReconcileRequest {
+  // Instance to store file in and reconcile
+  string instance_id = 1;
+  // Current path of the file
+  string path = 2;
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 3;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
+  bool strict = 5;
+}
+
+message RefreshAndReconcileResponse {
   // Errors encountered during reconciliation. If strict = false, any path in
   // affected_paths without an error can be assumed to have been reconciled succesfully.
   repeated ReconcileError errors = 1;

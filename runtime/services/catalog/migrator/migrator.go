@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -31,7 +32,7 @@ type EntityMigrator interface {
 	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *drivers.CatalogEntry) error
 	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error
 	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string
-	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error
+	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError
 	// IsEqual checks everything but the name
 	IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool
 	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error)
@@ -83,7 +84,7 @@ func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drive
 }
 
 // Validate also returns list of dependents
-func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -135,6 +136,16 @@ func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cat
 	}
 
 	return nil
+}
+
+func CreateValidationError(filePath string, message string) []*runtimev1.ReconcileError {
+	return []*runtimev1.ReconcileError{
+		{
+			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
+			FilePath: filePath,
+			Message:  message,
+		},
+	}
 }
 
 func getMigrator(catalog *drivers.CatalogEntry) (EntityMigrator, bool) {

@@ -2,10 +2,8 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"testing"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -26,6 +24,9 @@ const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 
+var AdBidsAffectedPaths = []string{AdBidsRepoPath, AdBidsModelRepoPath}
+var AdBidsNewAffectedPaths = []string{AdBidsNewRepoPath, AdBidsModelRepoPath}
+
 func TestServer_PutFileAndReconcile(t *testing.T) {
 	ctx := context.Background()
 	server, instanceId := getTestServer(t)
@@ -41,7 +42,17 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, resp.Errors, 0)
+	require.Equal(t, []string{AdBidsRepoPath}, resp.AffectedPaths)
 	testutils.AssertTable(t, service, "AdBids", AdBidsRepoPath)
+
+	artifact = testutils.CreateModel(t, service, "AdBids_model", "select * from AdBids", AdBidsModelRepoPath)
+	resp, err = server.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
+		InstanceId: instanceId,
+		Path:       AdBidsModelRepoPath,
+		Blob:       artifact,
+	})
+	require.NoError(t, err)
+	require.Len(t, resp.Errors, 0)
 
 	// replace with same name different file
 	artifact = testutils.CreateSource(t, service, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
@@ -52,10 +63,21 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, resp.Errors, 0)
+	require.Equal(t, AdBidsAffectedPaths, resp.AffectedPaths)
 	testutils.AssertTable(t, service, "AdBids", AdBidsRepoPath)
+
+	// refresh the source without changes
+	refreshResp, err := server.RefreshAndReconcile(ctx, &runtimev1.RefreshAndReconcileRequest{
+		InstanceId: instanceId,
+		Path:       AdBidsRepoPath,
+	})
+	require.NoError(t, err)
+	require.Len(t, refreshResp.Errors, 0)
+	require.Equal(t, AdBidsAffectedPaths, resp.AffectedPaths)
 
 	// rename
 	testutils.CreateSource(t, service, "AdBidsNew", AdBidsCsvPath, AdBidsRepoPath)
+	testutils.CreateModel(t, service, "AdBids_model", "select * from AdBidsNew", AdBidsModelRepoPath)
 	renameResp, err := server.RenameFileAndReconcile(ctx, &runtimev1.RenameFileAndReconcileRequest{
 		InstanceId: instanceId,
 		FromPath:   AdBidsRepoPath,
@@ -64,6 +86,7 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, renameResp.Errors, 0)
 	testutils.AssertTableAbsence(t, service, "AdBids")
+	require.Equal(t, []string{AdBidsNewRepoPath, AdBidsModelRepoPath, AdBidsRepoPath}, renameResp.AffectedPaths)
 	testutils.AssertTable(t, service, "AdBidsNew", AdBidsNewRepoPath)
 
 	// delete
@@ -72,28 +95,8 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 		Path:       AdBidsNewRepoPath,
 	})
 	require.NoError(t, err)
-	require.Len(t, delResp.Errors, 0)
+	require.Len(t, delResp.Errors, 1)
 	testutils.AssertTableAbsence(t, service, "AdBids")
+	require.Equal(t, AdBidsNewAffectedPaths, delResp.AffectedPaths)
 	testutils.AssertTableAbsence(t, service, "AdBidsNew")
-}
-
-func assertTablePresence(t *testing.T, server *Server, instanceId, tableName string, count int) {
-	ctx := context.Background()
-
-	resp, err := server.QueryDirect(ctx, &runtimev1.QueryDirectRequest{
-		InstanceId: instanceId,
-		Sql:        fmt.Sprintf("select count(*) as count from %s", tableName),
-		Args:       nil,
-		Priority:   0,
-		DryRun:     false,
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, resp.Data)
-	require.Equal(t, int(resp.Data[0].Fields["count"].GetNumberValue()), count)
-
-	catalog, _ := server.GetCatalogEntry(context.Background(), &runtimev1.GetCatalogEntryRequest{
-		InstanceId: instanceId,
-		Name:       tableName,
-	})
-	require.WithinDuration(t, time.Now(), catalog.GetEntry().RefreshedOn.AsTime(), time.Second)
 }
