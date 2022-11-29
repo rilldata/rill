@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -11,29 +10,21 @@
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import { navigationEvent } from "../../metrics/initMetrics";
-  import { getMetricsDefReadableById } from "../../redux-store/metrics-definition/metrics-definition-readables";
-  import { useMetaQuery } from "../../svelte-query/queries/metrics-views/metadata";
-  import { getContext } from "svelte";
 
-  export let metricsDefId: string;
+  export let metricsInternalRep;
+  export let metricsDefName;
 
-  const config = getContext<RootConfig>("config");
-
-  // query the `/meta` endpoint to get the valid measures and dimensions
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-  $: measures = $metaQuery.data?.measures;
-  $: dimensions = $metaQuery.data?.dimensions;
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
 
   let buttonDisabled = true;
   let buttonStatus = "OK";
 
-  const viewDashboard = (metricsDefId: string) => {
-    goto(`/dashboard/${metricsDefId}`);
+  const viewDashboard = () => {
+    goto(`/dashboard/${metricsDefName}`);
 
     navigationEvent.fireEvent(
-      metricsDefId,
+      metricsDefName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.MetricsDefinition,
@@ -42,8 +33,8 @@
   };
 
   $: if (
-    $selectedMetricsDef?.sourceModelId === undefined ||
-    $selectedMetricsDef?.timeDimension === undefined
+    $metricsInternalRep.getMetricKey("from") === "" ||
+    $metricsInternalRep.getMetricKey("timeseries") === ""
   ) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
@@ -55,12 +46,12 @@
   }
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip alignment="middle" distance={5} location="right">
   <!-- TODO: we need to standardize these buttons. -->
   <Button
-    type="primary"
     disabled={buttonDisabled}
-    on:click={() => viewDashboard(metricsDefId)}
+    on:click={() => viewDashboard()}
+    type="primary"
   >
     Go to Dashboard <ExploreIcon size="16px" />
   </Button>

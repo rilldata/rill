@@ -1,11 +1,11 @@
-import { Config } from "../utils/Config";
 import type { NonFunctionProperties } from "../utils/Config";
-import { ServerConfig } from "./ServerConfig";
+import { Config } from "../utils/Config";
 import { DatabaseConfig } from "./DatabaseConfig";
-import { StateConfig } from "./StateConfig";
-import { MetricsConfig } from "./MetricsConfig";
 import { LocalConfig } from "./LocalConfig";
+import { MetricsConfig } from "./MetricsConfig";
 import { ProjectConfig } from "./ProjectConfig";
+import { ServerConfig } from "./ServerConfig";
+import { StateConfig } from "./StateConfig";
 
 export class RootConfig extends Config<RootConfig> {
   @Config.SubConfig(ServerConfig)
@@ -36,6 +36,7 @@ export class RootConfig extends Config<RootConfig> {
     [K in keyof NonFunctionProperties<RootConfig>]?: NonFunctionProperties<RootConfig>[K];
   }) {
     super(configJson);
+    this.setFields(configJson);
 
     this.prependProjectFolder();
   }

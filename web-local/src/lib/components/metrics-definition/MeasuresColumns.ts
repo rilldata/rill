@@ -36,7 +36,7 @@ export const initMeasuresColumns = (
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
-      name: "formatPreset",
+      name: "format_preset",
       label: "number formatting",
       headerTooltip:
         "the number formatting used for this measure in the Metrics Explorer",

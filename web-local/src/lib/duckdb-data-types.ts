@@ -4,6 +4,19 @@
  */
 
 export const INTEGERS = new Set([
+  // Go Types
+  "CODE_INT8",
+  "CODE_INT16",
+  "CODE_INT32",
+  "CODE_INT64",
+  "CODE_INT128",
+  "CODE_UINT8",
+  "CODE_UINT16",
+  "CODE_UINT32",
+  "CODE_UINT64",
+  "CODE_UINT128",
+
+  // Node Types
   "BIGINT",
   "HUGEINT",
   "SMALLINT",
@@ -20,18 +33,39 @@ export const INTEGERS = new Set([
 ]);
 
 export const FLOATS = new Set([
+  // Go Types
+  "CODE_FLOAT32",
+  "CODE_FLOAT64",
+
+  // Node Types
   "DOUBLE",
   "DECIMAL",
   "FLOAT8",
   "NUMERIC",
   "FLOAT",
 ]);
-export const DATES = new Set(["DATE"]);
+export const DATES = new Set(["CODE_DATE", "DATE"]);
 export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
-export const BOOLEANS = new Set(["BOOLEAN", "BOOL", "LOGICAL"]);
-export const TIMESTAMPS = new Set(["TIMESTAMP", "TIME", "DATETIME", ...DATES]);
+export const BOOLEANS = new Set(["CODE_BOOL", "BOOLEAN", "BOOL", "LOGICAL"]);
+export const TIMESTAMPS = new Set([
+  // Go Types
+  "CODE_TIMESTAMP",
+  "CODE_TIME",
+
+  // Node Types
+  "TIMESTAMP",
+  "TIME",
+  "DATETIME",
+
+  ...DATES,
+]);
 export const INTERVALS = new Set(["INTERVAL"]);
 export const STRING_LIKES = new Set([
+  // Go Types
+  "CODE_STRING",
+  "CODE_BYTES",
+
+  // Node Types
   "BYTE_ARRAY",
   "VARCHAR",
   "CHAR",

@@ -11,7 +11,6 @@
   export let profile: any;
   export let head: any; // FIXME
   export let entityId: string;
-  export let showContextButton = true;
   export let indentLevel = 0;
 
   let sortedProfile;
