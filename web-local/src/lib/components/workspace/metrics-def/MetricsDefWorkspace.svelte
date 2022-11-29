@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
@@ -53,6 +54,9 @@
 
     queryClient.invalidateQueries(
       getRuntimeServiceGetFileQueryKey(instanceId, filePath)
+    );
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, metricsDefName)
     );
   }
 

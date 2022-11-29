@@ -6,24 +6,12 @@ import type {
   MetricsViewRequestFilter,
 } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
-import { fetchUrl } from "../fetch-url";
-import { useQuery } from "@sveltestack/svelte-query";
 import type { UseQueryOptions } from "@sveltestack/svelte-query/dist/types";
-
-// GET /api/v1/metrics-views/{view-name}/meta
-
-export const getMetricsViewMetadata = async (
-  config: RootConfig,
-  metricViewId: string
-): Promise<MetricsViewMetaResponse> => {
-  const json = await fetchUrl(
-    config.server.exploreUrl,
-    `metrics-views/${metricViewId}/meta`,
-    "GET"
-  );
-  json.id = metricViewId;
-  return json;
-};
+import {
+  useRuntimeServiceGetCatalogEntry,
+  V1GetCatalogEntryResponse,
+  V1MetricsView,
+} from "@rilldata/web-common/runtime-client";
 
 export const MetaId = `v1/metrics-view/meta`;
 
@@ -31,79 +19,67 @@ export const getMetaQueryKey = (metricViewId: string) => {
   return [MetaId, metricViewId];
 };
 
-export const useMetaQuery = <T = MetricsViewMetaResponse>(
-  config: RootConfig,
-  metricViewId: string,
-  selector?: (meta: MetricsViewMetaResponse) => T
+export const useMetaQuery = (instanceId: string, metricViewName: string) => {
+  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
+    query: {
+      enabled: !!metricViewName,
+      select: (data) => data?.entry?.metricsView,
+    },
+  });
+};
+
+export const useCatalogQuery = <T = V1MetricsView>(
+  instanceId: string,
+  metricViewName: string,
+  selector?: (meta: V1MetricsView) => T
 ) => {
-  const metaQueryKey = getMetaQueryKey(metricViewId);
-  const metaQueryFn = () => getMetricsViewMetadata(config, metricViewId);
-  const metaQueryOptions: UseQueryOptions<MetricsViewMetaResponse, Error, T> = {
-    enabled: !!metricViewId,
-    ...(selector ? { select: selector } : {}),
-  };
-  return useQuery<MetricsViewMetaResponse, Error, T>(
-    metaQueryKey,
-    metaQueryFn,
-    metaQueryOptions
-  );
+  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
+    query: {
+      enabled: !!metricViewName,
+      ...(selector
+        ? { select: (data) => selector(data?.entry?.metricsView) }
+        : {}),
+    },
+  });
 };
 
 export const useMetaMeasure = (
-  config: RootConfig,
-  metricViewId: string,
-  measureId: string
+  instanceId: string,
+  metricViewName: string,
+  measureName: string
 ) =>
-  useMetaQuery<MeasureDefinitionEntity>(config, metricViewId, (meta) =>
-    meta.measures?.find((measure) => measure.id === measureId)
+  useCatalogQuery(instanceId, metricViewName, (meta) =>
+    meta.measures?.find((measure) => measure.name === measureName)
   );
-export const useMetaMeasureNames = (
-  config: RootConfig,
-  metricViewId: string,
-  measureIds: Array<string>
-) =>
-  useMetaQuery<Array<string>>(config, metricViewId, (meta) => {
-    const measureIdMap = getMapFromArray(
-      meta.measures ?? [],
-      (measure) => measure.id
-    );
-    return (
-      measureIds?.map((measureId) => measureIdMap.get(measureId).sqlName) ?? []
-    );
-  });
 
 export const useMetaDimension = (
-  config: RootConfig,
-  metricViewId: string,
-  dimensionId: string
+  instanceId: string,
+  metricViewName: string,
+  dimensionName: string
 ) =>
-  useMetaQuery<DimensionDefinitionEntity>(config, metricViewId, (meta) =>
-    meta.dimensions?.find((dimension) => dimension.id === dimensionId)
+  useCatalogQuery(instanceId, metricViewName, (meta) =>
+    meta.dimensions?.find((dimension) => dimension.name === dimensionName)
   );
 
 export const useMetaMappedFilters = (
-  config: RootConfig,
-  metricViewId: string,
+  instanceId: string,
+  metricViewName: string,
   filters: MetricsViewRequestFilter,
-  dimensionId?: string
+  dimensionName?: string
 ) =>
-  useMetaQuery<MetricsViewRequestFilter>(config, metricViewId, (meta) => {
+  useCatalogQuery<MetricsViewRequestFilter>(instanceId, metricViewName, (_) => {
     if (!filters) return undefined;
-    const dimensionIdMap = getMapFromArray(
-      meta.dimensions ?? [],
-      (dimension) => dimension.id
-    );
     return {
       include: filters.include
-        .filter((dimensionValues) => dimensionId !== dimensionValues.name)
+        .filter((dimensionValues) => dimensionName !== dimensionValues.name)
         .map((dimensionValues) => ({
-          name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
+          name: dimensionValues.name,
           in: dimensionValues.in,
         })),
       exclude: filters.exclude
-        .filter((dimensionValues) => dimensionId !== dimensionValues.name)
+        .filter((dimensionValues) => dimensionName !== dimensionValues.name)
         .map((dimensionValues) => ({
-          name: dimensionIdMap.get(dimensionValues.name).dimensionColumn,
+          name: dimensionValues.name,
           in: dimensionValues.in,
         })),
     };

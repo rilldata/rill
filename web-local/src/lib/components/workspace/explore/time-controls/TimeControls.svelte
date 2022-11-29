@@ -6,7 +6,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     TimeGrain,
     TimeRangeName,
@@ -27,10 +27,13 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
+  import {
+    useRuntimeServiceGetTimeRangeSummary,
+    V1GetTimeRangeSummaryResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 
   export let metricsDefId: string;
-
-  const config = getContext<RootConfig>("config");
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
@@ -39,8 +42,28 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   let selectedTimeGrain;
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricsDefId);
+  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
+
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+      $runtimeStore.instanceId,
+      $metaQuery.data.from,
+      $metaQuery.data.timeDimension
+    );
+  }
+
+  let allTimeRange;
+  $: if (
+    timeRangeQuery &&
+    $timeRangeQuery.isSuccess &&
+    !$timeRangeQuery.isRefetching
+  ) {
+    allTimeRange = {
+      start: $timeRangeQuery.data.timeRangeSummary.min,
+      end: $timeRangeQuery.data.timeRangeSummary.max,
+    };
+  }
 
   const initializeState = (metricsExplorer: MetricsExplorerEntity) => {
     if (
