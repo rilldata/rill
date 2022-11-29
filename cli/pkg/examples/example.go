@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-//go:embed embed/*/*
+//go:embed embed
 var exampleFS embed.FS
 
 func InitExample(projectName string, projectDir string) error {
