@@ -697,6 +697,7 @@ export interface ReconcileErrorCharLocation {
 
 export interface NumericOutliersOutlier {
   bucket?: number;
+  count?: number;
   high?: number;
   low?: number;
   present?: boolean;
