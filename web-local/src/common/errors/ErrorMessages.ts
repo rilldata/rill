@@ -1,4 +1,4 @@
-import type { CommonEntityData } from "@rilldata/web-local/lib/application-state-stores/common-store";
+import type { FileArtifactsData } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import type { MetricsDefinitionEntity } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { SourceModelValidationStatus } from "../data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 
@@ -15,7 +15,7 @@ export const ExplorerTimeDimensionDoesntExist =
 export const ExplorerSourceColumnDoesntExist = "not found in FROM clause!"; // the full DuckDB error message is `Binder Error: Referenced column "COLUMN_NAME" not found in FROM clause!`
 
 export const MetricsSourceSelectionError = (
-  metricsDefinition: CommonEntityData
+  metricsDefinition: FileArtifactsData
 ): string => {
   console.log(metricsDefinition);
 

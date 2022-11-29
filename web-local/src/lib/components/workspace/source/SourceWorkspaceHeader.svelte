@@ -8,7 +8,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
-  import { renameEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import { fade } from "svelte/transition";
@@ -62,7 +62,7 @@
     }
 
     try {
-      await renameEntity(
+      await renameFileArtifact(
         runtimeInstanceId,
         name,
         e.target.value,

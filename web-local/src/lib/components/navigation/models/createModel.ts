@@ -6,8 +6,8 @@ import {
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
-import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
+import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
@@ -28,10 +28,7 @@ export async function createModel(
       strict: true,
     },
   });
-  commonEntitiesStore.consolidateMigrateResponse(
-    resp.affectedPaths,
-    resp.errors
-  );
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   if (resp.errors?.length && sql !== "") {
     resp.errors.forEach((error) => {
       console.error(error);

@@ -8,17 +8,17 @@ import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state
 import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
+import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import {
   getFileFromName,
   getLabel,
   getRouteFromName,
-} from "@rilldata/web-local/lib/components/entity-mappers/mappers";
+} from "@rilldata/web-local/lib/util/entity-mappers";
 import notifications from "@rilldata/web-local/lib/components/notifications";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
-export async function renameEntity(
+export async function renameFileArtifact(
   instanceId: string,
   fromName: string,
   toName: string,
@@ -32,10 +32,7 @@ export async function renameEntity(
       toPath: getFileFromName(toName, type),
     },
   });
-  commonEntitiesStore.consolidateMigrateResponse(
-    resp.affectedPaths,
-    resp.errors
-  );
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   await dataModelerService.dispatch("renameEntity", [type, fromName, toName]);
   goto(getRouteFromName(toName, type), {
     replaceState: true,
@@ -48,7 +45,7 @@ export async function renameEntity(
   );
 }
 
-export async function deleteEntity(
+export async function deleteFileArtifact(
   instanceId: string,
   name: string,
   type: EntityType,
@@ -63,10 +60,7 @@ export async function deleteEntity(
         path: getFileFromName(name, type),
       },
     });
-    commonEntitiesStore.consolidateMigrateResponse(
-      resp.affectedPaths,
-      resp.errors
-    );
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     if (activeEntity.name === name) {
       goto(getRouteFromName(getNextEntityName(names, name), type));
     }
