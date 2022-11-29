@@ -1069,54 +1069,78 @@ export const runtimeServiceMetricsViewTotals = (
   });
 };
 
-export type RuntimeServiceMetricsViewTotalsMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewTotalsQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTotalsBody: RuntimeServiceMetricsViewTotalsBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/totals`,
+  runtimeServiceMetricsViewTotalsBody,
+];
+
+export type RuntimeServiceMetricsViewTotalsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>
 >;
-export type RuntimeServiceMetricsViewTotalsMutationBody =
-  RuntimeServiceMetricsViewTotalsBody;
-export type RuntimeServiceMetricsViewTotalsMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewTotalsQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTotals = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTotalsBody: RuntimeServiceMetricsViewTotalsBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewTotalsQueryKey(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTotalsBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>
+  > = () =>
+    runtimeServiceMetricsViewTotals(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTotalsBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewTotals(instanceId, metricsViewName, data);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary TableCardinality (TODO: add description)
  */
