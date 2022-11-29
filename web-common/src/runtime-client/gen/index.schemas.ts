@@ -4,16 +4,6 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-/**
- * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
- */
-export type RuntimeServiceGetTopKBody = {
-  agg?: string;
-  k?: number;
-};
-
-export type RuntimeServiceGetTableRowsParams = { limit?: number };
-
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -34,6 +24,30 @@ export type RuntimeServiceQueryBody = {
   dryRun?: boolean;
   priority?: string;
   sql?: string;
+};
+
+/**
+ * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
+ */
+export type RuntimeServiceGetTopKBody = {
+  agg?: string;
+  k?: number;
+};
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  filters?: V1MetricsViewRequestFilter;
+  measures?: GenerateTimeSeriesRequestBasicMeasure[];
+  pixels?: number;
+  sampleSize?: number;
+  tableName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
+
+export type RuntimeServiceGetTableRowsParams = { limit?: number };
+
+export type RuntimeServiceEstimateRollupIntervalBody = {
+  columnName?: string;
 };
 
 export type RuntimeServiceMetricsViewTotalsBody = {
@@ -61,16 +75,6 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   timeStart?: string;
 };
 
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewRequestFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasures;
-  pixels?: number;
-  sampleSize?: number;
-  tableName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
-
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
@@ -85,10 +89,6 @@ It should only be set when create = true. */
 };
 
 export type RuntimeServiceListFilesParams = { glob?: string };
-
-export type RuntimeServiceEstimateRollupIntervalBody = {
-  columnName?: string;
-};
 
 export type RuntimeServiceListCatalogEntriesType =
   typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
@@ -154,7 +154,7 @@ export interface V1TriggerRefreshResponse {
 }
 
 export interface V1TopK {
-  entries?: TopKTopKEntry[];
+  entries?: TopKEntry[];
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: number };
@@ -166,11 +166,9 @@ export interface V1TimeSeriesValue {
 }
 
 export interface V1TimeSeriesResponse {
-  error?: string;
-  id?: string;
   results?: V1TimeSeriesValue[];
   sampleSize?: number;
-  spark?: TimeSeriesResponseTimeSeriesValues;
+  spark?: V1TimeSeriesValue[];
   timeRange?: V1TimeSeriesTimeRange;
 }
 
@@ -433,7 +431,7 @@ export interface V1MetricsViewFilter {
 
 export interface V1MetricsViewDimensionValue {
   in?: unknown[];
-  like?: MetricsViewDimensionValueValues;
+  like?: unknown[];
   name?: string;
 }
 
@@ -473,6 +471,10 @@ export interface V1ListFilesResponse {
   paths?: string[];
 }
 
+export interface V1ListConnectorsResponse {
+  connectors?: V1Connector[];
+}
+
 export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
@@ -496,6 +498,10 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+}
+
+export interface V1GetTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1GetTimeRangeSummaryResponse {
@@ -613,20 +619,12 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
-export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
-}
-
 /**
  * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
   cardinality?: number;
   topK?: V1TopK;
-}
-
-export interface V1GetTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {
@@ -639,12 +637,6 @@ export interface V1CatalogEntry {
   source?: V1Source;
   table?: V1Table;
   updatedOn?: string;
-}
-
-export interface V1BasicMeasureDefinition {
-  expression?: string;
-  id?: string;
-  sqlName?: string;
 }
 
 export interface Runtimev1Type {
@@ -682,14 +674,9 @@ export interface ProtobufAny {
   [key: string]: unknown;
 }
 
-export interface TopKTopKEntry {
+export interface TopKEntry {
   count?: number;
-  /** value is optional so that null values from the database can be represented. */
-  value?: string;
-}
-
-export interface TimeSeriesResponseTimeSeriesValues {
-  values?: V1TimeSeriesValue[];
+  value?: unknown;
 }
 
 export interface TimeRangeSummaryInterval {
@@ -745,10 +732,6 @@ export interface MetricsViewFilterCond {
   name?: string;
 }
 
-export interface MetricsViewDimensionValueValues {
-  values?: unknown[];
-}
-
 export interface MetricsViewDimension {
   description?: string;
   enabled?: string;
@@ -756,8 +739,10 @@ export interface MetricsViewDimension {
   name?: string;
 }
 
-export interface GenerateTimeSeriesRequestBasicMeasures {
-  basicMeasures?: V1BasicMeasureDefinition[];
+export interface GenerateTimeSeriesRequestBasicMeasure {
+  expression?: string;
+  id?: string;
+  sqlName?: string;
 }
 
 export type ConnectorPropertyType =

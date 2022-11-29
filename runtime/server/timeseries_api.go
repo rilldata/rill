@@ -11,12 +11,15 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/google/uuid"
 )
 
-func getExpressionColumnsFromMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
+// normaliseMeasures is called before this method so measure.SqlName will be non empty
+func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += measure.Expression + " as " + *measure.SqlName
+		result += measure.Expression + " as " + measure.SqlName
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -24,10 +27,11 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.BasicMeasureDefiniti
 	return result
 }
 
-func getCoalesceStatementsMeasures(measures []*runtimev1.BasicMeasureDefinition) string {
+// normaliseMeasures is called before this method so measure.SqlName will be non empty
+func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, *measure.SqlName, *measure.SqlName)
+		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, measure.SqlName, measure.SqlName)
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -62,7 +66,7 @@ func getFilterFromDimensionValuesFilter(
 		}
 		conditions = conditions[:0]
 		if notNulls {
-			var inClause string = escapedName + " " + prefix + " IN ("
+			var inClause = escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
 				if iv.GetKind() != nil {
 					inClause += "'" + EscapeSingleQuotes(iv.GetStringValue()) + "'"
@@ -78,14 +82,14 @@ func getFilterFromDimensionValuesFilter(
 			var nullClause = escapedName + " IS " + prefix + " NULL"
 			conditions = append(conditions, nullClause)
 		}
-		if dv.Like != nil {
+		if len(dv.Like) > 0 {
 			var likeClause string
-			for j, lv := range dv.Like.Values {
+			for j, lv := range dv.Like {
 				if lv.GetKind() == nil {
 					continue
 				}
 				likeClause += escapedName + " " + prefix + " ILIKE '" + EscapeSingleQuotes(lv.GetStringValue()) + "'"
-				if j < len(dv.Like.Values)-1 {
+				if j < len(dv.Like)-1 {
 					likeClause += " AND "
 				}
 			}
@@ -102,7 +106,6 @@ func getFilterFromDimensionValuesFilter(
 
 func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) string {
 	includeFilters := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
-
 	excludeFilters := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
 	if includeFilters != "" && excludeFilters != "" {
 		return includeFilters + " AND " + excludeFilters
@@ -115,30 +118,28 @@ func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter
 	}
 }
 
-func getFallbackMeasureName(index int, sqlName *string) *string {
-	if sqlName == nil || *sqlName == "" {
+func getFallbackMeasureName(index int, sqlName string) string {
+	if sqlName == "" {
 		s := fmt.Sprintf("measure_%d", index)
-		return &s
+		return s
 	} else {
 		return sqlName
 	}
 }
 
-var countName string = "count"
+var countName = "count"
 
-func normaliseMeasures(measures *runtimev1.GenerateTimeSeriesRequest_BasicMeasures) *runtimev1.GenerateTimeSeriesRequest_BasicMeasures {
-	if measures == nil {
-		return &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "count(*)",
-					SqlName:    &countName,
-					Id:         "",
-				},
+func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
+	if len(measures) == 0 {
+		return []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    countName,
+				Id:         "",
 			},
 		}
 	}
-	for i, measure := range measures.BasicMeasures {
+	for i, measure := range measures {
 		measure.SqlName = getFallbackMeasureName(i, measure.SqlName)
 	}
 	return measures
@@ -273,7 +274,7 @@ func sMap(k string, v float64) map[string]float64 {
 func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	ctx context.Context,
 	instanceId string,
-	table string,
+	tableName string,
 	timestampColumn string,
 	valueColumn string,
 	pixels int,
@@ -281,7 +282,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
 	cardinality, err := s.GetTableCardinality(ctx, &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
-		TableName:  table,
+		TableName:  tableName,
 	})
 	if err != nil {
 		return nil, err
@@ -289,7 +290,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 
 	if cardinality.Cardinality < int64(pixels*4) {
 		rows, err := s.query(ctx, instanceId, &drivers.Statement{
-			Query: `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + table + `"`,
+			Query: `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 		})
 		if err != nil {
 			return nil, err
@@ -313,7 +314,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 
 	sql := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + table + `"
+        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
@@ -416,14 +417,14 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	if err != nil {
 		return nil, err
 	}
-	var measures []*runtimev1.BasicMeasureDefinition = normaliseMeasures(request.Measures).BasicMeasures
-	var timestampColumn string = request.TimestampColumnName
-	var tableName string = request.TableName
+	var measures = normaliseMeasures(request.Measures)
+	var timestampColumn = request.TimestampColumnName
+	var tableName = request.TableName
 	var filter string
 	if request.Filters != nil {
 		filter = getFilterFromMetricsViewFilters(request.Filters)
 	}
-	var timeGranularity string = convertToDateTruncSpecifier(timeRange.Interval)
+	var timeGranularity = convertToDateTruncSpecifier(timeRange.Interval)
 	var tsAlias string
 	if timestampColumn == "ts" {
 		tsAlias = "_ts"
@@ -433,7 +434,8 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	if filter != "" {
 		filter = "WHERE " + filter
 	}
-	sql := `CREATE TEMPORARY TABLE _ts_ AS (
+	temporaryTableName := "_ts_" + uuid.New().String()
+	sql := `CREATE TEMPORARY TABLE "` + temporaryTableName + `" AS (
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
@@ -463,13 +465,13 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: sql,
 	})
-	defer s.dropTempTable(ctx, request.InstanceId)
+	defer s.dropTempTable(ctx, request.InstanceId, temporaryTableName)
 	if err != nil {
 		return nil, err
 	}
 	rows.Close()
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: "SELECT * from _ts_",
+		Query: `SELECT * from "` + temporaryTableName + `"`,
 	})
 	if err != nil {
 		return nil, err
@@ -478,15 +480,12 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	if err != nil {
 		return nil, err
 	}
-	var spOp *runtimev1.TimeSeriesResponse_TimeSeriesValues
-	if request.Pixels != nil {
-		pixels := int(*request.Pixels)
-		sparkValues, er := s.createTimestampRollupReduction(ctx, request.InstanceId, "_ts_", "ts", "count", pixels)
-		if er != nil {
-			return nil, er
-		}
-		spOp = &runtimev1.TimeSeriesResponse_TimeSeriesValues{
-			Values: sparkValues,
+	var sparkValues []*runtimev1.TimeSeriesValue
+	if request.Pixels != 0 {
+		pixels := int(request.Pixels)
+		sparkValues, err = s.createTimestampRollupReduction(ctx, request.InstanceId, temporaryTableName, "ts", "count", pixels)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -494,7 +493,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 		Rollup: &runtimev1.TimeSeriesResponse{
 			Results:   results,
 			TimeRange: timeRange,
-			Spark:     spOp,
+			Spark:     sparkValues,
 		},
 	}, nil
 }
@@ -532,9 +531,9 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 	return results, converr
 }
 
-func (s *Server) dropTempTable(ctx context.Context, instanceId string) {
+func (s *Server) dropTempTable(ctx context.Context, instanceId string, tableName string) {
 	rs, er := s.query(ctx, instanceId, &drivers.Statement{
-		Query: "DROP TABLE _ts_",
+		Query: `DROP TABLE "` + tableName + `"`,
 	})
 	if er == nil {
 		rs.Close()
