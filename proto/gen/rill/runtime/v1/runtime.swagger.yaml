@@ -1172,12 +1172,12 @@ definitions:
     properties:
       description:
         type: string
-      enabled:
-        type: string
       label:
         type: string
       name:
         type: string
+      visible:
+        type: boolean
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
@@ -1195,8 +1195,6 @@ definitions:
     properties:
       description:
         type: string
-      enabled:
-        type: string
       expression:
         type: string
       format:
@@ -1205,6 +1203,8 @@ definitions:
         type: string
       name:
         type: string
+      visible:
+        type: boolean
     title: Measures are aggregated computed values
   ModelDialect:
     type: string

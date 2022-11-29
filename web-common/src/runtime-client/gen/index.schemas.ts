@@ -719,11 +719,11 @@ export const ModelDialect = {
 
 export interface MetricsViewMeasure {
   description?: string;
-  enabled?: string;
   expression?: string;
   format?: string;
   label?: string;
   name?: string;
+  visible?: boolean;
 }
 
 export interface MetricsViewFilterCond {
@@ -734,9 +734,9 @@ export interface MetricsViewFilterCond {
 
 export interface MetricsViewDimension {
   description?: string;
-  enabled?: string;
   label?: string;
   name?: string;
+  visible?: boolean;
 }
 
 export interface GenerateTimeSeriesRequestBasicMeasure {
