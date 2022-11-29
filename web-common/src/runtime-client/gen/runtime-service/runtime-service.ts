@@ -69,6 +69,8 @@ import type {
   V1PingResponse,
   V1PutFileAndReconcileResponse,
   V1PutFileAndReconcileRequest,
+  V1RefreshAndReconcileResponse,
+  V1RefreshAndReconcileRequest,
   V1RenameFileAndReconcileResponse,
   V1RenameFileAndReconcileRequest,
 } from "../index.schemas";
@@ -2507,6 +2509,53 @@ export const useRuntimeServicePutFileAndReconcile = <
     Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
     TError,
     { data: V1PutFileAndReconcileRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const runtimeServiceRefreshAndReconcile = (
+  v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest
+) => {
+  return httpClient<V1RefreshAndReconcileResponse>({
+    url: `/v1/refresh-and-reconcile`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1RefreshAndReconcileRequest,
+  });
+};
+
+export type RuntimeServiceRefreshAndReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>
+>;
+export type RuntimeServiceRefreshAndReconcileMutationBody =
+  V1RefreshAndReconcileRequest;
+export type RuntimeServiceRefreshAndReconcileMutationError = RpcStatus;
+
+export const useRuntimeServiceRefreshAndReconcile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    TError,
+    { data: V1RefreshAndReconcileRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    { data: V1RefreshAndReconcileRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceRefreshAndReconcile(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    TError,
+    { data: V1RefreshAndReconcileRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
