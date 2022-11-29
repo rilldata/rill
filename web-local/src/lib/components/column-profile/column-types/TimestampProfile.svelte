@@ -4,6 +4,7 @@
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
 
+  import { TIMESTAMP_TOKENS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import TimestampDetail from "../../data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import WithParentClientRect from "../../data-graphic/functional-components/WithParentClientRect.svelte";
@@ -57,7 +58,7 @@
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->
-  <div slot="summary">
+  <div slot="summary" class={TIMESTAMP_TOKENS.textClass}>
     <WithParentClientRect let:rect>
       <TimestampSpark
         area
@@ -68,6 +69,7 @@
         xAccessor="ts"
         yAccessor="count"
         data={$timeSeries?.spark}
+        color={"currentColor"}
       />
     </WithParentClientRect>
   </div>

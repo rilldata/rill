@@ -10,7 +10,6 @@ measures the bounding rect of this element's child
   let observer;
   let rect;
   onMount(() => {
-    console.log(element);
     observer = new ResizeObserver(() => {
       rect = element.parentElement.getBoundingClientRect();
     });

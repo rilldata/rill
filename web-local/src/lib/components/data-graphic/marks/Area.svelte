@@ -3,13 +3,13 @@
     in the order the points appear in the data.
 -->
 <script lang="ts">
-  import { getContext, onDestroy } from "svelte";
   import { extent } from "d3-array";
+  import { getContext, onDestroy } from "svelte";
 
-  import { areaFactory } from "../utils";
   import { guidGenerator } from "../../../util/guid";
-  import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { contexts } from "../constants";
+  import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
+  import { areaFactory } from "../utils";
 
   const markID = guidGenerator();
 

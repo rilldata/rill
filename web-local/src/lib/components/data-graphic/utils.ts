@@ -1,5 +1,5 @@
-import { line, area, curveLinear, curveStep } from "d3-shape";
 import type { ScaleLinear, ScaleTime } from "d3-scale";
+import { area, curveLinear, curveStep, line } from "d3-shape";
 import type { GraphicScale } from "./state/types";
 
 /**
@@ -68,9 +68,9 @@ export function lineFactory(args: LineGeneratorArguments) {
 export function areaFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     area()
-      .x((d) => ~~args.xScale(d[args.xAccessor]))
-      .y0(~~args.yScale(0))
-      .y1((d) => ~~args.yScale(d[yAccessor]))
+      .x((d) => args.xScale(d[args.xAccessor]))
+      .y0(args.yScale(0))
+      .y1((d) => args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
