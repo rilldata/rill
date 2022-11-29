@@ -42,6 +42,7 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
+  $: timeDimension = $metaQuery.data?.timeDimension;
   $: mappedFiltersQuery = useMetaMappedFilters(
     instanceId,
     metricViewName,
@@ -50,9 +51,7 @@
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
-  $: interval =
-    metricsExplorer?.selectedTimeRange?.interval ||
-    $metaQuery.data?.timeDimension;
+  $: interval = metricsExplorer?.selectedTimeRange?.interval || timeDimension;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
@@ -113,11 +112,15 @@
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
-  $: if (dataCopy) formattedData = convertTimestampPreview(dataCopy, true);
+  $: if (dataCopy)
+    formattedData = convertTimestampPreview(dataCopy, timeDimension, true);
 
   let mouseoverValue = undefined;
 
-  $: [minVal, maxVal] = extent(dataCopy ?? [], (d: TimeSeriesValue) => d.ts);
+  $: [minVal, maxVal] = extent(
+    dataCopy ?? [],
+    (d: TimeSeriesValue) => d[timeDimension]
+  );
   $: startValue = removeTimezoneOffset(new Date(minVal));
   $: endValue = removeTimezoneOffset(new Date(maxVal));
   $: key = `${startValue}` + `${endValue}`;
