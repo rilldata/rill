@@ -9,8 +9,8 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
 
@@ -49,10 +49,7 @@
         create: false,
       },
     })) as V1PutFileAndReconcileResponse;
-    commonEntitiesStore.consolidateMigrateResponse(
-      resp.affectedPaths,
-      resp.errors
-    );
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     queryClient.invalidateQueries(
       getRuntimeServiceGetFileQueryKey(instanceId, filePath)
@@ -127,7 +124,7 @@
 
   let errors: Array<V1ReconcileError>;
   $: errors =
-    $commonEntitiesStore.entities[
+    $fileArtifactsStore.entities[
       getFileFromName(metricsDefName, EntityType.MetricsDefinition)
     ]?.errors;
 

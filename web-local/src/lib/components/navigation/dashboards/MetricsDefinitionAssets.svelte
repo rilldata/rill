@@ -19,14 +19,14 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
-    commonEntitiesStore,
-    CommonEntityData,
-  } from "@rilldata/web-local/lib/application-state-stores/common-store.js";
+    fileArtifactsStore,
+    FileArtifactsData,
+  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers.js";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers.js";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
-  import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
@@ -111,7 +111,7 @@
   };
 
   const deleteMetricsDef = async (dashboardName: string) => {
-    await deleteEntity(
+    await deleteFileArtifact(
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
@@ -122,7 +122,7 @@
   };
 
   const getDashboardData = (
-    entities: Record<string, CommonEntityData>,
+    entities: Record<string, FileArtifactsData>,
     name: string
   ) => {
     return entities[name];
@@ -145,7 +145,7 @@
   >
     {#each $dashboardNames.data as dashboardName (dashboardName)}
       {@const dashboardData = getDashboardData(
-        $commonEntitiesStore.entities,
+        $fileArtifactsStore.entities,
         dashboardName
       )}
       <NavigationEntry

@@ -1,24 +1,24 @@
 import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
 import { Readable, writable } from "svelte/store";
 
-export type CommonEntityData = {
+export type FileArtifactsData = {
   errors: Array<V1ReconcileError>;
 };
 
 /**
- * Store to save common data across entities.
- * Currently only has errors
+ * Store to save data for each file artifact.
+ * Currently, stores reconcile errors
  */
-export type CommonEntityState = {
-  entities: Record<string, CommonEntityData>;
+export type FileArtifactsState = {
+  entities: Record<string, FileArtifactsData>;
 };
 const { update, subscribe } = writable({
   entities: {},
-} as CommonEntityState);
+} as FileArtifactsState);
 
-const createOrUpdateEntity = (
+const createOrUpdateFileArtifact = (
   path: string,
-  callback: (entityData: CommonEntityData) => void
+  callback: (entityData: FileArtifactsData) => void
 ) => {
   update((state) => {
     if (!state[path]) {
@@ -31,17 +31,8 @@ const createOrUpdateEntity = (
   });
 };
 
-const commonEntitiesReducers = {
-  setErrors(path: string, errors: Array<V1ReconcileError>) {
-    createOrUpdateEntity(path, (entityData: CommonEntityData) => {
-      entityData.errors = errors;
-    });
-  },
-
-  consolidateMigrateResponse(
-    affectedPaths: Array<string>,
-    errors: Array<V1ReconcileError>
-  ) {
+const fileArtifactsEntitiesReducers = {
+  setErrors(affectedPaths: Array<string>, errors: Array<V1ReconcileError>) {
     const errorsForPaths = new Map<string, Array<V1ReconcileError>>();
     affectedPaths.forEach((affectedPath) =>
       errorsForPaths.set(correctFilePath(affectedPath), [])
@@ -57,15 +48,17 @@ const commonEntitiesReducers = {
     });
 
     errorsForPaths.forEach((errors, path) => {
-      commonEntitiesStore.setErrors(path, errors);
+      createOrUpdateFileArtifact(path, (entityData: FileArtifactsData) => {
+        entityData.errors = errors;
+      });
     });
   },
 };
 
-export const commonEntitiesStore: Readable<CommonEntityState> &
-  typeof commonEntitiesReducers = {
+export const fileArtifactsStore: Readable<FileArtifactsState> &
+  typeof fileArtifactsEntitiesReducers = {
   subscribe,
-  ...commonEntitiesReducers,
+  ...fileArtifactsEntitiesReducers,
 };
 
 function correctFilePath(filePath: string) {

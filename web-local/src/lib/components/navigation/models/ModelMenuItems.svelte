@@ -21,7 +21,7 @@
     derivedProfileEntityHasTimestampColumn,
     selectTimestampColumnFromProfileEntity,
   } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { createEventDispatcher, getContext } from "svelte";
   import { runtimeStore } from "../../../application-state-stores/application-store";
@@ -87,7 +87,7 @@
   };
 
   const handleDeleteModel = async (modelName: string) => {
-    await deleteEntity(
+    await deleteFileArtifact(
       $runtimeStore.instanceId,
       modelName,
       EntityType.Model,

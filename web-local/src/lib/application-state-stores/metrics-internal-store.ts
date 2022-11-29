@@ -20,10 +20,9 @@ timeseries: ""
 # default to opionated option around estimated timegrain,
 # first in order is default time grain
 timegrains:
-  - "DAY"
+  - 1 day
 # the timegrain that users will see when they first visit the dashboard.
-default_timegrain:
-  - "DAY"
+default_timegrain: "day"
 
 # measures
 # measures are presented in the order that they are written in this file.

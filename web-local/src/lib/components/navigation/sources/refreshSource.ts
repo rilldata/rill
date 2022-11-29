@@ -1,6 +1,6 @@
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
-import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
+import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
@@ -43,10 +43,7 @@ export async function refreshSource(
           strict: true,
         },
       });
-      commonEntitiesStore.consolidateMigrateResponse(
-        resp.affectedPaths,
-        resp.errors
-      );
+      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     }
   } else {
     overlay.set({ title: `Importing ${tableName}` });

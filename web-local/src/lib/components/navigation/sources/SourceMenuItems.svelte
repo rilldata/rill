@@ -18,11 +18,11 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { deleteEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     useSourceFromYaml,
@@ -92,7 +92,7 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const handleDeleteSource = async (tableName: string) => {
-    await deleteEntity(
+    await deleteFileArtifact(
       runtimeInstanceId,
       tableName,
       EntityType.Table,
