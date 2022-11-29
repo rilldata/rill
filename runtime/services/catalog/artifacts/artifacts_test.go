@@ -124,7 +124,7 @@ region: us-east-2
 display_name: ""
 description: ""
 from: Model
-time_dimension: time
+timeseries: time
 timegrains:
 - 1 day
 - 1 month

@@ -281,7 +281,7 @@ export interface V1ReconcileError {
 It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
-  propertyPath?: string;
+  propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
 }
 

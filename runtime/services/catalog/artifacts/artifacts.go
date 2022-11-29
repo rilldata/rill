@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
+	"regexp"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 var Artifacts = make(map[string]Artifact)
 
 var FileReadError = errors.New("failed to read artifact")
+var InvalidFileName = errors.New("invalid file name")
 
 func Register(name string, artifact Artifact) {
 	if Artifacts[name] != nil {
@@ -26,7 +28,7 @@ type Artifact interface {
 }
 
 func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, filePath string) (*drivers.CatalogEntry, error) {
-	extension := filepath.Ext(filePath)
+	extension := fileutil.FullExt(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
 		return nil, fmt.Errorf("no artifact found for %s", extension)
@@ -42,12 +44,16 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, fileP
 		return nil, err
 	}
 
+	if !isValidName(fileutil.GetFileName(filePath)) {
+		return nil, InvalidFileName
+	}
+
 	catalog.Path = filePath
 	return catalog, nil
 }
 
 func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, catalog *drivers.CatalogEntry) error {
-	extension := filepath.Ext(catalog.Path)
+	extension := fileutil.FullExt(catalog.Path)
 	artifact, ok := Artifacts[extension]
 	if !ok {
 		return fmt.Errorf("no artifact found for %s", extension)
@@ -59,4 +65,10 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, cata
 	}
 
 	return repoStore.PutBlob(ctx, instID, catalog.Path, blob)
+}
+
+var regex = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
+
+func isValidName(itemName string) bool {
+	return regex.MatchString(itemName)
 }

@@ -1930,7 +1930,9 @@ definitions:
         type: string
         title: Message is a developer-friendly error message
       propertyPath:
-        type: string
+        type: array
+        items:
+          type: string
         description: |-
           Property path of the error in the code artifact (if any).
           It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".

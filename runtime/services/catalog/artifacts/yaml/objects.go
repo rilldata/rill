@@ -2,8 +2,6 @@ package yaml
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/jinzhu/copier"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -31,7 +29,7 @@ type MetricsView struct {
 	DisplayName      string `yaml:"display_name"`
 	Description      string
 	From             string
-	TimeDimension    string `yaml:"time_dimension"`
+	TimeDimension    string `yaml:"timeseries"`
 	TimeGrains       []string
 	DefaultTimeGrain string `yaml:"default_timegrain"`
 	Dimensions       []*Dimension
@@ -43,12 +41,14 @@ type Measure struct {
 	Expression  string
 	Description string
 	Format      string `yaml:"format_preset"`
+	Visible     bool
 }
 
 type Dimension struct {
 	Label       string
 	Property    string `copier:"Name"`
 	Description string
+	Visible     bool
 }
 
 func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
@@ -100,7 +100,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		return nil, err
 	}
 
-	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
+	name := fileutil.GetFileName(path)
 	return &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeSource,
@@ -125,7 +125,7 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
-	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
+	name := fileutil.GetFileName(path)
 	apiMetrics.Name = name
 	return &drivers.CatalogEntry{
 		Name:   name,
