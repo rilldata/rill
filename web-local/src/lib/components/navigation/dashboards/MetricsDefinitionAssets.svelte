@@ -187,7 +187,7 @@
             <MetricsIcon slot="icon" />
             edit metrics
           </MenuItem>
-          <Divider /> -->
+          <Divider />
           <MenuItem
             icon
             on:select={() => openRenameMetricsDefModal(dashboardName)}

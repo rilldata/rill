@@ -37,11 +37,13 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
+  $: instanceId = $runtimeStore.instanceId;
+
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
   $: mappedFiltersQuery = useMetaMappedFilters(
-    $runtimeStore.instanceId,
+    instanceId,
     metricViewName,
     metricsExplorer?.filters
   );
@@ -57,10 +59,11 @@
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
+    !$metaQuery.isRefetching &&
+    $mappedFiltersQuery.isSuccess
   ) {
     totalsQuery = useRuntimeServiceMetricsViewTotals(
-      $runtimeStore.instanceId,
+      instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
@@ -79,18 +82,22 @@
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
+    !$metaQuery.isRefetching &&
+    metricsExplorer.selectedTimeRange
   ) {
-    console.log("time", metricsExplorer.selectedTimeRange);
     timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(
-      $runtimeStore.instanceId,
+      instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
         filter: $mappedFiltersQuery.data,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+        // Quick hack for now, API expects "day" instead of "1 day"
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval.replace(
+          /[0-9] /g,
+          ""
+        ),
       }
     );
   }
@@ -101,6 +108,7 @@
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
   let dataCopy;
+
   $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
