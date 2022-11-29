@@ -1,9 +1,4 @@
 <script lang="ts">
-  import {
-    useRuntimeServiceGetCardinalityOfColumn,
-    useRuntimeServiceGetTableCardinality,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
   import {
     formatCompactInteger,
@@ -13,33 +8,11 @@
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
   import BarAndLabel from "../../../viz/BarAndLabel.svelte";
 
-  export let objectName: string;
-  export let columnName: string;
+  export let cardinality: number;
+  export let totalRows: number;
   export let compact = false;
-  // export let compactBreakpoint = 350;
 
   $: cardinalityFormatter = !compact ? formatInteger : formatCompactInteger;
-
-  let cardinality;
-
-  $: cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
-  $: cardinality = $cardinalityQuery?.data?.categoricalSummary?.cardinality;
-
-  /**
-   * Get the total rows for this profile.
-   */
-  let totalRowsQuery;
-  $: totalRowsQuery = useRuntimeServiceGetTableCardinality(
-    $runtimeStore?.instanceId,
-    objectName
-  );
-  let totalRows;
-  // FIXME: count should not be a string.
-  $: totalRows = +$totalRowsQuery?.data?.cardinality;
 </script>
 
 {#if cardinality && totalRows}

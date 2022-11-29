@@ -1,51 +1,20 @@
 <script lang="ts">
-  import {
-    useRuntimeServiceGetDescriptiveStatistics,
-    useRuntimeServiceGetNumericHistogram,
-    useRuntimeServiceGetRugHistogram,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { WithParentClientRect } from "../../../data-graphic/functional-components";
   import NumericHistogram from "../../../viz/histogram/NumericHistogram.svelte";
   import OutlierHistogram from "../../../viz/histogram/OutlierHistogram.svelte";
 
-  export let objectName: string;
-  export let columnName: string;
+  export let data;
+  export let rug;
+  export let summary;
   export let plotPad = 24;
-
-  // DELETE THESE
-  let containerWidth = 200;
-  let indentLevel = 1;
-
-  $: summaryStatisticsQuery = useRuntimeServiceGetDescriptiveStatistics(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
-  $: summary = $summaryStatisticsQuery?.data?.numericSummary?.numericStatistics;
-
-  $: histogramQuery = useRuntimeServiceGetNumericHistogram(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
-  $: histogram =
-    $histogramQuery?.data?.numericSummary?.numericHistogramBins?.bins;
-
-  $: outliersQuery = useRuntimeServiceGetRugHistogram(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
-  $: outliers = $outliersQuery?.data?.numericSummary?.numericOutliers?.outliers;
 </script>
 
 <WithParentClientRect let:rect>
-  {#if histogram && summary}
+  {#if data && summary}
     <NumericHistogram
       width={(rect?.width || 400) - plotPad}
       height={65}
-      data={histogram}
+      {data}
       min={summary?.min}
       qlow={summary?.q25}
       median={summary?.q50}
@@ -54,11 +23,11 @@
       max={summary?.max}
     />
   {/if}
-  {#if outliers && outliers?.length}
+  {#if rug && rug?.length}
     <OutlierHistogram
       width={(rect?.width || 400) - plotPad}
       height={15}
-      data={outliers}
+      data={rug}
       mean={summary?.mean}
       sd={summary?.sd}
       min={summary?.min}

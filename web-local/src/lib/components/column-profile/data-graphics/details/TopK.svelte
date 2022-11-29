@@ -7,12 +7,7 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "$lib/util/formatters";
-  import {
-    useRuntimeServiceGetTableCardinality,
-    useRuntimeServiceGetTopK,
-  } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     copyToClipboard,
     createShiftClickAction,
@@ -27,31 +22,9 @@
 
   const { shiftClickAction } = createShiftClickAction();
 
-  let topK;
+  export let topK;
+  export let totalRows: number;
   let sliceAmount = 15;
-
-  $: topKQuery = useRuntimeServiceGetTopK(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName,
-    {
-      agg: "count(*)",
-      k: 75,
-    }
-  );
-  $: topK = $topKQuery?.data?.categoricalSummary?.topK?.entries;
-
-  /**
-   * Get the total rows for this profile.
-   */
-  let totalRowsQuery;
-  $: totalRowsQuery = useRuntimeServiceGetTableCardinality(
-    $runtimeStore?.instanceId,
-    objectName
-  );
-  // FIXME: count should not be a string.
-  $: totalRowsString = $totalRowsQuery?.data?.cardinality;
-  $: totalRows = +totalRowsString;
 
   $: smallestPercentage =
     topK && topK.length

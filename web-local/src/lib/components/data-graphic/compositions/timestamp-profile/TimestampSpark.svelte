@@ -7,15 +7,15 @@
    * It optionally enables the user to determine a "window", which
    * is just a box emcompassing the zoomWindowXMin and zoomWindowXMax values.
    */
-  import { guidGenerator } from "../../../../util/guid";
-  import { fade } from "svelte/transition";
-  import { cubicOut as easing } from "svelte/easing";
-  import { scaleLinear } from "d3-scale";
   import { extent } from "d3-array";
-  import { writable } from "svelte/store";
-  import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
-  import { lineFactory, areaFactory } from "../../utils";
+  import { scaleLinear } from "d3-scale";
+  import { cubicOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
+  import { writable } from "svelte/store";
+  import { fade } from "svelte/transition";
+  import { guidGenerator } from "../../../../util/guid";
+  import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
+  import { areaFactory, lineFactory } from "../../utils";
 
   const plotID = guidGenerator();
 
@@ -44,7 +44,7 @@
   export let top = 12;
   export let bottom = 4;
 
-  export let buffer = 4;
+  export let buffer = 0;
   export let leftBuffer = buffer;
   export let rightBuffer = buffer;
   export let topBuffer = buffer;

@@ -1,11 +1,18 @@
 <script lang="ts">
-  import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
-  import ProfileContainer from "../ProfileContainer.svelte";
-
+  import { useRuntimeServiceGetDescriptiveStatistics } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { derived } from "svelte/store";
   import { DataTypeIcon } from "../../data-types";
   import NumericPlot from "../data-graphics/details/NumericPlot.svelte";
+  import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import NumericSpark from "../data-graphics/sparks/NumericSpark.svelte";
+  import ProfileContainer from "../ProfileContainer.svelte";
+  import {
+    getNullPercentage,
+    getNumericHistogram,
+    getRugPlotData,
+  } from "../queries";
   export let columnName: string;
   export let objectName: string;
   export let type: string;
@@ -17,6 +24,30 @@
   export let hideNullPercentage = false;
 
   let active = false;
+
+  $: nulls = getNullPercentage(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
+
+  $: numericHistogram = getNumericHistogram(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
+  $: rug = getRugPlotData($runtimeStore?.instanceId, objectName, columnName);
+
+  $: summary = derived(
+    useRuntimeServiceGetDescriptiveStatistics(
+      $runtimeStore?.instanceId,
+      objectName,
+      columnName
+    ),
+    ($query) => {
+      return $query?.data?.numericSummary?.numericStatistics;
+    }
+  );
 </script>
 
 <ProfileContainer
@@ -36,9 +67,14 @@
 >
   <DataTypeIcon {type} slot="icon" />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark slot="summary" {compact} {objectName} {columnName} />
-  <NullPercentageSpark slot="nullity" {objectName} {columnName} />
+  <NumericSpark slot="summary" data={$numericHistogram} {compact} />
+  <NullPercentageSpark
+    slot="nullity"
+    nullCount={$nulls?.nullCount}
+    totalRows={$nulls?.totalRows}
+    {type}
+  />
   <div slot="details" class="px-4">
-    <NumericPlot {objectName} {columnName} />
+    <NumericPlot data={$numericHistogram} rug={$rug} summary={$summary} />
   </div>
 </ProfileContainer>

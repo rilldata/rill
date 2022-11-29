@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { useRuntimeServiceGenerateTimeSeries } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   /**
    * TimestampSpark.svelte
    * ---------------------
@@ -21,6 +18,7 @@
 
   export let width = undefined;
   export let height = undefined;
+  export let data;
   export let curve = "curveLinear";
   export let area = false;
   export let color = "hsl(217, 10%, 50%)";
@@ -52,27 +50,26 @@
   export let objectName: string;
   export let columnName: string;
 
-  $: sparkQuery = useRuntimeServiceGenerateTimeSeries(
-    $runtimeStore?.instanceId,
-    // FIXME: convert pixel back to number once the API
-    {
-      tableName: objectName,
-      timestampColumnName: columnName,
-      // measures: [{ expression: "count(*)" }],
-      pixels: 92,
-    }
-  );
-  let data = [];
-  $: data = convertTimestampPreview(
-    $sparkQuery?.data?.rollup?.spark?.values?.map((di) => {
-      let next = { ...di };
-      next[yAccessor] = next.records[yAccessor];
-      return next;
-    }) || []
-  );
+  // $: sparkQuery = useRuntimeServiceGenerateTimeSeries(
+  //   $runtimeStore?.instanceId,
+  //   // FIXME: convert pixel back to number once the API
+  //   {
+  //     tableName: objectName,
+  //     timestampColumnName: columnName,
+  //     pixels: 92,
+  //   }
+  // );
+  // let data = [];
+  // $: data = convertTimestampPreview(
+  //   $sparkQuery?.data?.rollup?.spark?.map((di) => {
+  //     let next = { ...di };
+  //     next[yAccessor] = next.records[yAccessor];
+  //     return next;
+  //   }) || []
+  // );
 </script>
 
-{#if data.length}
+{#if data?.length}
   <WithParentClientRect let:rect>
     <SimpleDataGraphic
       xType="date"

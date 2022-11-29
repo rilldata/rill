@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import TimestampSpark from "../../data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
-  import TimestampSpark from "../data-graphics/sparks/TimestampSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
 
-  import TopK from "../data-graphics/details/TopK.svelte";
-
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
+  import TimestampDetail from "../../data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
+  import WithParentClientRect from "../../data-graphic/functional-components/WithParentClientRect.svelte";
   import { DataTypeIcon } from "../../data-types";
+  import Interval from "../../data-types/Interval.svelte";
+  import { getNullPercentage, getTimeSeriesAndSpark } from "../queries";
   export let columnName: string;
   export let objectName: string;
   export let type: string;
@@ -20,6 +23,19 @@
   let columns: string;
 
   let active = false;
+
+  /** queries used to power the different plots */
+  $: nullPercentage = getNullPercentage(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
+
+  $: timeSeries = getTimeSeriesAndSpark(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
 </script>
 
 <ProfileContainer
@@ -42,19 +58,44 @@
 
   <!-- wrap in div to get size of grid item -->
   <div slot="summary">
-    <TimestampSpark
-      height={18}
-      top={4}
-      bottom={4}
-      xAccessor="ts"
-      yAccessor="count"
-      {objectName}
-      {columnName}
-    />
+    <WithParentClientRect let:rect>
+      <TimestampSpark
+        area
+        width={rect?.width || 400}
+        height={18}
+        top={4}
+        bottom={4}
+        xAccessor="ts"
+        yAccessor="count"
+        data={$timeSeries?.spark}
+      />
+    </WithParentClientRect>
   </div>
-  <NullPercentageSpark slot="nullity" {objectName} {columnName} />
+  <NullPercentageSpark
+    slot="nullity"
+    nullCount={$nullPercentage?.nullCount}
+    totalRows={$nullPercentage?.totalRows}
+    {type}
+  />
 
   <div slot="details">
-    <TopK {objectName} {columnName} />
+    <div class="px-10 py-4">
+      <WithParentClientRect let:rect>
+        {#if $timeSeries?.data?.length}
+          <TimestampDetail
+            width={rect?.width - 56 || 400}
+            mouseover={true}
+            height={160}
+            {type}
+            data={$timeSeries?.data}
+            spark={$timeSeries?.spark}
+            interval={Interval[$timeSeries?.estimatedRollupInterval]}
+            estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
+            xAccessor="ts"
+            yAccessor="count"
+          />
+        {/if}
+      </WithParentClientRect>
+    </div>
   </div>
 </ProfileContainer>

@@ -1,58 +1,18 @@
 <script lang="ts">
-  import {
-    useRuntimeServiceGetNullCount,
-    useRuntimeServiceGetTableCardinality,
-    useRuntimeServiceProfileColumns,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { singleDigitPercentage } from "@rilldata/web-local/lib/util/formatters";
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
   import BarAndLabel from "../../../viz/BarAndLabel.svelte";
-  import { getColumn } from "../util";
 
-  export let objectName: string;
-  export let columnName: string;
-
-  /**
-   * Get the null counts for this profile.
-   */
-  let nullCountQuery;
-
-  $: profileColumns = useRuntimeServiceProfileColumns(
-    $runtimeStore?.instanceId,
-    objectName
-  );
-
-  $: type = getColumn($profileColumns, columnName)?.type;
-
-  $: nullCountQuery = useRuntimeServiceGetNullCount(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
-
-  let nullCount;
-  // FIXME: count should not be a string. For now, let's patch it.
-  $: nullCount = +$nullCountQuery?.data?.count;
-
-  /**
-   * Get the total rows for this profile.
-   */
-  let totalRowsQuery;
-  $: totalRowsQuery = useRuntimeServiceGetTableCardinality(
-    $runtimeStore?.instanceId,
-    objectName
-  );
-  let totalRows;
-  // FIXME: count should not be a string.
-  $: totalRows = +$totalRowsQuery?.data?.cardinality;
+  export let type: string;
+  export let nullCount: number;
+  export let totalRows: number;
 
   $: percentage = nullCount / totalRows;
 </script>
 
-{#if $totalRowsQuery?.isSuccess && $nullCountQuery?.isSuccess && totalRows !== undefined && nullCount !== undefined && !isNaN(percentage)}
+{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage)}
   <Tooltip location="right" alignment="center" distance={8}>
     <BarAndLabel
       showBackground={nullCount !== 0}

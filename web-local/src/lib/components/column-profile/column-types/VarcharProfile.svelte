@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { DataTypeIcon } from "../../data-types";
   import TopK from "../data-graphics/details/TopK.svelte";
   import ColumnCardinalitySpark from "../data-graphics/sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
-
-  import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
-  import { DataTypeIcon } from "../../data-types";
+  import { getCountDistinct, getNullPercentage, getTopK } from "../queries";
   export let columnName: string;
   export let objectName: string;
   export let example;
@@ -19,6 +20,20 @@
   let columns: string;
 
   let active = false;
+
+  $: nulls = getNullPercentage(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
+
+  $: columnCardinality = getCountDistinct(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName
+  );
+
+  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 </script>
 
 <ProfileContainer
@@ -38,10 +53,25 @@
   <DataTypeIcon type="VARCHAR" slot="icon" />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
-  <ColumnCardinalitySpark slot="summary" {compact} {objectName} {columnName} />
-  <NullPercentageSpark slot="nullity" {objectName} {columnName} />
+  <ColumnCardinalitySpark
+    slot="summary"
+    cardinality={$columnCardinality?.cardinality}
+    totalRows={$columnCardinality?.totalRows}
+    {compact}
+  />
+  <NullPercentageSpark
+    slot="nullity"
+    nullCount={$nulls?.nullCount}
+    totalRows={$nulls?.totalRows}
+    {type}
+  />
 
   <div slot="details" class="px-4">
-    <TopK {objectName} {columnName} />
+    <TopK
+      topK={$topK}
+      totalRows={$columnCardinality?.totalRows}
+      {objectName}
+      {columnName}
+    />
   </div>
 </ProfileContainer>
