@@ -131,6 +131,10 @@ func (c *connection) PutReader(ctx context.Context, instID string, filePath stri
 // Rename implements drivers.RepoStore
 func (c *connection) Rename(ctx context.Context, instID string, from string, filePath string) error {
 	filePath = path.Join(c.root, filePath)
+	if _, err := os.Stat(filePath); err == nil {
+		return drivers.FileAlreadyExists
+	}
+
 	from = path.Join(c.root, from)
 	err := os.Rename(from, filePath)
 	if err != nil {
