@@ -11,6 +11,7 @@ import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";
 import type { CommonFields, MetricsEvent } from "./MetricsTypes";
 import type { BehaviourEventFactory } from "./BehaviourEventFactory";
+import MD5 from "crypto-js/md5";
 
 /**
  * We have DataModelerStateService as the 1st arg to have a structure for PickActionFunctions
@@ -51,6 +52,7 @@ export class MetricsService
       "GET"
     );
     try {
+      const projectPathParts = localConfig.project_path.split("/");
       this.commonFields = {
         app_name: this.config.metrics.appName,
         install_id: localConfig.install_id,
@@ -59,7 +61,9 @@ export class MetricsService
         // @ts-ignore
         version: RILL_VERSION,
         is_dev: localConfig.is_dev,
-        project_id: localConfig.project_id,
+        project_id: MD5(
+          projectPathParts[projectPathParts.length - 1]
+        ).toString(),
       };
     } catch (err) {
       console.error(err);

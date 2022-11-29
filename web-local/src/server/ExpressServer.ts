@@ -128,9 +128,7 @@ export class ExpressServer {
           .getDatabaseClient()
           .getInstanceId(),
         install_id: this.config.local.installId,
-        project_id: this.dataModelerService
-          .getStateService()
-          .getApplicationState().projectId,
+        project_path: path.resolve(this.config.projectFolder),
         is_dev: this.config.local.isDev,
       })
     );
