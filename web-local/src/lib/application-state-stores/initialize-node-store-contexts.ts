@@ -5,7 +5,6 @@ import {
   createPersistentModelStore,
 } from "@rilldata/web-local/lib/application-state-stores/model-stores";
 import { createQueryHighlightStore } from "@rilldata/web-local/lib/application-state-stores/query-highlight-store";
-import notificationStore from "@rilldata/web-local/lib/components/notifications/notificationStore";
 import type { ApplicationMetadata } from "@rilldata/web-local/lib/types";
 import { setContext } from "svelte";
 import { createStore } from "../application-state-stores/application-store";
@@ -46,7 +45,6 @@ export function initializeNodeStoreContexts() {
     setContext(`rill:app:derived-table-store`, createDerivedTableStore());
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
-    notificationStore.listenToSocket(store.socket);
     syncApplicationState(store);
   }
 }

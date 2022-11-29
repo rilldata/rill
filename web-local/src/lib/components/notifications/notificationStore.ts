@@ -1,4 +1,3 @@
-import type { Socket } from "socket.io";
 import type { Readable } from "svelte/store";
 import { derived, writable } from "svelte/store";
 
@@ -8,7 +7,6 @@ interface NotificationStore extends Readable<object> {
   timeoutID: ReturnType<typeof setTimeout>;
   send: (args: NotificationMessageArguments) => void;
   clear: () => void;
-  listenToSocket: (s: Socket) => void;
 }
 
 interface NotificationMessageArguments {
@@ -78,11 +76,6 @@ function createNotificationStore(): NotificationStore {
     clear: () => {
       clearTimeout(timeout);
       clear();
-    },
-    listenToSocket(s) {
-      s.on("notification", ({ message, type, detail, options }) =>
-        send({ message, type, detail, options })
-      );
     },
   };
 }
