@@ -17,22 +17,10 @@ export type ConfigFieldType = {
 export class Config<C> {
   private static configTypes = new Array<ConfigFieldType>();
 
-  constructor(configJson: {
+  constructor(_: {
     [K in keyof NonFunctionProperties<C>]?: NonFunctionProperties<C>[K];
   }) {
-    // if null is passed explicitly default param value does not take hold
-    configJson = configJson || {};
-    (this.constructor as typeof Config).configTypes.forEach((configType) => {
-      const configValue =
-        configJson[configType.key ? configType.key : configType.field] ??
-        configType.defaultValue;
-
-      if (configType.subConfigClass) {
-        this[configType.field] = new configType.subConfigClass(configValue);
-      } else {
-        this[configType.field] = configValue;
-      }
-    });
+    // no-op
   }
 
   /**
@@ -85,5 +73,23 @@ export class Config<C> {
     }
 
     return constructor;
+  }
+
+  protected setFields(configJson: {
+    [K in keyof NonFunctionProperties<C>]?: NonFunctionProperties<C>[K];
+  }) {
+    // if null is passed explicitly default param value does not take hold
+    configJson = configJson || {};
+    (this.constructor as typeof Config).configTypes.forEach((configType) => {
+      const configValue =
+        configJson[configType.key ? configType.key : configType.field] ??
+        configType.defaultValue;
+
+      if (configType.subConfigClass) {
+        this[configType.field] = new configType.subConfigClass(configValue);
+      } else {
+        this[configType.field] = configValue;
+      }
+    });
   }
 }

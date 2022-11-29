@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
@@ -25,17 +26,16 @@
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
+  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
+  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -62,6 +62,9 @@
     sourceName
   );
 
+  $: modelNames = useModelNames(runtimeInstanceId);
+  const createModelMutation = useRuntimeServicePutFileAndReconcile();
+
   let showColumns = true;
 
   let currentTable: PersistentTableEntity;
@@ -82,20 +85,19 @@
     selectTimestampColumnFromProfileEntity(currentDerivedTable);
 
   const handleCreateModelFromSource = async () => {
-    const asynchronous = true;
-    createModelForSource(
-      $persistentModelStore.entities,
+    const modelName = await createModelFromSource(
+      runtimeInstanceId,
+      $modelNames.data,
       currentTable.tableName,
-      asynchronous
-    ).then((createdModelId) => {
-      navigationEvent.fireEvent(
-        createdModelId,
-        BehaviourEventMedium.Button,
-        MetricsEventSpace.RightPanel,
-        MetricsEventScreenName.Source,
-        MetricsEventScreenName.Model
-      );
-    });
+      $createModelMutation
+    );
+    navigationEvent.fireEvent(
+      modelName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Source,
+      MetricsEventScreenName.Model
+    );
   };
 
   const handleCreateMetric = () => {

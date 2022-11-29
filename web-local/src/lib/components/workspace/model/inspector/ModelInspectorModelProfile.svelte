@@ -2,7 +2,6 @@
   import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
@@ -19,6 +18,8 @@
   import { slide } from "svelte/transition";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
+  export let modelName: string;
+
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
   ) as PersistentTableStore;
@@ -32,22 +33,22 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
   // get source tables?
   let sourceTableReferences = [];
   let showColumns = true;
 
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $store?.activeEntity?.id;
-
   /** get current model */
   let currentModel: PersistentModelEntity;
   $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
+    modelName && $persistentModelStore?.entities
+      ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
       : undefined;
+
+  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
+  $: activeEntityID = currentModel?.id;
+
   /** get current derived model*/
   let currentDerivedModel: DerivedModelEntity;
   $: currentDerivedModel =

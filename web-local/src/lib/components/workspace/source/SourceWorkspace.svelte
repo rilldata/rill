@@ -28,12 +28,12 @@
     ? $derivedTableStore.entities.find((q) => q.id === currentSource?.id)
     : undefined;
 
-  const switchToSource = async (sourceID: string) => {
-    if (!sourceID) return;
+  const switchToSource = async (name: string) => {
+    if (!name) return;
 
     await dataModelerService.dispatch("setActiveAsset", [
       EntityType.Table,
-      sourceID,
+      name,
     ]);
   };
 

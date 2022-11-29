@@ -1,8 +1,8 @@
-import type { RuntimeState } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
-import { sourceUpdated } from "@rilldata/web-local/lib/redux-store/source/source-apis";
 import {
   openFileUploadDialog,
   uploadFile,
@@ -12,9 +12,9 @@ import type { UseMutationResult } from "@sveltestack/svelte-query";
 export async function refreshSource(
   connector: string,
   tableName: string,
-  runtimeState: RuntimeState,
+  instanceId: string,
   refreshSource: UseMutationResult,
-  createSource: UseMutationResult
+  createSource: UseMutationResult<V1PutFileAndReconcileResponse>
 ) {
   if (connector === "file") {
     const files = await openFileUploadDialog(false);
@@ -22,7 +22,7 @@ export async function refreshSource(
 
     overlay.set({ title: `Importing ${tableName}` });
     const filePath = await uploadFile(
-      `${config.database.runtimeUrl}/v1/instances/${runtimeState.instanceId}/files/upload`,
+      `${config.database.runtimeUrl}/v1/instances/${instanceId}/files/upload`,
       files[0]
     );
     if (filePath) {
@@ -33,23 +33,23 @@ export async function refreshSource(
         },
         "file"
       );
-      await createSource.mutateAsync({
-        instanceId: runtimeState.instanceId,
+      const resp = await createSource.mutateAsync({
+        instanceId,
         data: {
-          instanceId: runtimeState.instanceId,
+          instanceId,
           path: `sources/${tableName}.yaml`,
           blob: yaml,
           create: true,
           strict: true,
         },
       });
+      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     }
   } else {
     overlay.set({ title: `Importing ${tableName}` });
     await refreshSource.mutateAsync({
-      instanceId: runtimeState.instanceId,
+      instanceId,
       name: tableName,
     });
   }
-  return sourceUpdated(tableName);
 }
