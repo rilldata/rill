@@ -1,24 +1,18 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
   import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { navigationEvent } from "../../metrics/initMetrics";
   import { Button } from "../button";
   import ExploreIcon from "../icons/Explore.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import { getMetricsDefReadableById } from "../../redux-store/metrics-definition/metrics-definition-readables";
-  import { useMetaQuery } from "../../svelte-query/queries/metrics-views/metadata";
-  import { getContext } from "svelte";
 
   export let metricsInternalRep;
   export let metricsDefName;
-
-  const config = getContext<RootConfig>("config");
 
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();
@@ -52,12 +46,12 @@
   }
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip alignment="middle" distance={5} location="right">
   <!-- TODO: we need to standardize these buttons. -->
   <Button
-    type="primary"
     disabled={buttonDisabled}
     on:click={() => viewDashboard()}
+    type="primary"
   >
     Go to Dashboard <ExploreIcon size="16px" />
   </Button>

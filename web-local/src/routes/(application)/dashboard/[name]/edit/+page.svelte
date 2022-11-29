@@ -1,12 +1,9 @@
 <script lang="ts">
-  import {
-    runtimeServiceGetFile,
-    useRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import { MetricsDefinitionWorkspace } from "@rilldata/web-local/lib/components/workspace";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 
   export let data;
 

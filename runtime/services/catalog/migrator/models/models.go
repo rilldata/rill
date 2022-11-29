@@ -64,13 +64,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 		DryRun:   true,
 	})
 	if err != nil {
-		return []*runtimev1.ReconcileError{
-			{
-				Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-				Message:  err.Error(),
-				FilePath: catalog.Path,
-			},
-		}
+		return migrator.CreateValidationError(catalog.Path, err.Error())
 	}
 	return nil
 }

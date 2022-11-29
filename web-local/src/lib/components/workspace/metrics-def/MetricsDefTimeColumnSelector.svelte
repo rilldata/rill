@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;

@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
@@ -219,7 +220,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			found := false
 			// if item is deleted compare with additions to look for renames
 			for _, addition := range additions {
-				if migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
+				if item.CatalogInStore != nil && migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
 					addition.renameFrom(item)
 					delete(additions, addition.Name)
 					add = false
@@ -314,11 +315,13 @@ func (s *Service) getMigrationItem(
 				FilePath: repoPath,
 			}
 		}
-		if _, ok := s.PathToName[repoPath]; !ok {
-			return nil
+		name, ok := s.PathToName[repoPath]
+		if ok {
+			item.Name = name
+		} else {
+			item.Name = fileutil.Stem(repoPath)
 		}
 
-		item.Name = s.PathToName[repoPath]
 		item.Type = MigrationDelete
 	} else {
 		item.Name = catalog.Name
@@ -335,6 +338,13 @@ func (s *Service) getMigrationItem(
 
 	catalogInStore, ok := storeObjectsMap[item.Name]
 	if !ok {
+		if item.CatalogInFile == nil {
+			item.Type = MigrationNoChange
+			if err == artifacts.FileReadError {
+				// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
+				return nil
+			}
+		}
 		return item
 	}
 	item.CatalogInStore = catalogInStore
@@ -355,7 +365,7 @@ func (s *Service) getMigrationItem(
 			break
 		}
 
-		// if item doesnt exist in olap, mark as create
+		// if item doesn't exist in olap, mark as create
 		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
 		if !ok {
 			item.Type = MigrationCreate
@@ -458,6 +468,10 @@ func (s *Service) runMigrationItems(
 	result *ReconcileResult,
 ) error {
 	for _, item := range migrations {
+		if item.Error != nil {
+			result.Errors = append(result.Errors, item.Error)
+		}
+
 		var validationErrors []*runtimev1.ReconcileError
 
 		if item.CatalogInFile != nil {

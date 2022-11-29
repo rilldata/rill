@@ -13,7 +13,6 @@ import { EntityStateSyncService } from "./EntityStateSyncService";
 import { EntityRepository } from "./EntityRepository";
 import { DerivedEntityUpdateHandler } from "./DerivedEntityUpdateHandler";
 import { EntityStateUpdatesHandler } from "./EntityStateUpdatesHandler";
-import { PersistentModelRepository } from "./PersistentModelRepository";
 import { PersistentModelUpdateHandler } from "./PersistentModelUpdateHandler";
 
 /**

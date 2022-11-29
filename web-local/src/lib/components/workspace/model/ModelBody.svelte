@@ -7,18 +7,18 @@
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
-  import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
-  import { renameEntity } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
@@ -59,7 +59,7 @@
   let showPreview = true;
   let modelPath: string;
   $: modelPath = getFileFromName(modelName, EntityType.Model);
-  $: modelError = $commonEntitiesStore.entities[modelPath]?.errors[0]?.message;
+  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
   let titleInput = currentModel?.name;
   $: titleInput = currentModel?.name;
@@ -79,7 +79,7 @@
     }
 
     try {
-      await renameEntity(
+      await renameFileArtifact(
         runtimeInstanceId,
         modelName,
         e.target.value,
@@ -126,10 +126,7 @@
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
-    commonEntitiesStore.consolidateMigrateResponse(
-      resp.affectedPaths,
-      resp.errors
-    );
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     if (!resp.errors.length) {
       await dataModelerService.dispatch("updateModelQuery", [
         currentModel.id,

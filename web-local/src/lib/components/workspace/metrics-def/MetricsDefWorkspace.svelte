@@ -1,17 +1,18 @@
 <script lang="ts">
   import {
+    getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { commonEntitiesStore } from "@rilldata/web-local/lib/application-state-stores/common-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
-
   import { CATEGORICALS } from "../../../duckdb-data-types";
   import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
@@ -19,7 +20,6 @@
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
-
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
@@ -47,13 +47,13 @@
         create: false,
       },
     })) as V1PutFileAndReconcileResponse;
-    commonEntitiesStore.consolidateMigrateResponse(
-      resp.affectedPaths,
-      resp.errors
-    );
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     queryClient.invalidateQueries(
       getRuntimeServiceGetFileQueryKey(instanceId, filePath)
+    );
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, metricsDefName)
     );
   }
 
@@ -84,7 +84,7 @@
   function handleDeleteMeasure(evt) {
     $metricsInternalRep.deleteMeasure(evt.detail);
   }
-  function handleMeasureExpressionValidation(index, name, value) {
+  function handleMeasureExpressionValidation(_index, _name, _value) {
     // store.dispatch(
     //   validateMeasureExpressionApi({
     //     metricsDefId: metricsDefId,
@@ -123,13 +123,15 @@
     validDimensionSelectorOption
   );
 
-  // $: metricsSourceSelectionError = $selectedMetricsDef
-  //   ? MetricsSourceSelectionError($selectedMetricsDef)
-  //   : nonStandardError
-  //   ? nonStandardError
-  //   : "";
+  let errors: Array<V1ReconcileError>;
+  $: errors =
+    $fileArtifactsStore.entities[
+      getFileFromName(metricsDefName, EntityType.MetricsDefinition)
+    ]?.errors;
 
-  $: metricsSourceSelectionError = nonStandardError ? nonStandardError : "";
+  $: metricsSourceSelectionError = nonStandardError
+    ? nonStandardError
+    : MetricsSourceSelectionError(errors);
 </script>
 
 {#if measures && dimensions}
