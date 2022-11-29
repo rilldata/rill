@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/marcboeker/go-duckdb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"math"
 	"time"
+
+	"github.com/marcboeker/go-duckdb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"

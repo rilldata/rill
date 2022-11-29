@@ -19,7 +19,6 @@
     useMetaDimension,
     useMetaMappedFilters,
     useMetaMeasure,
-    useMetaMeasureNames,
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
@@ -66,11 +65,7 @@
     dimensionId
   );
 
-  $: selectedMeasureNames = useMetaMeasureNames(
-    config,
-    metricsDefId,
-    metricsExplorer?.selectedMeasureIds
-  );
+  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
   let selectedValues: Array<unknown>;
   $: selectedValues =

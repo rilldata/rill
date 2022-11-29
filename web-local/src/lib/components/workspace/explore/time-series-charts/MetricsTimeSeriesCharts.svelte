@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
-  import type { MetricsViewTimeSeriesResponse } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
-  import { getContext } from "svelte";
   import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
@@ -13,11 +11,8 @@
   } from "../../../../application-state-stores/explorer-stores";
   import {
     useMetaMappedFilters,
-    useMetaMeasureNames,
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { useTimeSeriesQuery } from "../../../../svelte-query/queries/metrics-views/time-series";
-  import { useTotalsQuery } from "../../../../svelte-query/queries/metrics-views/totals";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { removeTimezoneOffset } from "../../../../util/formatters";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
@@ -30,52 +25,54 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import {
+    useRuntimeServiceMetricsViewTimeSeries,
+    useRuntimeServiceMetricsViewTotals,
+    V1MetricsViewTimeSeriesResponse,
+    V1MetricsViewTotalsResponse,
+  } from "@rilldata/web-common/runtime-client";
 
-  export let metricsDefId;
-
-  const config = getContext<RootConfig>("config");
+  export let metricViewName;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(config, metricsDefId);
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
   $: mappedFiltersQuery = useMetaMappedFilters(
-    config,
-    metricsDefId,
+    $runtimeStore.instanceId,
+    metricViewName,
     metricsExplorer?.filters
   );
 
-  $: selectedMeasureNames = useMetaMeasureNames(
-    config,
-    metricsDefId,
-    metricsExplorer?.selectedMeasureIds
-  );
+  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
   $: interval =
     metricsExplorer?.selectedTimeRange?.interval ||
-    $metaQuery.data?.timeDimension?.timeRange?.interval;
+    $metaQuery.data?.timeDimension;
 
-  let totalsQuery;
+  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(config, metricsDefId, {
-      measures: $selectedMeasureNames.data,
-      filter: $mappedFiltersQuery.data,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useRuntimeServiceMetricsViewTotals(
+      $runtimeStore.instanceId,
+      metricViewName,
+      {
+        measureNames: selectedMeasureNames,
+        filter: $mappedFiltersQuery.data,
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+      }
+    );
   }
 
   let timeSeriesQuery: UseQueryStoreResult<
-    MetricsViewTimeSeriesResponse,
+    V1MetricsViewTimeSeriesResponse,
     Error
   >;
   $: if (
@@ -84,15 +81,18 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    timeSeriesQuery = useTimeSeriesQuery(config, metricsDefId, {
-      measures: $selectedMeasureNames.data,
-      filter: $mappedFiltersQuery.data,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-        granularity: metricsExplorer.selectedTimeRange?.interval,
-      },
-    });
+    console.log("time", metricsExplorer.selectedTimeRange);
+    timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(
+      $runtimeStore.instanceId,
+      metricViewName,
+      {
+        measureNames: selectedMeasureNames,
+        filter: $mappedFiltersQuery.data,
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+      }
+    );
   }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
@@ -152,9 +152,9 @@
     </div>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-      {#each $metaQuery.data?.measures as measure, index (measure.id)}
+      {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery?.data.data?.[measure.sqlName]}
+        {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
         {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
 
         <!-- FIXME: I can't select a time series by measure id. -->
@@ -163,7 +163,8 @@
           description={measure?.description ||
             measure?.label ||
             measure?.expression}
-          formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
+          formatPreset={NicelyFormattedTypes[measure?.format] ||
+            NicelyFormattedTypes.HUMANIZE}
           status={$totalsQuery?.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
@@ -178,10 +179,10 @@
           {:else if formattedData}
             <TimeSeriesBody
               bind:mouseoverValue
-              formatPreset={measure?.formatPreset ||
+              formatPreset={NicelyFormattedTypes[measure?.format] ||
                 NicelyFormattedTypes.HUMANIZE}
               data={formattedData}
-              accessor={measure.sqlName}
+              accessor={measure.name}
               mouseover={point}
               timeRangeKey={key}
               timeGrain={metricsExplorer.selectedTimeRange?.interval}

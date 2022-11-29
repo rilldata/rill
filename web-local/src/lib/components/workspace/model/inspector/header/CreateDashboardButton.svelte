@@ -43,7 +43,7 @@
         instanceId: $runtimeStore.instanceId,
         path: `dashboards/${metricsLabel}.yaml`,
         blob: generatedYAML,
-        create: false,
+        create: true,
       },
     });
 

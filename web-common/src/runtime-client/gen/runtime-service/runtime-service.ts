@@ -926,58 +926,78 @@ export const runtimeServiceMetricsViewTimeSeries = (
   });
 };
 
-export type RuntimeServiceMetricsViewTimeSeriesMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewTimeSeriesQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTimeSeriesBody: RuntimeServiceMetricsViewTimeSeriesBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/timeseries`,
+  runtimeServiceMetricsViewTimeSeriesBody,
+];
+
+export type RuntimeServiceMetricsViewTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>
 >;
-export type RuntimeServiceMetricsViewTimeSeriesMutationBody =
-  RuntimeServiceMetricsViewTimeSeriesBody;
-export type RuntimeServiceMetricsViewTimeSeriesMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewTimeSeriesQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTimeSeries = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTimeSeriesBody: RuntimeServiceMetricsViewTimeSeriesBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewTimeSeries(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewTimeSeriesQueryKey(
       instanceId,
       metricsViewName,
-      data
+      runtimeServiceMetricsViewTimeSeriesBody
     );
-  };
 
-  return useMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>
+  > = () =>
+    runtimeServiceMetricsViewTimeSeries(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTimeSeriesBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 It's a convenience API for querying a metrics view.
@@ -996,62 +1016,82 @@ export const runtimeServiceMetricsViewToplist = (
   });
 };
 
-export type RuntimeServiceMetricsViewToplistMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewToplistQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  dimensionName: string,
+  runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist/${dimensionName}`,
+  runtimeServiceMetricsViewToplistBody,
+];
+
+export type RuntimeServiceMetricsViewToplistQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>
 >;
-export type RuntimeServiceMetricsViewToplistMutationBody =
-  RuntimeServiceMetricsViewToplistBody;
-export type RuntimeServiceMetricsViewToplistMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewToplistQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewToplist = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  dimensionName: string,
+  runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, dimensionName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewToplist(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewToplistQueryKey(
       instanceId,
       metricsViewName,
       dimensionName,
-      data
+      runtimeServiceMetricsViewToplistBody
     );
-  };
 
-  return useMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>
+  > = () =>
+    runtimeServiceMetricsViewToplist(
+      instanceId,
+      metricsViewName,
+      dimensionName,
+      runtimeServiceMetricsViewToplistBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName && dimensionName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 It's a convenience API for querying a metrics view.
