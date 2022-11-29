@@ -40,7 +40,7 @@ func CopyDir(origin string, dst string) (err error) {
 
 		if entry.IsDir() {
 			//Create dst dir if not exists
-			err = os.MkdirAll(dstPath, 0777)
+			err = os.MkdirAll(dstPath, os.ModePerm)
 			if err != nil {
 				return err
 			}
@@ -56,7 +56,7 @@ func CopyDir(origin string, dst string) (err error) {
 				return err
 			}
 
-			if err := os.WriteFile(dstPath, fileContent, 0666); err != nil {
+			if err := os.WriteFile(dstPath, fileContent, os.ModePerm); err != nil {
 				fmt.Printf("error os.WriteFile error: %v", err)
 				return err
 			}
