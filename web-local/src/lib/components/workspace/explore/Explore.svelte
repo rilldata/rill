@@ -28,8 +28,8 @@
     <svelte:fragment slot="leaderboards">
       {#if selectedDimensionName}
         <DimensionDisplay
-          metricsDefId={metricViewName}
-          dimensionId={selectedDimensionName}
+          {metricViewName}
+          dimensionName={selectedDimensionName}
         />
       {:else}
         <LeaderboardDisplay {metricViewName} />
