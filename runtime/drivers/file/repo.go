@@ -132,7 +132,7 @@ func (c *connection) PutReader(ctx context.Context, instID string, filePath stri
 func (c *connection) Rename(ctx context.Context, instID string, from string, filePath string) error {
 	filePath = path.Join(c.root, filePath)
 	if _, err := os.Stat(filePath); err == nil {
-		return drivers.FileAlreadyExists
+		return drivers.ErrFileAlreadyExists
 	}
 
 	from = path.Join(c.root, from)

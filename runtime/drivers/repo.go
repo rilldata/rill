@@ -25,4 +25,4 @@ type RepoObjectStat struct {
 	LastUpdated time.Time
 }
 
-var FileAlreadyExists = errors.New("file already exists")
+var ErrFileAlreadyExists = errors.New("file already exists")
