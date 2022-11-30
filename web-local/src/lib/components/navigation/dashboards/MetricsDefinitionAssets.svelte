@@ -9,12 +9,12 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { getName } from "@rilldata/web-local/common/utils/incrementName";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";

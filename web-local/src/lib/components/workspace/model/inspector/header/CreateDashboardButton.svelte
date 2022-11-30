@@ -4,11 +4,11 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
@@ -59,11 +59,11 @@
   }
 </script>
 
-<Tooltip location="bottom" alignment="right" distance={16}>
+<Tooltip alignment="right" distance={16} location="bottom">
   <Button
-    type="primary"
     disabled={!timestampColumns?.length}
     on:click={handleCreateMetric}
+    type="primary"
   >
     <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
     <Explore size="16px" /></Button

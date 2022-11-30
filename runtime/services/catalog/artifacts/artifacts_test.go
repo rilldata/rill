@@ -95,13 +95,11 @@ region: us-east-2
 							Name:        "dim0",
 							Label:       "Dim0_L",
 							Description: "Dim0_D",
-							Visible:     true,
 						},
 						{
 							Name:        "dim1",
 							Label:       "Dim1_L",
 							Description: "Dim1_D",
-							Visible:     false,
 						},
 					},
 					Measures: []*runtimev1.MetricsView_Measure{
@@ -111,7 +109,6 @@ region: us-east-2
 							Expression:  "count(c0)",
 							Description: "Mea0_D",
 							Format:      "humanise",
-							Visible:     false,
 						},
 						{
 							Name:        "measure_1",
@@ -119,14 +116,15 @@ region: us-east-2
 							Expression:  "avg(c1)",
 							Description: "Mea1_D",
 							Format:      "humanise",
-							Visible:     true,
 						},
 					},
+					Label:       "dashboard name",
+					Description: "long description for dashboard",
 				},
 			},
 			`version: 0.0.1
-display_name: ""
-description: ""
+display_name: dashboard name
+description: long description for dashboard
 from: Model
 timeseries: time
 timegrains:
@@ -137,22 +135,18 @@ dimensions:
 - label: Dim0_L
   property: dim0
   description: Dim0_D
-  visible: true
 - label: Dim1_L
   property: dim1
   description: Dim1_D
-  visible: false
 measures:
 - label: Mea0_L
   expression: count(c0)
   description: Mea0_D
   format_preset: humanise
-  visible: false
 - label: Mea1_L
   expression: avg(c1)
   description: Mea1_D
   format_preset: humanise
-  visible: true
 `,
 		},
 	}

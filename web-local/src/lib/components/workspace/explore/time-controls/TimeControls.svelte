@@ -32,16 +32,16 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 
-  export let metricsDefId: string;
+  export let metricViewName: string;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   let selectedTimeRangeName;
   let selectedTimeGrain;
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricsDefId);
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
   let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
 
   $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
@@ -69,8 +69,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       metricsExplorer?.selectedTimeRange?.name &&
       metricsExplorer?.selectedTimeRange?.interval
     ) {
-      selectedTimeRangeName = metricsExplorer.selectedTimeRange.name;
-      selectedTimeGrain = metricsExplorer.selectedTimeRange.interval;
+      selectedTimeRangeName = metricsExplorer.selectedTimeRange?.name;
+      selectedTimeGrain = metricsExplorer.selectedTimeRange?.interval;
     } else {
       selectedTimeRangeName = getDefaultTimeRangeName();
       selectedTimeGrain = getDefaultTimeGrain(
@@ -134,7 +134,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     )
       return;
 
-    metricsExplorerStore.setSelectedTimeRange(metricsDefId, newTimeRange);
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   };
 
   // reactive statement that makes a new valid time range whenever the selected options change
@@ -147,7 +147,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
 <div class="flex flex-row">
   <TimeRangeNameSelector
-    {metricsDefId}
+    {metricViewName}
+    {allTimeRange}
     on:select-time-range-name={setSelectedTimeRangeName}
     {selectedTimeRangeName}
   />

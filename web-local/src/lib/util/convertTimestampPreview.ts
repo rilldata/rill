@@ -10,6 +10,8 @@ export function convertTimestampPreview(
     pi.ts = removeTimezoneOffset
       ? remove(new Date(pi[timeDimension]))
       : new Date(pi[timeDimension]);
+
+    delete pi[timeDimension];
     return pi;
   });
 }

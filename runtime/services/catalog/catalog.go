@@ -61,7 +61,7 @@ func (s *Service) GetCatalogObject(
 ) (*runtimev1.CatalogEntry, error) {
 	obj, found := s.Catalog.FindEntry(ctx, s.InstId, name)
 	if !found {
-		return nil, status.Error(codes.InvalidArgument, "object not found")
+		return nil, status.Error(codes.InvalidArgument, "object not found: "+name)
 	}
 
 	pb, err := catalogObjectToPB(obj)

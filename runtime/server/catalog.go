@@ -46,9 +46,12 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 // TriggerRefresh implements RuntimeService
 func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	catalog, err := s.openCatalog(ctx, inst)
@@ -111,9 +114,12 @@ func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequ
 	// TODO: move to using reconcile
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	// Get OLAP

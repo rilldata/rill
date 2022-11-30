@@ -36,9 +36,12 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 	}
 
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, instId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	inst, err := registry.FindInstance(ctx, instId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	olapConn, err := s.connCache.openAndMigrate(ctx, instId, inst.OLAPDriver, inst.OLAPDSN)
