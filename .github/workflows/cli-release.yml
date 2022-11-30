@@ -10,21 +10,21 @@ on:
       - "cli/**"
 jobs:
   release:
-    strategy:
-      matrix:
-        name: ["OSX", "Linux"]
-        include:
-        - name: OSX
-          runs-on: macos-latest
-          config: .goreleaser.darwin.yaml
-          upload: osx
-        - name: Linux
-          runs-on: ubuntu-latest
-          config: .goreleaser.linux.yaml
-          upload: linux
+    # strategy:
+    #   matrix:
+    #     name: ["OSX", "Linux"]
+    #     include:
+    #     - name: OSX
+    #       runs-on: macos-latest
+    #       config: .goreleaser.darwin.yaml
+    #       upload: osx
+    #     - name: Linux
+    #       runs-on: ubuntu-latest
+    #       config: .goreleaser.linux.yaml
+    #       upload: linux
 
-    name: ${{ matrix.name }} Builds
-    runs-on: ${{ matrix.runs-on }}
+    name: Upload Assets to GitHub w/ goreleaser
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -52,17 +52,21 @@ jobs:
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          distribution: goreleaser
-          version: ${{ env.GITHUB_REF_NAME }}
-          args: release --config ${{ matrix.config }} --rm-dist
-        env:
-          CGO_ENABLED: 1
+      # - name: Run GoReleaser
+      #   uses: goreleaser/goreleaser-action@v2
+      #   with:
+      #     distribution: goreleaser
+      #     version: ${{ env.GITHUB_REF_NAME }}
+      #     args: release --config ${{ matrix.config }} --rm-dist
+      #   env:
+      #     CGO_ENABLED: 1
 
-      - name: Upload to GCS
-        uses: google-github-actions/upload-cloud-storage@v1
-        with:
-          path: dist/
-          destination: pkg.rilldata.com/rill/nightly/${{ matrix.upload }}
+      - name: release publish
+        run: make release-dry-run
+
+# commenting upload to gcs for now
+      # - name: Upload to GCS
+      #   uses: google-github-actions/upload-cloud-storage@v1
+      #   with:
+      #     path: dist/
+      #     destination: pkg.rilldata.com/rill/nightly/${{ matrix.upload }}
