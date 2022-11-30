@@ -1,4 +1,4 @@
-import notificationStore from "@rilldata/web-local/lib/components/notifications";
+import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { setContext } from "svelte";
 import { get, writable } from "svelte/store";
 interface CreateShiftClick {
@@ -7,7 +7,7 @@ interface CreateShiftClick {
 
 export async function copyToClipboard(value, message = "copied to clipboard") {
   await navigator.clipboard.writeText(value);
-  notificationStore.send({
+  notifications.send({
     message,
   });
 }
