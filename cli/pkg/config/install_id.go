@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func InstallId() (string, error) {
+func InstallID() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err

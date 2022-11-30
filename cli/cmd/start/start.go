@@ -10,7 +10,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
-	config2 "github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
@@ -48,10 +48,10 @@ func StartCmd(ver string) *cobra.Command {
 		Short: "Start the Rill Developer application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create base logger
-			config := zap.NewDevelopmentEncoderConfig()
-			config.EncodeLevel = zapcore.CapitalColorLevelEncoder
+			conf := zap.NewDevelopmentEncoderConfig()
+			conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
 			l := zap.New(zapcore.NewCore(
-				zapcore.NewConsoleEncoder(config),
+				zapcore.NewConsoleEncoder(conf),
 				zapcore.AddSync(colorable.NewColorableStdout()),
 				zapcore.DebugLevel,
 			))
@@ -128,7 +128,7 @@ func StartCmd(ver string) *cobra.Command {
 			}
 			logger.Infof("Hydration completed!")
 
-			installId, err := config2.InstallId()
+			installId, err := config.InstallID()
 			if err != nil {
 				return err
 			}
