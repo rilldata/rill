@@ -93,7 +93,7 @@ func getFilterFromDimensionValuesFilter(
 					continue
 				}
 				likeClause += escapedName + " " + prefix + " ILIKE '" + EscapeSingleQuotes(lv.GetStringValue()) + "'"
-				if j < len(dv.Like.Values)-1 {
+				if j < len(dv.Like)-1 {
 					likeClause += " OR "
 				}
 			}

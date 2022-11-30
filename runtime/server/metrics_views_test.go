@@ -247,6 +247,30 @@ func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
+func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
+	server, instanceId := createServerWithMetricsView(t)
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "domain",
+					Like: []*structpb.Value{
+						structpb.NewStringValue("msn%"),
+						structpb.NewStringValue("y%"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
 func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 	server, instanceId := createServerWithMetricsView(t)
 

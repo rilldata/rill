@@ -300,14 +300,13 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
-	sm := "sum"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "sum(clicks)",
-				SqlName:    &sm,
+				SqlName:    "sum",
 			},
 		},
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -337,14 +336,13 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
-	sm := "sum"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "sum(clicks)",
-				SqlName:    &sm,
+				SqlName:    "sum",
 			},
 		},
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -397,10 +395,46 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 						structpb.NewNullValue(),
 						structpb.NewStringValue("Google"),
 					},
-					Like: &runtimev1.MetricsViewDimensionValue_Values{
-						Values: []*structpb.Value{
-							structpb.NewStringValue("Goo%"),
-						},
+					Like: []*structpb.Value{
+						structpb.NewStringValue("Goo%"),
+					},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 2.0, results[0].Records["sum"])
+}
+
+func TestServer_Timeseries_1dim_2like(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		TimestampColumnName: "time",
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "domain",
+					Like: []*structpb.Value{
+						structpb.NewStringValue("g%"),
+						structpb.NewStringValue("msn%"),
 					},
 				},
 			},
