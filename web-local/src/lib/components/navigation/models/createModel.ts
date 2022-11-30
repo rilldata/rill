@@ -7,9 +7,9 @@ import { EntityType } from "@rilldata/web-local/common/data-modeler-state-servic
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
+import { getFileFromName } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";
 
 export async function createModel(

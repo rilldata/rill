@@ -10,10 +10,10 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/components/entity-mappers/mappers";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { CATEGORICALS } from "../../../duckdb-data-types";
+  import { getFileFromName } from "../../../util/entity-mappers";
   import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
