@@ -25,23 +25,19 @@
   import type { Interval } from "../../../../duckdb-data-types";
   import { removeTimezoneOffset } from "../../../../util/formatters";
   import { guidGenerator } from "../../../../util/guid";
+  import { createShiftClickAction } from "../../../../util/shift-click-action";
+  import { notifications } from "../../../notifications";
+  import Tooltip from "../../../tooltip/Tooltip.svelte";
   import { outline } from "../../actions/outline";
   import { createScrubAction } from "../../actions/scrub-action-factory";
   import { DEFAULT_COORDINATES } from "../../constants";
   import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
-
+  import type { PlotConfig } from "../../utils";
   import TimestampBound from "./TimestampBound.svelte";
-  import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
-
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
-
-  import { createShiftClickAction } from "../../../../util/shift-click-action";
-  import notifications from "../../../notifications";
   import TimestampMouseoverAnnotation from "./TimestampMouseoverAnnotation.svelte";
   import TimestampPaths from "./TimestampPaths.svelte";
-
-  import type { PlotConfig } from "../../utils";
+  import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
+  import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
 
   const id = guidGenerator();

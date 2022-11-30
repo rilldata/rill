@@ -13,12 +13,12 @@
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
@@ -27,7 +27,7 @@
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import notifications from "../../notifications";
+  import { notifications } from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;

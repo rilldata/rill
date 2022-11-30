@@ -7,7 +7,7 @@ import {
   resetQuickStartDashboardOverlay,
   showQuickStartDashboardOverlay,
 } from "../../application-state-stores/overlay-store";
-import notificationStore from "../../components/notifications";
+import notificationStore from "../../components/notifications/notificationStore";
 import { TIMESTAMPS } from "../../duckdb-data-types";
 import {
   createMetricsDefsApi,

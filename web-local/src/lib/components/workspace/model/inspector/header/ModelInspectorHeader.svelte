@@ -21,7 +21,6 @@
   import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "@rilldata/web-local/lib/components/menu";
-  import notification from "@rilldata/web-local/lib/components/notifications";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
@@ -31,6 +30,7 @@
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
+  import { notifications } from "../../../../notifications";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
@@ -71,7 +71,7 @@
         }/api/file/export?fileName=${encodeURIComponent(exportFilename)}`
       );
     } else if (exportResp.status === ActionStatus.Failure) {
-      notification.send({
+      notifications.send({
         message: `Failed to export.\n${exportResp.messages
           .map((message) => message.message)
           .join("\n")}`,
