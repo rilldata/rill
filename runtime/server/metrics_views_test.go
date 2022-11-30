@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,7 +12,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/projectpath"
 )
 
 func createServerWithMetricsView(t *testing.T) (*Server, string) {
@@ -28,13 +26,6 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 	}, metastore, nil)
 	require.NoError(t, err)
 
-	_, b, _, _ := runtime.Caller(0)
-	cwd, _ := os.Getwd()
-	fmt.Println("cwd " + cwd)
-	fmt.Println("dir cwd" + filepath.Join(cwd, "../../"))
-
-	fmt.Println("dir " + filepath.Dir(b))
-	fmt.Println("root " + projectpath.Root)
 	filepath.Walk("../",
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -47,7 +38,7 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 		OlapDriver:   "duckdb",
 		OlapDsn:      "",
 		RepoDriver:   "file",
-		RepoDsn:      projectpath.Root + "/runtime/testdata/ad_bids",
+		RepoDsn:      "../testdata/ad_bids",
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
