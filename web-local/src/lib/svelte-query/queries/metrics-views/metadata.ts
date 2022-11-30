@@ -39,26 +39,26 @@ export const useMetaDimension = (
     meta.dimensions?.find((dimension) => dimension.name === dimensionName)
   );
 
-export const useMetaMappedFilters = (
-  instanceId: string,
-  metricViewName: string,
+/**
+ * Returns a copy of the filter without the passed in dimension filters.
+ */
+export const getFilterForDimension = (
   filters: MetricsViewRequestFilter,
   dimensionName?: string
-) =>
-  useMetaQuery<MetricsViewRequestFilter>(instanceId, metricViewName, (_) => {
-    if (!filters) return undefined;
-    return {
-      include: filters.include
-        .filter((dimensionValues) => dimensionName !== dimensionValues.name)
-        .map((dimensionValues) => ({
-          name: dimensionValues.name,
-          in: dimensionValues.in,
-        })),
-      exclude: filters.exclude
-        .filter((dimensionValues) => dimensionName !== dimensionValues.name)
-        .map((dimensionValues) => ({
-          name: dimensionValues.name,
-          in: dimensionValues.in,
-        })),
-    };
-  });
+) => {
+  if (!filters) return undefined;
+  return {
+    include: filters.include
+      .filter((dimensionValues) => dimensionName !== dimensionValues.name)
+      .map((dimensionValues) => ({
+        name: dimensionValues.name,
+        in: dimensionValues.in,
+      })),
+    exclude: filters.exclude
+      .filter((dimensionValues) => dimensionName !== dimensionValues.name)
+      .map((dimensionValues) => ({
+        name: dimensionValues.name,
+        in: dimensionValues.in,
+      })),
+  };
+};

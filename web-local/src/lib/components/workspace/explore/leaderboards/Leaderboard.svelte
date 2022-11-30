@@ -14,7 +14,7 @@
   import { createEventDispatcher } from "svelte";
   import {
     useMetaDimension,
-    useMetaMappedFilters,
+    getFilterForDimension,
     useMetaMeasure,
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
@@ -81,9 +81,7 @@
   let measure: MetricsViewMeasure;
   $: measure = $measureQuery?.data;
 
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    $runtimeStore.instanceId,
-    metricViewName,
+  $: filterForDimension = getFilterForDimension(
     metricsExplorer?.filters,
     dimensionName
   );
@@ -133,7 +131,7 @@
         ],
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
-        filter: $mappedFiltersQuery.data,
+        filter: filterForDimension,
       }
     );
   }
