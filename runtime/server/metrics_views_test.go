@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/projectpath"
 )
 
 func createServerWithMetricsView(t *testing.T) (*Server, string) {
@@ -27,7 +28,7 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 		OlapDriver:   "duckdb",
 		OlapDsn:      "",
 		RepoDriver:   "file",
-		RepoDsn:      "../testdata/ad_bids",
+		RepoDsn:      projectpath.Root + "/runtime/testdata/ad_bids",
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
