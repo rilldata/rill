@@ -93,7 +93,7 @@ archives:
     files:
       - README.md
       - LICENSE*
-    wrap_in_directory: true
+    # wrap_in_directory: true
 
 checksum:
   name_template: checksums.txt
