@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import { fade } from "svelte/transition";
@@ -40,44 +40,6 @@
 
   const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      notifications.send({
-        message:
-          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      });
-      e.target.value = currentSource.name; // resets the input
-      return;
-    }
-
-    dataModelerService.dispatch("updateTableName", [id, e.target.value]);
-    $renameSource.mutate(
-      {
-        data: {
-          instanceId: runtimeInstanceId,
-          fromPath: `sources/${name}.yaml`,
-          toPath: `sources/${e.target.value}.yaml`,
-        },
-      },
-      {
-        onSuccess: () => {
-          goto(`/source/${e.target.value}`, { replaceState: true });
-          return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-          );
-        },
-        onError: (err) => {
-          console.error(err.response.data.message);
-          // reset the new table name
-          dataModelerService.dispatch("updateTableName", [
-            currentSource?.id,
-            "",
-          ]);
-        },
-      }
-    );
-  };
-
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createSource = useRuntimeServicePutFileAndReconcile();
@@ -89,12 +51,35 @@
 
   $: connector = $getSource.data?.entry?.source.connector as string;
 
+  const onChangeCallback = async (e) => {
+    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      notifications.send({
+        message:
+          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = currentSource.name; // resets the input
+      return;
+    }
+
+    try {
+      await renameFileArtifact(
+        runtimeInstanceId,
+        name,
+        e.target.value,
+        EntityType.Table,
+        $renameSource
+      );
+    } catch (err) {
+      console.error(err.response.data.message);
+    }
+  };
+
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
         connector,
         tableName,
-        $runtimeStore,
+        runtimeInstanceId,
         $refreshSourceMutation,
         $createSource
       );

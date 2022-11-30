@@ -1,37 +1,28 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import { useRuntimeServiceDeleteFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getNextEntityId } from "@rilldata/web-local/common/utils/getNextEntityId";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import { deleteModelApi } from "@rilldata/web-local/lib/redux-store/model/model-apis";
-  import { autoCreateMetricsDefinitionForModel } from "@rilldata/web-local/lib/redux-store/source/source-apis";
-  import {
-    derivedProfileEntityHasTimestampColumn,
-    selectTimestampColumnFromProfileEntity,
-  } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { createEventDispatcher, getContext } from "svelte";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
-
-  import { navigationEvent } from "../../../metrics/initMetrics";
-
-  import { goto } from "$app/navigation";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { Divider, MenuItem } from "../../menu";
 
-  export let modelID;
+  export let modelName: string;
+  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
+  export let toggleMenu: () => void;
 
   const dispatch = createEventDispatcher();
+
+  const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -41,56 +32,60 @@
   ) as DerivedModelStore;
   const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
+  $: modelNames = useModelNames($runtimeStore.instanceId);
+
   $: persistentModel = $persistentModelStore?.entities?.find(
-    (model) => model.id === modelID
+    (model) => model.tableName === modelName
   );
 
   $: derivedModel = $derivedModelStore?.entities?.find(
-    (model) => model.id === modelID
+    (model) => model.id === persistentModel?.id
   );
 
-  /** functionality for bootstrapping a dashboard */
-  const bootstrapDashboard = (derivedModel: DerivedModelEntity) => {
-    const previousActiveEntity = $applicationStore?.activeEntity?.type;
+  // const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
-    autoCreateMetricsDefinitionForModel(
-      persistentModel.tableName,
-      modelID,
-      selectTimestampColumnFromProfileEntity(derivedModel)[0].name
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
-        MetricsEventScreenName.Dashboard
-      );
-    });
+  /** functionality for bootstrapping a dashboard */
+  const bootstrapDashboard = (_: string) => {
+    // const previousActiveEntity = $applicationStore?.activeEntity?.type;
+    // const metricsLabel = `${modelName}_dashboard`;
+    // const generatedYAML = generateMeasuresAndDimension(model, {
+    //   display_name: metricsLabel,
+    // });
+    // await $metricMigrate.mutateAsync({
+    //   data: {
+    //     instanceId: $runtimeStore.instanceId,
+    //     path: `dashboards/${metricsLabel}.yaml`,
+    //     blob: generatedYAML,
+    //     create: false,
+    //   },
+    // });
+    // navigationEvent.fireEvent(
+    //     createdMetricsId,
+    //     BehaviourEventMedium.Menu,
+    //     MetricsEventSpace.LeftPanel,
+    //     EntityTypeToScreenMap[previousActiveEntity],
+    //     MetricsEventScreenName.Dashboard
+    //   );
   };
 
-  /** delete model */
-  const deleteModel = (id: string) => {
-    if (
-      $applicationStore.activeEntity.type === EntityType.Model &&
-      $applicationStore.activeEntity.id === id
-    ) {
-      const nextModelId = getNextEntityId($persistentModelStore.entities, id);
-
-      if (nextModelId) {
-        goto(`/model/${nextModelId}`);
-      } else {
-        goto("/");
-      }
-    }
-
-    deleteModelApi(id);
+  const handleDeleteModel = async (modelName: string) => {
+    await deleteFileArtifact(
+      $runtimeStore.instanceId,
+      modelName,
+      EntityType.Model,
+      $deleteModel,
+      $applicationStore.activeEntity,
+      $modelNames.data
+    );
+    // onSettled gets triggered *after* both onSuccess and onError
+    toggleMenu();
   };
 </script>
 
 <MenuItem
   disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
   icon
-  on:select={() => bootstrapDashboard(derivedModel)}
+  on:select={() => bootstrapDashboard(modelName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
@@ -110,7 +105,11 @@
   <EditIcon slot="icon" />
   rename...
 </MenuItem>
-<MenuItem icon on:select={() => deleteModel(derivedModel.id)}>
+<MenuItem
+  icon
+  on:select={() => handleDeleteModel(modelName)}
+  propogateSelect={false}
+>
   <Cancel slot="icon" />
   delete
 </MenuItem>

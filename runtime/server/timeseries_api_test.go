@@ -70,12 +70,10 @@ func TestServer_Timeseries(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "max(clicks)",
-					SqlName:    &mx,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    mx,
 			},
 		},
 		TimestampColumnName: "time",
@@ -100,6 +98,120 @@ func TestServer_Timeseries(t *testing.T) {
 	require.Equal(t, 1.0, results[0].Records["max"])
 }
 
+func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	mx := "max"
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    mx,
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange:           new(runtimev1.TimeSeriesTimeRange),
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "device",
+					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 25, len(results))
+	require.Equal(t, 1.0, results[0].Records["max"])
+}
+
+func TestServer_Timeseries_Empty_Filter(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	mx := "max"
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    mx,
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: new(runtimev1.MetricsViewRequestFilter),
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records["max"])
+}
+
+func TestServer_Timeseries_No_Measures(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TableName:           "timeseries",
+		Measures:            []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: new(runtimev1.MetricsViewRequestFilter),
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 2.0, results[0].Records["count"])
+}
+
+func TestServer_Timeseries_Nil_Measures(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId:          instanceId,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: new(runtimev1.MetricsViewRequestFilter),
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 2.0, results[0].Records["count"])
+}
+
 func TestServer_Timeseries_2measures(t *testing.T) {
 	server, instanceId := getTestServer(t)
 
@@ -111,16 +223,14 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "max(clicks)",
-					SqlName:    &mx,
-				},
-				{
-					Expression: "sum(clicks)",
-					SqlName:    &sm,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    mx,
+			},
+			{
+				Expression: "sum(clicks)",
+				SqlName:    sm,
 			},
 		},
 		TimestampColumnName: "time",
@@ -141,7 +251,6 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	// printResults(results)
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records["max"])
 	require.Equal(t, 2.0, results[0].Records["sum"])
@@ -157,12 +266,10 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "sum(clicks)",
-					SqlName:    &sm,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    sm,
 			},
 		},
 		TimestampColumnName: "time",
@@ -183,7 +290,6 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	// printResults(results)
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records["sum"])
 }
@@ -394,12 +500,10 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "max(clicks)",
-					SqlName:    &mx,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    mx,
 			},
 		},
 		TimestampColumnName: "time",
@@ -433,12 +537,10 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "count(*)",
-					SqlName:    &cnt,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    cnt,
 			},
 		},
 		TimestampColumnName: "time",
@@ -634,20 +736,18 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "count(*)",
-					SqlName:    &cnt,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    cnt,
 			},
 		},
 		TimestampColumnName: "time",
-		Pixels:              &pxls,
+		Pixels:              pxls,
 	})
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 9, len(results))
-	require.Equal(t, 12, len(response.Rollup.Spark.Values))
+	require.Equal(t, 12, len(response.Rollup.Spark))
 }

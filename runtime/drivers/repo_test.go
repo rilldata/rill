@@ -67,4 +67,18 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
+
+	// renaming to existing throws error
+	err = repo.Rename(ctx, instID, "foo.yml", "foo.sql")
+	require.ErrorIs(t, err, drivers.ErrFileAlreadyExists)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
+
+	// valid rename
+	err = repo.Rename(ctx, instID, "foo.yml", "foo_new.yml")
+	require.NoError(t, err)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/foo.sql", "/foo_new.yml"}, paths)
 }

@@ -1,6 +1,5 @@
 import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import type { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
 import { createEntityAdapter, createSlice } from "../redux-toolkit-wrapper";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -44,7 +43,6 @@ export const measureDefSlice = createSlice({
             (id) => state.entities[id].metricsDefId === action.payload
           )
         );
-        metricsExplorerStore.clearLeaderboardMeasureId(action.payload);
       },
       prepare: (id: string) => ({ payload: id }),
     },

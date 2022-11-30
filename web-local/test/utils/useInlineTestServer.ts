@@ -1,3 +1,4 @@
+import { rmSync } from "fs";
 import { getTestConfig } from "./getTestConfig";
 import { InlineTestServer } from "./InlineTestServer";
 import type { TestServer } from "./TestServer";
@@ -12,15 +13,19 @@ import type { TestServer } from "./TestServer";
  *
  * TODO: auto assign port
  */
-export function useInlineTestServer(port: number) {
-  const config = getTestConfig("temp/test", {
+export function useInlineTestServer(port: number, folder = "temp/test") {
+  const config = getTestConfig(folder, {
     socketPort: port,
-    autoSync: false,
+    serveStaticFile: true,
   });
 
   const inlineServer = new InlineTestServer(config);
 
   beforeAll(async () => {
+    rmSync(folder, {
+      force: true,
+      recursive: true,
+    });
     await inlineServer.init();
   });
 

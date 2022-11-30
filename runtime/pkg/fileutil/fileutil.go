@@ -27,6 +27,12 @@ func FullExt(path string) string {
 	return fullExt
 }
 
+// Stem returns the file name after removing directory and all extensions.
+// Uses FullExt to strip extensions.
+func Stem(path string) string {
+	return strings.TrimSuffix(filepath.Base(path), FullExt(path))
+}
+
 // CopyToTempFile pipes a reader to a temporary file. The caller must delete
 // the temporary file when it's no longer needed.
 func CopyToTempFile(r io.Reader, name string, ext string) (string, error) {
