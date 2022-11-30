@@ -18,7 +18,6 @@
   export let summary;
   export let topK;
   export let totalRows;
-  export let plotPad = 24;
 
   let summaryMode: "summary" | "topk" = "summary";
 
