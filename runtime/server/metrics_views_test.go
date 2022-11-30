@@ -35,6 +35,14 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 
 	fmt.Println("dir " + filepath.Dir(b))
 	fmt.Println("root " + projectpath.Root)
+	filepath.Walk("../",
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			fmt.Println(path, info.Size())
+			return nil
+		})
 	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
 		OlapDriver:   "duckdb",
 		OlapDsn:      "",
