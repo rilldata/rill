@@ -64,8 +64,8 @@ export enum TimeGrain {
   // FiveMinutes = "5 minute",
   // FifteenMinutes = "15 minute",
   OneHour = "hour",
-  OneDay = "week",
-  OneWeek = "day",
+  OneDay = "day",
+  OneWeek = "week",
   OneMonth = "month",
   OneYear = "year",
 }
