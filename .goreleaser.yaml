@@ -6,9 +6,9 @@ release:
 before:
   # Templates for the commands to be ran.
   hooks:
-  - mkdir -p cli/pkg/web/embed/dist
-  - cp -r web-local/build/ cli/pkg/web/embed/dist
-  - go build -o rill cli/main.go
+    - mkdir -p cli/pkg/web/embed/dist
+    - cp -r web-local/build/ cli/pkg/web/embed/dist
+    - ls cli/pkg/web/embed/dist
 builds:
   - id: darwin
     main: ./cli/main.go
