@@ -38,6 +38,12 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.19.2
+      
+      - name: setup release environment
+        run: |-
+          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
+          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -61,7 +67,7 @@ jobs:
       #   env:
       #     CGO_ENABLED: 1
 
-      - name: release publish
+      - name: Release Publish
         run: |-
           docker run \
               --rm \
