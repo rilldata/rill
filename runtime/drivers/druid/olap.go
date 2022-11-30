@@ -9,6 +9,10 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+func (c *connection) Dialect() drivers.Dialect {
+	return drivers.DialectDruid
+}
+
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	return drivers.ErrUnsupportedConnector
 }

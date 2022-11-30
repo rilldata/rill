@@ -902,6 +902,9 @@ paths:
                 type: integer
                 format: int32
                 title: default is 50
+              priority:
+                type: string
+                format: int64
             description: Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
         - RuntimeService

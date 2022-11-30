@@ -14,6 +14,7 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries
 type OLAPStore interface {
+	Dialect() Dialect
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
 	InformationSchema() InformationSchema
@@ -45,4 +46,26 @@ type Table struct {
 	DatabaseSchema string
 	Name           string
 	Schema         *runtimev1.StructType
+}
+
+// Dialect enumerates OLAP query languages
+type Dialect int
+
+const (
+	DialectUnspecified Dialect = iota
+	DialectDuckDB
+	DialectDruid
+)
+
+func (d Dialect) String() string {
+	switch d {
+	case DialectUnspecified:
+		return ""
+	case DialectDuckDB:
+		return "duckdb"
+	case DialectDruid:
+		return "druid"
+	default:
+		panic("not implemented")
+	}
 }

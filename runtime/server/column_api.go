@@ -9,54 +9,39 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const defaultK = 50
-const defaultAgg = "count(*)"
-
 func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
-	agg := defaultAgg
-	k := int32(defaultK)
+	agg := "count(*)"
 	if req.Agg != nil {
 		agg = *req.Agg
 	}
-	if req.K != nil {
-		k = *req.K
-	}
-	topKSql := fmt.Sprintf("SELECT %s as value, %s AS count from %s GROUP BY %s ORDER BY count desc, value asc LIMIT %d",
-		quoteName(req.ColumnName),
-		agg,
-		req.TableName,
-		quoteName(req.ColumnName),
-		k,
-	)
-	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query: topKSql,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	defer rows.Close()
 
-	topKResponse := runtimev1.TopK{
-		Entries: make([]*runtimev1.TopK_TopKEntry, 0),
+	k := 50
+	if req.K != nil {
+		k = int(*req.K)
 	}
-	for rows.Next() {
-		var topKEntry runtimev1.TopK_TopKEntry
-		err = rows.Scan(&topKEntry.Value, &topKEntry.Count)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
+
+	q := &queries.ColumnTopK{
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
+		Agg:        agg,
+		K:          k,
+	}
+
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.GetTopKResponse{
 		CategoricalSummary: &runtimev1.CategoricalSummary{
 			Case: &runtimev1.CategoricalSummary_TopK{
-				TopK: &topKResponse,
+				TopK: q.Result,
 			},
 		},
 	}, nil

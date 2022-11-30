@@ -25,6 +25,7 @@ export type RuntimeServiceQueryBody = {
 export type RuntimeServiceGetTopKBody = {
   agg?: string;
   k?: number;
+  priority?: string;
 };
 
 export type RuntimeServiceGenerateTimeSeriesBody = {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	goruntime "runtime"
-	"testing"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -15,8 +14,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestingT satisfies both *testing.T and *testing.B
+type TestingT interface {
+	Name() string
+	TempDir() string
+	FailNow()
+	Errorf(format string, args ...interface{})
+}
+
 // New returns a runtime configured for use in tests
-func New(t *testing.T) *runtime.Runtime {
+func New(t TestingT) *runtime.Runtime {
 	opts := &runtime.Options{
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     "sqlite",
@@ -32,7 +39,7 @@ func New(t *testing.T) *runtime.Runtime {
 
 // NewInstance creates a runtime and an instance for use in tests.
 // The instance's repo is a temp directory that will be cleared when the tests finish.
-func NewInstance(t *testing.T) (*runtime.Runtime, string) {
+func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
@@ -52,7 +59,7 @@ func NewInstance(t *testing.T) (*runtime.Runtime, string) {
 
 // NewInstanceWithModel creates a runtime and an instance for use in tests.
 // The passed model name and SQL SELECT statement will be loaded into the instance.
-func NewInstanceWithModel(t *testing.T, name string, sql string) (*runtime.Runtime, string) {
+func NewInstanceWithModel(t TestingT, name string, sql string) (*runtime.Runtime, string) {
 	rt, instanceID := NewInstance(t)
 
 	path := filepath.Join("models", name+".sql")
@@ -69,7 +76,7 @@ func NewInstanceWithModel(t *testing.T, name string, sql string) (*runtime.Runti
 // NewInstanceForProject creates a runtime and an instance for use in tests.
 // The passed name should match a test project in the testdata folder.
 // You should not do mutable repo operations on the returned instance.
-func NewInstanceForProject(t *testing.T, name string) (*runtime.Runtime, string) {
+func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	_, currentFile, _, _ := goruntime.Caller(0)
