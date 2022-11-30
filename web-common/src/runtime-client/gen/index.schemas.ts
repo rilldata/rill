@@ -15,14 +15,14 @@ reconciliation to execute faster by not scanning all code artifacts for changes.
 export type RuntimeServiceQueryDirectBody = {
   args?: unknown[];
   dryRun?: boolean;
-  priority?: string;
+  priority?: number;
   sql?: string;
 };
 
 export type RuntimeServiceQueryBody = {
   args?: unknown[];
   dryRun?: boolean;
-  priority?: string;
+  priority?: number;
   sql?: string;
 };
 
@@ -61,7 +61,7 @@ export type RuntimeServiceGetTableRowsParams = {
 
 export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
-  priority?: string;
+  priority?: number;
 };
 
 export type RuntimeServiceGetNumericHistogramParams = { priority?: number };
@@ -81,7 +81,7 @@ export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
-  priority?: string;
+  priority?: number;
   timeEnd?: string;
   timeStart?: string;
 };
@@ -91,7 +91,7 @@ export type RuntimeServiceMetricsViewToplistBody = {
   limit?: string;
   measureNames?: string[];
   offset?: string;
-  priority?: string;
+  priority?: number;
   sort?: V1MetricsViewSort[];
   timeEnd?: string;
   timeStart?: string;
@@ -100,7 +100,7 @@ export type RuntimeServiceMetricsViewToplistBody = {
 export type RuntimeServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
-  priority?: string;
+  priority?: number;
   timeEnd?: string;
   timeGranularity?: string;
   timeStart?: string;

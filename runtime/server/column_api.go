@@ -79,7 +79,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.G
 	)
 	rows, err := s.query(ctx, nullCountRequest.InstanceId, &drivers.Statement{
 		Query:    nullCountSql,
-		Priority: nullCountRequest.Priority,
+		Priority: int(nullCountRequest.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    descriptiveStatisticsSql,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 	sampleSize := int64(500000)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    fmt.Sprintf("SELECT count(*) as c FROM %s", request.TableName),
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
       `, quoteName(request.ColumnName), request.TableName, useSample)
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    estimateSql,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -284,7 +284,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    sql,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -363,7 +363,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 	      `, selectColumn, sanitizedColumnName, request.TableName, bucketSize)
 	histogramRows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    histogramSql,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -457,7 +457,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 
 	outlierResults, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    rugSql,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -490,7 +490,7 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf("SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
 			sanitizedColumnName, request.TableName),
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -539,7 +539,7 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.
 	sanitizedColumnName := quoteName(request.ColumnName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err

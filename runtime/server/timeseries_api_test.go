@@ -705,7 +705,7 @@ func TestServer_SparkOnly(t *testing.T) {
 
 	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
 	require.Equal(t, 9, getSingleValue(t, result.Rows))
-	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, "timeseries", "time", "clicks", 2.0)
+	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, 0, "timeseries", "time", "clicks", 2.0)
 	require.NoError(t, err)
 
 	require.Equal(t, 12, len(values))

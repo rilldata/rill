@@ -30,7 +30,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 
 	// Execute
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, req.Priority, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, req.Priority, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, req.Priority, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}

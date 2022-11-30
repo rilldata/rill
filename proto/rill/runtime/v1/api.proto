@@ -676,7 +676,7 @@ message QueryRequest {
   // Args to interpolate into the statement
   repeated google.protobuf.Value args = 3;
   // Query priority (not supported by all backends)
-  int64 priority = 4;
+  int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
 }
@@ -698,7 +698,7 @@ message QueryDirectRequest {
   // Args to interpolate into the statement
   repeated google.protobuf.Value args = 3;
   // Query priority (not supported by all backends)
-  int64 priority = 4;
+  int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
 }
@@ -727,7 +727,7 @@ message MetricsViewToplistRequest {
   int64 offset = 8;
   repeated MetricsViewSort sort = 9;
   MetricsViewFilter filter = 10;
-  int64 priority = 11;
+  int32 priority = 11;
 }
 
 // Response message for RuntimeService.MetricsViewToplist
@@ -745,7 +745,7 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_end = 5;
   string time_granularity = 6;
   MetricsViewFilter filter = 7;
-  int64 priority = 8;
+  int32 priority = 8;
 }
 
 // Response message for RuntimeService.MetricsViewTimeSeries
@@ -762,7 +762,7 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   MetricsViewFilter filter = 7;
-  int64 priority = 8;
+  int32 priority = 8;
 }
 
 // Response message for RuntimeService.MetricsViewTotals
@@ -804,7 +804,7 @@ message EstimateRollupIntervalRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  int64 priority = 4;
+  int32 priority = 4;
 }
 
 message EstimateRollupIntervalResponse {

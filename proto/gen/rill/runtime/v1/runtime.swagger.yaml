@@ -400,8 +400,8 @@ paths:
                 items:
                   type: string
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
               timeEnd:
                 type: string
                 format: date-time
@@ -460,8 +460,8 @@ paths:
                 type: string
                 format: int64
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
               sort:
                 type: array
                 items:
@@ -512,8 +512,8 @@ paths:
                 items:
                   type: string
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
               timeEnd:
                 type: string
                 format: date-time
@@ -744,8 +744,8 @@ paths:
               columnName:
                 type: string
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
@@ -1008,8 +1008,8 @@ paths:
                 type: boolean
                 title: If true, will only validate the query, not execute it
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
                 title: Query priority (not supported by all backends)
               sql:
                 type: string
@@ -1050,8 +1050,8 @@ paths:
                 type: boolean
                 title: If true, will only validate the query, not execute it
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
                 title: Query priority (not supported by all backends)
               sql:
                 type: string

@@ -282,7 +282,7 @@ func sMap(k string, v float64) map[string]float64 {
 func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	ctx context.Context,
 	instanceId string,
-	priority int,
+	priority int32,
 	tableName string,
 	timestampColumn string,
 	valueColumn string,
@@ -292,7 +292,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	cardinality, err := s.GetTableCardinality(ctx, &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  tableName,
-		Priority:   int32(priority),
+		Priority:   priority,
 	})
 	if err != nil {
 		return nil, err
@@ -301,7 +301,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	if cardinality.Cardinality < int64(pixels*4) {
 		rows, err := s.query(ctx, instanceId, &drivers.Statement{
 			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
-			Priority: priority,
+			Priority: int(priority),
 		})
 		if err != nil {
 			return nil, err
@@ -357,7 +357,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
-		Priority: priority,
+		Priority: int(priority),
 	})
 	if err != nil {
 		return nil, err
@@ -476,16 +476,16 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
       )`
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    sql,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
-	defer s.dropTempTable(context.Background(), request.InstanceId, request.Priority, temporaryTableName)
+	defer s.dropTempTable(context.Background(), request.InstanceId, int(request.Priority), temporaryTableName)
 	if err != nil {
 		return nil, err
 	}
 	rows.Close()
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
 		Query:    `SELECT * from "` + temporaryTableName + `"`,
-		Priority: request.Priority,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
