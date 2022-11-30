@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/grpc/codes"
@@ -39,7 +40,7 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 
 // PutFile implements RuntimeService
 func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
-	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, req.Blob, req.Create, req.CreateOnly)
+	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -87,7 +88,7 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	err = s.runtime.PutFileReader(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
+	err = s.runtime.PutFile(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to write file: %s", err), http.StatusBadRequest)
 		return

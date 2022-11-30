@@ -333,7 +333,7 @@ func (x Connector_Property_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Connector_Property_Type.Descriptor instead.
 func (Connector_Property_Type) EnumDescriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{95, 0, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{93, 0, 0}
 }
 
 // Request message for RuntimeService.Ping
@@ -2913,149 +2913,6 @@ func (x *QueryResponse) GetData() []*structpb.Struct {
 	return nil
 }
 
-// Request message for RuntimeService.QueryDirect
-type QueryDirectRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Instance to query
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	// SELECT statement
-	Sql string `protobuf:"bytes,2,opt,name=sql,proto3" json:"sql,omitempty"`
-	// Args to interpolate into the statement
-	Args []*structpb.Value `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
-	// Query priority (not supported by all backends)
-	Priority int64 `protobuf:"varint,4,opt,name=priority,proto3" json:"priority,omitempty"`
-	// If true, will only validate the query, not execute it
-	DryRun bool `protobuf:"varint,5,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
-}
-
-func (x *QueryDirectRequest) Reset() {
-	*x = QueryDirectRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryDirectRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryDirectRequest) ProtoMessage() {}
-
-func (x *QueryDirectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryDirectRequest.ProtoReflect.Descriptor instead.
-func (*QueryDirectRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{41}
-}
-
-func (x *QueryDirectRequest) GetInstanceId() string {
-	if x != nil {
-		return x.InstanceId
-	}
-	return ""
-}
-
-func (x *QueryDirectRequest) GetSql() string {
-	if x != nil {
-		return x.Sql
-	}
-	return ""
-}
-
-func (x *QueryDirectRequest) GetArgs() []*structpb.Value {
-	if x != nil {
-		return x.Args
-	}
-	return nil
-}
-
-func (x *QueryDirectRequest) GetPriority() int64 {
-	if x != nil {
-		return x.Priority
-	}
-	return 0
-}
-
-func (x *QueryDirectRequest) GetDryRun() bool {
-	if x != nil {
-		return x.DryRun
-	}
-	return false
-}
-
-// Response message for RuntimeService.QueryDirect
-type QueryDirectResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Schema of result data
-	Meta *StructType `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
-	// Result data
-	Data []*structpb.Struct `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
-}
-
-func (x *QueryDirectResponse) Reset() {
-	*x = QueryDirectResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *QueryDirectResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*QueryDirectResponse) ProtoMessage() {}
-
-func (x *QueryDirectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use QueryDirectResponse.ProtoReflect.Descriptor instead.
-func (*QueryDirectResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{42}
-}
-
-func (x *QueryDirectResponse) GetMeta() *StructType {
-	if x != nil {
-		return x.Meta
-	}
-	return nil
-}
-
-func (x *QueryDirectResponse) GetData() []*structpb.Struct {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
 // Request message for RuntimeService.MetricsViewToplist
 type MetricsViewToplistRequest struct {
 	state         protoimpl.MessageState
@@ -3077,7 +2934,7 @@ type MetricsViewToplistRequest struct {
 func (x *MetricsViewToplistRequest) Reset() {
 	*x = MetricsViewToplistRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3090,7 +2947,7 @@ func (x *MetricsViewToplistRequest) String() string {
 func (*MetricsViewToplistRequest) ProtoMessage() {}
 
 func (x *MetricsViewToplistRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3103,7 +2960,7 @@ func (x *MetricsViewToplistRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewToplistRequest.ProtoReflect.Descriptor instead.
 func (*MetricsViewToplistRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{43}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *MetricsViewToplistRequest) GetInstanceId() string {
@@ -3189,7 +3046,7 @@ type MetricsViewToplistResponse struct {
 func (x *MetricsViewToplistResponse) Reset() {
 	*x = MetricsViewToplistResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3202,7 +3059,7 @@ func (x *MetricsViewToplistResponse) String() string {
 func (*MetricsViewToplistResponse) ProtoMessage() {}
 
 func (x *MetricsViewToplistResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3215,7 +3072,7 @@ func (x *MetricsViewToplistResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewToplistResponse.ProtoReflect.Descriptor instead.
 func (*MetricsViewToplistResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{44}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *MetricsViewToplistResponse) GetMeta() []*MetricsViewColumn {
@@ -3250,7 +3107,7 @@ type MetricsViewTimeSeriesRequest struct {
 func (x *MetricsViewTimeSeriesRequest) Reset() {
 	*x = MetricsViewTimeSeriesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3263,7 +3120,7 @@ func (x *MetricsViewTimeSeriesRequest) String() string {
 func (*MetricsViewTimeSeriesRequest) ProtoMessage() {}
 
 func (x *MetricsViewTimeSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3276,7 +3133,7 @@ func (x *MetricsViewTimeSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewTimeSeriesRequest.ProtoReflect.Descriptor instead.
 func (*MetricsViewTimeSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{45}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *MetricsViewTimeSeriesRequest) GetInstanceId() string {
@@ -3341,7 +3198,7 @@ type MetricsViewTimeSeriesResponse struct {
 func (x *MetricsViewTimeSeriesResponse) Reset() {
 	*x = MetricsViewTimeSeriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3354,7 +3211,7 @@ func (x *MetricsViewTimeSeriesResponse) String() string {
 func (*MetricsViewTimeSeriesResponse) ProtoMessage() {}
 
 func (x *MetricsViewTimeSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3367,7 +3224,7 @@ func (x *MetricsViewTimeSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewTimeSeriesResponse.ProtoReflect.Descriptor instead.
 func (*MetricsViewTimeSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{46}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *MetricsViewTimeSeriesResponse) GetMeta() []*MetricsViewColumn {
@@ -3401,7 +3258,7 @@ type MetricsViewTotalsRequest struct {
 func (x *MetricsViewTotalsRequest) Reset() {
 	*x = MetricsViewTotalsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3414,7 +3271,7 @@ func (x *MetricsViewTotalsRequest) String() string {
 func (*MetricsViewTotalsRequest) ProtoMessage() {}
 
 func (x *MetricsViewTotalsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3427,7 +3284,7 @@ func (x *MetricsViewTotalsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewTotalsRequest.ProtoReflect.Descriptor instead.
 func (*MetricsViewTotalsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{47}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *MetricsViewTotalsRequest) GetInstanceId() string {
@@ -3485,7 +3342,7 @@ type MetricsViewTotalsResponse struct {
 func (x *MetricsViewTotalsResponse) Reset() {
 	*x = MetricsViewTotalsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3498,7 +3355,7 @@ func (x *MetricsViewTotalsResponse) String() string {
 func (*MetricsViewTotalsResponse) ProtoMessage() {}
 
 func (x *MetricsViewTotalsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3511,7 +3368,7 @@ func (x *MetricsViewTotalsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewTotalsResponse.ProtoReflect.Descriptor instead.
 func (*MetricsViewTotalsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{48}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *MetricsViewTotalsResponse) GetMeta() []*MetricsViewColumn {
@@ -3541,7 +3398,7 @@ type MetricsViewSort struct {
 func (x *MetricsViewSort) Reset() {
 	*x = MetricsViewSort{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3554,7 +3411,7 @@ func (x *MetricsViewSort) String() string {
 func (*MetricsViewSort) ProtoMessage() {}
 
 func (x *MetricsViewSort) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3567,7 +3424,7 @@ func (x *MetricsViewSort) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewSort.ProtoReflect.Descriptor instead.
 func (*MetricsViewSort) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{49}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *MetricsViewSort) GetName() string {
@@ -3598,7 +3455,7 @@ type MetricsViewFilter struct {
 func (x *MetricsViewFilter) Reset() {
 	*x = MetricsViewFilter{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3611,7 +3468,7 @@ func (x *MetricsViewFilter) String() string {
 func (*MetricsViewFilter) ProtoMessage() {}
 
 func (x *MetricsViewFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3624,7 +3481,7 @@ func (x *MetricsViewFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewFilter.ProtoReflect.Descriptor instead.
 func (*MetricsViewFilter) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{50}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *MetricsViewFilter) GetMatch() []string {
@@ -3662,7 +3519,7 @@ type MetricsViewColumn struct {
 func (x *MetricsViewColumn) Reset() {
 	*x = MetricsViewColumn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3675,7 +3532,7 @@ func (x *MetricsViewColumn) String() string {
 func (*MetricsViewColumn) ProtoMessage() {}
 
 func (x *MetricsViewColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3688,7 +3545,7 @@ func (x *MetricsViewColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewColumn.ProtoReflect.Descriptor instead.
 func (*MetricsViewColumn) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{51}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *MetricsViewColumn) GetName() string {
@@ -3725,7 +3582,7 @@ type EstimateRollupIntervalRequest struct {
 func (x *EstimateRollupIntervalRequest) Reset() {
 	*x = EstimateRollupIntervalRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3738,7 +3595,7 @@ func (x *EstimateRollupIntervalRequest) String() string {
 func (*EstimateRollupIntervalRequest) ProtoMessage() {}
 
 func (x *EstimateRollupIntervalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3751,7 +3608,7 @@ func (x *EstimateRollupIntervalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EstimateRollupIntervalRequest.ProtoReflect.Descriptor instead.
 func (*EstimateRollupIntervalRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{52}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *EstimateRollupIntervalRequest) GetInstanceId() string {
@@ -3788,7 +3645,7 @@ type EstimateRollupIntervalResponse struct {
 func (x *EstimateRollupIntervalResponse) Reset() {
 	*x = EstimateRollupIntervalResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3801,7 +3658,7 @@ func (x *EstimateRollupIntervalResponse) String() string {
 func (*EstimateRollupIntervalResponse) ProtoMessage() {}
 
 func (x *EstimateRollupIntervalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3814,7 +3671,7 @@ func (x *EstimateRollupIntervalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EstimateRollupIntervalResponse.ProtoReflect.Descriptor instead.
 func (*EstimateRollupIntervalResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{53}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *EstimateRollupIntervalResponse) GetStart() *timestamppb.Timestamp {
@@ -3853,7 +3710,7 @@ type ProfileColumnSummary struct {
 func (x *ProfileColumnSummary) Reset() {
 	*x = ProfileColumnSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3866,7 +3723,7 @@ func (x *ProfileColumnSummary) String() string {
 func (*ProfileColumnSummary) ProtoMessage() {}
 
 func (x *ProfileColumnSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3879,7 +3736,7 @@ func (x *ProfileColumnSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProfileColumnSummary.ProtoReflect.Descriptor instead.
 func (*ProfileColumnSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{54}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{52}
 }
 
 func (m *ProfileColumnSummary) GetCase() isProfileColumnSummary_Case {
@@ -3947,7 +3804,7 @@ type CategoricalSummary struct {
 func (x *CategoricalSummary) Reset() {
 	*x = CategoricalSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3960,7 +3817,7 @@ func (x *CategoricalSummary) String() string {
 func (*CategoricalSummary) ProtoMessage() {}
 
 func (x *CategoricalSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3973,7 +3830,7 @@ func (x *CategoricalSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CategoricalSummary.ProtoReflect.Descriptor instead.
 func (*CategoricalSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{55}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{53}
 }
 
 func (m *CategoricalSummary) GetCase() isCategoricalSummary_Case {
@@ -4024,7 +3881,7 @@ type GetCardinalityOfColumnResponse struct {
 func (x *GetCardinalityOfColumnResponse) Reset() {
 	*x = GetCardinalityOfColumnResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4037,7 +3894,7 @@ func (x *GetCardinalityOfColumnResponse) String() string {
 func (*GetCardinalityOfColumnResponse) ProtoMessage() {}
 
 func (x *GetCardinalityOfColumnResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4050,7 +3907,7 @@ func (x *GetCardinalityOfColumnResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCardinalityOfColumnResponse.ProtoReflect.Descriptor instead.
 func (*GetCardinalityOfColumnResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{56}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *GetCardinalityOfColumnResponse) GetCategoricalSummary() *CategoricalSummary {
@@ -4071,7 +3928,7 @@ type GetTopKResponse struct {
 func (x *GetTopKResponse) Reset() {
 	*x = GetTopKResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[57]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4084,7 +3941,7 @@ func (x *GetTopKResponse) String() string {
 func (*GetTopKResponse) ProtoMessage() {}
 
 func (x *GetTopKResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[57]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4097,7 +3954,7 @@ func (x *GetTopKResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTopKResponse.ProtoReflect.Descriptor instead.
 func (*GetTopKResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{57}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *GetTopKResponse) GetCategoricalSummary() *CategoricalSummary {
@@ -4124,7 +3981,7 @@ type NumericSummary struct {
 func (x *NumericSummary) Reset() {
 	*x = NumericSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[58]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4137,7 +3994,7 @@ func (x *NumericSummary) String() string {
 func (*NumericSummary) ProtoMessage() {}
 
 func (x *NumericSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[58]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4150,7 +4007,7 @@ func (x *NumericSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericSummary.ProtoReflect.Descriptor instead.
 func (*NumericSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{58}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{56}
 }
 
 func (m *NumericSummary) GetCase() isNumericSummary_Case {
@@ -4214,7 +4071,7 @@ type GetRugHistogramResponse struct {
 func (x *GetRugHistogramResponse) Reset() {
 	*x = GetRugHistogramResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[59]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4227,7 +4084,7 @@ func (x *GetRugHistogramResponse) String() string {
 func (*GetRugHistogramResponse) ProtoMessage() {}
 
 func (x *GetRugHistogramResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[59]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4240,7 +4097,7 @@ func (x *GetRugHistogramResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRugHistogramResponse.ProtoReflect.Descriptor instead.
 func (*GetRugHistogramResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{59}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *GetRugHistogramResponse) GetNumericSummary() *NumericSummary {
@@ -4261,7 +4118,7 @@ type GetNumericHistogramResponse struct {
 func (x *GetNumericHistogramResponse) Reset() {
 	*x = GetNumericHistogramResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[60]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[58]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4274,7 +4131,7 @@ func (x *GetNumericHistogramResponse) String() string {
 func (*GetNumericHistogramResponse) ProtoMessage() {}
 
 func (x *GetNumericHistogramResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[60]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[58]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4287,7 +4144,7 @@ func (x *GetNumericHistogramResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNumericHistogramResponse.ProtoReflect.Descriptor instead.
 func (*GetNumericHistogramResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{60}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetNumericHistogramResponse) GetNumericSummary() *NumericSummary {
@@ -4308,7 +4165,7 @@ type GetDescriptiveStatisticsResponse struct {
 func (x *GetDescriptiveStatisticsResponse) Reset() {
 	*x = GetDescriptiveStatisticsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[61]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[59]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4321,7 +4178,7 @@ func (x *GetDescriptiveStatisticsResponse) String() string {
 func (*GetDescriptiveStatisticsResponse) ProtoMessage() {}
 
 func (x *GetDescriptiveStatisticsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[61]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[59]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4334,7 +4191,7 @@ func (x *GetDescriptiveStatisticsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDescriptiveStatisticsResponse.ProtoReflect.Descriptor instead.
 func (*GetDescriptiveStatisticsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{61}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *GetDescriptiveStatisticsResponse) GetNumericSummary() *NumericSummary {
@@ -4355,7 +4212,7 @@ type GetTimeRangeSummaryResponse struct {
 func (x *GetTimeRangeSummaryResponse) Reset() {
 	*x = GetTimeRangeSummaryResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[62]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[60]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4368,7 +4225,7 @@ func (x *GetTimeRangeSummaryResponse) String() string {
 func (*GetTimeRangeSummaryResponse) ProtoMessage() {}
 
 func (x *GetTimeRangeSummaryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[62]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[60]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4381,7 +4238,7 @@ func (x *GetTimeRangeSummaryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTimeRangeSummaryResponse.ProtoReflect.Descriptor instead.
 func (*GetTimeRangeSummaryResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{62}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *GetTimeRangeSummaryResponse) GetTimeRangeSummary() *TimeRangeSummary {
@@ -4404,7 +4261,7 @@ type TimeRangeSummary struct {
 func (x *TimeRangeSummary) Reset() {
 	*x = TimeRangeSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[63]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[61]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4417,7 +4274,7 @@ func (x *TimeRangeSummary) String() string {
 func (*TimeRangeSummary) ProtoMessage() {}
 
 func (x *TimeRangeSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[63]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[61]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4430,7 +4287,7 @@ func (x *TimeRangeSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeRangeSummary.ProtoReflect.Descriptor instead.
 func (*TimeRangeSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{63}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *TimeRangeSummary) GetMin() *timestamppb.Timestamp {
@@ -4465,7 +4322,7 @@ type NumericOutliers struct {
 func (x *NumericOutliers) Reset() {
 	*x = NumericOutliers{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[64]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[62]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4478,7 +4335,7 @@ func (x *NumericOutliers) String() string {
 func (*NumericOutliers) ProtoMessage() {}
 
 func (x *NumericOutliers) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[64]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[62]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4491,7 +4348,7 @@ func (x *NumericOutliers) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericOutliers.ProtoReflect.Descriptor instead.
 func (*NumericOutliers) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{64}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *NumericOutliers) GetOutliers() []*NumericOutliers_Outlier {
@@ -4518,7 +4375,7 @@ type GetTopKRequest struct {
 func (x *GetTopKRequest) Reset() {
 	*x = GetTopKRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[65]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[63]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4531,7 +4388,7 @@ func (x *GetTopKRequest) String() string {
 func (*GetTopKRequest) ProtoMessage() {}
 
 func (x *GetTopKRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[65]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[63]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4544,7 +4401,7 @@ func (x *GetTopKRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTopKRequest.ProtoReflect.Descriptor instead.
 func (*GetTopKRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{65}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *GetTopKRequest) GetInstanceId() string {
@@ -4600,7 +4457,7 @@ type TopK struct {
 func (x *TopK) Reset() {
 	*x = TopK{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[66]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[64]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4613,7 +4470,7 @@ func (x *TopK) String() string {
 func (*TopK) ProtoMessage() {}
 
 func (x *TopK) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[66]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[64]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4626,7 +4483,7 @@ func (x *TopK) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TopK.ProtoReflect.Descriptor instead.
 func (*TopK) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{66}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *TopK) GetEntries() []*TopK_TopKEntry {
@@ -4650,7 +4507,7 @@ type GetNullCountRequest struct {
 func (x *GetNullCountRequest) Reset() {
 	*x = GetNullCountRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[67]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[65]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4663,7 +4520,7 @@ func (x *GetNullCountRequest) String() string {
 func (*GetNullCountRequest) ProtoMessage() {}
 
 func (x *GetNullCountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[67]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[65]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4676,7 +4533,7 @@ func (x *GetNullCountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNullCountRequest.ProtoReflect.Descriptor instead.
 func (*GetNullCountRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{67}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetNullCountRequest) GetInstanceId() string {
@@ -4712,7 +4569,7 @@ type GetNullCountResponse struct {
 func (x *GetNullCountResponse) Reset() {
 	*x = GetNullCountResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[68]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[66]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4725,7 +4582,7 @@ func (x *GetNullCountResponse) String() string {
 func (*GetNullCountResponse) ProtoMessage() {}
 
 func (x *GetNullCountResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[68]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[66]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4738,7 +4595,7 @@ func (x *GetNullCountResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNullCountResponse.ProtoReflect.Descriptor instead.
 func (*GetNullCountResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{68}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *GetNullCountResponse) GetCount() float64 {
@@ -4762,7 +4619,7 @@ type GetDescriptiveStatisticsRequest struct {
 func (x *GetDescriptiveStatisticsRequest) Reset() {
 	*x = GetDescriptiveStatisticsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[69]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[67]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4775,7 +4632,7 @@ func (x *GetDescriptiveStatisticsRequest) String() string {
 func (*GetDescriptiveStatisticsRequest) ProtoMessage() {}
 
 func (x *GetDescriptiveStatisticsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[69]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[67]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4788,7 +4645,7 @@ func (x *GetDescriptiveStatisticsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDescriptiveStatisticsRequest.ProtoReflect.Descriptor instead.
 func (*GetDescriptiveStatisticsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{69}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *GetDescriptiveStatisticsRequest) GetInstanceId() string {
@@ -4830,7 +4687,7 @@ type NumericStatistics struct {
 func (x *NumericStatistics) Reset() {
 	*x = NumericStatistics{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[70]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[68]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4843,7 +4700,7 @@ func (x *NumericStatistics) String() string {
 func (*NumericStatistics) ProtoMessage() {}
 
 func (x *NumericStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[70]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[68]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4856,7 +4713,7 @@ func (x *NumericStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericStatistics.ProtoReflect.Descriptor instead.
 func (*NumericStatistics) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{70}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *NumericStatistics) GetMin() float64 {
@@ -4922,7 +4779,7 @@ type EstimateSmallestTimeGrainRequest struct {
 func (x *EstimateSmallestTimeGrainRequest) Reset() {
 	*x = EstimateSmallestTimeGrainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[71]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[69]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4935,7 +4792,7 @@ func (x *EstimateSmallestTimeGrainRequest) String() string {
 func (*EstimateSmallestTimeGrainRequest) ProtoMessage() {}
 
 func (x *EstimateSmallestTimeGrainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[71]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[69]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4948,7 +4805,7 @@ func (x *EstimateSmallestTimeGrainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EstimateSmallestTimeGrainRequest.ProtoReflect.Descriptor instead.
 func (*EstimateSmallestTimeGrainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{71}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *EstimateSmallestTimeGrainRequest) GetInstanceId() string {
@@ -4984,7 +4841,7 @@ type EstimateSmallestTimeGrainResponse struct {
 func (x *EstimateSmallestTimeGrainResponse) Reset() {
 	*x = EstimateSmallestTimeGrainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[72]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[70]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4997,7 +4854,7 @@ func (x *EstimateSmallestTimeGrainResponse) String() string {
 func (*EstimateSmallestTimeGrainResponse) ProtoMessage() {}
 
 func (x *EstimateSmallestTimeGrainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[72]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[70]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5010,7 +4867,7 @@ func (x *EstimateSmallestTimeGrainResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use EstimateSmallestTimeGrainResponse.ProtoReflect.Descriptor instead.
 func (*EstimateSmallestTimeGrainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{72}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *EstimateSmallestTimeGrainResponse) GetTimeGrain() TimeGrain {
@@ -5034,7 +4891,7 @@ type GetNumericHistogramRequest struct {
 func (x *GetNumericHistogramRequest) Reset() {
 	*x = GetNumericHistogramRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[73]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[71]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5047,7 +4904,7 @@ func (x *GetNumericHistogramRequest) String() string {
 func (*GetNumericHistogramRequest) ProtoMessage() {}
 
 func (x *GetNumericHistogramRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[73]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[71]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5060,7 +4917,7 @@ func (x *GetNumericHistogramRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNumericHistogramRequest.ProtoReflect.Descriptor instead.
 func (*GetNumericHistogramRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{73}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *GetNumericHistogramRequest) GetInstanceId() string {
@@ -5096,7 +4953,7 @@ type NumericHistogramBins struct {
 func (x *NumericHistogramBins) Reset() {
 	*x = NumericHistogramBins{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[74]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[72]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5109,7 +4966,7 @@ func (x *NumericHistogramBins) String() string {
 func (*NumericHistogramBins) ProtoMessage() {}
 
 func (x *NumericHistogramBins) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[74]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[72]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5122,7 +4979,7 @@ func (x *NumericHistogramBins) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericHistogramBins.ProtoReflect.Descriptor instead.
 func (*NumericHistogramBins) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{74}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *NumericHistogramBins) GetBins() []*NumericHistogramBins_Bin {
@@ -5146,7 +5003,7 @@ type GetRugHistogramRequest struct {
 func (x *GetRugHistogramRequest) Reset() {
 	*x = GetRugHistogramRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[75]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[73]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5159,7 +5016,7 @@ func (x *GetRugHistogramRequest) String() string {
 func (*GetRugHistogramRequest) ProtoMessage() {}
 
 func (x *GetRugHistogramRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[75]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[73]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5172,7 +5029,7 @@ func (x *GetRugHistogramRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRugHistogramRequest.ProtoReflect.Descriptor instead.
 func (*GetRugHistogramRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{75}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *GetRugHistogramRequest) GetInstanceId() string {
@@ -5210,7 +5067,7 @@ type GetTimeRangeSummaryRequest struct {
 func (x *GetTimeRangeSummaryRequest) Reset() {
 	*x = GetTimeRangeSummaryRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[76]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[74]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5223,7 +5080,7 @@ func (x *GetTimeRangeSummaryRequest) String() string {
 func (*GetTimeRangeSummaryRequest) ProtoMessage() {}
 
 func (x *GetTimeRangeSummaryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[76]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[74]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5236,7 +5093,7 @@ func (x *GetTimeRangeSummaryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTimeRangeSummaryRequest.ProtoReflect.Descriptor instead.
 func (*GetTimeRangeSummaryRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{76}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *GetTimeRangeSummaryRequest) GetInstanceId() string {
@@ -5274,7 +5131,7 @@ type GetCardinalityOfColumnRequest struct {
 func (x *GetCardinalityOfColumnRequest) Reset() {
 	*x = GetCardinalityOfColumnRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[77]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[75]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5287,7 +5144,7 @@ func (x *GetCardinalityOfColumnRequest) String() string {
 func (*GetCardinalityOfColumnRequest) ProtoMessage() {}
 
 func (x *GetCardinalityOfColumnRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[77]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[75]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5300,7 +5157,7 @@ func (x *GetCardinalityOfColumnRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCardinalityOfColumnRequest.ProtoReflect.Descriptor instead.
 func (*GetCardinalityOfColumnRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{77}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *GetCardinalityOfColumnRequest) GetInstanceId() string {
@@ -5342,7 +5199,7 @@ type GenerateTimeSeriesRequest struct {
 func (x *GenerateTimeSeriesRequest) Reset() {
 	*x = GenerateTimeSeriesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[78]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[76]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5355,7 +5212,7 @@ func (x *GenerateTimeSeriesRequest) String() string {
 func (*GenerateTimeSeriesRequest) ProtoMessage() {}
 
 func (x *GenerateTimeSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[78]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[76]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5368,7 +5225,7 @@ func (x *GenerateTimeSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateTimeSeriesRequest.ProtoReflect.Descriptor instead.
 func (*GenerateTimeSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{78}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *GenerateTimeSeriesRequest) GetInstanceId() string {
@@ -5442,7 +5299,7 @@ type BasicMeasureDefinition struct {
 func (x *BasicMeasureDefinition) Reset() {
 	*x = BasicMeasureDefinition{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[79]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[77]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5455,7 +5312,7 @@ func (x *BasicMeasureDefinition) String() string {
 func (*BasicMeasureDefinition) ProtoMessage() {}
 
 func (x *BasicMeasureDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[79]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[77]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5468,7 +5325,7 @@ func (x *BasicMeasureDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BasicMeasureDefinition.ProtoReflect.Descriptor instead.
 func (*BasicMeasureDefinition) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{79}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *BasicMeasureDefinition) GetId() string {
@@ -5505,7 +5362,7 @@ type TimeSeriesTimeRange struct {
 func (x *TimeSeriesTimeRange) Reset() {
 	*x = TimeSeriesTimeRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[80]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[78]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5518,7 +5375,7 @@ func (x *TimeSeriesTimeRange) String() string {
 func (*TimeSeriesTimeRange) ProtoMessage() {}
 
 func (x *TimeSeriesTimeRange) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[80]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[78]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5531,7 +5388,7 @@ func (x *TimeSeriesTimeRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeSeriesTimeRange.ProtoReflect.Descriptor instead.
 func (*TimeSeriesTimeRange) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{80}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *TimeSeriesTimeRange) GetStart() *timestamppb.Timestamp {
@@ -5568,7 +5425,7 @@ type MetricsViewDimensionValue struct {
 func (x *MetricsViewDimensionValue) Reset() {
 	*x = MetricsViewDimensionValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[81]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[79]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5581,7 +5438,7 @@ func (x *MetricsViewDimensionValue) String() string {
 func (*MetricsViewDimensionValue) ProtoMessage() {}
 
 func (x *MetricsViewDimensionValue) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[81]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[79]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5594,7 +5451,7 @@ func (x *MetricsViewDimensionValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewDimensionValue.ProtoReflect.Descriptor instead.
 func (*MetricsViewDimensionValue) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{81}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *MetricsViewDimensionValue) GetName() string {
@@ -5630,7 +5487,7 @@ type MetricsViewRequestFilter struct {
 func (x *MetricsViewRequestFilter) Reset() {
 	*x = MetricsViewRequestFilter{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[82]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[80]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5643,7 +5500,7 @@ func (x *MetricsViewRequestFilter) String() string {
 func (*MetricsViewRequestFilter) ProtoMessage() {}
 
 func (x *MetricsViewRequestFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[82]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[80]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5656,7 +5513,7 @@ func (x *MetricsViewRequestFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewRequestFilter.ProtoReflect.Descriptor instead.
 func (*MetricsViewRequestFilter) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{82}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *MetricsViewRequestFilter) GetInclude() []*MetricsViewDimensionValue {
@@ -5689,7 +5546,7 @@ type TimeSeriesResponse struct {
 func (x *TimeSeriesResponse) Reset() {
 	*x = TimeSeriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[83]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[81]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5702,7 +5559,7 @@ func (x *TimeSeriesResponse) String() string {
 func (*TimeSeriesResponse) ProtoMessage() {}
 
 func (x *TimeSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[83]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[81]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5715,7 +5572,7 @@ func (x *TimeSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeSeriesResponse.ProtoReflect.Descriptor instead.
 func (*TimeSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{83}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *TimeSeriesResponse) GetId() string {
@@ -5771,7 +5628,7 @@ type GenerateTimeSeriesResponse struct {
 func (x *GenerateTimeSeriesResponse) Reset() {
 	*x = GenerateTimeSeriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[82]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5784,7 +5641,7 @@ func (x *GenerateTimeSeriesResponse) String() string {
 func (*GenerateTimeSeriesResponse) ProtoMessage() {}
 
 func (x *GenerateTimeSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[82]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5797,7 +5654,7 @@ func (x *GenerateTimeSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateTimeSeriesResponse.ProtoReflect.Descriptor instead.
 func (*GenerateTimeSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{84}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *GenerateTimeSeriesResponse) GetRollup() *TimeSeriesResponse {
@@ -5820,7 +5677,7 @@ type TimeSeriesValue struct {
 func (x *TimeSeriesValue) Reset() {
 	*x = TimeSeriesValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[83]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5833,7 +5690,7 @@ func (x *TimeSeriesValue) String() string {
 func (*TimeSeriesValue) ProtoMessage() {}
 
 func (x *TimeSeriesValue) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[83]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5846,7 +5703,7 @@ func (x *TimeSeriesValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeSeriesValue.ProtoReflect.Descriptor instead.
 func (*TimeSeriesValue) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{85}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *TimeSeriesValue) GetTs() string {
@@ -5884,7 +5741,7 @@ type RenameDatabaseObjectRequest struct {
 func (x *RenameDatabaseObjectRequest) Reset() {
 	*x = RenameDatabaseObjectRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5897,7 +5754,7 @@ func (x *RenameDatabaseObjectRequest) String() string {
 func (*RenameDatabaseObjectRequest) ProtoMessage() {}
 
 func (x *RenameDatabaseObjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5910,7 +5767,7 @@ func (x *RenameDatabaseObjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameDatabaseObjectRequest.ProtoReflect.Descriptor instead.
 func (*RenameDatabaseObjectRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{86}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *RenameDatabaseObjectRequest) GetInstanceId() string {
@@ -5950,7 +5807,7 @@ type RenameDatabaseObjectResponse struct {
 func (x *RenameDatabaseObjectResponse) Reset() {
 	*x = RenameDatabaseObjectResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5963,7 +5820,7 @@ func (x *RenameDatabaseObjectResponse) String() string {
 func (*RenameDatabaseObjectResponse) ProtoMessage() {}
 
 func (x *RenameDatabaseObjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5976,7 +5833,7 @@ func (x *RenameDatabaseObjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameDatabaseObjectResponse.ProtoReflect.Descriptor instead.
 func (*RenameDatabaseObjectResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{87}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{85}
 }
 
 type GetTableCardinalityRequest struct {
@@ -5991,7 +5848,7 @@ type GetTableCardinalityRequest struct {
 func (x *GetTableCardinalityRequest) Reset() {
 	*x = GetTableCardinalityRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6004,7 +5861,7 @@ func (x *GetTableCardinalityRequest) String() string {
 func (*GetTableCardinalityRequest) ProtoMessage() {}
 
 func (x *GetTableCardinalityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6017,7 +5874,7 @@ func (x *GetTableCardinalityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTableCardinalityRequest.ProtoReflect.Descriptor instead.
 func (*GetTableCardinalityRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{88}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *GetTableCardinalityRequest) GetInstanceId() string {
@@ -6045,7 +5902,7 @@ type GetTableCardinalityResponse struct {
 func (x *GetTableCardinalityResponse) Reset() {
 	*x = GetTableCardinalityResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6058,7 +5915,7 @@ func (x *GetTableCardinalityResponse) String() string {
 func (*GetTableCardinalityResponse) ProtoMessage() {}
 
 func (x *GetTableCardinalityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6071,7 +5928,7 @@ func (x *GetTableCardinalityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTableCardinalityResponse.ProtoReflect.Descriptor instead.
 func (*GetTableCardinalityResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{89}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *GetTableCardinalityResponse) GetCardinality() int64 {
@@ -6093,7 +5950,7 @@ type ProfileColumnsRequest struct {
 func (x *ProfileColumnsRequest) Reset() {
 	*x = ProfileColumnsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6106,7 +5963,7 @@ func (x *ProfileColumnsRequest) String() string {
 func (*ProfileColumnsRequest) ProtoMessage() {}
 
 func (x *ProfileColumnsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6119,7 +5976,7 @@ func (x *ProfileColumnsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProfileColumnsRequest.ProtoReflect.Descriptor instead.
 func (*ProfileColumnsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{90}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *ProfileColumnsRequest) GetInstanceId() string {
@@ -6147,7 +6004,7 @@ type ProfileColumnsResponse struct {
 func (x *ProfileColumnsResponse) Reset() {
 	*x = ProfileColumnsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6160,7 +6017,7 @@ func (x *ProfileColumnsResponse) String() string {
 func (*ProfileColumnsResponse) ProtoMessage() {}
 
 func (x *ProfileColumnsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6173,7 +6030,7 @@ func (x *ProfileColumnsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProfileColumnsResponse.ProtoReflect.Descriptor instead.
 func (*ProfileColumnsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{91}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *ProfileColumnsResponse) GetProfileColumns() []*ProfileColumn {
@@ -6196,7 +6053,7 @@ type ProfileColumn struct {
 func (x *ProfileColumn) Reset() {
 	*x = ProfileColumn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6209,7 +6066,7 @@ func (x *ProfileColumn) String() string {
 func (*ProfileColumn) ProtoMessage() {}
 
 func (x *ProfileColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6222,7 +6079,7 @@ func (x *ProfileColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProfileColumn.ProtoReflect.Descriptor instead.
 func (*ProfileColumn) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{92}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *ProfileColumn) GetName() string {
@@ -6259,7 +6116,7 @@ type GetTableRowsRequest struct {
 func (x *GetTableRowsRequest) Reset() {
 	*x = GetTableRowsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6272,7 +6129,7 @@ func (x *GetTableRowsRequest) String() string {
 func (*GetTableRowsRequest) ProtoMessage() {}
 
 func (x *GetTableRowsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6285,7 +6142,7 @@ func (x *GetTableRowsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTableRowsRequest.ProtoReflect.Descriptor instead.
 func (*GetTableRowsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{93}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *GetTableRowsRequest) GetInstanceId() string {
@@ -6320,7 +6177,7 @@ type GetTableRowsResponse struct {
 func (x *GetTableRowsResponse) Reset() {
 	*x = GetTableRowsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6333,7 +6190,7 @@ func (x *GetTableRowsResponse) String() string {
 func (*GetTableRowsResponse) ProtoMessage() {}
 
 func (x *GetTableRowsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6346,7 +6203,7 @@ func (x *GetTableRowsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTableRowsResponse.ProtoReflect.Descriptor instead.
 func (*GetTableRowsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{94}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *GetTableRowsResponse) GetData() []*structpb.Struct {
@@ -6376,7 +6233,7 @@ type Connector struct {
 func (x *Connector) Reset() {
 	*x = Connector{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6389,7 +6246,7 @@ func (x *Connector) String() string {
 func (*Connector) ProtoMessage() {}
 
 func (x *Connector) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6402,7 +6259,7 @@ func (x *Connector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Connector.ProtoReflect.Descriptor instead.
 func (*Connector) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{95}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *Connector) GetName() string {
@@ -6443,7 +6300,7 @@ type ListConnectorsRequest struct {
 func (x *ListConnectorsRequest) Reset() {
 	*x = ListConnectorsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6456,7 +6313,7 @@ func (x *ListConnectorsRequest) String() string {
 func (*ListConnectorsRequest) ProtoMessage() {}
 
 func (x *ListConnectorsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6469,7 +6326,7 @@ func (x *ListConnectorsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConnectorsRequest.ProtoReflect.Descriptor instead.
 func (*ListConnectorsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{96}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{94}
 }
 
 // Response message for RuntimeService.ListConnectors
@@ -6484,7 +6341,7 @@ type ListConnectorsResponse struct {
 func (x *ListConnectorsResponse) Reset() {
 	*x = ListConnectorsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6497,7 +6354,7 @@ func (x *ListConnectorsResponse) String() string {
 func (*ListConnectorsResponse) ProtoMessage() {}
 
 func (x *ListConnectorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6510,7 +6367,7 @@ func (x *ListConnectorsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConnectorsResponse.ProtoReflect.Descriptor instead.
 func (*ListConnectorsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{97}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *ListConnectorsResponse) GetConnectors() []*Connector {
@@ -6533,7 +6390,7 @@ type ReconcileError_CharLocation struct {
 func (x *ReconcileError_CharLocation) Reset() {
 	*x = ReconcileError_CharLocation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6546,7 +6403,7 @@ func (x *ReconcileError_CharLocation) String() string {
 func (*ReconcileError_CharLocation) ProtoMessage() {}
 
 func (x *ReconcileError_CharLocation) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6589,7 +6446,7 @@ type MetricsViewFilter_Cond struct {
 func (x *MetricsViewFilter_Cond) Reset() {
 	*x = MetricsViewFilter_Cond{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6602,7 +6459,7 @@ func (x *MetricsViewFilter_Cond) String() string {
 func (*MetricsViewFilter_Cond) ProtoMessage() {}
 
 func (x *MetricsViewFilter_Cond) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6615,7 +6472,7 @@ func (x *MetricsViewFilter_Cond) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewFilter_Cond.ProtoReflect.Descriptor instead.
 func (*MetricsViewFilter_Cond) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{50, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{48, 0}
 }
 
 func (x *MetricsViewFilter_Cond) GetName() string {
@@ -6652,7 +6509,7 @@ type TimeRangeSummary_Interval struct {
 func (x *TimeRangeSummary_Interval) Reset() {
 	*x = TimeRangeSummary_Interval{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6665,7 +6522,7 @@ func (x *TimeRangeSummary_Interval) String() string {
 func (*TimeRangeSummary_Interval) ProtoMessage() {}
 
 func (x *TimeRangeSummary_Interval) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6678,7 +6535,7 @@ func (x *TimeRangeSummary_Interval) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeRangeSummary_Interval.ProtoReflect.Descriptor instead.
 func (*TimeRangeSummary_Interval) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{63, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{61, 0}
 }
 
 func (x *TimeRangeSummary_Interval) GetMonths() int32 {
@@ -6716,7 +6573,7 @@ type NumericOutliers_Outlier struct {
 func (x *NumericOutliers_Outlier) Reset() {
 	*x = NumericOutliers_Outlier{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6729,7 +6586,7 @@ func (x *NumericOutliers_Outlier) String() string {
 func (*NumericOutliers_Outlier) ProtoMessage() {}
 
 func (x *NumericOutliers_Outlier) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6742,7 +6599,7 @@ func (x *NumericOutliers_Outlier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericOutliers_Outlier.ProtoReflect.Descriptor instead.
 func (*NumericOutliers_Outlier) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{64, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{62, 0}
 }
 
 func (x *NumericOutliers_Outlier) GetBucket() int32 {
@@ -6786,7 +6643,7 @@ type TopK_TopKEntry struct {
 func (x *TopK_TopKEntry) Reset() {
 	*x = TopK_TopKEntry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6799,7 +6656,7 @@ func (x *TopK_TopKEntry) String() string {
 func (*TopK_TopKEntry) ProtoMessage() {}
 
 func (x *TopK_TopKEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6812,7 +6669,7 @@ func (x *TopK_TopKEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TopK_TopKEntry.ProtoReflect.Descriptor instead.
 func (*TopK_TopKEntry) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{66, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{64, 0}
 }
 
 func (x *TopK_TopKEntry) GetValue() string {
@@ -6843,7 +6700,7 @@ type NumericHistogramBins_Bin struct {
 func (x *NumericHistogramBins_Bin) Reset() {
 	*x = NumericHistogramBins_Bin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6856,7 +6713,7 @@ func (x *NumericHistogramBins_Bin) String() string {
 func (*NumericHistogramBins_Bin) ProtoMessage() {}
 
 func (x *NumericHistogramBins_Bin) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6869,7 +6726,7 @@ func (x *NumericHistogramBins_Bin) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericHistogramBins_Bin.ProtoReflect.Descriptor instead.
 func (*NumericHistogramBins_Bin) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{74, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{72, 0}
 }
 
 func (x *NumericHistogramBins_Bin) GetBucket() int32 {
@@ -6911,7 +6768,7 @@ type GenerateTimeSeriesRequest_BasicMeasures struct {
 func (x *GenerateTimeSeriesRequest_BasicMeasures) Reset() {
 	*x = GenerateTimeSeriesRequest_BasicMeasures{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6924,7 +6781,7 @@ func (x *GenerateTimeSeriesRequest_BasicMeasures) String() string {
 func (*GenerateTimeSeriesRequest_BasicMeasures) ProtoMessage() {}
 
 func (x *GenerateTimeSeriesRequest_BasicMeasures) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6937,7 +6794,7 @@ func (x *GenerateTimeSeriesRequest_BasicMeasures) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use GenerateTimeSeriesRequest_BasicMeasures.ProtoReflect.Descriptor instead.
 func (*GenerateTimeSeriesRequest_BasicMeasures) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{78, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{76, 0}
 }
 
 func (x *GenerateTimeSeriesRequest_BasicMeasures) GetBasicMeasures() []*BasicMeasureDefinition {
@@ -6958,7 +6815,7 @@ type MetricsViewDimensionValue_Values struct {
 func (x *MetricsViewDimensionValue_Values) Reset() {
 	*x = MetricsViewDimensionValue_Values{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[105]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6971,7 +6828,7 @@ func (x *MetricsViewDimensionValue_Values) String() string {
 func (*MetricsViewDimensionValue_Values) ProtoMessage() {}
 
 func (x *MetricsViewDimensionValue_Values) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[105]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6984,7 +6841,7 @@ func (x *MetricsViewDimensionValue_Values) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewDimensionValue_Values.ProtoReflect.Descriptor instead.
 func (*MetricsViewDimensionValue_Values) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{81, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{79, 0}
 }
 
 func (x *MetricsViewDimensionValue_Values) GetValues() []*structpb.Value {
@@ -7005,7 +6862,7 @@ type TimeSeriesResponse_TimeSeriesValues struct {
 func (x *TimeSeriesResponse_TimeSeriesValues) Reset() {
 	*x = TimeSeriesResponse_TimeSeriesValues{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7018,7 +6875,7 @@ func (x *TimeSeriesResponse_TimeSeriesValues) String() string {
 func (*TimeSeriesResponse_TimeSeriesValues) ProtoMessage() {}
 
 func (x *TimeSeriesResponse_TimeSeriesValues) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7031,7 +6888,7 @@ func (x *TimeSeriesResponse_TimeSeriesValues) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use TimeSeriesResponse_TimeSeriesValues.ProtoReflect.Descriptor instead.
 func (*TimeSeriesResponse_TimeSeriesValues) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{83, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{81, 0}
 }
 
 func (x *TimeSeriesResponse_TimeSeriesValues) GetValues() []*TimeSeriesValue {
@@ -7068,7 +6925,7 @@ type Connector_Property struct {
 func (x *Connector_Property) Reset() {
 	*x = Connector_Property{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[108]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7081,7 +6938,7 @@ func (x *Connector_Property) String() string {
 func (*Connector_Property) ProtoMessage() {}
 
 func (x *Connector_Property) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[108]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7094,7 +6951,7 @@ func (x *Connector_Property) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Connector_Property.ProtoReflect.Descriptor instead.
 func (*Connector_Property) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{95, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{93, 0}
 }
 
 func (x *Connector_Property) GetKey() string {
@@ -7466,24 +7323,6 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x74, 0x79, 0x12, 0x17, 0x0a, 0x07, 0x64, 0x72, 0x79, 0x5f, 0x72, 0x75, 0x6e, 0x18, 0x05, 0x20,
 	0x01, 0x28, 0x08, 0x52, 0x06, 0x64, 0x72, 0x79, 0x52, 0x75, 0x6e, 0x22, 0x6d, 0x0a, 0x0d, 0x51,
 	0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2f, 0x0a, 0x04,
-	0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c,
-	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72,
-	0x75, 0x63, 0x74, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a,
-	0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f,
-	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74,
-	0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xa8, 0x01, 0x0a, 0x12, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
-	0x49, 0x64, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x71, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x03, 0x73, 0x71, 0x6c, 0x12, 0x2a, 0x0a, 0x04, 0x61, 0x72, 0x67, 0x73, 0x18, 0x03, 0x20, 0x03,
-	0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x04, 0x61, 0x72, 0x67, 0x73,
-	0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x04, 0x20, 0x01,
-	0x28, 0x03, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x17, 0x0a, 0x07,
-	0x64, 0x72, 0x79, 0x5f, 0x72, 0x75, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x64,
-	0x72, 0x79, 0x52, 0x75, 0x6e, 0x22, 0x73, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69,
-	0x72, 0x65, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2f, 0x0a, 0x04,
 	0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c,
 	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72,
 	0x75, 0x63, 0x74, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a,
@@ -8522,7 +8361,7 @@ func file_rill_runtime_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_rill_runtime_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 109)
+var file_rill_runtime_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 107)
 var file_rill_runtime_v1_api_proto_goTypes = []interface{}{
 	(TimeGrain)(0),                                  // 0: rill.runtime.v1.TimeGrain
 	(TimeRangeName)(0),                              // 1: rill.runtime.v1.TimeRangeName
@@ -8570,257 +8409,252 @@ var file_rill_runtime_v1_api_proto_goTypes = []interface{}{
 	(*RenameFileAndReconcileResponse)(nil),          // 43: rill.runtime.v1.RenameFileAndReconcileResponse
 	(*QueryRequest)(nil),                            // 44: rill.runtime.v1.QueryRequest
 	(*QueryResponse)(nil),                           // 45: rill.runtime.v1.QueryResponse
-	(*QueryDirectRequest)(nil),                      // 46: rill.runtime.v1.QueryDirectRequest
-	(*QueryDirectResponse)(nil),                     // 47: rill.runtime.v1.QueryDirectResponse
-	(*MetricsViewToplistRequest)(nil),               // 48: rill.runtime.v1.MetricsViewToplistRequest
-	(*MetricsViewToplistResponse)(nil),              // 49: rill.runtime.v1.MetricsViewToplistResponse
-	(*MetricsViewTimeSeriesRequest)(nil),            // 50: rill.runtime.v1.MetricsViewTimeSeriesRequest
-	(*MetricsViewTimeSeriesResponse)(nil),           // 51: rill.runtime.v1.MetricsViewTimeSeriesResponse
-	(*MetricsViewTotalsRequest)(nil),                // 52: rill.runtime.v1.MetricsViewTotalsRequest
-	(*MetricsViewTotalsResponse)(nil),               // 53: rill.runtime.v1.MetricsViewTotalsResponse
-	(*MetricsViewSort)(nil),                         // 54: rill.runtime.v1.MetricsViewSort
-	(*MetricsViewFilter)(nil),                       // 55: rill.runtime.v1.MetricsViewFilter
-	(*MetricsViewColumn)(nil),                       // 56: rill.runtime.v1.MetricsViewColumn
-	(*EstimateRollupIntervalRequest)(nil),           // 57: rill.runtime.v1.EstimateRollupIntervalRequest
-	(*EstimateRollupIntervalResponse)(nil),          // 58: rill.runtime.v1.EstimateRollupIntervalResponse
-	(*ProfileColumnSummary)(nil),                    // 59: rill.runtime.v1.ProfileColumnSummary
-	(*CategoricalSummary)(nil),                      // 60: rill.runtime.v1.CategoricalSummary
-	(*GetCardinalityOfColumnResponse)(nil),          // 61: rill.runtime.v1.GetCardinalityOfColumnResponse
-	(*GetTopKResponse)(nil),                         // 62: rill.runtime.v1.GetTopKResponse
-	(*NumericSummary)(nil),                          // 63: rill.runtime.v1.NumericSummary
-	(*GetRugHistogramResponse)(nil),                 // 64: rill.runtime.v1.GetRugHistogramResponse
-	(*GetNumericHistogramResponse)(nil),             // 65: rill.runtime.v1.GetNumericHistogramResponse
-	(*GetDescriptiveStatisticsResponse)(nil),        // 66: rill.runtime.v1.GetDescriptiveStatisticsResponse
-	(*GetTimeRangeSummaryResponse)(nil),             // 67: rill.runtime.v1.GetTimeRangeSummaryResponse
-	(*TimeRangeSummary)(nil),                        // 68: rill.runtime.v1.TimeRangeSummary
-	(*NumericOutliers)(nil),                         // 69: rill.runtime.v1.NumericOutliers
-	(*GetTopKRequest)(nil),                          // 70: rill.runtime.v1.GetTopKRequest
-	(*TopK)(nil),                                    // 71: rill.runtime.v1.TopK
-	(*GetNullCountRequest)(nil),                     // 72: rill.runtime.v1.GetNullCountRequest
-	(*GetNullCountResponse)(nil),                    // 73: rill.runtime.v1.GetNullCountResponse
-	(*GetDescriptiveStatisticsRequest)(nil),         // 74: rill.runtime.v1.GetDescriptiveStatisticsRequest
-	(*NumericStatistics)(nil),                       // 75: rill.runtime.v1.NumericStatistics
-	(*EstimateSmallestTimeGrainRequest)(nil),        // 76: rill.runtime.v1.EstimateSmallestTimeGrainRequest
-	(*EstimateSmallestTimeGrainResponse)(nil),       // 77: rill.runtime.v1.EstimateSmallestTimeGrainResponse
-	(*GetNumericHistogramRequest)(nil),              // 78: rill.runtime.v1.GetNumericHistogramRequest
-	(*NumericHistogramBins)(nil),                    // 79: rill.runtime.v1.NumericHistogramBins
-	(*GetRugHistogramRequest)(nil),                  // 80: rill.runtime.v1.GetRugHistogramRequest
-	(*GetTimeRangeSummaryRequest)(nil),              // 81: rill.runtime.v1.GetTimeRangeSummaryRequest
-	(*GetCardinalityOfColumnRequest)(nil),           // 82: rill.runtime.v1.GetCardinalityOfColumnRequest
-	(*GenerateTimeSeriesRequest)(nil),               // 83: rill.runtime.v1.GenerateTimeSeriesRequest
-	(*BasicMeasureDefinition)(nil),                  // 84: rill.runtime.v1.BasicMeasureDefinition
-	(*TimeSeriesTimeRange)(nil),                     // 85: rill.runtime.v1.TimeSeriesTimeRange
-	(*MetricsViewDimensionValue)(nil),               // 86: rill.runtime.v1.MetricsViewDimensionValue
-	(*MetricsViewRequestFilter)(nil),                // 87: rill.runtime.v1.MetricsViewRequestFilter
-	(*TimeSeriesResponse)(nil),                      // 88: rill.runtime.v1.TimeSeriesResponse
-	(*GenerateTimeSeriesResponse)(nil),              // 89: rill.runtime.v1.GenerateTimeSeriesResponse
-	(*TimeSeriesValue)(nil),                         // 90: rill.runtime.v1.TimeSeriesValue
-	(*RenameDatabaseObjectRequest)(nil),             // 91: rill.runtime.v1.RenameDatabaseObjectRequest
-	(*RenameDatabaseObjectResponse)(nil),            // 92: rill.runtime.v1.RenameDatabaseObjectResponse
-	(*GetTableCardinalityRequest)(nil),              // 93: rill.runtime.v1.GetTableCardinalityRequest
-	(*GetTableCardinalityResponse)(nil),             // 94: rill.runtime.v1.GetTableCardinalityResponse
-	(*ProfileColumnsRequest)(nil),                   // 95: rill.runtime.v1.ProfileColumnsRequest
-	(*ProfileColumnsResponse)(nil),                  // 96: rill.runtime.v1.ProfileColumnsResponse
-	(*ProfileColumn)(nil),                           // 97: rill.runtime.v1.ProfileColumn
-	(*GetTableRowsRequest)(nil),                     // 98: rill.runtime.v1.GetTableRowsRequest
-	(*GetTableRowsResponse)(nil),                    // 99: rill.runtime.v1.GetTableRowsResponse
-	(*Connector)(nil),                               // 100: rill.runtime.v1.Connector
-	(*ListConnectorsRequest)(nil),                   // 101: rill.runtime.v1.ListConnectorsRequest
-	(*ListConnectorsResponse)(nil),                  // 102: rill.runtime.v1.ListConnectorsResponse
-	(*ReconcileError_CharLocation)(nil),             // 103: rill.runtime.v1.ReconcileError.CharLocation
-	(*MetricsViewFilter_Cond)(nil),                  // 104: rill.runtime.v1.MetricsViewFilter.Cond
-	(*TimeRangeSummary_Interval)(nil),               // 105: rill.runtime.v1.TimeRangeSummary.Interval
-	(*NumericOutliers_Outlier)(nil),                 // 106: rill.runtime.v1.NumericOutliers.Outlier
-	(*TopK_TopKEntry)(nil),                          // 107: rill.runtime.v1.TopK.TopKEntry
-	(*NumericHistogramBins_Bin)(nil),                // 108: rill.runtime.v1.NumericHistogramBins.Bin
-	(*GenerateTimeSeriesRequest_BasicMeasures)(nil), // 109: rill.runtime.v1.GenerateTimeSeriesRequest.BasicMeasures
-	(*MetricsViewDimensionValue_Values)(nil),        // 110: rill.runtime.v1.MetricsViewDimensionValue.Values
-	(*TimeSeriesResponse_TimeSeriesValues)(nil),     // 111: rill.runtime.v1.TimeSeriesResponse.TimeSeriesValues
-	nil,                           // 112: rill.runtime.v1.TimeSeriesValue.RecordsEntry
-	(*Connector_Property)(nil),    // 113: rill.runtime.v1.Connector.Property
-	(*timestamppb.Timestamp)(nil), // 114: google.protobuf.Timestamp
-	(*Table)(nil),                 // 115: rill.runtime.v1.Table
-	(*Source)(nil),                // 116: rill.runtime.v1.Source
-	(*Model)(nil),                 // 117: rill.runtime.v1.Model
-	(*MetricsView)(nil),           // 118: rill.runtime.v1.MetricsView
-	(ObjectType)(0),               // 119: rill.runtime.v1.ObjectType
-	(*structpb.Value)(nil),        // 120: google.protobuf.Value
-	(*StructType)(nil),            // 121: rill.runtime.v1.StructType
-	(*structpb.Struct)(nil),       // 122: google.protobuf.Struct
+	(*MetricsViewToplistRequest)(nil),               // 46: rill.runtime.v1.MetricsViewToplistRequest
+	(*MetricsViewToplistResponse)(nil),              // 47: rill.runtime.v1.MetricsViewToplistResponse
+	(*MetricsViewTimeSeriesRequest)(nil),            // 48: rill.runtime.v1.MetricsViewTimeSeriesRequest
+	(*MetricsViewTimeSeriesResponse)(nil),           // 49: rill.runtime.v1.MetricsViewTimeSeriesResponse
+	(*MetricsViewTotalsRequest)(nil),                // 50: rill.runtime.v1.MetricsViewTotalsRequest
+	(*MetricsViewTotalsResponse)(nil),               // 51: rill.runtime.v1.MetricsViewTotalsResponse
+	(*MetricsViewSort)(nil),                         // 52: rill.runtime.v1.MetricsViewSort
+	(*MetricsViewFilter)(nil),                       // 53: rill.runtime.v1.MetricsViewFilter
+	(*MetricsViewColumn)(nil),                       // 54: rill.runtime.v1.MetricsViewColumn
+	(*EstimateRollupIntervalRequest)(nil),           // 55: rill.runtime.v1.EstimateRollupIntervalRequest
+	(*EstimateRollupIntervalResponse)(nil),          // 56: rill.runtime.v1.EstimateRollupIntervalResponse
+	(*ProfileColumnSummary)(nil),                    // 57: rill.runtime.v1.ProfileColumnSummary
+	(*CategoricalSummary)(nil),                      // 58: rill.runtime.v1.CategoricalSummary
+	(*GetCardinalityOfColumnResponse)(nil),          // 59: rill.runtime.v1.GetCardinalityOfColumnResponse
+	(*GetTopKResponse)(nil),                         // 60: rill.runtime.v1.GetTopKResponse
+	(*NumericSummary)(nil),                          // 61: rill.runtime.v1.NumericSummary
+	(*GetRugHistogramResponse)(nil),                 // 62: rill.runtime.v1.GetRugHistogramResponse
+	(*GetNumericHistogramResponse)(nil),             // 63: rill.runtime.v1.GetNumericHistogramResponse
+	(*GetDescriptiveStatisticsResponse)(nil),        // 64: rill.runtime.v1.GetDescriptiveStatisticsResponse
+	(*GetTimeRangeSummaryResponse)(nil),             // 65: rill.runtime.v1.GetTimeRangeSummaryResponse
+	(*TimeRangeSummary)(nil),                        // 66: rill.runtime.v1.TimeRangeSummary
+	(*NumericOutliers)(nil),                         // 67: rill.runtime.v1.NumericOutliers
+	(*GetTopKRequest)(nil),                          // 68: rill.runtime.v1.GetTopKRequest
+	(*TopK)(nil),                                    // 69: rill.runtime.v1.TopK
+	(*GetNullCountRequest)(nil),                     // 70: rill.runtime.v1.GetNullCountRequest
+	(*GetNullCountResponse)(nil),                    // 71: rill.runtime.v1.GetNullCountResponse
+	(*GetDescriptiveStatisticsRequest)(nil),         // 72: rill.runtime.v1.GetDescriptiveStatisticsRequest
+	(*NumericStatistics)(nil),                       // 73: rill.runtime.v1.NumericStatistics
+	(*EstimateSmallestTimeGrainRequest)(nil),        // 74: rill.runtime.v1.EstimateSmallestTimeGrainRequest
+	(*EstimateSmallestTimeGrainResponse)(nil),       // 75: rill.runtime.v1.EstimateSmallestTimeGrainResponse
+	(*GetNumericHistogramRequest)(nil),              // 76: rill.runtime.v1.GetNumericHistogramRequest
+	(*NumericHistogramBins)(nil),                    // 77: rill.runtime.v1.NumericHistogramBins
+	(*GetRugHistogramRequest)(nil),                  // 78: rill.runtime.v1.GetRugHistogramRequest
+	(*GetTimeRangeSummaryRequest)(nil),              // 79: rill.runtime.v1.GetTimeRangeSummaryRequest
+	(*GetCardinalityOfColumnRequest)(nil),           // 80: rill.runtime.v1.GetCardinalityOfColumnRequest
+	(*GenerateTimeSeriesRequest)(nil),               // 81: rill.runtime.v1.GenerateTimeSeriesRequest
+	(*BasicMeasureDefinition)(nil),                  // 82: rill.runtime.v1.BasicMeasureDefinition
+	(*TimeSeriesTimeRange)(nil),                     // 83: rill.runtime.v1.TimeSeriesTimeRange
+	(*MetricsViewDimensionValue)(nil),               // 84: rill.runtime.v1.MetricsViewDimensionValue
+	(*MetricsViewRequestFilter)(nil),                // 85: rill.runtime.v1.MetricsViewRequestFilter
+	(*TimeSeriesResponse)(nil),                      // 86: rill.runtime.v1.TimeSeriesResponse
+	(*GenerateTimeSeriesResponse)(nil),              // 87: rill.runtime.v1.GenerateTimeSeriesResponse
+	(*TimeSeriesValue)(nil),                         // 88: rill.runtime.v1.TimeSeriesValue
+	(*RenameDatabaseObjectRequest)(nil),             // 89: rill.runtime.v1.RenameDatabaseObjectRequest
+	(*RenameDatabaseObjectResponse)(nil),            // 90: rill.runtime.v1.RenameDatabaseObjectResponse
+	(*GetTableCardinalityRequest)(nil),              // 91: rill.runtime.v1.GetTableCardinalityRequest
+	(*GetTableCardinalityResponse)(nil),             // 92: rill.runtime.v1.GetTableCardinalityResponse
+	(*ProfileColumnsRequest)(nil),                   // 93: rill.runtime.v1.ProfileColumnsRequest
+	(*ProfileColumnsResponse)(nil),                  // 94: rill.runtime.v1.ProfileColumnsResponse
+	(*ProfileColumn)(nil),                           // 95: rill.runtime.v1.ProfileColumn
+	(*GetTableRowsRequest)(nil),                     // 96: rill.runtime.v1.GetTableRowsRequest
+	(*GetTableRowsResponse)(nil),                    // 97: rill.runtime.v1.GetTableRowsResponse
+	(*Connector)(nil),                               // 98: rill.runtime.v1.Connector
+	(*ListConnectorsRequest)(nil),                   // 99: rill.runtime.v1.ListConnectorsRequest
+	(*ListConnectorsResponse)(nil),                  // 100: rill.runtime.v1.ListConnectorsResponse
+	(*ReconcileError_CharLocation)(nil),             // 101: rill.runtime.v1.ReconcileError.CharLocation
+	(*MetricsViewFilter_Cond)(nil),                  // 102: rill.runtime.v1.MetricsViewFilter.Cond
+	(*TimeRangeSummary_Interval)(nil),               // 103: rill.runtime.v1.TimeRangeSummary.Interval
+	(*NumericOutliers_Outlier)(nil),                 // 104: rill.runtime.v1.NumericOutliers.Outlier
+	(*TopK_TopKEntry)(nil),                          // 105: rill.runtime.v1.TopK.TopKEntry
+	(*NumericHistogramBins_Bin)(nil),                // 106: rill.runtime.v1.NumericHistogramBins.Bin
+	(*GenerateTimeSeriesRequest_BasicMeasures)(nil), // 107: rill.runtime.v1.GenerateTimeSeriesRequest.BasicMeasures
+	(*MetricsViewDimensionValue_Values)(nil),        // 108: rill.runtime.v1.MetricsViewDimensionValue.Values
+	(*TimeSeriesResponse_TimeSeriesValues)(nil),     // 109: rill.runtime.v1.TimeSeriesResponse.TimeSeriesValues
+	nil,                           // 110: rill.runtime.v1.TimeSeriesValue.RecordsEntry
+	(*Connector_Property)(nil),    // 111: rill.runtime.v1.Connector.Property
+	(*timestamppb.Timestamp)(nil), // 112: google.protobuf.Timestamp
+	(*Table)(nil),                 // 113: rill.runtime.v1.Table
+	(*Source)(nil),                // 114: rill.runtime.v1.Source
+	(*Model)(nil),                 // 115: rill.runtime.v1.Model
+	(*MetricsView)(nil),           // 116: rill.runtime.v1.MetricsView
+	(ObjectType)(0),               // 117: rill.runtime.v1.ObjectType
+	(*structpb.Value)(nil),        // 118: google.protobuf.Value
+	(*StructType)(nil),            // 119: rill.runtime.v1.StructType
+	(*structpb.Struct)(nil),       // 120: google.protobuf.Struct
 }
 var file_rill_runtime_v1_api_proto_depIdxs = []int32{
-	114, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
+	112, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
 	7,   // 1: rill.runtime.v1.ListInstancesResponse.instances:type_name -> rill.runtime.v1.Instance
 	7,   // 2: rill.runtime.v1.GetInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
 	7,   // 3: rill.runtime.v1.CreateInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
-	114, // 4: rill.runtime.v1.GetFileResponse.updated_on:type_name -> google.protobuf.Timestamp
-	115, // 5: rill.runtime.v1.CatalogEntry.table:type_name -> rill.runtime.v1.Table
-	116, // 6: rill.runtime.v1.CatalogEntry.source:type_name -> rill.runtime.v1.Source
-	117, // 7: rill.runtime.v1.CatalogEntry.model:type_name -> rill.runtime.v1.Model
-	118, // 8: rill.runtime.v1.CatalogEntry.metrics_view:type_name -> rill.runtime.v1.MetricsView
-	114, // 9: rill.runtime.v1.CatalogEntry.created_on:type_name -> google.protobuf.Timestamp
-	114, // 10: rill.runtime.v1.CatalogEntry.updated_on:type_name -> google.protobuf.Timestamp
-	114, // 11: rill.runtime.v1.CatalogEntry.refreshed_on:type_name -> google.protobuf.Timestamp
-	119, // 12: rill.runtime.v1.ListCatalogEntriesRequest.type:type_name -> rill.runtime.v1.ObjectType
+	112, // 4: rill.runtime.v1.GetFileResponse.updated_on:type_name -> google.protobuf.Timestamp
+	113, // 5: rill.runtime.v1.CatalogEntry.table:type_name -> rill.runtime.v1.Table
+	114, // 6: rill.runtime.v1.CatalogEntry.source:type_name -> rill.runtime.v1.Source
+	115, // 7: rill.runtime.v1.CatalogEntry.model:type_name -> rill.runtime.v1.Model
+	116, // 8: rill.runtime.v1.CatalogEntry.metrics_view:type_name -> rill.runtime.v1.MetricsView
+	112, // 9: rill.runtime.v1.CatalogEntry.created_on:type_name -> google.protobuf.Timestamp
+	112, // 10: rill.runtime.v1.CatalogEntry.updated_on:type_name -> google.protobuf.Timestamp
+	112, // 11: rill.runtime.v1.CatalogEntry.refreshed_on:type_name -> google.protobuf.Timestamp
+	117, // 12: rill.runtime.v1.ListCatalogEntriesRequest.type:type_name -> rill.runtime.v1.ObjectType
 	26,  // 13: rill.runtime.v1.ListCatalogEntriesResponse.entries:type_name -> rill.runtime.v1.CatalogEntry
 	26,  // 14: rill.runtime.v1.GetCatalogEntryResponse.entry:type_name -> rill.runtime.v1.CatalogEntry
 	37,  // 15: rill.runtime.v1.ReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
 	3,   // 16: rill.runtime.v1.ReconcileError.code:type_name -> rill.runtime.v1.ReconcileError.Code
-	103, // 17: rill.runtime.v1.ReconcileError.start_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
-	103, // 18: rill.runtime.v1.ReconcileError.end_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
+	101, // 17: rill.runtime.v1.ReconcileError.start_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
+	101, // 18: rill.runtime.v1.ReconcileError.end_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
 	37,  // 19: rill.runtime.v1.PutFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
 	37,  // 20: rill.runtime.v1.DeleteFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
 	37,  // 21: rill.runtime.v1.RenameFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	120, // 22: rill.runtime.v1.QueryRequest.args:type_name -> google.protobuf.Value
-	121, // 23: rill.runtime.v1.QueryResponse.meta:type_name -> rill.runtime.v1.StructType
-	122, // 24: rill.runtime.v1.QueryResponse.data:type_name -> google.protobuf.Struct
-	120, // 25: rill.runtime.v1.QueryDirectRequest.args:type_name -> google.protobuf.Value
-	121, // 26: rill.runtime.v1.QueryDirectResponse.meta:type_name -> rill.runtime.v1.StructType
-	122, // 27: rill.runtime.v1.QueryDirectResponse.data:type_name -> google.protobuf.Struct
-	114, // 28: rill.runtime.v1.MetricsViewToplistRequest.time_start:type_name -> google.protobuf.Timestamp
-	114, // 29: rill.runtime.v1.MetricsViewToplistRequest.time_end:type_name -> google.protobuf.Timestamp
-	54,  // 30: rill.runtime.v1.MetricsViewToplistRequest.sort:type_name -> rill.runtime.v1.MetricsViewSort
-	55,  // 31: rill.runtime.v1.MetricsViewToplistRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	56,  // 32: rill.runtime.v1.MetricsViewToplistResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	122, // 33: rill.runtime.v1.MetricsViewToplistResponse.data:type_name -> google.protobuf.Struct
-	114, // 34: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_start:type_name -> google.protobuf.Timestamp
-	114, // 35: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_end:type_name -> google.protobuf.Timestamp
-	55,  // 36: rill.runtime.v1.MetricsViewTimeSeriesRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	56,  // 37: rill.runtime.v1.MetricsViewTimeSeriesResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	122, // 38: rill.runtime.v1.MetricsViewTimeSeriesResponse.data:type_name -> google.protobuf.Struct
-	114, // 39: rill.runtime.v1.MetricsViewTotalsRequest.time_start:type_name -> google.protobuf.Timestamp
-	114, // 40: rill.runtime.v1.MetricsViewTotalsRequest.time_end:type_name -> google.protobuf.Timestamp
-	55,  // 41: rill.runtime.v1.MetricsViewTotalsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	56,  // 42: rill.runtime.v1.MetricsViewTotalsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	122, // 43: rill.runtime.v1.MetricsViewTotalsResponse.data:type_name -> google.protobuf.Struct
-	104, // 44: rill.runtime.v1.MetricsViewFilter.include:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
-	104, // 45: rill.runtime.v1.MetricsViewFilter.exclude:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
-	114, // 46: rill.runtime.v1.EstimateRollupIntervalResponse.start:type_name -> google.protobuf.Timestamp
-	114, // 47: rill.runtime.v1.EstimateRollupIntervalResponse.end:type_name -> google.protobuf.Timestamp
-	0,   // 48: rill.runtime.v1.EstimateRollupIntervalResponse.interval:type_name -> rill.runtime.v1.TimeGrain
-	60,  // 49: rill.runtime.v1.ProfileColumnSummary.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	63,  // 50: rill.runtime.v1.ProfileColumnSummary.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	68,  // 51: rill.runtime.v1.ProfileColumnSummary.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
-	71,  // 52: rill.runtime.v1.CategoricalSummary.top_k:type_name -> rill.runtime.v1.TopK
-	60,  // 53: rill.runtime.v1.GetCardinalityOfColumnResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	60,  // 54: rill.runtime.v1.GetTopKResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	79,  // 55: rill.runtime.v1.NumericSummary.numeric_histogram_bins:type_name -> rill.runtime.v1.NumericHistogramBins
-	75,  // 56: rill.runtime.v1.NumericSummary.numeric_statistics:type_name -> rill.runtime.v1.NumericStatistics
-	69,  // 57: rill.runtime.v1.NumericSummary.numeric_outliers:type_name -> rill.runtime.v1.NumericOutliers
-	63,  // 58: rill.runtime.v1.GetRugHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	63,  // 59: rill.runtime.v1.GetNumericHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	63,  // 60: rill.runtime.v1.GetDescriptiveStatisticsResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	68,  // 61: rill.runtime.v1.GetTimeRangeSummaryResponse.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
-	114, // 62: rill.runtime.v1.TimeRangeSummary.min:type_name -> google.protobuf.Timestamp
-	114, // 63: rill.runtime.v1.TimeRangeSummary.max:type_name -> google.protobuf.Timestamp
-	105, // 64: rill.runtime.v1.TimeRangeSummary.interval:type_name -> rill.runtime.v1.TimeRangeSummary.Interval
-	106, // 65: rill.runtime.v1.NumericOutliers.outliers:type_name -> rill.runtime.v1.NumericOutliers.Outlier
-	107, // 66: rill.runtime.v1.TopK.entries:type_name -> rill.runtime.v1.TopK.TopKEntry
-	0,   // 67: rill.runtime.v1.EstimateSmallestTimeGrainResponse.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	108, // 68: rill.runtime.v1.NumericHistogramBins.bins:type_name -> rill.runtime.v1.NumericHistogramBins.Bin
-	109, // 69: rill.runtime.v1.GenerateTimeSeriesRequest.measures:type_name -> rill.runtime.v1.GenerateTimeSeriesRequest.BasicMeasures
-	85,  // 70: rill.runtime.v1.GenerateTimeSeriesRequest.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
-	87,  // 71: rill.runtime.v1.GenerateTimeSeriesRequest.filters:type_name -> rill.runtime.v1.MetricsViewRequestFilter
-	114, // 72: rill.runtime.v1.TimeSeriesTimeRange.start:type_name -> google.protobuf.Timestamp
-	114, // 73: rill.runtime.v1.TimeSeriesTimeRange.end:type_name -> google.protobuf.Timestamp
-	0,   // 74: rill.runtime.v1.TimeSeriesTimeRange.interval:type_name -> rill.runtime.v1.TimeGrain
-	120, // 75: rill.runtime.v1.MetricsViewDimensionValue.in:type_name -> google.protobuf.Value
-	110, // 76: rill.runtime.v1.MetricsViewDimensionValue.like:type_name -> rill.runtime.v1.MetricsViewDimensionValue.Values
-	86,  // 77: rill.runtime.v1.MetricsViewRequestFilter.include:type_name -> rill.runtime.v1.MetricsViewDimensionValue
-	86,  // 78: rill.runtime.v1.MetricsViewRequestFilter.exclude:type_name -> rill.runtime.v1.MetricsViewDimensionValue
-	90,  // 79: rill.runtime.v1.TimeSeriesResponse.results:type_name -> rill.runtime.v1.TimeSeriesValue
-	111, // 80: rill.runtime.v1.TimeSeriesResponse.spark:type_name -> rill.runtime.v1.TimeSeriesResponse.TimeSeriesValues
-	85,  // 81: rill.runtime.v1.TimeSeriesResponse.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
-	88,  // 82: rill.runtime.v1.GenerateTimeSeriesResponse.rollup:type_name -> rill.runtime.v1.TimeSeriesResponse
-	112, // 83: rill.runtime.v1.TimeSeriesValue.records:type_name -> rill.runtime.v1.TimeSeriesValue.RecordsEntry
-	2,   // 84: rill.runtime.v1.RenameDatabaseObjectRequest.type:type_name -> rill.runtime.v1.DatabaseObjectType
-	97,  // 85: rill.runtime.v1.ProfileColumnsResponse.profile_columns:type_name -> rill.runtime.v1.ProfileColumn
-	122, // 86: rill.runtime.v1.GetTableRowsResponse.data:type_name -> google.protobuf.Struct
-	113, // 87: rill.runtime.v1.Connector.properties:type_name -> rill.runtime.v1.Connector.Property
-	100, // 88: rill.runtime.v1.ListConnectorsResponse.connectors:type_name -> rill.runtime.v1.Connector
-	120, // 89: rill.runtime.v1.MetricsViewFilter.Cond.in:type_name -> google.protobuf.Value
-	120, // 90: rill.runtime.v1.MetricsViewFilter.Cond.like:type_name -> google.protobuf.Value
-	84,  // 91: rill.runtime.v1.GenerateTimeSeriesRequest.BasicMeasures.basic_measures:type_name -> rill.runtime.v1.BasicMeasureDefinition
-	120, // 92: rill.runtime.v1.MetricsViewDimensionValue.Values.values:type_name -> google.protobuf.Value
-	90,  // 93: rill.runtime.v1.TimeSeriesResponse.TimeSeriesValues.values:type_name -> rill.runtime.v1.TimeSeriesValue
-	4,   // 94: rill.runtime.v1.Connector.Property.type:type_name -> rill.runtime.v1.Connector.Property.Type
-	5,   // 95: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
-	8,   // 96: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
-	10,  // 97: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
-	12,  // 98: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
-	14,  // 99: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
-	16,  // 100: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
-	18,  // 101: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
-	20,  // 102: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
-	22,  // 103: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
-	24,  // 104: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
-	27,  // 105: rill.runtime.v1.RuntimeService.ListCatalogEntries:input_type -> rill.runtime.v1.ListCatalogEntriesRequest
-	29,  // 106: rill.runtime.v1.RuntimeService.GetCatalogEntry:input_type -> rill.runtime.v1.GetCatalogEntryRequest
-	31,  // 107: rill.runtime.v1.RuntimeService.TriggerRefresh:input_type -> rill.runtime.v1.TriggerRefreshRequest
-	33,  // 108: rill.runtime.v1.RuntimeService.TriggerSync:input_type -> rill.runtime.v1.TriggerSyncRequest
-	35,  // 109: rill.runtime.v1.RuntimeService.Reconcile:input_type -> rill.runtime.v1.ReconcileRequest
-	38,  // 110: rill.runtime.v1.RuntimeService.PutFileAndReconcile:input_type -> rill.runtime.v1.PutFileAndReconcileRequest
-	40,  // 111: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
-	42,  // 112: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
-	44,  // 113: rill.runtime.v1.RuntimeService.Query:input_type -> rill.runtime.v1.QueryRequest
-	48,  // 114: rill.runtime.v1.RuntimeService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
-	50,  // 115: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
-	52,  // 116: rill.runtime.v1.RuntimeService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
-	57,  // 117: rill.runtime.v1.RuntimeService.EstimateRollupInterval:input_type -> rill.runtime.v1.EstimateRollupIntervalRequest
-	70,  // 118: rill.runtime.v1.RuntimeService.GetTopK:input_type -> rill.runtime.v1.GetTopKRequest
-	72,  // 119: rill.runtime.v1.RuntimeService.GetNullCount:input_type -> rill.runtime.v1.GetNullCountRequest
-	74,  // 120: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:input_type -> rill.runtime.v1.GetDescriptiveStatisticsRequest
-	76,  // 121: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:input_type -> rill.runtime.v1.EstimateSmallestTimeGrainRequest
-	78,  // 122: rill.runtime.v1.RuntimeService.GetNumericHistogram:input_type -> rill.runtime.v1.GetNumericHistogramRequest
-	80,  // 123: rill.runtime.v1.RuntimeService.GetRugHistogram:input_type -> rill.runtime.v1.GetRugHistogramRequest
-	81,  // 124: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:input_type -> rill.runtime.v1.GetTimeRangeSummaryRequest
-	82,  // 125: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:input_type -> rill.runtime.v1.GetCardinalityOfColumnRequest
-	83,  // 126: rill.runtime.v1.RuntimeService.GenerateTimeSeries:input_type -> rill.runtime.v1.GenerateTimeSeriesRequest
-	93,  // 127: rill.runtime.v1.RuntimeService.GetTableCardinality:input_type -> rill.runtime.v1.GetTableCardinalityRequest
-	95,  // 128: rill.runtime.v1.RuntimeService.ProfileColumns:input_type -> rill.runtime.v1.ProfileColumnsRequest
-	98,  // 129: rill.runtime.v1.RuntimeService.GetTableRows:input_type -> rill.runtime.v1.GetTableRowsRequest
-	101, // 130: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
-	6,   // 131: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
-	9,   // 132: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
-	11,  // 133: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
-	13,  // 134: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
-	15,  // 135: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
-	17,  // 136: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
-	19,  // 137: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
-	21,  // 138: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
-	23,  // 139: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
-	25,  // 140: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
-	28,  // 141: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
-	30,  // 142: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
-	32,  // 143: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
-	34,  // 144: rill.runtime.v1.RuntimeService.TriggerSync:output_type -> rill.runtime.v1.TriggerSyncResponse
-	36,  // 145: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
-	39,  // 146: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
-	41,  // 147: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
-	43,  // 148: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
-	45,  // 149: rill.runtime.v1.RuntimeService.Query:output_type -> rill.runtime.v1.QueryResponse
-	49,  // 150: rill.runtime.v1.RuntimeService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
-	51,  // 151: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
-	53,  // 152: rill.runtime.v1.RuntimeService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
-	58,  // 153: rill.runtime.v1.RuntimeService.EstimateRollupInterval:output_type -> rill.runtime.v1.EstimateRollupIntervalResponse
-	62,  // 154: rill.runtime.v1.RuntimeService.GetTopK:output_type -> rill.runtime.v1.GetTopKResponse
-	73,  // 155: rill.runtime.v1.RuntimeService.GetNullCount:output_type -> rill.runtime.v1.GetNullCountResponse
-	66,  // 156: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:output_type -> rill.runtime.v1.GetDescriptiveStatisticsResponse
-	77,  // 157: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:output_type -> rill.runtime.v1.EstimateSmallestTimeGrainResponse
-	65,  // 158: rill.runtime.v1.RuntimeService.GetNumericHistogram:output_type -> rill.runtime.v1.GetNumericHistogramResponse
-	64,  // 159: rill.runtime.v1.RuntimeService.GetRugHistogram:output_type -> rill.runtime.v1.GetRugHistogramResponse
-	67,  // 160: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:output_type -> rill.runtime.v1.GetTimeRangeSummaryResponse
-	61,  // 161: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:output_type -> rill.runtime.v1.GetCardinalityOfColumnResponse
-	89,  // 162: rill.runtime.v1.RuntimeService.GenerateTimeSeries:output_type -> rill.runtime.v1.GenerateTimeSeriesResponse
-	94,  // 163: rill.runtime.v1.RuntimeService.GetTableCardinality:output_type -> rill.runtime.v1.GetTableCardinalityResponse
-	96,  // 164: rill.runtime.v1.RuntimeService.ProfileColumns:output_type -> rill.runtime.v1.ProfileColumnsResponse
-	99,  // 165: rill.runtime.v1.RuntimeService.GetTableRows:output_type -> rill.runtime.v1.GetTableRowsResponse
-	102, // 166: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
-	131, // [131:167] is the sub-list for method output_type
-	95,  // [95:131] is the sub-list for method input_type
-	95,  // [95:95] is the sub-list for extension type_name
-	95,  // [95:95] is the sub-list for extension extendee
-	0,   // [0:95] is the sub-list for field type_name
+	118, // 22: rill.runtime.v1.QueryRequest.args:type_name -> google.protobuf.Value
+	119, // 23: rill.runtime.v1.QueryResponse.meta:type_name -> rill.runtime.v1.StructType
+	120, // 24: rill.runtime.v1.QueryResponse.data:type_name -> google.protobuf.Struct
+	112, // 25: rill.runtime.v1.MetricsViewToplistRequest.time_start:type_name -> google.protobuf.Timestamp
+	112, // 26: rill.runtime.v1.MetricsViewToplistRequest.time_end:type_name -> google.protobuf.Timestamp
+	52,  // 27: rill.runtime.v1.MetricsViewToplistRequest.sort:type_name -> rill.runtime.v1.MetricsViewSort
+	53,  // 28: rill.runtime.v1.MetricsViewToplistRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	54,  // 29: rill.runtime.v1.MetricsViewToplistResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	120, // 30: rill.runtime.v1.MetricsViewToplistResponse.data:type_name -> google.protobuf.Struct
+	112, // 31: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_start:type_name -> google.protobuf.Timestamp
+	112, // 32: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_end:type_name -> google.protobuf.Timestamp
+	53,  // 33: rill.runtime.v1.MetricsViewTimeSeriesRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	54,  // 34: rill.runtime.v1.MetricsViewTimeSeriesResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	120, // 35: rill.runtime.v1.MetricsViewTimeSeriesResponse.data:type_name -> google.protobuf.Struct
+	112, // 36: rill.runtime.v1.MetricsViewTotalsRequest.time_start:type_name -> google.protobuf.Timestamp
+	112, // 37: rill.runtime.v1.MetricsViewTotalsRequest.time_end:type_name -> google.protobuf.Timestamp
+	53,  // 38: rill.runtime.v1.MetricsViewTotalsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	54,  // 39: rill.runtime.v1.MetricsViewTotalsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	120, // 40: rill.runtime.v1.MetricsViewTotalsResponse.data:type_name -> google.protobuf.Struct
+	102, // 41: rill.runtime.v1.MetricsViewFilter.include:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
+	102, // 42: rill.runtime.v1.MetricsViewFilter.exclude:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
+	112, // 43: rill.runtime.v1.EstimateRollupIntervalResponse.start:type_name -> google.protobuf.Timestamp
+	112, // 44: rill.runtime.v1.EstimateRollupIntervalResponse.end:type_name -> google.protobuf.Timestamp
+	0,   // 45: rill.runtime.v1.EstimateRollupIntervalResponse.interval:type_name -> rill.runtime.v1.TimeGrain
+	58,  // 46: rill.runtime.v1.ProfileColumnSummary.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	61,  // 47: rill.runtime.v1.ProfileColumnSummary.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	66,  // 48: rill.runtime.v1.ProfileColumnSummary.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
+	69,  // 49: rill.runtime.v1.CategoricalSummary.top_k:type_name -> rill.runtime.v1.TopK
+	58,  // 50: rill.runtime.v1.GetCardinalityOfColumnResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	58,  // 51: rill.runtime.v1.GetTopKResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	77,  // 52: rill.runtime.v1.NumericSummary.numeric_histogram_bins:type_name -> rill.runtime.v1.NumericHistogramBins
+	73,  // 53: rill.runtime.v1.NumericSummary.numeric_statistics:type_name -> rill.runtime.v1.NumericStatistics
+	67,  // 54: rill.runtime.v1.NumericSummary.numeric_outliers:type_name -> rill.runtime.v1.NumericOutliers
+	61,  // 55: rill.runtime.v1.GetRugHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	61,  // 56: rill.runtime.v1.GetNumericHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	61,  // 57: rill.runtime.v1.GetDescriptiveStatisticsResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	66,  // 58: rill.runtime.v1.GetTimeRangeSummaryResponse.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
+	112, // 59: rill.runtime.v1.TimeRangeSummary.min:type_name -> google.protobuf.Timestamp
+	112, // 60: rill.runtime.v1.TimeRangeSummary.max:type_name -> google.protobuf.Timestamp
+	103, // 61: rill.runtime.v1.TimeRangeSummary.interval:type_name -> rill.runtime.v1.TimeRangeSummary.Interval
+	104, // 62: rill.runtime.v1.NumericOutliers.outliers:type_name -> rill.runtime.v1.NumericOutliers.Outlier
+	105, // 63: rill.runtime.v1.TopK.entries:type_name -> rill.runtime.v1.TopK.TopKEntry
+	0,   // 64: rill.runtime.v1.EstimateSmallestTimeGrainResponse.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	106, // 65: rill.runtime.v1.NumericHistogramBins.bins:type_name -> rill.runtime.v1.NumericHistogramBins.Bin
+	107, // 66: rill.runtime.v1.GenerateTimeSeriesRequest.measures:type_name -> rill.runtime.v1.GenerateTimeSeriesRequest.BasicMeasures
+	83,  // 67: rill.runtime.v1.GenerateTimeSeriesRequest.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
+	85,  // 68: rill.runtime.v1.GenerateTimeSeriesRequest.filters:type_name -> rill.runtime.v1.MetricsViewRequestFilter
+	112, // 69: rill.runtime.v1.TimeSeriesTimeRange.start:type_name -> google.protobuf.Timestamp
+	112, // 70: rill.runtime.v1.TimeSeriesTimeRange.end:type_name -> google.protobuf.Timestamp
+	0,   // 71: rill.runtime.v1.TimeSeriesTimeRange.interval:type_name -> rill.runtime.v1.TimeGrain
+	118, // 72: rill.runtime.v1.MetricsViewDimensionValue.in:type_name -> google.protobuf.Value
+	108, // 73: rill.runtime.v1.MetricsViewDimensionValue.like:type_name -> rill.runtime.v1.MetricsViewDimensionValue.Values
+	84,  // 74: rill.runtime.v1.MetricsViewRequestFilter.include:type_name -> rill.runtime.v1.MetricsViewDimensionValue
+	84,  // 75: rill.runtime.v1.MetricsViewRequestFilter.exclude:type_name -> rill.runtime.v1.MetricsViewDimensionValue
+	88,  // 76: rill.runtime.v1.TimeSeriesResponse.results:type_name -> rill.runtime.v1.TimeSeriesValue
+	109, // 77: rill.runtime.v1.TimeSeriesResponse.spark:type_name -> rill.runtime.v1.TimeSeriesResponse.TimeSeriesValues
+	83,  // 78: rill.runtime.v1.TimeSeriesResponse.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
+	86,  // 79: rill.runtime.v1.GenerateTimeSeriesResponse.rollup:type_name -> rill.runtime.v1.TimeSeriesResponse
+	110, // 80: rill.runtime.v1.TimeSeriesValue.records:type_name -> rill.runtime.v1.TimeSeriesValue.RecordsEntry
+	2,   // 81: rill.runtime.v1.RenameDatabaseObjectRequest.type:type_name -> rill.runtime.v1.DatabaseObjectType
+	95,  // 82: rill.runtime.v1.ProfileColumnsResponse.profile_columns:type_name -> rill.runtime.v1.ProfileColumn
+	120, // 83: rill.runtime.v1.GetTableRowsResponse.data:type_name -> google.protobuf.Struct
+	111, // 84: rill.runtime.v1.Connector.properties:type_name -> rill.runtime.v1.Connector.Property
+	98,  // 85: rill.runtime.v1.ListConnectorsResponse.connectors:type_name -> rill.runtime.v1.Connector
+	118, // 86: rill.runtime.v1.MetricsViewFilter.Cond.in:type_name -> google.protobuf.Value
+	118, // 87: rill.runtime.v1.MetricsViewFilter.Cond.like:type_name -> google.protobuf.Value
+	82,  // 88: rill.runtime.v1.GenerateTimeSeriesRequest.BasicMeasures.basic_measures:type_name -> rill.runtime.v1.BasicMeasureDefinition
+	118, // 89: rill.runtime.v1.MetricsViewDimensionValue.Values.values:type_name -> google.protobuf.Value
+	88,  // 90: rill.runtime.v1.TimeSeriesResponse.TimeSeriesValues.values:type_name -> rill.runtime.v1.TimeSeriesValue
+	4,   // 91: rill.runtime.v1.Connector.Property.type:type_name -> rill.runtime.v1.Connector.Property.Type
+	5,   // 92: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
+	8,   // 93: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
+	10,  // 94: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
+	12,  // 95: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
+	14,  // 96: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
+	16,  // 97: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
+	18,  // 98: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
+	20,  // 99: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
+	22,  // 100: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
+	24,  // 101: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
+	27,  // 102: rill.runtime.v1.RuntimeService.ListCatalogEntries:input_type -> rill.runtime.v1.ListCatalogEntriesRequest
+	29,  // 103: rill.runtime.v1.RuntimeService.GetCatalogEntry:input_type -> rill.runtime.v1.GetCatalogEntryRequest
+	31,  // 104: rill.runtime.v1.RuntimeService.TriggerRefresh:input_type -> rill.runtime.v1.TriggerRefreshRequest
+	33,  // 105: rill.runtime.v1.RuntimeService.TriggerSync:input_type -> rill.runtime.v1.TriggerSyncRequest
+	35,  // 106: rill.runtime.v1.RuntimeService.Reconcile:input_type -> rill.runtime.v1.ReconcileRequest
+	38,  // 107: rill.runtime.v1.RuntimeService.PutFileAndReconcile:input_type -> rill.runtime.v1.PutFileAndReconcileRequest
+	40,  // 108: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
+	42,  // 109: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
+	44,  // 110: rill.runtime.v1.RuntimeService.Query:input_type -> rill.runtime.v1.QueryRequest
+	46,  // 111: rill.runtime.v1.RuntimeService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
+	48,  // 112: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
+	50,  // 113: rill.runtime.v1.RuntimeService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
+	55,  // 114: rill.runtime.v1.RuntimeService.EstimateRollupInterval:input_type -> rill.runtime.v1.EstimateRollupIntervalRequest
+	68,  // 115: rill.runtime.v1.RuntimeService.GetTopK:input_type -> rill.runtime.v1.GetTopKRequest
+	70,  // 116: rill.runtime.v1.RuntimeService.GetNullCount:input_type -> rill.runtime.v1.GetNullCountRequest
+	72,  // 117: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:input_type -> rill.runtime.v1.GetDescriptiveStatisticsRequest
+	74,  // 118: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:input_type -> rill.runtime.v1.EstimateSmallestTimeGrainRequest
+	76,  // 119: rill.runtime.v1.RuntimeService.GetNumericHistogram:input_type -> rill.runtime.v1.GetNumericHistogramRequest
+	78,  // 120: rill.runtime.v1.RuntimeService.GetRugHistogram:input_type -> rill.runtime.v1.GetRugHistogramRequest
+	79,  // 121: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:input_type -> rill.runtime.v1.GetTimeRangeSummaryRequest
+	80,  // 122: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:input_type -> rill.runtime.v1.GetCardinalityOfColumnRequest
+	81,  // 123: rill.runtime.v1.RuntimeService.GenerateTimeSeries:input_type -> rill.runtime.v1.GenerateTimeSeriesRequest
+	91,  // 124: rill.runtime.v1.RuntimeService.GetTableCardinality:input_type -> rill.runtime.v1.GetTableCardinalityRequest
+	93,  // 125: rill.runtime.v1.RuntimeService.ProfileColumns:input_type -> rill.runtime.v1.ProfileColumnsRequest
+	96,  // 126: rill.runtime.v1.RuntimeService.GetTableRows:input_type -> rill.runtime.v1.GetTableRowsRequest
+	99,  // 127: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
+	6,   // 128: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
+	9,   // 129: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
+	11,  // 130: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
+	13,  // 131: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
+	15,  // 132: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
+	17,  // 133: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
+	19,  // 134: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
+	21,  // 135: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
+	23,  // 136: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
+	25,  // 137: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
+	28,  // 138: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
+	30,  // 139: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
+	32,  // 140: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
+	34,  // 141: rill.runtime.v1.RuntimeService.TriggerSync:output_type -> rill.runtime.v1.TriggerSyncResponse
+	36,  // 142: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
+	39,  // 143: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
+	41,  // 144: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
+	43,  // 145: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
+	45,  // 146: rill.runtime.v1.RuntimeService.Query:output_type -> rill.runtime.v1.QueryResponse
+	47,  // 147: rill.runtime.v1.RuntimeService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
+	49,  // 148: rill.runtime.v1.RuntimeService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
+	51,  // 149: rill.runtime.v1.RuntimeService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
+	56,  // 150: rill.runtime.v1.RuntimeService.EstimateRollupInterval:output_type -> rill.runtime.v1.EstimateRollupIntervalResponse
+	60,  // 151: rill.runtime.v1.RuntimeService.GetTopK:output_type -> rill.runtime.v1.GetTopKResponse
+	71,  // 152: rill.runtime.v1.RuntimeService.GetNullCount:output_type -> rill.runtime.v1.GetNullCountResponse
+	64,  // 153: rill.runtime.v1.RuntimeService.GetDescriptiveStatistics:output_type -> rill.runtime.v1.GetDescriptiveStatisticsResponse
+	75,  // 154: rill.runtime.v1.RuntimeService.EstimateSmallestTimeGrain:output_type -> rill.runtime.v1.EstimateSmallestTimeGrainResponse
+	63,  // 155: rill.runtime.v1.RuntimeService.GetNumericHistogram:output_type -> rill.runtime.v1.GetNumericHistogramResponse
+	62,  // 156: rill.runtime.v1.RuntimeService.GetRugHistogram:output_type -> rill.runtime.v1.GetRugHistogramResponse
+	65,  // 157: rill.runtime.v1.RuntimeService.GetTimeRangeSummary:output_type -> rill.runtime.v1.GetTimeRangeSummaryResponse
+	59,  // 158: rill.runtime.v1.RuntimeService.GetCardinalityOfColumn:output_type -> rill.runtime.v1.GetCardinalityOfColumnResponse
+	87,  // 159: rill.runtime.v1.RuntimeService.GenerateTimeSeries:output_type -> rill.runtime.v1.GenerateTimeSeriesResponse
+	92,  // 160: rill.runtime.v1.RuntimeService.GetTableCardinality:output_type -> rill.runtime.v1.GetTableCardinalityResponse
+	94,  // 161: rill.runtime.v1.RuntimeService.ProfileColumns:output_type -> rill.runtime.v1.ProfileColumnsResponse
+	97,  // 162: rill.runtime.v1.RuntimeService.GetTableRows:output_type -> rill.runtime.v1.GetTableRowsResponse
+	100, // 163: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
+	128, // [128:164] is the sub-list for method output_type
+	92,  // [92:128] is the sub-list for method input_type
+	92,  // [92:92] is the sub-list for extension type_name
+	92,  // [92:92] is the sub-list for extension extendee
+	0,   // [0:92] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_api_proto_init() }
@@ -9324,30 +9158,6 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDirectRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rill_runtime_v1_api_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDirectResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_rill_runtime_v1_api_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewToplistRequest); i {
 			case 0:
 				return &v.state
@@ -9359,7 +9169,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewToplistResponse); i {
 			case 0:
 				return &v.state
@@ -9371,7 +9181,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewTimeSeriesRequest); i {
 			case 0:
 				return &v.state
@@ -9383,7 +9193,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewTimeSeriesResponse); i {
 			case 0:
 				return &v.state
@@ -9395,7 +9205,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewTotalsRequest); i {
 			case 0:
 				return &v.state
@@ -9407,7 +9217,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewTotalsResponse); i {
 			case 0:
 				return &v.state
@@ -9419,7 +9229,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewSort); i {
 			case 0:
 				return &v.state
@@ -9431,7 +9241,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewFilter); i {
 			case 0:
 				return &v.state
@@ -9443,7 +9253,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewColumn); i {
 			case 0:
 				return &v.state
@@ -9455,7 +9265,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EstimateRollupIntervalRequest); i {
 			case 0:
 				return &v.state
@@ -9467,7 +9277,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EstimateRollupIntervalResponse); i {
 			case 0:
 				return &v.state
@@ -9479,7 +9289,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProfileColumnSummary); i {
 			case 0:
 				return &v.state
@@ -9491,7 +9301,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CategoricalSummary); i {
 			case 0:
 				return &v.state
@@ -9503,7 +9313,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetCardinalityOfColumnResponse); i {
 			case 0:
 				return &v.state
@@ -9515,7 +9325,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTopKResponse); i {
 			case 0:
 				return &v.state
@@ -9527,7 +9337,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[58].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NumericSummary); i {
 			case 0:
 				return &v.state
@@ -9539,7 +9349,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[59].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetRugHistogramResponse); i {
 			case 0:
 				return &v.state
@@ -9551,7 +9361,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[60].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[58].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetNumericHistogramResponse); i {
 			case 0:
 				return &v.state
@@ -9563,7 +9373,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[61].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[59].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetDescriptiveStatisticsResponse); i {
 			case 0:
 				return &v.state
@@ -9575,7 +9385,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[62].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[60].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTimeRangeSummaryResponse); i {
 			case 0:
 				return &v.state
@@ -9587,7 +9397,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[63].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[61].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimeRangeSummary); i {
 			case 0:
 				return &v.state
@@ -9599,7 +9409,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[64].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[62].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NumericOutliers); i {
 			case 0:
 				return &v.state
@@ -9611,7 +9421,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[65].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[63].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTopKRequest); i {
 			case 0:
 				return &v.state
@@ -9623,7 +9433,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[66].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[64].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TopK); i {
 			case 0:
 				return &v.state
@@ -9635,7 +9445,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[67].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[65].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetNullCountRequest); i {
 			case 0:
 				return &v.state
@@ -9647,7 +9457,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[68].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[66].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetNullCountResponse); i {
 			case 0:
 				return &v.state
@@ -9659,7 +9469,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[69].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[67].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetDescriptiveStatisticsRequest); i {
 			case 0:
 				return &v.state
@@ -9671,7 +9481,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[70].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[68].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NumericStatistics); i {
 			case 0:
 				return &v.state
@@ -9683,7 +9493,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[71].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[69].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EstimateSmallestTimeGrainRequest); i {
 			case 0:
 				return &v.state
@@ -9695,7 +9505,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[72].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[70].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EstimateSmallestTimeGrainResponse); i {
 			case 0:
 				return &v.state
@@ -9707,7 +9517,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[73].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[71].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetNumericHistogramRequest); i {
 			case 0:
 				return &v.state
@@ -9719,7 +9529,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[74].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[72].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NumericHistogramBins); i {
 			case 0:
 				return &v.state
@@ -9731,7 +9541,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[75].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[73].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetRugHistogramRequest); i {
 			case 0:
 				return &v.state
@@ -9743,7 +9553,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[76].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[74].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTimeRangeSummaryRequest); i {
 			case 0:
 				return &v.state
@@ -9755,7 +9565,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[77].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[75].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetCardinalityOfColumnRequest); i {
 			case 0:
 				return &v.state
@@ -9767,7 +9577,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[78].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[76].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GenerateTimeSeriesRequest); i {
 			case 0:
 				return &v.state
@@ -9779,7 +9589,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[79].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[77].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BasicMeasureDefinition); i {
 			case 0:
 				return &v.state
@@ -9791,7 +9601,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[80].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[78].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimeSeriesTimeRange); i {
 			case 0:
 				return &v.state
@@ -9803,7 +9613,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[81].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[79].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewDimensionValue); i {
 			case 0:
 				return &v.state
@@ -9815,7 +9625,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[82].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[80].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewRequestFilter); i {
 			case 0:
 				return &v.state
@@ -9827,7 +9637,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[83].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[81].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimeSeriesResponse); i {
 			case 0:
 				return &v.state
@@ -9839,7 +9649,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[84].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[82].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GenerateTimeSeriesResponse); i {
 			case 0:
 				return &v.state
@@ -9851,7 +9661,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[85].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[83].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimeSeriesValue); i {
 			case 0:
 				return &v.state
@@ -9863,7 +9673,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[86].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[84].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RenameDatabaseObjectRequest); i {
 			case 0:
 				return &v.state
@@ -9875,7 +9685,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[87].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[85].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RenameDatabaseObjectResponse); i {
 			case 0:
 				return &v.state
@@ -9887,7 +9697,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[88].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[86].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTableCardinalityRequest); i {
 			case 0:
 				return &v.state
@@ -9899,7 +9709,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[89].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[87].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTableCardinalityResponse); i {
 			case 0:
 				return &v.state
@@ -9911,7 +9721,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[90].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[88].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProfileColumnsRequest); i {
 			case 0:
 				return &v.state
@@ -9923,7 +9733,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[91].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[89].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProfileColumnsResponse); i {
 			case 0:
 				return &v.state
@@ -9935,7 +9745,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[92].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[90].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProfileColumn); i {
 			case 0:
 				return &v.state
@@ -9947,7 +9757,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[93].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[91].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTableRowsRequest); i {
 			case 0:
 				return &v.state
@@ -9959,7 +9769,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[94].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[92].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTableRowsResponse); i {
 			case 0:
 				return &v.state
@@ -9971,7 +9781,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[95].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[93].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Connector); i {
 			case 0:
 				return &v.state
@@ -9983,7 +9793,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[96].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[94].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListConnectorsRequest); i {
 			case 0:
 				return &v.state
@@ -9995,7 +9805,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[97].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[95].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListConnectorsResponse); i {
 			case 0:
 				return &v.state
@@ -10007,7 +9817,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[98].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[96].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReconcileError_CharLocation); i {
 			case 0:
 				return &v.state
@@ -10019,7 +9829,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[99].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[97].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewFilter_Cond); i {
 			case 0:
 				return &v.state
@@ -10031,7 +9841,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[100].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[98].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimeRangeSummary_Interval); i {
 			case 0:
 				return &v.state
@@ -10043,7 +9853,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[101].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[99].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NumericOutliers_Outlier); i {
 			case 0:
 				return &v.state
@@ -10055,7 +9865,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[102].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[100].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TopK_TopKEntry); i {
 			case 0:
 				return &v.state
@@ -10067,7 +9877,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[103].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[101].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NumericHistogramBins_Bin); i {
 			case 0:
 				return &v.state
@@ -10079,7 +9889,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[104].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[102].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GenerateTimeSeriesRequest_BasicMeasures); i {
 			case 0:
 				return &v.state
@@ -10091,7 +9901,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[105].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[103].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MetricsViewDimensionValue_Values); i {
 			case 0:
 				return &v.state
@@ -10103,7 +9913,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[106].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[104].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimeSeriesResponse_TimeSeriesValues); i {
 			case 0:
 				return &v.state
@@ -10115,7 +9925,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[108].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[106].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Connector_Property); i {
 			case 0:
 				return &v.state
@@ -10134,35 +9944,35 @@ func file_rill_runtime_v1_api_proto_init() {
 		(*CatalogEntry_Model)(nil),
 		(*CatalogEntry_MetricsView)(nil),
 	}
-	file_rill_runtime_v1_api_proto_msgTypes[54].OneofWrappers = []interface{}{
+	file_rill_runtime_v1_api_proto_msgTypes[52].OneofWrappers = []interface{}{
 		(*ProfileColumnSummary_CategoricalSummary)(nil),
 		(*ProfileColumnSummary_NumericSummary)(nil),
 		(*ProfileColumnSummary_TimeRangeSummary)(nil),
 	}
-	file_rill_runtime_v1_api_proto_msgTypes[55].OneofWrappers = []interface{}{
+	file_rill_runtime_v1_api_proto_msgTypes[53].OneofWrappers = []interface{}{
 		(*CategoricalSummary_TopK)(nil),
 		(*CategoricalSummary_Cardinality)(nil),
 	}
-	file_rill_runtime_v1_api_proto_msgTypes[58].OneofWrappers = []interface{}{
+	file_rill_runtime_v1_api_proto_msgTypes[56].OneofWrappers = []interface{}{
 		(*NumericSummary_NumericHistogramBins)(nil),
 		(*NumericSummary_NumericStatistics)(nil),
 		(*NumericSummary_NumericOutliers)(nil),
 	}
-	file_rill_runtime_v1_api_proto_msgTypes[65].OneofWrappers = []interface{}{}
-	file_rill_runtime_v1_api_proto_msgTypes[78].OneofWrappers = []interface{}{}
+	file_rill_runtime_v1_api_proto_msgTypes[63].OneofWrappers = []interface{}{}
+	file_rill_runtime_v1_api_proto_msgTypes[76].OneofWrappers = []interface{}{}
+	file_rill_runtime_v1_api_proto_msgTypes[77].OneofWrappers = []interface{}{}
 	file_rill_runtime_v1_api_proto_msgTypes[79].OneofWrappers = []interface{}{}
 	file_rill_runtime_v1_api_proto_msgTypes[81].OneofWrappers = []interface{}{}
 	file_rill_runtime_v1_api_proto_msgTypes[83].OneofWrappers = []interface{}{}
-	file_rill_runtime_v1_api_proto_msgTypes[85].OneofWrappers = []interface{}{}
-	file_rill_runtime_v1_api_proto_msgTypes[86].OneofWrappers = []interface{}{}
-	file_rill_runtime_v1_api_proto_msgTypes[102].OneofWrappers = []interface{}{}
+	file_rill_runtime_v1_api_proto_msgTypes[84].OneofWrappers = []interface{}{}
+	file_rill_runtime_v1_api_proto_msgTypes[100].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_api_proto_rawDesc,
 			NumEnums:      5,
-			NumMessages:   109,
+			NumMessages:   107,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -58,5 +59,5 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, cata
 		return err
 	}
 
-	return repoStore.PutBlob(ctx, instID, catalog.Path, blob)
+	return repoStore.Put(ctx, instID, catalog.Path, strings.NewReader(blob))
 }

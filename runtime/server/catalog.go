@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -60,7 +61,7 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 
 // PutFileAndReconcile implements RuntimeService
 func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
-	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, req.Blob, req.Create, req.CreateOnly)
+	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -87,25 +87,8 @@ func (c *connection) Stat(ctx context.Context, instID string, filePath string) (
 	}, nil
 }
 
-// PutBlob implements drivers.RepoStore
-func (c *connection) PutBlob(ctx context.Context, instID string, filePath string, blob string) error {
-	filePath = filepath.Join(c.root, filePath)
-
-	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(filePath, []byte(blob), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// PutReader implements drivers.RepoStore
-func (c *connection) PutReader(ctx context.Context, instID string, filePath string, reader io.Reader) error {
+// Put implements drivers.RepoStore
+func (c *connection) Put(ctx context.Context, instID string, filePath string, reader io.Reader) error {
 	filePath = filepath.Join(c.root, filePath)
 
 	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)

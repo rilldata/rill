@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServer_InitCatalogService(t *testing.T) {
+func TestCatalog(t *testing.T) {
 	ctx := context.Background()
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 

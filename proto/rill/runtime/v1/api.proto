@@ -695,28 +695,6 @@ message QueryResponse {
   repeated google.protobuf.Struct data = 2;
 }
 
-// Request message for RuntimeService.QueryDirect
-message QueryDirectRequest {
-  // Instance to query
-  string instance_id = 1;
-  // SELECT statement
-  string sql = 2;
-  // Args to interpolate into the statement
-  repeated google.protobuf.Value args = 3;
-  // Query priority (not supported by all backends)
-  int64 priority = 4;
-  // If true, will only validate the query, not execute it
-  bool dry_run = 5;
-}
-
-// Response message for RuntimeService.QueryDirect
-message QueryDirectResponse {
-  // Schema of result data
-  StructType meta = 1;
-  // Result data
-  repeated google.protobuf.Struct data = 2;
-}
-
 // **********
 // Explore APIs
 // **********

@@ -33,6 +33,8 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	if err != nil {
 		return nil, fmt.Errorf("metadata db migration: %w", err)
 	}
+
+	// Check the metastore is a registry
 	_, ok := metastore.RegistryStore()
 	if !ok {
 		return nil, fmt.Errorf("server metastore must be a valid registry")

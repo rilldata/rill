@@ -22,7 +22,7 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 
 	sourcePath := "/sources/ad_bids_source.yaml"
 	csvPath := filepath.Join("../testruntime/testdata/ad_bids/data", "AdBids.csv.gz")
-	tsvPath := filepath.Join("../testruntime/testdata/ad_bids/data", "AdImpressions.tsv")
+	pqPath := filepath.Join("../testruntime/testdata/ad_bids/data", "AdImpressions.parquet")
 
 	artifact := testutils.CreateSource(t, cat, "ad_bids_source", csvPath, sourcePath)
 	resp, err := srv.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
@@ -35,7 +35,7 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 	testutils.AssertTable(t, cat, "ad_bids_source", sourcePath)
 
 	// replace with same name different file
-	artifact = testutils.CreateSource(t, cat, "ad_bids_source", tsvPath, sourcePath)
+	artifact = testutils.CreateSource(t, cat, "ad_bids_source", pqPath, sourcePath)
 	resp, err = srv.PutFileAndReconcile(ctx, &runtimev1.PutFileAndReconcileRequest{
 		InstanceId: instanceID,
 		Path:       sourcePath,

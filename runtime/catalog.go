@@ -60,7 +60,7 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID string, name str
 
 	path, ok := cat.NameToPath[name]
 	if !ok {
-		return err
+		return fmt.Errorf("artifact not found for source")
 	}
 
 	resp, err := cat.Reconcile(ctx, catalog.ReconcileConfig{

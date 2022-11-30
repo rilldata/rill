@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	goruntime "runtime"
+	"strings"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -63,7 +64,7 @@ func NewInstanceWithModel(t TestingT, name string, sql string) (*runtime.Runtime
 	rt, instanceID := NewInstance(t)
 
 	path := filepath.Join("models", name+".sql")
-	err := rt.PutFile(context.Background(), instanceID, path, sql, true, false)
+	err := rt.PutFile(context.Background(), instanceID, path, strings.NewReader(sql), true, false)
 	require.NoError(t, err)
 
 	res, err := rt.Reconcile(context.Background(), instanceID, nil, false, false)

@@ -2,13 +2,18 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
 func (r *Runtime) Registry() drivers.RegistryStore {
-	registry, _ := r.metastore.RegistryStore() // Verified as registry in New
+	registry, ok := r.metastore.RegistryStore()
+	if !ok {
+		// Verified as registry in New, so this should never happen
+		panic("metastore is not a registry")
+	}
 	return registry
 }
 
@@ -23,7 +28,11 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, err
 	}
 
-	repo, _ := conn.RepoStore() // Verified as repo when instance is created
+	repo, ok := conn.RepoStore()
+	if !ok {
+		// Verified as repo when instance is created, so this should never happen
+		return nil, fmt.Errorf("connection for instance '%s' is not a repo", instanceID)
+	}
 
 	return repo, nil
 }
@@ -39,7 +48,11 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, err
 	}
 
-	olap, _ := conn.OLAPStore() // Verified as OLAP when instance is created
+	olap, ok := conn.OLAPStore()
+	if !ok {
+		// Verified as OLAP when instance is created, so this should never happen
+		return nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)
+	}
 
 	return olap, nil
 }
