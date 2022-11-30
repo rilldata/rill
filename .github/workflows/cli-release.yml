@@ -10,7 +10,7 @@ on:
       - "cli/**"
 jobs:
   release:
-    name: Upload Assets to GitHub w/ goreleaser
+    name: Release rill-developer
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
