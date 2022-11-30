@@ -465,8 +465,10 @@ export interface V1MetricsViewColumn {
 }
 
 export interface V1MetricsView {
+  description?: string;
   dimensions?: MetricsViewDimension[];
   from?: string;
+  label?: string;
   measures?: MetricsViewMeasure[];
   name?: string;
   timeDimension?: string;
@@ -742,7 +744,6 @@ export interface MetricsViewMeasure {
   format?: string;
   label?: string;
   name?: string;
-  visible?: boolean;
 }
 
 export interface MetricsViewFilterCond {
@@ -755,7 +756,6 @@ export interface MetricsViewDimension {
   description?: string;
   label?: string;
   name?: string;
-  visible?: boolean;
 }
 
 export interface GenerateTimeSeriesRequestBasicMeasure {

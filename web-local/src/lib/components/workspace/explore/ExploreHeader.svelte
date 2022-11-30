@@ -74,7 +74,7 @@
   <div class="px-2 pt-1">
     <TimeControls metricsDefId={metricViewName} />
     {#key metricViewName}
-      <Filters metricsDefId={metricViewName} />
+      <Filters {metricViewName} />
     {/key}
   </div>
 </section>
