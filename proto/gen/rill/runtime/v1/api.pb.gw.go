@@ -1679,6 +1679,10 @@ func local_request_RuntimeService_GetTopK_0(ctx context.Context, marshaler runti
 
 }
 
+var (
+	filter_RuntimeService_GetNullCount_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
+
 func request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetNullCountRequest
 	var metadata runtime.ServerMetadata
@@ -1718,6 +1722,13 @@ func request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler runtim
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetNullCount_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetNullCount(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1766,10 +1777,21 @@ func local_request_RuntimeService_GetNullCount_0(ctx context.Context, marshaler 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetNullCount_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GetNullCount(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_GetDescriptiveStatistics_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
 
 func request_RuntimeService_GetDescriptiveStatistics_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetDescriptiveStatisticsRequest
@@ -1810,6 +1832,13 @@ func request_RuntimeService_GetDescriptiveStatistics_0(ctx context.Context, mars
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetDescriptiveStatistics_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetDescriptiveStatistics(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1858,10 +1887,21 @@ func local_request_RuntimeService_GetDescriptiveStatistics_0(ctx context.Context
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetDescriptiveStatistics_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GetDescriptiveStatistics(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_EstimateSmallestTimeGrain_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
 
 func request_RuntimeService_EstimateSmallestTimeGrain_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq EstimateSmallestTimeGrainRequest
@@ -1902,6 +1942,13 @@ func request_RuntimeService_EstimateSmallestTimeGrain_0(ctx context.Context, mar
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_EstimateSmallestTimeGrain_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.EstimateSmallestTimeGrain(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1950,10 +1997,21 @@ func local_request_RuntimeService_EstimateSmallestTimeGrain_0(ctx context.Contex
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_EstimateSmallestTimeGrain_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.EstimateSmallestTimeGrain(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_GetNumericHistogram_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
 
 func request_RuntimeService_GetNumericHistogram_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetNumericHistogramRequest
@@ -1994,6 +2052,13 @@ func request_RuntimeService_GetNumericHistogram_0(ctx context.Context, marshaler
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetNumericHistogram_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetNumericHistogram(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -2042,10 +2107,21 @@ func local_request_RuntimeService_GetNumericHistogram_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetNumericHistogram_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GetNumericHistogram(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_GetRugHistogram_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
 
 func request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRugHistogramRequest
@@ -2086,6 +2162,13 @@ func request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshaler run
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetRugHistogram_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetRugHistogram(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -2134,10 +2217,21 @@ func local_request_RuntimeService_GetRugHistogram_0(ctx context.Context, marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetRugHistogram_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GetRugHistogram(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_GetTimeRangeSummary_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
 
 func request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetTimeRangeSummaryRequest
@@ -2178,6 +2272,13 @@ func request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, marshaler
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetTimeRangeSummary_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetTimeRangeSummary(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -2226,10 +2327,21 @@ func local_request_RuntimeService_GetTimeRangeSummary_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetTimeRangeSummary_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GetTimeRangeSummary(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_GetCardinalityOfColumn_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1, "column_name": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
 
 func request_RuntimeService_GetCardinalityOfColumn_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetCardinalityOfColumnRequest
@@ -2270,6 +2382,13 @@ func request_RuntimeService_GetCardinalityOfColumn_0(ctx context.Context, marsha
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetCardinalityOfColumn_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetCardinalityOfColumn(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -2316,6 +2435,13 @@ func local_request_RuntimeService_GetCardinalityOfColumn_0(ctx context.Context, 
 	protoReq.ColumnName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "column_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetCardinalityOfColumn_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.GetCardinalityOfColumn(ctx, &protoReq)
@@ -2391,6 +2517,10 @@ func local_request_RuntimeService_GenerateTimeSeries_0(ctx context.Context, mars
 
 }
 
+var (
+	filter_RuntimeService_GetTableCardinality_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+)
+
 func request_RuntimeService_GetTableCardinality_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetTableCardinalityRequest
 	var metadata runtime.ServerMetadata
@@ -2420,6 +2550,13 @@ func request_RuntimeService_GetTableCardinality_0(ctx context.Context, marshaler
 	protoReq.TableName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetTableCardinality_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetTableCardinality(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -2458,10 +2595,21 @@ func local_request_RuntimeService_GetTableCardinality_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_GetTableCardinality_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GetTableCardinality(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_RuntimeService_ProfileColumns_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+)
 
 func request_RuntimeService_ProfileColumns_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ProfileColumnsRequest
@@ -2492,6 +2640,13 @@ func request_RuntimeService_ProfileColumns_0(ctx context.Context, marshaler runt
 	protoReq.TableName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_ProfileColumns_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.ProfileColumns(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -2528,6 +2683,13 @@ func local_request_RuntimeService_ProfileColumns_0(ctx context.Context, marshale
 	protoReq.TableName, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_RuntimeService_ProfileColumns_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.ProfileColumns(ctx, &protoReq)
