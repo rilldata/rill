@@ -17,9 +17,11 @@ jobs:
         - name: OSX
           runs-on: macos-latest
           config: .goreleaser.darwin.yaml
+          upload: osx
         - name: Linux
           runs-on: ubuntu-latest
           config: .goreleaser.linux.yaml
+          upload: linux
 
     name: ${{ matrix.name }} Builds
     runs-on: ${{ matrix.runs-on }}
@@ -58,4 +60,4 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: dist/
-          destination: pkg.rilldata.com/rill/nightly/
+          destination: pkg.rilldata.com/rill/nightly/${{ matrix.upload }}
