@@ -28,12 +28,12 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 // GetInstance implements RuntimeService
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found, err := registry.FindInstance(ctx, req.InstanceId)
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
 	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
 		return nil, err
-	}
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
 	}
 
 	return &runtimev1.GetInstanceResponse{

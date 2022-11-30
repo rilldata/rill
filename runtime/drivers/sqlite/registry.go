@@ -15,15 +15,15 @@ func (c *connection) FindInstances(ctx context.Context) ([]*drivers.Instance, er
 }
 
 // FindInstance implements drivers.RegistryStore
-func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, bool, error) {
+func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, error) {
 	is, err := c.findInstances(ctx, "WHERE id = $1", id)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	if len(is) == 0 {
-		return nil, false, nil
+		return nil, drivers.ErrNotFound
 	}
-	return is[0], true, nil
+	return is[0], nil
 }
 
 func (c *connection) findInstances(ctx context.Context, whereClause string, args ...any) ([]*drivers.Instance, error) {

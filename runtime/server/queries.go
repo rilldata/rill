@@ -77,12 +77,12 @@ func (s *Server) QueryDirect(ctx context.Context, req *runtimev1.QueryDirectRequ
 
 func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found, err := registry.FindInstance(ctx, instanceID)
+	inst, err := registry.FindInstance(ctx, instanceID)
 	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
 		return nil, err
-	}
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
 	}
 
 	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)

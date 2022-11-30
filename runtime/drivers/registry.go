@@ -8,7 +8,7 @@ import (
 // RegistryStore is implemented by drivers capable of storing and looking up instances and repos
 type RegistryStore interface {
 	FindInstances(ctx context.Context) ([]*Instance, error)
-	FindInstance(ctx context.Context, id string) (*Instance, bool, error)
+	FindInstance(ctx context.Context, id string) (*Instance, error)
 	CreateInstance(ctx context.Context, instance *Instance) error
 	DeleteInstance(ctx context.Context, id string) error
 }
