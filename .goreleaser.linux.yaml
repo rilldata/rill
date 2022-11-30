@@ -2,7 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
-  disable: true # travis takes care of it as of now
+  disable: true
 
 before:
   hooks:
@@ -16,13 +16,6 @@ builds:
       - linux
     goarch:
       - amd64
-    env:
-      # - CC=x86_64-linux-gnu-gcc
-      # - CXX=x86_64-linux-gnu-g++
-      # - CGO_CFLAGS=--sysroot=/sysroot/linux/amd64
-      # - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64
-      # - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
-      # - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
     flags:
       - "-mod=readonly"
     ldflags:
