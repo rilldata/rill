@@ -10,7 +10,7 @@ before:
 builds:
   - id: darwin
     main: ./cli/main.go
-    binary: rill_new
+    binary: rill
     goos:
       - darwin
     goarch:
@@ -28,7 +28,7 @@ builds:
 
   - id: linux
     main: ./cli/main.go
-    binary: rill_new
+    binary: rill
     goos:
       - linux
     goarch:
@@ -81,7 +81,6 @@ archives:
     files:
       - README.md
       - LICENSE*
-    # wrap_in_directory: true
 
 checksum:
   name_template: checksum-{{ .Runtime.Goos }}-{{ .Runtime.Goarch }}.txt
