@@ -298,6 +298,43 @@ func TestReconcileMetricsView(t *testing.T) {
 	require.Equal(t, []string{"Dimensions", "1"}, result.Errors[0].PropertyPath)
 	require.Contains(t, result.Errors[1].Message, `Binder Error: Referenced column "bid_price" not found`)
 	require.Equal(t, []string{"Measures", "1"}, result.Errors[1].PropertyPath)
+
+	// ignore invalid measure and dimension
+	testutils.CreateMetricsView(t, s, &runtimev1.MetricsView{
+		Name:          "AdBids_dashboard",
+		From:          "AdBids_model",
+		TimeDimension: "timestamp",
+		TimeGrains:    []string{"1 day", "1 month"},
+		Dimensions: []*runtimev1.MetricsView_Dimension{
+			{
+				Name:  "publisher",
+				Label: "Publisher",
+			},
+			{
+				Name:   "domain",
+				Label:  "Domain",
+				Ignore: true,
+			},
+		},
+		Measures: []*runtimev1.MetricsView_Measure{
+			{
+				Expression: "count(*)",
+			},
+			{
+				Expression: "avg(bid_price)",
+				Ignore:     true,
+			},
+		},
+	}, AdBidsDashboardRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+	mvEntry := testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
+	mv := mvEntry.GetMetricsView()
+	require.Len(t, mv.Measures, 1)
+	require.Equal(t, "count(*)", mv.Measures[0].Expression)
+	require.Len(t, mv.Dimensions, 1)
+	require.Equal(t, "publisher", mv.Dimensions[0].Name)
 }
 
 func TestInvalidFiles(t *testing.T) {
