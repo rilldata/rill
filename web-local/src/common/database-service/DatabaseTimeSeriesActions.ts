@@ -60,14 +60,14 @@ export const lastXTimeRanges: TimeRangeName[] = [
 
 // The string values must adhere to DuckDB INTERVAL syntax, since, in some places, we interpolate an SQL queries with these values.
 export enum TimeGrain {
-  OneMinute = "1 minute",
+  OneMinute = "minute",
   // FiveMinutes = "5 minute",
   // FifteenMinutes = "15 minute",
-  OneHour = "1 hour",
-  OneDay = "1 day",
-  OneWeek = "7 day",
-  OneMonth = "1 month",
-  OneYear = "1 year",
+  OneHour = "hour",
+  OneDay = "day",
+  OneWeek = "week",
+  OneMonth = "month",
+  OneYear = "year",
 }
 export interface TimeSeriesTimeRange {
   name?: TimeRangeName;

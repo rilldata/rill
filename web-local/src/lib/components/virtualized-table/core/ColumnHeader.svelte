@@ -5,7 +5,7 @@
   import { DataTypeIcon } from "../../data-types";
   import ArrowDown from "../../icons/ArrowDown.svelte";
   import Pin from "../../icons/Pin.svelte";
-  import notificationStore from "../../notifications";
+  import { notifications } from "../../notifications";
   import Shortcut from "../../tooltip/Shortcut.svelte";
   import StackingWord from "../../tooltip/StackingWord.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -72,7 +72,7 @@
     use:shiftClickAction
     on:shift-click={async () => {
       await navigator.clipboard.writeText(name);
-      notificationStore.send({
+      notifications.send({
         message: `copied column name "${name}" to clipboard`,
       });
     }}

@@ -30,7 +30,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 
 	// Execute
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -113,11 +113,11 @@ func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name 
 	return obj.GetMetricsView(), nil
 }
 
-func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
+func (s *Server) metricsQuery(ctx context.Context, instanceId string, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
-		Priority: 1,
+		Priority: priority,
 	})
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -346,18 +346,18 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 	var operatorPrefix string
 	var conditionJoiner string
 	if exclude {
-		operatorPrefix = "NOT"
-		conditionJoiner = "AND"
+		operatorPrefix = " NOT "
+		conditionJoiner = ") AND ("
 	} else {
 		operatorPrefix = ""
-		conditionJoiner = "OR"
+		conditionJoiner = " OR "
 	}
 
 	if len(cond.In) > 0 {
 		// null values should be added with IS NULL / IS NOT NULL
 		nullCount := 0
 		for _, val := range cond.In {
-			if val == nil {
+			if _, ok := val.Kind.(*structpb.Value_NullValue); ok {
 				nullCount++
 				continue
 			}
@@ -370,7 +370,9 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 
 		questionMarks := strings.Join(repeatString("?", len(cond.In)-nullCount), ",")
 		// <dimension> (NOT) IN (?,?,...)
-		clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+		if questionMarks != "" {
+			clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+		}
 		if nullCount > 0 {
 			// <dimension> IS (NOT) NULL
 			clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", cond.Name, operatorPrefix))
@@ -391,7 +393,7 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 
 	clause := ""
 	if len(clauses) > 0 {
-		clause = fmt.Sprintf(" AND %s", strings.Join(clauses, conditionJoiner))
+		clause = fmt.Sprintf(" AND (%s)", strings.Join(clauses, conditionJoiner))
 	}
 	return clause, args, nil
 }

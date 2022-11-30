@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
@@ -52,7 +52,7 @@
   };
 </script>
 
-<section id="header" class="w-full flex flex-col">
+<section class="w-full flex flex-col" id="header">
   <!-- top row
     title and call to action
   -->
@@ -65,16 +65,16 @@
     </h1>
     <!-- top right CTAs -->
     <div style="flex-shrink: 0;">
-      <Button type="secondary" on:click={() => viewMetrics(metricViewName)}>
+      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
         Edit Metrics <MetricsIcon size="16px" />
       </Button>
     </div>
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">
-    <TimeControls metricsDefId={metricViewName} />
+    <TimeControls {metricViewName} />
     {#key metricViewName}
-      <Filters metricsDefId={metricViewName} />
+      <Filters {metricViewName} />
     {/key}
   </div>
 </section>

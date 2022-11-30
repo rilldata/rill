@@ -1,4 +1,4 @@
-import type { RootConfig } from "../config/RootConfig";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type { CommonUserFields, MetricsEvent } from "./MetricsTypes";
 import type { CommonFields } from "./MetricsTypes";
 

@@ -73,6 +73,7 @@ export class FunctionalTestBase extends TestBase {
   @TestBase.AfterSuite()
   public async teardown(): Promise<void> {
     await this.rillDeveloper?.destroy();
+    await this.clientDataModelerService?.destroy();
     await this.socketServer?.destroy();
   }
 

@@ -45,18 +45,23 @@ export class TestServerSetup extends TestSuiteSetup {
     await execPromise(`mkdir -p ${testSuiteParameter.cliFolder}`);
     await execPromise(`rm -rf ${testSuiteParameter.cliFolder}/*`);
 
+    console.log("init");
     await execPromise(
       `${CLI_COMMAND} init --project ${testSuiteParameter.cliFolder}`
     );
+    console.log("import 1");
     await execPromise(
       `${CLI_COMMAND} import-source --project ${testSuiteParameter.cliFolder} ./test/data/Users.parquet`
     );
+    console.log("import 2");
     await execPromise(
       `${CLI_COMMAND} import-source --project ${testSuiteParameter.cliFolder} ./test/data/AdImpressions.parquet`
     );
+    console.log("import 2");
     await execPromise(
       `${CLI_COMMAND} import-source --project ${testSuiteParameter.cliFolder} ./test/data/AdBids.parquet`
     );
+    console.log("import done");
 
     let serverStarted = false;
 

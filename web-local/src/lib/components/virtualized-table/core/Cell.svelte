@@ -9,7 +9,7 @@
   import { formatDataType } from "../../../util/formatters";
   import { createShiftClickAction } from "../../../util/shift-click-action";
   import { FormattedDataType } from "../../data-types";
-  import notificationStore from "../../notifications";
+  import { notifications } from "../../notifications";
   import Shortcut from "../../tooltip/Shortcut.svelte";
   import StackingWord from "../../tooltip/StackingWord.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -139,7 +139,7 @@
             exportedValue = `TIMESTAMP '${value}'`;
           }
           await navigator.clipboard.writeText(exportedValue);
-          notificationStore.send({ message: `copied value to clipboard` });
+          notifications.send({ message: `copied value to clipboard` });
           // update this to set the active animation in the tooltip text
         }}
       >

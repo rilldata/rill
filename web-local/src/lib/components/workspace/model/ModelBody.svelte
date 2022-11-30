@@ -28,7 +28,7 @@
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import notifications from "../../notifications";
+  import { notifications } from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;

@@ -14,12 +14,12 @@ import (
 
 func CreateSimpleTimeseriesTable(server *Server, instanceId string, t *testing.T, tableName string) *drivers.Result {
 	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar)",
+		Query: "create table " + quoteName(tableName) + " (clicks double, time timestamp, device varchar, publisher varchar, domain varchar)",
 	})
 	require.NoError(t, err)
 	result.Close()
 	result, err = server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "insert into " + quoteName(tableName) + " values (1.0, '2019-01-01 00:00:00', 'android'), (1.0, '2019-01-02 00:00:00', 'iphone')",
+		Query: "insert into " + quoteName(tableName) + " values (1.0, '2019-01-01 00:00:00', 'android', 'Google', 'google.com'), (1.0, '2019-01-02 00:00:00', 'iphone', null, 'msn.com')",
 	})
 	require.NoError(t, err)
 	result.Close()
@@ -294,6 +294,202 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	require.Equal(t, 1.0, results[0].Records["sum"])
 }
 
+func TestServer_Timeseries_1dim_null(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		TimestampColumnName: "time",
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "publisher",
+					In:   []*structpb.Value{structpb.NewNullValue()},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	// printResults(results)
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records["sum"])
+}
+
+func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		TimestampColumnName: "time",
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "publisher",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+						structpb.NewStringValue("Google"),
+					},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 2.0, results[0].Records["sum"])
+}
+
+func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		TimestampColumnName: "time",
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "publisher",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+						structpb.NewStringValue("Google"),
+					},
+					Like: []*structpb.Value{
+						structpb.NewStringValue("Goo%"),
+					},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 2.0, results[0].Records["sum"])
+}
+
+func TestServer_Timeseries_1dim_2like(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		TimestampColumnName: "time",
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "domain",
+					Like: []*structpb.Value{
+						structpb.NewStringValue("g%"),
+						structpb.NewStringValue("msn%"),
+					},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 2.0, results[0].Records["sum"])
+}
+
+func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
+	server, instanceId := getTestServer(t)
+
+	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
+	require.Equal(t, 2, getSingleValue(t, result.Rows))
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceId,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		TimestampColumnName: "time",
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Include: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "publisher",
+					In: []*structpb.Value{
+						structpb.NewStringValue("Google"),
+					},
+				},
+				{
+					Name: "domain",
+					In: []*structpb.Value{
+						structpb.NewStringValue("msn.com"),
+					},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 0.0, results[0].Records["sum"])
+}
+
 func TestServer_Timeseries_no_measures(t *testing.T) {
 	server, instanceId := getTestServer(t)
 
@@ -509,7 +705,7 @@ func TestServer_SparkOnly(t *testing.T) {
 
 	result := CreateAggregatedTableForSpark(server, instanceId, t, "timeseries")
 	require.Equal(t, 9, getSingleValue(t, result.Rows))
-	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, "timeseries", "time", "clicks", 2.0)
+	values, err := server.createTimestampRollupReduction(context.Background(), instanceId, 0, "timeseries", "time", "clicks", 2.0)
 	require.NoError(t, err)
 
 	require.Equal(t, 12, len(values))

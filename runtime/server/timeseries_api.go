@@ -10,6 +10,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/uuid"
@@ -53,12 +54,15 @@ func getFilterFromDimensionValuesFilter(
 	}
 	var result string
 	conditions := make([]string, 3)
+	if len(dimensionValues) > 0 {
+		result += " ( "
+	}
 	for i, dv := range dimensionValues {
 		escapedName := EscapeSingleQuotes(dv.Name)
 		var nulls bool
 		var notNulls bool
 		for _, iv := range dv.In {
-			if iv.GetKind() == nil {
+			if _, ok := iv.Kind.(*structpb.Value_NullValue); ok {
 				nulls = true
 			} else {
 				notNulls = true
@@ -68,11 +72,11 @@ func getFilterFromDimensionValuesFilter(
 		if notNulls {
 			var inClause = escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
-				if iv.GetKind() != nil {
+				if _, ok := iv.Kind.(*structpb.Value_NullValue); !ok {
 					inClause += "'" + EscapeSingleQuotes(iv.GetStringValue()) + "'"
-				}
-				if j < len(dv.In)-1 {
-					inClause += ", "
+					if j < len(dv.In)-1 {
+						inClause += ", "
+					}
 				}
 			}
 			inClause += ")"
@@ -90,16 +94,17 @@ func getFilterFromDimensionValuesFilter(
 				}
 				likeClause += escapedName + " " + prefix + " ILIKE '" + EscapeSingleQuotes(lv.GetStringValue()) + "'"
 				if j < len(dv.Like)-1 {
-					likeClause += " AND "
+					likeClause += " OR "
 				}
 			}
 			conditions = append(conditions, likeClause)
 		}
 		result += strings.Join(conditions, " "+dimensionJoiner+" ")
 		if i < len(dimensionValues)-1 {
-			result += " AND "
+			result += ") AND ("
 		}
 	}
+	result += " ) "
 
 	return result
 }
@@ -108,7 +113,7 @@ func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter
 	includeFilters := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
 	excludeFilters := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
 	if includeFilters != "" && excludeFilters != "" {
-		return includeFilters + " AND " + excludeFilters
+		return " ( " + includeFilters + ") AND (" + excludeFilters + ")"
 	} else if includeFilters != "" {
 		return includeFilters
 	} else if excludeFilters != "" {
@@ -156,6 +161,7 @@ func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.
         	min(` + escapedColumnName + `) as min_value,
         	count(*) as count
         	from ` + tableName,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -212,6 +218,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.Gene
 			InstanceId: request.InstanceId,
 			TableName:  request.TableName,
 			ColumnName: request.TimestampColumnName,
+			Priority:   request.Priority,
 		})
 		if err != nil {
 			return nil, err
@@ -226,6 +233,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.Gene
 			InstanceId: request.InstanceId,
 			TableName:  request.TableName,
 			ColumnName: request.TimestampColumnName,
+			Priority:   request.Priority,
 		})
 		if err != nil {
 			return nil, err
@@ -274,6 +282,7 @@ func sMap(k string, v float64) map[string]float64 {
 func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	ctx context.Context,
 	instanceId string,
+	priority int32,
 	tableName string,
 	timestampColumn string,
 	valueColumn string,
@@ -283,6 +292,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	cardinality, err := s.GetTableCardinality(ctx, &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  tableName,
+		Priority:   priority,
 	})
 	if err != nil {
 		return nil, err
@@ -290,7 +300,8 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 
 	if cardinality.Cardinality < int64(pixels*4) {
 		rows, err := s.query(ctx, instanceId, &drivers.Statement{
-			Query: `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Priority: int(priority),
 		})
 		if err != nil {
 			return nil, err
@@ -345,7 +356,8 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
     `
 
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
-		Query: sql,
+		Query:    sql,
+		Priority: int(priority),
 	})
 	if err != nil {
 		return nil, err
@@ -463,15 +475,17 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
         ORDER BY template.` + tsAlias + `
       )`
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: sql,
+		Query:    sql,
+		Priority: int(request.Priority),
 	})
-	defer s.dropTempTable(ctx, request.InstanceId, temporaryTableName)
+	defer s.dropTempTable(context.Background(), request.InstanceId, int(request.Priority), temporaryTableName)
 	if err != nil {
 		return nil, err
 	}
 	rows.Close()
 	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: `SELECT * from "` + temporaryTableName + `"`,
+		Query:    `SELECT * from "` + temporaryTableName + `"`,
+		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -483,7 +497,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	var sparkValues []*runtimev1.TimeSeriesValue
 	if request.Pixels != 0 {
 		pixels := int(request.Pixels)
-		sparkValues, err = s.createTimestampRollupReduction(ctx, request.InstanceId, temporaryTableName, "ts", "count", pixels)
+		sparkValues, err = s.createTimestampRollupReduction(ctx, request.InstanceId, request.Priority, temporaryTableName, "ts", "count", pixels)
 		if err != nil {
 			return nil, err
 		}
@@ -531,9 +545,10 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 	return results, converr
 }
 
-func (s *Server) dropTempTable(ctx context.Context, instanceId string, tableName string) {
+func (s *Server) dropTempTable(ctx context.Context, instanceId string, priority int, tableName string) {
 	rs, er := s.query(ctx, instanceId, &drivers.Statement{
-		Query: `DROP TABLE "` + tableName + `"`,
+		Query:    `DROP TABLE "` + tableName + `"`,
+		Priority: priority,
 	})
 	if er == nil {
 		rs.Close()

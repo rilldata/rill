@@ -40,7 +40,7 @@ func runCmd(ctx context.Context, ver string, commit string, buildDate string) er
 	rootCmd.AddCommand(version.VersionCmd(ver, commit, buildDate))
 	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(initialize.InitCmd())
-	rootCmd.AddCommand(start.StartCmd())
+	rootCmd.AddCommand(start.StartCmd(ver))
 	rootCmd.AddCommand(apply.ApplyCmd())
 	rootCmd.AddCommand(source.SourceCmd())
 	rootCmd.AddCommand(info.InfoCmd())

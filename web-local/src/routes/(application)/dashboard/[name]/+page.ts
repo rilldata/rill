@@ -1,7 +1,7 @@
-import { error, redirect } from "@sveltejs/kit";
-import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
 import { runtimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
+import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
 import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { error, redirect } from "@sveltejs/kit";
 
 export const ssr = false;
 

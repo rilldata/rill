@@ -9,10 +9,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import {
-    useMetaMappedFilters,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
+  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { removeTimezoneOffset } from "../../../../util/formatters";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
@@ -43,30 +40,24 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
   $: timeDimension = $metaQuery.data?.timeDimension;
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    instanceId,
-    metricViewName,
-    metricsExplorer?.filters
-  );
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
-  $: interval = metricsExplorer?.selectedTimeRange?.interval || timeDimension;
+  $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching &&
-    $mappedFiltersQuery.isSuccess
+    !$metaQuery.isRefetching
   ) {
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter: $mappedFiltersQuery.data,
+        filter: metricsExplorer?.filters,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
       }
@@ -89,14 +80,11 @@
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter: $mappedFiltersQuery.data,
+        filter: metricsExplorer?.filters,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval.replace(
-          /[0-9] /g,
-          ""
-        ),
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
       }
     );
   }

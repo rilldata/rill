@@ -61,3 +61,6 @@ release.properties
 *.ipr
 *.iml
 *.iws
+
+# runtime test resources
+!runtime/testdata/**

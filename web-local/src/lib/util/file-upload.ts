@@ -20,7 +20,7 @@ import {
   RuntimeState,
 } from "../application-state-stores/application-store";
 import { importOverlayVisible } from "../application-state-stores/overlay-store";
-import notifications from "../components/notifications";
+import { notifications } from "../components/notifications";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "../types";
 import {
   extractFileExtension,
