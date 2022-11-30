@@ -304,12 +304,10 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "sum(clicks)",
-					SqlName:    &sm,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    &sm,
 			},
 		},
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -343,12 +341,10 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "sum(clicks)",
-					SqlName:    &sm,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    &sm,
 			},
 		},
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -380,16 +376,13 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
-	sm := "sum"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "sum(clicks)",
-					SqlName:    &sm,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
 			},
 		},
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -426,16 +419,13 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 	result := CreateSimpleTimeseriesTable(server, instanceId, t, "timeseries")
 	require.Equal(t, 2, getSingleValue(t, result.Rows))
 
-	sm := "sum"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceId,
 		TableName:  "timeseries",
-		Measures: &runtimev1.GenerateTimeSeriesRequest_BasicMeasures{
-			BasicMeasures: []*runtimev1.BasicMeasureDefinition{
-				{
-					Expression: "sum(clicks)",
-					SqlName:    &sm,
-				},
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "sum",
 			},
 		},
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
