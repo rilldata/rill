@@ -17,12 +17,14 @@ builds:
     goarch:
       - amd64
     env:
-      - CGO_ENABLED=1
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=o64-clang
+      - CXX=o64-clang++
     flags:
       - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
   # macos arm64/m1
   - id: darwin-arm64
     main: ./cli/main.go
@@ -32,11 +34,35 @@ builds:
     goarch:
       - arm64
     env:
-      - CGO_ENABLED=1
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=oa64-clang
+      - CXX=oa64-clang++
     flags:
       - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+  # linux amd64
+  - id: linux-amd64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+      - CGO_CFLAGS=--sysroot=/sysroot/linux/amd64
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
+      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
 blobs:
   - provider: gs
     bucket: pkg.rilldata.com
