@@ -4,9 +4,6 @@ release:
   prerelease: auto
   disable: true
 
-before:
-  hooks:
-
 builds:
   # linux amd64
   - id: linux-amd64
