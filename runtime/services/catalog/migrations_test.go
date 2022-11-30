@@ -290,7 +290,6 @@ func TestReconcileMetricsView(t *testing.T) {
 	// dropping the timestamp column gives a different error
 	require.Equal(t, metrics_views.TimestampNotFound, result.Errors[0].Message)
 
-	// some invalid parts still creates an entry in catalog for dashboard APIs to work
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
