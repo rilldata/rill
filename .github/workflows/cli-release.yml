@@ -10,19 +10,6 @@ on:
       - "cli/**"
 jobs:
   release:
-    # strategy:
-    #   matrix:
-    #     name: ["OSX", "Linux"]
-    #     include:
-    #     - name: OSX
-    #       runs-on: macos-latest
-    #       config: .goreleaser.darwin.yaml
-    #       upload: osx
-    #     - name: Linux
-    #       runs-on: ubuntu-latest
-    #       config: .goreleaser.linux.yaml
-    #       upload: linux
-
     name: Upload Assets to GitHub w/ goreleaser
     runs-on: ubuntu-latest
     steps:
@@ -34,16 +21,11 @@ jobs:
         with:
           repository: goreleaser/goreleaser-cross-example-sysroot
           path: sysroot
+
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.19.2
-      
-      - name: setup release environment
-        run: |-
-          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
-          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
-          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -51,21 +33,21 @@ jobs:
           node-version: 18
 
       - name: Build UI
-        run: make cli
+        run: |
+          make cli &&
+	      mkdir -p cli/pkg/web/embed/dist &&
+	      cp -r web-local/build/ cli/pkg/web/embed/dist
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      # - name: Run GoReleaser
-      #   uses: goreleaser/goreleaser-action@v2
-      #   with:
-      #     distribution: goreleaser
-      #     version: ${{ env.GITHUB_REF_NAME }}
-      #     args: release --config ${{ matrix.config }} --rm-dist
-      #   env:
-      #     CGO_ENABLED: 1
+      - name: setup release environment
+        run: |-
+          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
+          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
 
       - name: Release Publish
         run: |-
@@ -81,10 +63,3 @@ jobs:
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
               release --rm-dist --skip-validate
-
-# commenting upload to gcs for now
-      # - name: Upload to GCS
-      #   uses: google-github-actions/upload-cloud-storage@v1
-      #   with:
-      #     path: dist/
-      #     destination: pkg.rilldata.com/rill/nightly/${{ matrix.upload }}
