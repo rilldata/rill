@@ -68,7 +68,8 @@
   $: mappedFiltersQuery = useMetaMappedFilters(
     instanceId,
     metricViewName,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionName
   );
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;

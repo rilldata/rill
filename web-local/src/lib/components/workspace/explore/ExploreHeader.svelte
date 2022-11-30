@@ -52,7 +52,7 @@
   };
 </script>
 
-<section id="header" class="w-full flex flex-col">
+<section class="w-full flex flex-col" id="header">
   <!-- top row
     title and call to action
   -->
@@ -65,7 +65,7 @@
     </h1>
     <!-- top right CTAs -->
     <div style="flex-shrink: 0;">
-      <Button type="secondary" on:click={() => viewMetrics(metricViewName)}>
+      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
         Edit Metrics <MetricsIcon size="16px" />
       </Button>
     </div>
@@ -74,7 +74,7 @@
   <div class="px-2 pt-1">
     <TimeControls metricsDefId={metricViewName} />
     {#key metricViewName}
-      <Filters metricsDefId={metricViewName} />
+      <Filters {metricViewName} />
     {/key}
   </div>
 </section>

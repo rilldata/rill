@@ -84,7 +84,8 @@
   $: mappedFiltersQuery = useMetaMappedFilters(
     $runtimeStore.instanceId,
     metricViewName,
-    metricsExplorer?.filters
+    metricsExplorer?.filters,
+    dimensionName
   );
 
   let activeValues: Array<unknown>;

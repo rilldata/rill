@@ -6,30 +6,17 @@ import {
 
 export const MetaId = `v1/metrics-view/meta`;
 
-export const getMetaQueryKey = (metricViewId: string) => {
-  return [MetaId, metricViewId];
-};
-
-export const useMetaQuery = (instanceId: string, metricViewName: string) => {
-  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
-    query: {
-      enabled: !!metricViewName,
-      select: (data) => data?.entry?.metricsView,
-    },
-  });
-};
-
-export const useCatalogQuery = <T = V1MetricsView>(
+export const useMetaQuery = <T = V1MetricsView>(
   instanceId: string,
   metricViewName: string,
   selector?: (meta: V1MetricsView) => T
 ) => {
   return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
     query: {
-      enabled: !!metricViewName,
-      ...(selector
-        ? { select: (data) => selector(data?.entry?.metricsView) }
-        : {}),
+      select: (data) =>
+        selector
+          ? selector(data?.entry?.metricsView)
+          : data?.entry?.metricsView,
     },
   });
 };
@@ -39,7 +26,7 @@ export const useMetaMeasure = (
   metricViewName: string,
   measureName: string
 ) =>
-  useCatalogQuery(instanceId, metricViewName, (meta) =>
+  useMetaQuery(instanceId, metricViewName, (meta) =>
     meta.measures?.find((measure) => measure.name === measureName)
   );
 
@@ -48,7 +35,7 @@ export const useMetaDimension = (
   metricViewName: string,
   dimensionName: string
 ) =>
-  useCatalogQuery(instanceId, metricViewName, (meta) =>
+  useMetaQuery(instanceId, metricViewName, (meta) =>
     meta.dimensions?.find((dimension) => dimension.name === dimensionName)
   );
 
@@ -58,7 +45,7 @@ export const useMetaMappedFilters = (
   filters: MetricsViewRequestFilter,
   dimensionName?: string
 ) =>
-  useCatalogQuery<MetricsViewRequestFilter>(instanceId, metricViewName, (_) => {
+  useMetaQuery<MetricsViewRequestFilter>(instanceId, metricViewName, (_) => {
     if (!filters) return undefined;
     return {
       include: filters.include
