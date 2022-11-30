@@ -89,7 +89,7 @@
     let:xScale
     let:config
   >
-    <g transition:scaleVertical={{ duration: 400, start: 0.3 }}>
+    <g transition:scaleVertical|local={{ duration: 400, start: 0.3 }}>
       <Line {data} {xAccessor} {yAccessor} {color} lineThickness={0.5} />
       <Area {data} {xAccessor} {yAccessor} {color} />
     </g>

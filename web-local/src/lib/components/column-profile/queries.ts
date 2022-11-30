@@ -78,7 +78,6 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
       pixels: 92,
     }
   );
-
   const estimatedInterval = useRuntimeServiceEstimateRollupInterval(
     instanceId,
     objectName,
@@ -102,14 +101,16 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
             const next = { ...di };
             next.count = next.records.count;
             return next;
-          }) || []
+          }) || [],
+          "ts"
         ),
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark?.map((di) => {
             const next = { ...di };
             next.count = next.records.count;
             return next;
-          }) || []
+          }) || [],
+          "ts"
         ),
       };
     }

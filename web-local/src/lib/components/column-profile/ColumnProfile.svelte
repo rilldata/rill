@@ -12,14 +12,16 @@
   import { NATIVE_SELECT } from "../../util/component-classes";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getColumnType } from "./column-types";
 
   export let containerWidth = 0;
-
+  const queryClient = useQueryClient();
   export let objectName: string;
   // export let profile: any;
   export let head: any; // FIXME
   export let indentLevel = 0;
+  export let key: any;
 
   let mode = "summaries";
 
@@ -33,11 +35,32 @@
     return () => observer.unobserve(container);
   });
 
+  // function invalidateForModel(queryHash, modelName) {
+  //   const r = new RegExp(
+  //     `\/v1\/instances\/[a-zA-Z0-9-]+\/queries/[a-zA-Z0-9-]+\/tables\/${modelName}`
+  //   );
+  //   return r.test(queryHash);
+  // }
+
+  // invalidate any existing queries when this key changes.
+  // $: if (key) {
+  //   queryClient?.resetQueries({
+  //     predicate: (query) => {
+  //       console.log(
+  //         query.queryHash,
+  //         invalidateForModel(query.queryHash, objectName)
+  //       );
+  //       return false;
+  //     },
+  //   });
+  // }
+
   // get all column profiles.
   let profileColumns;
   $: profileColumns = useRuntimeServiceProfileColumns(
     $runtimeStore?.instanceId,
-    objectName
+    objectName,
+    { query: { keepPreviousData: true } }
   );
 
   /** get single example */
@@ -47,7 +70,6 @@
     objectName,
     { limit: 1 }
   );
-  $: console.log($exampleValue);
 
   /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
   function getSummaries(objectName, instanceId, profileColumnResults) {
@@ -56,11 +78,14 @@
         return derived(
           [
             writable(column),
-            useRuntimeServiceGetNullCount(instanceId, objectName, column.name),
+            useRuntimeServiceGetNullCount(instanceId, objectName, column.name, {
+              query: { keepPreviousData: true },
+            }),
             useRuntimeServiceGetCardinalityOfColumn(
               instanceId,
               objectName,
-              column.name
+              column.name,
+              { query: { keepPreviousData: true } }
             ),
           ],
           ([col, nullValues, cardinality]) => {
@@ -131,7 +156,7 @@
 </div>
 
 <div>
-  {#if sortedProfile && head.length}
+  {#if sortedProfile && exampleValue}
     {#each sortedProfile as column (column.name)}
       {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
       {@const hideNullPercentage =

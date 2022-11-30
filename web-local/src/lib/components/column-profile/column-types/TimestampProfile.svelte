@@ -21,8 +21,6 @@
   export let compact = false;
   export let hideNullPercentage = false;
 
-  let columns: string;
-
   let active = false;
 
   /** queries used to power the different plots */
