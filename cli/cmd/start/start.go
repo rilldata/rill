@@ -104,7 +104,7 @@ func StartCmd(ver string) *cobra.Command {
 
 			// Trigger reconciliation
 			logger.Sugar().Infof("Hydrating project at '%s'", repoAbs)
-			res, err := rt.Reconcile(context.Background(), inst.ID, nil, false, false)
+			res, err := rt.Reconcile(context.Background(), inst.ID, nil, nil, false, false)
 			if err != nil {
 				return err
 			}
@@ -121,7 +121,7 @@ func StartCmd(ver string) *cobra.Command {
 				HTTPPort: httpPort,
 				GRPCPort: grpcPort,
 			}
-			server, err := server.NewServer(srvOpts, rt, serverLogger)
+			srv, err := server.NewServer(srvOpts, rt, serverLogger)
 			if err != nil {
 				return err
 			}
@@ -179,7 +179,7 @@ func StartCmd(ver string) *cobra.Command {
 			// Start the gRPC and combined UI/REST servers
 			group.Go(func() error {
 				logger.Sugar().Debugf("Serving runtime gRPC on http://localhost:%d", srvOpts.GRPCPort)
-				return server.ServeGRPC(ctx)
+				return srv.ServeGRPC(ctx)
 			})
 			group.Go(func() error {
 				server := &http.Server{Handler: mux}
