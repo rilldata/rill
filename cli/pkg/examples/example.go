@@ -10,6 +10,20 @@ import (
 //go:embed embed
 var exampleFS embed.FS
 
+func ListExamples() ([]string, error) {
+	entries, err := exampleFS.ReadDir("embed/dist")
+	if err != nil {
+		return nil, err
+	}
+
+	exampleList := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		exampleList = append(exampleList, entry.Name())
+	}
+
+	return exampleList, nil
+}
+
 func InitExample(projectName string, projectDir string) error {
 	examplePath, err := getExampleProject(projectName)
 	if err != nil {
