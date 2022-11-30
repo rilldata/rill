@@ -41,14 +41,14 @@ type Measure struct {
 	Expression  string
 	Description string
 	Format      string `yaml:"format_preset"`
-	Visible     bool
+	Ignore      bool   `yaml:"ignore,omitempty"`
 }
 
 type Dimension struct {
 	Label       string
 	Property    string `copier:"Name"`
 	Description string
-	Visible     bool
+	Ignore      bool `yaml:"ignore,omitempty"`
 }
 
 func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {

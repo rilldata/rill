@@ -62,7 +62,7 @@ message MetricsView {
     string name = 1;
     string label = 2;
     string description = 3;
-    bool visible = 4;
+    bool ignore = 4;
   }
   // Measures are aggregated computed values
   message Measure {
@@ -71,7 +71,7 @@ message MetricsView {
     string expression = 3;
     string description = 4;
     string format = 5;
-    bool visible = 6;
+    bool ignore = 6;
   }
   // Name of the metrics view
   string name = 1;
@@ -86,4 +86,8 @@ message MetricsView {
   repeated Dimension dimensions = 5;
   // Measures in the metrics view
   repeated Measure measures = 6;
+  // User friendly name
+  string display_name = 7;
+  // Brief description of the dashboard
+  string description = 8;
 }

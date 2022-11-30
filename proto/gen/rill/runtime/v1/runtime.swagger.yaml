@@ -1195,12 +1195,12 @@ definitions:
     properties:
       description:
         type: string
+      ignore:
+        type: boolean
       label:
         type: string
       name:
         type: string
-      visible:
-        type: boolean
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
@@ -1222,12 +1222,12 @@ definitions:
         type: string
       format:
         type: string
+      ignore:
+        type: boolean
       label:
         type: string
       name:
         type: string
-      visible:
-        type: boolean
     title: Measures are aggregated computed values
   ModelDialect:
     type: string
@@ -1643,11 +1643,17 @@ definitions:
   v1MetricsView:
     type: object
     properties:
+      description:
+        type: string
+        title: Brief description of the dashboard
       dimensions:
         type: array
         items:
           $ref: '#/definitions/MetricsViewDimension'
         title: Dimensions in the metrics view
+      displayName:
+        type: string
+        title: User friendly name
       from:
         type: string
         title: Name of the source or model that the metrics view is based on
