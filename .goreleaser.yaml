@@ -80,7 +80,7 @@ brews:
       owner: rilldata
       name: homebrew-rill-developer
       branch: main
-      token: {{ .Env.GITHUB_TOKEN }}
+      token: "{{ .Env.GITHUB_TOKEN }}"
     test: |
       system "#{bin}/rill --version"
     install: |
