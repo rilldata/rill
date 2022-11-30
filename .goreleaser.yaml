@@ -68,7 +68,7 @@ blobs:
     bucket: pkg.rilldata.com
     folder: "rill/{{.Version}}"
     extra_files:
-    - ./dist/**
+    - glob: ./dist/**
 
 brews:
   - homepage: "https://github.com/rilldata/rill-developer"
