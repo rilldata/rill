@@ -22,7 +22,7 @@ builds:
       - CC=o64-clang
       - CXX=o64-clang++
     flags:
-      - -mod=readonly
+      - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
   # macos arm64/m1
@@ -39,7 +39,7 @@ builds:
       - CC=oa64-clang
       - CXX=oa64-clang++
     flags:
-      - -mod=readonly
+      - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
@@ -59,14 +59,14 @@ builds:
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
       - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
     flags:
-      - -mod=readonly
+      - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
 
 blobs:
   - provider: gs
     bucket: pkg.rilldata.com
-    folder: rill/{{.Version}}
+    folder: "rill/{{ .Version }}"
     extra_files:
     - glob: ./dist/**
 
