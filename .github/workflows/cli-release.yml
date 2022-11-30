@@ -27,8 +27,13 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
+      - name: Checkout sysroot for cross compilation
+        uses: actions/checkout@v3
+        with:
+          repository: goreleaser/goreleaser-cross-example-sysroot
+          path: sysroot
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
