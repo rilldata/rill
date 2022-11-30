@@ -1,4 +1,4 @@
-import { EntityType } from "../data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
 export interface CommonFields {
   app_name: string;
