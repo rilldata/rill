@@ -6,7 +6,6 @@ release:
 
 before:
   hooks:
-
 builds:
   - id: darwin
     main: ./cli/main.go
