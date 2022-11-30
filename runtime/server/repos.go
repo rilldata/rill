@@ -16,9 +16,12 @@ import (
 // ListFiles implements RuntimeService
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	conn, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
@@ -43,9 +46,12 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 // GetFile implements RuntimeService
 func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	conn, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
@@ -71,9 +77,12 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 // PutFile implements RuntimeService
 func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	conn, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
@@ -94,9 +103,12 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 // DeleteFile implements RuntimeService
 func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	conn, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
@@ -116,9 +128,12 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 // RenameFile implements RuntimeService
 func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	conn, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
@@ -145,9 +160,13 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 	}
 
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, pathParams["instance_id"])
-	if !found {
-		http.Error(w, "instance not found", http.StatusBadRequest)
+	inst, err := registry.FindInstance(ctx, pathParams["instance_id"])
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			http.Error(w, "instance not found", http.StatusBadRequest)
+		} else {
+			http.Error(w, "unexpected error", http.StatusInternalServerError)
+		}
 		return
 	}
 
