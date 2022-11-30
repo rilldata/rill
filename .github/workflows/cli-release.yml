@@ -52,14 +52,9 @@ jobs:
         with:
           distribution: goreleaser
           version: ${{ env.GITHUB_REF_NAME }}
-<<<<<<< HEAD
           args: release --config .linux-goreleaser.yaml --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
-=======
-          args: release --config ${{ matrix.config }} --rm-dist
-        env:
->>>>>>> 7db8d130 (cleanup)
           CGO_ENABLED: 1
 
       - name: Upload to GCS
