@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,6 +27,9 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 	}, metastore, nil)
 	require.NoError(t, err)
 
+	_, b, _, _ := runtime.Caller(0)
+	fmt.Println("dir " + filepath.Dir(b))
+	fmt.Println("root " + projectpath.Root)
 	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
 		OlapDriver:   "duckdb",
 		OlapDsn:      "",
