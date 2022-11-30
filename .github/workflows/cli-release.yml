@@ -62,7 +62,19 @@ jobs:
       #     CGO_ENABLED: 1
 
       - name: release publish
-        run: make release-dry-run
+        run: |-
+          docker run \
+              --rm \
+              --privileged \
+              -e CGO_ENABLED=1 \
+              --env-file .release-env \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v `pwd`:/go/src/rilldata/rill-developer \
+              -v `pwd`/sysroot:/sysroot \
+              -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
+              -w /go/src/rilldata/rill-developer \
+              goreleaser/goreleaser-cross:v1.19.2 \
+              release --rm-dist --skip-validate
 
 # commenting upload to gcs for now
       # - name: Upload to GCS
