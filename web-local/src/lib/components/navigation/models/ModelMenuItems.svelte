@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { useRuntimeServiceDeleteFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { goto } from "$app/navigation";
+  import {
+    getRuntimeServiceListFilesQueryKey,
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServicePutFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
@@ -10,7 +15,18 @@
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { createEventDispatcher, getContext } from "svelte";
+  import { BehaviourEventMedium } from "../../../../common/metrics-service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../../common/metrics-service/MetricsTypes";
+  import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { metricsTemplate } from "../../../application-state-stores/metrics-internal-store";
+  import { navigationEvent } from "../../../metrics/initMetrics";
+  import { useDashboardNames } from "../../../svelte-query/dashboards";
+  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -20,9 +36,12 @@
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
+  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
+
   const dispatch = createEventDispatcher();
 
   const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
+  const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -33,6 +52,7 @@
   const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   $: persistentModel = $persistentModelStore?.entities?.find(
     (model) => model.tableName === modelName
@@ -45,7 +65,43 @@
   // const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
   /** functionality for bootstrapping a dashboard */
-  const bootstrapDashboard = (_: string) => {
+  const createDashboardFromModel = (_: string) => {
+    // create dashboard from model
+    const newDashboardName = getName(
+      `${modelName}_dashboard`,
+      $dashboardNames.data
+    );
+    $createFileMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          path: `dashboards/${newDashboardName}.yaml`,
+          blob: metricsTemplate, // TODO: compile a real yaml file
+          create: true,
+          createOnly: true,
+          strict: false,
+        },
+      },
+      {
+        onSuccess: () => {
+          goto(`/dashboard/${newDashboardName}`);
+          queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
+          );
+          const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+          navigationEvent.fireEvent(
+            newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
+            BehaviourEventMedium.Menu,
+            MetricsEventSpace.LeftPanel,
+            EntityTypeToScreenMap[previousActiveEntity],
+            MetricsEventScreenName.Dashboard
+          );
+        },
+        onError: (err) => {
+          console.error(err);
+        },
+      }
+    );
     // const previousActiveEntity = $applicationStore?.activeEntity?.type;
     // const metricsLabel = `${modelName}_dashboard`;
     // const generatedYAML = generateMeasuresAndDimension(model, {
@@ -85,7 +141,7 @@
 <MenuItem
   disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
   icon
-  on:select={() => bootstrapDashboard(modelName)}
+  on:select={() => createDashboardFromModel(modelName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
