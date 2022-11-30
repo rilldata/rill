@@ -4,8 +4,8 @@
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getLabel } from "@rilldata/web-local/lib/util/entity-mappers";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { getLabel } from "@rilldata/web-local/lib/util/entity-mappers";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtimeStore } from "../../application-state-stores/application-store";

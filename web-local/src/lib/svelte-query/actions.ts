@@ -9,13 +9,13 @@ import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-s
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+import { notifications } from "@rilldata/web-local/lib/components/notifications";
+import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import {
   getFileFromName,
   getLabel,
   getRouteFromName,
 } from "@rilldata/web-local/lib/util/entity-mappers";
-import notifications from "@rilldata/web-local/lib/components/notifications";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
 export async function renameFileArtifact(
@@ -38,7 +38,7 @@ export async function renameFileArtifact(
     replaceState: true,
   });
   notifications.send({
-    message: `renamed ${getLabel(type)} ${fromName} to ${toName}`,
+    message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
   await queryClient.invalidateQueries(
     getRuntimeServiceListFilesQueryKey(instanceId)
@@ -66,6 +66,8 @@ export async function deleteFileArtifact(
     }
     // Temporary until nodejs is removed
     await dataModelerService.dispatch("deleteEntity", [type, name]);
+
+    notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
     // TODO: update all entities based on affected path
     return queryClient.invalidateQueries(

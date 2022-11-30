@@ -30,7 +30,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 
 	// Execute
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
 
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, sql, args)
+	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
 	if err != nil {
 		return nil, err
 	}
@@ -108,11 +108,11 @@ func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name 
 	return obj.GetMetricsView(), nil
 }
 
-func (s *Server) metricsQuery(ctx context.Context, instanceId string, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
+func (s *Server) metricsQuery(ctx context.Context, instanceId string, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := s.query(ctx, instanceId, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
-		Priority: 1,
+		Priority: priority,
 	})
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())

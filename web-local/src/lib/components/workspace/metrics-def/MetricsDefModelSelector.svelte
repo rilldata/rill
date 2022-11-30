@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { Readable } from "svelte/store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import ModelIcon from "../../icons/Model.svelte";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import type { Readable } from "svelte/store";
   import type { MetricsInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
+  import ModelIcon from "../../icons/Model.svelte";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 

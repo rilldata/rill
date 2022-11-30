@@ -7,9 +7,10 @@ import { EntityType } from "@rilldata/web-local/common/data-modeler-state-servic
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
+import { getFileFromName } from "../../../util/entity-mappers";
+import { notifications } from "../../notifications";
 
 export async function createModel(
   instanceId: string,
@@ -60,5 +61,8 @@ export async function createModelFromSource(
     `select * from ${sourceName}`,
     setAsActive
   );
+  notifications.send({
+    message: `Queried ${sourceName} in workspace`,
+  });
   return newModelName;
 }
