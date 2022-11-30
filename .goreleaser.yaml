@@ -67,6 +67,8 @@ blobs:
   - provider: gs
     bucket: pkg.rilldata.com
     folder: "rill/{{.Version}}"
+    extra_files:
+    - ./dist/**
 
 brews:
   - homepage: "https://github.com/rilldata/rill-developer"
@@ -99,7 +101,7 @@ archives:
     # wrap_in_directory: true
 
 checksum:
-  name_template: checksums.txt
+  name_template: checksum-{{ .Runtime.Goos }}-{{ .Runtime.Goarch }}.txt
 
 snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
