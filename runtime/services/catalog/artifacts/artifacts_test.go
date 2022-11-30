@@ -100,7 +100,6 @@ region: us-east-2
 							Name:        "dim1",
 							Label:       "Dim1_L",
 							Description: "Dim1_D",
-							Ignore:      true,
 						},
 					},
 					Measures: []*runtimev1.MetricsView_Measure{
@@ -110,7 +109,6 @@ region: us-east-2
 							Expression:  "count(c0)",
 							Description: "Mea0_D",
 							Format:      "humanise",
-							Ignore:      false,
 						},
 						{
 							Name:        "measure_1",
@@ -118,10 +116,9 @@ region: us-east-2
 							Expression:  "avg(c1)",
 							Description: "Mea1_D",
 							Format:      "humanise",
-							Ignore:      true,
 						},
 					},
-					DisplayName: "dashboard name",
+					Label:       "dashboard name",
 					Description: "long description for dashboard",
 				},
 			},
@@ -141,7 +138,6 @@ dimensions:
 - label: Dim1_L
   property: dim1
   description: Dim1_D
-  ignore: true
 measures:
 - label: Mea0_L
   expression: count(c0)
@@ -151,7 +147,6 @@ measures:
   expression: avg(c1)
   description: Mea1_D
   format_preset: humanise
-  ignore: true
 `,
 		},
 	}

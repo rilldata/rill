@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -300,32 +301,26 @@ func TestReconcileMetricsView(t *testing.T) {
 	require.Equal(t, []string{"Measures", "1"}, result.Errors[1].PropertyPath)
 
 	// ignore invalid measure and dimension
-	testutils.CreateMetricsView(t, s, &runtimev1.MetricsView{
-		Name:          "AdBids_dashboard",
-		From:          "AdBids_model",
-		TimeDimension: "timestamp",
-		TimeGrains:    []string{"1 day", "1 month"},
-		Dimensions: []*runtimev1.MetricsView_Dimension{
-			{
-				Name:  "publisher",
-				Label: "Publisher",
-			},
-			{
-				Name:   "domain",
-				Label:  "Domain",
-				Ignore: true,
-			},
-		},
-		Measures: []*runtimev1.MetricsView_Measure{
-			{
-				Expression: "count(*)",
-			},
-			{
-				Expression: "avg(bid_price)",
-				Ignore:     true,
-			},
-		},
-	}, AdBidsDashboardRepoPath)
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.PutBlob(context.Background(), s.InstId, AdBidsDashboardRepoPath, `version: 0.0.1
+from: AdBids_model
+timeseries: timestamp
+timegrains:
+- 1 day
+- 1 month
+default_timegrain: ""
+dimensions:
+- label: Publisher
+  property: publisher
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+- expression: avg(bid_price)
+  ignore: true
+`)
+	require.NoError(t, err)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})

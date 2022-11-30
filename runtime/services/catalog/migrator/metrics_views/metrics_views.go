@@ -68,11 +68,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	var validationErrors []*runtimev1.ReconcileError
 
-	var dimensions []*runtimev1.MetricsView_Dimension
 	for i, dimension := range mv.Dimensions {
-		if dimension.Ignore {
-			continue
-		}
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
@@ -82,16 +78,9 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 		}
-		dimensions = append(dimensions, dimension)
 	}
-	// only retain non-ignored dimensions
-	mv.Dimensions = dimensions
 
-	var measures []*runtimev1.MetricsView_Measure
 	for i, measure := range mv.Measures {
-		if measure.Ignore {
-			continue
-		}
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
@@ -101,10 +90,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 				PropertyPath: []string{"Measures", strconv.Itoa(i)},
 			})
 		}
-		measures = append(measures, measure)
 	}
-	// only retain non-ignored measures
-	mv.Measures = measures
 
 	return validationErrors
 }

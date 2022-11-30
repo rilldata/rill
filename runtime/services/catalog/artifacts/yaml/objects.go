@@ -26,7 +26,7 @@ type Source struct {
 
 type MetricsView struct {
 	Version          string
-	DisplayName      string `yaml:"display_name"`
+	Label            string `yaml:"display_name"`
 	Description      string
 	From             string
 	TimeDimension    string `yaml:"timeseries"`
@@ -114,6 +114,25 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
+	// remove ignored measures and dimensions
+	var measures []*Measure
+	for _, measure := range metrics.Measures {
+		if measure.Ignore {
+			continue
+		}
+		measures = append(measures, measure)
+	}
+	metrics.Measures = measures
+
+	var dimensions []*Dimension
+	for _, dimension := range metrics.Dimensions {
+		if dimension.Ignore {
+			continue
+		}
+		dimensions = append(dimensions, dimension)
+	}
+	metrics.Dimensions = dimensions
+
 	apiMetrics := &runtimev1.MetricsView{}
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {

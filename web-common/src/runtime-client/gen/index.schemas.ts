@@ -467,8 +467,8 @@ export interface V1MetricsViewColumn {
 export interface V1MetricsView {
   description?: string;
   dimensions?: MetricsViewDimension[];
-  displayName?: string;
   from?: string;
+  label?: string;
   measures?: MetricsViewMeasure[];
   name?: string;
   timeDimension?: string;
@@ -742,7 +742,6 @@ export interface MetricsViewMeasure {
   description?: string;
   expression?: string;
   format?: string;
-  ignore?: boolean;
   label?: string;
   name?: string;
 }
@@ -755,7 +754,6 @@ export interface MetricsViewFilterCond {
 
 export interface MetricsViewDimension {
   description?: string;
-  ignore?: boolean;
   label?: string;
   name?: string;
 }
