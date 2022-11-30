@@ -1,10 +1,10 @@
-import type { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
-import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
+import type { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+import type { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
 import type {
   CommonUserFields,
   MetricsEventScreenName,
   MetricsEventSpace,
-} from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+} from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
 
 export class NavigationEventHandler {
   public constructor(

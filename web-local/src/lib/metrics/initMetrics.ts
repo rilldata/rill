@@ -1,7 +1,7 @@
-import { BehaviourEventFactory } from "@rilldata/web-local/common/metrics-service/BehaviourEventFactory";
-import { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
-import { ProductHealthEventFactory } from "@rilldata/web-local/common/metrics-service/ProductHealthEventFactory";
-import { RillIntakeClient } from "@rilldata/web-local/common/metrics-service/RillIntakeClient";
+import { BehaviourEventFactory } from "@rilldata/web-local/lib/metrics/service/BehaviourEventFactory";
+import { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
+import { ProductHealthEventFactory } from "@rilldata/web-local/lib/metrics/service/ProductHealthEventFactory";
+import { RillIntakeClient } from "@rilldata/web-local/lib/metrics/service/RillIntakeClient";
 import { ActiveEventHandler } from "./ActiveEventHandler";
 import { config } from "../application-state-stores/application-store";
 import { collectCommonUserFields } from "./collectCommonUserFields";

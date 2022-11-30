@@ -3,9 +3,9 @@ import type {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
   PickActionFunctions,
-} from "../ServiceBase";
-import { getActionMethods } from "../ServiceBase";
-import type { RootConfig } from "../config/RootConfig";
+} from "@rilldata/web-local/common/ServiceBase";
+import { getActionMethods } from "@rilldata/web-local/common/ServiceBase";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type { MetricsEventFactory } from "./MetricsEventFactory";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";

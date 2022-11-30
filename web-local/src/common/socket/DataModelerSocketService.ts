@@ -9,7 +9,7 @@ import type {
   ServerToClientEvents,
 } from "./SocketInterfaces";
 import type { ActionResponse } from "../data-modeler-service/response/ActionResponse";
-import type { MetricsActionDefinition } from "../metrics-service/MetricsService";
+import type { MetricsActionDefinition } from "@rilldata/web-local/lib/metrics/service/MetricsService";
 
 /**
  * {@link DataModelerService} implementation that sits on the client side.

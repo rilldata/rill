@@ -26,7 +26,7 @@ import { ApplicationStatus } from "../data-modeler-state-service/entity-state-se
 import type {
   MetricsActionDefinition,
   MetricsService,
-} from "../metrics-service/MetricsService";
+} from "@rilldata/web-local/lib/metrics/service/MetricsService";
 import type {
   EntityType,
   StateType,

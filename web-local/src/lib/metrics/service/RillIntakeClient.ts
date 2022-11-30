@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { RootConfig } from "../config/RootConfig";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type { MetricsEvent } from "./MetricsTypes";
 
 export class RillIntakeClient {

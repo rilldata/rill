@@ -1,5 +1,5 @@
-import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
-import type { CommonUserFields } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+import type { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
+import type { CommonUserFields } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
 import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 
 export class ActiveEventHandler {
