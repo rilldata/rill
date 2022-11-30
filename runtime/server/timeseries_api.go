@@ -10,6 +10,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/uuid"
@@ -53,12 +54,15 @@ func getFilterFromDimensionValuesFilter(
 	}
 	var result string
 	conditions := make([]string, 3)
+	if len(dimensionValues) > 0 {
+		result += " ( "
+	}
 	for i, dv := range dimensionValues {
 		escapedName := EscapeSingleQuotes(dv.Name)
 		var nulls bool
 		var notNulls bool
 		for _, iv := range dv.In {
-			if iv.GetKind() == nil {
+			if _, ok := iv.Kind.(*structpb.Value_NullValue); ok {
 				nulls = true
 			} else {
 				notNulls = true
@@ -68,11 +72,11 @@ func getFilterFromDimensionValuesFilter(
 		if notNulls {
 			var inClause = escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
-				if iv.GetKind() != nil {
+				if _, ok := iv.Kind.(*structpb.Value_NullValue); !ok {
 					inClause += "'" + EscapeSingleQuotes(iv.GetStringValue()) + "'"
-				}
-				if j < len(dv.In)-1 {
-					inClause += ", "
+					if j < len(dv.In)-1 {
+						inClause += ", "
+					}
 				}
 			}
 			inClause += ")"
@@ -90,16 +94,17 @@ func getFilterFromDimensionValuesFilter(
 				}
 				likeClause += escapedName + " " + prefix + " ILIKE '" + EscapeSingleQuotes(lv.GetStringValue()) + "'"
 				if j < len(dv.Like)-1 {
-					likeClause += " AND "
+					likeClause += " OR "
 				}
 			}
 			conditions = append(conditions, likeClause)
 		}
 		result += strings.Join(conditions, " "+dimensionJoiner+" ")
 		if i < len(dimensionValues)-1 {
-			result += " AND "
+			result += ") AND ("
 		}
 	}
+	result += " ) "
 
 	return result
 }
@@ -108,7 +113,7 @@ func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter
 	includeFilters := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
 	excludeFilters := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
 	if includeFilters != "" && excludeFilters != "" {
-		return includeFilters + " AND " + excludeFilters
+		return " ( " + includeFilters + ") AND (" + excludeFilters + ")"
 	} else if includeFilters != "" {
 		return includeFilters
 	} else if excludeFilters != "" {
