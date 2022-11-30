@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -28,6 +29,10 @@ func createServerWithMetricsView(t *testing.T) (*Server, string) {
 	require.NoError(t, err)
 
 	_, b, _, _ := runtime.Caller(0)
+	cwd, _ := os.Getwd()
+	fmt.Println("cwd " + cwd)
+	fmt.Println("dir cwd" + filepath.Join(cwd, "../../"))
+
 	fmt.Println("dir " + filepath.Dir(b))
 	fmt.Println("root " + projectpath.Root)
 	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
