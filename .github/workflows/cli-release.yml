@@ -57,7 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
 
-      - name: release publish
+      - name: Release Publish
         run: |-
           docker run \
               --rm \
