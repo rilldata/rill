@@ -50,7 +50,7 @@ blobs:
     bucket: pkg.rilldata.com
     folder: "rill/v{{ .Version }}"
     extra_files:
-    - glob: ./dist/**
+      - glob: ./dist/**
 
 brews:
   - homepage: https://github.com/rilldata/rill-developer
