@@ -36,7 +36,11 @@ jobs:
           node-version: 18
 
       - name: Build UI
-        run: make cli
+        run: |
+	      npm install &&
+	      npm run build &&
+	      mkdir -p cli/pkg/web/embed/dist &&
+	      cp -r web-local/build/ cli/pkg/web/embed/dist
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
