@@ -20,7 +20,7 @@ type ColumnTopK struct {
 var _ runtime.Query = &ColumnTopK{}
 
 func (q *ColumnTopK) Key() string {
-	return fmt.Sprintf("%s:%s:%s:%d", q.TableName, q.ColumnName, q.Agg, q.K)
+	return fmt.Sprintf("ColumnTopK:%s:%s:%s:%d", q.TableName, q.ColumnName, q.Agg, q.K)
 }
 
 func (q *ColumnTopK) Deps() []string {
