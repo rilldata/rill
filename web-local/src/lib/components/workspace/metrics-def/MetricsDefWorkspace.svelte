@@ -5,6 +5,7 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
+    V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
