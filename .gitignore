@@ -63,4 +63,4 @@ release.properties
 *.iws
 
 # runtime test resources
-./runtime/testdata/**
+!runtime/testdata/**
