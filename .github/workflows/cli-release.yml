@@ -16,6 +16,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Fetch tags required by goreleaser
+        run: git fetch --prune --unshallow
+
       - name: Checkout sysroot for cross compilation
         uses: actions/checkout@v3
         with:
