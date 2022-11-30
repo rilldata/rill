@@ -1,38 +1,35 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import {
-    autoCreateMetricsDefinitionForSource,
-    createModelForSource,
-    sourceUpdated,
-  } from "@rilldata/web-local/lib/redux-store/source/source-apis";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
+  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
   import { createEventDispatcher, getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getNextEntityName } from "../../../../common/utils/getNextEntityId";
   import {
     dataModelerService,
     runtimeStore,
@@ -50,13 +47,14 @@
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
+
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
-    `/sources/${sourceName}.yaml`
+    getFileFromName(sourceName, EntityType.Table)
   );
 
   const dispatch = createEventDispatcher();
@@ -90,54 +88,41 @@
 
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServicePutFileAndReconcile();
+  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const handleDeleteSource = async (tableName: string) => {
-    try {
-      await $deleteSource.mutateAsync({
-        data: {
-          instanceId: runtimeInstanceId,
-          path: `sources/${tableName}.yaml`,
-        },
-      });
-      if (
-        $rillAppStore.activeEntity.type === EntityType.Table &&
-        $rillAppStore.activeEntity.id === sourceName
-      ) {
-        const nextSourceName = getNextEntityName($sourceNames.data, sourceName);
-        if (nextSourceName) {
-          goto(`/source/${nextSourceName}`);
-        } else {
-          goto("/");
-        }
-      }
-      sourceUpdated(tableName);
-      await queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-      );
-    } catch (err) {
-      console.error(err);
-    }
+    await deleteFileArtifact(
+      runtimeInstanceId,
+      tableName,
+      EntityType.Table,
+      $deleteSource,
+      $rillAppStore.activeEntity,
+      $sourceNames.data
+    );
     toggleMenu();
   };
 
-  const createModel = (tableName: string) => {
-    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    const asynchronous = true;
+  const handleCreateModel = async (tableName: string) => {
+    try {
+      const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+      const newModelName = await createModelFromSource(
+        runtimeInstanceId,
+        $modelNames.data,
+        tableName,
+        $createEntityMutation
+      );
 
-    createModelForSource(
-      $persistentModelStore.entities,
-      tableName,
-      asynchronous
-    ).then((createdModelId) => {
       navigationEvent.fireEvent(
-        createdModelId,
+        newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
         EntityTypeToScreenMap[previousActiveEntity],
         MetricsEventScreenName.Model
       );
-    });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const bootstrapDashboard = async (id: string, tableName: string) => {
@@ -171,9 +156,9 @@
       await refreshSource(
         connector,
         tableName,
-        $runtimeStore,
+        runtimeInstanceId,
         $refreshSourceMutation,
-        $createSource
+        $createEntityMutation
       );
 
       if (id) {
@@ -194,7 +179,7 @@
   };
 </script>
 
-<MenuItem icon on:select={() => createModel(sourceName)}>
+<MenuItem icon on:select={() => handleCreateModel(sourceName)}>
   <Model slot="icon" />
   create new model
 </MenuItem>

@@ -41,11 +41,11 @@ func TestServer_GetDescriptiveStatistics(t *testing.T) {
 	require.NotNil(t, res)
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericStatistics().Min)
 	require.Equal(t, 5.0, res.NumericSummary.GetNumericStatistics().Max)
-	require.Equal(t, 2.5, res.NumericSummary.GetNumericStatistics().Mean)
+	require.Equal(t, 2.2, res.NumericSummary.GetNumericStatistics().Mean)
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericStatistics().Q25)
-	require.Equal(t, 2.0, res.NumericSummary.GetNumericStatistics().Q50)
+	require.Equal(t, 1.0, res.NumericSummary.GetNumericStatistics().Q50)
 	require.Equal(t, 4.0, res.NumericSummary.GetNumericStatistics().Q75)
-	require.Equal(t, 1.6583123951777, res.NumericSummary.GetNumericStatistics().Sd)
+	require.Equal(t, 1.6, res.NumericSummary.GetNumericStatistics().Sd)
 }
 
 func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
@@ -72,7 +72,7 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 	require.Equal(t, 0, int(res.NumericSummary.GetNumericHistogramBins().Bins[0].Bucket))
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Low)
 	require.Equal(t, 2.333333333333333, res.NumericSummary.GetNumericHistogramBins().Bins[0].High)
-	require.Equal(t, 2.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
+	require.Equal(t, 3.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
 }
 
 func TestServer_GetCategoricalHistogram(t *testing.T) {
@@ -86,6 +86,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericOutliers().Outliers[0].Low)
 	require.Equal(t, 1.008, res.NumericSummary.GetNumericOutliers().Outliers[0].High)
 	require.Equal(t, true, res.NumericSummary.GetNumericOutliers().Outliers[0].Present)
+	require.True(t, res.NumericSummary.GetNumericOutliers().Outliers[0].Count > 0)
 
 	// works only with numeric columns
 	_, err = server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
@@ -103,6 +104,20 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max)
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(2), res.TimeRangeSummary.Interval.Days)
+	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
+}
+
+func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
+	server, instanceId := getColumnTestServer(t)
+
+	// Test Get Time Range Summary with Date type column
+	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min)
+	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
+	require.Equal(t, int32(1551), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
@@ -129,18 +144,20 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	res, err = server.GetCardinalityOfColumn(context.Background(), &runtimev1.GetCardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, 2.0, res.CategoricalSummary.GetCardinality())
+	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 }
 
 func getColumnTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
-		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 
+		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
 		UNION ALL 
-		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times
+		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
 		UNION ALL 
-		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
 		UNION ALL 
-		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
+		UNION ALL 
+		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 	`)
 
 	server, err := NewServer(&Options{}, rt, nil)
@@ -158,7 +175,7 @@ func getColumnTestServer(t *testing.T) (*Server, string) {
 		err := res.Scan(&n)
 		require.NoError(t, err)
 	}
-	require.Equal(t, 4, n)
+	require.Equal(t, 5, n)
 
 	return server, instanceID
 }

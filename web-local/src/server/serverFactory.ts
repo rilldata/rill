@@ -26,10 +26,6 @@ import { DatabaseService } from "@rilldata/web-local/common/database-service/Dat
 import { DatabaseTableActions } from "@rilldata/web-local/common/database-service/DatabaseTableActions";
 import { DatabaseTimeSeriesActions } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
 import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDBClient";
-import { BehaviourEventFactory } from "@rilldata/web-local/common/metrics-service/BehaviourEventFactory";
-import { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
-import { ProductHealthEventFactory } from "@rilldata/web-local/common/metrics-service/ProductHealthEventFactory";
-import { RillIntakeClient } from "@rilldata/web-local/common/metrics-service/RillIntakeClient";
 import { DimensionsActions } from "@rilldata/web-local/common/rill-developer-service/DimensionsActions";
 import { MeasuresActions } from "@rilldata/web-local/common/rill-developer-service/MeasuresActions";
 import { MetricsDefinitionActions } from "@rilldata/web-local/common/rill-developer-service/MetricsDefinitionActions";
@@ -90,18 +86,6 @@ export function dataModelerStateServiceFactory(config: RootConfig) {
   );
 }
 
-export function metricsServiceFactory(
-  config: RootConfig,
-  dataModelerStateService: DataModelerStateService
-) {
-  return new MetricsService(
-    config,
-    dataModelerStateService,
-    new RillIntakeClient(config),
-    [new ProductHealthEventFactory(config), new BehaviourEventFactory(config)]
-  );
-}
-
 export function dataModelerServiceFactory(config: RootConfig) {
   config.local = initLocalConfig(config.local);
   try {
@@ -116,15 +100,13 @@ export function dataModelerServiceFactory(config: RootConfig) {
 
   const dataModelerStateService = dataModelerStateServiceFactory(config);
 
-  const metricsService = metricsServiceFactory(config, dataModelerStateService);
-
   const notificationService = new SocketNotificationService();
 
   const dataModelerService = new DataModelerService(
     dataModelerStateService,
     databaseService,
     notificationService,
-    metricsService,
+    null,
     [TableActions, ModelActions, ProfileColumnActions, ApplicationActions].map(
       (DataModelerActionsClass) =>
         new DataModelerActionsClass(
@@ -139,7 +121,6 @@ export function dataModelerServiceFactory(config: RootConfig) {
     dataModelerStateService,
     dataModelerService,
     notificationService,
-    metricsService,
   };
 }
 
@@ -165,18 +146,13 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
 }
 
 export function serverFactory(config: RootConfig) {
-  const {
-    dataModelerStateService,
-    dataModelerService,
-    notificationService,
-    metricsService,
-  } = dataModelerServiceFactory(config);
+  const { dataModelerStateService, dataModelerService, notificationService } =
+    dataModelerServiceFactory(config);
 
   const socketServer = new SocketServer(
     config,
     dataModelerService,
-    dataModelerStateService,
-    metricsService
+    dataModelerStateService
   );
   notificationService.setSocketServer(socketServer.getSocketServer());
 
@@ -193,7 +169,6 @@ export function expressServerFactory(
     rillDeveloper.dataModelerService,
     rillDeveloperService,
     rillDeveloper.dataModelerStateService,
-    rillDeveloper.notificationService as SocketNotificationService,
-    rillDeveloper.metricsService
+    rillDeveloper.notificationService as SocketNotificationService
   );
 }

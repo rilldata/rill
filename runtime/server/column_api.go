@@ -7,23 +7,24 @@ import (
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := "count(*)"
-	if req.Agg != nil {
-		agg = *req.Agg
+	if req.Agg != "" {
+		agg = req.Agg
 	}
 
 	k := 50
-	if req.K != nil {
-		k = int(*req.K)
+	if req.K != 0 {
+		k = int(req.K)
 	}
 
 	q := &queries.ColumnTopK{
@@ -56,7 +57,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.G
 		Query: nullCountSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -64,7 +65,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.G
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -89,7 +90,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 		Query: descriptiveStatisticsSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -97,7 +98,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 	for rows.Next() {
 		err = rows.Scan(&stats.Min, &stats.Q25, &stats.Q50, &stats.Q75, &stats.Max, &stats.Mean, &stats.Sd)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	resp := &runtimev1.NumericSummary{
@@ -142,13 +143,13 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 		Query: fmt.Sprintf("SELECT count(*) as c FROM %s", request.TableName),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	var totalRows int64
 	for rows.Next() {
 		err := rows.Scan(&totalRows)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	rows.Close()
@@ -200,7 +201,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 		Query: estimateSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -208,7 +209,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 	for rows.Next() {
 		err := rows.Scan(&timeGrainString)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	var timeGrain *runtimev1.EstimateSmallestTimeGrainResponse
@@ -257,14 +258,14 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		Query: sql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 	var iqr, count, rangeVal float64
 	for rows.Next() {
 		err = rows.Scan(&iqr, &count, &rangeVal)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	var bucketSize float64
@@ -335,7 +336,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		Query: histogramSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer histogramRows.Close()
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
@@ -343,7 +344,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		bin := &runtimev1.NumericHistogramBins_Bin{}
 		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		histogramBins = append(histogramBins, bin)
 	}
@@ -363,7 +364,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
-	sql := fmt.Sprintf(`WITH data_table AS (
+	rugSql := fmt.Sprintf(`WITH data_table AS (
             SELECT %[1]s as %[2]s
             FROM %[3]s
             WHERE %[2]s IS NOT NULL
@@ -419,24 +420,25 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
             bucket,
             low,
             high,
-            CASE WHEN count>0 THEN true ELSE false END AS present
+            CASE WHEN count>0 THEN true ELSE false END AS present,
+			count
           FROM histrogram_with_edge
           WHERE present=true`, selectColumn, sanitizedColumnName, request.TableName, outlierPseudoBucketSize)
 
 	outlierResults, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: sql,
+		Query: rugSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer outlierResults.Close()
 
 	outlierBins := make([]*runtimev1.NumericOutliers_Outlier, 0)
 	for outlierResults.Next() {
 		outlier := &runtimev1.NumericOutliers_Outlier{}
-		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
+		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present, &outlier.Count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		outlierBins = append(outlierBins, outlier)
 	}
@@ -459,7 +461,7 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 			sanitizedColumnName, request.TableName),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 	if rows.Next() {
@@ -471,17 +473,34 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 		}
 		summary.Min = timestamppb.New(rowMap["min"].(time.Time))
 		summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-		interval := rowMap["interval"].(duckdb.Interval)
-		summary.Interval = new(runtimev1.TimeRangeSummary_Interval)
-		summary.Interval.Days = interval.Days
-		summary.Interval.Months = interval.Months
-		summary.Interval.Micros = interval.Micros
-
+		summary.Interval, err = handleInterval(rowMap["interval"])
+		if err != nil {
+			return nil, err
+		}
 		return &runtimev1.GetTimeRangeSummaryResponse{
 			TimeRangeSummary: summary,
 		}, nil
 	}
 	return nil, status.Error(codes.Internal, "no rows returned")
+}
+
+func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
+	switch interval.(type) {
+	case duckdb.Interval:
+		duckDbInterval := interval.(duckdb.Interval)
+		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result.Days = duckDbInterval.Days
+		result.Months = duckDbInterval.Months
+		result.Micros = duckDbInterval.Micros
+		return result, nil
+	case int64:
+		// for date type column interval is difference in num days for two dates
+		days := interval.(int64)
+		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result.Days = int32(days)
+		return result, nil
+	}
+	return nil, fmt.Errorf("cannot handle interval type %T", interval)
 }
 
 func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
@@ -490,14 +509,14 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 	var count float64
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		return &runtimev1.GetCardinalityOfColumnResponse{
 			CategoricalSummary: &runtimev1.CategoricalSummary{

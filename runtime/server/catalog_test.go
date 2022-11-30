@@ -45,6 +45,15 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 	require.Len(t, resp.Errors, 0)
 	testutils.AssertTable(t, cat, "ad_bids_source", sourcePath)
 
+	// refresh the source without changes
+	refreshResp, err := srv.RefreshAndReconcile(ctx, &runtimev1.RefreshAndReconcileRequest{
+		InstanceId: instanceID,
+		Path:       sourcePath,
+	})
+	require.NoError(t, err)
+	require.Len(t, refreshResp.Errors, 0)
+	require.Equal(t, sourcePath, resp.AffectedPaths[0])
+
 	// rename
 	testutils.CreateSource(t, cat, "ad_bids_new", csvPath, sourcePath)
 	renameResp, err := srv.RenameFileAndReconcile(ctx, &runtimev1.RenameFileAndReconcileRequest{

@@ -43,6 +43,21 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          RuntimeService_MetricsViewTotals: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_MetricsViewTimeSeries: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_MetricsViewToplist: {
+            query: {
+              useQuery: true,
+            },
+          },
         },
       },
     },

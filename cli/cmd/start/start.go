@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
@@ -31,7 +33,7 @@ import (
 var localInstanceID = "default"
 
 // StartCmd represents the start command
-func StartCmd() *cobra.Command {
+func StartCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var repoDSN string
@@ -46,10 +48,10 @@ func StartCmd() *cobra.Command {
 		Short: "Start the Rill Developer application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create base logger
-			config := zap.NewDevelopmentEncoderConfig()
-			config.EncodeLevel = zapcore.CapitalColorLevelEncoder
+			conf := zap.NewDevelopmentEncoderConfig()
+			conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
 			l := zap.New(zapcore.NewCore(
-				zapcore.NewConsoleEncoder(config),
+				zapcore.NewConsoleEncoder(conf),
 				zapcore.AddSync(colorable.NewColorableStdout()),
 				zapcore.DebugLevel,
 			))
@@ -75,6 +77,11 @@ func StartCmd() *cobra.Command {
 				return err
 			}
 
+			// create dir if it doesn't exist
+			err = os.MkdirAll(repoDSN, os.ModePerm)
+			if err != nil {
+				return err
+			}
 			// Create instance and repo configured for local use
 			inst := &drivers.Instance{
 				ID:           localInstanceID,
@@ -119,10 +126,21 @@ func StartCmd() *cobra.Command {
 				return err
 			}
 
+			installId, err := config.InstallID()
+			if err != nil {
+				return err
+			}
+			absOlapDSN, err := filepath.Abs(olapDSN)
+			if err != nil {
+				return err
+			}
 			// Create config object to serve on /local/config
 			localConfig := map[string]any{
-				"instance_id": localInstanceID,
-				"grpc_port":   grpcPort,
+				"instance_id":  localInstanceID,
+				"grpc_port":    grpcPort,
+				"install_id":   installId,
+				"project_path": absOlapDSN,
+				"is_dev":       ver == "",
 			}
 
 			// Prepare errgroup with graceful shutdown
@@ -134,7 +152,7 @@ func StartCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			runtimeHandler, err := server.HTTPHandler(ctx)
+			runtimeHandler, err := srv.HTTPHandler(ctx)
 			if err != nil {
 				return fmt.Errorf("could not create runtime http handler:%v", err)
 			}
@@ -147,6 +165,7 @@ func StartCmd() *cobra.Command {
 			}
 			mux.Handle("/v1/", runtimeHandler)
 			mux.Handle("/local/config", localConfigHandler)
+			mux.HandleFunc("/local/track", trackingForwarderHandler)
 
 			// Open the browser
 			if !noUI && !noOpen {
@@ -200,4 +219,26 @@ func localConfigHandler(localConfig map[string]any) http.Handler {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(data)
 	})
+}
+
+func trackingForwarderHandler(w http.ResponseWriter, req *http.Request) {
+	// create proxy request to rill intake
+	proxyReq, err := http.NewRequest(req.Method, "https://intake.rilldata.io/events/data-modeler-metrics", req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	// copy over the auth header
+	proxyReq.Header = http.Header{
+		"Authorization": req.Header["Authorization"],
+	}
+
+	// send the request
+	resp, err := http.DefaultClient.Do(proxyReq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
 }

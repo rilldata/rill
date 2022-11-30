@@ -29,7 +29,7 @@ const EXPECTED_RUN_ORDER = [
 
 @TestBase.Suite
 @TestBase.TestLibrary(JestTestLibrary)
-export class ActionQueueOrchestratorSpec extends TestBase {
+export class ActionQueueOrchestratorDisabled extends TestBase {
   private actionService: { dispatch: SinonStub };
   private actionQueueOrchestrator: ActionQueueOrchestrator<TestActionsDefinition>;
 

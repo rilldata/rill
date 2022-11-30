@@ -67,7 +67,7 @@ func NewInstanceWithModel(t TestingT, name string, sql string) (*runtime.Runtime
 	err := rt.PutFile(context.Background(), instanceID, path, strings.NewReader(sql), true, false)
 	require.NoError(t, err)
 
-	res, err := rt.Reconcile(context.Background(), instanceID, nil, false, false)
+	res, err := rt.Reconcile(context.Background(), instanceID, nil, nil, false, false)
 	require.NoError(t, err)
 	require.Empty(t, res.Errors)
 
@@ -94,7 +94,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	res, err := rt.Reconcile(context.Background(), inst.ID, nil, false, false)
+	res, err := rt.Reconcile(context.Background(), inst.ID, nil, nil, false, false)
 	require.NoError(t, err)
 	require.Empty(t, res.Errors)
 

@@ -34,7 +34,7 @@ func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID string, name s
 	return e, nil
 }
 
-func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths []string, dry bool, strict bool) (*catalog.ReconcileResult, error) {
+func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths []string, forcedPaths []string, dry bool, strict bool) (*catalog.ReconcileResult, error) {
 	cat, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
@@ -44,6 +44,7 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 		DryRun:       dry,
 		Strict:       strict,
 		ChangedPaths: changedPaths,
+		ForcedPaths:  forcedPaths,
 	})
 	if err != nil {
 		return nil, err

@@ -30,7 +30,7 @@ export type RuntimeServiceGetTopKBody = {
 
 export type RuntimeServiceGenerateTimeSeriesBody = {
   filters?: V1MetricsViewRequestFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasures;
+  measures?: GenerateTimeSeriesRequestBasicMeasure[];
   pixels?: number;
   sampleSize?: number;
   tableName?: string;
@@ -43,12 +43,6 @@ export type RuntimeServiceGetTableRowsParams = { limit?: number };
 export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
 };
-
-export interface V1MetricsViewFilter {
-  exclude?: MetricsViewFilterCond[];
-  include?: MetricsViewFilterCond[];
-  match?: string[];
-}
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
@@ -154,7 +148,7 @@ export interface V1TriggerRefreshResponse {
 }
 
 export interface V1TopK {
-  entries?: TopKTopKEntry[];
+  entries?: TopKEntry[];
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: number };
@@ -166,11 +160,9 @@ export interface V1TimeSeriesValue {
 }
 
 export interface V1TimeSeriesResponse {
-  error?: string;
-  id?: string;
   results?: V1TimeSeriesValue[];
   sampleSize?: number;
-  spark?: TimeSeriesResponseTimeSeriesValues;
+  spark?: V1TimeSeriesValue[];
   timeRange?: V1TimeSeriesTimeRange;
 }
 
@@ -231,16 +223,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
@@ -248,6 +230,14 @@ export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   strict?: boolean;
   toPath?: string;
+}
+
+export interface V1RefreshAndReconcileRequest {
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  instanceId?: string;
+  path?: string;
+  strict?: boolean;
 }
 
 /**
@@ -283,8 +273,28 @@ export interface V1ReconcileError {
 It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
-  propertyPath?: string;
+  propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export interface V1ReconcileResponse {
@@ -418,9 +428,15 @@ export interface V1MetricsViewSort {
   name?: string;
 }
 
+export interface V1MetricsViewFilter {
+  exclude?: MetricsViewFilterCond[];
+  include?: MetricsViewFilterCond[];
+  match?: string[];
+}
+
 export interface V1MetricsViewDimensionValue {
   in?: unknown[];
-  like?: MetricsViewDimensionValueValues;
+  like?: unknown[];
   name?: string;
 }
 
@@ -436,8 +452,10 @@ export interface V1MetricsViewColumn {
 }
 
 export interface V1MetricsView {
+  description?: string;
   dimensions?: MetricsViewDimension[];
   from?: string;
+  label?: string;
   measures?: MetricsViewMeasure[];
   name?: string;
   timeDimension?: string;
@@ -458,6 +476,10 @@ export interface V1ListInstancesResponse {
 
 export interface V1ListFilesResponse {
   paths?: string[];
+}
+
+export interface V1ListConnectorsResponse {
+  connectors?: V1Connector[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -483,6 +505,10 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+}
+
+export interface V1GetTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1GetTimeRangeSummaryResponse {
@@ -600,20 +626,12 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
-export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
-}
-
 /**
  * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
   cardinality?: number;
   topK?: V1TopK;
-}
-
-export interface V1GetTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {
@@ -626,12 +644,6 @@ export interface V1CatalogEntry {
   source?: V1Source;
   table?: V1Table;
   updatedOn?: string;
-}
-
-export interface V1BasicMeasureDefinition {
-  expression?: string;
-  id?: string;
-  sqlName?: string;
 }
 
 export interface Runtimev1Type {
@@ -669,14 +681,9 @@ export interface ProtobufAny {
   [key: string]: unknown;
 }
 
-export interface TopKTopKEntry {
+export interface TopKEntry {
   count?: number;
-  /** value is optional so that null values from the database can be represented. */
-  value?: string;
-}
-
-export interface TimeSeriesResponseTimeSeriesValues {
-  values?: V1TimeSeriesValue[];
+  value?: unknown;
 }
 
 export interface TimeRangeSummaryInterval {
@@ -697,6 +704,7 @@ export interface ReconcileErrorCharLocation {
 
 export interface NumericOutliersOutlier {
   bucket?: number;
+  count?: number;
   high?: number;
   low?: number;
   present?: boolean;
@@ -719,7 +727,6 @@ export const ModelDialect = {
 
 export interface MetricsViewMeasure {
   description?: string;
-  enabled?: string;
   expression?: string;
   format?: string;
   label?: string;
@@ -732,19 +739,16 @@ export interface MetricsViewFilterCond {
   name?: string;
 }
 
-export interface MetricsViewDimensionValueValues {
-  values?: unknown[];
-}
-
 export interface MetricsViewDimension {
   description?: string;
-  enabled?: string;
   label?: string;
   name?: string;
 }
 
-export interface GenerateTimeSeriesRequestBasicMeasures {
-  basicMeasures?: V1BasicMeasureDefinition[];
+export interface GenerateTimeSeriesRequestBasicMeasure {
+  expression?: string;
+  id?: string;
+  sqlName?: string;
 }
 
 export type ConnectorPropertyType =

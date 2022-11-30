@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -48,5 +47,3 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		catalogCache: newCatalogCache(),
 	}, nil
 }
-
-var ErrInstanceNotFound = errors.New("instance not found")

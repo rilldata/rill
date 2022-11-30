@@ -12,25 +12,19 @@ import "rill/runtime/v1/schema.proto";
 service RuntimeService {
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
-    option (google.api.http) = {
-      get: "/v1/ping"
-    };
+    option (google.api.http) = {get: "/v1/ping"};
   }
 
   // Instances
 
   // ListInstances lists all the instances currently managed by the runtime
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances"
-    };
+    option (google.api.http) = {get: "/v1/instances"};
   }
 
   // GetInstance returns information about a specific instance
   rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}"};
   }
 
   // CreateInstance creates a new instance
@@ -43,9 +37,7 @@ service RuntimeService {
 
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
-    option (google.api.http) = {
-      delete: "/v1/instances/{instance_id}"
-    };
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}"};
   }
 
   // Repos
@@ -53,16 +45,12 @@ service RuntimeService {
   // ListFiles lists all the files matching a glob in a repo.
   // The files are sorted by their full path.
   rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/files"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/files"};
   }
 
   // GetFile returns the contents of a specific file in a repo.
   rpc GetFile(GetFileRequest) returns (GetFileResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/files/-/{path=**}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/files/-/{path=**}"};
   }
 
   // PutFile creates or updates a file in a repo
@@ -75,9 +63,7 @@ service RuntimeService {
 
   // DeleteFile deletes a file from a repo
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
-    option (google.api.http) = {
-      delete: "/v1/instances/{instance_id}/files/-/{path=**}"
-    };
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/files/-/{path=**}"};
   }
 
   // RenameFile renames a file in a repo
@@ -90,35 +76,27 @@ service RuntimeService {
 
   // Catalog
 
-  // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views) 
+  // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
   rpc ListCatalogEntries(ListCatalogEntriesRequest) returns (ListCatalogEntriesResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/catalog"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/catalog"};
   }
 
   // GetCatalogEntry returns information about a specific entry in the catalog
   rpc GetCatalogEntry(GetCatalogEntryRequest) returns (GetCatalogEntryResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/catalog/{name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/catalog/{name}"};
   }
 
   // TriggerRefresh triggers a refresh of a refreshable catalog object.
   // It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
   // It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
   rpc TriggerRefresh(TriggerRefreshRequest) returns (TriggerRefreshResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/catalog/{name}/refresh"
-    };
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/catalog/{name}/refresh"};
   }
 
   // TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
   // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
   rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/sync"
-    };
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/sync"};
   }
 
   // Reconciliation
@@ -155,6 +133,13 @@ service RuntimeService {
   rpc RenameFileAndReconcile(RenameFileAndReconcileRequest) returns (RenameFileAndReconcileResponse) {
     option (google.api.http) = {
       post: "/v1/rename-and-reconcile",
+      body: "*"
+    };
+  }
+
+  rpc RefreshAndReconcile(RefreshAndReconcileRequest) returns (RefreshAndReconcileResponse) {
+    option (google.api.http) = {
+      post: "/v1/refresh-and-reconcile",
       body: "*"
     };
   }
@@ -219,51 +204,37 @@ service RuntimeService {
 
   // Get the number of nulls in a column
   rpc GetNullCount(GetNullCountRequest) returns (GetNullCountResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
   rpc GetDescriptiveStatistics(GetDescriptiveStatisticsRequest) returns (GetDescriptiveStatisticsResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"};
   }
 
   // Estimates the smallest time grain present in the column
   rpc EstimateSmallestTimeGrain(EstimateSmallestTimeGrainRequest) returns (EstimateSmallestTimeGrainResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get the histogram for values in a column
   rpc GetNumericHistogram(GetNumericHistogramRequest) returns (GetNumericHistogramResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get outliers for a numeric column
   rpc GetRugHistogram(GetRugHistogramRequest) returns (GetRugHistogramResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get the time range summaries (min, max) for a column
   rpc GetTimeRangeSummary(GetTimeRangeSummaryRequest) returns (GetTimeRangeSummaryResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get cardinality for a column
   rpc GetCardinalityOfColumn(GetCardinalityOfColumnRequest) returns (GetCardinalityOfColumnResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"};
   }
 
   // Generate time series
@@ -278,23 +249,17 @@ service RuntimeService {
 
   // TableCardinality (TODO: add description)
   rpc GetTableCardinality(GetTableCardinalityRequest) returns (GetTableCardinalityResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"};
   }
 
   // ProfileColumns (TODO: add description)
   rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"
-    };
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"};
   }
 
   // TableRows (TODO: add description)
   rpc GetTableRows(GetTableRowsRequest) returns (GetTableRowsResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
 
   // Connectors
@@ -302,9 +267,7 @@ service RuntimeService {
   // ListConnectors returns a description of all the connectors implemented in the runtime,
   // including their schema and validation rules
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
-    option (google.api.http) = {
-      get: "/v1/connectors/meta"
-    };
+    option (google.api.http) = {get: "/v1/connectors/meta"};
   }
 }
 
@@ -335,7 +298,7 @@ message Instance {
   string instance_id = 1;
   // Driver to connect to for OLAP (options: duckdb, druid)
   string olap_driver = 2;
-  // DSN for connection to OLAP 
+  // DSN for connection to OLAP
   string olap_dsn = 3;
   // Driver for reading/editing code artifacts (options: file, metastore).
   // This enables virtualizing a file system in a cloud setting.
@@ -533,7 +496,7 @@ message ReconcileRequest {
   // If true, will validate the file artifacts, but not actually execute any migrations
   bool dry = 3;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
   // artifacts that fail to validate.)
   bool strict = 4;
 }
@@ -581,7 +544,7 @@ message ReconcileError {
   // It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
   // It only applies to structured code artifacts (i.e. YAML).
   // Only applicable if file_path is set.
-  string property_path = 4;
+  repeated string property_path = 4;
   // Start location of the error in the code artifact (if any).
   // Only applicable if file_path is set.
   CharLocation start_location = 5;
@@ -606,7 +569,7 @@ message PutFileAndReconcileRequest {
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 6;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
   // artifacts that fail to validate.)
   bool strict = 7;
 }
@@ -629,7 +592,7 @@ message DeleteFileAndReconcileRequest {
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 3;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
   // artifacts that fail to validate.)
   bool strict = 4;
 }
@@ -654,12 +617,35 @@ message RenameFileAndReconcileRequest {
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 4;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with 
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
   // artifacts that fail to validate.)
   bool strict = 5;
 }
 
 message RenameFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
+  repeated string affected_paths = 2;
+}
+
+message RefreshAndReconcileRequest {
+  // Instance to store file in and reconcile
+  string instance_id = 1;
+  // Current path of the file
+  string path = 2;
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 3;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
+  bool strict = 5;
+}
+
+message RefreshAndReconcileResponse {
   // Errors encountered during reconciliation. If strict = false, any path in
   // affected_paths without an error can be assumed to have been reconciled succesfully.
   repeated ReconcileError errors = 1;
@@ -860,6 +846,7 @@ message NumericOutliers {
     double low = 2;
     double high = 3;
     bool present = 4;
+    int32 count = 5;
   }
   repeated Outlier outliers = 1;
 }
@@ -870,17 +857,16 @@ message GetTopKRequest {
   int64 priority = 2;
   string table_name = 3;
   string column_name = 4;
-  optional string agg = 5; // default is count(*)
-  optional int32 k = 6; // default is 50
+  string agg = 5; // default is count(*)
+  int32 k = 6; // default is 50
 }
 
 message TopK {
-  message TopKEntry {
-    // value is optional so that null values from the database can be represented.
-    optional string value = 1;
+  repeated Entry entries = 1;
+  message Entry {
+    google.protobuf.Value value = 1;
     double count = 2;
   }
-  repeated TopKEntry entries = 1;
 }
 
 // Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
@@ -979,23 +965,19 @@ message GetCardinalityOfColumnRequest {
 message GenerateTimeSeriesRequest {
   string instance_id = 1;
   string table_name = 2;
-  optional BasicMeasures measures = 3;
+  repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
-  optional TimeSeriesTimeRange time_range = 5;
-  optional MetricsViewRequestFilter filters = 6;
-  optional int32 pixels = 7;
-  optional int32 sample_size = 8;
-  message BasicMeasures {
-    repeated BasicMeasureDefinition basic_measures = 1;
+  TimeSeriesTimeRange time_range = 5;
+  MetricsViewRequestFilter filters = 6;
+  int32 pixels = 7;
+  int32 sample_size = 8;
+  message BasicMeasure {
+    string id = 1;
+    // mandatory user defined metadata
+    string expression = 2;
+    // optional user defined metadata
+    string sql_name = 3;
   }
-}
-
-message BasicMeasureDefinition {
-  string id = 1;
-  // mandatory user defined metadata
-  string expression = 2;
-  // optional user defined metadata
-  optional string sql_name = 3;
 }
 
 message TimeSeriesTimeRange {
@@ -1024,10 +1006,7 @@ enum TimeRangeName {
 message MetricsViewDimensionValue {
   string name = 1;
   repeated google.protobuf.Value in = 2;
-  optional Values like = 3;
-  message Values {
-    repeated google.protobuf.Value values = 1;
-  }
+  repeated google.protobuf.Value like = 3;
 }
 
 message MetricsViewRequestFilter {
@@ -1036,15 +1015,10 @@ message MetricsViewRequestFilter {
 }
 
 message TimeSeriesResponse {
-  optional string id = 1;
-  repeated TimeSeriesValue results = 2;
-  optional TimeSeriesValues spark = 3;
-  optional TimeSeriesTimeRange time_range = 4;
-  int32 sample_size = 5;
-  optional string error = 6;
-  message TimeSeriesValues {
-    repeated TimeSeriesValue values = 1;
-  }
+  repeated TimeSeriesValue results = 1;
+  repeated TimeSeriesValue spark = 2;
+  TimeSeriesTimeRange time_range = 3;
+  int32 sample_size = 4;
 }
 
 message GenerateTimeSeriesResponse {
@@ -1067,15 +1041,6 @@ enum DatabaseObjectType {
   DATABASE_OBJECT_TYPE_VIEW = 2;
   DATABASE_OBJECT_TYPE_FUNCTION = 3;
 }
-
-message RenameDatabaseObjectRequest {
-  string instance_id = 1;
-  string name = 2;
-  string new_name = 3;
-  optional DatabaseObjectType type = 4;
-}
-
-message RenameDatabaseObjectResponse {}
 
 message GetTableCardinalityRequest {
   string instance_id = 1;

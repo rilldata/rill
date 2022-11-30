@@ -846,7 +846,9 @@ paths:
               filters:
                 $ref: '#/definitions/v1MetricsViewRequestFilter'
               measures:
-                $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasures'
+                type: array
+                items:
+                  $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasure'
               pixels:
                 type: integer
                 format: int32
@@ -991,7 +993,10 @@ paths:
                 title: If true, will validate the file artifacts, but not actually execute any migrations
               strict:
                 type: boolean
-                title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+                title: |-
+                  If true, will not execute any migrations if any artifact fails to validate.
+                  Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+                  artifacts that fail to validate.)
             title: Request message for RuntimeService.Reconcile
       tags:
         - RuntimeService
@@ -1055,6 +1060,26 @@ paths:
             $ref: '#/definitions/v1PutFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/refresh-and-reconcile:
+    post:
+      operationId: RuntimeService_RefreshAndReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RefreshAndReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1RefreshAndReconcileRequest'
+      tags:
+        - RuntimeService
   /v1/rename-and-reconcile:
     post:
       summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
@@ -1115,31 +1140,27 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
-  GenerateTimeSeriesRequestBasicMeasures:
+  GenerateTimeSeriesRequestBasicMeasure:
     type: object
     properties:
-      basicMeasures:
-        type: array
-        items:
-          $ref: '#/definitions/v1BasicMeasureDefinition'
+      expression:
+        type: string
+        title: mandatory user defined metadata
+      id:
+        type: string
+      sqlName:
+        type: string
+        title: optional user defined metadata
   MetricsViewDimension:
     type: object
     properties:
       description:
-        type: string
-      enabled:
         type: string
       label:
         type: string
       name:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewDimensionValueValues:
-    type: object
-    properties:
-      values:
-        type: array
-        items: {}
   MetricsViewFilterCond:
     type: object
     properties:
@@ -1155,8 +1176,6 @@ definitions:
     type: object
     properties:
       description:
-        type: string
-      enabled:
         type: string
       expression:
         type: string
@@ -1193,6 +1212,9 @@ definitions:
     type: object
     properties:
       bucket:
+        type: integer
+        format: int32
+      count:
         type: integer
         format: int32
       high:
@@ -1232,22 +1254,13 @@ definitions:
       months:
         type: integer
         format: int32
-  TimeSeriesResponseTimeSeriesValues:
-    type: object
-    properties:
-      values:
-        type: array
-        items:
-          $ref: '#/definitions/v1TimeSeriesValue'
-  TopKTopKEntry:
+  TopKEntry:
     type: object
     properties:
       count:
         type: number
         format: double
-      value:
-        type: string
-        description: value is optional so that null values from the database can be represented.
+      value: {}
   protobufAny:
     type: object
     properties:
@@ -1297,17 +1310,6 @@ definitions:
         $ref: '#/definitions/v1StructType'
         title: If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
     title: Type represents a data type in a schema
-  v1BasicMeasureDefinition:
-    type: object
-    properties:
-      expression:
-        type: string
-        title: mandatory user defined metadata
-      id:
-        type: string
-      sqlName:
-        type: string
-        title: optional user defined metadata
   v1CatalogEntry:
     type: object
     properties:
@@ -1400,7 +1402,10 @@ definitions:
         title: Path to store the file at
       strict:
         type: boolean
-        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
   v1DeleteFileAndReconcileResponse:
     type: object
     properties:
@@ -1595,6 +1600,9 @@ definitions:
   v1MetricsView:
     type: object
     properties:
+      description:
+        type: string
+        title: Brief description of the dashboard
       dimensions:
         type: array
         items:
@@ -1603,6 +1611,9 @@ definitions:
       from:
         type: string
         title: Name of the source or model that the metrics view is based on
+      label:
+        type: string
+        title: User friendly label for the dashboard
       measures:
         type: array
         items:
@@ -1639,7 +1650,8 @@ definitions:
         type: array
         items: {}
       like:
-        $ref: '#/definitions/MetricsViewDimensionValueValues'
+        type: array
+        items: {}
       name:
         type: string
   v1MetricsViewFilter:
@@ -1842,7 +1854,10 @@ definitions:
         title: Path to store the file at
       strict:
         type: boolean
-        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
   v1PutFileAndReconcileResponse:
     type: object
     properties:
@@ -1898,7 +1913,9 @@ definitions:
         type: string
         title: Message is a developer-friendly error message
       propertyPath:
-        type: string
+        type: array
+        items:
+          type: string
         description: |-
           Property path of the error in the code artifact (if any).
           It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
@@ -1947,6 +1964,42 @@ definitions:
           Errors encountered during reconciliation. If strict = false, any path in
           affected_paths without an error can be assumed to have been reconciled succesfully.
     title: Response message for RuntimeService.Reconcile
+  v1RefreshAndReconcileRequest:
+    type: object
+    properties:
+      dry:
+        type: boolean
+        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+      instanceId:
+        type: string
+        title: Instance to store file in and reconcile
+      path:
+        type: string
+        title: Current path of the file
+      strict:
+        type: boolean
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
+  v1RefreshAndReconcileResponse:
+    type: object
+    properties:
+      affectedPaths:
+        type: array
+        items:
+          type: string
+        description: |-
+          affected_paths lists all the file artifact paths that were considered while
+          executing the reconciliation. If changed_paths was empty, this will include all
+          code artifacts in the repo.
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1RenameFileAndReconcileRequest:
     type: object
     properties:
@@ -1961,7 +2014,10 @@ definitions:
         title: Instance to store file in and reconcile
       strict:
         type: boolean
-        title: "If true, will not execute any migrations if any artifact fails to validate.\nOtherwise, it will execute a best-effort reconciliation (including dropping objects with \nartifacts that fail to validate.)"
+        title: |-
+          If true, will not execute any migrations if any artifact fails to validate.
+          Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+          artifacts that fail to validate.)
       toPath:
         type: string
         title: New path of the file
@@ -2055,10 +2111,6 @@ definitions:
   v1TimeSeriesResponse:
     type: object
     properties:
-      error:
-        type: string
-      id:
-        type: string
       results:
         type: array
         items:
@@ -2067,7 +2119,9 @@ definitions:
         type: integer
         format: int32
       spark:
-        $ref: '#/definitions/TimeSeriesResponseTimeSeriesValues'
+        type: array
+        items:
+          $ref: '#/definitions/v1TimeSeriesValue'
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
   v1TimeSeriesTimeRange:
@@ -2100,7 +2154,7 @@ definitions:
       entries:
         type: array
         items:
-          $ref: '#/definitions/TopKTopKEntry'
+          $ref: '#/definitions/TopKEntry'
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh

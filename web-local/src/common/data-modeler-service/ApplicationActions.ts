@@ -1,3 +1,4 @@
+import type { PersistentTableEntityService } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import type {
   ApplicationState,
   ApplicationStateActionArg,
@@ -5,9 +6,11 @@ import type {
 import {
   EntityRecord,
   EntityStateActionArg,
+  EntityStateService,
   EntityType,
   StateType,
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
+import type { PersistentModelEntityService } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { PersistentModelStateActionArg } from "../data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import {
   DatabaseActionQueuePriority,
@@ -16,7 +19,6 @@ import {
   MetadataPriority,
   ProfileMetadataPriorityMap,
 } from "../priority-action-queue/DatabaseActionQueuePriority";
-import { getNextEntityId } from "../utils/getNextEntityId";
 import { DataModelerActions } from "./DataModelerActions";
 
 export class ApplicationActions extends DataModelerActions {
@@ -61,20 +63,24 @@ export class ApplicationActions extends DataModelerActions {
 
     // upgrade profile priority of newly selected asset
     if (entityType === EntityType.Model) {
-      const columns = this.getEntityColumns(EntityType.Model, entityId);
+      try {
+        const columns = this.getEntityColumns(EntityType.Model, entityId);
 
-      columns.forEach((column) => {
-        Object.values(MetadataPriority).forEach((priority) => {
-          this.databaseActionQueue.updatePriority(
-            currentActiveAsset.id + column + priority,
-            getProfilePriority(
-              DatabaseActionQueuePriority.ActiveModelProfile,
-              DatabaseProfilesFieldPriority.NonFocused,
-              ProfileMetadataPriorityMap[priority]
-            )
-          );
+        columns?.forEach((column) => {
+          Object.values(MetadataPriority).forEach((priority) => {
+            this.databaseActionQueue.updatePriority(
+              currentActiveAsset.id + column + priority,
+              getProfilePriority(
+                DatabaseActionQueuePriority.ActiveModelProfile,
+                DatabaseProfilesFieldPriority.NonFocused,
+                ProfileMetadataPriorityMap[priority]
+              )
+            );
+          });
         });
-      });
+      } catch (e) {
+        // swallow error for now
+      }
     }
 
     this.dataModelerStateService.dispatch("setActiveAsset", [
@@ -129,41 +135,60 @@ export class ApplicationActions extends DataModelerActions {
   public async deleteEntity(
     { stateService }: EntityStateActionArg<EntityRecord>,
     entityType: EntityType,
-    entityId: string
+    entityName: string
   ) {
-    const applicationState = this.dataModelerStateService.getApplicationState();
-    if (
-      applicationState.activeEntity?.id === entityId &&
-      applicationState.activeEntity?.type === entityType
-    ) {
-      const newEntityId = getNextEntityId(
-        stateService.getCurrentState().entities,
-        entityId
-      );
-      if (newEntityId) {
-        await this.dataModelerService.dispatch("setActiveAsset", [
-          entityType,
-          newEntityId,
-        ]);
-      }
+    const entity = this.getEntityByName(stateService, entityName);
+    if (!entity) {
+      return;
     }
 
-    this.databaseActionQueue.clearQueue(entityId);
+    this.databaseActionQueue.clearQueue(entityName);
     this.dataModelerService.dispatch("clearColumnProfilePriority", [
       entityType,
-      entityId,
+      entity.id,
     ]);
 
     this.dataModelerStateService.dispatch("deleteEntity", [
       entityType,
       StateType.Persistent,
-      entityId,
+      entity.id,
     ]);
     this.dataModelerStateService.dispatch("deleteEntity", [
       entityType,
       StateType.Derived,
-      entityId,
+      entity.id,
     ]);
+  }
+
+  // Temporary until nodejs is removed
+  @DataModelerActions.PersistentAction()
+  public async renameEntity(
+    { stateService }: EntityStateActionArg<EntityRecord>,
+    entityType: EntityType,
+    fromName: string,
+    toName: string
+  ) {
+    const entity = this.getEntityByName(stateService, fromName);
+    if (!entity) {
+      return;
+    }
+
+    switch (entityType) {
+      case EntityType.Model:
+        this.dataModelerStateService.dispatch("updateModelName", [
+          entity.id,
+          toName,
+        ]);
+        break;
+      case EntityType.Table:
+        this.dataModelerStateService.dispatch("updateTableName", [
+          entity.id,
+          toName,
+        ]);
+        break;
+    }
+
+    this.databaseActionQueue.clearQueue(fromName);
   }
 
   private getEntityColumns(entityType: EntityType, entityId: string) {
@@ -175,5 +200,27 @@ export class ApplicationActions extends DataModelerActions {
           .profile?.map((column) => column.name) || []
       );
     } else return [];
+  }
+
+  private getEntityByName(
+    stateService: EntityStateService<EntityRecord>,
+    entityName: string
+  ) {
+    let entity: EntityRecord;
+    switch (stateService.entityType) {
+      case EntityType.Model:
+        entity = (stateService as PersistentModelEntityService).getByField(
+          "tableName",
+          entityName
+        );
+        break;
+      case EntityType.Table:
+        entity = (stateService as PersistentTableEntityService).getByField(
+          "tableName",
+          entityName
+        );
+        break;
+    }
+    return entity;
   }
 }

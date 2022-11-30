@@ -19,22 +19,6 @@ export async function waitForSource(
   return foundTable?.id;
 }
 
-export function compileCreateSourceSql(
-  values: Record<string, unknown>,
-  connectorName: string
-) {
-  const compiledKeyValues = Object.entries(values)
-    .filter(([key]) => key !== "sourceName")
-    .map(([key, value]) => `'${key}'='${value}'`)
-    .join(", ");
-
-  return (
-    `CREATE SOURCE ${values.sourceName} WITH (connector = '${connectorName}', ` +
-    compiledKeyValues +
-    `)`
-  );
-}
-
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string
@@ -75,7 +59,5 @@ export function inferSourceName(connector: V1Connector, path: string) {
 
   if (!fileName) return;
 
-  const sanitizedFileName = sanitizeEntityName(fileName);
-
-  return sanitizedFileName;
+  return sanitizeEntityName(fileName);
 }

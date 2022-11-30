@@ -48,7 +48,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 // Reconcile implements RuntimeService
 func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.Dry, req.Strict)
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, nil, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -67,7 +67,7 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 	}
 
 	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, req.Dry, req.Strict)
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -86,7 +86,7 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 	}
 
 	changedPaths := []string{req.FromPath, req.ToPath}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, req.Dry, req.Strict)
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -105,12 +105,26 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 	}
 
 	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, req.Dry, req.Strict)
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.DeleteFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
+
+// RefreshAndReconcile implements RuntimeService
+func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
+	changedPaths := []string{req.Path}
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, changedPaths, req.Dry, req.Strict)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.RefreshAndReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
 	}, nil

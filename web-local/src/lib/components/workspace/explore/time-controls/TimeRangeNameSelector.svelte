@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
-  import { createEventDispatcher, getContext, tick } from "svelte";
+  import { createEventDispatcher, tick } from "svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -21,22 +21,17 @@
     prettyFormatTimeRange,
   } from "./time-range-utils";
 
-  export let metricsDefId: string;
+  export let metricViewName: string;
   export let selectedTimeRangeName: TimeRangeName;
-
-  const config = getContext<RootConfig>("config");
+  export let allTimeRange;
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-
-  // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
   const getSelectableTimeRanges = (

@@ -8,8 +8,6 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type connectionCache struct {
@@ -79,14 +77,14 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 	}
 
 	registry, _ := rt.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, instId)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "instance not found")
+	inst, err := registry.FindInstance(ctx, instId)
+	if err != nil {
+		return nil, err
 	}
 
 	olapConn, err := rt.connCache.get(ctx, instId, inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	olap, _ := olapConn.OLAPStore()
 
@@ -113,7 +111,7 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 
 	repoConn, err := rt.connCache.get(ctx, instId, inst.RepoDriver, inst.RepoDSN)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	repoStore, _ := repoConn.RepoStore()
 

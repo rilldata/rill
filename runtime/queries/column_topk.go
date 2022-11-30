@@ -2,11 +2,13 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type ColumnTopK struct {
@@ -53,7 +55,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	}
 
 	// Build SQL
-	sql := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
+	qry := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
 		quoteName(q.ColumnName),
 		q.Agg,
 		quoteName(q.TableName),
@@ -63,7 +65,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 
 	// Run query
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
+		Query:    qry,
 		Priority: priority,
 	})
 	if err != nil {
@@ -74,10 +76,16 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	// Scan result
 	res := &runtimev1.TopK{}
 	for rows.Next() {
-		entry := &runtimev1.TopK_TopKEntry{}
-		err = rows.Scan(&entry.Value, &entry.Count)
+		entry := &runtimev1.TopK_Entry{}
+		var val sql.NullString
+		err = rows.Scan(&val, &entry.Count)
 		if err != nil {
 			return err
+		}
+		if val.Valid {
+			entry.Value = structpb.NewStringValue(val.String)
+		} else {
+			entry.Value = structpb.NewNullValue()
 		}
 		res.Entries = append(res.Entries, entry)
 	}

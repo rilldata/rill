@@ -6,7 +6,6 @@
   import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import {
-    ApplicationStore,
     config as appConfig,
     dataModelerService,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -22,7 +21,9 @@
   import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
   import { Menu, MenuItem } from "@rilldata/web-local/lib/components/menu";
-
+  import notification from "@rilldata/web-local/lib/components/notifications";
+  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import {
@@ -30,12 +31,10 @@
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
+  import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
-  import notification from "@rilldata/web-local/lib/components/notifications";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
-  import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
+  export let modelName: string;
   export let containerWidth = 0;
 
   const persistentTableStore = getContext(
@@ -51,8 +50,6 @@
     "rill:app:derived-model-store"
   ) as DerivedModelStore;
 
-  const appStore = getContext("rill:app:store") as ApplicationStore;
-
   let contextMenuOpen = false;
 
   const onExport = async (fileType: FileExportType) => {
@@ -60,7 +57,7 @@
     if (fileType === FileExportType.Parquet) {
       extension = ".parquet";
     }
-    const exportFilename = currentModel.name.replace(".sql", extension);
+    const exportFilename = currentModel.tableName.replace(".sql", extension);
 
     const exportResp = await dataModelerService.dispatch(fileType, [
       currentModel.id,
@@ -87,19 +84,14 @@
   // get source tables?
   let sourceTableReferences;
 
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $appStore?.activeEntity?.id;
-
   let currentModel: PersistentModelEntity;
-  $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  $: currentModel = $persistentModelStore?.entities
+    ? $persistentModelStore.entities.find((q) => q.name === modelName)
+    : undefined;
   let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  $: currentDerivedModel = $derivedModelStore?.entities
+    ? $derivedModelStore.entities.find((q) => q.id === currentModel?.id)
+    : undefined;
   // get source table references.
   $: if (currentDerivedModel?.sources) {
     sourceTableReferences = currentDerivedModel?.sources;
@@ -210,7 +202,7 @@
       {/if}
     </TooltipContent>
   </Tooltip>
-  <CreateDashboardButton {width} hasError={modelHasError} {activeEntityID} />
+  <CreateDashboardButton {modelName} {width} hasError={modelHasError} />
 </PanelCTA>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">

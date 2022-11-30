@@ -1,3 +1,7 @@
+import type {
+  StructTypeField,
+  V1StructType,
+} from "@rilldata/web-common/runtime-client";
 import type { DataProfileEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DataProfileEntity";
 import { TIMESTAMPS } from "../../duckdb-data-types";
 import type { ProfileColumn } from "../../types";
@@ -8,6 +12,9 @@ import type { ProfileColumn } from "../../types";
 const isProfileColumnATimestamp = (column: ProfileColumn) =>
   TIMESTAMPS.has(column.type);
 
+const isFieldColumnATimestamp = (field: StructTypeField) =>
+  TIMESTAMPS.has(field.type.code as string);
+
 export const derivedProfileEntityHasTimestampColumn = (
   derivedProfileEntity: DataProfileEntity
 ) => derivedProfileEntity?.profile.some(isProfileColumnATimestamp);
@@ -15,3 +22,6 @@ export const derivedProfileEntityHasTimestampColumn = (
 export const selectTimestampColumnFromProfileEntity = (
   derivedProfileEntity: DataProfileEntity
 ) => derivedProfileEntity?.profile?.filter(isProfileColumnATimestamp) ?? [];
+
+export const selectTimestampColumnFromModelSchema = (schema: V1StructType) =>
+  (schema?.fields?.filter(isFieldColumnATimestamp) ?? []).map((f) => f.name);

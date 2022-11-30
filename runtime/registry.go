@@ -8,11 +8,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (r *Runtime) FindInstances(ctx context.Context) []*drivers.Instance {
+func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
 	return r.Registry().FindInstances(ctx)
 }
 
-func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers.Instance, bool) {
+func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers.Instance, error) {
 	return r.Registry().FindInstance(ctx, instanceID)
 }
 

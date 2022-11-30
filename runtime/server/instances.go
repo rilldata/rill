@@ -11,7 +11,10 @@ import (
 
 // ListInstances implements RuntimeService
 func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
-	instances := s.runtime.FindInstances(ctx)
+	instances, err := s.runtime.FindInstances(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
@@ -23,9 +26,12 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 // GetInstance implements RuntimeService
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
-	inst, found := s.runtime.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.GetInstanceResponse{
@@ -44,7 +50,10 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		EmbedCatalog: req.EmbedCatalog,
 	}
 
-	s.runtime.CreateInstance(ctx, inst)
+	err := s.runtime.CreateInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	return &runtimev1.CreateInstanceResponse{
 		Instance: instanceToPB(inst),

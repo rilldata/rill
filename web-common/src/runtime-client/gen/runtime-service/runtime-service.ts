@@ -67,6 +67,8 @@ import type {
   V1PingResponse,
   V1PutFileAndReconcileResponse,
   V1PutFileAndReconcileRequest,
+  V1RefreshAndReconcileResponse,
+  V1RefreshAndReconcileRequest,
   V1RenameFileAndReconcileResponse,
   V1RenameFileAndReconcileRequest,
 } from "../index.schemas";
@@ -922,58 +924,78 @@ export const runtimeServiceMetricsViewTimeSeries = (
   });
 };
 
-export type RuntimeServiceMetricsViewTimeSeriesMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewTimeSeriesQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTimeSeriesBody: RuntimeServiceMetricsViewTimeSeriesBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/timeseries`,
+  runtimeServiceMetricsViewTimeSeriesBody,
+];
+
+export type RuntimeServiceMetricsViewTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>
 >;
-export type RuntimeServiceMetricsViewTimeSeriesMutationBody =
-  RuntimeServiceMetricsViewTimeSeriesBody;
-export type RuntimeServiceMetricsViewTimeSeriesMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewTimeSeriesQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTimeSeries = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTimeSeriesBody: RuntimeServiceMetricsViewTimeSeriesBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewTimeSeries(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewTimeSeriesQueryKey(
       instanceId,
       metricsViewName,
-      data
+      runtimeServiceMetricsViewTimeSeriesBody
     );
-  };
 
-  return useMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>
+  > = () =>
+    runtimeServiceMetricsViewTimeSeries(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTimeSeriesBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 It's a convenience API for querying a metrics view.
@@ -992,62 +1014,82 @@ export const runtimeServiceMetricsViewToplist = (
   });
 };
 
-export type RuntimeServiceMetricsViewToplistMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewToplistQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  dimensionName: string,
+  runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist/${dimensionName}`,
+  runtimeServiceMetricsViewToplistBody,
+];
+
+export type RuntimeServiceMetricsViewToplistQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>
 >;
-export type RuntimeServiceMetricsViewToplistMutationBody =
-  RuntimeServiceMetricsViewToplistBody;
-export type RuntimeServiceMetricsViewToplistMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewToplistQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewToplist = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  dimensionName: string,
+  runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, dimensionName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewToplist(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewToplistQueryKey(
       instanceId,
       metricsViewName,
       dimensionName,
-      data
+      runtimeServiceMetricsViewToplistBody
     );
-  };
 
-  return useMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>
+  > = () =>
+    runtimeServiceMetricsViewToplist(
+      instanceId,
+      metricsViewName,
+      dimensionName,
+      runtimeServiceMetricsViewToplistBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName && dimensionName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 It's a convenience API for querying a metrics view.
@@ -1065,54 +1107,78 @@ export const runtimeServiceMetricsViewTotals = (
   });
 };
 
-export type RuntimeServiceMetricsViewTotalsMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewTotalsQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTotalsBody: RuntimeServiceMetricsViewTotalsBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/totals`,
+  runtimeServiceMetricsViewTotalsBody,
+];
+
+export type RuntimeServiceMetricsViewTotalsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>
 >;
-export type RuntimeServiceMetricsViewTotalsMutationBody =
-  RuntimeServiceMetricsViewTotalsBody;
-export type RuntimeServiceMetricsViewTotalsMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewTotalsQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTotals = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTotalsBody: RuntimeServiceMetricsViewTotalsBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewTotalsQueryKey(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTotalsBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>
+  > = () =>
+    runtimeServiceMetricsViewTotals(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTotalsBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewTotals(instanceId, metricsViewName, data);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary TableCardinality (TODO: add description)
  */
@@ -2454,6 +2520,53 @@ export const useRuntimeServicePutFileAndReconcile = <
     Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
     TError,
     { data: V1PutFileAndReconcileRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const runtimeServiceRefreshAndReconcile = (
+  v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest
+) => {
+  return httpClient<V1RefreshAndReconcileResponse>({
+    url: `/v1/refresh-and-reconcile`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1RefreshAndReconcileRequest,
+  });
+};
+
+export type RuntimeServiceRefreshAndReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>
+>;
+export type RuntimeServiceRefreshAndReconcileMutationBody =
+  V1RefreshAndReconcileRequest;
+export type RuntimeServiceRefreshAndReconcileMutationError = RpcStatus;
+
+export const useRuntimeServiceRefreshAndReconcile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    TError,
+    { data: V1RefreshAndReconcileRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    { data: V1RefreshAndReconcileRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceRefreshAndReconcile(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    TError,
+    { data: V1RefreshAndReconcileRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

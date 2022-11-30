@@ -18,9 +18,9 @@ func (r *Runtime) Registry() drivers.RegistryStore {
 }
 
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, error) {
-	inst, found := r.FindInstance(ctx, instanceID)
-	if !found {
-		return nil, ErrInstanceNotFound
+	inst, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return nil, err
 	}
 
 	conn, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, inst.RepoDSN)
@@ -38,9 +38,9 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 }
 
 func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, error) {
-	inst, found := r.FindInstance(ctx, instanceID)
-	if !found {
-		return nil, ErrInstanceNotFound
+	inst, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return nil, err
 	}
 
 	conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN)

@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
 
@@ -44,19 +46,19 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}, nil
 }
 
-// Starts the gRPC server
+// ServeGRPC Starts the gRPC server
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode)),
 			recovery.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode)),
 			recovery.UnaryServerInterceptor(),
 		),
 	)
@@ -77,7 +79,20 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// HTTP handler serving REST gateway
+// CustomErrorToCode returns the Code of the error if it is a Status error
+// otherwise use status.FromContextError to determine the Code.
+// Log level for error codes is defined in logging.DefaultServerCodeToLevel
+func CustomErrorToCode(err error) codes.Code {
+	if se, ok := err.(interface {
+		GRPCStatus() *status.Status
+	}); ok {
+		return se.GRPCStatus().Code()
+	}
+	contextStatus := status.FromContextError(err)
+	return contextStatus.Code()
+}
+
+// HTTPHandler HTTP handler serving REST gateway
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	mux := gateway.NewServeMux()
