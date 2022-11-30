@@ -10,19 +10,6 @@ on:
       - "cli/**"
 jobs:
   release:
-    # strategy:
-    #   matrix:
-    #     name: ["OSX", "Linux"]
-    #     include:
-    #     - name: OSX
-    #       runs-on: macos-latest
-    #       config: .goreleaser.darwin.yaml
-    #       upload: osx
-    #     - name: Linux
-    #       runs-on: ubuntu-latest
-    #       config: .goreleaser.linux.yaml
-    #       upload: linux
-
     name: Upload Assets to GitHub w/ goreleaser
     runs-on: ubuntu-latest
     steps:
@@ -71,10 +58,3 @@ jobs:
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
               release --rm-dist --skip-validate
-
-# commenting upload to gcs for now
-      # - name: Upload to GCS
-      #   uses: google-github-actions/upload-cloud-storage@v1
-      #   with:
-      #     path: dist/
-      #     destination: pkg.rilldata.com/rill/nightly/${{ matrix.upload }}
