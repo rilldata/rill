@@ -19,7 +19,7 @@ func InitExample(projectName string, projectDir string) error {
 }
 
 func getExampleProject(projectName string) (string, error) {
-	examplesPath := "embed/" + projectName
+	examplesPath := "embed/dist/" + projectName
 	_, err := exampleFS.ReadDir(examplesPath)
 	if err != nil {
 		return "", err
