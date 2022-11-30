@@ -36,11 +36,7 @@ jobs:
           node-version: 18
 
       - name: Build UI
-        run: |-
-          npm install
-          npm run build
-          mkdir -p cli/pkg/web/embed/dist
-          cp -r web-local/build/ cli/pkg/web/embed/dist
+        run: make cli
 
       - name: setup release environment
         run: |-
