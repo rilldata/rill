@@ -6,7 +6,7 @@ The main feature-set component for dashboard filters
   import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
 
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/queries/metrics-views/metadata";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { flip } from "svelte/animate";
 
   import type {

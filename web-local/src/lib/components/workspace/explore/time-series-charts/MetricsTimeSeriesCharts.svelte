@@ -2,6 +2,7 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
@@ -9,7 +10,6 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { removeTimezoneOffset } from "../../../../util/formatters";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";

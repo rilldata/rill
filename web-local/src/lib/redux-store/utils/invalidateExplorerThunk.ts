@@ -5,8 +5,6 @@ import type {
 import type { EntityRecordMapType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateServicesMap";
 import { createAsyncThunk } from "../redux-toolkit-wrapper";
 import type { RillReduxState } from "../store-root";
-import { queryClient } from "../../svelte-query/globalQueryClient";
-import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
 import type { AsyncThunk } from "@reduxjs/toolkit";
 
 /**
@@ -71,9 +69,6 @@ export const invalidateExplorer = async <
     const metricsExplorerIds = metricsExplorerIdsGetter(
       thunkAPI.getState() as RillReduxState,
       id
-    );
-    metricsExplorerIds.forEach((metricsExplorerId) =>
-      invalidateMetricsView(queryClient, metricsExplorerId)
     );
   }
 };

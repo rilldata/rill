@@ -6,11 +6,11 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { invalidateMetricsViewData } from "../../../svelte-query/queries/metrics-views/invalidation";
-  import { useMetaQuery } from "../../../svelte-query/queries/metrics-views/metadata";
+  import { invalidateMetricsViewData } from "../../../svelte-query/invalidation";
   import { Button } from "../../button";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import Filters from "./filters/Filters.svelte";
@@ -34,7 +34,11 @@
       goto(`/dashboard/${metricViewName}/edit`);
     } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
       // FIXME: understand this logic before removing invalidateMetricsViewData
-      invalidateMetricsViewData(queryClient, metricViewName);
+      invalidateMetricsViewData(
+        queryClient,
+        $runtimeStore.instanceId,
+        metricViewName
+      );
     }
     metricsExplorerStore.sync(metricViewName, $metaQuery.data);
   }

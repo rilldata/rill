@@ -12,11 +12,11 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,

@@ -4,12 +4,12 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { createEventDispatcher, getContext, tick } from "svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { onClickOutside } from "../../../../util/on-click-outside";
   import { FloatingElement } from "../../../floating-element";
   import Calendar from "../../../icons/Calendar.svelte";

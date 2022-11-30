@@ -7,18 +7,18 @@
    */
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
+    getFilterForDimension,
+    useMetaDimension,
+    useMetaMeasure,
+    useMetaQuery,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
   import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
   import DimensionTable from "../../../dimension/DimensionTable.svelte";
-  import {
-    useMetaDimension,
-    getFilterForDimension,
-    useMetaMeasure,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
   import {
     humanizeGroupByColumns,
     NicelyFormattedTypes,
