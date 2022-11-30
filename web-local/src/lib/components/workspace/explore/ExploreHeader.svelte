@@ -72,7 +72,7 @@
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">
-    <TimeControls metricsDefId={metricViewName} />
+    <TimeControls {metricViewName} />
     {#key metricViewName}
       <Filters {metricViewName} />
     {/key}

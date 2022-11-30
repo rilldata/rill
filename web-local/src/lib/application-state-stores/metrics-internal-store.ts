@@ -20,7 +20,7 @@ timeseries: ""
 # default to opionated option around estimated timegrain,
 # first in order is default time grain
 timegrains:
-  - 1 day
+  - day
 # the timegrain that users will see when they first visit the dashboard.
 default_timegrain: "day"
 
