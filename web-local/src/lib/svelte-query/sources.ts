@@ -2,6 +2,7 @@ import {
   useRuntimeServiceGetFile,
   useRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
+import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 import { parse } from "yaml";
 
 /**
@@ -12,7 +13,7 @@ export function useSourceNames(instanceId: string) {
   return useRuntimeServiceListFiles(
     instanceId,
     {
-      glob: "sources/*.{sql,yaml}",
+      glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
     {
       query: {
@@ -26,10 +27,16 @@ export function useSourceNames(instanceId: string) {
   );
 }
 
+export type SourceFromYaml = {
+  type: string;
+  uri?: string;
+  path?: string;
+};
+
 export function useSourceFromYaml(instanceId: string, filePath: string) {
   return useRuntimeServiceGetFile(instanceId, filePath, {
     query: {
       select: (data) => (data.blob ? parse(data.blob) : {}),
     },
-  });
+  }) as UseQueryStoreResult<SourceFromYaml>;
 }

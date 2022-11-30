@@ -2,8 +2,8 @@ package metrics_views
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strconv"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -14,10 +14,10 @@ func init() {
 	migrator.Register(drivers.ObjectTypeMetricsView, &metricsViewMigrator{})
 }
 
-var SourceNotSelected = errors.New("metrics view source not selected")
-var SourceNotFound = errors.New("metrics view source not found")
-var TimestampNotSelected = errors.New("metrics view timestamp not selected")
-var TimestampNotFound = errors.New("metrics view selected timestamp not found")
+const SourceNotSelected = "metrics view source not selected"
+const SourceNotFound = "metrics view source not found"
+const TimestampNotSelected = "metrics view timestamp not selected"
+const TimestampNotFound = "metrics view selected timestamp not found"
 
 type metricsViewMigrator struct{}
 
@@ -41,20 +41,20 @@ func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.
 	return []string{catalog.GetMetricsView().From}
 }
 
-func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	mv := catalog.GetMetricsView()
 	if mv.From == "" {
-		return SourceNotSelected
+		return migrator.CreateValidationError(catalog.Path, SourceNotSelected)
 	}
 	if mv.TimeDimension == "" {
-		return TimestampNotSelected
+		return migrator.CreateValidationError(catalog.Path, TimestampNotSelected)
 	}
 	model, err := olap.InformationSchema().Lookup(ctx, mv.From)
 	if err != nil {
 		if err == drivers.ErrNotFound {
-			return SourceNotFound
+			return migrator.CreateValidationError(catalog.Path, SourceNotFound)
 		}
-		return err
+		return migrator.CreateValidationError(catalog.Path, err.Error())
 	}
 
 	fieldsMap := make(map[string]*runtimev1.StructType_Field)
@@ -63,25 +63,36 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	}
 
 	if _, ok := fieldsMap[mv.TimeDimension]; !ok {
-		return TimestampNotFound
+		return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
 	}
 
-	for _, dimension := range mv.Dimensions {
+	var validationErrors []*runtimev1.ReconcileError
+
+	for i, dimension := range mv.Dimensions {
 		err := validateDimension(ctx, model, dimension)
 		if err != nil {
-			return err
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      err.Error(),
+				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
+			})
 		}
 	}
 
-	for _, measure := range mv.Measures {
+	for i, measure := range mv.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
-			return err
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      err.Error(),
+				PropertyPath: []string{"Measures", strconv.Itoa(i)},
+			})
 		}
 	}
 
-	// dimension and measure errors are not marked as error
-	return nil
+	return validationErrors
 }
 
 func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {

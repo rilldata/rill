@@ -78,7 +78,10 @@ export class ExpressServer {
     this.app.use(bodyParser.json());
 
     const tmpFolder = `${this.config.projectFolder}/tmp`;
-    if (!existsSync(tmpFolder)) mkdirSync(tmpFolder);
+    if (!existsSync(tmpFolder))
+      mkdirSync(tmpFolder, {
+        recursive: true,
+      });
     this.app.use(
       fileUpload({
         useTempFiles: true,

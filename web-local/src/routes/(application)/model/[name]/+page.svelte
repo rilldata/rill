@@ -5,8 +5,7 @@
 </script>
 
 <svelte:head>
-  <!-- TODO: add the model name to the title -->
-  <title>Rill Developer</title>
+  <title>Rill Developer | {data.modelName}</title>
 </svelte:head>
 
-<ModelWorkspace modelID={data.modelID} />
+<ModelWorkspace modelName={data.modelName} />

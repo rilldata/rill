@@ -1,4 +1,4 @@
-import { Config } from "../utils/Config";
+import { Config, NonFunctionProperties } from "../utils/Config";
 
 export class MetricsConfig extends Config<MetricsConfig> {
   @Config.ConfigField("rill-developer")
@@ -17,4 +17,11 @@ export class MetricsConfig extends Config<MetricsConfig> {
     "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug=="
   )
   public rillIntakePassword: string;
+
+  public constructor(configJson: {
+    [K in keyof NonFunctionProperties<MetricsConfig>]?: NonFunctionProperties<MetricsConfig>[K];
+  }) {
+    super(configJson);
+    this.setFields(configJson);
+  }
 }

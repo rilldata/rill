@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 )
@@ -56,13 +57,16 @@ func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPSt
 	return ExtractTableNames(catalog.GetModel().Sql)
 }
 
-func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	_, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    catalog.GetModel().Sql,
 		Priority: 100,
 		DryRun:   true,
 	})
-	return err
+	if err != nil {
+		return migrator.CreateValidationError(catalog.Path, err.Error())
+	}
+	return nil
 }
 
 func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {

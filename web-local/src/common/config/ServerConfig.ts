@@ -27,6 +27,7 @@ export class ServerConfig extends Config<ServerConfig> {
 
   constructor(configJson) {
     super(configJson);
+    this.setFields(configJson);
 
     if (!this.serverUrl) {
       this.serverUrl = `http://${this.serverHost}:${this.serverPort}`;

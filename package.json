@@ -26,8 +26,5 @@
       "package.json",
       "web-local/package.json"
     ]
-  },
-  "devDependencies": {
-    "crypto-js": "^4.1.1"
   }
 }

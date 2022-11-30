@@ -1,4 +1,4 @@
-import { Config } from "../utils/Config";
+import { Config, NonFunctionProperties } from "../utils/Config";
 
 export class StateConfig extends Config<StateConfig> {
   @Config.ConfigField(true)
@@ -12,6 +12,13 @@ export class StateConfig extends Config<StateConfig> {
 
   @Config.ConfigField("models")
   public modelFolder: string;
+
+  public constructor(configJson: {
+    [K in keyof NonFunctionProperties<StateConfig>]?: NonFunctionProperties<StateConfig>[K];
+  }) {
+    super(configJson);
+    this.setFields(configJson);
+  }
 
   public prependProjectFolder(projectFolder: string) {
     this.stateFolder = `${projectFolder}/${this.stateFolder}`;
