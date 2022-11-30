@@ -51,7 +51,7 @@
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
-  $: interval = metricsExplorer?.selectedTimeRange?.interval || timeDimension;
+  $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
@@ -93,10 +93,7 @@
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval.replace(
-          /[0-9] /g,
-          ""
-        ),
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
       }
     );
   }
