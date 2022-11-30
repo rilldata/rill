@@ -91,6 +91,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 
 // CustomErrorToCode returns the Code of the error if it is a Status error
 // otherwise use status.FromContextError to determine the Code.
+// Log level for error codes is defined in logging.DefaultServerCodeToLevel
 func CustomErrorToCode(err error) codes.Code {
 	if se, ok := err.(interface {
 		GRPCStatus() *status.Status
