@@ -33,10 +33,7 @@ jobs:
           node-version: 18
 
       - name: Build UI
-        run: |
-          make cli &&
-	      mkdir -p cli/pkg/web/embed/dist &&
-	      cp -r web-local/build/ cli/pkg/web/embed/dist
+        run: make cli
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
