@@ -12,7 +12,10 @@ import (
 // ListInstances implements RuntimeService
 func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	instances := registry.FindInstances(ctx)
+	instances, err := registry.FindInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
@@ -25,7 +28,10 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 // GetInstance implements RuntimeService
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
+	inst, found, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
 	if !found {
 		return nil, status.Error(codes.NotFound, "instance not found")
 	}

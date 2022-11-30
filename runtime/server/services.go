@@ -36,7 +36,10 @@ func (c *servicesCache) createCatalogService(ctx context.Context, s *Server, ins
 	}
 
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, instId)
+	inst, found, err := registry.FindInstance(ctx, instId)
+	if err != nil {
+		return nil, err
+	}
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "instance not found")
 	}

@@ -10,25 +10,28 @@ import (
 )
 
 // FindInstances implements drivers.RegistryStore
-func (c *connection) FindInstances(ctx context.Context) []*drivers.Instance {
+func (c *connection) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
 	return c.findInstances(ctx, "")
 }
 
 // FindInstance implements drivers.RegistryStore
-func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, bool) {
-	is := c.findInstances(ctx, "WHERE id = $1", id)
-	if len(is) == 0 {
-		return nil, false
+func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, bool, error) {
+	is, err := c.findInstances(ctx, "WHERE id = $1", id)
+	if err != nil {
+		return nil, false, err
 	}
-	return is[0], true
+	if len(is) == 0 {
+		return nil, false, nil
+	}
+	return is[0], true, nil
 }
 
-func (c *connection) findInstances(ctx context.Context, whereClause string, args ...any) []*drivers.Instance {
+func (c *connection) findInstances(ctx context.Context, whereClause string, args ...any) ([]*drivers.Instance, error) {
 	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -37,12 +40,12 @@ func (c *connection) findInstances(ctx context.Context, whereClause string, args
 		i := &drivers.Instance{}
 		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		res = append(res, i)
 	}
 
-	return res
+	return res, nil
 }
 
 // CreateInstance implements drivers.RegistryStore

@@ -39,7 +39,7 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequ
 		Query: topKSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -51,7 +51,7 @@ func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequ
 		var value sql.NullString
 		err = rows.Scan(&value, &topKEntry.Count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		if value.Valid {
 			topKEntry.Value = structpb.NewStringValue(value.String)
@@ -79,7 +79,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.G
 		Query: nullCountSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -87,7 +87,7 @@ func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.G
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -112,7 +112,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 		Query: descriptiveStatisticsSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -120,7 +120,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 	for rows.Next() {
 		err = rows.Scan(&stats.Min, &stats.Q25, &stats.Q50, &stats.Q75, &stats.Max, &stats.Mean, &stats.Sd)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	resp := &runtimev1.NumericSummary{
@@ -165,13 +165,13 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 		Query: fmt.Sprintf("SELECT count(*) as c FROM %s", request.TableName),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	var totalRows int64
 	for rows.Next() {
 		err := rows.Scan(&totalRows)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	rows.Close()
@@ -223,7 +223,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 		Query: estimateSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -231,7 +231,7 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 	for rows.Next() {
 		err := rows.Scan(&timeGrainString)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	var timeGrain *runtimev1.EstimateSmallestTimeGrainResponse
@@ -280,14 +280,14 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		Query: sql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 	var iqr, count, rangeVal float64
 	for rows.Next() {
 		err = rows.Scan(&iqr, &count, &rangeVal)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	var bucketSize float64
@@ -358,7 +358,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		Query: histogramSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer histogramRows.Close()
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
@@ -366,7 +366,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		bin := &runtimev1.NumericHistogramBins_Bin{}
 		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		histogramBins = append(histogramBins, bin)
 	}
@@ -450,7 +450,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 		Query: rugSql,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer outlierResults.Close()
 
@@ -459,7 +459,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 		outlier := &runtimev1.NumericOutliers_Outlier{}
 		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		outlierBins = append(outlierBins, outlier)
 	}
@@ -482,7 +482,7 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 			sanitizedColumnName, request.TableName),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 	if rows.Next() {
@@ -530,14 +530,14 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.
 		Query: fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	defer rows.Close()
 	var count float64
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		return &runtimev1.GetCardinalityOfColumnResponse{
 			CategoricalSummary: &runtimev1.CategoricalSummary{
