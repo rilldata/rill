@@ -167,6 +167,7 @@ func StartCmd(ver string) *cobra.Command {
 			}
 			mux.Handle("/v1/", runtimeHandler)
 			mux.Handle("/local/config", localConfigHandler)
+			mux.HandleFunc("/local/track", trackingForwarderHandler)
 
 			// Open the browser
 			if !noUI && !noOpen {
@@ -220,4 +221,26 @@ func localConfigHandler(localConfig map[string]any) http.Handler {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(data)
 	})
+}
+
+func trackingForwarderHandler(w http.ResponseWriter, req *http.Request) {
+	// create proxy request to rill intake
+	proxyReq, err := http.NewRequest(req.Method, "https://intake.rilldata.io/events/data-modeler-metrics", req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	// copy over the auth header
+	proxyReq.Header = http.Header{
+		"Authorization": req.Header["Authorization"],
+	}
+
+	// send the request
+	resp, err := http.DefaultClient.Do(proxyReq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
 }

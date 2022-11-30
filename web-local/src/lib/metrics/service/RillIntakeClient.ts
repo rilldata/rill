@@ -16,11 +16,15 @@ export class RillIntakeClient {
 
   public async fireEvent(event: MetricsEvent) {
     try {
-      await axios.post(this.config.metrics.rillIntakeUrl, event, {
-        headers: {
-          Authorization: this.authHeader,
-        },
-      });
+      await axios.post(
+        `${this.config.database.runtimeUrl}/local/track`,
+        event,
+        {
+          headers: {
+            Authorization: this.authHeader,
+          },
+        }
+      );
     } catch (err) {
       console.error(`Failed to send ${event.event_type}. ${err.message}`);
     }
