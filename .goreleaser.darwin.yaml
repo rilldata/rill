@@ -4,9 +4,6 @@ release:
   prerelease: auto
   disable: true
 
-before:
-  hooks:
-
 builds:
   # macos amd64
   - id: darwin-amd64
