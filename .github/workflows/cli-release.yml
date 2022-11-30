@@ -1,4 +1,4 @@
-name: release
+name: Release Rill CLI
 on:
   workflow_dispatch:
   push:
@@ -59,3 +59,9 @@ jobs:
         env:
 >>>>>>> 7db8d130 (cleanup)
           CGO_ENABLED: 1
+
+      - name: Upload to GCS
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: dist/
+          destination: pkg.rilldata.com/rill/nightly/
