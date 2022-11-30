@@ -113,7 +113,6 @@ export class MetricsInternalRepresentation {
   }
 
   regenerateInternalYAML(shouldUpdateRuntime = true) {
-    console.log("Update regenerateInternalYAML", shouldUpdateRuntime);
     // create json before any fields are removed
     this.internalRepresentation = this.internalRepresentationDocument.toJSON();
 
@@ -172,7 +171,6 @@ export class MetricsInternalRepresentation {
   }
 
   updateErrors(errors: Array<V1ReconcileError>) {
-    console.log("Update errors", errors);
     const measureErroredIndices = new Set<number>();
     const dimensionErroredIndices = new Set<number>();
     // set errors for measures and dimensions

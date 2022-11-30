@@ -20,8 +20,6 @@
   let selectStyle = "";
   const greyedOut = " color: rgb(107, 114, 128);";
 
-  // $: console.log(row[columnConfig.name], options);
-
   $: if (row[columnConfig.name]) {
     // if there is an actual value, use it
     value = row[columnConfig.name];
