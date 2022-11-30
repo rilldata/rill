@@ -2,11 +2,12 @@
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,
     RuntimeServiceListCatalogEntriesType,
-    useRuntimeServicePutFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
@@ -23,7 +24,7 @@
   ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServicePutFileAndMigrate();
+  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -31,8 +32,7 @@
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
       [$persistentModelStore.entities, $persistentTableStore.entities],
-      $runtimeStore,
-      persistentTableStore
+      $runtimeStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -43,17 +43,13 @@
           },
           "file"
         );
-        await $createSource.mutateAsync({
-          data: {
-            repoId: $runtimeStore.repoId,
-            instanceId: runtimeInstanceId,
-            path: `sources/${tableName}.yaml`,
-            blob: yaml,
-            create: true,
-            createOnly: true,
-            strict: true,
-          },
-        });
+        // TODO: errors
+        await createSource(
+          runtimeInstanceId,
+          tableName,
+          yaml,
+          $createSourceMutation
+        );
       } catch (err) {
         console.error(err);
       }

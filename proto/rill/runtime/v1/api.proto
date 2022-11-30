@@ -12,94 +12,19 @@ import "rill/runtime/v1/schema.proto";
 service RuntimeService {
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
-    option (google.api.http) = {
-      get: "/v1/ping"
-    };
-  }
-
-  // Repos
-
-  // ListRepos lists all the repos currently managed by the runtime
-  rpc ListRepos(ListReposRequest) returns (ListReposResponse) {
-    option (google.api.http) = {
-      get: "/v1/repos"
-    };
-  }
-
-  // GetRepo returns info about a specific repo
-  rpc GetRepo(GetRepoRequest) returns (GetRepoResponse) {
-    option (google.api.http) = {
-      get: "/v1/repos/{repo_id}"
-    };
-  }
-
-  // CreateRepo creates a new repo. See the Repo message for an explanation of repos.
-  rpc CreateRepo(CreateRepoRequest) returns (CreateRepoResponse) {
-    option (google.api.http) = {
-      post: "/v1/repos",
-      body: "*"
-    };
-  }
-
-  // DeleteRepo deletes a repo
-  rpc DeleteRepo(DeleteRepoRequest) returns (DeleteRepoResponse) {
-    option (google.api.http) = {
-      delete: "/v1/repos/{repo_id}"
-    };
-  }
-
-  // ListFiles lists all the files matching a glob in a repo.
-  // The files are sorted by their full path.
-  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
-    option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/files"
-    };
-  }
-
-  // GetFile returns the contents of a specific file in a repo.
-  rpc GetFile(GetFileRequest) returns (GetFileResponse) {
-    option (google.api.http) = {
-      get: "/v1/repos/{repo_id}/files/-/{path=**}"
-    };
-  }
-
-  // PutFile creates or updates a file in a repo
-  rpc PutFile(PutFileRequest) returns (PutFileResponse) {
-    option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/files/-/{path=**}",
-      body: "*"
-    };
-  }
-
-  // DeleteFile deletes a file from a repo
-  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
-    option (google.api.http) = {
-      delete: "/v1/repos/{repo_id}/files/-/{path=**}"
-    };
-  }
-
-  // RenameFile renames a file in a repo
-  rpc RenameFile(RenameFileRequest) returns (RenameFileResponse) {
-    option (google.api.http) = {
-      post: "/v1/repos/{repo_id}/files/rename",
-      body: "*"
-    };
+    option (google.api.http) = {get: "/v1/ping"};
   }
 
   // Instances
 
   // ListInstances lists all the instances currently managed by the runtime
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances"
-    };
+    option (google.api.http) = {get: "/v1/instances"};
   }
 
   // GetInstance returns information about a specific instance
   rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}"};
   }
 
   // CreateInstance creates a new instance
@@ -112,78 +37,109 @@ service RuntimeService {
 
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}"};
+  }
+
+  // Repos
+
+  // ListFiles lists all the files matching a glob in a repo.
+  // The files are sorted by their full path.
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/files"};
+  }
+
+  // GetFile returns the contents of a specific file in a repo.
+  rpc GetFile(GetFileRequest) returns (GetFileResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/files/-/{path=**}"};
+  }
+
+  // PutFile creates or updates a file in a repo
+  rpc PutFile(PutFileRequest) returns (PutFileResponse) {
     option (google.api.http) = {
-      delete: "/v1/instances/{instance_id}"
+      post: "/v1/instances/{instance_id}/files/-/{path=**}",
+      body: "*"
+    };
+  }
+
+  // DeleteFile deletes a file from a repo
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/files/-/{path=**}"};
+  }
+
+  // RenameFile renames a file in a repo
+  rpc RenameFile(RenameFileRequest) returns (RenameFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/rename",
+      body: "*"
     };
   }
 
   // Catalog
 
-  // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views) 
+  // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
   rpc ListCatalogEntries(ListCatalogEntriesRequest) returns (ListCatalogEntriesResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/catalog"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/catalog"};
   }
 
   // GetCatalogEntry returns information about a specific entry in the catalog
   rpc GetCatalogEntry(GetCatalogEntryRequest) returns (GetCatalogEntryResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/catalog/{name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/catalog/{name}"};
   }
 
   // TriggerRefresh triggers a refresh of a refreshable catalog object.
   // It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
   // It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
   rpc TriggerRefresh(TriggerRefreshRequest) returns (TriggerRefreshResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/catalog/{name}/refresh"
-    };
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/catalog/{name}/refresh"};
   }
 
   // TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
   // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
   rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/sync"
-    };
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/sync"};
   }
 
-  // Migrations
+  // Reconciliation
 
-  // Migrate applies a full set of artifacts from a repo to the catalog and infra.
+  // Reconcile applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
   // the desired state expressed in the artifacts. Any existing objects not described in the submitted
   // artifacts will be deleted.
-  rpc Migrate(MigrateRequest) returns (MigrateResponse) {
+  rpc Reconcile(ReconcileRequest) returns (ReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/migrate",
+      post: "/v1/instances/{instance_id}/reconcile",
       body: "*"
     };
   }
 
-  // PutFileAndMigrate combines PutFile and Migrate in a single endpoint to reduce latency.
+  // PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
   // It is equivalent to calling the two RPCs sequentially.
-  rpc PutFileAndMigrate(PutFileAndMigrateRequest) returns (PutFileAndMigrateResponse) {
+  rpc PutFileAndReconcile(PutFileAndReconcileRequest) returns (PutFileAndReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/put-and-migrate",
+      post: "/v1/put-and-reconcile",
       body: "*"
     };
   }
 
-  // DeleteFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-  rpc DeleteFileAndMigrate(DeleteFileAndMigrateRequest) returns (DeleteFileAndMigrateResponse) {
+  // DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+  rpc DeleteFileAndReconcile(DeleteFileAndReconcileRequest) returns (DeleteFileAndReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/delete-and-migrate",
+      post: "/v1/delete-and-reconcile",
       body: "*"
     };
   }
 
-  // RenameFileAndMigrate combines RenameFile and Migrate in a single endpoint to reduce latency.
-  rpc RenameFileAndMigrate(RenameFileAndMigrateRequest) returns (RenameFileAndMigrateResponse) {
+  // RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+  rpc RenameFileAndReconcile(RenameFileAndReconcileRequest) returns (RenameFileAndReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/rename-and-migrate",
+      post: "/v1/rename-and-reconcile",
+      body: "*"
+    };
+  }
+
+  rpc RefreshAndReconcile(RefreshAndReconcileRequest) returns (RefreshAndReconcileResponse) {
+    option (google.api.http) = {
+      post: "/v1/refresh-and-reconcile",
       body: "*"
     };
   }
@@ -240,7 +196,7 @@ service RuntimeService {
   // EstimateRollupInterval (TODO: add description)
   rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/estimate-rollup-interval/{table_name}",
+      post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
       body: "*"
     };
   }
@@ -249,64 +205,50 @@ service RuntimeService {
   // agg function and k are optional, defaults are count(*) and 50 respectively
   rpc GetTopK(GetTopKRequest) returns (GetTopKResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/topk/{table_name}/{column_name}",
+      post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}/columns/{column_name}",
       body: "*"
     };
   }
 
   // Get the number of nulls in a column
   rpc GetNullCount(GetNullCountRequest) returns (GetNullCountResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/null-count/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
   rpc GetDescriptiveStatistics(GetDescriptiveStatisticsRequest) returns (GetDescriptiveStatisticsResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/descriptive-statistics/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"};
   }
 
   // Estimates the smallest time grain present in the column
   rpc EstimateSmallestTimeGrain(EstimateSmallestTimeGrainRequest) returns (EstimateSmallestTimeGrainResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/estimate-smallest-time-grain/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get the histogram for values in a column
   rpc GetNumericHistogram(GetNumericHistogramRequest) returns (GetNumericHistogramResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/numeric-histogram/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get outliers for a numeric column
   rpc GetRugHistogram(GetRugHistogramRequest) returns (GetRugHistogramResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/rug-histogram/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get the time range summaries (min, max) for a column
   rpc GetTimeRangeSummary(GetTimeRangeSummaryRequest) returns (GetTimeRangeSummaryResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/time-range-summary/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"};
   }
 
   // Get cardinality for a column
   rpc GetCardinalityOfColumn(GetCardinalityOfColumnRequest) returns (GetCardinalityOfColumnResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/cardinality-of-column/{table_name}/{column_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"};
   }
 
   // Generate time series
   rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (GenerateTimeSeriesResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate-timeseries",
+      post: "/v1/instances/{instance_id}/queries/timeseries",
       body: "*"
     };
   }
@@ -315,23 +257,17 @@ service RuntimeService {
 
   // TableCardinality (TODO: add description)
   rpc GetTableCardinality(GetTableCardinalityRequest) returns (GetTableCardinalityResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"};
   }
 
   // ProfileColumns (TODO: add description)
   rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/tables/{table_name}/profile-columns"
-    };
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"};
   }
 
   // TableRows (TODO: add description)
   rpc GetTableRows(GetTableRowsRequest) returns (GetTableRowsResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/tables/{table_name}/rows"
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
 
   // Connectors
@@ -339,9 +275,7 @@ service RuntimeService {
   // ListConnectors returns a description of all the connectors implemented in the runtime,
   // including their schema and validation rules
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
-    option (google.api.http) = {
-      get: "/v1/connectors/meta"
-    };
+    option (google.api.http) = {get: "/v1/connectors/meta"};
   }
 }
 
@@ -358,147 +292,29 @@ message PingResponse {
 }
 
 // **********
-// Repos
-// **********
-
-// Repo represents a collection of file artifacts containing SQL statements.
-// It will usually by represented as a folder on disk, but may also be backed by a
-// database (for modelling in the cloud where no persistant file system is available).
-message Repo {
-  // UUID identifier
-  string repo_id = 1;
-  // Driver for persisting artifacts. Supports "file" and "postgres".
-  string driver = 2;
-  // DSN for driver. If the driver is "file", this should be the path to the root directory.
-  string dsn = 3;
-}
-
-// Request message for RuntimeService.ListRepos
-message ListReposRequest {
-  int32 page_size = 1;
-  string page_token = 2;
-}
-
-// Response message for RuntimeService.ListRepos
-message ListReposResponse {
-  repeated Repo repos = 1;
-  string next_page_token = 2;
-}
-
-// Request message for RuntimeService.GetRepo
-message GetRepoRequest {
-  string repo_id = 1;
-}
-
-// Response message for RuntimeService.GetRepo
-message GetRepoResponse {
-  Repo repo = 1;
-}
-
-// Request message for RuntimeService.CreateRepo
-message CreateRepoRequest {
-  string repo_id = 1;
-  string driver = 2;
-  string dsn = 3;
-}
-
-// Response message for RuntimeService.CreateRepo
-message CreateRepoResponse {
-  Repo repo = 1;
-}
-
-// Request message for RuntimeService.DeleteRepo
-message DeleteRepoRequest {
-  string repo_id = 1;
-}
-
-// Response message for RuntimeService.DeleteRepo
-message DeleteRepoResponse {}
-
-// Request message for RuntimeService.ListFiles
-message ListFilesRequest {
-  string repo_id = 1;
-  string glob = 2;
-}
-
-// Response message for RuntimeService.ListFiles
-message ListFilesResponse {
-  repeated string paths = 1;
-}
-
-// Request message for RuntimeService.GetFile
-message GetFileRequest {
-  string repo_id = 1;
-  string path = 2;
-}
-
-// Reponse message for RuntimeService.GetFile
-message GetFileResponse {
-  string blob = 1;
-  google.protobuf.Timestamp updated_on = 2;
-}
-
-// Request message for RuntimeService.PutFile
-message PutFileRequest {
-  string repo_id = 1;
-  string path = 2;
-  string blob = 3;
-  // Create indicates whether to create the file if it doesn't already exist
-  bool create = 4;
-  // Will cause the operation to fail if the file already exists.
-  // It should only be set when create = true.
-  bool create_only = 5;
-}
-
-// Response message for RuntimeService.PutFile
-message PutFileResponse {
-  string file_path = 1; // TODO: Redundant, should be removed (but frontend currently uses it)
-}
-
-// Request message for RuntimeService.DeleteFile
-message DeleteFileRequest {
-  string repo_id = 1;
-  string path = 2;
-}
-
-// Response message for RuntimeService.DeleteFile
-message DeleteFileResponse {}
-
-// Request message for RuntimeService.RenameFile
-message RenameFileRequest {
-  string repo_id = 1;
-  string from_path = 2;
-  string to_path = 3;
-}
-
-// Response message for RuntimeService.RenameFile
-message RenameFileResponse {}
-
-// **********
 // Instances
 // **********
 
-// Instance represents one connection to an OLAP datastore (such as DuckDB or Druid).
-// Migrations and queries are issued against a specific instance. The concept of
-// instances enables multiple data projects to be served by one runtime.
+// Instance represents a single data project, meaning one set of code artifacts,
+// one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+// metadata (such as reconciliation state). Instances are the unit of isolation within
+// the runtime. They enable one runtime deployment to serve not only multiple data
+// projects, but also multiple tenants. On local, the runtime will usually have
+// just a single instance.
 message Instance {
   // Identifier (UUID)
   string instance_id = 1;
-  // Name of OLAP infra driver ("druid" or "duckdb")
-  string driver = 2;
-  // DSN for connection to the OLAP infra
-  string dsn = 3;
-  // Prefix to add to all table names created through Rill SQL (such as sources, models, etc.)
-  // Use it as an alternative to database schemas.
-  string object_prefix = 4;
-  // Indicates that the underlying infra may be manipulated directly by users.
-  // If true, the runtime will continuously poll the infra's information schema
-  // to discover tables not created through the runtime. They will be added to the
-  // catalog as UnmanagedTables.
-  bool exposed = 5;
-  // If true, the runtime will store the instance's catalog data (such as sources and metrics views)
-  // in the instance's OLAP datastore instead of in the runtime's metadata store. This is currently
-  // only supported for the duckdb driver.
+  // Driver to connect to for OLAP (options: duckdb, druid)
+  string olap_driver = 2;
+  // DSN for connection to OLAP
+  string olap_dsn = 3;
+  // Driver for reading/editing code artifacts (options: file, metastore).
+  // This enables virtualizing a file system in a cloud setting.
+  string repo_driver = 4;
+  // DSN for connecting to repo
+  string repo_dsn = 5;
+  // If true, the runtime will store the instance's catalog in its OLAP store instead
+  // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
 }
 
@@ -524,21 +340,20 @@ message GetInstanceResponse {
   Instance instance = 1;
 }
 
-// Request message for RuntimeService.CreateInstance
+// Request message for RuntimeService.CreateInstance.
+// See message Instance for field descriptions.
 message CreateInstanceRequest {
-  // See message Instance for field descriptions
   string instance_id = 1;
-  string driver = 2;
-  string dsn = 3;
-  string object_prefix = 4;
-  bool exposed = 5;
+  string olap_driver = 2;
+  string olap_dsn = 3;
+  string repo_driver = 4;
+  string repo_dsn = 5;
   bool embed_catalog = 6;
 }
 
 // Response message for RuntimeService.CreateInstance
 message CreateInstanceResponse {
-  string instance_id = 1; // Temporary, for compatibility with local frontend
-  Instance instance = 2;
+  Instance instance = 1;
 }
 
 // Request message for RuntimeService.DeleteInstance
@@ -548,6 +363,69 @@ message DeleteInstanceRequest {
 
 // Response message for RuntimeService.DeleteInstance
 message DeleteInstanceResponse {}
+
+// **********
+// Repos
+// **********
+
+// Request message for RuntimeService.ListFiles
+message ListFilesRequest {
+  string instance_id = 1;
+  string glob = 2;
+}
+
+// Response message for RuntimeService.ListFiles
+message ListFilesResponse {
+  repeated string paths = 1;
+}
+
+// Request message for RuntimeService.GetFile
+message GetFileRequest {
+  string instance_id = 1;
+  string path = 2;
+}
+
+// Reponse message for RuntimeService.GetFile
+message GetFileResponse {
+  string blob = 1;
+  google.protobuf.Timestamp updated_on = 2;
+}
+
+// Request message for RuntimeService.PutFile
+message PutFileRequest {
+  string instance_id = 1;
+  string path = 2;
+  string blob = 3;
+  // Create indicates whether to create the file if it doesn't already exist
+  bool create = 4;
+  // Will cause the operation to fail if the file already exists.
+  // It should only be set when create = true.
+  bool create_only = 5;
+}
+
+// Response message for RuntimeService.PutFile
+message PutFileResponse {
+  string file_path = 1; // TODO: Redundant, should be removed (but frontend currently uses it)
+}
+
+// Request message for RuntimeService.DeleteFile
+message DeleteFileRequest {
+  string instance_id = 1;
+  string path = 2;
+}
+
+// Response message for RuntimeService.DeleteFile
+message DeleteFileResponse {}
+
+// Request message for RuntimeService.RenameFile
+message RenameFileRequest {
+  string instance_id = 1;
+  string from_path = 2;
+  string to_path = 3;
+}
+
+// Response message for RuntimeService.RenameFile
+message RenameFileResponse {}
 
 // **********
 // Catalog
@@ -616,37 +494,35 @@ message TriggerSyncResponse {
 // Migrations
 // **********
 
-// Request message for RuntimeService.Migrate
-message MigrateRequest {
-  // Instance to migrate
+// Request message for RuntimeService.Reconcile
+message ReconcileRequest {
+  // Instance to reconcile
   string instance_id = 1;
-  // Contents of files containing one or more SQL DDL statements
-  string repo_id = 2;
   // Changed paths provides a way to "hint" what files have changed in the repo, enabling
-  // migrations to execute faster by not scanning all code artifacts for changes.
-  repeated string changed_paths = 3;
+  // reconciliation to execute faster by not scanning all code artifacts for changes.
+  repeated string changed_paths = 2;
   // If true, will validate the file artifacts, but not actually execute any migrations
-  bool dry = 4;
+  bool dry = 3;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
-  bool strict = 5;
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
+  bool strict = 4;
 }
 
-// Response message for RuntimeService.Migrate
-message MigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
+// Response message for RuntimeService.Reconcile
+message ReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
   // affected_paths lists all the file artifact paths that were considered while
-  // executing the migration. If changed_paths was empty, this will include all
+  // executing the reconciliation. If changed_paths was empty, this will include all
   // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
-// MigrationError represents an error encountered while running Migrate.
-message MigrationError {
-  // Code represents different categories of migration errors
+// ReconcileError represents an error encountered while running Reconcile.
+message ReconcileError {
+  // Code represents different categories of reconciliation errors
   enum Code {
     // Unspecified error
     CODE_UNSPECIFIED = 0;
@@ -676,7 +552,7 @@ message MigrationError {
   // It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
   // It only applies to structured code artifacts (i.e. YAML).
   // Only applicable if file_path is set.
-  string property_path = 4;
+  repeated string property_path = 4;
   // Start location of the error in the code artifact (if any).
   // Only applicable if file_path is set.
   CharLocation start_location = 5;
@@ -685,88 +561,105 @@ message MigrationError {
   CharLocation end_location = 6;
 }
 
-message PutFileAndMigrateRequest {
-  // Repo to store the file in
-  string repo_id = 1;
-  // Instance to apply the migrations to
-  string instance_id = 2;
+message PutFileAndReconcileRequest {
+  // Instance to store file in and reconcile
+  string instance_id = 1;
   // Path to store the file at
-  string path = 3;
+  string path = 2;
   // Contents to save to the file
-  string blob = 4;
+  string blob = 3;
   // Create indicates whether to create the file if it doesn't already exist
-  bool create = 5;
+  bool create = 4;
   // create_only will cause the operation to fail if a file already exists at path.
   // It should only be set when create = true.
-  bool create_only = 6;
+  bool create_only = 5;
 
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-  bool dry = 8;
+  bool dry = 6;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
-  bool strict = 9;
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
+  bool strict = 7;
 }
 
-message PutFileAndMigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
-  // affected_paths lists all the file paths that were considered while
-  // executing the migration. For a PutFileAndMigrate, this includes the put file
-  // as well as any file artifacts that rely on objects declared in it.
+message PutFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
-message DeleteFileAndMigrateRequest {
-  // Repo to store the file in
-  string repo_id = 1;
-  // Instance to apply the migrations to
-  string instance_id = 2;
+message DeleteFileAndReconcileRequest {
+  // Instance to store file in and reconcile
+  string instance_id = 1;
   // Path to store the file at
-  string path = 3;
+  string path = 2;
+  // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
+  bool dry = 3;
+  // If true, will not execute any migrations if any artifact fails to validate.
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
+  bool strict = 4;
+}
+
+message DeleteFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
+  repeated string affected_paths = 2;
+}
+
+message RenameFileAndReconcileRequest {
+  // Instance to store file in and reconcile
+  string instance_id = 1;
+  // Current path of the file
+  string from_path = 2;
+  // New path of the file
+  string to_path = 3;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
   bool dry = 4;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
   bool strict = 5;
 }
 
-message DeleteFileAndMigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
-  // affected_paths lists all the file paths that were considered while
-  // executing the migration. For a PutFileAndMigrate, this includes the put file
-  // as well as any file artifacts that rely on objects declared in it.
+message RenameFileAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
-message RenameFileAndMigrateRequest {
-  // Repo to store the file in
-  string repo_id = 1;
-  // Instance to apply the migrations to
-  string instance_id = 2;
+message RefreshAndReconcileRequest {
+  // Instance to store file in and reconcile
+  string instance_id = 1;
   // Current path of the file
-  string from_path = 3;
-  // New path of the file
-  string to_path = 4;
+  string path = 2;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-  bool dry = 5;
+  bool dry = 3;
   // If true, will not execute any migrations if any artifact fails to validate.
-  // Otherwise, it will execute a best-effort migration (including dropping objects with artifacts
-  // that fail to validate.)
-  bool strict = 6;
+  // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+  // artifacts that fail to validate.)
+  bool strict = 5;
 }
 
-message RenameFileAndMigrateResponse {
-  // Errors encountered during the migration. If strict = false, any path in
-  // affected_paths without an error can be assumed to have been migrated succesfully.
-  repeated MigrationError errors = 1;
-  // affected_paths lists all the file paths that were considered while
-  // executing the migration. For a PutFileAndMigrate, this includes the put file
-  // as well as any file artifacts that rely on objects declared in it.
+message RefreshAndReconcileResponse {
+  // Errors encountered during reconciliation. If strict = false, any path in
+  // affected_paths without an error can be assumed to have been reconciled succesfully.
+  repeated ReconcileError errors = 1;
+  // affected_paths lists all the file artifact paths that were considered while
+  // executing the reconciliation. If changed_paths was empty, this will include all
+  // code artifacts in the repo.
   repeated string affected_paths = 2;
 }
 
@@ -983,6 +876,7 @@ message NumericOutliers {
     double low = 2;
     double high = 3;
     bool present = 4;
+    int32 count = 5;
   }
   repeated Outlier outliers = 1;
 }
@@ -992,17 +886,16 @@ message GetTopKRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
-  optional string agg = 4; // default is count(*)
-  optional int32 k = 5; // default is 50
+  string agg = 4; // default is count(*)
+  int32 k = 5; // default is 50
 }
 
 message TopK {
-  message TopKEntry {
-    // value is optional so that null values from the database can be represented.
-    optional string value = 1;
+  repeated Entry entries = 1;
+  message Entry {
+    google.protobuf.Value value = 1;
     double count = 2;
   }
-  repeated TopKEntry entries = 1;
 }
 
 // Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
@@ -1101,23 +994,19 @@ message GetCardinalityOfColumnRequest {
 message GenerateTimeSeriesRequest {
   string instance_id = 1;
   string table_name = 2;
-  optional BasicMeasures measures = 3;
+  repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
-  optional TimeSeriesTimeRange time_range = 5;
-  optional MetricsViewRequestFilter filters = 6;
-  optional int32 pixels = 7;
-  optional int32 sample_size = 8;
-  message BasicMeasures {
-    repeated BasicMeasureDefinition basic_measures = 1;
+  TimeSeriesTimeRange time_range = 5;
+  MetricsViewRequestFilter filters = 6;
+  int32 pixels = 7;
+  int32 sample_size = 8;
+  message BasicMeasure {
+    string id = 1;
+    // mandatory user defined metadata
+    string expression = 2;
+    // optional user defined metadata
+    string sql_name = 3;
   }
-}
-
-message BasicMeasureDefinition {
-  string id = 1;
-  // mandatory user defined metadata
-  string expression = 2;
-  // optional user defined metadata
-  optional string sql_name = 3;
 }
 
 message TimeSeriesTimeRange {
@@ -1146,10 +1035,7 @@ enum TimeRangeName {
 message MetricsViewDimensionValue {
   string name = 1;
   repeated google.protobuf.Value in = 2;
-  optional Values like = 3;
-  message Values {
-    repeated google.protobuf.Value values = 1;
-  }
+  repeated google.protobuf.Value like = 3;
 }
 
 message MetricsViewRequestFilter {
@@ -1158,15 +1044,10 @@ message MetricsViewRequestFilter {
 }
 
 message TimeSeriesResponse {
-  optional string id = 1;
-  repeated TimeSeriesValue results = 2;
-  optional TimeSeriesValues spark = 3;
-  optional TimeSeriesTimeRange time_range = 4;
-  int32 sample_size = 5;
-  optional string error = 6;
-  message TimeSeriesValues {
-    repeated TimeSeriesValue values = 1;
-  }
+  repeated TimeSeriesValue results = 1;
+  repeated TimeSeriesValue spark = 2;
+  TimeSeriesTimeRange time_range = 3;
+  int32 sample_size = 4;
 }
 
 message GenerateTimeSeriesResponse {
@@ -1189,15 +1070,6 @@ enum DatabaseObjectType {
   DATABASE_OBJECT_TYPE_VIEW = 2;
   DATABASE_OBJECT_TYPE_FUNCTION = 3;
 }
-
-message RenameDatabaseObjectRequest {
-  string instance_id = 1;
-  string name = 2;
-  string new_name = 3;
-  optional DatabaseObjectType type = 4;
-}
-
-message RenameDatabaseObjectResponse {}
 
 message GetTableCardinalityRequest {
   string instance_id = 1;

@@ -96,7 +96,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 }
 
 func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*runtimev1.MetricsView, error) {
-	catalog, err := s.serviceCache.createCatalogService(ctx, s, instanceID, instanceID)
+	catalog, err := s.serviceCache.createCatalogService(ctx, s, instanceID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -346,18 +346,18 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 	var operatorPrefix string
 	var conditionJoiner string
 	if exclude {
-		operatorPrefix = "NOT"
-		conditionJoiner = "AND"
+		operatorPrefix = " NOT "
+		conditionJoiner = ") AND ("
 	} else {
 		operatorPrefix = ""
-		conditionJoiner = "OR"
+		conditionJoiner = " OR "
 	}
 
 	if len(cond.In) > 0 {
 		// null values should be added with IS NULL / IS NOT NULL
 		nullCount := 0
 		for _, val := range cond.In {
-			if val == nil {
+			if _, ok := val.Kind.(*structpb.Value_NullValue); ok {
 				nullCount++
 				continue
 			}
@@ -370,7 +370,9 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 
 		questionMarks := strings.Join(repeatString("?", len(cond.In)-nullCount), ",")
 		// <dimension> (NOT) IN (?,?,...)
-		clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+		if questionMarks != "" {
+			clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+		}
 		if nullCount > 0 {
 			// <dimension> IS (NOT) NULL
 			clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", cond.Name, operatorPrefix))
@@ -391,7 +393,7 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 
 	clause := ""
 	if len(clauses) > 0 {
-		clause = fmt.Sprintf(" AND %s", strings.Join(clauses, conditionJoiner))
+		clause = fmt.Sprintf(" AND (%s)", strings.Join(clauses, conditionJoiner))
 	}
 	return clause, args, nil
 }

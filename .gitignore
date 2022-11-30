@@ -31,6 +31,7 @@ export/
 /*_state.json
 /state
 /models
+/dashboards
 /sources
 
 # check in generated data files
@@ -64,3 +65,5 @@ release.properties
 dist/*
 rill-binary-sa.json
 .release-env
+# runtime test resources
+!runtime/testdata/**

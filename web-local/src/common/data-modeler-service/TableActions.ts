@@ -1,5 +1,6 @@
 import {
-  runtimeServicePutFileAndMigrate,
+  runtimeServiceDeleteFileAndReconcile,
+  runtimeServicePutFileAndReconcile,
 } from "@rilldata/web-common/runtime-client";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
@@ -77,12 +78,11 @@ export class TableActions extends DataModelerActions {
       },
       "file"
     );
-    await runtimeServicePutFileAndMigrate({
+    await runtimeServicePutFileAndReconcile({
       instanceId: this.dataModelerService
         .getDatabaseService()
         .getDatabaseClient()
         .getInstanceId(),
-      repoId: this.dataModelerStateService.getApplicationState().repoId,
       path: `/sources/${tableName}.yaml`,
       blob: yaml,
       create: true,
@@ -152,7 +152,8 @@ export class TableActions extends DataModelerActions {
   @DataModelerActions.PersistentTableAction()
   public async addOrSyncTableFromDB(
     { stateService }: PersistentTableStateActionArg,
-    tableName?: string
+    tableName?: string,
+    asynchronous?: boolean
   ) {
     const existingTable = stateService.getByField("tableName", tableName);
     const table = existingTable ? { ...existingTable } : getNewTable();
@@ -160,7 +161,7 @@ export class TableActions extends DataModelerActions {
     table.name = table.tableName = tableName;
     table.sourceType = TableSourceType.DuckDB;
 
-    await this.addOrUpdateTable(table, !existingTable, true);
+    await this.addOrUpdateTable(table, !existingTable, true, asynchronous);
   }
 
   @DataModelerActions.DerivedTableAction()
@@ -375,17 +376,11 @@ export class TableActions extends DataModelerActions {
     args: PersistentTableStateActionArg,
     tableName: string
   ) {
-    // MigrateDelete has been deprecated. All migrations should go through reconciliation.
-    // Leaving this here to highlight if this code path still gets hit.
-    console.error("dropTableFromCLI called, but MigrateDelete was deprecated");
-
-    // await runtimeServiceMigrateDelete(
-    //   this.databaseService.getDatabaseClient().getInstanceId(),
-    //   {
-    //     name: tableName,
-    //   }
-    // );
-    // return this.dropTable(args, tableName);
+    await runtimeServiceDeleteFileAndReconcile({
+      instanceId: this.databaseService.getDatabaseClient().getInstanceId(),
+      path: `/sources/${tableName}.yaml`,
+    });
+    return this.dropTable(args, tableName);
   }
 
   @DataModelerActions.DerivedTableAction()
@@ -451,7 +446,8 @@ export class TableActions extends DataModelerActions {
   private async addOrUpdateTable(
     table: PersistentTableEntity,
     isNew: boolean,
-    shouldProfile: boolean
+    shouldProfile: boolean,
+    asynchronous = false
   ): Promise<ActionResponse> {
     // get the original Table state if not new.
     let originalPersistentTable: PersistentTableEntity;
@@ -534,7 +530,13 @@ export class TableActions extends DataModelerActions {
     if (this.config.profileWithUpdate) {
       // this check should not hit else on false. hence it is nested
       if (shouldProfile) {
-        await this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+        if (asynchronous) {
+          await this.dataModelerService.dispatch("collectTableInfo", [
+            table.id,
+          ]);
+        } else {
+          this.dataModelerService.dispatch("collectTableInfo", [table.id]);
+        }
       }
     } else {
       this.dataModelerStateService.dispatch("markAsProfiled", [

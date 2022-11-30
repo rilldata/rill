@@ -15,7 +15,6 @@ type Service struct {
 	Catalog drivers.CatalogStore
 	Repo    drivers.RepoStore
 	Olap    drivers.OLAPStore
-	RepoId  string
 	InstId  string
 
 	// temporary information. should this be persisted into olap?
@@ -29,18 +28,11 @@ type Service struct {
 	PathToName map[string]string
 }
 
-func NewService(
-	catalog drivers.CatalogStore,
-	repo drivers.RepoStore,
-	olap drivers.OLAPStore,
-	repoId string,
-	instId string,
-) *Service {
+func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drivers.OLAPStore, instId string) *Service {
 	return &Service{
 		Catalog: catalog,
 		Repo:    repo,
 		Olap:    olap,
-		RepoId:  repoId,
 		InstId:  instId,
 
 		dag:        dag.NewDAG(),
@@ -69,7 +61,7 @@ func (s *Service) GetCatalogObject(
 ) (*runtimev1.CatalogEntry, error) {
 	obj, found := s.Catalog.FindEntry(ctx, s.InstId, name)
 	if !found {
-		return nil, status.Error(codes.InvalidArgument, "object not found")
+		return nil, status.Error(codes.InvalidArgument, "object not found: "+name)
 	}
 
 	pb, err := catalogObjectToPB(obj)

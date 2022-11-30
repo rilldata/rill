@@ -22,15 +22,16 @@ func getTestServer(t *testing.T) (*Server, string) {
 	require.NoError(t, err)
 
 	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
-		Driver:       "duckdb",
-		Dsn:          "",
-		Exposed:      true,
+		OlapDriver:   "duckdb",
+		OlapDsn:      "",
+		RepoDriver:   "file",
+		RepoDsn:      t.TempDir(),
 		EmbedCatalog: true,
 	})
 	require.NoError(t, err)
-	require.NotEmpty(t, resp.InstanceId)
+	require.NotEmpty(t, resp.Instance.InstanceId)
 
-	return server, resp.InstanceId
+	return server, resp.Instance.InstanceId
 }
 
 func getTestServerWithData(t *testing.T) (*Server, string) {
@@ -39,13 +40,15 @@ func getTestServerWithData(t *testing.T) (*Server, string) {
 	_, err := server.QueryDirect(context.Background(), &runtimev1.QueryDirectRequest{
 		InstanceId: instanceId,
 		Sql: `CREATE TABLE test AS (
-			SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 
+			SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
 			UNION ALL 
-			SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times
+			SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
 			UNION ALL 
-			SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+			SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
 			UNION ALL 
-			SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+			SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
+			UNION ALL 
+			SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 			)`,
 		Args: nil,
 	})

@@ -15,7 +15,7 @@ import (
 
 // ListCatalogEntries implements RuntimeService
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "") // TODO: Remove repo ID
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -30,7 +30,7 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 
 // GetCatalogEntry implements RuntimeService
 func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, "") // TODO: Remove repo ID
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -77,7 +77,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 	}
 
 	// Get olap
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -86,8 +86,8 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 	// Make connector env
 	// Since we're deprecating this code soon, this is just a hack to ingest sources from paths relative to pwd
 	env := &connectors.Env{
-		RepoDriver: "file",
-		RepoDSN:    ".",
+		RepoDriver: inst.RepoDriver,
+		RepoDSN:    inst.RepoDSN,
 	}
 
 	// Ingest the source
@@ -108,7 +108,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 
 // TriggerSync implements RuntimeService
 func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
-	// TODO: move to using migrate
+	// TODO: move to using reconcile
 	// Get instance
 	registry, _ := s.metastore.RegistryStore()
 	inst, found := registry.FindInstance(ctx, req.InstanceId)
@@ -117,7 +117,7 @@ func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequ
 	}
 
 	// Get OLAP
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -219,7 +219,7 @@ func (s *Server) openCatalog(ctx context.Context, inst *drivers.Instance) (drive
 		return catalogStore, nil
 	}
 
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
+	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
 		return nil, err
 	}

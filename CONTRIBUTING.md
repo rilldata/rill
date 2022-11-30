@@ -21,7 +21,7 @@ Here's a high-level overview of the technologies we use for different parts of t
 - Java and Apache Calcite for the SQL engine, which gets compiled to a native library using GraalVM
 - DuckDB for OLAP on small data
 - Apache Druid for OLAP on big data
-- Postgres for handling metadata in cloud deployments
+- Postgres for handling metadata in hosted deployments
 - OpenAPI and/or gRPC for most APIs
 - Docker for running Postgres and Druid in local development
 
@@ -38,12 +38,12 @@ The project uses NPM for Node.js (specifically, NPM [workspaces](https://docs.np
 Here's a guide to the top-level structure of the repository:
 
 - `.github` and `.travis.yml` contain CI/CD workflows. We allow both, but the goal is to move fully to Github Actions.
+- `admin` contains the backend control plane for a multi-user, hosted version of Rill (in progress, not launched yet).
 - `cli` is an implementation of a new CLI in Go (in progress, not launched yet).
 - `docs` contains the user-facing documentation that we deploy to [docs.rilldata.com](https://docs.rilldata.com).
 - `proto` contains protocol buffer definitions for all Rill components, which notably includes our API interfaces.
 - `runtime` is our data plane, responsible for querying and orchestrating data infra. It currently supports DuckDB and Druid.
-- `server-cloud` contains the backend control plane for a multi-user version of Rill (in progress, not launched yet).
 - `sql` contains our SQL parser and transpiler. It's based on Apache Calcite and is used heavily by the `runtime`.
-- `web-cloud` contains the frontend control plane for a multi-user version of Rill (in progress, not launched yet).
+- `web-admin` contains the frontend control plane for a multi-user, hosted version of Rill (in progress, not launched yet).
 - `web-common` contains common functionality shared across the local and cloud frontends.
 - `web-local` contains the local Rill Developer application, including the data modeller and current CLI.

@@ -1,18 +1,19 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { getContext } from "svelte";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import type { PersistentModelStore } from "../../../application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
-  import { createModelForSource } from "../../../redux-store/source/source-apis";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import Source from "../../icons/Source.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
@@ -22,7 +23,9 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtimeStore.repoId);
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
+  $: modelNames = useModelNames($runtimeStore.instanceId);
+  const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
   const persistentTableStore = getContext(
     "rill:app:persistent-table-store"
@@ -31,10 +34,6 @@
   const derivedTableStore = getContext(
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
 
   let showTables = true;
 
@@ -45,21 +44,20 @@
   };
 
   const queryHandler = async (tableName: string) => {
-    const asynchronous = true;
-    await createModelForSource(
-      $persistentModelStore.entities,
+    await createModelFromSource(
+      $runtimeStore.instanceId,
+      $modelNames.data,
       tableName,
-      asynchronous
+      $createModelMutation
     );
+    // TODO: fire telemetry
   };
 
   let showRenameTableModal = false;
-  let renameTableID = null;
   let renameTableName = null;
 
-  const openRenameTableModal = (tableID: string, tableName: string) => {
+  const openRenameTableModal = (tableName: string) => {
     showRenameTableModal = true;
-    renameTableID = tableID;
     renameTableName = tableName;
   };
 </script>
@@ -79,7 +77,7 @@
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}
         {@const persistentTable = $persistentTableStore.entities.find(
-          (t) => t["tableName"] == sourceName
+          (t) => t["tableName"] === sourceName
         )}
         {@const derivedTable = $derivedTableStore.entities.find(
           (t) => t["id"] === persistentTable?.id
@@ -115,7 +113,7 @@
                 {sourceName}
                 {toggleMenu}
                 on:rename-asset={() => {
-                  openRenameTableModal(persistentTable?.id, sourceName);
+                  openRenameTableModal(sourceName);
                 }}
               />
             </svelte:fragment>
@@ -137,7 +135,6 @@
   <RenameAssetModal
     entityType={EntityType.Table}
     closeModal={() => (showRenameTableModal = false)}
-    entityId={renameTableID}
     currentAssetName={renameTableName}
   />
 {/if}

@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndMigrate,
-    useRuntimeServiceRenameFileAndMigrate,
+    useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRenameFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getContext } from "svelte";
   import { fade } from "svelte/transition";
@@ -38,7 +38,18 @@
     (entity) => entity.id === id || entity.tableName === name
   );
 
-  const renameSource = useRuntimeServiceRenameFileAndMigrate();
+  const renameSource = useRuntimeServiceRenameFileAndReconcile();
+
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
+  const createSource = useRuntimeServicePutFileAndReconcile();
+
+  $: getSource = useRuntimeServiceGetCatalogEntry(
+    runtimeInstanceId,
+    currentSource?.tableName
+  );
+
+  $: connector = $getSource.data?.entry?.source.connector as string;
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -50,52 +61,25 @@
       return;
     }
 
-    dataModelerService.dispatch("updateTableName", [id, e.target.value]);
-    $renameSource.mutate(
-      {
-        data: {
-          repoId: $runtimeStore.repoId,
-          instanceId: runtimeInstanceId,
-          fromPath: `sources/${name}.yaml`,
-          toPath: `sources/${e.target.value}.yaml`,
-        },
-      },
-      {
-        onSuccess: () => {
-          goto(`/source/${e.target.value}`, { replaceState: true });
-          return queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.repoId)
-          );
-        },
-        onError: (err) => {
-          console.error(err.response.data.message);
-          // reset the new table name
-          dataModelerService.dispatch("updateTableName", [
-            currentSource?.id,
-            "",
-          ]);
-        },
-      }
-    );
+    try {
+      await renameFileArtifact(
+        runtimeInstanceId,
+        name,
+        e.target.value,
+        EntityType.Table,
+        $renameSource
+      );
+    } catch (err) {
+      console.error(err.response.data.message);
+    }
   };
-
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createSource = useRuntimeServicePutFileAndMigrate();
-
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    currentSource?.tableName
-  );
-
-  $: connector = $getSource.data?.entry?.source.connector as string;
 
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
         connector,
         tableName,
-        $runtimeStore,
+        runtimeInstanceId,
         $refreshSourceMutation,
         $createSource
       );

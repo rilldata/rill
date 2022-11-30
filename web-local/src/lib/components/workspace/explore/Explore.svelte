@@ -10,22 +10,29 @@
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
   import MetricsTimeSeriesCharts from "./time-series-charts/MetricsTimeSeriesCharts.svelte";
 
-  export let metricsDefId: string;
+  export let metricViewName: string;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
-  $: selectedDimensionId = metricsExplorer?.selectedDimensionId;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
 </script>
 
-<WorkspaceContainer bgClass="bg-white" inspector={false} assetID={metricsDefId}>
-  <ExploreContainer slot="body" let:columns>
-    <ExploreHeader slot="header" {metricsDefId} />
-    <MetricsTimeSeriesCharts slot="metrics" {metricsDefId} />
+<WorkspaceContainer
+  bgClass="bg-white"
+  inspector={false}
+  assetID={metricViewName}
+>
+  <ExploreContainer slot="body">
+    <ExploreHeader slot="header" {metricViewName} />
+    <MetricsTimeSeriesCharts slot="metrics" {metricViewName} />
     <svelte:fragment slot="leaderboards">
-      {#if selectedDimensionId}
-        <DimensionDisplay {metricsDefId} dimensionId={selectedDimensionId} />
+      {#if selectedDimensionName}
+        <DimensionDisplay
+          {metricViewName}
+          dimensionName={selectedDimensionName}
+        />
       {:else}
-        <LeaderboardDisplay {metricsDefId} />
+        <LeaderboardDisplay {metricViewName} />
       {/if}
     </svelte:fragment>
   </ExploreContainer>

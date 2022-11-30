@@ -36,7 +36,6 @@ export const config = new RootConfig({});
 
 const clientInstances = clientFactory(config);
 export const dataModelerService = clientInstances.dataModelerService;
-export const metricsService = clientInstances.metricsService;
 export const dataModelerStateService = clientInstances.dataModelerStateService;
 dataModelerService.init();
 
@@ -68,10 +67,8 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 export const duplicateSourceName: Writable<string> = writable(null);
 
 export type RuntimeState = {
-  repoId?: string;
   instanceId: string;
 };
 export const runtimeStore = writable<RuntimeState>({
-  repoId: null,
   instanceId: null,
 });

@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
@@ -26,7 +27,7 @@ type MigrationItem struct {
 	FromName       string
 	FromPath       string
 	Dependencies   []string
-	Error          *runtimev1.MigrationError
+	Error          *runtimev1.ReconcileError
 }
 
 func (i *MigrationItem) renameFrom(from *MigrationItem) {
@@ -43,32 +44,32 @@ const (
 	MigrationDelete       = 4
 )
 
-type MigrationConfig struct {
+type ReconcileConfig struct {
 	DryRun       bool
 	Strict       bool
 	ChangedPaths []string
 	ForcedPaths  []string
 }
 
-type MigrationResult struct {
+type ReconcileResult struct {
 	AddedObjects   []*drivers.CatalogEntry
 	UpdatedObjects []*drivers.CatalogEntry
 	DroppedObjects []*drivers.CatalogEntry
 	AffectedPaths  []string
-	Errors         []*runtimev1.MigrationError
+	Errors         []*runtimev1.ReconcileError
 }
 
-func NewMigrationResult() *MigrationResult {
-	return &MigrationResult{
+func NewReconcileResult() *ReconcileResult {
+	return &ReconcileResult{
 		AddedObjects:   make([]*drivers.CatalogEntry, 0),
 		UpdatedObjects: make([]*drivers.CatalogEntry, 0),
 		DroppedObjects: make([]*drivers.CatalogEntry, 0),
 		AffectedPaths:  make([]string, 0),
-		Errors:         make([]*runtimev1.MigrationError, 0),
+		Errors:         make([]*runtimev1.ReconcileError, 0),
 	}
 }
 
-func (r *MigrationResult) collectAffectedPaths() {
+func (r *ReconcileResult) collectAffectedPaths() {
 	pathDuplicates := make(map[string]bool)
 	for _, added := range r.AddedObjects {
 		r.AffectedPaths = append(r.AffectedPaths, added.Path)
@@ -104,11 +105,8 @@ type ArtifactError struct {
 
 // TODO: support loading existing projects
 
-func (s *Service) Migrate(
-	ctx context.Context,
-	conf MigrationConfig,
-) (*MigrationResult, error) {
-	result := NewMigrationResult()
+func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
+	result := NewReconcileResult()
 
 	// collect repos and create migration items
 	migrationMap, err := s.collectRepos(ctx, conf, result)
@@ -136,7 +134,7 @@ func (s *Service) Migrate(
 
 // convert repo paths to MigrationItem
 
-func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result *MigrationResult) (map[string]*MigrationItem, error) {
+func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result *ReconcileResult) (map[string]*MigrationItem, error) {
 	// TODO: if the repo folder is source controlled we should leverage it to find changes
 	// TODO: ListRecursive needs some kind of cache or optimisation
 	repoPaths := conf.ChangedPaths
@@ -148,7 +146,7 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 		}
 	} else {
 		var err error
-		repoPaths, err = s.Repo.ListRecursive(ctx, s.RepoId, "{sources,models,dashboards}/*.{sql,yaml,yml}")
+		repoPaths, err = s.Repo.ListRecursive(ctx, s.InstId, "{sources,models,dashboards}/*.{sql,yaml,yml}")
 		if err != nil {
 			return nil, err
 		}
@@ -192,8 +190,8 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 			} else {
 				errPath = item.Path
 			}
-			result.Errors = append(result.Errors, &runtimev1.MigrationError{
-				Code:     runtimev1.MigrationError_CODE_UNSPECIFIED,
+			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
 				Message:  "item with same name exists",
 				FilePath: errPath,
 			})
@@ -222,7 +220,7 @@ func (s *Service) collectRepos(ctx context.Context, conf MigrationConfig, result
 			found := false
 			// if item is deleted compare with additions to look for renames
 			for _, addition := range additions {
-				if migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
+				if item.CatalogInStore != nil && migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
 					addition.renameFrom(item)
 					delete(additions, addition.Name)
 					add = false
@@ -308,27 +306,29 @@ func (s *Service) getMigrationItem(
 		Path: repoPath,
 	}
 
-	catalog, err := artifacts.Read(ctx, s.Repo, s.RepoId, repoPath)
+	catalog, err := artifacts.Read(ctx, s.Repo, s.InstId, repoPath)
 	if err != nil {
 		if err != artifacts.FileReadError {
-			item.Error = &runtimev1.MigrationError{
-				Code:     runtimev1.MigrationError_CODE_SYNTAX,
+			item.Error = &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_SYNTAX,
 				Message:  err.Error(),
 				FilePath: repoPath,
 			}
 		}
-		if _, ok := s.PathToName[repoPath]; !ok {
-			return nil
+		name, ok := s.PathToName[repoPath]
+		if ok {
+			item.Name = name
+		} else {
+			item.Name = fileutil.Stem(repoPath)
 		}
 
-		item.Name = s.PathToName[repoPath]
 		item.Type = MigrationDelete
 	} else {
 		item.Name = catalog.Name
 		item.CatalogInFile = catalog
 
 		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
-		repoStat, _ := s.Repo.Stat(ctx, s.RepoId, repoPath)
+		repoStat, _ := s.Repo.Stat(ctx, s.InstId, repoPath)
 		item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
 		if repoStat.LastUpdated.After(s.LastMigration) {
 			// assume creation until we see a catalog object
@@ -338,6 +338,13 @@ func (s *Service) getMigrationItem(
 
 	catalogInStore, ok := storeObjectsMap[item.Name]
 	if !ok {
+		if item.CatalogInFile == nil {
+			item.Type = MigrationNoChange
+			if err == artifacts.FileReadError {
+				// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
+				return nil
+			}
+		}
 		return item
 	}
 	item.CatalogInStore = catalogInStore
@@ -358,7 +365,7 @@ func (s *Service) getMigrationItem(
 			break
 		}
 
-		// if item doesnt exist in olap, mark as create
+		// if item doesn't exist in olap, mark as create
 		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
 		if !ok {
 			item.Type = MigrationCreate
@@ -456,18 +463,28 @@ func (s *Service) collectMigrationItems(
 // runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type
 func (s *Service) runMigrationItems(
 	ctx context.Context,
-	conf MigrationConfig,
+	conf ReconcileConfig,
 	migrations []*MigrationItem,
-	result *MigrationResult,
+	result *ReconcileResult,
 ) error {
 	for _, item := range migrations {
-		var err error
-
-		if item.CatalogInFile != nil {
-			err = migrator.Validate(ctx, s.Olap, item.CatalogInFile)
+		if item.Error != nil {
+			result.Errors = append(result.Errors, item.Error)
 		}
 
-		if err == nil {
+		var validationErrors []*runtimev1.ReconcileError
+
+		if item.CatalogInFile != nil {
+			validationErrors = migrator.Validate(ctx, s.Olap, item.CatalogInFile)
+		}
+
+		var err error
+		failed := false
+		if len(validationErrors) > 0 {
+			// do not run migration if validation failed
+			result.Errors = append(result.Errors, validationErrors...)
+			failed = true
+		} else {
 			switch item.Type {
 			case MigrationNoChange:
 				if _, ok := s.PathToName[item.Path]; !ok {
@@ -492,16 +509,21 @@ func (s *Service) runMigrationItems(
 		}
 
 		if err != nil {
-			result.Errors = append(result.Errors, &runtimev1.MigrationError{
-				Code:     runtimev1.MigrationError_CODE_OLAP,
+			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_OLAP,
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
+			failed = true
+		}
+
+		if failed {
+			// remove entity from catalog and OLAP if it failed validation or during migration
 			err := s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
 			if err != nil {
 				// shouldn't ideally happen
-				result.Errors = append(result.Errors, &runtimev1.MigrationError{
-					Code:     runtimev1.MigrationError_CODE_OLAP,
+				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+					Code:     runtimev1.ReconcileError_CODE_OLAP,
 					Message:  err.Error(),
 					FilePath: item.Path,
 				})
@@ -510,8 +532,8 @@ func (s *Service) runMigrationItems(
 				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
 				if err != nil {
 					// shouldn't ideally happen
-					result.Errors = append(result.Errors, &runtimev1.MigrationError{
-						Code:     runtimev1.MigrationError_CODE_OLAP,
+					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+						Code:     runtimev1.ReconcileError_CODE_OLAP,
 						Message:  err.Error(),
 						FilePath: item.Path,
 					})
@@ -627,18 +649,24 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
-	repoStat, err := s.Repo.Stat(ctx, s.RepoId, item.Path)
+	repoStat, err := s.Repo.Stat(ctx, s.InstId, item.Path)
 	if err != nil {
 		return nil, err
 	}
 
 	// convert protobuf to database object
-	catalog := item.CatalogInFile
+	catalogEntry := item.CatalogInFile
 	// NOTE: Previously there was a copy here when using the API types. This might have to reverted.
 
 	// set the UpdatedOn as LastUpdated from the artifact file
 	// this will allow to not reprocess unchanged files
-	catalog.UpdatedOn = repoStat.LastUpdated
-	catalog.RefreshedOn = time.Now()
-	return catalog, nil
+	catalogEntry.UpdatedOn = repoStat.LastUpdated
+	catalogEntry.RefreshedOn = time.Now()
+
+	err = migrator.SetSchema(ctx, s.Olap, catalogEntry)
+	if err != nil {
+		return nil, err
+	}
+
+	return catalogEntry, nil
 }

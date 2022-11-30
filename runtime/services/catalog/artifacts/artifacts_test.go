@@ -118,13 +118,15 @@ region: us-east-2
 							Format:      "humanise",
 						},
 					},
+					Label:       "dashboard name",
+					Description: "long description for dashboard",
 				},
 			},
 			`version: 0.0.1
-display_name: ""
-description: ""
+display_name: dashboard name
+description: long description for dashboard
 from: Model
-time_dimension: time
+timeseries: time
 timegrains:
 - 1 day
 - 1 month

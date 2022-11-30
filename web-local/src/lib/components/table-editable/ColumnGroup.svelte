@@ -46,7 +46,7 @@
   </TableRow>
   <!-- values -->
   {#each rows as row, index}
-    <TableRowWithMenu {index} on:delete={() => dispatch("delete", row.id)}>
+    <TableRowWithMenu {index} on:delete={() => dispatch("delete", index)}>
       {#each columnNames as column (index + column.name + column.label)}
         <TableCellRenderer columnConfig={column} {row} {index} />
       {/each}

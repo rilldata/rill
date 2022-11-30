@@ -9,14 +9,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Migrate implements RuntimeService
-func (s *Server) Migrate(ctx context.Context, req *runtimev1.MigrateRequest) (*runtimev1.MigrateResponse, error) {
-	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId, req.RepoId)
+// Reconcile implements RuntimeService
+func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	resp, err := service.Migrate(ctx, catalog.MigrationConfig{
+	resp, err := service.Reconcile(ctx, catalog.ReconcileConfig{
 		DryRun:       req.Dry,
 		Strict:       req.Strict,
 		ChangedPaths: req.ChangedPaths,
@@ -25,16 +25,16 @@ func (s *Server) Migrate(ctx context.Context, req *runtimev1.MigrateRequest) (*r
 		return nil, err
 	}
 
-	return &runtimev1.MigrateResponse{
+	return &runtimev1.ReconcileResponse{
 		Errors:        resp.Errors,
 		AffectedPaths: resp.AffectedPaths,
 	}, nil
 }
 
-// PutFileAndMigrate implements RuntimeService
-func (s *Server) PutFileAndMigrate(ctx context.Context, req *runtimev1.PutFileAndMigrateRequest) (*runtimev1.PutFileAndMigrateResponse, error) {
+// PutFileAndReconcile implements RuntimeService
+func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
 	_, err := s.PutFile(ctx, &runtimev1.PutFileRequest{
-		RepoId:     req.RepoId,
+		InstanceId: req.InstanceId,
 		Path:       req.Path,
 		Blob:       req.Blob,
 		Create:     req.Create,
@@ -43,67 +43,84 @@ func (s *Server) PutFileAndMigrate(ctx context.Context, req *runtimev1.PutFileAn
 	if err != nil {
 		return nil, err
 	}
-	migrateResp, err := s.Migrate(ctx, &runtimev1.MigrateRequest{
+	res, err := s.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   req.InstanceId,
-		RepoId:       req.RepoId,
 		ChangedPaths: []string{req.Path},
-		Dry:          false,
-		Strict:       false,
+		Dry:          req.Dry,
+		Strict:       req.Strict,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.PutFileAndMigrateResponse{
-		Errors:        migrateResp.Errors,
-		AffectedPaths: migrateResp.AffectedPaths,
+	return &runtimev1.PutFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
 	}, nil
 }
 
-func (s *Server) RenameFileAndMigrate(ctx context.Context, req *runtimev1.RenameFileAndMigrateRequest) (*runtimev1.RenameFileAndMigrateResponse, error) {
+func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
 	_, err := s.RenameFile(ctx, &runtimev1.RenameFileRequest{
-		RepoId:   req.RepoId,
-		FromPath: req.FromPath,
-		ToPath:   req.ToPath,
+		InstanceId: req.InstanceId,
+		FromPath:   req.FromPath,
+		ToPath:     req.ToPath,
 	})
 	if err != nil {
 		return nil, err
 	}
-	migrateResp, err := s.Migrate(ctx, &runtimev1.MigrateRequest{
+	res, err := s.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   req.InstanceId,
-		RepoId:       req.RepoId,
 		ChangedPaths: []string{req.FromPath, req.ToPath},
-		Dry:          false,
-		Strict:       false,
+		Dry:          req.Dry,
+		Strict:       req.Strict,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.RenameFileAndMigrateResponse{
-		Errors:        migrateResp.Errors,
-		AffectedPaths: migrateResp.AffectedPaths,
+	return &runtimev1.RenameFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
 	}, nil
 }
 
-func (s *Server) DeleteFileAndMigrate(ctx context.Context, req *runtimev1.DeleteFileAndMigrateRequest) (*runtimev1.DeleteFileAndMigrateResponse, error) {
+func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
 	_, err := s.DeleteFile(ctx, &runtimev1.DeleteFileRequest{
-		RepoId: req.RepoId,
-		Path:   req.Path,
+		InstanceId: req.InstanceId,
+		Path:       req.Path,
 	})
 	if err != nil {
 		return nil, err
 	}
-	migrateResp, err := s.Migrate(ctx, &runtimev1.MigrateRequest{
+	res, err := s.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   req.InstanceId,
-		RepoId:       req.RepoId,
 		ChangedPaths: []string{req.Path},
-		Dry:          false,
-		Strict:       false,
+		Dry:          req.Dry,
+		Strict:       req.Strict,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.DeleteFileAndMigrateResponse{
-		Errors:        migrateResp.Errors,
-		AffectedPaths: migrateResp.AffectedPaths,
+	return &runtimev1.DeleteFileAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
+	}, nil
+}
+
+func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
+	service, err := s.serviceCache.createCatalogService(ctx, s, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	res, err := service.Reconcile(ctx, catalog.ReconcileConfig{
+		ChangedPaths: []string{req.Path},
+		ForcedPaths:  []string{req.Path},
+		DryRun:       req.Dry,
+		Strict:       req.Strict,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.RefreshAndReconcileResponse{
+		Errors:        res.Errors,
+		AffectedPaths: res.AffectedPaths,
 	}, nil
 }
