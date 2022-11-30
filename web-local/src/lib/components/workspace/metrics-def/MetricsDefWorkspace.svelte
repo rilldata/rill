@@ -64,10 +64,14 @@
     yaml,
     callPutAndMigrate
   );
+  function updateInternalRep() {
+    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    if (errors) $metricsInternalRep.updateErrors(errors);
+  }
 
   // reset internal representation in case of deviation from runtime YAML
   $: if (yaml !== $metricsInternalRep.internalYAML) {
-    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    updateInternalRep();
   }
 
   $: measures = $metricsInternalRep.getMeasures();

@@ -1,6 +1,9 @@
 <script lang="ts">
   import {
+    getRuntimeServiceGetCatalogEntryQueryKey,
+    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
@@ -13,20 +16,18 @@
     PersistentModelStore,
   } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import notifications from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
@@ -60,9 +61,14 @@
   let modelPath: string;
   $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
+  $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: modelSql = $modelSqlQuery?.data.blob;
+  // this is temporary until we have model query binding from backend to the UI editor
+  let hasModelSql = false;
+  $: hasModelSql ||= modelSql !== undefined;
 
-  let titleInput = currentModel?.name;
-  $: titleInput = currentModel?.name;
+  let titleInput: string;
+  $: titleInput = modelName;
 
   function formatModelName(str) {
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
@@ -72,9 +78,9 @@
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
       notifications.send({
         message:
-          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
       });
-      e.target.value = currentModel.name; // resets the input
+      e.target.value = modelName; // resets the input
       return;
     }
 
@@ -117,22 +123,25 @@
     "rill:app:navigation-visibility-tween"
   ) as Writable<number>;
 
+  const queryClient = useQueryClient();
+
   async function updateModelContent(content: string) {
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
         instanceId: runtimeInstanceId,
-        path: `models/${currentModel.tableName}.sql`,
+        path: modelPath,
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    if (!resp.errors.length) {
-      await dataModelerService.dispatch("updateModelQuery", [
-        currentModel.id,
-        content,
-      ]);
-    }
+
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetFileQueryKey(runtimeInstanceId, modelPath)
+    );
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetCatalogEntryQueryKey(runtimeInstanceId, modelName)
+    );
   }
 </script>
 
@@ -147,11 +156,11 @@
     style:height="calc({innerHeight}px - {$outputPosition}px -
     var(--header-height))"
   >
-    {#if $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel}
+    {#if $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel && hasModelSql}
       <div class="h-full grid p-5 pt-0 overflow-auto">
         {#key currentModel?.id}
           <Editor
-            content={currentModel.query}
+            content={modelSql}
             selections={$queryHighlight}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
