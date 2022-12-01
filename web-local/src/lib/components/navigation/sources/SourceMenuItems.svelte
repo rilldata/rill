@@ -14,18 +14,18 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors.js";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { deleteFileArtifact } from "../../../svelte-query/actions";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import { useModelNames } from "../../../svelte-query/models";
   import { getFileFromName } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
@@ -39,6 +39,8 @@
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
+
+  const queryClient = useQueryClient();
 
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
@@ -70,6 +72,7 @@
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
+      queryClient,
       runtimeInstanceId,
       tableName,
       EntityType.Table,
@@ -82,8 +85,9 @@
 
   const handleCreateModel = async (tableName: string) => {
     try {
-      const previousActiveEntity = $appStore.activeEntity.type;
+      const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
+        queryClient,
         runtimeInstanceId,
         $modelNames.data,
         tableName,

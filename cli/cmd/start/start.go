@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -31,7 +32,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var localInstanceID = "default"
+const localInstanceID = "default"
+const defaultOLAPDriver = "duckdb"
+const defaultOLAPDSN = "stage.db"
 
 // StartCmd represents the start command
 func StartCmd(ver string) *cobra.Command {
@@ -82,6 +85,11 @@ func StartCmd(ver string) *cobra.Command {
 			err = os.MkdirAll(repoDSN, os.ModePerm)
 			if err != nil {
 				return err
+			}
+
+			// If no OLAP is specifically set, initialize it in the repo dir, not the working directory
+			if olapDriver == defaultOLAPDriver && olapDSN == defaultOLAPDSN {
+				olapDSN = path.Join(repoDSN, olapDSN)
 			}
 
 			// Create instance and repo configured for local use
@@ -187,8 +195,8 @@ func StartCmd(ver string) *cobra.Command {
 		},
 	}
 
-	startCmd.Flags().StringVar(&olapDriver, "db-driver", "duckdb", "OLAP database driver")
-	startCmd.Flags().StringVar(&olapDSN, "db", "stage.db", "OLAP database DSN")
+	startCmd.Flags().StringVar(&olapDriver, "db-driver", defaultOLAPDriver, "OLAP database driver")
+	startCmd.Flags().StringVar(&olapDSN, "db", defaultOLAPDSN, "OLAP database DSN")
 	startCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for the UI and runtime")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for the runtime's gRPC service")

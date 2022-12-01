@@ -1,5 +1,4 @@
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { error } from "@sveltejs/kit";
 import { fetchWrapperDirect } from "../../../../lib/util/fetchWrapper";
 
@@ -9,7 +8,7 @@ export const ssr = false;
 export async function load({ params }) {
   try {
     const localConfig = await fetchWrapperDirect(
-      `${config.server.serverUrl}/local/config`,
+      `${RILL_RUNTIME_URL}/local/config`,
       "GET"
     );
 

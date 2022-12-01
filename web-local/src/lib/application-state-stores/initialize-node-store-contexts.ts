@@ -1,4 +1,4 @@
-/*global  RILL_VERSION, RILL_COMMIT */
+/*global  RILL_VERSION, RILL_COMMIT, RILL_RUNTIME_URL */
 import { browser } from "$app/environment";
 import { createQueryHighlightStore } from "@rilldata/web-local/lib/application-state-stores/query-highlight-store";
 import type { ApplicationMetadata } from "@rilldata/web-local/lib/types";
@@ -8,7 +8,10 @@ import { setContext } from "svelte";
 declare global {
   const RILL_VERSION: string;
   const RILL_COMMIT: string;
+  const RILL_RUNTIME_URL: string;
 }
+
+export const RuntimeUrl = RILL_RUNTIME_URL; // constant defined in svelte.config.js
 
 /** This function will initialize the existing node stores and will connect them
  * to the Node server. It is best used in various application layouts to ensure that all children of the layout

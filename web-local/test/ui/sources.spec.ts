@@ -1,14 +1,14 @@
 import { describe } from "@jest/globals";
 import path from "node:path";
-import { useInlineTestServer } from "../utils/useInlineTestServer";
 import { TestBrowser, TestEntityType } from "./TestBrowser";
+import { useTestServer } from "./useTestServer";
 
-const PORT = 8080;
+const PORT = 8082;
 const DataPath = path.join(__dirname, "../data");
 
 // TODO: these tests cannot run in CI until cli supports custom ports for UI
 describe.skip("sources", () => {
-  useInlineTestServer(PORT, "temp/sources");
+  useTestServer(PORT, "temp/models");
   const testBrowser = TestBrowser.useTestBrowser(
     DataPath,
     `http://localhost:${PORT}`

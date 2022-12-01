@@ -12,7 +12,7 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { CATEGORICALS } from "../../../duckdb-data-types";
   import { getFileFromName } from "../../../util/entity-mappers";
@@ -32,6 +32,8 @@
   export let yaml: string;
   export let metricsDefName: string;
   export let nonStandardError;
+
+  const queryClient = useQueryClient();
 
   $: instanceId = $runtimeStore.instanceId;
 

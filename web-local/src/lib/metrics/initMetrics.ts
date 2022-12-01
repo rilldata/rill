@@ -13,7 +13,7 @@ export let actionEvent: ActiveEventHandler;
 export let navigationEvent: NavigationEventHandler;
 
 export async function initMetrics() {
-  metricsService = new MetricsService(config, new RillIntakeClient(config), [
+  metricsService = new MetricsService(new RillIntakeClient(config), [
     new ProductHealthEventFactory(config),
     new BehaviourEventFactory(config),
   ]);

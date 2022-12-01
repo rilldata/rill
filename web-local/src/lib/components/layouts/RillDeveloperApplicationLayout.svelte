@@ -3,7 +3,7 @@
     duplicateSourceName,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { config } from "@rilldata/web-local/lib/application-state-stores/application-store.js";
+  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import {
     importOverlayVisible,
     overlay,
@@ -14,23 +14,19 @@
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
   import PreparingImport from "@rilldata/web-local/lib/components/overlay/PreparingImport.svelte";
   import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
-  import ConfigProvider from "@rilldata/web-local/lib/config/ConfigProvider.svelte";
   import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import {
-    createQueryClient,
-    queryClient,
-  } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
   import BasicLayout from "./BasicLayout.svelte";
 
-  createQueryClient();
+  const queryClient = createQueryClient();
 
   onMount(async () => {
     const localConfig = await fetchWrapperDirect(
-      `${config.server.serverUrl}/local/config`,
+      `${RuntimeUrl}/local/config`,
       "GET"
     );
 
@@ -65,47 +61,45 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <ConfigProvider {config}>
-    <div class="body">
-      {#if $importOverlayVisible}
-        <PreparingImport />
-      {:else if $quickStartDashboardOverlay?.show}
-        <QuickStartDashboard
-          sourceName={$quickStartDashboardOverlay.sourceName}
-          timeDimension={$quickStartDashboardOverlay.timeDimension}
-        />
-      {:else if showDropOverlay}
-        <FileDrop bind:showDropOverlay />
-      {:else if $overlay !== null}
-        <BlockingOverlayContainer
-          bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-        >
-          <div slot="title">
-            <span class="font-bold">{$overlay?.title}</span>
-          </div>
-        </BlockingOverlayContainer>
-      {/if}
-
-      {#if $duplicateSourceName !== null}
-        <DuplicateSource />
-      {/if}
-
-      <div
-        class="index-body absolute w-screen h-screen"
-        on:dragenter|preventDefault|stopPropagation
-        on:dragleave|preventDefault|stopPropagation
-        on:dragover|preventDefault|stopPropagation={(e) => {
-          if (isEventWithFiles(e)) showDropOverlay = true;
-        }}
-        on:drag|preventDefault|stopPropagation
-        on:drop|preventDefault|stopPropagation
+  <div class="body">
+    {#if $importOverlayVisible}
+      <PreparingImport />
+    {:else if $quickStartDashboardOverlay?.show}
+      <QuickStartDashboard
+        sourceName={$quickStartDashboardOverlay.sourceName}
+        timeDimension={$quickStartDashboardOverlay.timeDimension}
+      />
+    {:else if showDropOverlay}
+      <FileDrop bind:showDropOverlay />
+    {:else if $overlay !== null}
+      <BlockingOverlayContainer
+        bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
       >
-        <BasicLayout>
-          <slot />
-        </BasicLayout>
-      </div>
+        <div slot="title">
+          <span class="font-bold">{$overlay?.title}</span>
+        </div>
+      </BlockingOverlayContainer>
+    {/if}
+
+    {#if $duplicateSourceName !== null}
+      <DuplicateSource />
+    {/if}
+
+    <div
+      class="index-body absolute w-screen h-screen"
+      on:dragenter|preventDefault|stopPropagation
+      on:dragleave|preventDefault|stopPropagation
+      on:dragover|preventDefault|stopPropagation={(e) => {
+        if (isEventWithFiles(e)) showDropOverlay = true;
+      }}
+      on:drag|preventDefault|stopPropagation
+      on:drop|preventDefault|stopPropagation
+    >
+      <BasicLayout>
+        <slot />
+      </BasicLayout>
     </div>
-  </ConfigProvider>
+  </div>
 </QueryClientProvider>
 
 <NotificationCenter />
