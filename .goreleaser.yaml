@@ -4,6 +4,10 @@ release:
   prerelease: auto
   disable: true
 
+hooks:
+  before:
+    - ls -lrt cli/pkg/web/embed/dist
+
 builds:
   - id: darwin
     main: ./cli/main.go
