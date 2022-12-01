@@ -57,7 +57,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 	require.Equal(t, int32(len("10")), cr.GetProfileColumns()[1].LargestStringLength)
 }
 
-func TestServer_ProfileColumns_empty(t *testing.T) {
+func TestServer_ProfileColumns_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
@@ -126,15 +126,4 @@ func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
 	}
 	rows.Close()
 	return val
-}
-
-func getTableTestServerWithEmptyModel(t *testing.T) (*Server, string) {
-	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
-		SELECT 1::int AS a, 10::int AS "b""b" where 1<>1
-	`)
-
-	server, err := NewServer(&Options{}, rt, nil)
-	require.NoError(t, err)
-
-	return server, instanceID
 }
