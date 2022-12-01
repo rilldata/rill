@@ -98,16 +98,14 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
           $query?.data?.rollup?.results?.map((di) => {
-            const next = { ...di };
-            next.count = next.records.count;
+            const next = { ...di, count: di.records.count };
             return next;
           }) || [],
           "ts"
         ),
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark?.map((di) => {
-            const next = { ...di };
-            next.count = next.records.count;
+            const next = { ...di, count: di.records.count };
             return next;
           }) || [],
           "ts"
