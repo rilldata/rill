@@ -28,10 +28,9 @@
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import {
-    createDashboardFromSource,
     deleteFileArtifact,
+    useCreateDashboardFromSource,
   } from "../../../svelte-query/actions";
-  import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
   import { getFileFromName } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
@@ -45,11 +44,12 @@
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
+  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
+  export let toggleMenu: () => void;
 
   const queryClient = useQueryClient();
 
-  // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
-  export let toggleMenu: () => void;
+  $: runtimeInstanceId = $runtimeStore.instanceId;
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: sourceFromYaml = useSourceFromYaml(
@@ -62,16 +62,14 @@
   );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
+  $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const dispatch = createEventDispatcher();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
-  $: modelNames = useModelNames($runtimeStore.instanceId);
-  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
@@ -109,30 +107,29 @@
     }
   };
 
-  const handleCreateDashboardFromSource = async (sourceName: string) => {
-    let newDashboardName: string;
-    try {
-      newDashboardName = await createDashboardFromSource(
-        $runtimeStore.instanceId,
-        sourceName
-      );
-
-      toggleMenu();
-      goto(`/dashboard/${newDashboardName}`);
-      queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-      );
-      // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-      // navigationEvent.fireEvent(
-      //   newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
-      //   BehaviourEventMedium.Menu,
-      //   MetricsEventSpace.LeftPanel,
-      //   EntityTypeToScreenMap[previousActiveEntity],
-      //   MetricsEventScreenName.Dashboard
-      // );
-    } catch (err) {
-      console.error(err);
-    }
+  const handleCreateDashboardFromSource = (sourceName: string) => {
+    $createDashboardFromSourceMutation.mutate(
+      {
+        data: { instanceId: $runtimeStore.instanceId, sourceName },
+      },
+      {
+        onSuccess: (resp) => {
+          toggleMenu();
+          goto(`/dashboard/${resp.dashboardName}`);
+          queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
+          );
+          // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+          // navigationEvent.fireEvent(
+          //   newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
+          //   BehaviourEventMedium.Menu,
+          //   MetricsEventSpace.LeftPanel,
+          //   EntityTypeToScreenMap[previousActiveEntity],
+          //   MetricsEventScreenName.Dashboard
+          // );
+        },
+      }
+    );
   };
 
   const onRefreshSource = async (tableName: string) => {

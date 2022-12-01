@@ -1,10 +1,10 @@
 import { goto } from "$app/navigation";
 import {
   RpcStatus,
+  runtimeServiceGetCatalogEntry,
   runtimeServiceListFiles,
   runtimeServicePutFileAndReconcile,
   V1DeleteFileAndReconcileResponse,
-  V1PutFileAndReconcileRequest,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
@@ -25,6 +25,7 @@ import {
   UseMutationOptions,
 } from "@sveltestack/svelte-query";
 import { getName } from "../../common/utils/incrementName";
+import { generateMeasuresAndDimension } from "../application-state-stores/metrics-internal-store";
 
 export async function renameFileArtifact(
   queryClient: QueryClient,
@@ -80,68 +81,21 @@ export async function deleteFileArtifact(
   }
 }
 
-// Option 1: vanilla function
-// TODO: pass mutations into here (or call the mutationFns directly)
-export async function createDashboardFromSource(
-  instanceId: string,
-  sourceName: string
-) {
-  // TODO: filter results for names in the right format
-  const existingModelNames = await runtimeServiceListFiles(instanceId, {
-    glob: "models/*.sql",
-  });
-
-  const newModelName = getName(`${sourceName}_model`, existingModelNames.paths);
-
-  // create model from source
-  await $createFileMutation.mutateAsync({
-    data: {
-      instanceId: instanceId,
-      path: `models/${newModelName}.sql`,
-      blob: `select * from ${sourceName}`,
-      create: true,
-      createOnly: true,
-      strict: true,
-    },
-  });
-
-  // TODO: filter results for names in the right format
-  const existingDashboardNames = await runtimeServiceListFiles(instanceId, {
-    glob: "dashboards/*.yaml",
-  });
-
-  const newDashboardName = getName(
-    `${newModelName}_dashboard`,
-    existingDashboardNames.paths
-  );
-
-  // create dashboard from model
-  await $createFileMutation.mutateAsync({
-    data: {
-      instanceId: instanceId,
-      path: `dashboards/${newDashboardName}.yaml`,
-      blob: metricsTemplate, // TODO: compile a real yaml file
-      create: true,
-      createOnly: true,
-      strict: false,
-    },
-  });
-
-  return newDashboardName;
-}
-
 export interface CreateDashboardFromSourceRequest {
   instanceId?: string;
   sourceName?: string;
 }
 
-// Option 2: Custom hook
+export interface CreateDashboardFromSourceResponse {
+  dashboardName: string;
+}
+
 export const useCreateDashboardFromSource = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
+    Awaited<Promise<CreateDashboardFromSourceResponse>>,
     TError,
     { data: CreateDashboardFromSourceRequest },
     TContext
@@ -150,56 +104,72 @@ export const useCreateDashboardFromSource = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
+    Awaited<Promise<CreateDashboardFromSourceResponse>>,
     { data: CreateDashboardFromSourceRequest }
   > = async (props) => {
     const { data } = props ?? {};
 
-    // TODO: filter results for names in the right format
-    const existingModelNames = await runtimeServiceListFiles(data.instanceId, {
+    // first, create model from source
+
+    // not ideal that this doesn't come from the useQuery cache
+    const existingModelFiles = await runtimeServiceListFiles(data.instanceId, {
       glob: "models/*.sql",
     });
-
+    const existingModelNames = existingModelFiles.paths?.map((path) =>
+      path.replace("/models/", "").replace(".sql", "")
+    );
     const newModelName = getName(
       `${data.sourceName}_model`,
-      existingModelNames.paths
+      existingModelNames
     );
 
     await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
       path: `models/${newModelName}.sql`,
       blob: `select * from ${data.sourceName}`,
-      create: true,
-      createOnly: true,
-      strict: true,
     });
 
-    // TODO: filter results for names in the right format
-    const existingDashboardNames = await runtimeServiceListFiles(
-      data.instanceId,
-      { glob: "dashboards/*.yaml" }
-    );
+    // second, create dashboard from model
 
+    // not ideal that this doesn't come from the useQuery cache
+    const existingDashboardFiles = await runtimeServiceListFiles(
+      data.instanceId,
+      {
+        glob: "dashboards/*.yaml",
+      }
+    );
+    const existingDashboardNames = existingDashboardFiles.paths?.map((path) =>
+      path.replace("/dashboards/", "").replace(".yaml", "")
+    );
     const newDashboardName = getName(
       `${newModelName}_dashboard`,
-      existingDashboardNames.paths
+      existingDashboardNames
     );
 
-    // compose the request for the dashboard file
-    return runtimeServicePutFileAndReconcile({
+    const model = await runtimeServiceGetCatalogEntry(
+      data.instanceId,
+      newModelName
+    );
+    const generatedYAML = generateMeasuresAndDimension(model.entry.model);
+
+    await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
       path: `dashboards/${newDashboardName}.yaml`,
-      blob: metricsTemplate, // TODO: compile a real yaml file
+      blob: generatedYAML,
       create: true,
       createOnly: true,
       strict: false,
     });
+
+    return {
+      dashboardName: newDashboardName,
+    };
   };
 
   return useMutation<
-    Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
+    Awaited<Promise<CreateDashboardFromSourceResponse>>,
     TError,
-    { data: V1PutFileAndReconcileRequest },
+    { data: CreateDashboardFromSourceRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
