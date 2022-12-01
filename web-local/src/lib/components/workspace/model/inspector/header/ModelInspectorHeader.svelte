@@ -8,6 +8,7 @@
   import {
     config as appConfig,
     dataModelerService,
+    runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     DerivedModelStore,
@@ -30,7 +31,6 @@
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
-  import { notifications } from "../../../../notifications";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
@@ -52,31 +52,11 @@
 
   let contextMenuOpen = false;
 
-  const onExport = async (fileType: FileExportType) => {
-    let extension = ".csv";
-    if (fileType === FileExportType.Parquet) {
-      extension = ".parquet";
-    }
-    const exportFilename = currentModel.tableName.replace(".sql", extension);
-
-    const exportResp = await dataModelerService.dispatch(fileType, [
-      currentModel.id,
-      exportFilename,
-    ]);
-
-    if (exportResp.status === ActionStatus.Success) {
-      window.open(
-        `${
-          appConfig.server.serverUrl
-        }/api/file/export?fileName=${encodeURIComponent(exportFilename)}`
-      );
-    } else if (exportResp.status === ActionStatus.Failure) {
-      notifications.send({
-        message: `Failed to export.\n${exportResp.messages
-          .map((message) => message.message)
-          .join("\n")}`,
-      });
-    }
+  const onExport = async (exportExtension: "csv" | "parquet") => {
+    // TODO: how do we handle errors ?
+    window.open(
+      `${appConfig.server.serverUrl}/v1/instances/${$runtimeStore.instanceId}/table/${modelName}/export/${exportExtension}`
+    );
   };
 
   let rollup;
@@ -148,25 +128,25 @@
   $: modelHasError = !!currentDerivedModel?.error;
 </script>
 
-<PanelCTA side="right" let:width>
+<PanelCTA let:width side="right">
   <Tooltip
-    location="left"
     alignment="middle"
     distance={16}
+    location="left"
     suppress={contextMenuOpen}
   >
     <!-- attach floating element right here-->
     <WithTogglableFloatingElement
-      location="left"
       alignment="start"
+      bind:active={contextMenuOpen}
       distance={16}
       let:toggleFloatingElement
-      bind:active={contextMenuOpen}
+      location="left"
     >
       <Button
         disabled={modelHasError}
-        type="secondary"
         on:click={toggleFloatingElement}
+        type="secondary"
       >
         <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
         <Export size="16px" />
@@ -202,7 +182,7 @@
       {/if}
     </TooltipContent>
   </Tooltip>
-  <CreateDashboardButton {modelName} {width} hasError={modelHasError} />
+  <CreateDashboardButton hasError={modelHasError} {modelName} {width} />
 </PanelCTA>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
@@ -213,8 +193,8 @@
   >
     <div
       class="italic text-gray-500"
-      class:text-gray-500={modelHasError}
       class:italic={modelHasError}
+      class:text-gray-500={modelHasError}
     >
       <WithModelResultTooltip {modelHasError}>
         <div>
@@ -263,8 +243,8 @@
     <WithModelResultTooltip {modelHasError}>
       <div
         class:font-normal={modelHasError}
-        class:text-gray-500={modelHasError}
         class:italic={modelHasError}
+        class:text-gray-500={modelHasError}
       >
         {#if columnDelta > 0}
           {formatInteger(columnDelta)} column{#if columnDelta !== 1}s{/if} added
@@ -286,8 +266,8 @@
     <div
       class="text-gray-800 font-bold"
       class:font-normal={modelHasError}
-      class:text-gray-500={modelHasError}
       class:italic={modelHasError}
+      class:text-gray-500={modelHasError}
     >
       {currentDerivedModel?.profile?.length} columns
     </div>

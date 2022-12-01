@@ -3,10 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
@@ -108,6 +109,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		"POST",
 		"/v1/instances/{instance_id}/files/upload/-/{path=**}",
 		s.UploadMultipartFile,
+	)
+
+	// One-off REST-only path for file export
+	mux.HandlePath(
+		"GET",
+		"/v1/instances/{instance_id}/table/{table_name}/export/{format}",
+		s.ExportTable,
 	)
 
 	// Register CORS
