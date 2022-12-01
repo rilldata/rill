@@ -1,8 +1,9 @@
-package repov0
+package artifactsv0
 
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -13,27 +14,27 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 }
 
 func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID string, name string) error {
-	err := repo.PutBlob(ctx, instanceID, "rill.yaml", fmt.Sprintf("version: 0.0.1\n\nname: %s\n", name))
+	err := repo.Put(ctx, instanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("version: 0.0.1\n\nname: %s\n", name)))
 	if err != nil {
 		return err
 	}
 
-	err = repo.PutBlob(ctx, instanceID, ".gitignore", "*.db\n")
+	err = repo.Put(ctx, instanceID, ".gitignore", strings.NewReader("*.db\n"))
 	if err != nil {
 		return err
 	}
 
-	err = repo.PutBlob(ctx, instanceID, "sources/.gitkeep", "")
+	err = repo.Put(ctx, instanceID, "sources/.gitkeep", strings.NewReader(""))
 	if err != nil {
 		return err
 	}
 
-	err = repo.PutBlob(ctx, instanceID, "models/.gitkeep", "")
+	err = repo.Put(ctx, instanceID, "models/.gitkeep", strings.NewReader(""))
 	if err != nil {
 		return err
 	}
 
-	err = repo.PutBlob(ctx, instanceID, "dashboards/.gitkeep", "")
+	err = repo.Put(ctx, instanceID, "dashboards/.gitkeep", strings.NewReader(""))
 	if err != nil {
 		return err
 	}

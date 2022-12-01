@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/repo/repov0"
 	"github.com/spf13/cobra"
 )
 
@@ -38,13 +38,9 @@ func InitCmd() *cobra.Command {
 			isPwd := repoDSN == "."
 			isExample := exampleName != "empty"
 			repoDSN = filepath.Clean(repoDSN)
-			name := filepath.Base(repoDSN)
-			if name == "" || strings.ContainsAny(name, "./\\") {
-				name = "untitled"
-			}
 
 			// Open the project as a repo
-			// TODO: Init a runtime and go through its interface instead.
+			// TODO: Init a runtime and go through its interface instead (instance OLAP needs to be optional first)
 			conn, err := drivers.Open("file", repoDSN)
 			if err != nil {
 				return err
@@ -56,7 +52,7 @@ func InitCmd() *cobra.Command {
 			instanceID := "" // hacky, but doesn't matter for file repos
 
 			// Check if already initialized
-			if repov0.IsInit(context.Background(), repo, instanceID) {
+			if artifactsv0.IsInit(context.Background(), repo, instanceID) {
 				if isPwd {
 					return fmt.Errorf("a Rill project already exists in the current directory")
 				} else {
@@ -66,7 +62,7 @@ func InitCmd() *cobra.Command {
 
 			// Use repo parser's init for empty projects
 			if !isExample {
-				err := repov0.InitEmpty(context.Background(), repo, instanceID, name)
+				err := artifactsv0.InitEmpty(context.Background(), repo, instanceID, local.PathToProjectName(repoDSN))
 				if err != nil {
 					return err
 				}

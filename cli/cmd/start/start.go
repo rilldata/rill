@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -28,7 +28,6 @@ import (
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -51,24 +50,9 @@ func StartCmd(ver string) *cobra.Command {
 		Use:   "start",
 		Short: "Build project and start web application",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Create base logger
-			conf := zap.NewDevelopmentEncoderConfig()
-			conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-			l := zap.New(zapcore.NewCore(
-				zapcore.NewConsoleEncoder(conf),
-				zapcore.AddSync(colorable.NewColorableStdout()),
-				zapcore.DebugLevel,
-			))
-
-			// Create derived loggers
-			cliLevel := zap.InfoLevel
-			serverLevel := zap.ErrorLevel
-			if verbose {
-				cliLevel = zap.DebugLevel
-				serverLevel = zap.DebugLevel
-			}
-			logger := l.WithOptions(zap.IncreaseLevel(cliLevel))
-			serverLogger := l.WithOptions(zap.IncreaseLevel(serverLevel))
+			// Create loggers
+			logger := local.NewLogger(verbose)
+			serverLogger := local.NewServerLogger(verbose)
 
 			// Get full path to repo for logging
 			repoAbs, err := filepath.Abs(repoDSN)
@@ -112,6 +96,27 @@ func StartCmd(ver string) *cobra.Command {
 				return err
 			}
 
+			// If not initialized, init repo with an empty project
+			repo, err := rt.Repo(context.Background(), localInstanceID)
+			if err != nil {
+				return err
+			}
+			if !artifactsv0.IsInit(context.Background(), repo, localInstanceID) {
+				err := artifactsv0.InitEmpty(context.Background(), repo, localInstanceID, local.PathToProjectName(olapDSN))
+				if err != nil {
+					if repoDSN == "." {
+						return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
+					} else {
+						return fmt.Errorf("failed to initialize project in '%s' (detailed error: %s)", filepath.Clean(repoDSN), err.Error())
+					}
+				}
+				if repoDSN == "." {
+					logger.Sugar().Infof("Initialized empty project in the current directory")
+				} else {
+					logger.Sugar().Infof("Initialized empty project at '%s'", repoAbs)
+				}
+			}
+
 			// Trigger reconciliation
 			logger.Sugar().Infof("Hydrating project at '%s'", repoAbs)
 			res, err := rt.Reconcile(context.Background(), inst.ID, nil, nil, false, false)
@@ -127,7 +132,7 @@ func StartCmd(ver string) *cobra.Command {
 			logger.Sugar().Infof("Hydration completed!")
 
 			// Build local info for frontend
-			installID, err := config.InstallID()
+			installID, err := local.InstallID()
 			if err != nil {
 				return err
 			}
