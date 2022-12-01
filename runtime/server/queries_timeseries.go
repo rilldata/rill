@@ -7,11 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/uuid"
 )
@@ -152,29 +150,18 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 
 // Metrics/Timeseries APIs
 func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.EstimateRollupIntervalRequest) (*runtimev1.EstimateRollupIntervalResponse, error) {
-	tableName := EscapeDoubleQuotes(request.TableName)
-	escapedColumnName := EscapeDoubleQuotes(request.ColumnName)
-	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: `SELECT
-        	max(` + escapedColumnName + `) - min(` + escapedColumnName + `) as r,
-        	max(` + escapedColumnName + `) as max_value,
-        	min(` + escapedColumnName + `) as min_value,
-        	count(*) as count
-        	from ` + tableName,
-		Priority: int(request.Priority),
+	// tableName := EscapeDoubleQuotes(request.TableName)
+	// escapedColumnName := EscapeDoubleQuotes(request.ColumnName)
+	trr, err := s.GetTimeRangeSummary(ctx, &runtimev1.GetTimeRangeSummaryRequest{
+		InstanceId: request.InstanceId,
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
+		Priority:   request.Priority,
 	})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	rows.Next()
-	var r duckdb.Interval
-	var max, min time.Time
-	var count int64
-	err = rows.Scan(&r, &max, &min, &count)
-	if err != nil {
-		return nil, err
-	}
+	r := trr.TimeRangeSummary.Interval
 
 	const (
 		MICROS_SECOND = 1000 * 1000
@@ -202,8 +189,8 @@ func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.
 
 	return &runtimev1.EstimateRollupIntervalResponse{
 		Interval: rollupInterval,
-		Start:    timestamppb.New(min),
-		End:      timestamppb.New(max),
+		Start:    trr.TimeRangeSummary.Min,
+		End:      trr.TimeRangeSummary.Max,
 	}, nil
 }
 
