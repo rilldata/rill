@@ -54,8 +54,6 @@ it to do any automatic binning of data, which is done server-side.
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
   const yScale = getContext(contexts.scale("y")) as ScaleStore;
 
-  const config = getContext(contexts.config);
-
   onDestroy(() => {
     if (inferXExtent) xMinStore.removeKey(markID);
     if (inferXExtent) xMaxStore.removeKey(markID);

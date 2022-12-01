@@ -143,9 +143,6 @@
               on:focus-top-k={(event) => {
                 focusPoint = event.detail;
               }}
-              on:blur-top-k={(event) => {
-                //focusPoint = undefined;
-              }}
               {topK}
               {totalRows}
               colorClass="bg-red-200"
