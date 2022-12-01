@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"mime"
 	"net/http"
 	"os"
 
@@ -17,7 +16,6 @@ var distFS embed.FS
 
 // Handler serves an web-local UI
 func StaticHandler() (http.Handler, error) {
-	mime.AddExtensionType(".js", "application/javascript")
 	uiAssetFS, err := newUIAssetFS()
 	if err != nil {
 		return nil, fmt.Errorf("UI assets error: %w", err)
