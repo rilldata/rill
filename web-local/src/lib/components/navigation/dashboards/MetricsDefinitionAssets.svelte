@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
+    runtimeServiceGetCatalogEntry,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
@@ -55,6 +56,18 @@
   let showRenameMetricsDefinitionModal = false;
   let renameMetricsDefName = null;
 
+  async function getModelFromDashboardName(
+    instanceId: string,
+    metricViewName: string
+  ) {
+    const metricViewCatalog = await runtimeServiceGetCatalogEntry(
+      instanceId,
+      metricViewName
+    );
+    const metricViewEntry = metricViewCatalog.entry?.metricsView;
+    return metricViewEntry?.from;
+  }
+
   const openRenameMetricsDefModal = (metricsDefName: string) => {
     showRenameMetricsDefinitionModal = true;
     renameMetricsDefName = metricsDefName;
@@ -79,7 +92,11 @@
     return invalidateAfterReconcile(queryClient, instanceId, resp);
   };
 
-  const editModel = (sourceModelName: string) => {
+  const editModel = async (dashboardName: string) => {
+    const sourceModelName = await getModelFromDashboardName(
+      instanceId,
+      dashboardName
+    );
     goto(`/model/${sourceModelName}`);
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
@@ -106,6 +123,10 @@
   };
 
   const deleteMetricsDef = async (dashboardName: string) => {
+    const sourceModelName = await getModelFromDashboardName(
+      instanceId,
+      dashboardName
+    );
     await deleteFileArtifact(
       queryClient,
       instanceId,
@@ -115,6 +136,14 @@
       $appStore.activeEntity,
       $dashboardNames.data
     );
+
+    if ($appStore.activeEntity.name === dashboardName) {
+      if (sourceModelName) {
+        goto(`/model/${sourceModelName}`);
+      } else {
+        goto("/");
+      }
+    }
   };
 
   const getDashboardData = (
@@ -161,7 +190,7 @@
           )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""} -->
+            selectionError !== ""}
           <MenuItem
             icon
             disabled={hasSourceError}
