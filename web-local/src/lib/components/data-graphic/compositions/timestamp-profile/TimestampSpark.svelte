@@ -9,11 +9,8 @@
    * It optionally enables the user to determine a "window", which
    * is just a box emcompassing the zoomWindowXMin and zoomWindowXMax values.
    */
-  import { guidGenerator } from "../../../../util/guid";
   import { SimpleDataGraphic } from "../../elements";
   import { Area, Line } from "../../marks";
-
-  const plotID = guidGenerator();
 
   export let data;
 

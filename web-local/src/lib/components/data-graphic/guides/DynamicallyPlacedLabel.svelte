@@ -30,7 +30,6 @@
   let elementX = 0;
   let elementY = 0;
   let xOffset = tweened(buffer, { duration: 0 });
-  let w = "left";
 
   function update() {
     let bb = element.getBBox();
@@ -49,12 +48,6 @@
   let observer;
 
   onMount(() => {
-    const config = {
-      attributes: true,
-      childList: true,
-      characterData: true,
-      subtree: true,
-    };
     observer = new ResizeObserver(() => {
       if (element) update();
     });
