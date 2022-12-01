@@ -108,15 +108,17 @@
   };
 
   const handleCreateDashboardFromSource = (sourceName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
     $createDashboardFromSourceMutation.mutate(
       {
         data: { instanceId: $runtimeStore.instanceId, sourceName },
       },
       {
-        onSuccess: (resp) => {
-          toggleMenu();
+        onSuccess: async (resp) => {
           goto(`/dashboard/${resp.dashboardName}`);
-          queryClient.invalidateQueries(
+          await queryClient.invalidateQueries(
             getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
           );
           // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
@@ -127,6 +129,10 @@
           //   EntityTypeToScreenMap[previousActiveEntity],
           //   MetricsEventScreenName.Dashboard
           // );
+        },
+        onSettled: () => {
+          overlay.set(null);
+          toggleMenu(); // unmount component
         },
       }
     );
