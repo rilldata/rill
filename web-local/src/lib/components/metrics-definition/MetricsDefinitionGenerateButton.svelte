@@ -8,7 +8,7 @@
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
-  import { selectTimestampColumnFromModelSchema } from "../../redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "../../redux-store/source/source-selectors";
 
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();
@@ -36,9 +36,7 @@
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {
-    timestampColumns = selectTimestampColumnFromModelSchema(
-      selectedModel?.schema
-    );
+    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
   } else {
     timestampColumns = [];
   }
@@ -75,10 +73,8 @@
   };
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip alignment="middle" distance={5} location="right">
   <button
-    disabled={buttonDisabled}
-    on:click={openModelIfNeeded}
     class={`bg-white
           border-gray-400
           hover:border-gray-900
@@ -93,7 +89,9 @@
           pt-2 pb-2
           ${buttonDisabled ? "cursor-not-allowed" : "cursor-pointer"}
           ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
-        `}>quick metrics</button
+        `}
+    disabled={buttonDisabled}
+    on:click={openModelIfNeeded}>quick metrics</button
   >
   <TooltipContent slot="tooltip-content">
     <div>

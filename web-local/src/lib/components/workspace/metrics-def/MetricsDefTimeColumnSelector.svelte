@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
@@ -13,9 +13,7 @@
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {
-    timestampColumns = selectTimestampColumnFromModelSchema(
-      selectedModel?.schema
-    );
+    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
   } else {
     timestampColumns = [];
   }

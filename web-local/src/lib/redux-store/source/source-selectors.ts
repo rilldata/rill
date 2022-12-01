@@ -26,5 +26,5 @@ export const selectTimestampColumnFromProfileEntity = (
 export const schemaHasTimestampColumn = (schema: V1StructType) =>
   schema?.fields?.some(isFieldColumnATimestamp);
 
-export const selectTimestampColumnFromModelSchema = (schema: V1StructType) =>
+export const selectTimestampColumnFromSchema = (schema: V1StructType) =>
   (schema?.fields?.filter(isFieldColumnATimestamp) ?? []).map((f) => f.name);

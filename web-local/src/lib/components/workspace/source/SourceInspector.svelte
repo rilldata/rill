@@ -26,8 +26,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     formatBigNumberPercentage,
@@ -43,6 +42,8 @@
     runtimeInstanceId,
     sourceName
   );
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
@@ -53,14 +54,13 @@
 
   // toggle state for inspector sections
 
-  $: timestampColumns =
-    selectTimestampColumnFromProfileEntity(currentDerivedTable);
+  $: timestampColumns = selectTimestampColumnFromSchema(source.schema);
 
   const handleCreateModelFromSource = async () => {
     const modelName = await createModelFromSource(
       runtimeInstanceId,
       $modelNames.data,
-      currentTable.tableName,
+      sourceName,
       $createModelMutation
     );
     navigationEvent.fireEvent(
@@ -77,22 +77,22 @@
     // the newly created metrics definition. So, this'll bring us to the
     // MetricsDefinition page. (The logic for this is contained in the
     // not-pictured async thunk.)
-    autoCreateMetricsDefinitionForSource(
-      $persistentModelStore.entities,
-      $derivedTableStore.entities,
-      currentTable.id,
-      $persistentTableStore.entities.find(
-        (table) => table.tableName === sourceName
-      ).tableName
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Button,
-        MetricsEventSpace.RightPanel,
-        MetricsEventScreenName.Source,
-        MetricsEventScreenName.Dashboard
-      );
-    });
+    // autoCreateMetricsDefinitionForSource(
+    //   $persistentModelStore.entities,
+    //   $derivedTableStore.entities,
+    //   currentTable.id,
+    //   $persistentTableStore.entities.find(
+    //     (table) => table.tableName === sourceName
+    //   ).tableName
+    // ).then((createdMetricsId) => {
+    //   navigationEvent.fireEvent(
+    //     createdMetricsId,
+    //     BehaviourEventMedium.Button,
+    //     MetricsEventSpace.RightPanel,
+    //     MetricsEventScreenName.Source,
+    //     MetricsEventScreenName.Dashboard
+    //   );
+    // });
   };
 
   /** source summary information */
@@ -127,6 +127,8 @@
   );
   $: fileExtension = getFileExtension($getSource.data?.entry?.source);
 
+  // TODO: get cardinality and null counts
+
   /** get the current row count */
   $: {
     rowCount = `${formatInteger(currentDerivedTable?.cardinality)} row${
@@ -136,9 +138,7 @@
 
   /** get the current column count */
   $: {
-    columnCount = `${formatInteger(
-      currentDerivedTable?.profile?.length
-    )} columns`;
+    columnCount = `${formatInteger(source?.schema?.fields?.length)} columns`;
   }
 
   /** total % null cells */
@@ -154,7 +154,7 @@
 </script>
 
 <div class="table-profile">
-  {#if currentTable}
+  {#if source}
     <!-- CTAs -->
     <PanelCTA side="right" let:width>
       <Tooltip location="left" distance={16}>
@@ -222,16 +222,9 @@
         </CollapsibleSectionTitle>
       </div>
 
-      {#if currentDerivedTable?.profile && showColumns}
+      {#if showColumns}
         <div transition:slide|local={{ duration: 200 }}>
-          <ColumnProfile
-            objectName={sourceName}
-            entityId={currentTable.id}
-            indentLevel={0}
-            cardinality={currentDerivedTable?.cardinality ?? 0}
-            profile={currentDerivedTable?.profile ?? []}
-            head={currentDerivedTable?.preview ?? []}
-          />
+          <ColumnProfile objectName={sourceName} indentLevel={0} />
         </div>
       {/if}
     </div>

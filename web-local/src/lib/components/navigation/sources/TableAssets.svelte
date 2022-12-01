@@ -51,9 +51,9 @@
 
 <NavigationHeader
   bind:show={showTables}
-  tooltipText="add a new data source"
-  on:add={openShowAddSourceModal}
   contextButtonID={"add-table"}
+  on:add={openShowAddSourceModal}
+  tooltipText="add a new data source"
 >
   <Source size="16px" /> Sources
 </NavigationHeader>
@@ -75,11 +75,7 @@
           >
             <svelte:fragment slot="more">
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-                <ColumnProfile
-                  indentLevel={1}
-                  objectName={sourceName}
-                  head={derivedTable?.preview ?? []}
-                />
+                <ColumnProfile indentLevel={1} objectName={sourceName} />
               </div>
             </svelte:fragment>
 

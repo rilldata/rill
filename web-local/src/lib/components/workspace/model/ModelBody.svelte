@@ -8,13 +8,9 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
-  import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
+  import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
@@ -24,35 +20,18 @@
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import { notifications } from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
 
   const queryHighlight = getContext("rill:app:query-highlight");
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   $: getModel = useRuntimeServiceGetCatalogEntry(runtimeInstanceId, modelName);
   const updateModel = useRuntimeServicePutFileAndReconcile();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
-
-  $: currentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
-    : undefined;
-
-  $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === currentModel?.id)
-    : undefined;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
@@ -62,12 +41,12 @@
   $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
-  let titleInput = currentModel?.name;
-  $: titleInput = currentModel?.name;
+  // TODO: does this need any sanitization?
+  $: titleInput = modelName;
 
   function invalidateForModel(queryHash, modelName) {
     const r = new RegExp(
-      `\/v1\/instances\/[a-zA-Z0-9-]+\/queries/[a-zA-Z0-9-]+\/tables\/${modelName}`
+      `\\/v1/instances\\/[a-zA-Z0-9-]+\\/queries\\/[a-zA-Z0-9-]+\\/tables\\/${modelName}`
     );
     return r.test(queryHash);
   }
@@ -82,7 +61,7 @@
         message:
           "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
       });
-      e.target.value = currentModel.name; // resets the input
+      e.target.value = modelName; // resets the input
       return;
     }
 
@@ -100,7 +79,8 @@
   };
 
   /** model body layout elements */
-  const outputLayout = localStorageStore(`${currentModel?.id}-output`, {
+  // TODO: should there be a session lived ID here instead of name?
+  const outputLayout = localStorageStore(`${modelName}-output`, {
     value: 500,
     visible: true,
   });
@@ -114,7 +94,7 @@
   ) as Writable<number>;
 
   const inspectorVisibilityTween = getContext(
-    "rill:app:inspector-visibility-tween"
+    "rilapp:inspector-visibility-tween"
   ) as Writable<number>;
 
   const navigationWidth = getContext(
@@ -137,7 +117,7 @@
     const resp = (await $updateModel.mutateAsync({
       data: {
         instanceId: runtimeInstanceId,
-        path: `models/${currentModel.tableName}.sql`,
+        path: getFileFromName(modelName, EntityType.Model),
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
@@ -150,10 +130,6 @@
           return invalidateForModel(query.queryHash, modelName);
         },
       });
-      await dataModelerService.dispatch("updateModelQuery", [
-        currentModel.id,
-        content,
-      ]);
     }
   }
 </script>
@@ -213,29 +189,24 @@
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
-        class:border={!!currentDerivedModel?.error}
-        class:border-gray-300={!!currentDerivedModel?.error}
+        class:border={!!modelError}
+        class:border-gray-300={!!modelError}
       >
-        {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
-          <div
-            style="{currentDerivedModel?.error ? 'filter: brightness(.9);' : ''}
+        <div
+          style="{modelError ? 'filter: brightness(.9);' : ''}
             transition: filter 200ms;
           "
-            class="relative h-full"
-          >
-            <PreviewTable
-              rows={currentDerivedModel.preview}
-              columnNames={currentDerivedModel.profile}
-              rowOverscanAmount={20}
-            />
-          </div>
-        {:else}
-          <div
-            class="grid items-center justify-center italic pt-3 text-gray-600"
-          >
-            no columns selected
-          </div>
-        {/if}
+          class="relative h-full"
+        >
+          <ConnectedPreviewTable objectName={modelName} />
+        </div>
+        <!--TODO {:else}-->
+        <!--  <div-->
+        <!--    class="grid items-center justify-center italic pt-3 text-gray-600"-->
+        <!--  >-->
+        <!--    no columns selected-->
+        <!--  </div>-->
+        <!--{/if}-->
       </div>
       {#if modelError}
         <div

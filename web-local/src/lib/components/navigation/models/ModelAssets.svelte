@@ -5,14 +5,9 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "../../../application-state-stores/model-stores";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import ModelIcon from "../../icons/Model.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
@@ -24,13 +19,6 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
 
   let showModels = true;
 
@@ -57,9 +45,9 @@
 
 <NavigationHeader
   bind:show={showModels}
-  tooltipText="create a new model"
-  on:add={handleAddModel}
   contextButtonID={"create-model-button"}
+  on:add={handleAddModel}
+  tooltipText="create a new model"
 >
   <ModelIcon size="16px" /> Models
 </NavigationHeader>
@@ -70,14 +58,8 @@
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
-    {#if $modelNames?.data && $persistentModelStore?.entities && $derivedModelStore?.entities}
+    {#if $modelNames?.data}
       {#each $modelNames.data as modelName (modelName)}
-        {@const persistentModel = $persistentModelStore.entities.find(
-          (model) => model["tableName"] === modelName
-        )}
-        {@const derivedModel = $derivedModelStore.entities.find(
-          (model) => model["id"] === persistentModel?.id
-        )}
         <NavigationEntry
           name={modelName}
           href={`/model/${modelName}`}
@@ -85,13 +67,7 @@
         >
           <svelte:fragment slot="more">
             <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-              <ColumnProfile
-                indentLevel={1}
-                cardinality={derivedModel?.cardinality ?? 0}
-                profile={derivedModel?.profile ?? []}
-                head={derivedModel?.preview ?? []}
-                entityId={persistentModel?.id}
-              />
+              <ColumnProfile indentLevel={1} objectName={modelName} />
             </div>
           </svelte:fragment>
 

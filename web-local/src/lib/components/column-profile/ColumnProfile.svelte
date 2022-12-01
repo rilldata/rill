@@ -19,9 +19,9 @@
   const queryClient = useQueryClient();
   export let objectName: string;
   // export let profile: any;
-  export let head: any; // FIXME
+  // export let head: any; // FIXME
   export let indentLevel = 0;
-  export let key: any;
+  // export let key: any;
 
   let mode = "summaries";
 
