@@ -2,7 +2,7 @@ name: Build and Deploy to Netlify
 on:
   pull_request:
     paths:
-      - ".github/workflows/docs.yml"
+      - ".github/workflows/docs-check.yml"
       - "docs/**"
       - "docs-enterprise/**"
 jobs:
