@@ -43,10 +43,10 @@ jobs:
       - name: Embed static UI
         run: |-
           mkdir -p cli/pkg/web/embed/dist
-          cp -r web-local/build/ cli/pkg/web/embed/dist
+          cp -r web-local/build/* cli/pkg/web/embed/dist
           ls -lrt cli/pkg/web/embed/dist
 
-      - name: setup release environment
+      - name: Set up release environment
         run: |-
           echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
           echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
@@ -65,4 +65,4 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release --skip-validate --debug
+              release --skip-validate
