@@ -1,4 +1,4 @@
-name: Build and Deploy to Netlify
+name: Build and Test docs
 on:
   pull_request:
     paths:
