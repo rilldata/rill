@@ -1,5 +1,9 @@
 .PHONY: cli
-cli:
+cli: cli.prepare
+	go build -o rill cli/main.go 
+
+.PHONY: cli.prepare
+cli.prepare:
 	npm install
 	npm run build
 	rm -rf cli/pkg/web/embed/dist || true
@@ -8,7 +12,6 @@ cli:
 	rm -rf cli/pkg/examples/embed/dist || true
 	mkdir -p cli/pkg/examples/embed/dist
 	cp -r examples/ cli/pkg/examples/embed/dist/
-	go build -o rill cli/main.go 
 
 .PHONY: proto.generate
 proto.generate:

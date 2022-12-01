@@ -20,6 +20,7 @@ export/
 /cli/pkg/web/embed/dist
 /rill
 /cli/pkg/examples/embed/dist
+/dev-project
 
 # data files
 *.duckdb
