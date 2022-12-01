@@ -12,13 +12,6 @@ reconciliation to execute faster by not scanning all code artifacts for changes.
   strict?: boolean;
 };
 
-export type RuntimeServiceQueryDirectBody = {
-  args?: unknown[];
-  dryRun?: boolean;
-  priority?: number;
-  sql?: string;
-};
-
 export type RuntimeServiceQueryBody = {
   args?: unknown[];
   dryRun?: boolean;
@@ -348,13 +341,6 @@ export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
   data?: V1QueryResponseDataItem[];
-  meta?: V1StructType;
-}
-
-export type V1QueryDirectResponseDataItem = { [key: string]: any };
-
-export interface V1QueryDirectResponse {
-  data?: V1QueryDirectResponseDataItem[];
   meta?: V1StructType;
 }
 

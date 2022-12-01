@@ -9,3 +9,4 @@ cli:
 .PHONY: proto.generate
 proto.generate:
 	cd proto && buf generate
+	npm run generate:runtime-client -w web-common

@@ -1,7 +1,7 @@
 version: 0.0.1
 
-from: ad_bids_full
-display_name: Ad bids (all)
+from: ad_bids
+display_name: Ad bids
 description:
 
 timeseries: timestamp
@@ -21,6 +21,9 @@ dimensions:
 measures:
   - label: "Number of bids"
     expression: count(*)
+    description: ""
+    format_preset: ""
   - label: "Average bid price"
     expression: avg(bid_price)
-
+    description: ""
+    format_preset: ""
