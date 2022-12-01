@@ -1,11 +1,10 @@
 <script lang="ts">
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceListCatalogEntries,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
   import { Debounce } from "@rilldata/web-local/common/utils/Debounce";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "../application-state-stores/table-stores";
   import {
     acceptCompletion,
     autocompletion,
@@ -54,16 +53,25 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { createEventDispatcher, getContext, onMount } from "svelte";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { createEventDispatcher, onMount } from "svelte";
   import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
   const dispatch = createEventDispatcher();
+  export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
   export let selections: any[] = [];
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
+
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
+  );
+  let model: V1Model;
+  $: model = $getModel?.data?.entry?.model;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -138,31 +146,20 @@
 
   let autocompleteCompartment = new Compartment();
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
+    $runtimeStore.instanceId,
+    {
+      type: "OBJECT_TYPE_SOURCE",
+    }
+  );
 
   let schema: { [table: string]: string[] };
-  $: {
-    schema = $persistentTableStore.entities.reduce(
-      (acc, persistentTable: PersistentTableEntity) => {
-        const derivedTable: DerivedTableEntity =
-          $derivedTableStore.entities.find(
-            (derivedTable) => persistentTable.id === derivedTable.id
-          );
-        // defensive check since persistentTableStore updates incrementally and can
-        // have transition states where tables are defined but none of their attributes are
-        if (derivedTable?.profile) {
-          const columnNames = derivedTable?.profile.map((col) => col.name);
-          acc[persistentTable.tableName] = columnNames;
-        }
-        return acc;
-      },
-      {}
-    );
+  $: if ($sourceCatalogsQuery?.data?.entries) {
+    schema = {};
+    for (const sourceTable of $sourceCatalogsQuery.data.entries) {
+      schema[sourceTable.name] =
+        sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
+    }
   }
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
@@ -329,8 +326,8 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div use:listenToNodeResize class="h-full">
-  <div class="editor-container border h-full" bind:this={editorContainer}>
+<div class="h-full" use:listenToNodeResize>
+  <div bind:this={editorContainer} class="editor-container border h-full">
     <div bind:this={editorContainerComponent} />
   </div>
 </div>

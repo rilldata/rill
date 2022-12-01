@@ -1,13 +1,8 @@
 <script lang="ts">
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getContext } from "svelte";
-
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
-
-  const store = getContext("rill:app:store") as ApplicationStore;
 
   let applicationStatus = 0;
   let asTimer;
@@ -18,7 +13,8 @@
     }, 100);
   }
 
-  $: debounceStatus($store?.status as unknown as EntityStatus);
+  // TODO
+  $: debounceStatus(EntityStatus.Idle);
 
   const applicationStatusTooltipMap = {
     [EntityStatus.Idle]: "idle",
@@ -33,8 +29,8 @@
 
 <div>
   <div class="text-gray-400">
-    <Tooltip location="left" alignment="center" distance={16}>
-      <Spinner status={applicationStatus || EntityStatus.Idle} size="20px" />
+    <Tooltip alignment="center" distance={16} location="left">
+      <Spinner size="20px" status={applicationStatus || EntityStatus.Idle} />
       <TooltipContent slot="tooltip-content"
         >{applicationStatusTooltip}
       </TooltipContent>

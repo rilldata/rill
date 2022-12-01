@@ -164,8 +164,8 @@ func StartCmd(ver string) *cobra.Command {
 				mux.Handle("/", uiHandler)
 			}
 			mux.Handle("/v1/", runtimeHandler)
-			mux.Handle("/local/config", localConfigHandler)
-			mux.HandleFunc("/local/track", trackingForwarderHandler)
+			mux.Handle("/local/config", server.CORS(localConfigHandler))
+			mux.Handle("/local/track", server.CORS(http.HandlerFunc(trackingForwarderHandler)))
 
 			// Open the browser
 			if !noUI && !noOpen {

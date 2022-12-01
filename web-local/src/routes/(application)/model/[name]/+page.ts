@@ -1,16 +1,20 @@
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { error } from "@sveltejs/kit";
-import { fetchWrapper } from "../../../../lib/util/fetchWrapper";
+import { fetchWrapperDirect } from "../../../../lib/util/fetchWrapper";
 
 export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   try {
-    const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
+    const localConfig = await fetchWrapperDirect(
+      `${config.server.serverUrl}/local/config`,
+      "GET"
+    );
 
     await runtimeServiceGetFile(
-      instanceResp.instanceId,
+      localConfig.instance_id,
       `models/${params.name}.sql`
     );
 

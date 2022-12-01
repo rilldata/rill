@@ -1,16 +1,21 @@
 import { runtimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
 import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
-import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
+import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error, redirect } from "@sveltejs/kit";
 
 export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
+  const localConfig = await fetchWrapperDirect(
+    `${config.server.serverUrl}/local/config`,
+    "GET"
+  );
+
   try {
     const dashboardMeta = await runtimeServiceGetCatalogEntry(
-      instanceResp.instanceId,
+      localConfig.instance_id,
       params.name
     );
 

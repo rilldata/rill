@@ -3,6 +3,7 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
+    V1Model,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -32,6 +33,8 @@
   $: getModel = useRuntimeServiceGetCatalogEntry(runtimeInstanceId, modelName);
   const updateModel = useRuntimeServicePutFileAndReconcile();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
+  let model: V1Model;
+  $: model = $getModel?.data?.entry?.model;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
@@ -94,7 +97,7 @@
   ) as Writable<number>;
 
   const inspectorVisibilityTween = getContext(
-    "rilapp:inspector-visibility-tween"
+    "ril:app:inspector-visibility-tween"
   ) as Writable<number>;
 
   const navigationWidth = getContext(
@@ -145,11 +148,12 @@
     style:height="calc({innerHeight}px - {$outputPosition}px -
     var(--header-height))"
   >
-    {#if $getModel?.data?.entry?.model}
+    {#if model}
       <div class="h-full grid p-5 pt-0 overflow-auto">
         {#key modelName}
           <Editor
-            content={$getModel?.data?.entry?.model?.sql}
+            {modelName}
+            content={model.sql}
             selections={$queryHighlight}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
@@ -184,7 +188,7 @@
     </div>
   </Portal>
 
-  {#if $getModel?.data?.entry}
+  {#if model}
     <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&

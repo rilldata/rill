@@ -119,7 +119,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	)
 
 	// Register CORS
-	handler := cors(mux)
+	handler := CORS(mux)
 
 	return handler, nil
 }
@@ -133,7 +133,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
-func cors(h http.Handler) http.Handler {
+func CORS(h http.Handler) http.Handler {
 	// TODO: Hack for local - not production-ready
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if origin := r.Header.Get("Origin"); origin != "" {

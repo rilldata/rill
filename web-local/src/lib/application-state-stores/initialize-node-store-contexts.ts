@@ -1,17 +1,8 @@
 /*global  RILL_VERSION, RILL_COMMIT */
 import { browser } from "$app/environment";
-import {
-  createDerivedModelStore,
-  createPersistentModelStore,
-} from "@rilldata/web-local/lib/application-state-stores/model-stores";
 import { createQueryHighlightStore } from "@rilldata/web-local/lib/application-state-stores/query-highlight-store";
 import type { ApplicationMetadata } from "@rilldata/web-local/lib/types";
 import { setContext } from "svelte";
-import { createStore } from "../application-state-stores/application-store";
-import {
-  createDerivedTableStore,
-  createPersistentTableStore,
-} from "../application-state-stores/table-stores";
 
 /** determined by Vite's define option. */
 declare global {
@@ -25,7 +16,6 @@ declare global {
  * deprecate this function.
  */
 export function initializeNodeStoreContexts() {
-  let store;
   const queryHighlight = createQueryHighlightStore();
 
   /** set build-specific metadata as a context.  */
@@ -37,12 +27,6 @@ export function initializeNodeStoreContexts() {
 
   /** Set the existing node stores, which are consumed through getContext within routes. */
   if (browser) {
-    store = createStore();
-    setContext("rill:app:store", store);
     setContext("rill:app:query-highlight", queryHighlight);
-    setContext(`rill:app:persistent-table-store`, createPersistentTableStore());
-    setContext(`rill:app:derived-table-store`, createDerivedTableStore());
-    setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
-    setContext(`rill:app:derived-model-store`, createDerivedModelStore());
   }
 }

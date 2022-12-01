@@ -1,23 +1,18 @@
 <script lang="ts">
-  import { FileExportType } from "@rilldata/web-local/common/data-modeler-service/ModelActions";
-  import { ActionStatus } from "@rilldata/web-local/common/data-modeler-service/response/ActionResponse";
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTableCardinality,
+    V1GetTableCardinalityResponse,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import {
     config as appConfig,
-    dataModelerService,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
@@ -26,29 +21,28 @@
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
-  import { getContext } from "svelte";
+  import { extractSourceTables } from "@rilldata/web-local/lib/util/model-structure";
+  import { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let modelName: string;
   export let containerWidth = 0;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
+  );
+  let model: V1Model;
+  $: model = $getModel?.data?.entry?.model;
+
+  $: modelPath = getFileFromName(modelName, EntityType.Model);
+  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
   let contextMenuOpen = false;
 
@@ -64,37 +58,25 @@
   // get source tables?
   let sourceTableReferences;
 
-  let currentModel: PersistentModelEntity;
-  $: currentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.name === modelName)
-    : undefined;
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === currentModel?.id)
-    : undefined;
   // get source table references.
-  $: if (currentDerivedModel?.sources) {
-    sourceTableReferences = currentDerivedModel?.sources;
+  $: if (model?.sql) {
+    sourceTableReferences = extractSourceTables(model.sql);
   }
 
   // map and filter these source tables.
   $: if (sourceTableReferences?.length) {
-    tables = sourceTableReferences
-      .map((sourceTableReference) => {
-        const table = $persistentTableStore.entities.find(
-          (t) => sourceTableReference.name === t.tableName
-        );
-        if (!table) return undefined;
-        return $derivedTableStore.entities.find(
-          (derivedTable) => derivedTable.id === table.id
-        );
-      })
-      .filter((t) => !!t);
+    // TODO: get cardinality values
   } else {
     tables = [];
   }
 
-  $: outputRowCardinalityValue = currentDerivedModel?.cardinality;
+  let modelCardinalityQuery: UseQueryStoreResult<V1GetTableCardinalityResponse>;
+  $: if (model?.name)
+    modelCardinalityQuery = useRuntimeServiceGetTableCardinality(
+      $runtimeStore.instanceId,
+      model?.name
+    );
+  $: outputRowCardinalityValue = $modelCardinalityQuery?.data?.cardinality;
 
   let inputRowCardinalityValue;
   $: if (tables?.length)
@@ -122,10 +104,10 @@
       (acc, v: DerivedTableEntity) => acc + v.profile.length,
       0
     );
-  $: outputColumnNum = currentDerivedModel?.profile?.length;
+  $: outputColumnNum = model?.schema?.fields?.length ?? 0;
   $: columnDelta = outputColumnNum - inputColumnNum;
 
-  $: modelHasError = !!currentDerivedModel?.error;
+  $: modelHasError = !!modelError;
 </script>
 
 <PanelCTA let:width side="right">
@@ -160,7 +142,7 @@
         <MenuItem
           on:select={() => {
             toggleFloatingElement();
-            onExport(FileExportType.Parquet);
+            onExport("parquet");
           }}
         >
           Export as Parquet
@@ -168,7 +150,7 @@
         <MenuItem
           on:select={() => {
             toggleFloatingElement();
-            onExport(FileExportType.CSV);
+            onExport("csv");
           }}
         >
           Export as CSV
@@ -269,7 +251,7 @@
       class:italic={modelHasError}
       class:text-gray-500={modelHasError}
     >
-      {currentDerivedModel?.profile?.length} columns
+      {outputColumnNum} columns
     </div>
   </div>
 </div>

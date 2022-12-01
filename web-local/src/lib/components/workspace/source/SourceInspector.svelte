@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTableCardinality,
     useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -54,7 +55,7 @@
 
   // toggle state for inspector sections
 
-  $: timestampColumns = selectTimestampColumnFromSchema(source.schema);
+  $: timestampColumns = selectTimestampColumnFromSchema(source?.schema);
 
   const handleCreateModelFromSource = async () => {
     const modelName = await createModelFromSource(
@@ -122,17 +123,21 @@
     return "";
   }
 
-  $: connectorType = formatConnectorType(
-    $getSource.data?.entry?.source?.connector
-  );
-  $: fileExtension = getFileExtension($getSource.data?.entry?.source);
+  $: connectorType = formatConnectorType(source?.connector);
+  $: fileExtension = getFileExtension(source);
 
-  // TODO: get cardinality and null counts
+  $: cardinalityQuery = useRuntimeServiceGetTableCardinality(
+    $runtimeStore.instanceId,
+    sourceName
+  );
+  $: cardinality = $cardinalityQuery?.data?.cardinality
+    ? Number($cardinalityQuery?.data?.cardinality)
+    : 0;
 
   /** get the current row count */
   $: {
-    rowCount = `${formatInteger(currentDerivedTable?.cardinality)} row${
-      currentDerivedTable?.cardinality !== 1 ? "s" : ""
+    rowCount = `${formatInteger(cardinality)} row${
+      cardinality !== 1 ? "s" : ""
     }`;
   }
 
@@ -144,11 +149,12 @@
   /** total % null cells */
 
   $: {
-    const totalCells =
-      currentDerivedTable?.profile?.length * currentDerivedTable?.cardinality;
-    const totalNulls = currentDerivedTable?.profile
-      .map((profile) => profile?.nullCount)
-      .reduce((total, count) => total + count, 0);
+    // TODO: get null count for tables
+    const totalCells = source?.schema?.fields?.length * cardinality;
+    // const totalNulls = currentDerivedTable?.profile
+    //   .map((profile) => profile?.nullCount)
+    //   .reduce((total, count) => total + count, 0);
+    const totalNulls = 0;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 </script>

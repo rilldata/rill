@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    ApplicationStore,
     duplicateSourceName,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -21,18 +20,22 @@
     createQueryClient,
     queryClient,
   } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
+  import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
-  import { getContext, onMount } from "svelte";
+  import { onMount } from "svelte";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
   import BasicLayout from "./BasicLayout.svelte";
+
   createQueryClient();
 
   onMount(async () => {
-    const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
+    const localConfig = await fetchWrapperDirect(
+      `${config.server.serverUrl}/local/config`,
+      "GET"
+    );
 
     runtimeStore.set({
-      instanceId: instanceResp.instanceId,
+      instanceId: localConfig.instance_id,
     });
 
     return initMetrics();
