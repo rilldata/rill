@@ -99,7 +99,7 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
         data: convertTimestampPreview(
           $query?.data?.rollup?.results?.map((di) => {
             const next = { ...di };
-            // next.count = next.records.count;
+            next.count = next.records.count;
             return next;
           }) || [],
           "ts"
@@ -107,7 +107,7 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark?.map((di) => {
             const next = { ...di };
-            // next.count = next.records.count;
+            next.count = next.records.count;
             return next;
           }) || [],
           "ts"
