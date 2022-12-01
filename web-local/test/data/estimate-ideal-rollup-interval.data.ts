@@ -119,7 +119,7 @@ export const timeGrainSeriesData: DataProviderData<
             {
               start: "2021-01-01 00:00:00",
               end: "2520-01-01 00:00:00",
-              interval: "1 day",
+              interval: "day",
               expectedRollupInterval: PreviewRollupInterval.month,
             },
           ],

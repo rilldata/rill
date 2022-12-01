@@ -1,51 +1,56 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { invalidateMetricsViewData } from "../../../svelte-query/queries/metrics-views/invalidation";
-  import { useMetaQuery } from "../../../svelte-query/queries/metrics-views/metadata";
+  import { invalidateMetricsViewData } from "../../../svelte-query/invalidation";
   import { Button } from "../../button";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
-  export let metricsDefId: string;
-
-  const config = getContext<RootConfig>("config");
+  export let metricViewName: string;
 
   const queryClient = useQueryClient();
 
-  $: metaQuery = useMetaQuery(config, metricsDefId);
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+
+  let displayName;
   // TODO: move this "sync" to a more relevant component
-  $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data?.id) {
+  $: if (
+    metricViewName &&
+    $metaQuery &&
+    metricViewName === $metaQuery.data?.name
+  ) {
     if (
       !$metaQuery.data?.measures?.length ||
       !$metaQuery.data?.dimensions?.length
     ) {
-      goto(`/dashboard/${metricsDefId}/edit`);
+      goto(`/dashboard/${metricViewName}/edit`);
     } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
       // FIXME: understand this logic before removing invalidateMetricsViewData
-      invalidateMetricsViewData(queryClient, metricsDefId);
+      invalidateMetricsViewData(
+        queryClient,
+        $runtimeStore.instanceId,
+        metricViewName
+      );
     }
-    metricsExplorerStore.sync(metricsDefId, $metaQuery.data);
+    displayName = $metaQuery.data.label;
+    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
   }
 
-  $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
-
-  const viewMetrics = (metricsDefId: string) => {
-    goto(`/dashboard/${metricsDefId}/edit`);
+  const viewMetrics = (metricViewName: string) => {
+    goto(`/dashboard/${metricViewName}/edit`);
 
     navigationEvent.fireEvent(
-      metricsDefId,
+      metricViewName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard,
@@ -54,7 +59,7 @@
   };
 </script>
 
-<section id="header" class="w-full flex flex-col">
+<section class="w-full flex flex-col" id="header">
   <!-- top row
     title and call to action
   -->
@@ -62,23 +67,21 @@
     <!-- title element -->
     <h1 style:line-height="1.1">
       <div class="pl-4 pt-1" style:font-size="24px">
-        {#if $metricsDefinition}
-          {$metricsDefinition?.metricDefLabel}
-        {/if}
+        {displayName || metricViewName}
       </div>
     </h1>
     <!-- top right CTAs -->
     <div style="flex-shrink: 0;">
-      <Button type="secondary" on:click={() => viewMetrics(metricsDefId)}>
+      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
         Edit Metrics <MetricsIcon size="16px" />
       </Button>
     </div>
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">
-    <TimeControls {metricsDefId} />
-    {#key metricsDefId}
-      <Filters {metricsDefId} />
+    <TimeControls {metricViewName} />
+    {#key metricViewName}
+      <Filters {metricViewName} />
     {/key}
   </div>
 </section>

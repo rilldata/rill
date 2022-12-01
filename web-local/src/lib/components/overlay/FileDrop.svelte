@@ -5,34 +5,31 @@
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { getContext } from "svelte";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { uploadTableFiles } from "../../util/file-upload";
+  import { createSource } from "../navigation/sources/createSource";
   import Overlay from "./Overlay.svelte";
 
   export let showDropOverlay: boolean;
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServicePutFileAndReconcile();
+  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+
+  $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: modelNames = useModelNames(runtimeInstanceId);
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
 
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
-      [$persistentModelStore.entities, $persistentTableStore.entities],
-      $runtimeStore,
-      persistentTableStore
+      [$sourceNames?.data, $modelNames?.data],
+      $runtimeStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -43,16 +40,14 @@
           },
           "file"
         );
-        await $createSource.mutateAsync({
-          data: {
-            instanceId: runtimeInstanceId,
-            path: `sources/${tableName}.yaml`,
-            blob: yaml,
-            create: true,
-            createOnly: true,
-            strict: true,
-          },
-        });
+        // TODO: errors
+        await createSource(
+          queryClient,
+          runtimeInstanceId,
+          tableName,
+          yaml,
+          $createSourceMutation
+        );
       } catch (err) {
         console.error(err);
       }

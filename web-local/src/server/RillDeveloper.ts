@@ -3,7 +3,6 @@ import { DuckDbConnection } from "@rilldata/web-local/common/connection/DuckDbCo
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 import { DataModelerStateSyncService } from "@rilldata/web-local/common/data-modeler-state-service/sync-service/DataModelerStateSyncService";
-import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { NotificationService } from "@rilldata/web-local/common/notifications/NotificationService";
 import axios from "axios";
 import { existsSync, mkdirSync } from "fs";
@@ -20,7 +19,6 @@ export class RillDeveloper {
     public readonly dataModelerService: DataModelerService,
     public readonly dataModelerStateService: DataModelerStateService,
     public readonly dataModelerStateSyncService: DataModelerStateSyncService,
-    public readonly metricsService: MetricsService,
     public readonly notificationService: NotificationService
   ) {
     this.duckDbConnection = new DuckDbConnection(
@@ -32,12 +30,8 @@ export class RillDeveloper {
   }
 
   public static getRillDeveloper(config: RootConfig) {
-    const {
-      dataModelerService,
-      dataModelerStateService,
-      metricsService,
-      notificationService,
-    } = dataModelerServiceFactory(config);
+    const { dataModelerService, dataModelerStateService, notificationService } =
+      dataModelerServiceFactory(config);
 
     const dataModelerStateSyncService = new DataModelerStateSyncService(
       config,
@@ -51,7 +45,6 @@ export class RillDeveloper {
       dataModelerService,
       dataModelerStateService,
       dataModelerStateSyncService,
-      metricsService,
       notificationService
     );
   }

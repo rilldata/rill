@@ -3,8 +3,6 @@ package sql
 import (
 	"context"
 	"errors"
-	"path"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -25,9 +23,7 @@ func init() {
 }
 
 func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error) {
-	ext := fileutil.FullExt(filePath)
-	fileName := path.Base(filePath)
-	name := strings.TrimSuffix(fileName, ext)
+	name := fileutil.Stem(filePath)
 	return &drivers.CatalogEntry{
 		Type: drivers.ObjectTypeModel,
 		Object: &runtimev1.Model{

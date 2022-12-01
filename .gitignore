@@ -31,12 +31,15 @@ export/
 /*_state.json
 /state
 /models
+/dashboards
 /sources
 
 # check in generated data files
 !/web-local/test/data/*.parquet
 !/web-local/test/data/*.csv
 !/web-local/test/data/*.tsv
+!/runtime/testruntime/**/*.parquet
+!/runtime/testruntime/**/*.csv
 
 # generated content
 log
@@ -60,3 +63,6 @@ release.properties
 *.ipr
 *.iml
 *.iws
+
+# runtime test resources
+!runtime/testdata/**

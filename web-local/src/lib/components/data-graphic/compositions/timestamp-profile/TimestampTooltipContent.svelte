@@ -7,12 +7,12 @@
   import Shortcut from "../../../tooltip/Shortcut.svelte";
   import StackingWord from "../../../tooltip/StackingWord.svelte";
 
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "../../../../util/formatters";
+  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
   import TimestampSpark from "./TimestampSpark.svelte";
 
   export let xAccessor: string;

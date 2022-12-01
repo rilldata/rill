@@ -1,5 +1,5 @@
-import { line, area, curveLinear, curveStep } from "d3-shape";
 import type { ScaleLinear, ScaleTime } from "d3-scale";
+import { area, curveLinear, curveStep, line } from "d3-shape";
 import type { GraphicScale } from "./state/types";
 
 /**
@@ -68,9 +68,9 @@ export function lineFactory(args: LineGeneratorArguments) {
 export function areaFactory(args: LineGeneratorArguments) {
   return (yAccessor: string) =>
     area()
-      .x((d) => ~~args.xScale(d[args.xAccessor]))
-      .y0(~~args.yScale(0))
-      .y1((d) => ~~args.yScale(d[yAccessor]))
+      .x((d) => args.xScale(d[args.xAccessor]))
+      .y0(args.yScale(0))
+      .y1((d) => args.yScale(d[yAccessor]))
       .curve(curves[args.curve] || curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
@@ -95,4 +95,71 @@ export function getTicks(
   }
 
   return ticks;
+}
+
+export function barplotPolyline(
+  data,
+  xLow,
+  xHigh,
+  yAccessor,
+  X,
+  Y,
+  separator = 1,
+  closeBottom = false,
+  inflator = 1
+) {
+  const path = data
+    //.filter((d) => d[yAccessor])
+    .reduce((pointsPathString, datum, i) => {
+      const low = datum[xLow];
+      const high = datum[xHigh];
+      const count = datum[yAccessor];
+
+      const x = X(low) + separator;
+
+      const width = Math.max(0.5, X(high) - X(low) - separator * 2);
+      const y = Y(0) * (1 - inflator) + Y(count) * inflator;
+
+      const computedHeight = Math.min(
+        Y(0),
+        Y(0) * inflator - Y(count) * inflator
+      );
+      const height = separator > 0 ? computedHeight : 0;
+
+      // do not add zero values here
+      if (count === 0) {
+        return pointsPathString;
+      }
+
+      let p1 = "";
+
+      const nextPointIsZero =
+        i < data.length - 1 && data[i + 1][yAccessor] === 0;
+
+      const lastPointWasZero = i > 0 && data[i - 1][yAccessor] === 0;
+
+      if (separator === 0 && lastPointWasZero) {
+        // we will need to start this thing at 0?
+        p1 = `M${x},${y + computedHeight}`;
+      } else if (separator > 0 || i === 0) {
+        // standard case.
+        p1 = `${i !== 0 ? "M" : ""}${x},${y + height}`;
+      }
+
+      const p2 = `${x},${y}`;
+      const p3 = `${x + width},${y}`;
+
+      const p4 =
+        separator > 0 || nextPointIsZero
+          ? `${x + width},${y + (separator > 0 ? height : computedHeight)}`
+          : "";
+      const closedBottom = closeBottom ? `${x},${y + height}` : "";
+
+      return pointsPathString + `${p1} ${p2} ${p3} ${p4} ${closedBottom} `;
+    }, " ");
+  return (
+    `M${X(data[0][xLow]) + separator},${Y(0)} ` +
+    path +
+    ` ${X(data.findLast((d) => d[yAccessor])[xHigh]) - separator},${Y(0)} `
+  );
 }

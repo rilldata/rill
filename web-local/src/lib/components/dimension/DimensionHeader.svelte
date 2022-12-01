@@ -20,8 +20,8 @@
   import SearchBar from "../search/Search.svelte";
   import Spinner from "../Spinner.svelte";
 
-  export let metricsDefId: string;
-  export let dimensionId: string;
+  export let metricViewName: string;
+  export let dimensionName: string;
   export let isFetching: boolean;
   export let excludeMode = false;
 
@@ -44,10 +44,10 @@
   }
 
   const goBackToLeaderboard = () => {
-    metricsExplorerStore.setMetricDimensionId(metricsDefId, null);
+    metricsExplorerStore.setMetricDimensionName(metricViewName, null);
   };
   function toggleFilterMode() {
-    metricsExplorerStore.toggleFilterMode(metricsDefId, dimensionId);
+    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 </script>
 

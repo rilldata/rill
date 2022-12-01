@@ -1,3 +1,5 @@
+import { format } from "d3-format";
+import { timeFormat } from "d3-time-format";
 import type { Interval } from "../duckdb-data-types";
 import {
   CATEGORICALS,
@@ -7,8 +9,6 @@ import {
   PreviewRollupInterval,
   TIMESTAMPS,
 } from "../duckdb-data-types";
-import { format } from "d3-format";
-import { timeFormat } from "d3-time-format";
 
 const zeroPad = format("02d");
 const msPad = format("03d");
