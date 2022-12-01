@@ -1,8 +1,11 @@
 import {
+  getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
+import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
 
 // invalidation helpers
@@ -12,15 +15,28 @@ export const invalidateAfterReconcile = async (
   instanceId: string,
   reconcileResponse: V1ReconcileResponse
 ) => {
-  await queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(instanceId)
-  );
+  await Promise.all([
+    queryClient.invalidateQueries(
+      getRuntimeServiceListFilesQueryKey(instanceId)
+    ),
+    queryClient.invalidateQueries(
+      getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
+    ),
+  ]);
   await Promise.all(
-    reconcileResponse.affectedPaths.map((affectedPath) =>
-      queryClient.invalidateQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, affectedPath)
-      )
-    )
+    reconcileResponse.affectedPaths
+      .map((affectedPath) => [
+        queryClient.invalidateQueries(
+          getRuntimeServiceGetFileQueryKey(instanceId, affectedPath)
+        ),
+        queryClient.invalidateQueries(
+          getRuntimeServiceGetCatalogEntryQueryKey(
+            instanceId,
+            getNameFromFile(affectedPath)
+          )
+        ),
+      ])
+      .flat()
   );
 };
 

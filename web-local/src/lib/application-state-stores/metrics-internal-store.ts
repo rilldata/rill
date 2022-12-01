@@ -171,52 +171,23 @@ export class MetricsInternalRepresentation {
   }
 
   updateErrors(errors: Array<V1ReconcileError>) {
-    const measureErroredIndices = new Set<number>();
-    const dimensionErroredIndices = new Set<number>();
     // set errors for measures and dimensions
     for (const error of errors) {
       const index = Number(error.propertyPath[1]);
       switch (error.propertyPath[0]) {
         case "Measures":
-          measureErroredIndices.add(index);
           this.internalRepresentationDocument.setIn(
             ["measures", index, "__ERROR__"],
             error.message
           );
           break;
         case "Dimensions":
-          dimensionErroredIndices.add(index);
           this.internalRepresentationDocument.setIn(
             ["dimensions", index, "__ERROR__"],
             error.message
           );
           break;
       }
-    }
-
-    // remove previous errors if set
-    const numberOfMeasures = (
-      this.internalRepresentationDocument.get("measures") as Collection
-    ).items.length;
-    for (let i = 0; i < numberOfMeasures; i++) {
-      if (measureErroredIndices.has(i)) continue;
-      this.internalRepresentationDocument.deleteIn([
-        "measures",
-        i,
-        "__ERROR__",
-      ]);
-    }
-
-    const numberOfDimensions = (
-      this.internalRepresentationDocument.get("dimensions") as Collection
-    ).items.length;
-    for (let i = 0; i < numberOfDimensions; i++) {
-      if (dimensionErroredIndices.has(i)) continue;
-      this.internalRepresentationDocument.deleteIn([
-        "dimensions",
-        i,
-        "__ERROR__",
-      ]);
     }
 
     this.regenerateInternalYAML(false);

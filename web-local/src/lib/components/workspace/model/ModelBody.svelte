@@ -1,7 +1,5 @@
 <script lang="ts">
   import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
@@ -16,6 +14,7 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
@@ -130,13 +129,7 @@
       },
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey(runtimeInstanceId, modelPath)
-    );
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetCatalogEntryQueryKey(runtimeInstanceId, modelName)
-    );
+    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
     if (!resp.errors.length) {
       // re-fetch existing finished queries
       await queryClient.resetQueries({

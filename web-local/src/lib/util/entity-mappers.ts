@@ -3,16 +3,23 @@ import { EntityType } from "@rilldata/web-local/common/data-modeler-state-servic
 export function getFileFromName(name: string, type: EntityType): string {
   switch (type) {
     case EntityType.Table:
-      return `sources/${name}.yaml`;
+      return `/sources/${name}.yaml`;
     case EntityType.Model:
-      return `models/${name}.sql`;
+      return `/models/${name}.sql`;
     case EntityType.MetricsDefinition:
-      return `dashboards/${name}.yaml`;
+      return `/dashboards/${name}.yaml`;
     default:
       throw new Error(
         "type must be either 'Table', 'Model', or 'MetricsDefinition'"
       );
   }
+}
+
+export function getNameFromFile(fileName: string): string {
+  // TODO: do we need a library here?
+  const splits = fileName.split("/");
+  const extensionSplits = splits[splits.length - 1]?.split(".");
+  return extensionSplits[0];
 }
 
 export function getRouteFromName(name: string, type: EntityType): string {
