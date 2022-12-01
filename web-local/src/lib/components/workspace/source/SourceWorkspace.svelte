@@ -6,10 +6,11 @@
     DerivedTableStore,
     PersistentTableStore,
   } from "../../../application-state-stores/table-stores";
-  import PreviewTable from "../../preview-table/PreviewTable.svelte";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceInspector from "./SourceInspector.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
+
+  import { ConnectedPreviewTable } from "../../preview-table";
 
   export let sourceName: string;
 
@@ -71,16 +72,12 @@
         style:height="100%"
         class="m-6 mt-0 border border-gray-300 rounded"
       >
-        {#if currentDerivedSource}
-          {#key currentDerivedSource.id}
-            <PreviewTable
-              rows={currentDerivedSource?.preview}
-              columnNames={currentDerivedSource?.profile}
-            />
-          {/key}
-        {/if}
+        {#key sourceName}
+          <ConnectedPreviewTable objectName={sourceName} />
+        {/key}
       </div>
     </div>
-    <SourceInspector sourceID={currentSource?.id} slot="inspector" />
+
+    <SourceInspector {sourceName} slot="inspector" />
   </WorkspaceContainer>
 {/key}

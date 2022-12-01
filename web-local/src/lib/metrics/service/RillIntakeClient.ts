@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { RootConfig } from "../config/RootConfig";
+import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type { MetricsEvent } from "./MetricsTypes";
 
 export class RillIntakeClient {
@@ -9,18 +9,22 @@ export class RillIntakeClient {
     // this is the format rill-intake expects.
     this.authHeader =
       "Basic " +
-      Buffer.from(
+      btoa(
         `${config.metrics.rillIntakeUser}:${config.metrics.rillIntakePassword}`
-      ).toString("base64");
+      );
   }
 
   public async fireEvent(event: MetricsEvent) {
     try {
-      await axios.post(this.config.metrics.rillIntakeUrl, event, {
-        headers: {
-          Authorization: this.authHeader,
-        },
-      });
+      await axios.post(
+        `${this.config.database.runtimeUrl}/local/track`,
+        event,
+        {
+          headers: {
+            Authorization: this.authHeader,
+          },
+        }
+      );
     } catch (err) {
       console.error(`Failed to send ${event.event_type}. ${err.message}`);
     }

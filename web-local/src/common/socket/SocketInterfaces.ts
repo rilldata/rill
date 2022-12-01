@@ -7,7 +7,7 @@ import type {
 } from "../data-modeler-state-service/entity-state-service/EntityStateService";
 import type { EntityTypeAndStates } from "../data-modeler-state-service/DataModelerStateService";
 import type { ActionResponse } from "../data-modeler-service/response/ActionResponse";
-import type { MetricsActionDefinition } from "../metrics-service/MetricsService";
+import type { MetricsActionDefinition } from "@rilldata/web-local/lib/metrics/service/MetricsService";
 
 export interface ServerToClientEvents {
   patch: (

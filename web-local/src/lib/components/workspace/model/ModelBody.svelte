@@ -21,14 +21,17 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
-  import notifications from "../../notifications";
+  import {
+    dataModelerService,
+    runtimeStore,
+  } from "../../../application-state-stores/application-store";
+  import { notifications } from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
@@ -69,6 +72,13 @@
 
   let titleInput: string;
   $: titleInput = modelName;
+
+  function invalidateForModel(queryHash, modelName) {
+    const r = new RegExp(
+      `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${modelName}`
+    );
+    return r.test(queryHash);
+  }
 
   function formatModelName(str) {
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
@@ -123,9 +133,14 @@
     "rill:app:navigation-visibility-tween"
   ) as Writable<number>;
 
-  const queryClient = useQueryClient();
-
   async function updateModelContent(content: string) {
+    // cancel all existing analytical queries currently running.
+    await queryClient.cancelQueries({
+      fetching: true,
+      predicate: (query) => {
+        return invalidateForModel(query.queryHash, modelName);
+      },
+    });
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
@@ -142,6 +157,18 @@
     queryClient.invalidateQueries(
       getRuntimeServiceGetCatalogEntryQueryKey(runtimeInstanceId, modelName)
     );
+    if (!resp.errors.length) {
+      // re-fetch existing finished queries
+      await queryClient.resetQueries({
+        predicate: (query) => {
+          return invalidateForModel(query.queryHash, modelName);
+        },
+      });
+      await dataModelerService.dispatch("updateModelQuery", [
+        currentModel.id,
+        content,
+      ]);
+    }
   }
 </script>
 
@@ -156,11 +183,11 @@
     style:height="calc({innerHeight}px - {$outputPosition}px -
     var(--header-height))"
   >
-    {#if $persistentModelStore?.entities && $derivedModelStore?.entities && currentModel && hasModelSql}
+    {#if $getModel?.data?.entry?.model}
       <div class="h-full grid p-5 pt-0 overflow-auto">
-        {#key currentModel?.id}
+        {#key modelName}
           <Editor
-            content={modelSql}
+            content={$getModel?.data?.entry?.model?.sql}
             selections={$queryHighlight}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
@@ -195,7 +222,7 @@
     </div>
   </Portal>
 
-  {#if currentModel}
+  {#if $getModel?.data?.entry}
     <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&

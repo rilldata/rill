@@ -11,18 +11,16 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
-
   import { CATEGORICALS } from "../../../duckdb-data-types";
+  import { getFileFromName } from "../../../util/entity-mappers";
   import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
-
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";

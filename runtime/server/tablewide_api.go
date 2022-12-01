@@ -13,7 +13,8 @@ import (
 // Table level profiling APIs
 func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query: "select count(*) from " + quoteName(req.TableName),
+		Query:    "select count(*) from " + quoteName(req.TableName),
+		Priority: int(req.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -47,6 +48,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
 		where table_name = '%s' and table_schema = current_schema()`, req.TableName),
+		Priority: int(req.Priority),
 	})
 	if err != nil {
 		return nil, err
@@ -66,7 +68,8 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 	for _, pc := range pcs[0:i] {
 		columnName := EscapeDoubleQuotes(pc.Name)
 		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
-			Query: fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
+			Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
+			Priority: int(req.Priority),
 		})
 		if err != nil {
 			return nil, err
@@ -86,7 +89,8 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 
 func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query: fmt.Sprintf("select * from %s limit %d", req.TableName, req.Limit),
+		Query:    fmt.Sprintf("select * from %s limit %d", req.TableName, req.Limit),
+		Priority: int(req.Priority),
 	})
 	if err != nil {
 		return nil, err

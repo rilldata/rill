@@ -12,7 +12,10 @@ import (
 // ListInstances implements RuntimeService
 func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	instances := registry.FindInstances(ctx)
+	instances, err := registry.FindInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
@@ -25,9 +28,12 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 // GetInstance implements RuntimeService
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, req.InstanceId)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
+	inst, err := registry.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		if err == drivers.ErrNotFound {
+			return nil, status.Error(codes.InvalidArgument, "instance not found")
+		}
+		return nil, err
 	}
 
 	return &runtimev1.GetInstanceResponse{
@@ -49,7 +55,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	// Check OLAP connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "could not connect to driver '%s': %s", inst.OLAPDriver, err.Error())
 	}
 	_, ok := olap.OLAPStore()
 	if !ok {

@@ -6,11 +6,11 @@
   } from "@rilldata/web-common/runtime-client";
   import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import type {
@@ -53,13 +53,13 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  export let sourceID: string;
+  export let sourceName: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
-    currentTable?.tableName
+    sourceName
   );
 
   $: modelNames = useModelNames(runtimeInstanceId);
@@ -69,13 +69,13 @@
 
   let currentTable: PersistentTableEntity;
   $: currentTable =
-    sourceID && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === sourceID)
+    sourceName && $persistentTableStore?.entities
+      ? $persistentTableStore.entities.find((q) => q.tableName === sourceName)
       : undefined;
   let currentDerivedTable: DerivedTableEntity;
   $: currentDerivedTable =
-    sourceID && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === sourceID)
+    currentTable && $derivedTableStore?.entities
+      ? $derivedTableStore.entities.find((q) => q.id === currentTable?.id)
       : undefined;
   // get source table references.
 
@@ -109,8 +109,9 @@
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       currentTable.id,
-      $persistentTableStore.entities.find((table) => table.id === sourceID)
-        .tableName
+      $persistentTableStore.entities.find(
+        (table) => table.tableName === sourceName
+      ).tableName
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(
         createdMetricsId,
@@ -252,6 +253,7 @@
       {#if currentDerivedTable?.profile && showColumns}
         <div transition:slide|local={{ duration: 200 }}>
           <ColumnProfile
+            objectName={sourceName}
             entityId={currentTable.id}
             indentLevel={0}
             cardinality={currentDerivedTable?.cardinality ?? 0}

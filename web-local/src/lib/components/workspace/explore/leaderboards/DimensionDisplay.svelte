@@ -15,7 +15,7 @@
   import DimensionTable from "../../../dimension/DimensionTable.svelte";
   import {
     useMetaDimension,
-    useMetaMappedFilters,
+    getFilterForDimension,
     useMetaMeasure,
     useMetaQuery,
   } from "../../../../svelte-query/queries/metrics-views/metadata";
@@ -65,10 +65,9 @@
   $: excludeMode =
     metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    instanceId,
-    metricViewName,
-    metricsExplorer?.filters
+  $: filterForDimension = getFilterForDimension(
+    metricsExplorer?.filters,
+    dimensionName
   );
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
@@ -96,7 +95,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let filterData = JSON.parse(JSON.stringify($mappedFiltersQuery.data));
+    let filterData = JSON.parse(JSON.stringify(filterForDimension));
 
     if (searchText !== "") {
       let foundDimension = false;
