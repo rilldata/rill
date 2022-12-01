@@ -30,14 +30,13 @@
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { createEventDispatcher, getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getName } from "../../../../common/utils/incrementName";
   import {
     dataModelerService,
     runtimeStore,
   } from "../../../application-state-stores/application-store";
-  import { metricsTemplate } from "../../../application-state-stores/metrics-internal-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
+  import { createDashboardFromSource } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
@@ -125,67 +124,30 @@
     }
   };
 
-  const createDashboardFromSource = async (sourceName: string) => {
-    // create model from source
-    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
-    $createFileMutation.mutate(
-      {
-        data: {
-          instanceId: $runtimeStore.instanceId,
-          path: `models/${newModelName}.sql`,
-          blob: `select * from ${sourceName}`,
-          create: true,
-          createOnly: true,
-          strict: true,
-        },
-      },
-      {
-        onSuccess: () => {
-          // create dashboard from model
-          const newDashboardName = getName(
-            `${newModelName}_dashboard`,
-            $dashboardNames.data
-          );
-          $createFileMutation.mutate(
-            {
-              data: {
-                instanceId: $runtimeStore.instanceId,
-                path: `dashboards/${newDashboardName}.yaml`,
-                blob: metricsTemplate, // TODO: compile a real yaml file
-                create: true,
-                createOnly: true,
-                strict: false,
-              },
-            },
-            {
-              onSuccess: () => {
-                goto(`/dashboard/${newDashboardName}`);
-                queryClient.invalidateQueries(
-                  getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-                );
-                const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-                navigationEvent.fireEvent(
-                  newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
-                  BehaviourEventMedium.Menu,
-                  MetricsEventSpace.LeftPanel,
-                  EntityTypeToScreenMap[previousActiveEntity],
-                  MetricsEventScreenName.Dashboard
-                );
-              },
-              onError: (err) => {
-                console.error(err);
-              },
-            }
-          );
-        },
-        onError: (err) => {
-          console.error(err);
-        },
-        onSettled: () => {
-          toggleMenu();
-        },
-      }
-    );
+  const handleCreateDashboardFromSource = async (sourceName: string) => {
+    let newDashboardName: string;
+    try {
+      newDashboardName = await createDashboardFromSource(
+        $runtimeStore.instanceId,
+        sourceName
+      );
+
+      toggleMenu();
+      goto(`/dashboard/${newDashboardName}`);
+      queryClient.invalidateQueries(
+        getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
+      );
+      const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+      navigationEvent.fireEvent(
+        newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        EntityTypeToScreenMap[previousActiveEntity],
+        MetricsEventScreenName.Dashboard
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const onRefreshSource = async (id: string, tableName: string) => {
@@ -232,7 +194,7 @@
 <MenuItem
   disabled={!derivedProfileEntityHasTimestampColumn(derivedTable)}
   icon
-  on:select={() => createDashboardFromSource(sourceName)}
+  on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
