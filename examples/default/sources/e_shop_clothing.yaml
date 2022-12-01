@@ -1,2 +1,2 @@
-type: "file"
-path: "data/e-shop-clothing.csv"
+type: "https"
+uri: https://cdn.rilldata.com/examples/0.16/ecomm-click-stream/e-shop-clothing.csv

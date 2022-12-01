@@ -9,7 +9,7 @@ import (
 
 // InitCmd represents the init command
 func InitCmd() *cobra.Command {
-	var projectName string
+	var exampleName string
 	var projectDir string
 	var initCmd = &cobra.Command{
 		Use:       "init [example|list]",
@@ -20,13 +20,13 @@ func InitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch args[0] {
 			case "example":
-				err := example.InitExample(projectName, projectDir)
+				err := example.Init(exampleName, projectDir)
 				if err != nil {
-					return fmt.Errorf("Example project not found, Project Name:%s, Error:%v", projectName, err)
+					return fmt.Errorf("Example project not found, Project Name:%s, Error:%v", exampleName, err)
 				}
-				fmt.Printf("Example project '%s' unpacked at path '%s'", projectName, projectDir)
+				fmt.Printf("Example project '%s' unpacked at path '%s'", exampleName, projectDir)
 			case "list":
-				exampleList, err := example.ListExamples()
+				exampleList, err := example.List()
 				if err != nil {
 					return fmt.Errorf("Example projects are not available, Error:%v", err)
 				}
@@ -36,7 +36,7 @@ func InitCmd() *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVarP(&projectName, "name", "p", "default", "Example project Name")
+	initCmd.Flags().StringVarP(&exampleName, "name", "p", "default", "Example project Name")
 	initCmd.Flags().StringVarP(&projectDir, "dir", "d", ".", "Example project directory")
 	return initCmd
 }

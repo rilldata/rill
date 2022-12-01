@@ -1,2 +1,2 @@
-type: "file"
-path: "data/iot-telemetry-data.csv"
+type: "https"
+uri: https://cdn.rilldata.com/examples/0.16/iot-env-sensor/iot-telemetry-data.csv

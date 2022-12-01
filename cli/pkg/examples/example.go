@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 )
 
-//go:embed embed
+//go:embed all:embed
 var exampleFS embed.FS
 
-func ListExamples() ([]string, error) {
+func List() ([]string, error) {
 	entries, err := exampleFS.ReadDir("embed/dist")
 	if err != nil {
 		return nil, err
@@ -24,12 +24,12 @@ func ListExamples() ([]string, error) {
 	return exampleList, nil
 }
 
-func InitExample(projectName string, projectDir string) error {
+func Init(projectName string, projectDir string) error {
 	examplePath, err := getExampleProject(projectName)
 	if err != nil {
 		return err
 	}
-	return CopyDir(examplePath, projectDir)
+	return copyDir(examplePath, projectDir)
 }
 
 func getExampleProject(projectName string) (string, error) {
@@ -41,7 +41,7 @@ func getExampleProject(projectName string) (string, error) {
 	return examplesPath, nil
 }
 
-func CopyDir(origin string, dst string) (err error) {
+func copyDir(origin string, dst string) (err error) {
 	entries, err := exampleFS.ReadDir(origin)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func CopyDir(origin string, dst string) (err error) {
 				return err
 			}
 
-			err = CopyDir(srcPath, dstPath)
+			err = copyDir(srcPath, dstPath)
 			if err != nil {
 				return err
 			}
