@@ -121,14 +121,14 @@
           await queryClient.invalidateQueries(
             getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
           );
-          // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-          // navigationEvent.fireEvent(
-          //   newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
-          //   BehaviourEventMedium.Menu,
-          //   MetricsEventSpace.LeftPanel,
-          //   EntityTypeToScreenMap[previousActiveEntity],
-          //   MetricsEventScreenName.Dashboard
-          // );
+          const previousActiveEntity = $appStore?.activeEntity?.type;
+          navigationEvent.fireEvent(
+            resp.dashboardName,
+            BehaviourEventMedium.Menu,
+            MetricsEventSpace.LeftPanel,
+            EntityTypeToScreenMap[previousActiveEntity],
+            MetricsEventScreenName.Dashboard
+          );
         },
         onSettled: () => {
           overlay.set(null);
