@@ -1,5 +1,4 @@
 <script lang="ts">
-  import notificationStore from "@rilldata/web-local/lib/components/notifications";
   import { createCommandClickAction } from "../../util/command-click-action";
   import { createShiftClickAction } from "../../util/shift-click-action";
   import ContextButton from "../column-profile/ContextButton.svelte";
@@ -9,16 +8,17 @@
   import MoreHorizontal from "../icons/MoreHorizontal.svelte";
   import Spacer from "../icons/Spacer.svelte";
   import { Menu } from "../menu";
+  import { notifications } from "../notifications";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  const { commandClickAction } = createCommandClickAction();
-  const { shiftClickAction } = createShiftClickAction();
 
   export let name: string;
   export let href: string;
-
   export let open = false;
   export let notExpandable = false;
+
+  const { commandClickAction } = createCommandClickAction();
+  const { shiftClickAction } = createShiftClickAction();
 
   let showDetails = false;
   let contextMenuOpen = false;
@@ -29,7 +29,7 @@
 
   const shiftClickHandler = async () => {
     await navigator.clipboard.writeText(name);
-    notificationStore.send({ message: `copied "${name}" to clipboard` });
+    notifications.send({ message: `copied "${name}" to clipboard` });
   };
 
   let containerFocused;

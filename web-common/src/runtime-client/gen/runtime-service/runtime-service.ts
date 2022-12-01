@@ -43,32 +43,41 @@ import type {
   V1MetricsViewTotalsResponse,
   RuntimeServiceMetricsViewTotalsBody,
   V1GetTableCardinalityResponse,
+  RuntimeServiceGetTableCardinalityParams,
   V1GetCardinalityOfColumnResponse,
+  RuntimeServiceGetCardinalityOfColumnParams,
   V1ProfileColumnsResponse,
+  RuntimeServiceProfileColumnsParams,
   V1GetDescriptiveStatisticsResponse,
+  RuntimeServiceGetDescriptiveStatisticsParams,
   V1GetNullCountResponse,
+  RuntimeServiceGetNullCountParams,
   V1GetNumericHistogramResponse,
+  RuntimeServiceGetNumericHistogramParams,
   V1EstimateRollupIntervalResponse,
   RuntimeServiceEstimateRollupIntervalBody,
   V1GetTableRowsResponse,
   RuntimeServiceGetTableRowsParams,
   V1GetRugHistogramResponse,
+  RuntimeServiceGetRugHistogramParams,
   V1EstimateSmallestTimeGrainResponse,
+  RuntimeServiceEstimateSmallestTimeGrainParams,
   V1GetTimeRangeSummaryResponse,
+  RuntimeServiceGetTimeRangeSummaryParams,
   V1GenerateTimeSeriesResponse,
   RuntimeServiceGenerateTimeSeriesBody,
   V1GetTopKResponse,
   RuntimeServiceGetTopKBody,
   V1QueryResponse,
   RuntimeServiceQueryBody,
-  V1QueryDirectResponse,
-  RuntimeServiceQueryDirectBody,
   V1ReconcileResponse,
   RuntimeServiceReconcileBody,
   V1TriggerSyncResponse,
   V1PingResponse,
   V1PutFileAndReconcileResponse,
   V1PutFileAndReconcileRequest,
+  V1RefreshAndReconcileResponse,
+  V1RefreshAndReconcileRequest,
   V1RenameFileAndReconcileResponse,
   V1RenameFileAndReconcileRequest,
 } from "../index.schemas";
@@ -924,58 +933,78 @@ export const runtimeServiceMetricsViewTimeSeries = (
   });
 };
 
-export type RuntimeServiceMetricsViewTimeSeriesMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewTimeSeriesQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTimeSeriesBody: RuntimeServiceMetricsViewTimeSeriesBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/timeseries`,
+  runtimeServiceMetricsViewTimeSeriesBody,
+];
+
+export type RuntimeServiceMetricsViewTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>
 >;
-export type RuntimeServiceMetricsViewTimeSeriesMutationBody =
-  RuntimeServiceMetricsViewTimeSeriesBody;
-export type RuntimeServiceMetricsViewTimeSeriesMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewTimeSeriesQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTimeSeries = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTimeSeriesBody: RuntimeServiceMetricsViewTimeSeriesBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewTimeSeries(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewTimeSeriesQueryKey(
       instanceId,
       metricsViewName,
-      data
+      runtimeServiceMetricsViewTimeSeriesBody
     );
-  };
 
-  return useMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>
+  > = () =>
+    runtimeServiceMetricsViewTimeSeries(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTimeSeriesBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTimeSeriesBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTimeSeries>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 It's a convenience API for querying a metrics view.
@@ -994,62 +1023,82 @@ export const runtimeServiceMetricsViewToplist = (
   });
 };
 
-export type RuntimeServiceMetricsViewToplistMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewToplistQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  dimensionName: string,
+  runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist/${dimensionName}`,
+  runtimeServiceMetricsViewToplistBody,
+];
+
+export type RuntimeServiceMetricsViewToplistQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>
 >;
-export type RuntimeServiceMetricsViewToplistMutationBody =
-  RuntimeServiceMetricsViewToplistBody;
-export type RuntimeServiceMetricsViewToplistMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewToplistQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewToplist = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  dimensionName: string,
+  runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, dimensionName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewToplist(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewToplistQueryKey(
       instanceId,
       metricsViewName,
       dimensionName,
-      data
+      runtimeServiceMetricsViewToplistBody
     );
-  };
 
-  return useMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>
+  > = () =>
+    runtimeServiceMetricsViewToplist(
+      instanceId,
+      metricsViewName,
+      dimensionName,
+      runtimeServiceMetricsViewToplistBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      dimensionName: string;
-      data: RuntimeServiceMetricsViewToplistBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName && dimensionName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 It's a convenience API for querying a metrics view.
@@ -1067,73 +1116,103 @@ export const runtimeServiceMetricsViewTotals = (
   });
 };
 
-export type RuntimeServiceMetricsViewTotalsMutationResult = NonNullable<
+export const getRuntimeServiceMetricsViewTotalsQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTotalsBody: RuntimeServiceMetricsViewTotalsBody
+) => [
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/totals`,
+  runtimeServiceMetricsViewTotalsBody,
+];
+
+export type RuntimeServiceMetricsViewTotalsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>
 >;
-export type RuntimeServiceMetricsViewTotalsMutationBody =
-  RuntimeServiceMetricsViewTotalsBody;
-export type RuntimeServiceMetricsViewTotalsMutationError = RpcStatus;
+export type RuntimeServiceMetricsViewTotalsQueryError = RpcStatus;
 
 export const useRuntimeServiceMetricsViewTotals = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
+  TData = Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  runtimeServiceMetricsViewTotalsBody: RuntimeServiceMetricsViewTotalsBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceMetricsViewTotalsQueryKey(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTotalsBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>
+  > = () =>
+    runtimeServiceMetricsViewTotals(
+      instanceId,
+      metricsViewName,
+      runtimeServiceMetricsViewTotalsBody
+    );
+
+  const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return runtimeServiceMetricsViewTotals(instanceId, metricsViewName, data);
-  };
-
-  return useMutation<
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewTotals>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: RuntimeServiceMetricsViewTotalsBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary TableCardinality (TODO: add description)
  */
 export const runtimeServiceGetTableCardinality = (
   instanceId: string,
   tableName: string,
+  params?: RuntimeServiceGetTableCardinalityParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetTableCardinalityResponse>({
     url: `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`,
     method: "get",
+    params,
     signal,
   });
 };
 
 export const getRuntimeServiceGetTableCardinalityQueryKey = (
   instanceId: string,
-  tableName: string
-) => [`/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`];
+  tableName: string,
+  params?: RuntimeServiceGetTableCardinalityParams
+) => [
+  `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`,
+  ...(params ? [params] : []),
+];
 
 export type RuntimeServiceGetTableCardinalityQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
@@ -1146,6 +1225,7 @@ export const useRuntimeServiceGetTableCardinality = <
 >(
   instanceId: string,
   tableName: string,
+  params?: RuntimeServiceGetTableCardinalityParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
@@ -1163,12 +1243,12 @@ export const useRuntimeServiceGetTableCardinality = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetTableCardinalityQueryKey(instanceId, tableName);
+    getRuntimeServiceGetTableCardinalityQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
   > = ({ signal }) =>
-    runtimeServiceGetTableCardinality(instanceId, tableName, signal);
+    runtimeServiceGetTableCardinality(instanceId, tableName, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
@@ -1196,11 +1276,13 @@ export const runtimeServiceGetCardinalityOfColumn = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetCardinalityOfColumnParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetCardinalityOfColumnResponse>({
     url: `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1208,9 +1290,11 @@ export const runtimeServiceGetCardinalityOfColumn = (
 export const getRuntimeServiceGetCardinalityOfColumnQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceGetCardinalityOfColumnParams
 ) => [
   `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetCardinalityOfColumnQueryResult = NonNullable<
@@ -1225,6 +1309,7 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetCardinalityOfColumnParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetCardinalityOfColumn>>,
@@ -1245,7 +1330,8 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
     getRuntimeServiceGetCardinalityOfColumnQueryKey(
       instanceId,
       tableName,
-      columnName
+      columnName,
+      params
     );
 
   const queryFn: QueryFunction<
@@ -1255,6 +1341,7 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
       instanceId,
       tableName,
       columnName,
+      params,
       signal
     );
 
@@ -1282,19 +1369,23 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
  */
 export const runtimeServiceProfileColumns = (
   instanceId: string,
-  tableName: string
+  tableName: string,
+  params?: RuntimeServiceProfileColumnsParams
 ) => {
   return httpClient<V1ProfileColumnsResponse>({
     url: `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
     method: "post",
+    params,
   });
 };
 
 export const getRuntimeServiceProfileColumnsQueryKey = (
   instanceId: string,
-  tableName: string
+  tableName: string,
+  params?: RuntimeServiceProfileColumnsParams
 ) => [
   `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceProfileColumnsQueryResult = NonNullable<
@@ -1308,6 +1399,7 @@ export const useRuntimeServiceProfileColumns = <
 >(
   instanceId: string,
   tableName: string,
+  params?: RuntimeServiceProfileColumnsParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
@@ -1325,11 +1417,11 @@ export const useRuntimeServiceProfileColumns = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceProfileColumnsQueryKey(instanceId, tableName);
+    getRuntimeServiceProfileColumnsQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceProfileColumns>>
-  > = () => runtimeServiceProfileColumns(instanceId, tableName);
+  > = () => runtimeServiceProfileColumns(instanceId, tableName, params);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceProfileColumns>>,
@@ -1357,11 +1449,13 @@ export const runtimeServiceGetDescriptiveStatistics = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetDescriptiveStatisticsParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetDescriptiveStatisticsResponse>({
     url: `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1369,9 +1463,11 @@ export const runtimeServiceGetDescriptiveStatistics = (
 export const getRuntimeServiceGetDescriptiveStatisticsQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceGetDescriptiveStatisticsParams
 ) => [
   `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetDescriptiveStatisticsQueryResult = NonNullable<
@@ -1386,6 +1482,7 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetDescriptiveStatisticsParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetDescriptiveStatistics>>,
@@ -1406,7 +1503,8 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
     getRuntimeServiceGetDescriptiveStatisticsQueryKey(
       instanceId,
       tableName,
-      columnName
+      columnName,
+      params
     );
 
   const queryFn: QueryFunction<
@@ -1416,6 +1514,7 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
       instanceId,
       tableName,
       columnName,
+      params,
       signal
     );
 
@@ -1445,11 +1544,13 @@ export const runtimeServiceGetNullCount = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetNullCountParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetNullCountResponse>({
     url: `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1457,9 +1558,11 @@ export const runtimeServiceGetNullCount = (
 export const getRuntimeServiceGetNullCountQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceGetNullCountParams
 ) => [
   `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetNullCountQueryResult = NonNullable<
@@ -1474,6 +1577,7 @@ export const useRuntimeServiceGetNullCount = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetNullCountParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetNullCount>>,
@@ -1491,12 +1595,23 @@ export const useRuntimeServiceGetNullCount = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetNullCountQueryKey(instanceId, tableName, columnName);
+    getRuntimeServiceGetNullCountQueryKey(
+      instanceId,
+      tableName,
+      columnName,
+      params
+    );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetNullCount>>
   > = ({ signal }) =>
-    runtimeServiceGetNullCount(instanceId, tableName, columnName, signal);
+    runtimeServiceGetNullCount(
+      instanceId,
+      tableName,
+      columnName,
+      params,
+      signal
+    );
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetNullCount>>,
@@ -1524,11 +1639,13 @@ export const runtimeServiceGetNumericHistogram = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetNumericHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetNumericHistogramResponse>({
     url: `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1536,9 +1653,11 @@ export const runtimeServiceGetNumericHistogram = (
 export const getRuntimeServiceGetNumericHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceGetNumericHistogramParams
 ) => [
   `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetNumericHistogramQueryResult = NonNullable<
@@ -1553,6 +1672,7 @@ export const useRuntimeServiceGetNumericHistogram = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetNumericHistogramParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
@@ -1573,7 +1693,8 @@ export const useRuntimeServiceGetNumericHistogram = <
     getRuntimeServiceGetNumericHistogramQueryKey(
       instanceId,
       tableName,
-      columnName
+      columnName,
+      params
     );
 
   const queryFn: QueryFunction<
@@ -1583,6 +1704,7 @@ export const useRuntimeServiceGetNumericHistogram = <
       instanceId,
       tableName,
       columnName,
+      params,
       signal
     );
 
@@ -1781,11 +1903,13 @@ export const runtimeServiceGetRugHistogram = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetRugHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetRugHistogramResponse>({
     url: `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1793,9 +1917,11 @@ export const runtimeServiceGetRugHistogram = (
 export const getRuntimeServiceGetRugHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceGetRugHistogramParams
 ) => [
   `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetRugHistogramQueryResult = NonNullable<
@@ -1810,6 +1936,7 @@ export const useRuntimeServiceGetRugHistogram = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetRugHistogramParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
@@ -1827,12 +1954,23 @@ export const useRuntimeServiceGetRugHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetRugHistogramQueryKey(instanceId, tableName, columnName);
+    getRuntimeServiceGetRugHistogramQueryKey(
+      instanceId,
+      tableName,
+      columnName,
+      params
+    );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
   > = ({ signal }) =>
-    runtimeServiceGetRugHistogram(instanceId, tableName, columnName, signal);
+    runtimeServiceGetRugHistogram(
+      instanceId,
+      tableName,
+      columnName,
+      params,
+      signal
+    );
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
@@ -1860,11 +1998,13 @@ export const runtimeServiceEstimateSmallestTimeGrain = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceEstimateSmallestTimeGrainParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1EstimateSmallestTimeGrainResponse>({
     url: `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1872,9 +2012,11 @@ export const runtimeServiceEstimateSmallestTimeGrain = (
 export const getRuntimeServiceEstimateSmallestTimeGrainQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceEstimateSmallestTimeGrainParams
 ) => [
   `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceEstimateSmallestTimeGrainQueryResult = NonNullable<
@@ -1889,6 +2031,7 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceEstimateSmallestTimeGrainParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceEstimateSmallestTimeGrain>>,
@@ -1909,7 +2052,8 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
     getRuntimeServiceEstimateSmallestTimeGrainQueryKey(
       instanceId,
       tableName,
-      columnName
+      columnName,
+      params
     );
 
   const queryFn: QueryFunction<
@@ -1919,6 +2063,7 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
       instanceId,
       tableName,
       columnName,
+      params,
       signal
     );
 
@@ -1948,11 +2093,13 @@ export const runtimeServiceGetTimeRangeSummary = (
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetTimeRangeSummaryParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetTimeRangeSummaryResponse>({
     url: `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}/columns/${columnName}`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -1960,9 +2107,11 @@ export const runtimeServiceGetTimeRangeSummary = (
 export const getRuntimeServiceGetTimeRangeSummaryQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string
+  columnName: string,
+  params?: RuntimeServiceGetTimeRangeSummaryParams
 ) => [
   `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}/columns/${columnName}`,
+  ...(params ? [params] : []),
 ];
 
 export type RuntimeServiceGetTimeRangeSummaryQueryResult = NonNullable<
@@ -1977,6 +2126,7 @@ export const useRuntimeServiceGetTimeRangeSummary = <
   instanceId: string,
   tableName: string,
   columnName: string,
+  params?: RuntimeServiceGetTimeRangeSummaryParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceGetTimeRangeSummary>>,
@@ -1997,7 +2147,8 @@ export const useRuntimeServiceGetTimeRangeSummary = <
     getRuntimeServiceGetTimeRangeSummaryQueryKey(
       instanceId,
       tableName,
-      columnName
+      columnName,
+      params
     );
 
   const queryFn: QueryFunction<
@@ -2007,6 +2158,7 @@ export const useRuntimeServiceGetTimeRangeSummary = <
       instanceId,
       tableName,
       columnName,
+      params,
       signal
     );
 
@@ -2257,57 +2409,6 @@ export const useRuntimeServiceQuery = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
- */
-export const runtimeServiceQueryDirect = (
-  instanceId: string,
-  runtimeServiceQueryDirectBody: RuntimeServiceQueryDirectBody
-) => {
-  return httpClient<V1QueryDirectResponse>({
-    url: `/v1/instances/${instanceId}/query/direct`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceQueryDirectBody,
-  });
-};
-
-export type RuntimeServiceQueryDirectMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceQueryDirect>>
->;
-export type RuntimeServiceQueryDirectMutationBody =
-  RuntimeServiceQueryDirectBody;
-export type RuntimeServiceQueryDirectMutationError = RpcStatus;
-
-export const useRuntimeServiceQueryDirect = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceQueryDirectBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
-    { instanceId: string; data: RuntimeServiceQueryDirectBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceQueryDirect(instanceId, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceQueryDirectBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 It attempts to infer a minimal number of migrations to apply to reconcile the current state with
 the desired state expressed in the artifacts. Any existing objects not described in the submitted
@@ -2507,6 +2608,53 @@ export const useRuntimeServicePutFileAndReconcile = <
     Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
     TError,
     { data: V1PutFileAndReconcileRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const runtimeServiceRefreshAndReconcile = (
+  v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest
+) => {
+  return httpClient<V1RefreshAndReconcileResponse>({
+    url: `/v1/refresh-and-reconcile`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1RefreshAndReconcileRequest,
+  });
+};
+
+export type RuntimeServiceRefreshAndReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>
+>;
+export type RuntimeServiceRefreshAndReconcileMutationBody =
+  V1RefreshAndReconcileRequest;
+export type RuntimeServiceRefreshAndReconcileMutationError = RpcStatus;
+
+export const useRuntimeServiceRefreshAndReconcile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    TError,
+    { data: V1RefreshAndReconcileRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    { data: V1RefreshAndReconcileRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return runtimeServiceRefreshAndReconcile(data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
+    TError,
+    { data: V1RefreshAndReconcileRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

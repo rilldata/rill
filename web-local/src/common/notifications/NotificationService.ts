@@ -1,4 +1,4 @@
-import type { NotificationOptions } from "@rilldata/web-local/lib/components/notifications";
+import type { NotificationOptions } from "@rilldata/web-local/lib/components/notifications/notificationStore";
 
 export interface Notification {
   message: string;

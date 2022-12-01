@@ -1,30 +1,25 @@
 <script lang="ts">
+  import {
+    useRuntimeServiceGetCardinalityOfColumn,
+    useRuntimeServiceGetNullCount,
+    useRuntimeServiceGetTableRows,
+    useRuntimeServiceProfileColumns,
+  } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
+  import { derived, writable } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
-  import ColumnProfileEntry from "./ColumnProfileEntry.svelte";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
-  export let containerWidth = 0;
+  import { getColumnType } from "./column-types";
 
-  export let cardinality: number;
-  export let profile: any;
-  export let head: any; // FIXME
-  export let entityId: string;
-  export let showContextButton = true;
+  export let containerWidth = 0;
+  // const queryClient = useQueryClient();
+  export let objectName: string;
   export let indentLevel = 0;
 
-  let sortedProfile;
-  const sortByOriginalOrder = null;
-
-  let sortMethod = defaultSort;
-  $: if (sortMethod !== sortByOriginalOrder) {
-    sortedProfile = [...profile].sort(sortMethod);
-  } else {
-    sortedProfile = profile;
-  }
-
-  let previewView = "summaries";
+  let mode = "summaries";
 
   let container;
 
@@ -35,6 +30,103 @@
     observer.observe(container);
     return () => observer.unobserve(container);
   });
+
+  // function invalidateForModel(queryHash, modelName) {
+  //   const r = new RegExp(
+  //     `\/v1\/instances\/[a-zA-Z0-9-]+\/queries/[a-zA-Z0-9-]+\/tables\/${modelName}`
+  //   );
+  //   return r.test(queryHash);
+  // }
+
+  // invalidate any existing queries when this key changes.
+  // $: if (key) {
+  //   queryClient?.resetQueries({
+  //     predicate: (query) => {
+  //       console.log(
+  //         query.queryHash,
+  //         invalidateForModel(query.queryHash, objectName)
+  //       );
+  //       return false;
+  //     },
+  //   });
+  // }
+
+  // get all column profiles.
+  let profileColumns;
+  $: profileColumns = useRuntimeServiceProfileColumns(
+    $runtimeStore?.instanceId,
+    objectName,
+    {},
+    { query: { keepPreviousData: true } }
+  );
+
+  /** get single example */
+  let exampleValue;
+  $: exampleValue = useRuntimeServiceGetTableRows(
+    $runtimeStore?.instanceId,
+    objectName,
+    { limit: 1 }
+  );
+
+  /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
+  function getSummaries(objectName, instanceId, profileColumnResults) {
+    return derived(
+      profileColumnResults.map((column) => {
+        return derived(
+          [
+            writable(column),
+            useRuntimeServiceGetNullCount(
+              instanceId,
+              objectName,
+              column.name,
+              {},
+              {
+                query: { keepPreviousData: true },
+              }
+            ),
+            useRuntimeServiceGetCardinalityOfColumn(
+              instanceId,
+              objectName,
+              column.name,
+              {},
+              { query: { keepPreviousData: true } }
+            ),
+          ],
+          ([col, nullValues, cardinality]) => {
+            return {
+              ...col,
+              nullCount: +nullValues?.data?.count,
+              cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
+            };
+          }
+        );
+      }),
+
+      (combos) => {
+        return combos;
+      }
+    );
+  }
+
+  let nestedColumnProfileQuery;
+  $: if ($profileColumns?.data?.profileColumns) {
+    nestedColumnProfileQuery = getSummaries(
+      objectName,
+      $runtimeStore?.instanceId,
+      $profileColumns?.data?.profileColumns
+    );
+  }
+
+  $: profile = $nestedColumnProfileQuery;
+  let sortedProfile;
+  const sortByOriginalOrder = null;
+
+  let sortMethod = defaultSort;
+  $: if (profile?.length && sortMethod !== sortByOriginalOrder) {
+    sortedProfile = [...profile].sort(sortMethod);
+  } else {
+    sortedProfile = profile;
+  }
 </script>
 
 <!-- pl-16 -->
@@ -57,7 +149,7 @@
   </select>
   <select
     style:transform="translateX(4px)"
-    bind:value={previewView}
+    bind:value={mode}
     class={NATIVE_SELECT}
     class:hidden={containerWidth < 325}
   >
@@ -68,23 +160,23 @@
 </div>
 
 <div>
-  {#if sortedProfile && head.length}
+  {#if sortedProfile && exampleValue}
     {#each sortedProfile as column (column.name)}
-      <ColumnProfileEntry
-        {indentLevel}
-        {entityId}
-        example={head[0][column.name] || ""}
-        {containerWidth}
-        hideNullPercentage={containerWidth <
-          COLUMN_PROFILE_CONFIG.hideNullPercentage}
-        hideRight={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
-        compactBreakpoint={COLUMN_PROFILE_CONFIG.compactBreakpoint}
-        view={previewView}
-        name={column.name}
+      {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
+      {@const hideNullPercentage =
+        containerWidth < COLUMN_PROFILE_CONFIG.hideNullPercentage}
+      {@const compact =
+        containerWidth < COLUMN_PROFILE_CONFIG.compactBreakpoint}
+      <svelte:component
+        this={getColumnType(column.type)}
         type={column.type}
-        summary={column.summary}
-        totalRows={cardinality}
-        nullCount={column.nullCount}
+        {objectName}
+        columnName={column.name}
+        example={$exampleValue?.data?.data?.[0]?.[column.name]}
+        {mode}
+        {hideRight}
+        {hideNullPercentage}
+        {compact}
       />
     {/each}
   {/if}

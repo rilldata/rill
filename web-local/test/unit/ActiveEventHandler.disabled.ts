@@ -6,15 +6,12 @@ import { TestBase } from "@adityahegde/typescript-test-utils";
 import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import type { SinonStub } from "sinon";
 import { assert, useFakeTimers } from "sinon";
-import { RillIntakeClient } from "@rilldata/web-local/common/metrics-service/RillIntakeClient";
+import { RillIntakeClient } from "@rilldata/web-local/lib/metrics/service/RillIntakeClient";
 import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import { ActiveEventHandler } from "@rilldata/web-local/lib/metrics/ActiveEventHandler";
-import {
-  dataModelerStateServiceFactory,
-  metricsServiceFactory,
-} from "@rilldata/web-local/server/serverFactory";
+import { dataModelerStateServiceFactory } from "@rilldata/web-local/server/serverFactory";
 import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
-import type { ActiveEvent } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+import type { ActiveEvent } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
 
 const CommonUserMetricsData = {
@@ -142,7 +139,7 @@ export class ActiveEventHandlerDisabled extends TestBase {
     const dataModelerStateService = dataModelerStateServiceFactory(this.config);
     const activeEventHandler = new ActiveEventHandler(
       this.config,
-      metricsServiceFactory(this.config, dataModelerStateService),
+      null,
       CommonUserMetricsData
     );
     return { dataModelerStateService, activeEventHandler };

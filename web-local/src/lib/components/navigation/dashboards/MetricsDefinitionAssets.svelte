@@ -1,64 +1,62 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
-    MetricsDefinitionEntity,
-    SourceModelValidationStatus,
-  } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+    getRuntimeServiceListFilesQueryKey,
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServicePutFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { getName } from "@rilldata/web-local/common/utils/incrementName";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import notificationStore from "@rilldata/web-local/lib/components/notifications";
-  import { getContext, onMount } from "svelte";
-  import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../../application-state-stores/application-store";
-  import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
-  import { navigationEvent } from "../../../metrics/initMetrics";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
-    createMetricsDefsAndFocusApi,
-    deleteMetricsDefsApi,
-    fetchManyMetricsDefsApi,
-    validateSelectedSources,
-  } from "../../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getAllMetricsDefinitionsReadable } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../../redux-store/store-root";
+    FileArtifactsData,
+    fileArtifactsStore,
+  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
+  import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
+  import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { slide } from "svelte/transition";
+  import { navigationEvent } from "../../../metrics/initMetrics";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import { default as Explore } from "../../icons/Explore.svelte";
   import MetricsIcon from "../../icons/Metrics.svelte";
-  import Model from "../../icons/Model.svelte";
-  import { Divider, MenuItem } from "../../menu";
+  import { MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
 
-  const metricsDefinitions = getAllMetricsDefinitionsReadable();
-  const appStore = getContext("rill:app:store") as ApplicationStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-  const applicationStore = getContext("rill:app:store") as ApplicationStore;
+  $: instanceId = $runtimeStore.instanceId;
+
+  $: dashboardNames = useDashboardNames(instanceId);
+
+  const queryClient = useQueryClient();
+
+  const createDashboard = useRuntimeServicePutFileAndReconcile();
+  const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
 
   let showMetricsDefs = true;
 
   let showRenameMetricsDefinitionModal = false;
-  let renameMetricsDefId = null;
   let renameMetricsDefName = null;
 
-  const openRenameMetricsDefModal = (
-    metricsDefId: string,
-    metricsDefName: string
-  ) => {
+  const openRenameMetricsDefModal = (metricsDefName: string) => {
     showRenameMetricsDefinitionModal = true;
-    renameMetricsDefId = metricsDefId;
     renameMetricsDefName = metricsDefName;
   };
 
@@ -66,15 +64,29 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    await store.dispatch(createMetricsDefsAndFocusApi());
+    const newDashboardName = getName("dashboard", $dashboardNames.data);
+    await $createDashboard.mutateAsync({
+      data: {
+        instanceId,
+        path: `dashboards/${newDashboardName}.yaml`,
+        blob: metricsTemplate,
+        create: true,
+        createOnly: true,
+        strict: false,
+      },
+    });
+    goto(`/dashboard/${newDashboardName}`);
+    queryClient.invalidateQueries(
+      getRuntimeServiceListFilesQueryKey(instanceId)
+    );
   };
 
-  const editModel = (sourceModelId: string) => {
-    goto(`/model/${sourceModelId}`);
+  const editModel = (sourceModelName: string) => {
+    goto(`/model/${sourceModelName}`);
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
     navigationEvent.fireEvent(
-      sourceModelId,
+      sourceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       EntityTypeToScreenMap[previousActiveEntity],
@@ -82,12 +94,12 @@
     );
   };
 
-  const editMetrics = (metricsId: string) => {
-    goto(`/dashboard/${metricsId}/edit`);
+  const editMetrics = (dashboardName: string) => {
+    goto(`/dashboard/${dashboardName}/edit`);
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
     navigationEvent.fireEvent(
-      metricsId,
+      dashboardName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       EntityTypeToScreenMap[previousActiveEntity],
@@ -95,75 +107,67 @@
     );
   };
 
-  const deleteMetricsDef = (metricsDef: MetricsDefinitionEntity) => {
-    const sourceModelId = metricsDef.sourceModelId;
-
-    notificationStore.send({
-      message: `Dashboard "${metricsDef.metricDefLabel}" deleted`,
-    });
-    store.dispatch(deleteMetricsDefsApi(metricsDef.id));
-
-    if (
-      ($applicationStore.activeEntity.type === EntityType.MetricsDefinition ||
-        $applicationStore.activeEntity.type === EntityType.MetricsExplorer) &&
-      $applicationStore.activeEntity.id === metricsDef.id
-    ) {
-      if (sourceModelId) {
-        goto(`/model/${sourceModelId}`);
-      } else {
-        goto("/");
-      }
-    }
+  const deleteMetricsDef = async (dashboardName: string) => {
+    await deleteFileArtifact(
+      queryClient,
+      instanceId,
+      dashboardName,
+      EntityType.MetricsDefinition,
+      $deleteDashboard,
+      $appStore.activeEntity,
+      $dashboardNames.data
+    );
   };
 
-  onMount(() => {
-    // TODO: once we have everything in redux store we can easily move this to its own async thunk
-    store.dispatch(fetchManyMetricsDefsApi()).then(async () => {
-      await waitUntil(() => {
-        return !!$derivedModelStore;
-      }, -1);
-      $metricsDefinitions.forEach((metricsDefinition) =>
-        store.dispatch(validateSelectedSources(metricsDefinition.id))
-      );
-    });
-  });
+  const getDashboardData = (
+    entities: Record<string, FileArtifactsData>,
+    name: string
+  ) => {
+    return entities[name];
+  };
 </script>
 
 <NavigationHeader
   bind:show={showMetricsDefs}
-  tooltipText="create a new dashboard"
   on:add={dispatchAddEmptyMetricsDef}
+  tooltipText="create a new dashboard"
 >
   <Explore size="16px" /> Dashboards
 </NavigationHeader>
 
-{#if showMetricsDefs && $metricsDefinitions}
+{#if showMetricsDefs && $dashboardNames.data}
   <div
     class="pb-6 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
-    {#each $metricsDefinitions as metricsDef (metricsDef.id)}
+    {#each $dashboardNames.data as dashboardName (dashboardName)}
+      {@const dashboardData = getDashboardData(
+        $fileArtifactsStore.entities,
+        dashboardName
+      )}
       <NavigationEntry
         notExpandable={true}
-        name={metricsDef.metricDefLabel}
-        href={`/dashboard/${metricsDef.id}`}
-        open={$page.url.pathname === `/dashboard/${metricsDef.id}` ||
-          $page.url.pathname === `/dashboard/${metricsDef.id}/edit`}
+        name={dashboardName}
+        href={`/dashboard/${dashboardName}`}
+        open={$page.url.pathname === `/dashboard/${dashboardName}` ||
+          $page.url.pathname === `/dashboard/${dashboardName}/edit`}
       >
         <svelte:fragment slot="summary" let:containerWidth>
           <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
         </svelte:fragment>
 
         <svelte:fragment slot="menu-items">
-          {@const selectionError = MetricsSourceSelectionError(metricsDef)}
+          {@const selectionError = MetricsSourceSelectionError(
+            dashboardData?.errors
+          )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""}
+            selectionError !== ""} -->
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => editModel(metricsDef.sourceModelId)}
+            on:select={() => editModel(dashboardName)}
           >
             <Model slot="icon" />
             edit model
@@ -176,7 +180,7 @@
           <MenuItem
             icon
             disabled={hasSourceError}
-            on:select={() => editMetrics(metricsDef.id)}
+            on:select={() => editMetrics(dashboardName)}
           >
             <MetricsIcon slot="icon" />
             edit metrics
@@ -184,16 +188,12 @@
           <Divider />
           <MenuItem
             icon
-            on:select={() =>
-              openRenameMetricsDefModal(
-                metricsDef.id,
-                metricsDef.metricDefLabel
-              )}
+            on:select={() => openRenameMetricsDefModal(dashboardName)}
           >
             <EditIcon slot="icon" />
             rename...</MenuItem
           >
-          <MenuItem icon on:select={() => deleteMetricsDef(metricsDef)}>
+          <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
             delete</MenuItem
           >
@@ -205,7 +205,6 @@
     <RenameAssetModal
       entityType={EntityType.MetricsDefinition}
       closeModal={() => (showRenameMetricsDefinitionModal = false)}
-      entityId={renameMetricsDefId}
       currentAssetName={renameMetricsDefName}
     />
   {/if}

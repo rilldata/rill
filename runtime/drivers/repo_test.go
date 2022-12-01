@@ -2,6 +2,7 @@ package drivers_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,9 +18,9 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Len(t, paths, 0)
 
-	err = repo.PutBlob(ctx, instID, "foo.sql", "hello world")
+	err = repo.Put(ctx, instID, "foo.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
-	err = repo.PutBlob(ctx, instID, "/nested/bar.sql", "hello world")
+	err = repo.Put(ctx, instID, "/nested/bar.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
 
 	paths, err = repo.ListRecursive(ctx, instID, "/**")
@@ -48,7 +49,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Equal(t, "hello world", blob)
 
-	err = repo.PutBlob(ctx, instID, "foo.sql", "bar bar bar")
+	err = repo.Put(ctx, instID, "foo.sql", strings.NewReader("bar bar bar"))
 	require.NoError(t, err)
 
 	blob, err = repo.Get(ctx, instID, "foo.sql")
@@ -59,12 +60,26 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql"}, paths)
 
-	err = repo.PutBlob(ctx, instID, "foo.yml", "foo foo")
+	err = repo.Put(ctx, instID, "foo.yml", strings.NewReader("foo foo"))
 	require.NoError(t, err)
-	err = repo.PutBlob(ctx, instID, "foo.csv", "foo foo")
+	err = repo.Put(ctx, instID, "foo.csv", strings.NewReader("foo foo"))
 	require.NoError(t, err)
 
 	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
+
+	// renaming to existing throws error
+	err = repo.Rename(ctx, instID, "foo.yml", "foo.sql")
+	require.ErrorIs(t, err, drivers.ErrFileAlreadyExists)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
+
+	// valid rename
+	err = repo.Rename(ctx, instID, "foo.yml", "foo_new.yml")
+	require.NoError(t, err)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/foo.sql", "/foo_new.yml"}, paths)
 }

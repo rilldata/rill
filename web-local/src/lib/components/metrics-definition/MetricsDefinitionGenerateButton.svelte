@@ -1,71 +1,49 @@
 <script lang="ts">
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
-  import type { DerivedModelStore } from "../../application-state-stores/model-stores";
-  import { getDimensionsByMetricsId } from "../../redux-store/dimension-definition/dimension-definition-readables";
-  import { getMeasuresByMetricsId } from "../../redux-store/measure-definition/measure-definition-readables";
-  import {
-    generateMeasuresAndDimensionsApi,
-    updateMetricsDefsWrapperApi,
-  } from "../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../redux-store/metrics-definition/metrics-definition-readables";
-  import { selectTimestampColumnFromProfileEntity } from "../../redux-store/source/source-selectors";
-  import { store } from "../../redux-store/store-root";
-  import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
-  import type { ProfileColumn } from "../../types";
+  import type { Readable } from "svelte/store";
+  import type { V1Model } from "@rilldata/web-common/runtime-client";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import {
+    generateMeasuresAndDimension,
+    MetricsInternalRepresentation,
+  } from "../../application-state-stores/metrics-internal-store";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
+  import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
 
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-  $: selectedDimensions = getDimensionsByMetricsId(metricsDefId);
-  $: selectedMeasures = getMeasuresByMetricsId(metricsDefId);
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
 
-  export let metricsDefId: string;
-
-  const queryClient = useQueryClient();
+  export let selectedModel: V1Model;
+  export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
+  export let handlePutAndMigrate;
 
   async function handleGenerateClick() {
-    await store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
-    if (!$selectedMetricsDef?.timeDimension && timestampColumns.length > 0) {
-      // select the first available timestamp column if one has not been
-      // selected and there are some available
-      store.dispatch(
-        updateMetricsDefsWrapperApi({
-          id: metricsDefId,
-          changes: { timeDimension: timestampColumns[0].name },
-        })
-      );
-    }
-    invalidateMetricsView(queryClient, metricsDefId);
-    // In `svelte-query/totals.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
-    // We should make that change, but it has a wide surface area, so we need to take the time to QA it properly. In the meantime, we need to remove old
-    // queryKeys from the queryCache, so they don't get refetched and generate 500 errors.
-    queryClient.removeQueries([`v1/metrics-view/toplist`, metricsDefId], {
-      exact: false,
+    const newYAMLString = generateMeasuresAndDimension(selectedModel, {
+      timeseries: $metricsInternalRep.getMetricKey("timeseries"),
     });
+    handlePutAndMigrate(newYAMLString);
+
+    // invalidateMetricsView(queryClient, metricsDefId);
+    // // In `svelte-query/totals.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
+    // // We should make that change, but it has a wide surface area, so we need to take the time to QA it properly. In the meantime, we need to remove old
+    // // queryKeys from the queryCache, so they don't get refetched and generate 500 errors.
+    // queryClient.removeQueries([`v1/metrics-view/toplist`, metricsDefId], {
+    //   exact: false,
+    // });
+
     closeModal();
   }
 
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  let timestampColumns: Array<ProfileColumn>;
-
-  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    timestampColumns = selectTimestampColumnFromProfileEntity(
-      $derivedModelStore?.entities.find(
-        (model) => model.id === $selectedMetricsDef.sourceModelId
-      )
-    );
+  let timestampColumns: Array<string>;
+  $: if (selectedModel) {
+    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
   } else {
     timestampColumns = [];
   }
 
   let tooltipText = "";
   let buttonDisabled = true;
-  $: if ($selectedMetricsDef?.sourceModelId === undefined) {
+  $: if ($metricsInternalRep.getMetricKey("from") === "") {
     tooltipText = "Select a model before populating these metrics";
     buttonDisabled = true;
   } else if (timestampColumns.length === 0) {
@@ -79,7 +57,7 @@
   let modalIsOpen = false;
 
   const openModelIfNeeded = () => {
-    if ($selectedDimensions.length > 0 || $selectedMeasures.length > 0) {
+    if (measures.length > 0 || dimensions.length > 0) {
       openModal();
     } else {
       handleGenerateClick();
@@ -95,10 +73,8 @@
   };
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip alignment="middle" distance={5} location="right">
   <button
-    disabled={buttonDisabled}
-    on:click={openModelIfNeeded}
     class={`bg-white
           border-gray-400
           hover:border-gray-900
@@ -113,7 +89,9 @@
           pt-2 pb-2
           ${buttonDisabled ? "cursor-not-allowed" : "cursor-pointer"}
           ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
-        `}>quick metrics</button
+        `}
+    disabled={buttonDisabled}
+    on:click={openModelIfNeeded}>quick metrics</button
   >
   <TooltipContent slot="tooltip-content">
     <div>

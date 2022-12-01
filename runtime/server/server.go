@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
@@ -14,7 +17,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -22,51 +25,41 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type ServerOptions struct {
-	HTTPPort            int
-	GRPCPort            int
-	ConnectionCacheSize int
+type Options struct {
+	HTTPPort int
+	GRPCPort int
 }
 
 type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
-	opts         *ServerOptions
-	metastore    drivers.Connection
-	logger       *zap.Logger
-	connCache    *connectionCache
-	serviceCache *servicesCache
+	runtime *runtime.Runtime
+	opts    *Options
+	logger  *zap.Logger
 }
 
 var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
 
-func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Logger) (*Server, error) {
-	_, ok := metastore.RegistryStore()
-	if !ok {
-		return nil, fmt.Errorf("server metastore must be a valid registry")
-	}
-
+func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	return &Server{
-		opts:         opts,
-		metastore:    metastore,
-		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize),
-		serviceCache: newServicesCache(),
+		opts:    opts,
+		runtime: rt,
+		logger:  logger,
 	}, nil
 }
 
-// Starts the gRPC server
+// ServeGRPC Starts the gRPC server
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode)),
 			recovery.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode)),
 			recovery.UnaryServerInterceptor(),
 		),
 	)
@@ -87,7 +80,20 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// HTTP handler serving REST gateway
+// CustomErrorToCode returns the Code of the error if it is a Status error
+// otherwise use status.FromContextError to determine the Code.
+// Log level for error codes is defined in logging.DefaultServerCodeToLevel
+func CustomErrorToCode(err error) codes.Code {
+	if se, ok := err.(interface {
+		GRPCStatus() *status.Status
+	}); ok {
+		return se.GRPCStatus().Code()
+	}
+	contextStatus := status.FromContextError(err)
+	return contextStatus.Code()
+}
+
+// HTTPHandler HTTP handler serving REST gateway
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	mux := gateway.NewServeMux()
@@ -99,11 +105,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// One-off REST-only path for multipart file upload
-	mux.HandlePath(
-		"POST",
-		"/v1/instances/{instance_id}/files/upload/-/{path=**}",
-		s.UploadMultipartFile,
-	)
+	mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+
+	// One-off REST-only path for file export
+	mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
 
 	// Register CORS
 	handler := cors(mux)

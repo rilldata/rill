@@ -1,6 +1,8 @@
 <script>
-  import { createEventDispatcher } from "svelte";
   import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { createEventDispatcher } from "svelte";
+  import { slide } from "svelte/transition";
+  import { LIST_SLIDE_DURATION } from "../../application-config";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();
@@ -8,15 +10,11 @@
   export let active = false;
   export let emphasize = false;
   export let hideRight = false;
-
-  export let left = 8; // "pl-8 pl-10";
-  export let right = 4; // pr-2";
 </script>
 
 <div>
   <button
     class="
-        pl-{left} pr-{right}
         select-none	
         flex 
         space-between 
@@ -34,7 +32,7 @@
     }}
   >
     <div class="flex gap-2 grow items-baseline flex-1" style:min-width="0px">
-      <div class="self-center flex items-center">
+      <div class="self-center flex items-center ui-copy-icon-muted">
         <slot name="icon" />
       </div>
       <div
@@ -50,7 +48,12 @@
       <slot name="context-button" />
     </div>
   </button>
-  <div class="w-full">
-    <slot name="details" />
-  </div>
+  {#if active && $$slots["details"]}
+    <div
+      class="w-full"
+      transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+    >
+      <slot name="details" />
+    </div>
+  {/if}
 </div>

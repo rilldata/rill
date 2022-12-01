@@ -5,7 +5,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -38,10 +40,6 @@ var AdBidsNewAffectedPaths = []string{AdBidsNewRepoPath, AdBidsModelRepoPath, Ad
 var AdBidsDashboardAffectedPaths = []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath}
 
 func TestReconcile(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -61,7 +59,7 @@ func TestReconcile(t *testing.T) {
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsAffectedPaths)
-			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[1].Message)
+			require.Equal(t, metrics_views.SourceNotFound, result.Errors[1].Message)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
@@ -92,6 +90,7 @@ func TestReconcile(t *testing.T) {
 
 			// delete file
 			err = os.Remove(path.Join(dir, AdBidsRepoPath))
+			require.NoError(t, err)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 2, 0, 0, 1, AdBidsAffectedPaths)
@@ -110,10 +109,6 @@ func TestReconcile(t *testing.T) {
 }
 
 func TestReconcileRenames(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -155,10 +150,6 @@ func TestReconcileRenames(t *testing.T) {
 }
 
 func TestRefreshSource(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -187,10 +178,6 @@ func TestRefreshSource(t *testing.T) {
 }
 
 func TestInterdependentModel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -223,7 +210,7 @@ func TestInterdependentModel(t *testing.T) {
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
-			require.Equal(t, metrics_views.SourceNotFound.Error(), result.Errors[2].Message)
+			require.Equal(t, metrics_views.SourceNotFound, result.Errors[2].Message)
 			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
@@ -239,10 +226,6 @@ func TestInterdependentModel(t *testing.T) {
 }
 
 func TestModelRename(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	var AdBidsRenameModelRepoPath = "/models/AdBidsRename.sql"
 	var AdBidsRenameNewModelRepoPath = "/models/AdBidsRenameNew.sql"
 
@@ -281,10 +264,6 @@ func TestModelRename(t *testing.T) {
 }
 
 func TestModelVariations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	s, _ := initBasicService(t)
 
 	// update to invalid model
@@ -305,10 +284,6 @@ func TestModelVariations(t *testing.T) {
 }
 
 func TestReconcileMetricsView(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test in short mode")
-	}
-
 	s, _ := initBasicService(t)
 
 	testutils.CreateModel(t, s, "AdBids_model", "select id, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
@@ -316,13 +291,69 @@ func TestReconcileMetricsView(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	// dropping the timestamp column gives a different error
-	require.Equal(t, metrics_views.TimestampNotFound.Error(), result.Errors[0].Message)
+	require.Equal(t, metrics_views.TimestampNotFound, result.Errors[0].Message)
 
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
+	testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	require.Equal(t, `dimension not found: domain`, result.Errors[0].Message)
+	require.Equal(t, []string{"Dimensions", "1"}, result.Errors[0].PropertyPath)
+	require.Contains(t, result.Errors[1].Message, `Binder Error: Referenced column "bid_price" not found`)
+	require.Equal(t, []string{"Measures", "1"}, result.Errors[1].PropertyPath)
+
+	// ignore invalid measure and dimension
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`version: 0.0.1
+from: AdBids_model
+timeseries: timestamp
+timegrains:
+- 1 day
+- 1 month
+default_timegrain: ""
+dimensions:
+- label: Publisher
+  property: publisher
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+- expression: avg(bid_price)
+  ignore: true
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+	mvEntry := testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
+	mv := mvEntry.GetMetricsView()
+	require.Len(t, mv.Measures, 1)
+	require.Equal(t, "count(*)", mv.Measures[0].Expression)
+	require.Len(t, mv.Dimensions, 1)
+	require.Equal(t, "publisher", mv.Dimensions[0].Name)
+}
+
+func TestInvalidFiles(t *testing.T) {
+	s, _ := initBasicService(t)
+	ctx := context.Background()
+
+	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`version: 0.0.1
+type: file
+path:
+ - data/source.csv`))
+	require.NoError(t, err)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 3, 0, 0, 1, AdBidsAffectedPaths)
+	require.Contains(t, result.Errors[0].Message, "yaml: unmarshal errors")
+
+	testutils.CreateSource(t, s, "Ad-Bids", "AdBids.csv", "/sources/Ad-Bids.yaml")
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{"/sources/Ad-Bids.yaml"})
+	require.Equal(t, "/sources/Ad-Bids.yaml", result.Errors[0].FilePath)
+	require.Equal(t, "invalid file name", result.Errors[0].Message)
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {

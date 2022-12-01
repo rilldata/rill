@@ -32,8 +32,8 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.Greater(t, time.Minute, time.Since(inst.CreatedOn))
 	require.Greater(t, time.Minute, time.Since(inst.UpdatedOn))
 
-	res, found := reg.FindInstance(ctx, inst.ID)
-	require.True(t, found)
+	res, err := reg.FindInstance(ctx, inst.ID)
+	require.NoError(t, err)
 	require.Equal(t, inst.OLAPDriver, res.OLAPDriver)
 	require.Equal(t, inst.OLAPDSN, res.OLAPDSN)
 	require.Equal(t, inst.RepoDriver, res.RepoDriver)
@@ -43,15 +43,15 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPDriver: "druid"})
 	require.NoError(t, err)
 
-	insts := reg.FindInstances(ctx)
+	insts, err := reg.FindInstances(ctx)
 	require.Equal(t, 2, len(insts))
 
 	err = reg.DeleteInstance(ctx, inst.ID)
 	require.NoError(t, err)
 
-	_, found = reg.FindInstance(ctx, inst.ID)
-	require.False(t, found)
+	_, err = reg.FindInstance(ctx, inst.ID)
+	require.EqualError(t, err, drivers.ErrNotFound.Error())
 
-	insts = reg.FindInstances(ctx)
+	insts, err = reg.FindInstances(ctx)
 	require.Equal(t, 1, len(insts))
 }
