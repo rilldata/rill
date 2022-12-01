@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"database/sql"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -75,8 +77,12 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 			return nil, err
 		}
 		for rows.Next() {
-			if err := rows.Scan(&pc.LargestStringLength); err != nil {
+			var max sql.NullInt32
+			if err := rows.Scan(&max); err != nil {
 				return nil, err
+			}
+			if max.Valid {
+				pc.LargestStringLength = int32(max.Int32)
 			}
 		}
 		rows.Close()
