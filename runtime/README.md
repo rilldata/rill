@@ -1,17 +1,19 @@
 # `runtime`
 
-The runtime is our data plane. It connects to data infrastructure and will be responsible for transpiling queries, applying migrations, implementing connectors, enforcing row-based access policies, scheduling tasks, triggering alerts, and much more.
+The runtime a data infrastructure proxy and orchestrator – our data plane. It connects to data infrastructure and is or will be responsible for transpiling queries, parsing code artifacts, reconciling infra state, implementing connectors, enforcing (row-based) access policies, scheduling tasks, triggering alerts, and much more.
 
-It's designed as a stand-alone component that can be embedded in local applications (as it is into Rill Developer) or deployed in a cloud environment.
+It's designed as a modular component that can be embedded in local applications (as it is into Rill Developer) or deployed stand-alone in a cloud environment.
 
 ## Code structure
 
 - `cmd` contains a `main.go` file that starts the runtime as a standalone server.
 - `connectors` contains connector implementations.
-- `drivers` contains interfaces and drivers for all the data infrastructure (and other persistant stores) we support.
+- `drivers` contains interfaces and drivers for external data infrastructure that the runtime interfaces with (like DuckDB and Druid).
 - `pkg` contains utility libraries.
-- `server` contains a server that implements the APIs described in `api`.
+- `queries` contains pre-defined analytical queries that the runtime can serve (used for profiling and dashboards).
+- `server` contains a server that implements the runtime's APIs.
 - `sql` contains bindings for the SQL native library (see the `sql` folder at the repo root for details).
+- `testruntime` contains helper functions for initializing a test runtime with test data.
 
 ## How to test and run
 
@@ -45,7 +47,12 @@ To add a new endpoint:
 1. Describe the endpoint in `proto/rill/runtime/v1/api.proto`
 2. Re-generate gRPC and OpenAPI interfaces by running `make proto.generate`
 3. Copy the new handler signature from the `RuntimeServiceServer` interface in `proto/gen/rill/runtime/v1/api_grpc_pb.go`
-4. Paste the handler signature and implement it in a file in `runtime/server/`
+4. Paste the handler signature and implement it in a relevant file in `runtime/server/`
+
+## Adding a new analytical query endpoint
+
+1. Add a new endpoint for the query by following the steps in the section above ("Adding a new endpoint")
+2. Implement the query in `runtime/queries` by following the instructions in `runtime/queries/README.md`
 
 ## Example: Creating an instance and rehydrating from code artifacts
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -12,19 +14,27 @@
 
   export let metricViewName: string;
 
+  const switchToMetrics = async (metricViewName: string) => {
+    if (!metricViewName) return;
+
+    appStore.setActiveEntity(metricViewName, EntityType.MetricsExplorer);
+  };
+
+  $: switchToMetrics(metricViewName);
+
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
 </script>
 
 <WorkspaceContainer
+  assetID={metricViewName}
   bgClass="bg-white"
   inspector={false}
-  assetID={metricViewName}
 >
   <ExploreContainer slot="body">
-    <ExploreHeader slot="header" {metricViewName} />
-    <MetricsTimeSeriesCharts slot="metrics" {metricViewName} />
+    <ExploreHeader {metricViewName} slot="header" />
+    <MetricsTimeSeriesCharts {metricViewName} slot="metrics" />
     <svelte:fragment slot="leaderboards">
       {#if selectedDimensionName}
         <DimensionDisplay

@@ -28,7 +28,7 @@ import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDB
     })
   );
   console.log(
-    await duckdb.requestToInstance("query/direct", {
+    await duckdb.requestToInstance("query", {
       sql: "select * from AdBidsS3 limit 5",
     })
   );
@@ -41,7 +41,7 @@ import { DuckDBClient } from "@rilldata/web-local/common/database-service/DuckDB
     })
   );
   console.log(
-    await duckdb.requestToInstance("query/direct", {
+    await duckdb.requestToInstance("query", {
       sql: "select * from AdBidsGS limit 5",
     })
   );

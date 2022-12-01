@@ -3,10 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"net/http"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
@@ -16,7 +17,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -24,35 +25,25 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type ServerOptions struct {
-	HTTPPort            int
-	GRPCPort            int
-	ConnectionCacheSize int
+type Options struct {
+	HTTPPort int
+	GRPCPort int
 }
 
 type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
-	opts         *ServerOptions
-	metastore    drivers.Connection
-	logger       *zap.Logger
-	connCache    *connectionCache
-	serviceCache *servicesCache
+	runtime *runtime.Runtime
+	opts    *Options
+	logger  *zap.Logger
 }
 
 var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
 
-func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Logger) (*Server, error) {
-	_, ok := metastore.RegistryStore()
-	if !ok {
-		return nil, fmt.Errorf("server metastore must be a valid registry")
-	}
-
+func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	return &Server{
-		opts:         opts,
-		metastore:    metastore,
-		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize),
-		serviceCache: newServicesCache(),
+		opts:    opts,
+		runtime: rt,
+		logger:  logger,
 	}, nil
 }
 
@@ -114,11 +105,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// One-off REST-only path for multipart file upload
-	mux.HandlePath(
-		"POST",
-		"/v1/instances/{instance_id}/files/upload/-/{path=**}",
-		s.UploadMultipartFile,
-	)
+	mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+
+	// One-off REST-only path for file export
+	mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
 
 	// Register CORS
 	handler := cors(mux)

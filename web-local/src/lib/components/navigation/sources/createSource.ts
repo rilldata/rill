@@ -4,15 +4,15 @@ import type {
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+import type { QueryClient } from "@sveltestack/svelte-query";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 import { notifications } from "../../notifications";
 
 export async function createSource(
+  queryClient: QueryClient,
   instanceId: string,
   tableName: string,
   yaml: string,
@@ -34,7 +34,6 @@ export async function createSource(
     // TODO: make sure to get the right error
     return resp.errors;
   }
-  await dataModelerService.dispatch("addOrSyncTableFromDB", [tableName, true]);
   goto(`/source/${tableName}`);
   notifications.send({ message: `Created source ${tableName}` });
   return [];

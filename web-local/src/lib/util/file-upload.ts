@@ -1,19 +1,9 @@
 import { goto } from "$app/navigation";
-import type { V1PutFileResponse } from "@rilldata/web-common/runtime-client";
-import {
-  EntityType,
-  StateType,
-} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-local/common/utils/duplicateNameUtils";
-import { waitForSource } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
-  config,
-  dataModelerStateService,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
@@ -36,16 +26,13 @@ import { fetchWrapperDirect } from "./fetchWrapper";
  */
 export async function* uploadTableFiles(
   files: Array<File>,
-  [models, sources]: [
-    Array<PersistentModelEntity>,
-    Array<PersistentTableEntity>
-  ],
+  [models, sources]: [Array<string>, Array<string>],
   runtimeState: RuntimeState
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  const tableUploadURL = `${config.database.runtimeUrl}/v1/instances/${runtimeState.instanceId}/files/upload`;
+  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${runtimeState.instanceId}/files/upload`;
   let lastTableName: string;
 
   for (const validFile of validFiles) {
@@ -71,13 +58,6 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName) {
-    await waitForSource(
-      lastTableName,
-      dataModelerStateService.getEntityStateService(
-        EntityType.Table,
-        StateType.Persistent
-      ).store
-    );
     goto(`/source/${lastTableName}`);
   }
 
@@ -143,15 +123,12 @@ export async function uploadFile(url: string, file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
+  const filePath = `data/${file.name}`;
+
   try {
     // TODO: generate client and use it in component
-    const resp: V1PutFileResponse = await fetchWrapperDirect(
-      `${url}/-/data/${file.name}`,
-      "POST",
-      formData,
-      {}
-    );
-    return resp.filePath;
+    await fetchWrapperDirect(`${url}/-/${filePath}`, "POST", formData, {});
+    return filePath;
   } catch (err) {
     console.error(err);
   }

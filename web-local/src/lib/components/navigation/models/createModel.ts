@@ -2,15 +2,15 @@ import { goto } from "$app/navigation";
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
-import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+import type { QueryClient } from "@sveltestack/svelte-query";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 import { getFileFromName } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";
 
 export async function createModel(
+  queryClient: QueryClient,
   instanceId: string,
   newModelName: string,
   createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
@@ -35,14 +35,12 @@ export async function createModel(
     });
     throw new Error(resp.errors[0].filePath);
   }
-  await dataModelerService.dispatch("addModel", [
-    { name: newModelName, query: sql, asynchronous: true },
-  ]);
   if (!setAsActive) return;
   goto(`/model/${newModelName}`);
 }
 
 export async function createModelFromSource(
+  queryClient: QueryClient,
   instanceId: string,
   modelNames: Array<string>,
   sourceName: string,
@@ -51,6 +49,7 @@ export async function createModelFromSource(
 ): Promise<string> {
   const newModelName = getName(`${sourceName}_model`, modelNames);
   await createModel(
+    queryClient,
     instanceId,
     newModelName,
     createModelMutation,

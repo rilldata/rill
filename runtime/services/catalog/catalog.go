@@ -4,11 +4,8 @@ import (
 	"context"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/dag"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Service struct {
@@ -41,33 +38,10 @@ func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drive
 	}
 }
 
-func (s *Service) ListObjects(ctx context.Context, typ runtimev1.ObjectType) ([]*runtimev1.CatalogEntry, error) {
-	objs := s.Catalog.FindEntries(ctx, s.InstId, pbToObjectType(typ))
-	pbs := make([]*runtimev1.CatalogEntry, len(objs))
-	var err error
-	for i, obj := range objs {
-		pbs[i], err = catalogObjectToPB(obj)
-		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
-	}
-
-	return pbs, nil
+func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
+	return s.Catalog.FindEntries(ctx, s.InstId, typ)
 }
 
-func (s *Service) GetCatalogObject(
-	ctx context.Context,
-	name string,
-) (*runtimev1.CatalogEntry, error) {
-	obj, found := s.Catalog.FindEntry(ctx, s.InstId, name)
-	if !found {
-		return nil, status.Error(codes.InvalidArgument, "object not found: "+name)
-	}
-
-	pb, err := catalogObjectToPB(obj)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	return pb, nil
+func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
+	return s.Catalog.FindEntry(ctx, s.InstId, name)
 }

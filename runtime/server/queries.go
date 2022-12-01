@@ -55,41 +55,11 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 	return resp, nil
 }
 
-// QueryDirect implements RuntimeService
-func (s *Server) QueryDirect(ctx context.Context, req *runtimev1.QueryDirectRequest) (*runtimev1.QueryDirectResponse, error) {
-	// NOTE: Deprecated – just proxy to Query
-	res, err := s.Query(ctx, &runtimev1.QueryRequest{
-		InstanceId: req.InstanceId,
-		Sql:        req.Sql,
-		Args:       req.Args,
-		Priority:   req.Priority,
-		DryRun:     req.DryRun,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.QueryDirectResponse{
-		Meta: res.Meta,
-		Data: res.Data,
-	}, nil
-}
-
 func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
-	registry, _ := s.metastore.RegistryStore()
-	inst, err := registry.FindInstance(ctx, instanceID)
-	if err != nil {
-		if err == drivers.ErrNotFound {
-			return nil, status.Error(codes.InvalidArgument, "instance not found")
-		}
-		return nil, err
-	}
-
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+	olap, err := s.runtime.OLAP(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
-	olap, _ := conn.OLAPStore()
 
 	return olap.Execute(ctx, stmt)
 }

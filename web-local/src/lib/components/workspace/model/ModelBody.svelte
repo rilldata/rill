@@ -2,7 +2,6 @@
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     getRuntimeServiceGetFileQueryKey,
-    useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
@@ -11,51 +10,31 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
-  import { PreviewTable } from "@rilldata/web-local/lib/components/preview-table";
+  import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import { notifications } from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
 
+  const queryClient = useQueryClient();
+
   const queryHighlight = getContext("rill:app:query-highlight");
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getModel = useRuntimeServiceGetCatalogEntry(runtimeInstanceId, modelName);
   const updateModel = useRuntimeServicePutFileAndReconcile();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
-
-  $: currentModel = $persistentModelStore?.entities
-    ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
-    : undefined;
-
-  $: currentDerivedModel = $derivedModelStore?.entities
-    ? $derivedModelStore.entities.find((q) => q.id === currentModel?.id)
-    : undefined;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
@@ -65,12 +44,11 @@
   $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
-  $: modelSql = $modelSqlQuery?.data.blob;
-  // this is temporary until we have model query binding from backend to the UI editor
-  let hasModelSql = false;
-  $: hasModelSql ||= modelSql !== undefined;
 
-  let titleInput: string;
+  $: modelSql = $modelSqlQuery?.data?.blob;
+  $: hasModelSql = typeof modelSql === "string";
+
+  // TODO: does this need any sanitization?
   $: titleInput = modelName;
 
   function invalidateForModel(queryHash, modelName) {
@@ -96,6 +74,7 @@
 
     try {
       await renameFileArtifact(
+        queryClient,
         runtimeInstanceId,
         modelName,
         e.target.value,
@@ -108,7 +87,8 @@
   };
 
   /** model body layout elements */
-  const outputLayout = localStorageStore(`${currentModel?.id}-output`, {
+  // TODO: should there be a session lived ID here instead of name?
+  const outputLayout = localStorageStore(`${modelName}-output`, {
     value: 500,
     visible: true,
   });
@@ -122,7 +102,7 @@
   ) as Writable<number>;
 
   const inspectorVisibilityTween = getContext(
-    "rill:app:inspector-visibility-tween"
+    "ril:app:inspector-visibility-tween"
   ) as Writable<number>;
 
   const navigationWidth = getContext(
@@ -164,10 +144,6 @@
           return invalidateForModel(query.queryHash, modelName);
         },
       });
-      await dataModelerService.dispatch("updateModelQuery", [
-        currentModel.id,
-        content,
-      ]);
     }
   }
 </script>
@@ -183,11 +159,12 @@
     style:height="calc({innerHeight}px - {$outputPosition}px -
     var(--header-height))"
   >
-    {#if $getModel?.data?.entry?.model}
+    {#if hasModelSql}
       <div class="h-full grid p-5 pt-0 overflow-auto">
         {#key modelName}
           <Editor
-            content={$getModel?.data?.entry?.model?.sql}
+            {modelName}
+            content={modelSql}
             selections={$queryHighlight}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
@@ -222,34 +199,29 @@
     </div>
   </Portal>
 
-  {#if $getModel?.data?.entry}
+  {#if hasModelSql}
     <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
-        class:border={!!currentDerivedModel?.error}
-        class:border-gray-300={!!currentDerivedModel?.error}
+        class:border={!!modelError}
+        class:border-gray-300={!!modelError}
       >
-        {#if currentDerivedModel?.preview && currentDerivedModel?.profile}
-          <div
-            style="{currentDerivedModel?.error ? 'filter: brightness(.9);' : ''}
+        <div
+          style="{modelError ? 'filter: brightness(.9);' : ''}
             transition: filter 200ms;
           "
-            class="relative h-full"
-          >
-            <PreviewTable
-              rows={currentDerivedModel.preview}
-              columnNames={currentDerivedModel.profile}
-              rowOverscanAmount={20}
-            />
-          </div>
-        {:else}
-          <div
-            class="grid items-center justify-center italic pt-3 text-gray-600"
-          >
-            no columns selected
-          </div>
-        {/if}
+          class="relative h-full"
+        >
+          <ConnectedPreviewTable objectName={modelName} />
+        </div>
+        <!--TODO {:else}-->
+        <!--  <div-->
+        <!--    class="grid items-center justify-center italic pt-3 text-gray-600"-->
+        <!--  >-->
+        <!--    no columns selected-->
+        <!--  </div>-->
+        <!--{/if}-->
       </div>
       {#if modelError}
         <div

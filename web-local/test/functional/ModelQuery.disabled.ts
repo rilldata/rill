@@ -214,7 +214,7 @@ export class ModelQuerySpec extends FunctionalTestBase {
     const queryResp = await this.serverDataModelerService
       .getDatabaseService()
       .getDatabaseClient()
-      .requestToInstance("query/direct", {
+      .requestToInstance("query", {
         sql: "select * from RenameModel_Renamed limit 5",
       });
     expect(queryResp.data.length).toBe(5);

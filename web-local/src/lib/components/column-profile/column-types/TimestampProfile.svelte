@@ -52,7 +52,7 @@
   {example}
   {type}
 >
-  <DataTypeIcon type="TIMESTAMP" slot="icon" />
+  <DataTypeIcon {type} slot="icon" />
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->

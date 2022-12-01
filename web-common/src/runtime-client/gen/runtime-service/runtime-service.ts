@@ -70,8 +70,6 @@ import type {
   RuntimeServiceGetTopKBody,
   V1QueryResponse,
   RuntimeServiceQueryBody,
-  V1QueryDirectResponse,
-  RuntimeServiceQueryDirectBody,
   V1ReconcileResponse,
   RuntimeServiceReconcileBody,
   V1TriggerSyncResponse,
@@ -2407,57 +2405,6 @@ export const useRuntimeServiceQuery = <
     Awaited<ReturnType<typeof runtimeServiceQuery>>,
     TError,
     { instanceId: string; data: RuntimeServiceQueryBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
- */
-export const runtimeServiceQueryDirect = (
-  instanceId: string,
-  runtimeServiceQueryDirectBody: RuntimeServiceQueryDirectBody
-) => {
-  return httpClient<V1QueryDirectResponse>({
-    url: `/v1/instances/${instanceId}/query/direct`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceQueryDirectBody,
-  });
-};
-
-export type RuntimeServiceQueryDirectMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceQueryDirect>>
->;
-export type RuntimeServiceQueryDirectMutationBody =
-  RuntimeServiceQueryDirectBody;
-export type RuntimeServiceQueryDirectMutationError = RpcStatus;
-
-export const useRuntimeServiceQueryDirect = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceQueryDirectBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
-    { instanceId: string; data: RuntimeServiceQueryDirectBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceQueryDirect(instanceId, data);
-  };
-
-  return useMutation<
-    Awaited<ReturnType<typeof runtimeServiceQueryDirect>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceQueryDirectBody },
     TContext
   >(mutationFn, mutationOptions);
 };
