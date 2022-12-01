@@ -8,7 +8,7 @@
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
-  import { selectTimestampColumnFromSchema } from "../../redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
 
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();

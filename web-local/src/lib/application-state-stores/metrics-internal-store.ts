@@ -4,7 +4,7 @@ import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { CATEGORICALS } from "../duckdb-data-types";
-import { selectTimestampColumnFromSchema } from "../redux-store/source/source-selectors";
+import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
 export const metricsTemplate = `
 display_name: "Dashboard"

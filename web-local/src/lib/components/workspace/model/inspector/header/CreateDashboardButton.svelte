@@ -17,7 +17,7 @@
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
 
   export let modelName: string;
   export let hasError = false;

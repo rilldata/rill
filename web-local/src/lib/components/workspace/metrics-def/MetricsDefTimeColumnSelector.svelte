@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";

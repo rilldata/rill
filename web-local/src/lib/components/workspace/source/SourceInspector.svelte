@@ -27,7 +27,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
