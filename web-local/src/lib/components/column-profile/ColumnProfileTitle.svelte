@@ -1,14 +1,15 @@
 <script lang="ts">
+  import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "../../duckdb-data-types";
+  import Shortcut from "../tooltip/Shortcut.svelte";
+  import SlidingWords from "../tooltip/SlidingWords.svelte";
+  import StackingWord from "../tooltip/StackingWord.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import SlidingWords from "../tooltip/SlidingWords.svelte";
-  import StackingWord from "../tooltip/StackingWord.svelte";
-  import Shortcut from "../tooltip/Shortcut.svelte";
-  import { CATEGORICALS, NUMERICS, TIMESTAMPS } from "../../duckdb-data-types";
 
   import TooltipTitle from "../tooltip/TooltipTitle.svelte";
-  export let name;
+  export let objectName;
+  export let columnName;
   export let type;
   export let totalRows;
 
@@ -31,13 +32,13 @@
     <div
       class="column-profile-name text-ellipsis overflow-hidden whitespace-nowrap"
     >
-      {name}
+      {columnName}
     </div>
   </div>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name">
-        {name}
+        {columnName}
       </svelte:fragment>
       <svelte:fragment slot="description">
         {type}

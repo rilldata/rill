@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import TimestampIcon from "../../icons/TimestampType.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
@@ -13,9 +13,7 @@
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {
-    timestampColumns = selectTimestampColumnFromModelSchema(
-      selectedModel?.schema
-    );
+    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
   } else {
     timestampColumns = [];
   }

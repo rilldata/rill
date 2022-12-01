@@ -1,7 +1,7 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
   import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,
@@ -9,7 +9,6 @@
   } from "../../../../application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
@@ -17,6 +16,7 @@
   } from "../../../../util/humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import {
+    MetricsViewDimension,
     useRuntimeServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -30,6 +30,7 @@
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
@@ -84,10 +85,10 @@
 
   let leaderboardExpanded;
 
-  function onSelectItem(event, item: DimensionDefinitionEntity) {
+  function onSelectItem(event, item: MetricsViewDimension) {
     metricsExplorerStore.toggleFilter(
       metricViewName,
-      item.id,
+      item.name,
       event.detail.label
     );
   }
@@ -130,9 +131,9 @@
 <svelte:window on:resize={onResize} />
 <!-- container for the metrics leaderboard components and controls -->
 <div
+  bind:this={leaderboardContainer}
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
   style:min-width="365px"
-  bind:this={leaderboardContainer}
 >
   <div
     class="grid grid-auto-cols justify-start grid-flow-col items-end p-1 pb-3"

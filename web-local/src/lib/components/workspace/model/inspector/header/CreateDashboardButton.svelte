@@ -4,11 +4,11 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
@@ -17,7 +17,7 @@
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { selectTimestampColumnFromModelSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
 
   export let modelName: string;
   export let hasError = false;
@@ -28,7 +28,7 @@
     modelName
   );
   $: model = $getModel.data?.entry?.model;
-  $: timestampColumns = selectTimestampColumnFromModelSchema(model?.schema);
+  $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
@@ -59,11 +59,11 @@
   }
 </script>
 
-<Tooltip location="bottom" alignment="right" distance={16}>
+<Tooltip alignment="right" distance={16} location="bottom">
   <Button
-    type="primary"
     disabled={!timestampColumns?.length}
     on:click={handleCreateMetric}
+    type="primary"
   >
     <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
     <Explore size="16px" /></Button

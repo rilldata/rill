@@ -3,30 +3,28 @@
   import {
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
+    V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher, getContext } from "svelte";
-  import { BehaviourEventMedium } from "../../../../common/metrics-service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "../../../../common/metrics-service/MetricsTypes";
   import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { metricsTemplate } from "../../../application-state-stores/metrics-internal-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
+  import { deleteFileArtifact } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import { useModelNames } from "../../../svelte-query/models";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -40,27 +38,19 @@
 
   const dispatch = createEventDispatcher();
 
+  const queryClient = useQueryClient();
+
   const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-  const applicationStore = getContext("rill:app:store") as ApplicationStore;
-
   $: modelNames = useModelNames($runtimeStore.instanceId);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
-
-  $: persistentModel = $persistentModelStore?.entities?.find(
-    (model) => model.tableName === modelName
+  $: modelQuery = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
   );
-
-  $: derivedModel = $derivedModelStore?.entities?.find(
-    (model) => model.id === persistentModel?.id
-  );
+  let model: V1Model;
+  $: model = $modelQuery.data?.entry?.model;
 
   // const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
@@ -126,11 +116,12 @@
 
   const handleDeleteModel = async (modelName: string) => {
     await deleteFileArtifact(
+      queryClient,
       $runtimeStore.instanceId,
       modelName,
       EntityType.Model,
       $deleteModel,
-      $applicationStore.activeEntity,
+      $appStore.activeEntity,
       $modelNames.data
     );
     // onSettled gets triggered *after* both onSuccess and onError
@@ -139,14 +130,14 @@
 </script>
 
 <MenuItem
-  disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
+  disabled={!schemaHasTimestampColumn(model?.schema)}
   icon
   on:select={() => createDashboardFromModel(modelName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
+    {#if !schemaHasTimestampColumn(model?.schema)}
       requires a timestamp column
     {/if}
   </svelte:fragment>

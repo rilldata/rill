@@ -1,5 +1,6 @@
 <script>
   import { scale } from "svelte/transition";
+
   export let width = undefined;
   export let level = "info"; // info, error.
 

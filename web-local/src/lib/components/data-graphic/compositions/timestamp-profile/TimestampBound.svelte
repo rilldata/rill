@@ -5,19 +5,19 @@
    * This component will render the label bound on the TimestampDetail.svelte graph.
    * It also enables a shift + click to copy the bound as a query-ready timestamp.
    */
-  import notifications from "../../../notifications";
+  import {
+    datePortion,
+    removeTimezoneOffset,
+    timePortion,
+  } from "../../../../util/formatters";
+  import { createShiftClickAction } from "../../../../util/shift-click-action";
+  import { notifications } from "../../../notifications";
   import Shortcut from "../../../tooltip/Shortcut.svelte";
   import StackingWord from "../../../tooltip/StackingWord.svelte";
   import Tooltip from "../../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
-  import {
-    datePortion,
-    timePortion,
-    removeTimezoneOffset,
-  } from "../../../../util/formatters";
-  import { createShiftClickAction } from "../../../../util/shift-click-action";
+  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
 
   const { shiftClickAction } = createShiftClickAction();
 

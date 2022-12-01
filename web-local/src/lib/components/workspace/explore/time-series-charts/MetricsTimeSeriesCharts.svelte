@@ -2,6 +2,7 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
@@ -9,10 +10,6 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import {
-    useMetaMappedFilters,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { removeTimezoneOffset } from "../../../../util/formatters";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
@@ -43,30 +40,24 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
   $: timeDimension = $metaQuery.data?.timeDimension;
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    instanceId,
-    metricViewName,
-    metricsExplorer?.filters
-  );
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
-  $: interval = metricsExplorer?.selectedTimeRange?.interval || timeDimension;
+  $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching &&
-    $mappedFiltersQuery.isSuccess
+    !$metaQuery.isRefetching
   ) {
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter: $mappedFiltersQuery.data,
+        filter: metricsExplorer?.filters,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
       }
@@ -89,14 +80,11 @@
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter: $mappedFiltersQuery.data,
+        filter: metricsExplorer?.filters,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval.replace(
-          /[0-9] /g,
-          ""
-        ),
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
       }
     );
   }

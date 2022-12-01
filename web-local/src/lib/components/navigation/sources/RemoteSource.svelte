@@ -7,6 +7,7 @@
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
@@ -32,6 +33,8 @@
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
   const dispatch = createEventDispatcher();
+
+  const queryClient = useQueryClient();
 
   let connectorProperties: ConnectorProperty[];
   let yupSchema: yup.AnyObjectSchema;
@@ -69,6 +72,7 @@
         waitingOnSourceImport = true;
         try {
           const errors = await createSource(
+            queryClient,
             runtimeInstanceId,
             values.sourceName,
             yaml,

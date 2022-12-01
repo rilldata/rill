@@ -7,7 +7,6 @@ import type { SocketNotificationService } from "@rilldata/web-local/common/socke
 import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
 import { clientFactory } from "@rilldata/web-local/common/clientFactory";
 import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
-import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import { RillDeveloper } from "@rilldata/web-local/server/RillDeveloper";
 import { ProjectConfig } from "@rilldata/web-local/common/config/ProjectConfig";
 import { LocalConfig } from "@rilldata/web-local/common/config/LocalConfig";
@@ -26,12 +25,49 @@ export abstract class DataModelerCliCommand {
   protected dataModelerService: DataModelerService;
   protected dataModelerStateService: DataModelerStateService;
   protected notificationService: SocketNotificationService;
-  protected metricsService: MetricsService;
   protected projectPath: string;
   protected config: RootConfig;
   protected isClient: boolean;
 
   protected rillDeveloper: RillDeveloper;
+
+  public async run(
+    cliRunArgs: CliRunArgs,
+    ...args: Array<unknown>
+  ): Promise<void> {
+    await this.init(cliRunArgs);
+    await this.sendActions(...args);
+    await this.teardown();
+  }
+
+  public abstract getCommand(): Command;
+
+  protected async teardown(): Promise<void> {
+    if (this.isClient) {
+      await this.dataModelerService.destroy();
+    } else {
+      await this.rillDeveloper.destroy();
+    }
+  }
+
+  protected abstract sendActions(...args: Array<unknown>): Promise<void>;
+
+  protected applyCommonSettings(
+    command: Command,
+    description: string
+  ): Command {
+    return (
+      command
+        .description(description)
+        // override default help text to add capital D for display
+        .helpOption("-h, --help", "Displays help for each command.")
+        // common across all commands
+        .option(
+          "--project <projectPath>",
+          "Optionally indicate the path to your project. This path defaults to the current directory."
+        )
+    );
+  }
 
   private async init(cliRunArgs: CliRunArgs): Promise<void> {
     this.projectPath = cliRunArgs.projectPath ?? process.cwd();
@@ -70,14 +106,6 @@ export abstract class DataModelerCliCommand {
     this.isClient = isServerRunning;
   }
 
-  protected async teardown(): Promise<void> {
-    if (this.isClient) {
-      await this.dataModelerService.destroy();
-    } else {
-      await this.rillDeveloper.destroy();
-    }
-  }
-
   private async initServerInstances() {
     this.rillDeveloper = RillDeveloper.getRillDeveloper(this.config);
 
@@ -85,47 +113,16 @@ export abstract class DataModelerCliCommand {
     this.dataModelerStateService = this.rillDeveloper.dataModelerStateService;
     this.notificationService = this.rillDeveloper
       .notificationService as SocketNotificationService;
-    this.metricsService = this.rillDeveloper.metricsService;
 
     await this.rillDeveloper.init();
   }
 
   private async initClientInstances() {
-    const { dataModelerService, dataModelerStateService, metricsService } =
-      clientFactory(this.config);
+    const { dataModelerService, dataModelerStateService } = clientFactory(
+      this.config
+    );
     this.dataModelerService = dataModelerService;
     this.dataModelerStateService = dataModelerStateService;
-    this.metricsService = metricsService;
     await dataModelerService.init();
   }
-
-  public async run(
-    cliRunArgs: CliRunArgs,
-    ...args: Array<unknown>
-  ): Promise<void> {
-    await this.init(cliRunArgs);
-    await this.sendActions(...args);
-    await this.teardown();
-  }
-
-  protected abstract sendActions(...args: Array<unknown>): Promise<void>;
-
-  protected applyCommonSettings(
-    command: Command,
-    description: string
-  ): Command {
-    return (
-      command
-        .description(description)
-        // override default help text to add capital D for display
-        .helpOption("-h, --help", "Displays help for each command.")
-        // common across all commands
-        .option(
-          "--project <projectPath>",
-          "Optionally indicate the path to your project. This path defaults to the current directory."
-        )
-    );
-  }
-
-  public abstract getCommand(): Command;
 }

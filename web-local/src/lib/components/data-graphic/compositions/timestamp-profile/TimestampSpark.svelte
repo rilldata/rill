@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
   /**
    * TimestampSpark.svelte
    * ---------------------
@@ -7,26 +9,14 @@
    * It optionally enables the user to determine a "window", which
    * is just a box emcompassing the zoomWindowXMin and zoomWindowXMax values.
    */
-  import { guidGenerator } from "../../../../util/guid";
-  import { fade } from "svelte/transition";
-  import { cubicOut as easing } from "svelte/easing";
-  import { scaleLinear } from "d3-scale";
-  import { extent } from "d3-array";
-  import { writable } from "svelte/store";
-  import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
-  import { lineFactory, areaFactory } from "../../utils";
-  import { tweened } from "svelte/motion";
-
-  const plotID = guidGenerator();
+  import { SimpleDataGraphic } from "../../elements";
+  import { Area, Line } from "../../marks";
 
   export let data;
 
   export let width = 360;
   export let height = 120;
-  export let curve = "curveLinear";
-  export let area = false;
   export let color = "hsl(217, 10%, 50%)";
-  export let tweenIn = false;
 
   // the color of the zoom window
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
@@ -44,136 +34,89 @@
   export let top = 12;
   export let bottom = 4;
 
-  export let buffer = 4;
-  export let leftBuffer = buffer;
-  export let rightBuffer = buffer;
-  export let topBuffer = buffer;
-  export let bottomBuffer = buffer;
+  export function scaleVertical(
+    node: Element,
+    {
+      delay = 0,
+      duration = 400,
+      easing = cubicOut,
+      start = 0,
+      opacity = 0,
+      scaleDown = false,
+    } = {}
+  ) {
+    const style = getComputedStyle(node);
+    const target_opacity = +style.opacity;
+    const transform = style.transform === "none" ? "" : style.transform;
 
-  const X = writable(undefined);
-  const Y = writable(undefined);
+    const sd = 1 - start;
+    const od = target_opacity * (1 - opacity);
 
-  $: plotTop = top + topBuffer;
-  $: plotBottom = height - bottomBuffer - bottom;
-  $: plotLeft = left + leftBuffer;
-  $: plotRight = width - rightBuffer - buffer;
-
-  // establish basis values
-  let xExtents = extent(data, (d) => d[xAccessor]);
-  $: xExtents = extent(data, (d) => d[xAccessor]);
-
-  $: xMin = createExtremumResolutionStore(xExtents[0], {
-    duration: 300,
-    easing,
-    direction: "min",
-  });
-  $: xMax = createExtremumResolutionStore(xExtents[1], {
-    duration: 300,
-    easing,
-  });
-
-  $: xMin.setWithKey("x", xExtents[0]);
-  $: xMax.setWithKey("x", xExtents[1]);
-
-  // Let's set the X Scale based on the $xMin and $xMax.
-  $: $X = scaleLinear()
-    .domain([$xMin, $xMax])
-    .range([left, width - right]);
-
-  // Generate our Y Scale.
-  let yExtents = extent(data, (d) => d[yAccessor]);
-  $: yExtents = extent(data, (d) => d[yAccessor]);
-  $: yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
-
-  /** Listen ~ the world needs a little bit of joy. If the user wants to tween in the height
-   * of the graph so it looks like it grows, then let them have it.
-   * This tweened value is consumed only if the consumer sets tweenIn={true}.
-   */
-  const tweenInValue = tweened(height, { duration: 600, easing });
-  $: tweenInValue.set(plotTop);
-
-  /** we will tween in the upper part of the range if the consumer of the component
-   * sets tweenIn={true}. Otherwise This sparkline will just appear.
-   */
-  $: $Y = scaleLinear()
-    .domain([0, $yMax])
-    .range([plotBottom, tweenIn ? $tweenInValue : plotTop]);
-
-  $: lineFcn = lineFactory({
-    xScale: $X,
-    yScale: $Y,
-    curve,
-    xAccessor,
-  });
-
-  $: areaFcn = areaFactory({
-    xScale: $X,
-    yScale: $Y,
-    curve,
-    xAccessor,
-  });
-
-  // zoom window scrubbing, if used
-  $: zoomPreviewXScale = scaleLinear().domain($X.domain()).range([0, width]);
-  $: zoomPreviewX = zoomPreviewXScale(zoomWindowXMin);
-  $: zoomPreviewWidth = zoomPreviewXScale(zoomWindowXMax) - zoomPreviewX;
+    return {
+      delay,
+      duration,
+      easing,
+      css: (_t, u) => {
+        const yScale = scaleDown ? ` scaleY(${1 - sd * u})` : "";
+        return `
+    transform: ${transform} scaleY(${1 - sd * u}) ${yScale};
+    transform-origin: 100% calc(100% - ${0}px);
+    opacity: ${target_opacity - od * u}
+  `;
+      },
+    };
+  }
 </script>
 
-<svg {width} {height}>
-  <clipPath id="data-graphic-{plotID}">
-    <rect
-      x={plotLeft}
-      y={plotTop}
-      width={plotRight - plotLeft}
-      height={plotBottom - plotTop}
-    />
-  </clipPath>
-  <!-- core geoms -->
-  <g clip-path="url(#data-graphic-{plotID})">
-    {#if area}
-      <path d={areaFcn(yAccessor)(data)} fill={color} />
-    {/if}
-
-    <path
-      d={lineFcn(yAccessor)(data)}
-      stroke={color}
-      stroke-width={0.2}
-      fill="none"
-      style:opacity={1}
-    />
-    <line
-      x1={$X.range()[0]}
-      x2={$X.range()[1]}
-      y1={plotBottom}
-      y2={plotBottom}
-      stroke={color}
-    />
-    {#if zoomPreviewWidth}
-      <g transition:fade={{ duration: 100 }}>
+{#if data.length}
+  <SimpleDataGraphic
+    xType="date"
+    yType="number"
+    {width}
+    {height}
+    yMin={0}
+    bodyBuffer={0}
+    marginBuffer={0}
+    {left}
+    {right}
+    {top}
+    {bottom}
+    shareXScale={false}
+    shareYScale={false}
+    let:xScale
+    let:config
+  >
+    <g transition:scaleVertical|local={{ duration: 400, start: 0.3 }}>
+      <Line {data} {xAccessor} {yAccessor} {color} lineThickness={0.5} />
+      <Area {data} {xAccessor} {yAccessor} {color} />
+    </g>
+    <!-- show zoom boundaries -->
+    {#if zoomWindowXMin && zoomWindowXMax}
+      <g transition:fade|local={{ duration: 100 }}>
         <rect
-          x={zoomPreviewX}
-          y={plotTop}
-          width={zoomPreviewWidth}
+          x={xScale(zoomWindowXMin)}
+          y={config.plotTop}
+          width={xScale(zoomWindowXMax) - xScale(zoomWindowXMin)}
           {height}
           fill={zoomWindowColor}
           opacity=".9"
           style:mix-blend-mode="lighten"
         />
         <line
-          x1={zoomPreviewX}
-          x2={zoomPreviewX}
-          y1={plotTop}
-          y2={plotBottom}
+          x1={xScale(zoomWindowXMin)}
+          x2={xScale(zoomWindowXMin)}
+          y1={config.plotTop}
+          y2={config.plotBottom}
           stroke={zoomWindowBoundaryColor}
         />
         <line
-          x1={zoomPreviewX + zoomPreviewWidth}
-          x2={zoomPreviewX + zoomPreviewWidth}
-          y1={plotTop}
-          y2={plotBottom}
+          x1={xScale(zoomWindowXMax)}
+          x2={xScale(zoomWindowXMax)}
+          y1={config.plotTop}
+          y2={config.plotBottom}
           stroke={zoomWindowBoundaryColor}
         />
       </g>
     {/if}
-  </g>
-</svg>
+  </SimpleDataGraphic>
+{/if}

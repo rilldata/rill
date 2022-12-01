@@ -5,7 +5,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -88,6 +90,7 @@ func TestReconcile(t *testing.T) {
 
 			// delete file
 			err = os.Remove(path.Join(dir, AdBidsRepoPath))
+			require.NoError(t, err)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 2, 0, 0, 1, AdBidsAffectedPaths)
@@ -298,16 +301,47 @@ func TestReconcileMetricsView(t *testing.T) {
 	require.Equal(t, []string{"Dimensions", "1"}, result.Errors[0].PropertyPath)
 	require.Contains(t, result.Errors[1].Message, `Binder Error: Referenced column "bid_price" not found`)
 	require.Equal(t, []string{"Measures", "1"}, result.Errors[1].PropertyPath)
+
+	// ignore invalid measure and dimension
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`version: 0.0.1
+from: AdBids_model
+timeseries: timestamp
+timegrains:
+- 1 day
+- 1 month
+default_timegrain: ""
+dimensions:
+- label: Publisher
+  property: publisher
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+- expression: avg(bid_price)
+  ignore: true
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+	mvEntry := testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
+	mv := mvEntry.GetMetricsView()
+	require.Len(t, mv.Measures, 1)
+	require.Equal(t, "count(*)", mv.Measures[0].Expression)
+	require.Len(t, mv.Dimensions, 1)
+	require.Equal(t, "publisher", mv.Dimensions[0].Name)
 }
 
 func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.PutBlob(ctx, s.InstId, AdBidsRepoPath, `version: 0.0.1
+	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`version: 0.0.1
 type: file
 path:
- - data/source.csv`)
+ - data/source.csv`))
 	require.NoError(t, err)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)

@@ -7,18 +7,18 @@
    */
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
+    getFilterForDimension,
+    useMetaDimension,
+    useMetaMeasure,
+    useMetaQuery,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
   import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
   import DimensionTable from "../../../dimension/DimensionTable.svelte";
-  import {
-    useMetaDimension,
-    useMetaMappedFilters,
-    useMetaMeasure,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
   import {
     humanizeGroupByColumns,
     NicelyFormattedTypes,
@@ -65,10 +65,9 @@
   $: excludeMode =
     metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    instanceId,
-    metricViewName,
-    metricsExplorer?.filters
+  $: filterForDimension = getFilterForDimension(
+    metricsExplorer?.filters,
+    dimensionName
   );
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
@@ -96,7 +95,7 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let filterData = JSON.parse(JSON.stringify($mappedFiltersQuery.data));
+    let filterData = JSON.parse(JSON.stringify(filterForDimension));
 
     if (searchText !== "") {
       let foundDimension = false;

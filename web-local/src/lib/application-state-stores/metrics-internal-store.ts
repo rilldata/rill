@@ -1,10 +1,13 @@
-import type { V1Model } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Model,
+  V1ReconcileError,
+} from "@rilldata/web-common/runtime-client";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { CATEGORICALS } from "../duckdb-data-types";
-import { selectTimestampColumnFromModelSchema } from "../redux-store/source/source-selectors";
+import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
 export const metricsTemplate = `
 display_name: "Dashboard"
@@ -20,7 +23,7 @@ timeseries: ""
 # default to opionated option around estimated timegrain,
 # first in order is default time grain
 timegrains:
-  - 1 day
+  - day
 # the timegrain that users will see when they first visit the dashboard.
 default_timegrain: "day"
 
@@ -50,6 +53,7 @@ export interface MeasureEntity {
   format_preset?: string;
   visible?: boolean;
   __GUID__?: string;
+  __ERROR__?: string;
 }
 export interface DimensionEntity {
   label?: string;
@@ -57,6 +61,7 @@ export interface DimensionEntity {
   description?: string;
   visible?: boolean;
   expression?: string;
+  __ERROR__?: string;
 }
 
 export class MetricsInternalRepresentation {
@@ -107,37 +112,50 @@ export class MetricsInternalRepresentation {
     return internalRepresentationDoc.toJSON();
   }
 
-  regenerateInternalYAML() {
+  regenerateInternalYAML(shouldUpdateRuntime = true) {
+    // create json before any fields are removed
+    this.internalRepresentation = this.internalRepresentationDocument.toJSON();
+
+    // remove fields that are not to be sent as yaml
     const temporaryRepresentation = this.internalRepresentationDocument.clone();
+
     const numberOfMeasures = (
       temporaryRepresentation.get("measures") as Collection
     ).items.length;
+    for (let i = 0; i < numberOfMeasures; i++) {
+      const measure = temporaryRepresentation.getIn(["measures", i]) as YAMLMap;
 
-    Array(numberOfMeasures)
-      .fill(0)
-      .map((_, i) => {
-        const measure = temporaryRepresentation.getIn([
-          "measures",
-          i,
-        ]) as YAMLMap;
+      if (measure.has("__GUID__"))
+        temporaryRepresentation.deleteIn(["measures", i, "__GUID__"]);
 
-        if (measure.has("__GUID__"))
-          temporaryRepresentation.deleteIn(["measures", i, "__GUID__"]);
+      if (measure.has("__ERROR__"))
+        temporaryRepresentation.deleteIn(["measures", i, "__ERROR__"]);
+    }
 
-        if (measure.has("__ERROR__"))
-          temporaryRepresentation.deleteIn(["measures", i, "__ERROR__"]);
-      });
+    const numberOfDimensions = (
+      temporaryRepresentation.get("dimensions") as Collection
+    ).items.length;
+    for (let i = 0; i < numberOfDimensions; i++) {
+      const dimension = temporaryRepresentation.getIn([
+        "dimensions",
+        i,
+      ]) as YAMLMap;
+
+      if (dimension.has("__ERROR__"))
+        temporaryRepresentation.deleteIn(["dimensions", i, "__ERROR__"]);
+    }
 
     this.internalYAML = temporaryRepresentation.toString({
       collectionStyle: "block",
     });
-    this.internalRepresentation = this.internalRepresentationDocument.toJSON();
 
     // Update svelte store
     this.updateStore(this);
 
-    // Update Runtime
-    this.updateRuntime(this.internalYAML);
+    if (shouldUpdateRuntime) {
+      // Update Runtime
+      this.updateRuntime(this.internalYAML);
+    }
   }
 
   getMetricKey<K extends keyof MetricsConfig>(key: K): MetricsConfig[K] {
@@ -150,6 +168,29 @@ export class MetricsInternalRepresentation {
   ) {
     this.internalRepresentationDocument.set(key, value);
     this.regenerateInternalYAML();
+  }
+
+  updateErrors(errors: Array<V1ReconcileError>) {
+    // set errors for measures and dimensions
+    for (const error of errors) {
+      const index = Number(error.propertyPath[1]);
+      switch (error.propertyPath[0]) {
+        case "Measures":
+          this.internalRepresentationDocument.setIn(
+            ["measures", index, "__ERROR__"],
+            error.message
+          );
+          break;
+        case "Dimensions":
+          this.internalRepresentationDocument.setIn(
+            ["dimensions", index, "__ERROR__"],
+            error.message
+          );
+          break;
+      }
+    }
+
+    this.regenerateInternalYAML(false);
   }
 
   // MEASURE METHODS
@@ -238,9 +279,7 @@ export function generateMeasuresAndDimension(
   if (options?.timeseries) {
     template.set("timeseries", options.timeseries);
   } else {
-    const timestampColumns = selectTimestampColumnFromModelSchema(
-      model?.schema
-    );
+    const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
     template.set("timeseries", timestampColumns[0]);
   }
   const measureNode = template.createNode({

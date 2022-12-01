@@ -1,7 +1,5 @@
 <script lang="ts">
   import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
@@ -9,20 +7,20 @@
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
-
   import { CATEGORICALS } from "../../../duckdb-data-types";
+  import { getFileFromName } from "../../../util/entity-mappers";
   import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
-
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
@@ -34,7 +32,17 @@
   export let metricsDefName: string;
   export let nonStandardError;
 
+  const queryClient = useQueryClient();
+
   $: instanceId = $runtimeStore.instanceId;
+
+  const switchToMetrics = async (metricsDefName: string) => {
+    if (!metricsDefName) return;
+
+    appStore.setActiveEntity(metricsDefName, EntityType.MetricsDefinition);
+  };
+
+  $: switchToMetrics(metricsDefName);
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
   async function callPutAndMigrate(internalYamlString) {
@@ -52,22 +60,21 @@
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey(instanceId, filePath)
-    );
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, metricsDefName)
-    );
+    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
   }
 
   let metricsInternalRep = createInternalRepresentation(
     yaml,
     callPutAndMigrate
   );
+  function updateInternalRep() {
+    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    if (errors) $metricsInternalRep.updateErrors(errors);
+  }
 
   // reset internal representation in case of deviation from runtime YAML
   $: if (yaml !== $metricsInternalRep.internalYAML) {
-    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    updateInternalRep();
   }
 
   $: measures = $metricsInternalRep.getMeasures();

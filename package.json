@@ -3,7 +3,6 @@
   "version": "0.10.0",
   "type": "module",
   "workspaces": [
-    "runtime",
     "web-admin",
     "web-common",
     "web-local"
@@ -14,6 +13,7 @@
     "build-vercel-pkg": "node web-local/dist/web-local/src/cli/build-vercel-pkg.js",
     "to-esm": "node build-tools/replace_package_type.cjs commonjs module",
     "dev": "npm run dev -w web-local",
+    "dev-runtime": "go run cli/main.go start --no-ui",
     "cli": "ts-node-dev --quiet --project web-local/tsconfig.node.json -- web-local/src/cli/data-modeler-cli.ts",
     "test": "npm run test -w web-local"
   },
@@ -26,8 +26,5 @@
       "package.json",
       "web-local/package.json"
     ]
-  },
-  "dependencies": {
-    "yaml": "^2.1.3"
   }
 }

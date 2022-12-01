@@ -149,8 +149,11 @@ export class TestBrowser {
 
   public async updateModelSql(sql: string) {
     await this.page.locator(".cm-line").first().click();
-    // TODO: make this platform independent
-    await this.page.keyboard.press("Meta+A");
+    if (process.platform === "darwin") {
+      await this.page.keyboard.press("Meta+A");
+    } else {
+      await this.page.keyboard.press("Control+A");
+    }
     await this.page.keyboard.press("Delete");
     await this.page.keyboard.insertText(sql);
   }

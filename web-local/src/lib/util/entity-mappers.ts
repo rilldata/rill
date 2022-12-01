@@ -15,6 +15,13 @@ export function getFileFromName(name: string, type: EntityType): string {
   }
 }
 
+export function getNameFromFile(fileName: string): string {
+  // TODO: do we need a library here?
+  const splits = fileName.split("/");
+  const extensionSplits = splits[splits.length - 1]?.split(".");
+  return extensionSplits[0];
+}
+
 export function getRouteFromName(name: string, type: EntityType): string {
   if (!name) return "/";
   switch (type) {

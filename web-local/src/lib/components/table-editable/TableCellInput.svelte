@@ -88,21 +88,21 @@
 
 <td
   class="py-2 px-4 border border-gray-200 hover:bg-gray-200"
+  on:click={startEditing}
   style={editing
     ? "cursor:text; background:white; outline:1px solid #aaa;"
     : ""}
-  on:click={startEditing}
 >
   <div class="flex flex-row">
     <input
       autocomplete="off"
       bind:this={inputElt}
-      id="model-title-input"
       class="table-input w-full text-ellipsis bg-inherit font-normal"
-      on:input={startEditing}
-      on:focus={startEditing}
+      id="model-title-input"
       on:blur={stopEditing}
       on:change={onchangeHandler}
+      on:focus={startEditing}
+      on:input={startEditing}
       on:keyup={onkeyupHandler}
       value={value ?? ""}
     />

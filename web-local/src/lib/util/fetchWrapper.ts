@@ -1,5 +1,3 @@
-import { config } from "../application-state-stores/application-store";
-
 export async function fetchWrapperDirect(
   url: string,
   method: string,
@@ -24,7 +22,7 @@ export async function fetchWrapper(
   body?: BodyInit | Record<string, unknown>,
   headers: HeadersInit = { "Content-Type": "application/json" }
 ) {
-  const resp = await fetch(`${config.server.serverUrl}/api/${path}`, {
+  const resp = await fetch(`${RILL_RUNTIME_URL}/api/${path}`, {
     method,
     ...(body ? { body: serializeBody(body) } : {}),
     headers,
@@ -44,7 +42,7 @@ export async function* streamingFetchWrapper<T>(
 ): AsyncGenerator<T> {
   let response: Response;
   try {
-    response = await fetch(`${config.server.serverUrl}/api/${path}`, {
+    response = await fetch(`${RILL_RUNTIME_URL}/api/${path}`, {
       method,
       ...(body ? { body: JSON.stringify(body) } : {}),
       headers: { "Content-Type": "application/json" },

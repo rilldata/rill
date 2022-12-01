@@ -9,34 +9,22 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { getContext } from "svelte";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
-  import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
   import { IconButton } from "../../button";
   import Import from "../../icons/Import.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
-  import notifications from "../../notifications";
+  import { notifications } from "../../notifications";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
-  export let id;
-  export let name: string;
+  export let sourceName: string;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-
-  $: currentSource = $persistentTableStore?.entities?.find(
-    (entity) => entity.id === id || entity.tableName === name
-  );
+  const queryClient = useQueryClient();
 
   const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
@@ -46,7 +34,7 @@
 
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
-    currentSource?.tableName
+    sourceName
   );
 
   $: connector = $getSource.data?.entry?.source.connector as string;
@@ -57,14 +45,15 @@
         message:
           "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
       });
-      e.target.value = currentSource.name; // resets the input
+      e.target.value = sourceName; // resets the input
       return;
     }
 
     try {
       await renameFileArtifact(
+        queryClient,
         runtimeInstanceId,
-        name,
+        sourceName,
         e.target.value,
         EntityType.Table,
         $renameSource
@@ -84,7 +73,8 @@
         $createSource
       );
       // invalidate the data preview (async)
-      dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
+      // TODO: use new runtime approach
+      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
@@ -112,7 +102,7 @@
 
 <div class="grid  items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
-    {...{ titleInput: name, onChangeCallback }}
+    {...{ titleInput: sourceName, onChangeCallback }}
     showStatus={false}
   >
     <svelte:fragment slot="icon">
@@ -136,9 +126,7 @@
           {#if connector === "file"}
             <Tooltip location="bottom" distance={8}>
               <div style="transformY(-1px)">
-                <IconButton
-                  on:click={() => onRefreshClick(currentSource.tableName)}
-                >
+                <IconButton on:click={() => onRefreshClick(sourceName)}>
                   <Import size="16px" />
                 </IconButton>
               </div>
@@ -148,9 +136,7 @@
             </Tooltip>
           {:else}
             <Tooltip location="bottom" distance={8}>
-              <IconButton
-                on:click={() => onRefreshClick(currentSource.tableName)}
-              >
+              <IconButton on:click={() => onRefreshClick(sourceName)}>
                 <RefreshIcon size="16px" />
               </IconButton>
               <TooltipContent slot="tooltip-content">
