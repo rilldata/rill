@@ -1,29 +1,18 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import {
     ApplicationStore,
     duplicateSourceName,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { config } from "@rilldata/web-local/lib/application-state-stores/application-store.js";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
   import {
     importOverlayVisible,
     overlay,
     quickStartDashboardOverlay,
   } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import DuplicateSource from "@rilldata/web-local/lib/components/navigation/sources/DuplicateSource.svelte";
   import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
-  import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
   import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
-  import ImportingTable from "@rilldata/web-local/lib/components/overlay/ImportingTable.svelte";
   import PreparingImport from "@rilldata/web-local/lib/components/overlay/PreparingImport.svelte";
   import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
   import ConfigProvider from "@rilldata/web-local/lib/config/ConfigProvider.svelte";
@@ -66,34 +55,6 @@
   const app = getContext("rill:app:store") as ApplicationStore;
   $: debounceRunstate($app?.status || "disconnected");
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  // get any importing tables
-  $: derivedImportedTable = $derivedTableStore?.entities?.find(
-    (table) => table.status === EntityStatus.Importing
-  );
-  $: persistentImportedTable = $persistentTableStore?.entities?.find(
-    (table) => table.id === derivedImportedTable?.id
-  );
-  // get any exporting datasets.
-  $: derivedExportedModel = $derivedModelStore?.entities?.find(
-    (model) => model.status === EntityStatus.Exporting
-  );
-  $: persistentExportedModel = $persistentModelStore?.entities?.find(
-    (model) => model.id === derivedExportedModel?.id
-  );
-
   function isEventWithFiles(event: DragEvent) {
     let types = event.dataTransfer.types;
     return types && types.indexOf("Files") != -1;
@@ -103,14 +64,7 @@
 <QueryClientProvider client={queryClient}>
   <ConfigProvider {config}>
     <div class="body">
-      {#if derivedExportedModel && persistentExportedModel}
-        <ExportingDataset tableName={persistentExportedModel.name} />
-      {:else if derivedImportedTable && persistentImportedTable}
-        <ImportingTable
-          importName={persistentImportedTable.path}
-          tableName={persistentImportedTable.name}
-        />
-      {:else if $importOverlayVisible}
+      {#if $importOverlayVisible}
         <PreparingImport />
       {:else if $quickStartDashboardOverlay?.show}
         <QuickStartDashboard
