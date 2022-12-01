@@ -39,9 +39,12 @@ jobs:
         run: |-
           npm install
           npm run build
+
+      - name: Embed static UI
+        run: |-
           mkdir -p cli/pkg/web/embed/dist
           cp -r web-local/build/ cli/pkg/web/embed/dist
-          ls cli/pkg/web/embed/dist
+          ls -lrt cli/pkg/web/embed/dist
 
       - name: setup release environment
         run: |-
