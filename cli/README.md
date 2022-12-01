@@ -1,36 +1,20 @@
 # `cli`
 
-*NOTE: This folder is a work in progress. See `src/cli/` for the CLI currently used in Rill Developer.*
+## Building the CLI
 
-## Example usage:
-
-1. In a terminal, Run following commands to use rill cli:
-```
+In production builds, the CLI embeds the SPA in `web-local` and the examples in `examples` (from the root of the repo). To create a production build of the CLI with these embedded, run:
+```bash
 make cli
-./rill --help 
-```
-2. To install it via homebrew
-```
-brew install rilldata/rill-developer/rill
-rill --help
+./rill --help
 ```
 
-3. You can also try our example:
-    1. List of available examples
-    ```
-    rill init list
-    ```
-    2. Initialize the example project, default to `default`, default directory `.`
-    ```
-    rill init --example <example project name> --dir <directory to migrate example project>
-    ```
-    3. Start rill with hydration of example project, `start --help` for other available flags
-    ```
-    rill start --dir <example project directory>
-    ```
-4. See our documentation for more information by running
-```
-rill docs
-```
+## Running in development
 
-*NOTE: Few of the CLI commands are work in progress, it will just print the message eg. `command Name is called`
+In development, the CLI will serve a dummy frontend and not embed any examples. You can run it like this:
+```bash
+# To output usage:
+go run ./cli
+
+# To run start:
+go run ./cli start --dir dev-project
+```
