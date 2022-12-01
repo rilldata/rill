@@ -4,15 +4,15 @@ export function useModelNames(instanceId: string) {
   return useRuntimeServiceListFiles(
     instanceId,
     {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
+      glob: "{models}/*.{sql}",
     },
     {
       query: {
         refetchInterval: 1000,
         select: (data) =>
-          data.paths
-            ?.filter((path) => path.includes("models/"))
-            .map((path) => path.replace("/models/", "").replace(".sql", "")),
+          data.paths?.map((path) =>
+            path.replace("/models/", "").replace(".sql", "")
+          ),
       },
     }
   );

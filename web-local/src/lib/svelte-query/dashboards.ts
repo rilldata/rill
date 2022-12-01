@@ -9,17 +9,15 @@ export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
     repoId,
     {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
+      glob: "{dashboards}/*.{yaml}",
     },
     {
       query: {
         refetchInterval: 1000,
         select: (data) =>
-          data.paths
-            ?.filter((path) => path.includes("dashboards/"))
-            .map((path) =>
-              path.replace("/dashboards/", "").replace(".yaml", "")
-            ),
+          data.paths?.map((path) =>
+            path.replace("/dashboards/", "").replace(".yaml", "")
+          ),
       },
     }
   );
