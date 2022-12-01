@@ -96,10 +96,8 @@
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
                 <ColumnProfile
                   indentLevel={1}
-                  cardinality={derivedTable?.cardinality ?? 0}
-                  profile={derivedTable?.profile ?? []}
+                  objectName={sourceName}
                   head={derivedTable?.preview ?? []}
-                  entityId={persistentTable.id}
                 />
               </div>
             </svelte:fragment>

@@ -1,84 +1,48 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+
+  import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-  import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
-
   export let modelName: string;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
   const queryHighlight = getContext("rill:app:query-highlight");
+
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore?.instanceId,
+    modelName
+  );
+
+  $: entry = $getModel?.data?.entry;
 
   // get source tables?
   let sourceTableReferences = [];
   let showColumns = true;
-
-  /** get current model */
-  let currentModel: PersistentModelEntity;
-  $: currentModel =
-    modelName && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.tableName === modelName)
-      : undefined;
-
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = currentModel?.id;
-
-  /** get current derived model*/
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  // get source table references.
-  $: if (currentDerivedModel?.sources?.length) {
-    sourceTableReferences = currentDerivedModel.sources;
-  }
 
   // toggle state for inspector sections
   let showSourceTables = true;
 
   function focus(reference) {
     return () => {
-      if (!currentDerivedModel?.error && reference) {
-        queryHighlight.set(reference.tables);
-      }
+      // FIXME
+      // if (!currentDerivedModel?.error && reference) {
+      //   queryHighlight.set(reference.tables);
+      // }
     };
   }
   function blur() {
     queryHighlight.set(undefined);
   }
 
-  $: modelHasError = !!currentDerivedModel?.error;
+  // FIXME
+  let modelHasError = false;
 </script>
 
 <div class="model-profile">
-  {#if currentModel && currentModel.query.trim().length}
+  {#if entry && entry?.model?.sql?.trim()?.length}
     <div class="pt-4 pb-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
@@ -89,13 +53,13 @@
         </CollapsibleSectionTitle>
       </div>
 
-      <!-- source tables -->
       {#if showSourceTables}
         <div
           transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
           class="mt-1"
         >
-          {#each sourceTableReferences as table}
+          <!-- FIXME -->
+          <!-- {#each sourceTableReferences as table}
             {@const persistentTableRef = $persistentTableStore.entities.find(
               (t) => table.name === t.tableName
             )}
@@ -126,7 +90,6 @@
                 </div>
 
                 <div class="text-gray-500 italic">
-                  <!-- is there a source table with this name and cardinality established? -->
                   {#if correspondingTableCardinality}
                     {`${formatInteger(correspondingTableCardinality)} rows` ||
                       ""}
@@ -134,7 +97,6 @@
                 </div>
               </div>
 
-              <!-- tooltip content -->
               <svelte:fragment slot="tooltip-title"
                 >{sourceName}</svelte:fragment
               >
@@ -149,7 +111,7 @@
                 {/if}
               </svelte:fragment>
             </WithModelResultTooltip>
-          {/each}
+          {/each} -->
         </div>
       {/if}
     </div>
@@ -166,15 +128,15 @@
         </CollapsibleSectionTitle>
       </div>
 
-      {#if currentDerivedModel?.profile && showColumns}
+      {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile
-            indentLevel={0}
-            cardinality={currentDerivedModel?.cardinality ?? 0}
-            profile={currentDerivedModel?.profile ?? []}
-            head={currentDerivedModel?.preview ?? []}
-            entityId={activeEntityID}
-          />
+          {#key entry?.model?.sql}
+            <ColumnProfile
+              key={entry?.model?.sql}
+              objectName={entry?.model?.name}
+              indentLevel={0}
+            />
+          {/key}
         </div>
       {/if}
     </div>

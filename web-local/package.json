@@ -111,6 +111,7 @@
     "commander": "^9.1.0",
     "cors": "^2.8.5",
     "d3-format": "^3.1.0",
+    "d3-scale-chromatic": "^3.0.0",
     "d3-shape": "^3.1.0",
     "d3-time": "^3.0.0",
     "d3-time-format": "^4.1.0",

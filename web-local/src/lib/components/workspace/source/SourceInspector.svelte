@@ -53,13 +53,13 @@
     "rill:app:derived-table-store"
   ) as DerivedTableStore;
 
-  export let sourceID: string;
+  export let sourceName: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
-    currentTable?.tableName
+    sourceName
   );
 
   $: modelNames = useModelNames(runtimeInstanceId);
@@ -69,13 +69,13 @@
 
   let currentTable: PersistentTableEntity;
   $: currentTable =
-    sourceID && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.id === sourceID)
+    sourceName && $persistentTableStore?.entities
+      ? $persistentTableStore.entities.find((q) => q.tableName === sourceName)
       : undefined;
   let currentDerivedTable: DerivedTableEntity;
   $: currentDerivedTable =
-    sourceID && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === sourceID)
+    currentTable && $derivedTableStore?.entities
+      ? $derivedTableStore.entities.find((q) => q.id === currentTable?.id)
       : undefined;
   // get source table references.
 
@@ -109,8 +109,9 @@
       $persistentModelStore.entities,
       $derivedTableStore.entities,
       currentTable.id,
-      $persistentTableStore.entities.find((table) => table.id === sourceID)
-        .tableName
+      $persistentTableStore.entities.find(
+        (table) => table.tableName === sourceName
+      ).tableName
     ).then((createdMetricsId) => {
       navigationEvent.fireEvent(
         createdMetricsId,
@@ -252,6 +253,7 @@
       {#if currentDerivedTable?.profile && showColumns}
         <div transition:slide|local={{ duration: 200 }}>
           <ColumnProfile
+            objectName={sourceName}
             entityId={currentTable.id}
             indentLevel={0}
             cardinality={currentDerivedTable?.cardinality ?? 0}
