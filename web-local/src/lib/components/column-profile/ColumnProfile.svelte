@@ -12,16 +12,12 @@
   import { NATIVE_SELECT } from "../../util/component-classes";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getColumnType } from "./column-types";
 
   export let containerWidth = 0;
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   export let objectName: string;
-  // export let profile: any;
-  export let head: any; // FIXME
   export let indentLevel = 0;
-  export let key: any;
 
   let mode = "summaries";
 
@@ -60,6 +56,7 @@
   $: profileColumns = useRuntimeServiceProfileColumns(
     $runtimeStore?.instanceId,
     objectName,
+    {},
     { query: { keepPreviousData: true } }
   );
 
@@ -78,13 +75,20 @@
         return derived(
           [
             writable(column),
-            useRuntimeServiceGetNullCount(instanceId, objectName, column.name, {
-              query: { keepPreviousData: true },
-            }),
+            useRuntimeServiceGetNullCount(
+              instanceId,
+              objectName,
+              column.name,
+              {},
+              {
+                query: { keepPreviousData: true },
+              }
+            ),
             useRuntimeServiceGetCardinalityOfColumn(
               instanceId,
               objectName,
               column.name,
+              {},
               { query: { keepPreviousData: true } }
             ),
           ],
