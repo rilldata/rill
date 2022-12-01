@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServicePutFileAndReconcile,
@@ -15,7 +17,6 @@
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
-  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
@@ -29,12 +30,15 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { slide } from "svelte/transition";
+  import { overlay } from "../../../application-state-stores/overlay-store";
+  import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
+  import { useModelNames } from "../../../svelte-query/models";
+  import { createModelFromSource } from "../../navigation/models/createModel";
 
   export let sourceName: string;
 
@@ -51,6 +55,7 @@
 
   $: modelNames = useModelNames(runtimeInstanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let showColumns = true;
 
@@ -77,27 +82,33 @@
     );
   };
 
-  const handleCreateMetric = () => {
-    // A side effect of the createMetricsDefsApi is we switch active assets to
-    // the newly created metrics definition. So, this'll bring us to the
-    // MetricsDefinition page. (The logic for this is contained in the
-    // not-pictured async thunk.)
-    // autoCreateMetricsDefinitionForSource(
-    //   $persistentModelStore.entities,
-    //   $derivedTableStore.entities,
-    //   currentTable.id,
-    //   $persistentTableStore.entities.find(
-    //     (table) => table.tableName === sourceName
-    //   ).tableName
-    // ).then((createdMetricsId) => {
-    //   navigationEvent.fireEvent(
-    //     createdMetricsId,
-    //     BehaviourEventMedium.Button,
-    //     MetricsEventSpace.RightPanel,
-    //     MetricsEventScreenName.Source,
-    //     MetricsEventScreenName.Dashboard
-    //   );
-    // });
+  const handleCreateDashboardFromSource = (sourceName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
+    $createDashboardFromSourceMutation.mutate(
+      {
+        data: { instanceId: $runtimeStore.instanceId, sourceName },
+      },
+      {
+        onSuccess: async (resp) => {
+          goto(`/dashboard/${resp.dashboardName}`);
+          await queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
+          );
+          navigationEvent.fireEvent(
+            resp.dashboardName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.RightPanel,
+            MetricsEventScreenName.Source,
+            MetricsEventScreenName.Dashboard
+          );
+        },
+        onSettled: () => {
+          overlay.set(null);
+        },
+      }
+    );
   };
 
   /** source summary information */
@@ -180,7 +191,7 @@
         <Button
           type="primary"
           disabled={!timestampColumns?.length}
-          on:click={handleCreateMetric}
+          on:click={() => handleCreateDashboardFromSource(sourceName)}
         >
           <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
           <Explore size="16px" /></Button
