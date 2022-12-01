@@ -80,7 +80,7 @@ archives:
       - LICENSE*
 
 checksum:
-  name_template: checksum-{{ .Runtime.Goos }}-{{ .Runtime.Goarch }}.txt
+  name_template: checksums.txt
 
 snapshot:
   name_template: "{{ incpatch .Version }}-snapshot"
