@@ -7,6 +7,8 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { uploadTableFiles } from "../../util/file-upload";
   import { createSource } from "../navigation/sources/createSource";
   import Overlay from "./Overlay.svelte";
@@ -16,12 +18,15 @@
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
+  $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: modelNames = useModelNames(runtimeInstanceId);
+
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
 
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
-      [$persistentModelStore.entities, $persistentTableStore.entities],
+      [sourceNames, modelNames],
       $runtimeStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {

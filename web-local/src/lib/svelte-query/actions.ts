@@ -7,7 +7,6 @@ import {
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
-import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
@@ -33,7 +32,6 @@ export async function renameFileArtifact(
     },
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  await dataModelerService.dispatch("renameEntity", [type, fromName, toName]);
   goto(getRouteFromName(toName, type), {
     replaceState: true,
   });
@@ -64,8 +62,6 @@ export async function deleteFileArtifact(
     if (activeEntity.name === name) {
       goto(getRouteFromName(getNextEntityName(names, name), type));
     }
-    // Temporary until nodejs is removed
-    await dataModelerService.dispatch("deleteEntity", [type, name]);
 
     notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 

@@ -4,6 +4,8 @@
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import {
     openFileUploadDialog,
     uploadTableFiles,
@@ -15,6 +17,9 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
+  $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: modelNames = useModelNames(runtimeInstanceId);
+
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
   async function handleOpenFileDialog() {
@@ -24,7 +29,7 @@
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
-      [$persistentModelStore.entities, $persistentTableStore.entities],
+      [sourceNames, modelNames],
       $runtimeStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {

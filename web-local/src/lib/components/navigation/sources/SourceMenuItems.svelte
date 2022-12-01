@@ -5,21 +5,21 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
+    V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors.js";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
@@ -48,6 +48,12 @@
     $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
   );
+  $: getSource = useRuntimeServiceGetCatalogEntry(
+    runtimeInstanceId,
+    sourceName
+  );
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
 
   const dispatch = createEventDispatcher();
 
@@ -96,7 +102,7 @@
     }
   };
 
-  const bootstrapDashboard = async (id: string, tableName: string) => {
+  const bootstrapDashboard = async (_tableName: string) => {
     // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
     // const createdMetricsId = await autoCreateMetricsDefinitionForSource(
     //   $persistentModelStore.entities,
@@ -155,14 +161,14 @@
 </MenuItem>
 
 <MenuItem
-  disabled={!derivedProfileEntityHasTimestampColumn(derivedTable)}
+  disabled={!schemaHasTimestampColumn(source?.schema)}
   icon
-  on:select={() => bootstrapDashboard(sourceID, sourceName)}
+  on:select={() => bootstrapDashboard(sourceName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
+    {#if !schemaHasTimestampColumn(source?.schema)}
       requires a timestamp column
     {/if}
   </svelte:fragment>

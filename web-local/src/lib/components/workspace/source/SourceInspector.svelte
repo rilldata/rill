@@ -4,7 +4,6 @@
     useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
@@ -22,6 +21,7 @@
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
