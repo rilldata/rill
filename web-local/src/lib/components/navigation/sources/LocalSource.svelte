@@ -10,10 +10,13 @@
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-local/lib/util/file-upload";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createSource } from "./createSource";
 
   const dispatch = createEventDispatcher();
+
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -29,7 +32,7 @@
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
-      [sourceNames, modelNames],
+      [$sourceNames?.data, $modelNames?.data],
       $runtimeStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {
@@ -43,6 +46,7 @@
         );
         // TODO: errors
         await createSource(
+          queryClient,
           runtimeInstanceId,
           tableName,
           yaml,

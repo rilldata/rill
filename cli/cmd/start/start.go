@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/mattn/go-colorable"
@@ -31,6 +32,8 @@ import (
 )
 
 var localInstanceID = "default"
+
+const DatabaseFile = "stage.db"
 
 // StartCmd represents the start command
 func StartCmd(ver string) *cobra.Command {
@@ -81,6 +84,10 @@ func StartCmd(ver string) *cobra.Command {
 			err = os.MkdirAll(repoDSN, os.ModePerm)
 			if err != nil {
 				return err
+			}
+			if olapDSN == DatabaseFile {
+				// if no olapDSN is passed prepend repoDSN to make sure the file is inside repo dir
+				olapDSN = path.Join(repoDSN, olapDSN)
 			}
 			// Create instance and repo configured for local use
 			inst := &drivers.Instance{
@@ -198,7 +205,7 @@ func StartCmd(ver string) *cobra.Command {
 	}
 
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", "duckdb", "OLAP database driver")
-	startCmd.Flags().StringVar(&olapDSN, "db", "stage.db", "OLAP database DSN")
+	startCmd.Flags().StringVar(&olapDSN, "db", DatabaseFile, "OLAP database DSN")
 	startCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for the UI and runtime")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for the runtime's gRPC service")

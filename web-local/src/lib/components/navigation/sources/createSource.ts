@@ -6,12 +6,13 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+import type { QueryClient } from "@sveltestack/svelte-query";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 import { getFileFromName } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";
 
 export async function createSource(
+  queryClient: QueryClient,
   instanceId: string,
   tableName: string,
   yaml: string,

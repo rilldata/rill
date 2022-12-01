@@ -9,7 +9,7 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
@@ -23,6 +23,8 @@
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let sourceName: string;
+
+  const queryClient = useQueryClient();
 
   const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
@@ -49,6 +51,7 @@
 
     try {
       await renameFileArtifact(
+        queryClient,
         runtimeInstanceId,
         sourceName,
         e.target.value,

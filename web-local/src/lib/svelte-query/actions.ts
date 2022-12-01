@@ -9,15 +9,16 @@ import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-s
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { notifications } from "@rilldata/web-local/lib/components/notifications";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
 import {
   getFileFromName,
   getLabel,
   getRouteFromName,
 } from "@rilldata/web-local/lib/util/entity-mappers";
+import type { QueryClient } from "@sveltestack/svelte-query";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 
 export async function renameFileArtifact(
+  queryClient: QueryClient,
   instanceId: string,
   fromName: string,
   toName: string,
@@ -44,6 +45,7 @@ export async function renameFileArtifact(
 }
 
 export async function deleteFileArtifact(
+  queryClient: QueryClient,
   instanceId: string,
   name: string,
   type: EntityType,

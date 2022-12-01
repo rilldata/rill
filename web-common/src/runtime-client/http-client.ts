@@ -1,7 +1,7 @@
 import Axios, { AxiosRequestConfig } from "axios";
 
 export const AXIOS_INSTANCE = Axios.create({
-  baseURL: "http://localhost:8081",
+  baseURL: (window as any).RILL_RUNTIME_URL,
 });
 
 export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {

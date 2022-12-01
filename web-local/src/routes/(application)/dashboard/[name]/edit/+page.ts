@@ -6,14 +6,13 @@ import {
   ExplorerTimeDimensionDoesntExist,
   ExplorerMetricsDefinitionDoesntExist,
 } from "@rilldata/web-local/common/errors/ErrorMessages";
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   const localConfig = await fetchWrapperDirect(
-    `${config.server.serverUrl}/local/config`,
+    `${RILL_RUNTIME_URL}/local/config`,
     "GET"
   );
 

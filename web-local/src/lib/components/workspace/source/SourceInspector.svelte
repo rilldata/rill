@@ -28,6 +28,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     formatBigNumberPercentage,
@@ -36,6 +37,8 @@
   import { slide } from "svelte/transition";
 
   export let sourceName: string;
+
+  const queryClient = createQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -59,6 +62,7 @@
 
   const handleCreateModelFromSource = async () => {
     const modelName = await createModelFromSource(
+      queryClient,
       runtimeInstanceId,
       $modelNames.data,
       sourceName,

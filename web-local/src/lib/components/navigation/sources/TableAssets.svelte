@@ -4,6 +4,7 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
@@ -22,6 +23,8 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
+  const queryClient = useQueryClient();
+
   let showTables = true;
 
   let showAddSourceModal = false;
@@ -32,6 +35,7 @@
 
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
+      queryClient,
       $runtimeStore.instanceId,
       $modelNames.data,
       tableName,

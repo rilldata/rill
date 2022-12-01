@@ -28,9 +28,9 @@
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import { default as Explore } from "../../icons/Explore.svelte";
@@ -44,6 +44,8 @@
   $: instanceId = $runtimeStore.instanceId;
 
   $: dashboardNames = useDashboardNames(instanceId);
+
+  const queryClient = useQueryClient();
 
   const createDashboard = useRuntimeServicePutFileAndReconcile();
   const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
@@ -107,6 +109,7 @@
 
   const deleteMetricsDef = async (dashboardName: string) => {
     await deleteFileArtifact(
+      queryClient,
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,

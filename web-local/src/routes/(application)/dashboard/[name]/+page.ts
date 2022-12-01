@@ -1,6 +1,5 @@
 import { runtimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
 import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error, redirect } from "@sveltejs/kit";
 
@@ -9,7 +8,7 @@ export const ssr = false;
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   const localConfig = await fetchWrapperDirect(
-    `${config.server.serverUrl}/local/config`,
+    `${RILL_RUNTIME_URL}/local/config`,
     "GET"
   );
 

@@ -15,8 +15,8 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
@@ -26,6 +26,8 @@
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
+
+  const queryClient = useQueryClient();
 
   const queryHighlight = getContext("rill:app:query-highlight");
 
@@ -70,6 +72,7 @@
 
     try {
       await renameFileArtifact(
+        queryClient,
         runtimeInstanceId,
         modelName,
         e.target.value,

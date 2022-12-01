@@ -14,7 +14,7 @@
     "build-vercel-pkg": "node web-local/dist/web-local/src/cli/build-vercel-pkg.js",
     "to-esm": "node build-tools/replace_package_type.cjs commonjs module",
     "dev": "npm run dev -w web-local",
-    "dev-runtime": "go run cli/main.go start --no-ui --port 8081",
+    "dev-runtime": "go run cli/main.go start --no-ui",
     "cli": "ts-node-dev --quiet --project web-local/tsconfig.node.json -- web-local/src/cli/data-modeler-cli.ts",
     "test": "npm run test -w web-local"
   },

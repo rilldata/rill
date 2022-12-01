@@ -11,7 +11,7 @@ import (
 	"github.com/NYTimes/gziphandler"
 )
 
-//go:embed embed
+//go:embed all:embed
 var distFS embed.FS
 
 // Handler serves an web-local UI

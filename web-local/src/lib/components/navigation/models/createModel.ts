@@ -6,12 +6,13 @@ import {
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+import type { QueryClient } from "@sveltestack/svelte-query";
 import type { UseMutationResult } from "@sveltestack/svelte-query";
 import { getFileFromName } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";
 
 export async function createModel(
+  queryClient: QueryClient,
   instanceId: string,
   newModelName: string,
   createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
@@ -43,6 +44,7 @@ export async function createModel(
 }
 
 export async function createModelFromSource(
+  queryClient: QueryClient,
   instanceId: string,
   modelNames: Array<string>,
   sourceName: string,
@@ -51,6 +53,7 @@ export async function createModelFromSource(
 ): Promise<string> {
   const newModelName = getName(`${sourceName}_model`, modelNames);
   await createModel(
+    queryClient,
     instanceId,
     newModelName,
     createModelMutation,

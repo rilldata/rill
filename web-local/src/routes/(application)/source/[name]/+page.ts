@@ -7,7 +7,10 @@ export const ssr = false;
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   try {
-    const localConfig = await fetchWrapperDirect(`/local/config`, "GET");
+    const localConfig = await fetchWrapperDirect(
+      `${RILL_RUNTIME_URL}/local/config`,
+      "GET"
+    );
 
     await runtimeServiceGetFile(
       localConfig.instance_id,

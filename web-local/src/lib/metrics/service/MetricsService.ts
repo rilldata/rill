@@ -5,7 +5,6 @@ import type {
   PickActionFunctions,
 } from "@rilldata/web-local/common/ServiceBase";
 import { getActionMethods } from "@rilldata/web-local/common/ServiceBase";
-import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type { MetricsEventFactory } from "./MetricsEventFactory";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";
@@ -35,7 +34,6 @@ export class MetricsService
   private commonFields: Record<string, unknown>;
 
   public constructor(
-    private readonly config: RootConfig,
     private readonly rillIntakeClient: RillIntakeClient,
     private readonly metricsEventFactories: Array<MetricsEventFactory>
   ) {
@@ -48,13 +46,13 @@ export class MetricsService
 
   public async loadCommonFields() {
     const localConfig = await fetchWrapperDirect(
-      `${this.config.server.serverUrl}/local/config`,
+      `${RILL_RUNTIME_URL}/local/config`,
       "GET"
     );
     try {
       const projectPathParts = localConfig.project_path.split("/");
       this.commonFields = {
-        app_name: this.config.metrics.appName,
+        app_name: "rill-developer",
         install_id: localConfig.install_id,
         // @ts-ignore
         build_id: RILL_COMMIT,
@@ -74,7 +72,6 @@ export class MetricsService
     action: Action,
     args: MetricsActionDefinition[Action]
   ): Promise<void> {
-    if (!this.config.local.sendTelemetryData) return;
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);
       return;

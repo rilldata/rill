@@ -5,6 +5,7 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
@@ -18,12 +19,15 @@
 
   $: modelNames = useModelNames($runtimeStore.instanceId);
 
+  const queryClient = useQueryClient();
+
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
   let showModels = true;
 
   async function handleAddModel() {
     await createModel(
+      queryClient,
       $runtimeStore.instanceId,
       getName("model", $modelNames.data),
       $createModelMutation

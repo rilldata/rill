@@ -3,7 +3,7 @@
   "version": "0.15.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "RILL_DEV=true vite dev",
     "build": "vite build",
     "prepack": "./build-tools/replace_package_type.sh module commonjs && cp package.json dist/web-local/",
     "postpack": "./build-tools/replace_package_type.sh commonjs module",
