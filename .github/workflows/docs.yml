@@ -1,8 +1,7 @@
 name: Build and Deploy to Netlify
 on:
   push:
-    tags:
-      - "*"
+    branches: [ "main" ]
     paths:
       - ".github/workflows/docs.yml"
       - "docs/**"
