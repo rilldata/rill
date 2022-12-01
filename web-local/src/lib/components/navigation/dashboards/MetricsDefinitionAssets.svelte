@@ -140,6 +140,14 @@
     if ($appStore.activeEntity.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
+
+        navigationEvent.fireEvent(
+          sourceModelName,
+          BehaviourEventMedium.Menu,
+          MetricsEventSpace.LeftPanel,
+          MetricsEventScreenName.MetricsDefinition,
+          MetricsEventScreenName.Model
+        );
       } else {
         goto("/");
       }
