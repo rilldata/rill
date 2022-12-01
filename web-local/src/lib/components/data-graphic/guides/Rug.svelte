@@ -5,6 +5,7 @@
   import { interpolateReds } from "d3-scale-chromatic";
   import { getContext } from "svelte";
   import { fly } from "svelte/transition";
+  import type { SimpleConfigurationStore } from "../state/types";
 
   export let data;
 

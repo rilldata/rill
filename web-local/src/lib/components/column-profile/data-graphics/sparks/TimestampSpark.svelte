@@ -7,17 +7,9 @@
    * It optionally enables the user to determine a "window", which
    * is just a box emcompassing the zoomWindowXMin and zoomWindowXMax values.
    */
-  import resolveConfig from "tailwindcss/resolveConfig";
-  import tailwindConfig from "../../../../../../../tailwind.config";
-  import { guidGenerator } from "../../../../util/guid";
   import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithParentClientRect } from "../../../data-graphic/functional-components";
   import { Area, Line } from "../../../data-graphic/marks";
-  const { theme } = resolveConfig(tailwindConfig);
-
-  console.log(theme.colors.blue[500], "SOOSNFON!!");
-
-  const plotID = guidGenerator();
 
   //export let data;
 

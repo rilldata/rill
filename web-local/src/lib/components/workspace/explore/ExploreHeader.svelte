@@ -21,6 +21,8 @@
   const queryClient = useQueryClient();
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+
+  let displayName;
   // TODO: move this "sync" to a more relevant component
   $: if (
     metricViewName &&
@@ -36,6 +38,7 @@
       // FIXME: understand this logic before removing invalidateMetricsViewData
       invalidateMetricsViewData(queryClient, metricViewName);
     }
+    displayName = $metaQuery.data.label;
     metricsExplorerStore.sync(metricViewName, $metaQuery.data);
   }
 
@@ -60,7 +63,7 @@
     <!-- title element -->
     <h1 style:line-height="1.1">
       <div class="pl-4 pt-1" style:font-size="24px">
-        {metricViewName}
+        {displayName || metricViewName}
       </div>
     </h1>
     <!-- top right CTAs -->
