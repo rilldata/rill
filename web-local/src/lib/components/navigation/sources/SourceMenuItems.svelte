@@ -9,11 +9,6 @@
     useRuntimeServiceTriggerRefresh,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
@@ -27,6 +22,11 @@
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
   import {
     createDashboardFromSource,
     deleteFileArtifact,
@@ -122,14 +122,14 @@
       queryClient.invalidateQueries(
         getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
       );
-      const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-      navigationEvent.fireEvent(
-        newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
-        MetricsEventScreenName.Dashboard
-      );
+      // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+      // navigationEvent.fireEvent(
+      //   newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
+      //   BehaviourEventMedium.Menu,
+      //   MetricsEventSpace.LeftPanel,
+      //   EntityTypeToScreenMap[previousActiveEntity],
+      //   MetricsEventScreenName.Dashboard
+      // );
     } catch (err) {
       console.error(err);
     }
