@@ -6,6 +6,7 @@
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -13,7 +14,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import {
     useSourceFromYaml,
@@ -51,8 +51,6 @@
 
   const dispatch = createEventDispatcher();
 
-  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
-
   $: runtimeInstanceId = $runtimeStore.instanceId;
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
@@ -70,7 +68,7 @@
       tableName,
       EntityType.Table,
       $deleteSource,
-      $rillAppStore.activeEntity,
+      $appStore.activeEntity,
       $sourceNames.data
     );
     toggleMenu();
@@ -78,7 +76,7 @@
 
   const handleCreateModel = async (tableName: string) => {
     try {
-      const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+      const previousActiveEntity = $appStore.activeEntity.type;
       const newModelName = await createModelFromSource(
         runtimeInstanceId,
         $modelNames.data,
@@ -99,21 +97,21 @@
   };
 
   const bootstrapDashboard = async (id: string, tableName: string) => {
-    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    const createdMetricsId = await autoCreateMetricsDefinitionForSource(
-      $persistentModelStore.entities,
-      $derivedTableStore.entities,
-      sourceID,
-      tableName
-    );
-
-    navigationEvent.fireEvent(
-      createdMetricsId,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
-      MetricsEventScreenName.Dashboard
-    );
+    // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    // const createdMetricsId = await autoCreateMetricsDefinitionForSource(
+    //   $persistentModelStore.entities,
+    //   $derivedTableStore.entities,
+    //   sourceID,
+    //   tableName
+    // );
+    //
+    // navigationEvent.fireEvent(
+    //   createdMetricsId,
+    //   BehaviourEventMedium.Menu,
+    //   MetricsEventSpace.LeftPanel,
+    //   EntityTypeToScreenMap[previousActiveEntity],
+    //   MetricsEventScreenName.Dashboard
+    // );
   };
 
   const onRefreshSource = async (tableName: string) => {

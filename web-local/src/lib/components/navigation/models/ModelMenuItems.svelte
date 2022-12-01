@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { useRuntimeServiceDeleteFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServiceGetCatalogEntry,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
@@ -24,23 +24,13 @@
 
   const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-  const applicationStore = getContext("rill:app:store") as ApplicationStore;
-
   $: modelNames = useModelNames($runtimeStore.instanceId);
-
-  $: persistentModel = $persistentModelStore?.entities?.find(
-    (model) => model.tableName === modelName
+  $: modelQuery = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
   );
-
-  $: derivedModel = $derivedModelStore?.entities?.find(
-    (model) => model.id === persistentModel?.id
-  );
+  let model: V1Model;
+  $: model = $modelQuery.data?.entry?.model;
 
   // const metricMigrate = useRuntimeServicePutFileAndReconcile();
 
@@ -74,7 +64,7 @@
       modelName,
       EntityType.Model,
       $deleteModel,
-      $applicationStore.activeEntity,
+      $appStore.activeEntity,
       $modelNames.data
     );
     // onSettled gets triggered *after* both onSuccess and onError
@@ -83,14 +73,14 @@
 </script>
 
 <MenuItem
-  disabled={!derivedProfileEntityHasTimestampColumn(derivedModel)}
+  disabled={!schemaHasTimestampColumn(model?.schema)}
   icon
   on:select={() => bootstrapDashboard(modelName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if !derivedProfileEntityHasTimestampColumn(derivedModel)}
+    {#if !schemaHasTimestampColumn(model?.schema)}
       requires a timestamp column
     {/if}
   </svelte:fragment>

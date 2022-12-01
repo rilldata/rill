@@ -52,8 +52,8 @@
 
   let showDropOverlay = false;
 
-  const app = getContext("rill:app:store") as ApplicationStore;
-  $: debounceRunstate($app?.status || "disconnected");
+  // TODO: add new global run state
+  $: debounceRunstate("disconnected");
 
   function isEventWithFiles(event: DragEvent) {
     let types = event.dataTransfer.types;

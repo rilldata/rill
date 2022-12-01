@@ -9,6 +9,7 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -27,9 +28,7 @@
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../../application-state-stores/application-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
@@ -48,9 +47,6 @@
 
   const createDashboard = useRuntimeServicePutFileAndReconcile();
   const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
-
-  const appStore = getContext("rill:app:store") as ApplicationStore;
-  const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showMetricsDefs = true;
 
@@ -115,7 +111,7 @@
       dashboardName,
       EntityType.MetricsDefinition,
       $deleteDashboard,
-      $applicationStore.activeEntity,
+      $appStore.activeEntity,
       $dashboardNames.data
     );
   };

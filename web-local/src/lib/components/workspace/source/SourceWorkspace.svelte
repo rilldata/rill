@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "../../../application-state-stores/application-store";
   import { ConnectedPreviewTable } from "../../preview-table";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceInspector from "./SourceInspector.svelte";
@@ -11,10 +11,7 @@
   const switchToSource = async (name: string) => {
     if (!name) return;
 
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Table,
-      name,
-    ]);
+    appStore.setActiveEntity(name, EntityType.Table);
   };
 
   $: switchToSource(sourceName);

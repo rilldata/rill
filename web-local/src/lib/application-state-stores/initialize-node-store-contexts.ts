@@ -12,7 +12,6 @@ import {
   createDerivedTableStore,
   createPersistentTableStore,
 } from "../application-state-stores/table-stores";
-import { syncApplicationState } from "../redux-store/application/application-apis";
 
 /** determined by Vite's define option. */
 declare global {
@@ -45,6 +44,5 @@ export function initializeNodeStoreContexts() {
     setContext(`rill:app:derived-table-store`, createDerivedTableStore());
     setContext(`rill:app:persistent-model-store`, createPersistentModelStore());
     setContext(`rill:app:derived-model-store`, createDerivedModelStore());
-    syncApplicationState(store);
   }
 }

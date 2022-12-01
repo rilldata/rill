@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
@@ -33,6 +34,14 @@
   export let nonStandardError;
 
   $: instanceId = $runtimeStore.instanceId;
+
+  const switchToMetrics = async (metricsDefName: string) => {
+    if (!metricsDefName) return;
+
+    appStore.setActiveEntity(metricsDefName, EntityType.MetricsDefinition);
+  };
+
+  $: switchToMetrics(metricsDefName);
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
   async function callPutAndMigrate(internalYamlString) {
