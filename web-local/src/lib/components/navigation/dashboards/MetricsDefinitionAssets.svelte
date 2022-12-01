@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
@@ -28,6 +27,7 @@
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
@@ -65,7 +65,7 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
-    await $createDashboard.mutateAsync({
+    const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
         path: `dashboards/${newDashboardName}.yaml`,
@@ -76,9 +76,7 @@
       },
     });
     goto(`/dashboard/${newDashboardName}`);
-    queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    );
+    return invalidateAfterReconcile(queryClient, instanceId, resp);
   };
 
   const editModel = (sourceModelName: string) => {

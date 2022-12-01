@@ -1,6 +1,7 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,
@@ -8,7 +9,6 @@
   } from "../../../../application-state-stores/explorer-stores";
   import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,

@@ -1,6 +1,5 @@
 import { goto } from "$app/navigation";
-import {
-  getRuntimeServiceListFilesQueryKey,
+import type {
   V1DeleteFileAndReconcileResponse,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -9,6 +8,7 @@ import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-s
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { notifications } from "@rilldata/web-local/lib/components/notifications";
+import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import {
   getFileFromName,
   getLabel,
@@ -39,9 +39,7 @@ export async function renameFileArtifact(
   notifications.send({
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
-  await queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(instanceId)
-  );
+  return invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 
 export async function deleteFileArtifact(
@@ -67,10 +65,7 @@ export async function deleteFileArtifact(
 
     notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
-    // TODO: update all entities based on affected path
-    return queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    );
+    return invalidateAfterReconcile(queryClient, instanceId, resp);
   } catch (err) {
     console.error(err);
   }

@@ -14,6 +14,7 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
@@ -42,6 +43,7 @@
   $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
 
@@ -63,7 +65,7 @@
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
       notifications.send({
         message:
-          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
       });
       e.target.value = modelName; // resets the input
       return;
@@ -122,12 +124,12 @@
     const resp = (await $updateModel.mutateAsync({
       data: {
         instanceId: runtimeInstanceId,
-        path: getFileFromName(modelName, EntityType.Model),
+        path: modelPath,
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
+    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
     if (!resp.errors.length) {
       // re-fetch existing finished queries
       await queryClient.resetQueries({
