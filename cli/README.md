@@ -9,12 +9,28 @@
 make cli
 ./rill --help 
 ```
-
-2. You can also try our example:
-
+2. To install it via homebrew
 ```
-rill init --example <example project name>
-rill start --dir <example project name>
+brew install rilldata/rill-developer/rill
+rill --help
+```
+
+3. You can also try our example:
+    1. List of available examples
+    ```
+    rill init list
+    ```
+    2. Initialize the example project, default to `default`, default directory `.`
+    ```
+    rill init --example <example project name> --dir <directory to migrate example project>
+    ```
+    3. Start rill with hydration of example project, `start --help` for other available flags
+    ```
+    rill start --dir <example project directory>
+    ```
+4. See our documentation for more information by running
+```
+rill docs
 ```
 
 *NOTE: Few of the CLI commands are work in progress, it will just print the message eg. `command Name is called`
