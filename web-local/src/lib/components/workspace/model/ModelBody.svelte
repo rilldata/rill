@@ -1,9 +1,8 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
-    V1Model,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
@@ -32,11 +31,8 @@
   const queryHighlight = getContext("rill:app:query-highlight");
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getModel = useRuntimeServiceGetCatalogEntry(runtimeInstanceId, modelName);
   const updateModel = useRuntimeServicePutFileAndReconcile();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
@@ -45,6 +41,9 @@
   let modelPath: string;
   $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
+  $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: modelSql = $modelSqlQuery?.data?.blob;
+  $: hasModelSql = typeof modelSql === "string";
 
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
@@ -151,12 +150,12 @@
     style:height="calc({innerHeight}px - {$outputPosition}px -
     var(--header-height))"
   >
-    {#if model}
+    {#if hasModelSql}
       <div class="h-full grid p-5 pt-0 overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
-            content={model.sql}
+            content={modelSql}
             selections={$queryHighlight}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
@@ -191,7 +190,7 @@
     </div>
   </Portal>
 
-  {#if model}
+  {#if hasModelSql}
     <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&

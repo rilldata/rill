@@ -85,7 +85,7 @@
 
   const handleCreateModel = async (tableName: string) => {
     try {
-      const previousActiveEntity = $appStore.activeEntity.type;
+      const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
         queryClient,
         runtimeInstanceId,

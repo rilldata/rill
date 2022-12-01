@@ -61,7 +61,7 @@ export async function deleteFileArtifact(
       },
     });
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    if (activeEntity.name === name) {
+    if (activeEntity?.name === name) {
       goto(getRouteFromName(getNextEntityName(names, name), type));
     }
 
