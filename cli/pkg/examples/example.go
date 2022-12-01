@@ -2,16 +2,20 @@ package examples
 
 import (
 	"embed"
-	"fmt"
+	"errors"
 	"os"
-	"path/filepath"
+	"path"
+
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 //go:embed all:embed
-var exampleFS embed.FS
+var examplesFS embed.FS
+
+var ErrExampleNotFound = errors.New("example not found")
 
 func List() ([]string, error) {
-	entries, err := exampleFS.ReadDir("embed/dist")
+	entries, err := examplesFS.ReadDir("embed/dist")
 	if err != nil {
 		return nil, err
 	}
@@ -24,59 +28,16 @@ func List() ([]string, error) {
 	return exampleList, nil
 }
 
-func Init(projectName string, projectDir string) error {
-	examplePath, err := getExampleProject(projectName)
+func Init(name string, projectDir string) error {
+	examplePath := path.Join("embed", "dist", name)
+
+	_, err := examplesFS.ReadDir(examplePath)
 	if err != nil {
-		return err
-	}
-	return copyDir(examplePath, projectDir)
-}
-
-func getExampleProject(projectName string) (string, error) {
-	examplesPath := "embed/dist/" + projectName
-	_, err := exampleFS.ReadDir(examplesPath)
-	if err != nil {
-		return "", err
-	}
-	return examplesPath, nil
-}
-
-func copyDir(origin string, dst string) (err error) {
-	entries, err := exampleFS.ReadDir(origin)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-
-		srcPath := filepath.Join(origin, entry.Name())
-		dstPath := filepath.Join(dst, entry.Name())
-
-		if entry.IsDir() {
-			//Create dst dir if not exists
-			err = os.MkdirAll(dstPath, os.ModePerm)
-			if err != nil {
-				return err
-			}
-
-			err = copyDir(srcPath, dstPath)
-			if err != nil {
-				return err
-			}
-
-		} else {
-			fileContent, err := exampleFS.ReadFile(srcPath)
-			if err != nil {
-				return err
-			}
-
-			if err := os.WriteFile(dstPath, fileContent, os.ModePerm); err != nil {
-				fmt.Printf("error os.WriteFile error: %v", err)
-				return err
-			}
+		if os.IsNotExist(err) {
+			return ErrExampleNotFound
 		}
-
+		return err
 	}
-	return nil
 
+	return fileutil.CopyEmbedDir(examplesFS, examplePath, projectDir)
 }

@@ -6,10 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(completionCmd)
-}
-
 // See: https://github.com/spf13/cobra/blob/main/shell_completions.md
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",

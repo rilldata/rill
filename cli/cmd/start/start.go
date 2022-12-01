@@ -43,7 +43,7 @@ func StartCmd() *cobra.Command {
 
 	var startCmd = &cobra.Command{
 		Use:   "start",
-		Short: "Start the Rill Developer application",
+		Short: "Build project and start web application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create base logger
 			config := zap.NewDevelopmentEncoderConfig()
@@ -63,6 +63,12 @@ func StartCmd() *cobra.Command {
 			}
 			logger := l.WithOptions(zap.IncreaseLevel(cliLevel)).Sugar()
 			serverLogger := l.WithOptions(zap.IncreaseLevel(serverLevel))
+
+			// Get full path to repo for logging
+			repoAbs, err := filepath.Abs(repoDSN)
+			if err != nil {
+				return err
+			}
 
 			// Create an in-memory metastore
 			metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
@@ -95,12 +101,6 @@ func StartCmd() *cobra.Command {
 				RepoDsn:      repoDSN,
 				EmbedCatalog: olapDriver == "duckdb",
 			})
-			if err != nil {
-				return err
-			}
-
-			// Get full path to repo for logging
-			repoAbs, err := filepath.Abs(repoDSN)
 			if err != nil {
 				return err
 			}

@@ -7,8 +7,8 @@ description:
 time_dimension: timestamp
 default_timegrain: ""
 timegrains:
-  - 1 day
-  - 1 month
+  - day
+  - month
 
 dimensions:
   - label: Publisher

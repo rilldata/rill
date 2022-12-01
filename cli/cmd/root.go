@@ -4,24 +4,21 @@ import (
 	"context"
 	"os"
 
-	"github.com/rilldata/rill/cli/cmd/apply"
 	"github.com/rilldata/rill/cli/cmd/docs"
-	"github.com/rilldata/rill/cli/cmd/info"
 	"github.com/rilldata/rill/cli/cmd/initialize"
-	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/version"
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	cobra.EnableCommandSorting = false
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "rill <command>",
-	Short: "Radically simple metrics dashboards",
-	Long:  `Rill makes it easy to create and consume metrics by combining a SQL-based data modeler, real-time database, and metrics dashboard into a single product—a simple alternative to complex BI stacks`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Short: "Rill CLI",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -37,13 +34,13 @@ func runCmd(ctx context.Context, ver string, commit string, buildDate string) er
 	v := version.Format(ver, commit, buildDate)
 	rootCmd.Version = v
 
-	rootCmd.AddCommand(version.VersionCmd(ver, commit, buildDate))
-	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(initialize.InitCmd())
 	rootCmd.AddCommand(start.StartCmd())
-	rootCmd.AddCommand(apply.ApplyCmd())
-	rootCmd.AddCommand(source.SourceCmd())
-	rootCmd.AddCommand(info.InfoCmd())
+	// rootCmd.AddCommand(apply.ApplyCmd())
+	// rootCmd.AddCommand(source.SourceCmd())
+	rootCmd.AddCommand(docs.DocsCmd())
+	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(version.VersionCmd(ver, commit, buildDate))
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

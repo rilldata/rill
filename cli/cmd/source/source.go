@@ -10,10 +10,9 @@ import (
 func SourceCmd() *cobra.Command {
 	var sourceCmd = &cobra.Command{
 		Use:   "source",
-		Short: "Create, drop sources to the project",
-		Long:  `Create, drop sources to the project.`,
+		Short: "Create or drop a source",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("Error: must also specify a sub commands like add or drop")
+			return fmt.Errorf("must specify a sub commands")
 		},
 	}
 	sourceCmd.AddCommand(AddCmd())
