@@ -5,56 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestServer_GetTopK(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
-
-	res, err := server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
-	require.NoError(t, err)
-	require.NotEmpty(t, res)
-	topk := res.CategoricalSummary.GetTopK()
-	require.Equal(t, 4, len(topk.Entries))
-	require.Equal(t, "abc", topk.Entries[0].Value.GetStringValue())
-	require.Equal(t, 2, int(topk.Entries[0].Count))
-	require.Equal(t, "def", topk.Entries[1].Value.GetStringValue())
-	require.Equal(t, 1, int(topk.Entries[1].Count))
-	require.Equal(t, structpb.NewNullValue(), topk.Entries[2].Value)
-	require.Equal(t, 1, int(topk.Entries[2].Count))
-	require.Equal(t, "12", topk.Entries[3].Value.GetStringValue())
-	require.Equal(t, 1, int(topk.Entries[3].Count))
-
-	agg := "sum(val)"
-	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: agg})
-	require.NoError(t, err)
-	require.NotEmpty(t, res)
-	require.Equal(t, 4, len(res.CategoricalSummary.GetTopK().Entries))
-	require.Equal(t, "def", res.CategoricalSummary.GetTopK().Entries[0].Value.GetStringValue())
-	require.Equal(t, 5, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
-	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[1].Value.GetStringValue())
-	require.Equal(t, 4, int(res.CategoricalSummary.GetTopK().Entries[1].Count))
-	require.Equal(t, structpb.NewNullValue(), res.CategoricalSummary.GetTopK().Entries[2].Value)
-	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[2].Count))
-	require.Equal(t, "12", res.CategoricalSummary.GetTopK().Entries[3].Value.GetStringValue())
-	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[3].Count))
-
-	k := int32(1)
-	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: k})
-	require.NoError(t, err)
-	require.NotEmpty(t, res)
-	require.Equal(t, 1, len(res.CategoricalSummary.GetTopK().Entries))
-	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[0].Value.GetStringValue())
-	require.Equal(t, 2, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
-}
-
 func TestServer_GetNullCount(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetNullCount(context.Background(), &runtimev1.GetNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
@@ -68,7 +28,7 @@ func TestServer_GetNullCount(t *testing.T) {
 }
 
 func TestServer_GetDescriptiveStatistics(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	_, err := server.GetDescriptiveStatistics(context.Background(), &runtimev1.GetDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	if err != nil {
@@ -89,7 +49,7 @@ func TestServer_GetDescriptiveStatistics(t *testing.T) {
 }
 
 func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	_, err := server.EstimateSmallestTimeGrain(context.Background(), &runtimev1.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
@@ -103,7 +63,7 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
@@ -116,7 +76,7 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 }
 
 func TestServer_GetCategoricalHistogram(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
@@ -134,7 +94,7 @@ func TestServer_GetCategoricalHistogram(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	// Get Time Range Summary works with timestamp columns
 	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
@@ -148,7 +108,7 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	// Test Get Time Range Summary with Date type column
 	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
@@ -168,7 +128,7 @@ func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {
-	server, instanceId := getTestServerWithData(t)
+	server, instanceId := getColumnTestServer(t)
 
 	// Get Cardinality of Column works with all columns
 	res, err := server.GetCardinalityOfColumn(context.Background(), &runtimev1.GetCardinalityOfColumnRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -185,4 +145,37 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
+}
+
+func getColumnTestServer(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
+		UNION ALL 
+		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
+		UNION ALL 
+		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
+		UNION ALL 
+		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
+		UNION ALL 
+		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	olap, err := rt.OLAP(context.Background(), instanceID)
+	require.NoError(t, err)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
+	require.NoError(t, err)
+
+	defer res.Close()
+	var n int
+	for res.Next() {
+		err := res.Scan(&n)
+		require.NoError(t, err)
+	}
+	require.Equal(t, 5, n)
+
+	return server, instanceID
 }

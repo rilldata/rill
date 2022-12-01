@@ -14,6 +14,10 @@ type job struct {
 	result *sqlx.Rows
 }
 
+func (c *connection) Dialect() drivers.Dialect {
+	return drivers.DialectDuckDB
+}
+
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	j := &job{
 		stmt: stmt,

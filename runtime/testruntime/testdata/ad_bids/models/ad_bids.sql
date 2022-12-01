@@ -4,4 +4,4 @@ select
     publisher,
     domain,
     bid_price
-from ad_bids_source_full
+from ad_bids_source

@@ -2,71 +2,47 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"math"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const defaultK = 50
-const defaultAgg = "count(*)"
+func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
+	agg := "count(*)"
+	if req.Agg != "" {
+		agg = req.Agg
+	}
 
-func (s *Server) GetTopK(ctx context.Context, topKRequest *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
-	agg := defaultAgg
-	k := int32(defaultK)
-	if topKRequest.Agg != "" {
-		agg = topKRequest.Agg
+	k := 50
+	if req.K != 0 {
+		k = int(req.K)
 	}
-	if topKRequest.K != 0 {
-		k = topKRequest.K
+
+	q := &queries.ColumnTopK{
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
+		Agg:        agg,
+		K:          k,
 	}
-	topKSql := fmt.Sprintf("SELECT %s as value, %s AS count from %s GROUP BY %s ORDER BY count desc LIMIT %d",
-		quoteName(topKRequest.ColumnName),
-		agg,
-		topKRequest.TableName,
-		quoteName(topKRequest.ColumnName),
-		k,
-	)
-	rows, err := s.query(ctx, topKRequest.InstanceId, &drivers.Statement{
-		Query:    topKSql,
-		Priority: int(topKRequest.Priority),
-	})
+
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	topKResponse := runtimev1.TopK{
-		Entries: make([]*runtimev1.TopK_Entry, 0),
-	}
-	for rows.Next() {
-		var topKEntry runtimev1.TopK_Entry
-		var value sql.NullString
-		err = rows.Scan(&value, &topKEntry.Count)
-		if err != nil {
-			return nil, err
-		}
-		if value.Valid {
-			topKEntry.Value = structpb.NewStringValue(value.String)
-		} else {
-			topKEntry.Value = structpb.NewNullValue()
-		}
-		topKResponse.Entries = append(topKResponse.Entries, &topKEntry)
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.GetTopKResponse{
 		CategoricalSummary: &runtimev1.CategoricalSummary{
 			Case: &runtimev1.CategoricalSummary_TopK{
-				TopK: &topKResponse,
+				TopK: q.Result,
 			},
 		},
 	}, nil

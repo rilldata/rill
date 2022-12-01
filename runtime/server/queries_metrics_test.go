@@ -2,61 +2,25 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func createServerWithMetricsView(t *testing.T) (*Server, string) {
-	metastore, err := drivers.Open("sqlite", "file:rill?mode=memory&cache=shared")
+func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
+
+	server, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)
 
-	err = metastore.Migrate(context.Background())
-	require.NoError(t, err)
-
-	server, err := NewServer(&ServerOptions{
-		ConnectionCacheSize: 100,
-	}, metastore, nil)
-	require.NoError(t, err)
-
-	filepath.Walk("../",
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			fmt.Println(path, info.Size())
-			return nil
-		})
-	resp, err := server.CreateInstance(context.Background(), &runtimev1.CreateInstanceRequest{
-		OlapDriver:   "duckdb",
-		OlapDsn:      "",
-		RepoDriver:   "file",
-		RepoDsn:      "../testdata/ad_bids",
-		EmbedCatalog: true,
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, resp.Instance.InstanceId)
-
-	rr, err := server.Reconcile(context.Background(), &runtimev1.ReconcileRequest{
-		InstanceId: resp.Instance.InstanceId,
-	})
-	require.NoError(t, err)
-	if len(rr.Errors) > 0 {
-		t.Error(rr.Errors[0].Message)
-	}
-
-	return server, resp.Instance.InstanceId
+	return server, instanceID
 }
 
 func TestServer_LookupMetricsView(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	mv, err := server.lookupMetricsView(context.Background(), instanceId, "ad_bids_metrics")
 	require.NoError(t, err)
@@ -65,7 +29,7 @@ func TestServer_LookupMetricsView(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -78,7 +42,7 @@ func TestServer_MetricsViewTotals(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_2measures(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
@@ -91,7 +55,7 @@ func TestServer_MetricsViewTotals_2measures(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_TimeStart(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -105,7 +69,7 @@ func TestServer_MetricsViewTotals_TimeStart(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_TimeEnd(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -119,7 +83,7 @@ func TestServer_MetricsViewTotals_TimeEnd(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_TimeStart_TimeEnd(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -134,7 +98,7 @@ func TestServer_MetricsViewTotals_TimeStart_TimeEnd(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -157,7 +121,7 @@ func TestServer_MetricsViewTotals_1dim(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_2In(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -181,7 +145,7 @@ func TestServer_MetricsViewTotals_1dim_2In(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_2dim(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -210,7 +174,7 @@ func TestServer_MetricsViewTotals_2dim(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -233,7 +197,7 @@ func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -259,7 +223,7 @@ func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -283,7 +247,7 @@ func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -314,7 +278,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_null(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -337,7 +301,7 @@ func TestServer_MetricsViewTotals_1dim_null(t *testing.T) {
 }
 
 func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
@@ -374,7 +338,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 }
 
 func TestServer_MetricsViewToplist(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
@@ -401,7 +365,7 @@ func TestServer_MetricsViewToplist(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_asc(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
@@ -429,7 +393,7 @@ func TestServer_MetricsViewToplist_asc(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
@@ -453,7 +417,7 @@ func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_2measures(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
@@ -485,11 +449,11 @@ func TestServer_MetricsViewToplist_2measures(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
-		MetricsViewName: "ad_bids_metrics_full",
+		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_0"},
 		Sort: []*runtimev1.MetricsViewSort{
@@ -515,7 +479,7 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 }
 
 func TestServer_MetricsViewTimeSeries(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
@@ -537,11 +501,11 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 }
 
 func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) {
-	server, instanceId := createServerWithMetricsView(t)
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
-		MetricsViewName: "ad_bids_metrics_full",
+		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: "DAY",
 		MeasureNames:    []string{"measure_0", "measure_1"},
 		Filter: &runtimev1.MetricsViewFilter{

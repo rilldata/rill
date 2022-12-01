@@ -5,7 +5,7 @@ description:
 
 from: sf_props
 
-time_dimension: date
+timeseries: date
 default_timegrain: ""
 timegrains:
   - 1 day
