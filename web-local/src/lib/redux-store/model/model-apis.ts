@@ -3,8 +3,6 @@ import { selectApplicationActiveEntity } from "../application/application-select
 import { selectMetricsDefinitionsByModelId } from "../dimension-definition/dimension-definition-selectors";
 import { validateSelectedSources } from "../metrics-definition/metrics-definition-apis";
 import { store } from "../store-root";
-import { queryClient } from "../../svelte-query/globalQueryClient";
-import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
 
 export const updateModelQueryApi = async (
   modelId: string,
@@ -31,7 +29,6 @@ const syncMetricsDefinitions = (modelId: string) => {
 
   const metricsDefinitions = selectMetricsDefinitionsByModelId(state, modelId);
   metricsDefinitions.forEach((metricsDefinition) => {
-    invalidateMetricsView(queryClient, metricsDefinition.id);
     if (activeEntity.id === metricsDefinition.id) {
       store.dispatch(validateSelectedSources(metricsDefinition.id));
     }
