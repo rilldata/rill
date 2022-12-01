@@ -6,7 +6,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors.js";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useQueryClient } from "@sveltestack/svelte-query";

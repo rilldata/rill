@@ -14,7 +14,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors.js";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import {
     useSourceFromYaml,
     useSourceNames,

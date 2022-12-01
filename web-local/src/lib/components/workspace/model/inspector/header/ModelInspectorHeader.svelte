@@ -10,6 +10,7 @@
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
@@ -46,7 +47,7 @@
   const onExport = async (exportExtension: "csv" | "parquet") => {
     // TODO: how do we handle errors ?
     window.open(
-      `${RILL_RUNTIME_URL}/v1/instances/${$runtimeStore.instanceId}/table/${modelName}/export/${exportExtension}`
+      `${RuntimeUrl}/v1/instances/${$runtimeStore.instanceId}/table/${modelName}/export/${exportExtension}`
     );
   };
 

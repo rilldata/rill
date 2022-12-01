@@ -1,6 +1,4 @@
 import { describe, expect } from "@jest/globals";
-import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
