@@ -67,7 +67,7 @@
 
   function invalidateForModel(queryHash, modelName) {
     const r = new RegExp(
-      `\/v1\/instances\/[a-zA-Z0-9-]+\/queries/[a-zA-Z0-9-]+\/tables\/${modelName}`
+      `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${modelName}`
     );
     return r.test(queryHash);
   }

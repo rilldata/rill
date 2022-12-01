@@ -30,7 +30,7 @@
 
   $: smallestPercentage =
     topK && topK.length
-      ? Math.min(...topK?.slice(0, 5)?.map((entry) => entry.count / totalRows))
+      ? Math.min(...topK.slice(0, 5).map((entry) => entry.count / totalRows))
       : undefined;
   $: formatPercentage =
     smallestPercentage < 0.01

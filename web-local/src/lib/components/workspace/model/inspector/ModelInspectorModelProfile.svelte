@@ -5,11 +5,11 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import { getContext } from "svelte";
   import { slide } from "svelte/transition";
   export let modelName: string;
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  // FIXME: re-integrate
+  // const queryHighlight = getContext("rill:app:query-highlight");
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore?.instanceId,
@@ -18,27 +18,25 @@
 
   $: entry = $getModel?.data?.entry;
 
-  // get source tables?
-  let sourceTableReferences = [];
   let showColumns = true;
 
   // toggle state for inspector sections
   let showSourceTables = true;
 
-  function focus(reference) {
-    return () => {
-      // FIXME
-      // if (!currentDerivedModel?.error && reference) {
-      //   queryHighlight.set(reference.tables);
-      // }
-    };
-  }
-  function blur() {
-    queryHighlight.set(undefined);
-  }
+  // function focus(reference) {
+  //   return () => {
+  //     // FIXME
+  //     // if (!currentDerivedModel?.error && reference) {
+  //     //   queryHighlight.set(reference.tables);
+  //     // }
+  //   };
+  // }
+  // function blur() {
+  //   queryHighlight.set(undefined);
+  // }
 
   // FIXME
-  let modelHasError = false;
+  // let modelHasError = false;
 </script>
 
 <div class="model-profile">
