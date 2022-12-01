@@ -61,6 +61,7 @@ func main() {
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     conf.DatabaseDriver,
 		MetastoreDSN:        conf.DatabaseURL,
+		QueryCacheSize:      1000,
 	}
 	rt, err := runtime.New(opts, logger)
 	if err != nil {

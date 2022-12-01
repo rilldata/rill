@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 )
 
 type Query interface {
@@ -20,6 +21,29 @@ type Query interface {
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
-	// TODO: Add caching here
-	return query.Resolve(ctx, r, instanceID, priority)
+	// take all deps and their last updated time and add them to the query key, prefix query key with instanceID
+	cacheKey := instanceID + query.Key()
+	deps := query.Deps()
+	service, err := r.catalogCache.get(ctx, r, instanceID)
+	if err != nil {
+		return err
+	}
+	for _, dep := range deps {
+		entry, found := service.FindEntry(ctx, dep)
+		if !found {
+			r.logger.Error(fmt.Sprintf("dependency %s not found, ignoring it!", dep))
+			continue
+		}
+		cacheKey += entry.Name + entry.UpdatedOn.String()
+	}
+	val, ok := r.queryCache.get(cacheKey)
+	if ok {
+		return query.UnmarshalResult(val)
+	}
+	err = query.Resolve(ctx, r, instanceID, priority)
+	if err != nil {
+		return err
+	}
+	r.queryCache.add(cacheKey, query.MarshalResult())
+	return nil
 }

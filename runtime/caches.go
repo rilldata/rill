@@ -119,3 +119,23 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 	c.cache[key] = service
 	return service, nil
 }
+
+type queryCache struct {
+	cache *simplelru.LRU
+}
+
+func newQueryCache(size int) *queryCache {
+	cache, err := simplelru.NewLRU(size, nil)
+	if err != nil {
+		panic(err)
+	}
+	return &queryCache{cache: cache}
+}
+
+func (c *queryCache) get(key string) (any, bool) {
+	return c.cache.Get(key)
+}
+
+func (c *queryCache) add(key string, value any) bool {
+	return c.cache.Add(key, value)
+}
