@@ -643,9 +643,9 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 
 func getTimeseriesTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain
 		UNION ALL
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-02 00:00:00' AS time, 'iphone' AS device, null AS publisher, 'msn.com' AS domain
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-02 00:00:00' AS time, DATE '2019-01-02' as day, 'iphone' AS device, null AS publisher, 'msn.com' AS domain
 	`)
 
 	server, err := NewServer(&Options{}, rt, nil)
@@ -679,4 +679,34 @@ func getSparkTimeseriesTestServer(t *testing.T) (*Server, string) {
 	require.NoError(t, err)
 
 	return server, instanceID
+}
+
+func TestServer_EstimateRollupInterval_timestamp(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	r, err := server.EstimateRollupInterval(context.Background(), &runtimev1.EstimateRollupIntervalRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		ColumnName: "time",
+		Priority:   1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
+}
+
+func TestServer_EstimateRollupInterval_date(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	r, err := server.EstimateRollupInterval(context.Background(), &runtimev1.EstimateRollupIntervalRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		ColumnName: "day",
+		Priority:   1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
