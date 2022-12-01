@@ -6,37 +6,28 @@
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
+  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { createEventDispatcher, getContext } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
+  import { deleteFileArtifact } from "../../../svelte-query/actions";
   import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import { useModelNames } from "../../../svelte-query/models";
+  import { getFileFromName } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -44,6 +35,7 @@
   import Model from "../../icons/Model.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "../../menu";
+  import { createModelFromSource } from "../models/createModel";
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
@@ -61,29 +53,10 @@
 
   const rillAppStore = getContext("rill:app:store") as ApplicationStore;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-
   $: runtimeInstanceId = $runtimeStore.instanceId;
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
-  );
-
-  $: sourceID = $persistentTableStore.entities.find(
-    (entity) => entity.tableName === sourceName
-  );
-  $: derivedTable = $derivedTableStore?.entities?.find(
-    (source) => source.id === sourceID
   );
 
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
@@ -143,7 +116,7 @@
     );
   };
 
-  const onRefreshSource = async (id: string, tableName: string) => {
+  const onRefreshSource = async (tableName: string) => {
     const connector: string =
       $getSource?.data?.entry.source?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
@@ -161,10 +134,9 @@
         $createEntityMutation
       );
 
-      if (id) {
-        // invalidate the data preview (async)
-        dataModelerService.dispatch("collectTableInfo", [id]);
-      }
+      // invalidate the data preview (async)
+      // TODO: use new runtime approach
+      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
@@ -199,14 +171,14 @@
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "file"}
-  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
+  <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
     import local file to refresh source
   </MenuItem>
 {:else}
-  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
+  <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <RefreshIcon />
     </svelte:fragment>

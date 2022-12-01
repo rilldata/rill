@@ -4,19 +4,8 @@
     useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
@@ -33,6 +22,10 @@
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
@@ -40,18 +33,7 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
-  import { getContext } from "svelte";
   import { slide } from "svelte/transition";
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
 
   export let sourceName: string;
 
@@ -67,16 +49,6 @@
 
   let showColumns = true;
 
-  let currentTable: PersistentTableEntity;
-  $: currentTable =
-    sourceName && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.tableName === sourceName)
-      : undefined;
-  let currentDerivedTable: DerivedTableEntity;
-  $: currentDerivedTable =
-    currentTable && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === currentTable?.id)
-      : undefined;
   // get source table references.
 
   // toggle state for inspector sections

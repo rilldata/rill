@@ -5,23 +5,13 @@
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { getContext } from "svelte";
   import { uploadTableFiles } from "../../util/file-upload";
+  import { createSource } from "../navigation/sources/createSource";
   import Overlay from "./Overlay.svelte";
 
   export let showDropOverlay: boolean;
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();

@@ -1,19 +1,13 @@
 import { goto } from "$app/navigation";
 import type { V1PutFileResponse } from "@rilldata/web-common/runtime-client";
-import {
-  EntityType,
-  StateType,
-} from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-local/common/utils/duplicateNameUtils";
-import { waitForSource } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
 import {
   config,
-  dataModelerStateService,
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
@@ -71,13 +65,6 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName) {
-    await waitForSource(
-      lastTableName,
-      dataModelerStateService.getEntityStateService(
-        EntityType.Table,
-        StateType.Persistent
-      ).store
-    );
     goto(`/source/${lastTableName}`);
   }
 
