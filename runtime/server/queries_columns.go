@@ -8,6 +8,8 @@ import (
 
 	"github.com/marcboeker/go-duckdb"
 
+	"database/sql"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
@@ -209,15 +211,22 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 	}
 	defer rows.Close()
 
-	var timeGrainString string
+	var timeGrainString sql.NullString
 	for rows.Next() {
 		err := rows.Scan(&timeGrainString)
 		if err != nil {
 			return nil, err
 		}
+		if timeGrainString.Valid {
+			break
+		} else {
+			return &runtimev1.EstimateSmallestTimeGrainResponse{
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
+			}, nil
+		}
 	}
 	var timeGrain *runtimev1.EstimateSmallestTimeGrainResponse
-	switch timeGrainString {
+	switch timeGrainString.String {
 	case "milliseconds":
 		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
 			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
@@ -479,11 +488,17 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 		if err != nil {
 			return nil, err
 		}
-		summary.Min = timestamppb.New(rowMap["min"].(time.Time))
-		summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-		summary.Interval, err = handleInterval(rowMap["interval"])
-		if err != nil {
-			return nil, err
+		if v := rowMap["min"]; v != nil {
+			summary.Min = timestamppb.New(v.(time.Time))
+			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
+			summary.Interval, err = handleInterval(rowMap["interval"])
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			summary.Min = timestamppb.Now()
+			summary.Max = timestamppb.Now()
+			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
 		}
 		return &runtimev1.GetTimeRangeSummaryResponse{
 			TimeRangeSummary: summary,
@@ -493,19 +508,17 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 }
 
 func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
-	switch interval.(type) {
+	switch i := interval.(type) {
 	case duckdb.Interval:
-		duckDbInterval := interval.(duckdb.Interval)
 		var result = new(runtimev1.TimeRangeSummary_Interval)
-		result.Days = duckDbInterval.Days
-		result.Months = duckDbInterval.Months
-		result.Micros = duckDbInterval.Micros
+		result.Days = i.Days
+		result.Months = i.Months
+		result.Micros = i.Micros
 		return result, nil
 	case int64:
 		// for date type column interval is difference in num days for two dates
-		days := interval.(int64)
 		var result = new(runtimev1.TimeRangeSummary_Interval)
-		result.Days = int32(days)
+		result.Days = int32(i)
 		return result, nil
 	}
 	return nil, fmt.Errorf("cannot handle interval type %T", interval)

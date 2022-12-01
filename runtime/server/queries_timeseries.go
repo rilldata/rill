@@ -150,8 +150,6 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 
 // Metrics/Timeseries APIs
 func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.EstimateRollupIntervalRequest) (*runtimev1.EstimateRollupIntervalResponse, error) {
-	// tableName := EscapeDoubleQuotes(request.TableName)
-	// escapedColumnName := EscapeDoubleQuotes(request.ColumnName)
 	trr, err := s.GetTimeRangeSummary(ctx, &runtimev1.GetTimeRangeSummaryRequest{
 		InstanceId: request.InstanceId,
 		TableName:  request.TableName,

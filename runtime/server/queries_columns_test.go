@@ -62,6 +62,20 @@ func TestServer_EstimateSmallestTimeGrain(t *testing.T) {
 	require.Equal(t, "TIME_GRAIN_DAY", res.TimeGrain.String())
 }
 
+func TestServer_EstimateSmallestTimeGrain_empty(t *testing.T) {
+	server, instanceId := getColumnTestServerWithEmptyModel(t)
+
+	_, err := server.EstimateSmallestTimeGrain(context.Background(), &runtimev1.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	if err != nil {
+		// "val" is a numeric column, so this should fail
+		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
+	}
+	res, err := server.EstimateSmallestTimeGrain(context.Background(), &runtimev1.EstimateSmallestTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, "TIME_GRAIN_UNSPECIFIED", res.TimeGrain.String())
+}
+
 func TestServer_GetNumericHistogram(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
@@ -107,6 +121,20 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
+func TestServer_GetTimeRangeSummary_empty(t *testing.T) {
+	server, instanceId := getColumnTestServerWithEmptyModel(t)
+
+	// Get Time Range Summary works with timestamp columns
+	res, err := server.GetTimeRangeSummary(context.Background(), &runtimev1.GetTimeRangeSummaryRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.TimeRangeSummary.Max)
+
+	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
+	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Days)
+	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
+}
+
 func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
@@ -148,7 +176,7 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 }
 
 func getColumnTestServer(t *testing.T) (*Server, string) {
-	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
 		UNION ALL 
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
@@ -158,7 +186,20 @@ func getColumnTestServer(t *testing.T) (*Server, string) {
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
 		UNION ALL 
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
-	`)
+	`
+
+	return getColumnTestServerWithModel(t, sql, 5)
+}
+
+func getColumnTestServerWithEmptyModel(t *testing.T) (*Server, string) {
+	sql := `
+		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates where 1<>1
+	`
+	return getColumnTestServerWithModel(t, sql, 0)
+}
+
+func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
 	server, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)
@@ -175,7 +216,7 @@ func getColumnTestServer(t *testing.T) (*Server, string) {
 		err := res.Scan(&n)
 		require.NoError(t, err)
 	}
-	require.Equal(t, 5, n)
+	require.Equal(t, expectation, n)
 
 	return server, instanceID
 }
