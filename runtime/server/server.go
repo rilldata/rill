@@ -105,21 +105,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// One-off REST-only path for multipart file upload
-	mux.HandlePath(
-		"POST",
-		"/v1/instances/{instance_id}/files/upload/-/{path=**}",
-		s.UploadMultipartFile,
-	)
+	mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
 
 	// One-off REST-only path for file export
-	mux.HandlePath(
-		"GET",
-		"/v1/instances/{instance_id}/table/{table_name}/export/{format}",
-		s.ExportTable,
-	)
+	mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
 
 	// Register CORS
-	handler := CORS(mux)
+	handler := cors(mux)
 
 	return handler, nil
 }
@@ -133,7 +125,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
-func CORS(h http.Handler) http.Handler {
+func cors(h http.Handler) http.Handler {
 	// TODO: Hack for local - not production-ready
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if origin := r.Header.Get("Origin"); origin != "" {

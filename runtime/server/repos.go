@@ -3,14 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"path"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -70,48 +66,6 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 	}
 
 	return &runtimev1.RenameFileResponse{}, nil
-}
-
-func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	var exportString string
-	switch pathParams["format"] {
-	case "csv":
-		exportString = "FORMAT CSV, HEADER"
-	case "parquet":
-		exportString = "FORMAT PARQUET"
-	default:
-		http.Error(w, fmt.Sprintf("unknown format: %s", pathParams), http.StatusBadRequest)
-	}
-
-	if pathParams["instance_id"] == "" || pathParams["table_name"] == "" {
-		http.Error(w, "missing params", http.StatusBadRequest)
-	}
-
-	fileName := fmt.Sprintf("%s.%s", pathParams["table_name"], pathParams["format"])
-	filePath := path.Join(os.TempDir(), fileName)
-
-	// select * from the table and write to the temp file
-	// using duckdb for this. TODO: druid
-	_, err := s.query(req.Context(), pathParams["instance_id"], &drivers.Statement{
-		Query:    fmt.Sprintf("COPY (SELECT * FROM %s) TO '%s' (%s)", pathParams["table_name"], filePath, exportString),
-		DryRun:   false,
-		Priority: 0,
-	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-	defer os.Remove(filePath)
-
-	// set the header to trigger download
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
-	w.Header().Set("Content-Type", req.Header.Get("Content-Type"))
-
-	// read and stream the file
-	file, err := os.Open(filePath)
-	_, err = io.Copy(w, file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
 }
 
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
