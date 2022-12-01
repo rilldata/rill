@@ -3,6 +3,7 @@ package initialize
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/examples"
@@ -34,9 +35,15 @@ func InitCmd() *cobra.Command {
 				return nil
 			}
 
+			// Create project dir if it doesn't exist
+			err := os.MkdirAll(repoDSN, os.ModePerm)
+			if err != nil {
+				return err
+			}
+
 			// Prepare
 			isPwd := repoDSN == "."
-			isExample := exampleName != "empty"
+			isExample := exampleName != ""
 			repoDSN = filepath.Clean(repoDSN)
 
 			// Open the project as a repo
@@ -98,7 +105,7 @@ func InitCmd() *cobra.Command {
 	}
 
 	initCmd.Flags().StringVar(&repoDSN, "dir", ".", "Directory to initialize")
-	initCmd.Flags().StringVar(&exampleName, "example", "empty", "Name of example project")
+	initCmd.Flags().StringVar(&exampleName, "example", "", "Name of example project")
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
 
 	return initCmd
