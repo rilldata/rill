@@ -1,0 +1,25 @@
+name: Build and Deploy to Netlify
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - ".github/workflows/docs.yml"
+      - "docs/**"
+      - "docs-enterprise/**"
+jobs:
+  build:
+    strategy:
+      matrix:
+        name: ["docs", "docs-enterprise"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Build ${{ matrix.name }}
+        run: npm install -w ${{ matrix.name }} && npm run build -w ${{ matrix.name }}
