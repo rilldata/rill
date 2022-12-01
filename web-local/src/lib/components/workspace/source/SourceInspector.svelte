@@ -1,22 +1,11 @@
 <script lang="ts">
   import {
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTableCardinality,
     useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
@@ -33,27 +22,23 @@
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
-  import { getContext } from "svelte";
   import { slide } from "svelte/transition";
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-
   export let sourceName: string;
+
+  const queryClient = createQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -61,34 +46,26 @@
     runtimeInstanceId,
     sourceName
   );
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
   let showColumns = true;
 
-  let currentTable: PersistentTableEntity;
-  $: currentTable =
-    sourceName && $persistentTableStore?.entities
-      ? $persistentTableStore.entities.find((q) => q.tableName === sourceName)
-      : undefined;
-  let currentDerivedTable: DerivedTableEntity;
-  $: currentDerivedTable =
-    currentTable && $derivedTableStore?.entities
-      ? $derivedTableStore.entities.find((q) => q.id === currentTable?.id)
-      : undefined;
   // get source table references.
 
   // toggle state for inspector sections
 
-  $: timestampColumns =
-    selectTimestampColumnFromProfileEntity(currentDerivedTable);
+  $: timestampColumns = selectTimestampColumnFromSchema(source?.schema);
 
   const handleCreateModelFromSource = async () => {
     const modelName = await createModelFromSource(
+      queryClient,
       runtimeInstanceId,
       $modelNames.data,
-      currentTable.tableName,
+      sourceName,
       $createModelMutation
     );
     navigationEvent.fireEvent(
@@ -105,22 +82,22 @@
     // the newly created metrics definition. So, this'll bring us to the
     // MetricsDefinition page. (The logic for this is contained in the
     // not-pictured async thunk.)
-    autoCreateMetricsDefinitionForSource(
-      $persistentModelStore.entities,
-      $derivedTableStore.entities,
-      currentTable.id,
-      $persistentTableStore.entities.find(
-        (table) => table.tableName === sourceName
-      ).tableName
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Button,
-        MetricsEventSpace.RightPanel,
-        MetricsEventScreenName.Source,
-        MetricsEventScreenName.Dashboard
-      );
-    });
+    // autoCreateMetricsDefinitionForSource(
+    //   $persistentModelStore.entities,
+    //   $derivedTableStore.entities,
+    //   currentTable.id,
+    //   $persistentTableStore.entities.find(
+    //     (table) => table.tableName === sourceName
+    //   ).tableName
+    // ).then((createdMetricsId) => {
+    //   navigationEvent.fireEvent(
+    //     createdMetricsId,
+    //     BehaviourEventMedium.Button,
+    //     MetricsEventSpace.RightPanel,
+    //     MetricsEventScreenName.Source,
+    //     MetricsEventScreenName.Dashboard
+    //   );
+    // });
   };
 
   /** source summary information */
@@ -150,39 +127,44 @@
     return "";
   }
 
-  $: connectorType = formatConnectorType(
-    $getSource.data?.entry?.source?.connector
+  $: connectorType = formatConnectorType(source?.connector);
+  $: fileExtension = getFileExtension(source);
+
+  $: cardinalityQuery = useRuntimeServiceGetTableCardinality(
+    $runtimeStore.instanceId,
+    sourceName
   );
-  $: fileExtension = getFileExtension($getSource.data?.entry?.source);
+  $: cardinality = $cardinalityQuery?.data?.cardinality
+    ? Number($cardinalityQuery?.data?.cardinality)
+    : 0;
 
   /** get the current row count */
   $: {
-    rowCount = `${formatInteger(currentDerivedTable?.cardinality)} row${
-      currentDerivedTable?.cardinality !== 1 ? "s" : ""
+    rowCount = `${formatInteger(cardinality)} row${
+      cardinality !== 1 ? "s" : ""
     }`;
   }
 
   /** get the current column count */
   $: {
-    columnCount = `${formatInteger(
-      currentDerivedTable?.profile?.length
-    )} columns`;
+    columnCount = `${formatInteger(source?.schema?.fields?.length)} columns`;
   }
 
   /** total % null cells */
 
   $: {
-    const totalCells =
-      currentDerivedTable?.profile?.length * currentDerivedTable?.cardinality;
-    const totalNulls = currentDerivedTable?.profile
-      .map((profile) => profile?.nullCount)
-      .reduce((total, count) => total + count, 0);
+    // TODO: get null count for tables
+    const totalCells = source?.schema?.fields?.length * cardinality;
+    // const totalNulls = currentDerivedTable?.profile
+    //   .map((profile) => profile?.nullCount)
+    //   .reduce((total, count) => total + count, 0);
+    const totalNulls = 0;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 </script>
 
 <div class="table-profile">
-  {#if currentTable}
+  {#if source}
     <!-- CTAs -->
     <PanelCTA side="right" let:width>
       <Tooltip location="left" distance={16}>
@@ -250,16 +232,9 @@
         </CollapsibleSectionTitle>
       </div>
 
-      {#if currentDerivedTable?.profile && showColumns}
+      {#if showColumns}
         <div transition:slide|local={{ duration: 200 }}>
-          <ColumnProfile
-            objectName={sourceName}
-            entityId={currentTable.id}
-            indentLevel={0}
-            cardinality={currentDerivedTable?.cardinality ?? 0}
-            profile={currentDerivedTable?.profile ?? []}
-            head={currentDerivedTable?.preview ?? []}
-          />
+          <ColumnProfile objectName={sourceName} indentLevel={0} />
         </div>
       {/if}
     </div>

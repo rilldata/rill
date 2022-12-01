@@ -1,28 +1,27 @@
 <script lang="ts">
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores.js";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import type { PersistentTableStore } from "@rilldata/web-local/lib/application-state-stores/table-stores.js";
   import { Button } from "@rilldata/web-local/lib/components/button";
-  import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import {
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-local/lib/util/file-upload";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createEventDispatcher } from "svelte";
+  import { createSource } from "./createSource";
 
   const dispatch = createEventDispatcher();
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
+
+  $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: modelNames = useModelNames(runtimeInstanceId);
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
@@ -33,7 +32,7 @@
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
-      [$persistentModelStore.entities, $persistentTableStore.entities],
+      [$sourceNames?.data, $modelNames?.data],
       $runtimeStore
     );
     for await (const { tableName, filePath } of uploadedFiles) {
@@ -47,6 +46,7 @@
         );
         // TODO: errors
         await createSource(
+          queryClient,
           runtimeInstanceId,
           tableName,
           yaml,
