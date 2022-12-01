@@ -4,8 +4,8 @@ release:
   prerelease: auto
   disable: true
 
-hooks:
-  before:
+before:
+  hooks:
     - ls -lrt cli/pkg/web/embed/dist
 
 builds:
