@@ -76,6 +76,32 @@ describe("HttpRequestQueue", () => {
     ]);
   });
 
+  it("change priority", async () => {
+    const table1 = "t1";
+    const cols1 = 5;
+    const table2 = "t2";
+    const cols2 = 4;
+
+    const promises = getProfilingQueries(table1, cols1);
+    await asyncWait(55);
+    unlockRequests(table1, cols1, 0, 2);
+    await asyncWait(55);
+    httpRequestQueue.inactiveByName(table1);
+    await asyncWait(55);
+
+    promises.push(...getProfilingQueries(table2, cols2));
+    await asyncWait(55);
+    unlockRequests(table1, cols1, 2);
+    unlockRequests(table2, cols2);
+    await Promise.all(promises);
+
+    expect(getActualUrls(fetchMock)).toEqual([
+      ...getProfilingRequests(table1, cols1, 0, 7),
+      ...getProfilingRequests(table2, cols2),
+      ...getProfilingRequests(table1, cols1, 7),
+    ]);
+  });
+
   afterAll(() => {
     if (originalFetch) {
       global.fetch = originalFetch;
@@ -152,10 +178,10 @@ function getProfilingRequests(
   const requests = [
     ...Array(cols)
       .fill(0)
-      .map((_, i) => `queries/numeric-histogram/tables/${table}/columns/c${i}`),
+      .map((_, i) => `queries/cardinality/tables/${table}/columns/c${i}`),
     ...Array(cols)
       .fill(0)
-      .map((_, i) => `queries/cardinality/tables/${table}/columns/c${i}`),
+      .map((_, i) => `queries/numeric-histogram/tables/${table}/columns/c${i}`),
   ];
   if (end === -1) {
     return requests.slice(start);
@@ -168,10 +194,10 @@ function unlockRequests(table: string, cols: number, start = 0, end = -1) {
   const keys = [
     ...Array(cols)
       .fill(0)
-      .map((_, i) => `queries__numeric-histogram__${table}__c${i}`),
+      .map((_, i) => `queries__cardinality__${table}__c${i}`),
     ...Array(cols)
       .fill(0)
-      .map((_, i) => `queries__cardinality__${table}__c${i}`),
+      .map((_, i) => `queries__numeric-histogram__${table}__c${i}`),
   ];
   const endIndex = end === -1 ? keys.length : end;
   for (let i = start; i < endIndex && i < keys.length; i++) {
