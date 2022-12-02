@@ -60,7 +60,6 @@ export interface DimensionEntity {
   property?: string;
   description?: string;
   visible?: boolean;
-  expression?: string;
   __ERROR__?: string;
 }
 
@@ -232,7 +231,6 @@ export class MetricsInternalRepresentation {
       label: "",
       property: "",
       description: "",
-      expression: "",
       visible: true,
     });
 
@@ -300,7 +298,6 @@ export function generateMeasuresAndDimension(
         label: "",
         property: field.name,
         description: "",
-        expression: "",
         visible: true,
       };
     });
