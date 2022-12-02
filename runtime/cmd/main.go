@@ -60,10 +60,10 @@ func main() {
 
 	// Init runtime
 	opts := &runtime.Options{
-		ConnectionCacheSize: 100,
+		ConnectionCacheSize: conf.ConnectionCacheSize,
 		MetastoreDriver:     conf.DatabaseDriver,
 		MetastoreDSN:        conf.DatabaseURL,
-		QueryCacheSize:      10000,
+		QueryCacheSize:      conf.QueryCacheSize,
 	}
 	rt, err := runtime.New(opts, logger)
 	if err != nil {
