@@ -2,7 +2,6 @@ import { goto } from "$app/navigation";
 import {
   RpcStatus,
   runtimeServiceGetCatalogEntry,
-  runtimeServiceListFiles,
   runtimeServicePutFileAndReconcile,
   V1DeleteFileAndReconcileResponse,
   V1ReconcileError,
@@ -25,7 +24,6 @@ import {
   useMutation,
   UseMutationOptions,
 } from "@sveltestack/svelte-query";
-import { getName } from "../../common/utils/incrementName";
 import { generateMeasuresAndDimension } from "../application-state-stores/metrics-internal-store";
 
 export async function renameFileArtifact(
@@ -83,14 +81,15 @@ export async function deleteFileArtifact(
 }
 
 export interface CreateDashboardFromSourceRequest {
-  instanceId?: string;
-  sourceName?: string;
+  instanceId: string;
+  sourceName: string;
+  newModelName: string;
+  newDashboardName: string;
 }
 
 export interface CreateDashboardFromSourceResponse {
   affectedPaths?: string[];
   errors?: V1ReconcileError[];
-  dashboardName: string;
 }
 
 export const useCreateDashboardFromSource = <
@@ -114,44 +113,17 @@ export const useCreateDashboardFromSource = <
 
     // first, create model from source
 
-    // not ideal that this doesn't come from the useQuery cache
-    const existingModelFiles = await runtimeServiceListFiles(data.instanceId, {
-      glob: "models/*.sql",
-    });
-    const existingModelNames = existingModelFiles.paths?.map((path) =>
-      path.replace("/models/", "").replace(".sql", "")
-    );
-    const newModelName = getName(
-      `${data.sourceName}_model`,
-      existingModelNames
-    );
-
     await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
-      path: `models/${newModelName}.sql`,
+      path: `models/${data.newModelName}.sql`,
       blob: `select * from ${data.sourceName}`,
     });
 
     // second, create dashboard from model
 
-    // not ideal that this doesn't come from the useQuery cache
-    const existingDashboardFiles = await runtimeServiceListFiles(
-      data.instanceId,
-      {
-        glob: "dashboards/*.yaml",
-      }
-    );
-    const existingDashboardNames = existingDashboardFiles.paths?.map((path) =>
-      path.replace("/dashboards/", "").replace(".yaml", "")
-    );
-    const newDashboardName = getName(
-      `${newModelName}_dashboard`,
-      existingDashboardNames
-    );
-
     const model = await runtimeServiceGetCatalogEntry(
       data.instanceId,
-      newModelName
+      data.newModelName
     );
     const generatedYAML = generateMeasuresAndDimension(model.entry.model, {
       display_name: `${data.sourceName} dashboard`,
@@ -160,7 +132,7 @@ export const useCreateDashboardFromSource = <
 
     const response = await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
-      path: `dashboards/${newDashboardName}.yaml`,
+      path: `dashboards/${data.newDashboardName}.yaml`,
       blob: generatedYAML,
       create: true,
       createOnly: true,
@@ -170,7 +142,6 @@ export const useCreateDashboardFromSource = <
     return {
       affectedPaths: response?.affectedPaths,
       errors: response?.errors,
-      dashboardName: newDashboardName,
     };
   };
 

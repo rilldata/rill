@@ -19,6 +19,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { fileArtifactsStore } from "../../../application-state-stores/file-artifacts-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
@@ -32,6 +33,7 @@
     deleteFileArtifact,
     useCreateDashboardFromSource,
   } from "../../../svelte-query/actions";
+  import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
   import { getFileFromName } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
@@ -64,6 +66,7 @@
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
   $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   const dispatch = createEventDispatcher();
 
@@ -112,20 +115,30 @@
     overlay.set({
       title: "Creating a dashboard for " + sourceName,
     });
+    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      $dashboardNames.data
+    );
     $createDashboardFromSourceMutation.mutate(
       {
-        data: { instanceId: $runtimeStore.instanceId, sourceName },
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          sourceName,
+          newModelName,
+          newDashboardName,
+        },
       },
       {
         onSuccess: async (resp) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-          goto(`/dashboard/${resp.dashboardName}`);
+          goto(`/dashboard/${newDashboardName}`);
           await queryClient.invalidateQueries(
             getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
           );
           const previousActiveEntity = $appStore?.activeEntity?.type;
           navigationEvent.fireEvent(
-            resp.dashboardName,
+            newDashboardName,
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,
             EntityTypeToScreenMap[previousActiveEntity],

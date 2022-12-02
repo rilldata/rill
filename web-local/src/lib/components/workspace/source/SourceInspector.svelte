@@ -36,8 +36,10 @@
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { slide } from "svelte/transition";
+  import { getName } from "../../../../common/utils/incrementName";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
+  import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
   import { createModelFromSource } from "../../navigation/models/createModel";
 
@@ -55,6 +57,7 @@
   $: source = $getSource?.data?.entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: dashboardNames = useDashboardNames(runtimeInstanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
@@ -87,19 +90,29 @@
     overlay.set({
       title: "Creating a dashboard for " + sourceName,
     });
+    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      $dashboardNames.data
+    );
     $createDashboardFromSourceMutation.mutate(
       {
-        data: { instanceId: $runtimeStore.instanceId, sourceName },
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          sourceName,
+          newModelName,
+          newDashboardName,
+        },
       },
       {
         onSuccess: async (resp) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-          goto(`/dashboard/${resp.dashboardName}`);
+          goto(`/dashboard/${newDashboardName}`);
           await queryClient.invalidateQueries(
             getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
           );
           navigationEvent.fireEvent(
-            resp.dashboardName,
+            newDashboardName,
             BehaviourEventMedium.Button,
             MetricsEventSpace.RightPanel,
             MetricsEventScreenName.Source,
