@@ -13,17 +13,36 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestServer_Timeseries(t *testing.T) {
-	server, instanceID := getTimeseriesTestServer(t)
+func TestServer_Timeseries_EmptyModel(t *testing.T) {
+	server, instanceID := getTimeseriesTestServerWithEmptyModel(t)
 
-	mx := "max"
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
-				SqlName:    mx,
+				SqlName:    "max",
+			},
+		},
+		TimestampColumnName: "time",
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Nil(t, results)
+}
+
+func TestServer_Timeseries(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    "max",
 			},
 		},
 		TimestampColumnName: "time",
@@ -646,6 +665,17 @@ func getTimeseriesTestServer(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain
 		UNION ALL
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-02 00:00:00' AS time, DATE '2019-01-02' as day, 'iphone' AS device, null AS publisher, 'msn.com' AS domain
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getTimeseriesTestServerWithEmptyModel(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain where 1<>1
 	`)
 
 	server, err := NewServer(&Options{}, rt, nil)
