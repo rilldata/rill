@@ -265,6 +265,8 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
   });
 }
 
+const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
+
 export function generateMeasuresAndDimension(
   model: V1Model,
   options?: { [key: string]: string }
@@ -295,7 +297,7 @@ export function generateMeasuresAndDimension(
     })
     .map((field) => {
       return {
-        label: "",
+        label: capitalize(field.name),
         property: field.name,
         description: "",
         visible: true,
