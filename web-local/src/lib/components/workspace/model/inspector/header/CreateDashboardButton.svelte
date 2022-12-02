@@ -3,6 +3,7 @@
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
+    V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -18,6 +19,7 @@
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 
   export let modelName: string;
   export let hasError = false;
@@ -38,14 +40,16 @@
       display_name: metricsLabel,
     });
 
-    await $metricMigrate.mutateAsync({
+    const filePath = `dashboards/${metricsLabel}.yaml`;
+    const resp = (await $metricMigrate.mutateAsync({
       data: {
         instanceId: $runtimeStore.instanceId,
-        path: `dashboards/${metricsLabel}.yaml`,
+        path: filePath,
         blob: generatedYAML,
         create: true,
       },
-    });
+    })) as V1PutFileAndReconcileResponse;
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     navigationEvent.fireEvent(
       metricsLabel,
@@ -55,7 +59,7 @@
       MetricsEventScreenName.Dashboard
     );
 
-    goto(`/dashboard/${metricsLabel}/edit`);
+    goto(`/dashboard/${metricsLabel}`);
   }
 </script>
 
