@@ -24,12 +24,14 @@ import (
 )
 
 type Config struct {
-	Env            string        `default:"development"`
-	HTTPPort       int           `default:"8080" split_words:"true"`
-	GRPCPort       int           `default:"9090" split_words:"true"`
-	LogLevel       zapcore.Level `default:"warn" split_words:"true"`
-	DatabaseDriver string        `default:"sqlite"`
-	DatabaseURL    string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	Env                 string        `default:"development"`
+	HTTPPort            int           `default:"8080" split_words:"true"`
+	GRPCPort            int           `default:"9090" split_words:"true"`
+	LogLevel            zapcore.Level `default:"warn" split_words:"true"`
+	DatabaseDriver      string        `default:"sqlite"`
+	DatabaseURL         string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	ConnectionCacheSize int           `default:"100" split_words:"true"`
+	QueryCacheSize      int           `default:"10000" split_words:"true"`
 }
 
 func main() {
@@ -61,7 +63,7 @@ func main() {
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     conf.DatabaseDriver,
 		MetastoreDSN:        conf.DatabaseURL,
-		QueryCacheSize:      1000,
+		QueryCacheSize:      10000,
 	}
 	rt, err := runtime.New(opts, logger)
 	if err != nil {

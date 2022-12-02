@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -121,21 +122,21 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 }
 
 type queryCache struct {
-	cache *simplelru.LRU
+	cache *lru.Cache
 }
 
 func newQueryCache(size int) *queryCache {
-	cache, err := simplelru.NewLRU(size, nil)
+	cache, err := lru.New(size)
 	if err != nil {
 		panic(err)
 	}
 	return &queryCache{cache: cache}
 }
 
-func (c *queryCache) get(key string) (any, bool) {
+func (c *queryCache) get(key queryCacheKey) (any, bool) {
 	return c.cache.Get(key)
 }
 
-func (c *queryCache) add(key string, value any) bool {
+func (c *queryCache) add(key queryCacheKey, value any) bool {
 	return c.cache.Add(key, value)
 }
