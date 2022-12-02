@@ -293,6 +293,7 @@ export function getScaleForLeaderboard(
   let numValues = [...leaderboard.values()]
     // use the first ten dimensions as the sample
     .slice(0, 10)
+    // Take only first 7 values which are shown as input
     .map((values) => values.slice(0, 7))
     .flat()
     .map((values) => values.value);
