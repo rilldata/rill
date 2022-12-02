@@ -147,6 +147,7 @@
       $dashboardNames.data
     );
 
+    // redirect to model when metric is deleted
     const sourceModelName = dashboardData.jsonRepresentation.from;
     if ($appStore.activeEntity.name === dashboardName) {
       if (sourceModelName) {
