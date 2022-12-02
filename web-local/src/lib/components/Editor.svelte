@@ -63,7 +63,7 @@
   export let content: string;
   export let editorHeight = 0;
   export let selections: Reference[] = [];
-
+  $: console.log(selections);
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 

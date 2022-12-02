@@ -118,6 +118,8 @@
         return invalidateForModel(query.queryHash, modelName);
       },
     });
+    // invalidate any catalog queries for this model.
+
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
@@ -126,6 +128,16 @@
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
+
+    // invalidate any direct usage of this catalog entry
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        return query.queryHash.includes(
+          `/v1/instances/${$runtimeStore?.instanceId}/catalog/${modelName}`
+        );
+      },
+    });
+
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     if (!resp.errors.length) {
@@ -133,15 +145,6 @@
       await queryClient.resetQueries({
         predicate: (query) => {
           return invalidateForModel(query.queryHash, modelName);
-        },
-      });
-      // reset the inspector model for this entry.
-      await queryClient.resetQueries({
-        predicate: (query) => {
-          return query.queryHash.includes(
-            `/v1/instances/${$runtimeStore?.instanceId}/catalog/${modelName}`
-            //`rill/model/${modelName}/inspector/catalog-entry`
-          );
         },
       });
     }

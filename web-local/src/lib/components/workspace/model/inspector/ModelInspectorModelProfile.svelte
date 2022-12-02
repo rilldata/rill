@@ -18,7 +18,6 @@
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
   export let modelName: string;
 
-  // FIXME: re-integrate
   const queryHighlight = getContext("rill:app:query-highlight");
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
@@ -41,16 +40,24 @@
         return references.some((ref) => ref.reference === entry.name);
       })
       .map((entry) => {
+        return [entry, references.find((ref) => ref.reference === entry.name)];
+      })
+      .map(([entry, reference]) => {
         return derived(
           [
             writable(entry),
+            writable(reference),
             useRuntimeServiceGetTableCardinality(
               $runtimeStore?.instanceId,
               entry.name
             ),
           ],
-          ([entry, $cardinality]) => {
-            return { ...entry, totalRows: +$cardinality?.data?.cardinality };
+          ([entry, reference, $cardinality]) => {
+            return {
+              ...entry,
+              ...reference,
+              totalRows: +$cardinality?.data?.cardinality,
+            };
           }
         );
       }),
@@ -61,7 +68,7 @@
   // toggle state for inspector sections
   let showSourceTables = true;
 
-  function focus(reference) {
+  function focus() {
     return () => {
       // FIXME
       if (references.length) {
