@@ -27,7 +27,7 @@ jobs:
     # Run tests always
     - stage: Test
       name: "Verify build"
-      if: tag IS NOT present
+      if: false # disabling this
 
       # in order to achieve npm ci (clean install) delete the travis cache.
       install: &npm-install
@@ -35,42 +35,6 @@ jobs:
         - npm i
         - echo "Disabling telmetry"
         - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
-
-      script:
-        - set -e
-        - echo "Running npm install"
-        - npm install
-
-        - echo "Check that prettier has been applied"
-        - npx prettier --check "**/*"
-
-        - echo "Install browser for UI tests"
-        - npx playwright install
-
-        - echo "Build the entire application"
-        - npm run build
-
-        - echo "Verify lint of the repo"
-        - npm run lint -w web-local -- --quiet
-
-        - echo "Run all tests"
-        - npm run test
-
-    # Run SQL lib tests
-    - stage: Test
-      language: java
-      jdk: openjdk17
-      name: "Run SQL lib tests"
-      if: tag IS NOT present
-      install:
-        - PROTOC_ZIP=protoc-21.5-linux-x86_64.zip
-        - curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v21.5/$PROTOC_ZIP
-        - sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
-        - sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
-        - rm -f $PROTOC_ZIP
-      script:
-        - echo "Testing SQL library"
-        - mvn -f sql/ clean test
 
     # Publish binaries on the release
     - stage: Release

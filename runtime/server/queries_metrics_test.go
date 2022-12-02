@@ -41,6 +41,20 @@ func TestServer_MetricsViewTotals(t *testing.T) {
 	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
+func TestServer_MetricsViewTotals_EmptyModel(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "no_rows_metrics",
+		MeasureNames:    []string{"measure_0", "measure_1"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data.Fields))
+	require.Equal(t, 0.0, tr.Data.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 0.0, tr.Data.Fields["measure_2"].GetNumberValue())
+}
+
 func TestServer_MetricsViewTotals_2measures(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
