@@ -3,7 +3,6 @@ import {
   V1PutFileAndReconcileResponse,
   V1RefreshAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
@@ -12,7 +11,9 @@ import {
   uploadFile,
 } from "@rilldata/web-local/lib/util/file-upload";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { invalidateAfterReconcile } from "../../../svelte-query/invalidation";
+import { getFileFromName } from "../../../util/entity-mappers";
 
 export async function refreshSource(
   connector: string,
@@ -44,27 +45,29 @@ export async function refreshSource(
   if (!files.length) return Promise.reject();
 
   overlay.set({ title: `Importing ${sourceName}` });
-  const filePath = await uploadFile(
-    `${config.database.runtimeUrl}/v1/instances/${instanceId}/files/upload`,
-    files[0]
-  );
-  if (filePath) {
-    const yaml = compileCreateSourceYAML(
-      {
-        sourceName: sourceName,
-        path: filePath,
-      },
-      "file"
-    );
-    const resp = await createSource.mutateAsync({
-      data: {
-        instanceId,
-        path: `sources/${sourceName}.yaml`,
-        blob: yaml,
-        create: true,
-        strict: true,
-      },
-    });
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${instanceId}/files/upload`;
+  const filePath = await uploadFile(tableUploadURL, files[0]);
+  if (filePath === null) {
+    return Promise.reject();
   }
+  const yaml = compileCreateSourceYAML(
+    {
+      sourceName,
+      path: filePath,
+    },
+    "file"
+  );
+  const resp = await createSource.mutateAsync({
+    data: {
+      instanceId,
+      path: getFileFromName(sourceName, EntityType.Table),
+      blob: yaml,
+      create: true,
+      strict: true,
+    },
+  });
+  queryClient.invalidateQueries(
+    getRuntimeServiceGetTableRowsQueryKey(instanceId, sourceName)
+  );
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 }
