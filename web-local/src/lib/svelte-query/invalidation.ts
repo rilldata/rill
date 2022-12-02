@@ -16,20 +16,18 @@ export const invalidateAfterReconcile = async (
   reconcileResponse: V1ReconcileResponse
 ) => {
   await Promise.all([
-    queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    ),
-    queryClient.invalidateQueries(
+    queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId)),
+    queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
     ),
   ]);
   await Promise.all(
     reconcileResponse.affectedPaths
       .map((affectedPath) => [
-        queryClient.invalidateQueries(
+        queryClient.refetchQueries(
           getRuntimeServiceGetFileQueryKey(instanceId, affectedPath)
         ),
-        queryClient.invalidateQueries(
+        queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
             instanceId,
             getNameFromFile(affectedPath)
@@ -45,7 +43,7 @@ export const invalidateMetricsViewData = (
   instanceId: string,
   metricsViewName: string
 ) => {
-  return queryClient.invalidateQueries({
+  return queryClient.refetchQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
       query.queryKey[0].startsWith(

@@ -42,6 +42,7 @@
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {
+    buttonStatus = "NO_ERROR";
     buttonDisabled = false;
   }
 </script>
