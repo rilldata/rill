@@ -12,12 +12,28 @@ builds:
       - darwin
     goarch:
       - amd64
-      - arm64
     env:
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
       - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
       - CC=o64-clang
       - CXX=o64-clang++
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+  - id: darwin_arm64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=oa64-clang
+      - CXX=oa64-clang++
     flags:
       - "-mod=readonly"
     ldflags:
@@ -44,7 +60,7 @@ builds:
 
 blobs:
   - provider: gs
-    bucket: pkg.rilldata.com
+    bucket: stage-cdn.rilldata.io #TODO: testing
     folder: "rill/v{{ .Version }}"
     extra_files:
       - glob: ./dist/**
@@ -54,7 +70,7 @@ brews:
     description: The Rill CLI
     name: rill
     license: Apache 2.0
-    url_template: http://pkg.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
+    url_template: https://cdn.rilldata.io/rill/{{ .Tag }}/{{ .ArtifactName }} #TODO: testing
     tap:
       owner: rilldata
       name: homebrew-rill-developer
