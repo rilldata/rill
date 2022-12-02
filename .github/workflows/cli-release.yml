@@ -6,12 +6,12 @@ on:
   push:
     tags:
       - "**"
-    branches: [ "goreleaser-prototype" ]
-    paths:
-      - ".github/workflows/cli-release.yml"
-      - ".goreleaser.yaml"
-      - "go.mod"
-      - "cli/**"
+#    branches: [ "goreleaser-prototype" ]
+#    paths:
+#      - ".github/workflows/cli-release.yml"
+#      - ".goreleaser.yaml"
+#      - "go.mod"
+#      - "cli/**"
 jobs:
   release:
     name: Release rill-developer
@@ -61,4 +61,4 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release --skip-validate
+              release
