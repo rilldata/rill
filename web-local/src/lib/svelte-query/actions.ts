@@ -154,7 +154,6 @@ export const useCreateDashboardFromSource = <
       display_name: `${data.sourceName} dashboard`,
       description: `A dashboard automatically generated from the ${data.sourceName} source.`,
     });
-    console.log(generatedYAML);
 
     await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
