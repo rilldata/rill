@@ -5,6 +5,7 @@
     useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -113,6 +114,7 @@
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
+    httpRequestQueue.removeByName(modelName);
     // cancel all existing analytical queries currently running.
     await queryClient.cancelQueries({
       fetching: true,

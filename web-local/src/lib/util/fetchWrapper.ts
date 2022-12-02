@@ -1,13 +1,30 @@
-export async function fetchWrapperDirect(
-  url: string,
-  method: string,
-  body?: BodyInit | Record<string, unknown>,
-  headers: HeadersInit = { "Content-Type": "application/json" }
-) {
+import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
+
+export async function fetchWrapper({
+  url,
+  method,
+  headers,
+  data,
+  params,
+  signal,
+}: RequestQueueEntry) {
+  if (signal && signal.aborted) return Promise.reject(new Error("Aborted"));
+
+  headers ??= { "Content-Type": "application/json" };
+
+  if (params) {
+    const u = new URL(url);
+    for (const p in params) {
+      u.searchParams.append(p, params[p]);
+    }
+    url = u.toString();
+  }
+
   const resp = await fetch(url, {
     method,
-    ...(body ? { body: serializeBody(body) } : {}),
+    ...(data ? { body: serializeBody(data) } : {}),
     headers,
+    signal,
   });
   if (!resp.ok) {
     const err = new Error();
@@ -15,59 +32,6 @@ export async function fetchWrapperDirect(
     return Promise.reject(err);
   }
   return resp.json();
-}
-export async function fetchWrapper(
-  path: string,
-  method: string,
-  body?: BodyInit | Record<string, unknown>,
-  headers: HeadersInit = { "Content-Type": "application/json" }
-) {
-  const resp = await fetch(`${RILL_RUNTIME_URL}/api/${path}`, {
-    method,
-    ...(body ? { body: serializeBody(body) } : {}),
-    headers,
-  });
-  if (!resp.ok) {
-    const err = new Error();
-    (err as any).response = await resp.json();
-    return Promise.reject(err);
-  }
-  return (await resp.json())?.data;
-}
-
-export async function* streamingFetchWrapper<T>(
-  path: string,
-  method: string,
-  body?: Record<string, unknown>
-): AsyncGenerator<T> {
-  let response: Response;
-  try {
-    response = await fetch(`${RILL_RUNTIME_URL}/api/${path}`, {
-      method,
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error(err);
-    return;
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  let readResult = await reader.read();
-  while (!readResult.done) {
-    const parts = decoder.decode(readResult.value).split("\n");
-    for (const part of parts) {
-      if (part === "") continue;
-      try {
-        const json = JSON.parse(part);
-        yield json;
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    readResult = await reader.read();
-  }
 }
 
 function serializeBody(body: BodyInit | Record<string, unknown>): BodyInit {
