@@ -59,7 +59,10 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
-    const generatedYAML = generateMeasuresAndDimension(model);
+    const generatedYAML = generateMeasuresAndDimension(model, {
+      display_name: `${newDashboardName} dashboard`,
+      description: `A dashboard generated for ${modelName}`,
+    });
     $createFileMutation.mutate(
       {
         data: {

@@ -276,12 +276,9 @@ export function generateMeasuresAndDimension(
   const template = parseDocument(metricsTemplate);
   template.set("from", model.name);
 
-  if (options?.timeseries) {
-    template.set("timeseries", options.timeseries);
-  } else {
-    const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
-    template.set("timeseries", timestampColumns[0]);
-  }
+  const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  template.set("timeseries", timestampColumns[0]);
+
   const measureNode = template.createNode({
     label: "Total records",
     expression: "count(*)",
@@ -307,6 +304,13 @@ export function generateMeasuresAndDimension(
 
   const dimensionNode = template.createNode(diemensionSeq);
   template.set("dimensions", dimensionNode);
+
+  // override default values
+  if (options) {
+    for (const key in options) {
+      template.set(key, options[key]);
+    }
+  }
 
   return template.toString({ collectionStyle: "block" });
 }
