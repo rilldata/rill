@@ -1,7 +1,4 @@
-import {
-  asyncWait,
-  waitUntil,
-} from "@rilldata/web-local/common/utils/waitUtils";
+import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
 import {
   getHeapByName,
   getHeapByQuery,
