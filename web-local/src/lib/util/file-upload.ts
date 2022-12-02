@@ -7,7 +7,6 @@ import {
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
-  RuntimeState,
 } from "../application-state-stores/application-store";
 import { importOverlayVisible } from "../application-state-stores/overlay-store";
 import { notifications } from "../components/notifications";
@@ -27,12 +26,12 @@ import { fetchWrapperDirect } from "./fetchWrapper";
 export async function* uploadTableFiles(
   files: Array<File>,
   [models, sources]: [Array<string>, Array<string>],
-  runtimeState: RuntimeState
+  instanceId: string
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${runtimeState.instanceId}/files/upload`;
+  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${instanceId}/files/upload`;
   let lastTableName: string;
 
   for (const validFile of validFiles) {
