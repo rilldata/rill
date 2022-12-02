@@ -30,7 +30,7 @@ func TestServer_TableCardinality(t *testing.T) {
 	require.Equal(t, int64(1), cr.Cardinality)
 }
 
-func TestServer_TableCardinality_empty(t *testing.T) {
+func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
@@ -68,7 +68,7 @@ func TestServer_TableRows(t *testing.T) {
 	require.Equal(t, 1, len(cr.Data))
 }
 
-func TestServer_TableRows_empty(t *testing.T) {
+func TestServer_TableRows_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
 		InstanceId: instanceId,
