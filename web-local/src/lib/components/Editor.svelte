@@ -55,14 +55,13 @@
   import { Debounce } from "@rilldata/web-local/common/utils/Debounce";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { createEventDispatcher, onMount } from "svelte";
-  import type { Reference } from "../util/get-table-references";
   import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
   const dispatch = createEventDispatcher();
   export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
-  export let selections: Reference[] = [];
+  export let selections: any[] = [];
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
@@ -310,12 +309,9 @@
 
   function underlineSelection(selections: any) {
     if (editor) {
-      const effects = selections
-        .map((selection) => ({
-          from: selection.referenceIndex,
-          to: selection.referenceIndex + selection.reference.length,
-        }))
-        .map(({ from, to }) => addUnderline.of({ from, to }));
+      const effects = selections.map(({ from, to }) =>
+        addUnderline.of({ from, to })
+      );
 
       if (!editor.state.field(underlineField, false))
         effects.push(StateEffect.appendConfig.of([underlineField]));
