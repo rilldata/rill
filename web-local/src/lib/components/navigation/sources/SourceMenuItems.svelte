@@ -134,7 +134,8 @@
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createEntityMutation
+        $createEntityMutation,
+        queryClient
       );
 
       // invalidate the data preview (async)

@@ -1,4 +1,8 @@
-import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
+import {
+  getRuntimeServiceGetTableRowsQueryKey,
+  V1PutFileAndReconcileResponse,
+  V1RefreshAndReconcileResponse,
+} from "@rilldata/web-common/runtime-client";
 import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
@@ -7,23 +11,30 @@ import {
   openFileUploadDialog,
   uploadFile,
 } from "@rilldata/web-local/lib/util/file-upload";
-import type { UseMutationResult } from "@sveltestack/svelte-query";
+import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { invalidateAfterReconcile } from "../../../svelte-query/invalidation";
 
 export async function refreshSource(
   connector: string,
   sourceName: string,
   instanceId: string,
-  refreshSource: UseMutationResult,
-  createSource: UseMutationResult<V1PutFileAndReconcileResponse>
+  refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
+  createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
+  queryClient: QueryClient
 ) {
   if (connector !== "file") {
     overlay.set({ title: `Importing ${sourceName}` });
-    await refreshSource.mutateAsync({
+    const resp = await refreshSource.mutateAsync({
       data: {
         instanceId,
         path: `sources/${sourceName}.yaml`,
       },
     });
+    invalidateAfterReconcile(queryClient, instanceId, resp);
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetTableRowsQueryKey(instanceId, sourceName)
+    );
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     return;
   }
 

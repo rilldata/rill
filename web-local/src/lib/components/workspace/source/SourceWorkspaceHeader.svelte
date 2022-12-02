@@ -70,7 +70,8 @@
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createSource
+        $createSource,
+        queryClient
       );
       // invalidate the data preview (async)
       // TODO: use new runtime approach
