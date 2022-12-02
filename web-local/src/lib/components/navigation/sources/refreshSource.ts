@@ -11,45 +11,49 @@ import type { UseMutationResult } from "@sveltestack/svelte-query";
 
 export async function refreshSource(
   connector: string,
-  tableName: string,
+  sourceName: string,
   instanceId: string,
   refreshSource: UseMutationResult,
   createSource: UseMutationResult<V1PutFileAndReconcileResponse>
 ) {
-  if (connector === "file") {
-    const files = await openFileUploadDialog(false);
-    if (!files.length) return Promise.reject();
-
-    overlay.set({ title: `Importing ${tableName}` });
-    const filePath = await uploadFile(
-      `${config.database.runtimeUrl}/v1/instances/${instanceId}/files/upload`,
-      files[0]
-    );
-    if (filePath) {
-      const yaml = compileCreateSourceYAML(
-        {
-          sourceName: tableName,
-          path: filePath,
-        },
-        "file"
-      );
-      const resp = await createSource.mutateAsync({
-        instanceId,
-        data: {
-          instanceId,
-          path: `sources/${tableName}.yaml`,
-          blob: yaml,
-          create: true,
-          strict: true,
-        },
-      });
-      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    }
-  } else {
-    overlay.set({ title: `Importing ${tableName}` });
+  if (connector !== "file") {
+    overlay.set({ title: `Importing ${sourceName}` });
     await refreshSource.mutateAsync({
-      instanceId,
-      name: tableName,
+      data: {
+        instanceId,
+        path: `sources/${sourceName}.yaml`,
+      },
     });
+    return;
+  }
+
+  // different logic for the file connector
+
+  const files = await openFileUploadDialog(false);
+  if (!files.length) return Promise.reject();
+
+  overlay.set({ title: `Importing ${sourceName}` });
+  const filePath = await uploadFile(
+    `${config.database.runtimeUrl}/v1/instances/${instanceId}/files/upload`,
+    files[0]
+  );
+  if (filePath) {
+    const yaml = compileCreateSourceYAML(
+      {
+        sourceName: sourceName,
+        path: filePath,
+      },
+      "file"
+    );
+    const resp = await createSource.mutateAsync({
+      data: {
+        instanceId,
+        path: `sources/${sourceName}.yaml`,
+        blob: yaml,
+        create: true,
+        strict: true,
+      },
+    });
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   }
 }

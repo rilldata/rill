@@ -4,7 +4,7 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceTriggerRefresh,
+    useRuntimeServiceRefreshAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
@@ -39,25 +39,20 @@
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
-
-  const queryClient = useQueryClient();
-
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
+
+  const queryClient = useQueryClient();
+  const dispatch = createEventDispatcher();
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
   );
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
+
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
-
-  const dispatch = createEventDispatcher();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   $: getSource = useRuntimeServiceGetCatalogEntry(
@@ -66,7 +61,7 @@
   );
 
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createEntityMutation = useRuntimeServicePutFileAndReconcile();
   $: modelNames = useModelNames($runtimeStore.instanceId);
 
