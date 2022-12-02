@@ -38,7 +38,7 @@ jobs:
           node-version: 18
 
       - name: Build and embed static UI
-        run: cli.prepare
+        run: make cli.prepare
 
       - name: Set up release environment
         run: |-
