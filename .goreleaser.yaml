@@ -2,6 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
+  draft: true
   disable: true
 
 builds:
