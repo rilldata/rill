@@ -399,6 +399,9 @@ paths:
                 type: array
                 items:
                   type: string
+              priority:
+                type: integer
+                format: int32
               timeEnd:
                 type: string
                 format: date-time
@@ -456,6 +459,9 @@ paths:
               offset:
                 type: string
                 format: int64
+              priority:
+                type: integer
+                format: int32
               sort:
                 type: array
                 items:
@@ -505,6 +511,9 @@ paths:
                 type: array
                 items:
                   type: string
+              priority:
+                type: integer
+                format: int32
               timeEnd:
                 type: string
                 format: date-time
@@ -536,6 +545,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}/columns/{columnName}:
@@ -564,6 +578,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
@@ -588,6 +607,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}/columns/{columnName}:
@@ -616,6 +640,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}/columns/{columnName}:
@@ -644,6 +673,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}/columns/{columnName}:
@@ -672,6 +706,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
@@ -704,6 +743,9 @@ paths:
             properties:
               columnName:
                 type: string
+              priority:
+                type: integer
+                format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
@@ -729,6 +771,11 @@ paths:
           required: true
           type: string
         - name: limit
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: priority
           in: query
           required: false
           type: integer
@@ -761,6 +808,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}/columns/{columnName}:
@@ -789,6 +841,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}/columns/{columnName}:
@@ -817,6 +874,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/timeseries:
@@ -850,6 +912,9 @@ paths:
                 items:
                   $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasure'
               pixels:
+                type: integer
+                format: int32
+              priority:
                 type: integer
                 format: int32
               sampleSize:
@@ -904,6 +969,9 @@ paths:
                 type: integer
                 format: int32
                 title: default is 50
+              priority:
+                type: integer
+                format: int32
             description: Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
         - RuntimeService
@@ -940,55 +1008,13 @@ paths:
                 type: boolean
                 title: If true, will only validate the query, not execute it
               priority:
-                type: string
-                format: int64
+                type: integer
+                format: int32
                 title: Query priority (not supported by all backends)
               sql:
                 type: string
                 title: SELECT statement
             title: Request message for RuntimeService.Query
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/query/direct:
-    post:
-      summary: 'DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance''s OLAP datastore.'
-      operationId: RuntimeService_QueryDirect
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1QueryDirectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          description: Instance to query
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              args:
-                type: array
-                items: {}
-                title: Args to interpolate into the statement
-              dryRun:
-                type: boolean
-                title: If true, will only validate the query, not execute it
-              priority:
-                type: string
-                format: int64
-                title: Query priority (not supported by all backends)
-              sql:
-                type: string
-                title: SELECT statement
-            title: Request message for RuntimeService.QueryDirect
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/reconcile:
@@ -1922,18 +1948,6 @@ definitions:
         type: string
         title: 'TODO: Redundant, should be removed (but frontend currently uses it)'
     title: Response message for RuntimeService.PutFile
-  v1QueryDirectResponse:
-    type: object
-    properties:
-      data:
-        type: array
-        items:
-          type: object
-        title: Result data
-      meta:
-        $ref: '#/definitions/v1StructType'
-        title: Schema of result data
-    title: Response message for RuntimeService.QueryDirect
   v1QueryResponse:
     type: object
     properties:

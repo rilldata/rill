@@ -3,19 +3,15 @@
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { getContext } from "svelte";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "../../../application-state-stores/table-stores";
+  import { useModelNames } from "../../../svelte-query/models";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import Source from "../../icons/Source.svelte";
+  import { createModelFromSource } from "../models/createModel";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
@@ -27,13 +23,7 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const queryClient = useQueryClient();
 
   let showTables = true;
 
@@ -45,6 +35,7 @@
 
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
+      queryClient,
       $runtimeStore.instanceId,
       $modelNames.data,
       tableName,
@@ -64,24 +55,18 @@
 
 <NavigationHeader
   bind:show={showTables}
-  tooltipText="add a new data source"
-  on:add={openShowAddSourceModal}
   contextButtonID={"add-table"}
+  on:add={openShowAddSourceModal}
+  tooltipText="add a new data source"
 >
   <Source size="16px" /> Sources
 </NavigationHeader>
 
 {#if showTables}
   <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#if $sourceNames?.data && $persistentTableStore?.entities && $derivedTableStore?.entities}
+    {#if $sourceNames?.data}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}
-        {@const persistentTable = $persistentTableStore.entities.find(
-          (t) => t["tableName"] === sourceName
-        )}
-        {@const derivedTable = $derivedTableStore.entities.find(
-          (t) => t["id"] === persistentTable?.id
-        )}
         <div
           animate:flip={{ duration: 200 }}
           out:slide={{ duration: LIST_SLIDE_DURATION }}
@@ -94,13 +79,7 @@
           >
             <svelte:fragment slot="more">
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-                <ColumnProfile
-                  indentLevel={1}
-                  cardinality={derivedTable?.cardinality ?? 0}
-                  profile={derivedTable?.profile ?? []}
-                  head={derivedTable?.preview ?? []}
-                  entityId={persistentTable.id}
-                />
+                <ColumnProfile indentLevel={1} objectName={sourceName} />
               </div>
             </svelte:fragment>
 

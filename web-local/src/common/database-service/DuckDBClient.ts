@@ -54,7 +54,7 @@ export class DuckDBClient {
 
     try {
       const resp = await this.request(
-        `/v1/instances/${this.instanceID}/query/direct`,
+        `/v1/instances/${this.instanceID}/query`,
         {
           sql: query,
           priority: 0,

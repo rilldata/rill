@@ -3,7 +3,7 @@ import { Config } from "../utils/Config";
 export class ServerConfig extends Config<ServerConfig> {
   @Config.ConfigField("localhost")
   public serverHost: string;
-  @Config.ConfigField(8080)
+  @Config.ConfigField(8081)
   public serverPort: number;
   @Config.ConfigField()
   public serverUrl: string;

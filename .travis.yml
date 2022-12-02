@@ -112,7 +112,7 @@ jobs:
           - rilldata/rill-macos-x64
           - rilldata/rill-linux-x64
           - rilldata/rill-win-x64.exe
-        cleanup: false
+        skip_cleanup: true
         on:
           tags: true
 

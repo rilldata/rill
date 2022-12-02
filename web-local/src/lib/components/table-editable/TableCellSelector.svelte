@@ -54,15 +54,15 @@
 </script>
 
 <td
+  bind:this={tdElt}
   class="py-2 px-4 border border-gray-200 hover:bg-gray-200"
   style="position:relative"
-  bind:this={tdElt}
 >
   <select
     class="table-select bg-transparent w-full"
+    on:change={onchangeHandler}
     style={selectStyle}
     {value}
-    on:change={onchangeHandler}
   >
     {#if placeholderLabel}
       <option value="__PLACEHOLDER_VALUE__" disabled selected hidden

@@ -154,14 +154,6 @@ service RuntimeService {
     };
   }
 
-  // DEPRECATED: QueryDirect runs a SQL query by directly executing it against the instance's OLAP datastore.
-  rpc QueryDirect(QueryDirectRequest) returns (QueryDirectResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/query/direct",
-      body: "*"
-    };
-  }
-
   // Explore APIs
 
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
@@ -676,35 +668,13 @@ message QueryRequest {
   // Args to interpolate into the statement
   repeated google.protobuf.Value args = 3;
   // Query priority (not supported by all backends)
-  int64 priority = 4;
+  int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
 }
 
 // Response message for RuntimeService.Query
 message QueryResponse {
-  // Schema of result data
-  StructType meta = 1;
-  // Result data
-  repeated google.protobuf.Struct data = 2;
-}
-
-// Request message for RuntimeService.QueryDirect
-message QueryDirectRequest {
-  // Instance to query
-  string instance_id = 1;
-  // SELECT statement
-  string sql = 2;
-  // Args to interpolate into the statement
-  repeated google.protobuf.Value args = 3;
-  // Query priority (not supported by all backends)
-  int64 priority = 4;
-  // If true, will only validate the query, not execute it
-  bool dry_run = 5;
-}
-
-// Response message for RuntimeService.QueryDirect
-message QueryDirectResponse {
   // Schema of result data
   StructType meta = 1;
   // Result data
@@ -727,6 +697,7 @@ message MetricsViewToplistRequest {
   int64 offset = 8;
   repeated MetricsViewSort sort = 9;
   MetricsViewFilter filter = 10;
+  int32 priority = 11;
 }
 
 // Response message for RuntimeService.MetricsViewToplist
@@ -744,6 +715,7 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_end = 5;
   string time_granularity = 6;
   MetricsViewFilter filter = 7;
+  int32 priority = 8;
 }
 
 // Response message for RuntimeService.MetricsViewTimeSeries
@@ -760,6 +732,7 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   MetricsViewFilter filter = 7;
+  int32 priority = 8;
 }
 
 // Response message for RuntimeService.MetricsViewTotals
@@ -801,6 +774,7 @@ message EstimateRollupIntervalRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 message EstimateRollupIntervalResponse {
@@ -888,6 +862,7 @@ message GetTopKRequest {
   string column_name = 3;
   string agg = 4; // default is count(*)
   int32 k = 5; // default is 50
+  int32 priority = 6;
 }
 
 message TopK {
@@ -903,6 +878,7 @@ message GetNullCountRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 // Response for RuntimeService.GetNullCount
@@ -915,6 +891,7 @@ message GetDescriptiveStatisticsRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 // Response for RuntimeService.GetDescriptiveStatistics
@@ -933,6 +910,7 @@ message EstimateSmallestTimeGrainRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 enum TimeGrain {
@@ -957,6 +935,7 @@ message GetNumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 // Response for RuntimeService.GetNumericHistogram
@@ -975,6 +954,7 @@ message GetRugHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 // Request for RuntimeService.GetTimeRangeSummary
@@ -982,6 +962,7 @@ message GetTimeRangeSummaryRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 // Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
@@ -989,6 +970,7 @@ message GetCardinalityOfColumnRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
+  int32 priority = 4;
 }
 
 message GenerateTimeSeriesRequest {
@@ -1000,6 +982,7 @@ message GenerateTimeSeriesRequest {
   MetricsViewRequestFilter filters = 6;
   int32 pixels = 7;
   int32 sample_size = 8;
+  int32 priority = 9;
   message BasicMeasure {
     string id = 1;
     // mandatory user defined metadata
@@ -1074,6 +1057,7 @@ enum DatabaseObjectType {
 message GetTableCardinalityRequest {
   string instance_id = 1;
   string table_name = 2;
+  int32 priority = 3;
 }
 
 message GetTableCardinalityResponse {
@@ -1083,6 +1067,7 @@ message GetTableCardinalityResponse {
 message ProfileColumnsRequest {
   string instance_id = 1;
   string table_name = 2;
+  int32 priority = 3;
 }
 
 message ProfileColumnsResponse {
@@ -1099,6 +1084,7 @@ message GetTableRowsRequest {
   string instance_id = 1;
   string table_name = 2;
   int32 limit = 3;
+  int32 priority = 4;
 }
 
 message GetTableRowsResponse {

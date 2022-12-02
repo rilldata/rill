@@ -12,17 +12,10 @@ reconciliation to execute faster by not scanning all code artifacts for changes.
   strict?: boolean;
 };
 
-export type RuntimeServiceQueryDirectBody = {
-  args?: unknown[];
-  dryRun?: boolean;
-  priority?: string;
-  sql?: string;
-};
-
 export type RuntimeServiceQueryBody = {
   args?: unknown[];
   dryRun?: boolean;
-  priority?: string;
+  priority?: number;
   sql?: string;
 };
 
@@ -32,27 +25,56 @@ export type RuntimeServiceQueryBody = {
 export type RuntimeServiceGetTopKBody = {
   agg?: string;
   k?: number;
+  priority?: number;
 };
 
 export type RuntimeServiceGenerateTimeSeriesBody = {
   filters?: V1MetricsViewRequestFilter;
   measures?: GenerateTimeSeriesRequestBasicMeasure[];
   pixels?: number;
+  priority?: number;
   sampleSize?: number;
   tableName?: string;
   timeRange?: V1TimeSeriesTimeRange;
   timestampColumnName?: string;
 };
 
-export type RuntimeServiceGetTableRowsParams = { limit?: number };
+export type RuntimeServiceGetTimeRangeSummaryParams = { priority?: number };
+
+export type RuntimeServiceEstimateSmallestTimeGrainParams = {
+  priority?: number;
+};
+
+export type RuntimeServiceGetRugHistogramParams = { priority?: number };
+
+export type RuntimeServiceGetTableRowsParams = {
+  limit?: number;
+  priority?: number;
+};
 
 export type RuntimeServiceEstimateRollupIntervalBody = {
   columnName?: string;
+  priority?: number;
 };
+
+export type RuntimeServiceGetNumericHistogramParams = { priority?: number };
+
+export type RuntimeServiceGetNullCountParams = { priority?: number };
+
+export type RuntimeServiceGetDescriptiveStatisticsParams = {
+  priority?: number;
+};
+
+export type RuntimeServiceProfileColumnsParams = { priority?: number };
+
+export type RuntimeServiceGetCardinalityOfColumnParams = { priority?: number };
+
+export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
+  priority?: number;
   timeEnd?: string;
   timeStart?: string;
 };
@@ -62,6 +84,7 @@ export type RuntimeServiceMetricsViewToplistBody = {
   limit?: string;
   measureNames?: string[];
   offset?: string;
+  priority?: number;
   sort?: V1MetricsViewSort[];
   timeEnd?: string;
   timeStart?: string;
@@ -70,6 +93,7 @@ export type RuntimeServiceMetricsViewToplistBody = {
 export type RuntimeServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
+  priority?: number;
   timeEnd?: string;
   timeGranularity?: string;
   timeStart?: string;
@@ -165,6 +189,12 @@ export interface V1TimeSeriesValue {
   ts?: string;
 }
 
+export interface V1TimeSeriesTimeRange {
+  end?: string;
+  interval?: V1TimeGrain;
+  start?: string;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   sampleSize?: number;
@@ -192,12 +222,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  end?: string;
-  interval?: V1TimeGrain;
-  start?: string;
-}
 
 export interface V1StructType {
   fields?: StructTypeField[];
@@ -227,6 +251,16 @@ export interface V1Source {
 
 export interface V1RenameFileResponse {
   [key: string]: any;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export interface V1RenameFileAndReconcileRequest {
@@ -283,16 +317,6 @@ Only applicable if file_path is set. */
   startLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-}
-
 export interface V1RefreshAndReconcileResponse {
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
@@ -317,13 +341,6 @@ export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
   data?: V1QueryResponseDataItem[];
-  meta?: V1StructType;
-}
-
-export type V1QueryDirectResponseDataItem = { [key: string]: any };
-
-export interface V1QueryDirectResponse {
-  data?: V1QueryDirectResponseDataItem[];
   meta?: V1StructType;
 }
 
@@ -424,11 +441,6 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewToplistResponse {
-  data?: V1MetricsViewToplistResponseDataItem[];
-  meta?: V1MetricsViewColumn[];
-}
-
 export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -462,6 +474,11 @@ export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
+}
+
+export interface V1MetricsViewToplistResponse {
+  data?: V1MetricsViewToplistResponseDataItem[];
+  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {

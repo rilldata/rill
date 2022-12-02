@@ -2,13 +2,13 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -19,38 +19,36 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
-    fileArtifactsStore,
     FileArtifactsData,
+    fileArtifactsStore,
   } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { getContext } from "svelte";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import type { ApplicationStore } from "../../../application-state-stores/application-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
   import Cancel from "../../icons/Cancel.svelte";
+  import EditIcon from "../../icons/EditIcon.svelte";
   import { default as Explore } from "../../icons/Explore.svelte";
+  import MetricsIcon from "../../icons/Metrics.svelte";
   import { MenuItem } from "../../menu";
   import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
-  import MetricsIcon from "../../icons/Metrics.svelte";
-  import EditIcon from "../../icons/EditIcon.svelte";
 
   $: instanceId = $runtimeStore.instanceId;
 
   $: dashboardNames = useDashboardNames(instanceId);
 
+  const queryClient = useQueryClient();
+
   const createDashboard = useRuntimeServicePutFileAndReconcile();
   const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
-
-  const appStore = getContext("rill:app:store") as ApplicationStore;
-  const applicationStore = getContext("rill:app:store") as ApplicationStore;
 
   let showMetricsDefs = true;
 
@@ -67,7 +65,7 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
-    await $createDashboard.mutateAsync({
+    const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
         path: `dashboards/${newDashboardName}.yaml`,
@@ -78,9 +76,7 @@
       },
     });
     goto(`/dashboard/${newDashboardName}`);
-    queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    );
+    return invalidateAfterReconcile(queryClient, instanceId, resp);
   };
 
   const editModel = (sourceModelName: string) => {
@@ -111,11 +107,12 @@
 
   const deleteMetricsDef = async (dashboardName: string) => {
     await deleteFileArtifact(
+      queryClient,
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
       $deleteDashboard,
-      $applicationStore.activeEntity,
+      $appStore.activeEntity,
       $dashboardNames.data
     );
   };
@@ -164,7 +161,7 @@
           )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""}
+            selectionError !== ""} -->
           <MenuItem
             icon
             disabled={hasSourceError}

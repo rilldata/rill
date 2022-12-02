@@ -1,6 +1,4 @@
 import { describe, expect } from "@jest/globals";
-import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
-import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
@@ -12,17 +10,9 @@ function testDuplicateNameChecker(
   tableNames: Array<string>,
   isDuplicate: boolean
 ) {
-  expect(
-    duplicateNameChecker(
-      name,
-      modelNames.map((modelName) => ({
-        name: modelName,
-      })) as Array<PersistentModelEntity>,
-      tableNames.map((tableName) => ({
-        name: tableName,
-      })) as Array<PersistentTableEntity>
-    )
-  ).toEqual(isDuplicate);
+  expect(duplicateNameChecker(name, modelNames, tableNames)).toEqual(
+    isDuplicate
+  );
 }
 
 function testIncrementedNameGetter(
@@ -31,17 +21,9 @@ function testIncrementedNameGetter(
   tableNames: Array<string>,
   expectedName: string
 ) {
-  expect(
-    incrementedNameGetter(
-      name,
-      modelNames.map((modelName) => ({
-        name: modelName,
-      })) as Array<PersistentModelEntity>,
-      tableNames.map((tableName) => ({
-        name: tableName,
-      })) as Array<PersistentTableEntity>
-    )
-  ).toEqual(expectedName);
+  expect(incrementedNameGetter(name, modelNames, tableNames)).toEqual(
+    expectedName
+  );
 }
 
 describe("duplicateNameUtils", () => {

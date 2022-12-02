@@ -42,8 +42,8 @@ export class TestBrowser {
 
     beforeAll(async () => {
       testBrowser.browser = await chromium.launch({
-        headless: true,
-        devtools: false,
+        headless: false,
+        devtools: true,
       });
     });
 

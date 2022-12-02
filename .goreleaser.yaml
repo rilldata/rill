@@ -94,12 +94,10 @@ archives:
   - replacements:
       darwin: Darwin
       linux: Linux
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - README.md
       - LICENSE*
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: checksums.txt

@@ -5,38 +5,29 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceTriggerRefresh,
+    V1Source,
   } from "@rilldata/web-common/runtime-client";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { PersistentModelStore } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
-  import { autoCreateMetricsDefinitionForSource } from "@rilldata/web-local/lib/redux-store/source/source-apis";
-  import { derivedProfileEntityHasTimestampColumn } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createEventDispatcher } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
+  import { deleteFileArtifact } from "../../../svelte-query/actions";
+  import { useModelNames } from "../../../svelte-query/models";
+  import { getFileFromName } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -44,9 +35,12 @@
   import Model from "../../icons/Model.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "../../menu";
+  import { createModelFromSource } from "../models/createModel";
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
+
+  const queryClient = useQueryClient();
 
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
@@ -56,34 +50,19 @@
     $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
   );
+  $: getSource = useRuntimeServiceGetCatalogEntry(
+    runtimeInstanceId,
+    sourceName
+  );
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
 
   const dispatch = createEventDispatcher();
-
-  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
-
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
-  );
-
-  $: sourceID = $persistentTableStore.entities.find(
-    (entity) => entity.tableName === sourceName
-  );
-  $: derivedTable = $derivedTableStore?.entities?.find(
-    (source) => source.id === sourceID
   );
 
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
@@ -93,11 +72,12 @@
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
+      queryClient,
       runtimeInstanceId,
       tableName,
       EntityType.Table,
       $deleteSource,
-      $rillAppStore.activeEntity,
+      $appStore.activeEntity,
       $sourceNames.data
     );
     toggleMenu();
@@ -105,8 +85,9 @@
 
   const handleCreateModel = async (tableName: string) => {
     try {
-      const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+      const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
+        queryClient,
         runtimeInstanceId,
         $modelNames.data,
         tableName,
@@ -125,25 +106,25 @@
     }
   };
 
-  const bootstrapDashboard = async (id: string, tableName: string) => {
-    const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    const createdMetricsId = await autoCreateMetricsDefinitionForSource(
-      $persistentModelStore.entities,
-      $derivedTableStore.entities,
-      sourceID,
-      tableName
-    );
-
-    navigationEvent.fireEvent(
-      createdMetricsId,
-      BehaviourEventMedium.Menu,
-      MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
-      MetricsEventScreenName.Dashboard
-    );
+  const bootstrapDashboard = async (_tableName: string) => {
+    // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+    // const createdMetricsId = await autoCreateMetricsDefinitionForSource(
+    //   $persistentModelStore.entities,
+    //   $derivedTableStore.entities,
+    //   sourceID,
+    //   tableName
+    // );
+    //
+    // navigationEvent.fireEvent(
+    //   createdMetricsId,
+    //   BehaviourEventMedium.Menu,
+    //   MetricsEventSpace.LeftPanel,
+    //   EntityTypeToScreenMap[previousActiveEntity],
+    //   MetricsEventScreenName.Dashboard
+    // );
   };
 
-  const onRefreshSource = async (id: string, tableName: string) => {
+  const onRefreshSource = async (tableName: string) => {
     const connector: string =
       $getSource?.data?.entry.source?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
@@ -161,10 +142,9 @@
         $createEntityMutation
       );
 
-      if (id) {
-        // invalidate the data preview (async)
-        dataModelerService.dispatch("collectTableInfo", [id]);
-      }
+      // invalidate the data preview (async)
+      // TODO: use new runtime approach
+      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
@@ -185,28 +165,28 @@
 </MenuItem>
 
 <MenuItem
-  disabled={!derivedProfileEntityHasTimestampColumn(derivedTable)}
+  disabled={!schemaHasTimestampColumn(source?.schema)}
   icon
-  on:select={() => bootstrapDashboard(sourceID, sourceName)}
+  on:select={() => bootstrapDashboard(sourceName)}
 >
   <Explore slot="icon" />
   autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if !derivedProfileEntityHasTimestampColumn(derivedTable)}
+    {#if !schemaHasTimestampColumn(source?.schema)}
       requires a timestamp column
     {/if}
   </svelte:fragment>
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "file"}
-  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
+  <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
     import local file to refresh source
   </MenuItem>
 {:else}
-  <MenuItem icon on:select={() => onRefreshSource(sourceID, sourceName)}>
+  <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <RefreshIcon />
     </svelte:fragment>
