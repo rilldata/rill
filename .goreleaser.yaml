@@ -5,7 +5,7 @@ release:
   disable: true
 
 builds:
-  - id: darwin
+  - id: darwin_amd4
     main: ./cli/main.go
     binary: rill
     goos:
