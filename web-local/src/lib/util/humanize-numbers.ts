@@ -156,17 +156,14 @@ export function humanizeDataType(
 }
 
 function determineScaleForValues(values: number[]): ShortHandSymbols {
-  let numberValues = values.sort();
+  let numberValues = values;
   const nullIndex = values.indexOf(null);
   if (nullIndex !== -1) {
     numberValues = values.slice(0, nullIndex);
   }
 
   // Convert negative numbers to absolute
-  numberValues = numberValues
-    .map((v) => Math.abs(v))
-    .sort()
-    .reverse();
+  numberValues = numberValues.map((v) => Math.abs(v)).sort((a, b) => b - a);
 
   const half = Math.floor(numberValues.length / 2);
   let median: number;
@@ -290,9 +287,9 @@ export function getScaleForLeaderboard(
 ) {
   if (!leaderboard) return "none";
 
-  let numValues = [...leaderboard.values()]
-    // use the first ten dimensions as the sample
-    .slice(0, 10)
+  const numValues = [...leaderboard.values()]
+    // use the first fie dimensions as the sample
+    .slice(0, 5)
     // Take only first 7 values which are shown as input
     .map((values) => values.slice(0, 7))
     .flat()
@@ -300,7 +297,8 @@ export function getScaleForLeaderboard(
 
   const areAllNumbers = numValues.every((e) => typeof e === "number");
   if (!areAllNumbers) return "none";
-  numValues = (numValues as number[]).sort((a, b) => b - a);
 
-  return determineScaleForValues(numValues);
+  const sortedValues = numValues.sort((a, b) => b - a);
+
+  return determineScaleForValues(sortedValues);
 }
