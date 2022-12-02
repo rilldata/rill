@@ -63,13 +63,13 @@ blobs:
     bucket: stage-cdn.rilldata.io #TODO: testing
     folder: "rill/v{{ .Version }}"
     extra_files:
-      - glob: ./dist/**
+      - glob: ./dist/**/*
 
   - provider: gs
     bucket: stage-cdn.rilldata.io #TODO: testing
     folder: "rill/latest"
     extra_files:
-      - glob: ./dist/**
+      - glob: ./dist/**/*
 
 brews:
   - homepage: https://github.com/rilldata/rill-developer
