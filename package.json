@@ -3,6 +3,8 @@
   "version": "0.10.0",
   "type": "module",
   "workspaces": [
+    "docs",
+    "docs-enterprise",
     "web-admin",
     "web-common",
     "web-local"
