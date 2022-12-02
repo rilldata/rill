@@ -291,8 +291,9 @@ export function getScaleForLeaderboard(
   if (!leaderboard) return "none";
 
   let numValues = [...leaderboard.values()]
-    // use the first five dimensions as the sample
-    .slice(0, 5)
+    // use the first ten dimensions as the sample
+    .slice(0, 10)
+    .map((values) => values.slice(0, 7))
     .flat()
     .map((values) => values.value);
 
