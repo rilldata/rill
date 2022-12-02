@@ -20,6 +20,7 @@
   import { createEventDispatcher } from "svelte";
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { fileArtifactsStore } from "../../../application-state-stores/file-artifacts-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import {
@@ -117,6 +118,7 @@
       },
       {
         onSuccess: async (resp) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${resp.dashboardName}`);
           await queryClient.invalidateQueries(
             getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)

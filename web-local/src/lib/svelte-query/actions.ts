@@ -5,6 +5,7 @@ import {
   runtimeServiceListFiles,
   runtimeServicePutFileAndReconcile,
   V1DeleteFileAndReconcileResponse,
+  V1ReconcileError,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
@@ -87,6 +88,8 @@ export interface CreateDashboardFromSourceRequest {
 }
 
 export interface CreateDashboardFromSourceResponse {
+  affectedPaths?: string[];
+  errors?: V1ReconcileError[];
   dashboardName: string;
 }
 
@@ -155,7 +158,7 @@ export const useCreateDashboardFromSource = <
       description: `A dashboard automatically generated from the ${data.sourceName} source.`,
     });
 
-    await runtimeServicePutFileAndReconcile({
+    const response = await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
       path: `dashboards/${newDashboardName}.yaml`,
       blob: generatedYAML,
@@ -165,6 +168,8 @@ export const useCreateDashboardFromSource = <
     });
 
     return {
+      affectedPaths: response?.affectedPaths,
+      errors: response?.errors,
       dashboardName: newDashboardName,
     };
   };
