@@ -41,7 +41,7 @@ func TestServer_MetricsViewTotals(t *testing.T) {
 	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
-func TestServer_MetricsViewTotals_empty(t *testing.T) {
+func TestServer_MetricsViewTotals_EmptyModel(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{

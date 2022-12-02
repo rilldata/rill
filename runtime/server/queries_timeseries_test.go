@@ -13,7 +13,7 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestServer_Timeseries_empty(t *testing.T) {
+func TestServer_Timeseries_EmptyModel(t *testing.T) {
 	server, instanceID := getTimeseriesTestServerWithEmptyModel(t)
 
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
@@ -30,8 +30,7 @@ func TestServer_Timeseries_empty(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records["max"])
+	require.Nil(t, results)
 }
 
 func TestServer_Timeseries(t *testing.T) {

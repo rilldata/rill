@@ -159,6 +159,9 @@ func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.
 	if err != nil {
 		return nil, err
 	}
+	if trr.GetTimeRangeSummary().Interval == nil {
+		return &runtimev1.EstimateRollupIntervalResponse{}, nil
+	}
 	r := trr.TimeRangeSummary.Interval
 
 	const (
@@ -207,6 +210,9 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.Gene
 		})
 		if err != nil {
 			return nil, err
+		}
+		if r.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			return &result, nil
 		}
 		result = runtimev1.TimeSeriesTimeRange{
 			Interval: r.Interval,
@@ -413,6 +419,11 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	timeRange, err := s.normaliseTimeRange(ctx, request)
 	if err != nil {
 		return nil, err
+	}
+	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		return &runtimev1.GenerateTimeSeriesResponse{
+			Rollup: &runtimev1.TimeSeriesResponse{},
+		}, nil
 	}
 	var measures = normaliseMeasures(request.Measures)
 	var timestampColumn = request.TimestampColumnName

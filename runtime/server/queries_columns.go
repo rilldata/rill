@@ -99,10 +99,26 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
 	defer rows.Close()
 
 	stats := new(runtimev1.NumericStatistics)
+	var min, q25, q50, q75, max, mean, sd sql.NullFloat64
 	for rows.Next() {
-		err = rows.Scan(&stats.Min, &stats.Q25, &stats.Q50, &stats.Q75, &stats.Max, &stats.Mean, &stats.Sd)
+		err = rows.Scan(&min, &q25, &q50, &q75, &max, &mean, &sd)
 		if err != nil {
 			return nil, err
+		}
+		if !min.Valid {
+			return &runtimev1.GetDescriptiveStatisticsResponse{
+				NumericSummary: &runtimev1.NumericSummary{
+					Case: &runtimev1.NumericSummary_NumericStatistics{},
+				},
+			}, nil
+		} else {
+			stats.Min = min.Float64
+			stats.Max = max.Float64
+			stats.Q25 = q25.Float64
+			stats.Q50 = q50.Float64
+			stats.Q75 = q75.Float64
+			stats.Mean = mean.Float64
+			stats.Sd = sd.Float64
 		}
 	}
 	resp := &runtimev1.NumericSummary{
@@ -265,21 +281,32 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 
 func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
 	sanitizedColumnName := quoteName(request.ColumnName)
-	sql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
+	querySql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
 		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
 	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    sql,
+		Query:    querySql,
 		Priority: int(request.Priority),
 	})
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var iqr, count, rangeVal float64
+
+	var iqr, rangeVal sql.NullFloat64
+	var count float64
 	for rows.Next() {
 		err = rows.Scan(&iqr, &count, &rangeVal)
 		if err != nil {
 			return nil, err
+		}
+		if !iqr.Valid {
+			return &runtimev1.GetNumericHistogramResponse{
+				NumericSummary: &runtimev1.NumericSummary{
+					Case: &runtimev1.NumericSummary_NumericHistogramBins{
+						NumericHistogramBins: &runtimev1.NumericHistogramBins{},
+					},
+				},
+			}, nil
 		}
 	}
 	var bucketSize float64
@@ -288,8 +315,8 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 		bucketSize = count
 	} else {
 		// Use Freedman–Diaconis rule for calculating number of bins
-		bucketWidth := (2 * iqr) / math.Cbrt(count)
-		FDEstimatorBucketSize := math.Ceil(rangeVal / bucketWidth)
+		bucketWidth := (2 * iqr.Float64) / math.Cbrt(count)
+		FDEstimatorBucketSize := math.Ceil(rangeVal.Float64 / bucketWidth)
 		bucketSize = math.Min(40, FDEstimatorBucketSize)
 	}
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -495,10 +522,6 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			summary.Min = timestamppb.Now()
-			summary.Max = timestamppb.Now()
-			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
 		}
 		return &runtimev1.GetTimeRangeSummaryResponse{
 			TimeRangeSummary: summary,
