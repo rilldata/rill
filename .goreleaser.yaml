@@ -4,8 +4,6 @@ release:
   prerelease: auto
   disable: true
 
-before:
-  hooks:
 builds:
   - id: darwin
     main: ./cli/main.go
@@ -65,7 +63,13 @@ blobs:
     bucket: stage-cdn.rilldata.io #TODO: testing
     folder: "rill/v{{ .Version }}"
     extra_files:
-      - glob: ./dist/**
+      - glob: ./dist/**/*
+
+  - provider: gs
+    bucket: stage-cdn.rilldata.io #TODO: testing
+    folder: "rill/latest"
+    extra_files:
+      - glob: ./dist/**/*
 
 brews:
   - homepage: https://github.com/rilldata/rill-developer
@@ -90,12 +94,10 @@ archives:
   - replacements:
       darwin: Darwin
       linux: Linux
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - README.md
       - LICENSE*
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: checksums.txt
