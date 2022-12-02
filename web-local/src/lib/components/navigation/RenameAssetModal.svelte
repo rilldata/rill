@@ -3,8 +3,8 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getLabel } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";

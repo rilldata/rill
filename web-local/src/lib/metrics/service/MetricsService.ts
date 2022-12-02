@@ -3,8 +3,8 @@ import type {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
   PickActionFunctions,
-} from "@rilldata/web-local/common/ServiceBase";
-import { getActionMethods } from "@rilldata/web-local/common/ServiceBase";
+} from "@rilldata/web-local/lib/metrics/service/ServiceBase";
+import { getActionMethods } from "@rilldata/web-local/lib/metrics/service/ServiceBase";
 import type { MetricsEventFactory } from "./MetricsEventFactory";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";

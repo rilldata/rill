@@ -1,4 +1,4 @@
-import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 
 export function getFileFromName(name: string, type: EntityType): string {
   switch (type) {

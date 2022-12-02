@@ -2,7 +2,7 @@
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
-  } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  } from "@rilldata/web-local/lib/temp/time-control-types";
   import { createEventDispatcher, tick } from "svelte";
   import {
     MetricsExplorerEntity,

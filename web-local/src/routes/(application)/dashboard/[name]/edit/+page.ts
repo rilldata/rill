@@ -1,11 +1,11 @@
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
 import {
+  ExplorerMetricsDefinitionDoesntExist,
   ExplorerSourceColumnDoesntExist,
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
   ExplorerTimeDimensionDoesntExist,
-  ExplorerMetricsDefinitionDoesntExist,
-} from "@rilldata/web-local/common/errors/ErrorMessages";
+} from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
 import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error } from "@sveltejs/kit";
 

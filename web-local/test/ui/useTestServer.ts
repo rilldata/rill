@@ -1,5 +1,5 @@
-import { isPortOpen } from "@rilldata/web-local/common/utils/isPortOpen";
-import { asyncWaitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
+import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import { rmSync } from "fs";
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";

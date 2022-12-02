@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TimeGrain } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import type { TimeGrain } from "@rilldata/web-local/lib/temp/time-control-types";
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../../../icons/CaretDownIcon.svelte";
   import WithSelectMenu from "../../../menu/wrappers/WithSelectMenu.svelte";

@@ -11,7 +11,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     TimeGrain,
     TimeRangeName,
     TimeSeriesTimeRange,
-  } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  } from "@rilldata/web-local/lib/temp/time-control-types";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
@@ -147,8 +147,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
 <div class="flex flex-row">
   <TimeRangeNameSelector
-    {metricViewName}
     {allTimeRange}
+    {metricViewName}
     on:select-time-range-name={setSelectedTimeRangeName}
     {selectedTimeRangeName}
   />

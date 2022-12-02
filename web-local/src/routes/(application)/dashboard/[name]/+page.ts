@@ -1,5 +1,5 @@
 import { runtimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
-import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/common/errors/ErrorMessages";
+import { ExplorerMetricsDefinitionDoesntExist } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
 import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error, redirect } from "@sveltejs/kit";
 

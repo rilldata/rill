@@ -11,9 +11,6 @@ export interface TimeSeriesResponse {
   sampleSize?: number;
   error?: string;
 }
-export interface TimeSeriesRollup {
-  rollup: TimeSeriesResponse;
-}
 
 export enum TimeRangeName {
   LastHour = "Last hour",

@@ -1,6 +1,7 @@
 import type { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
 import type { CommonUserFields } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+
+const ActiveEventInterval = 60;
 
 export class ActiveEventHandler {
   private isInFocus = true;
@@ -9,7 +10,6 @@ export class ActiveEventHandler {
   private previousInFocusTime = 0;
 
   public constructor(
-    private readonly config: RootConfig,
     private readonly metricsService: MetricsService,
     private readonly commonUserMetrics: CommonUserFields
   ) {
@@ -30,7 +30,7 @@ export class ActiveEventHandler {
     setTimeout(() => {
       setInterval(() => {
         this.fireEvent();
-      }, this.config.metrics.activeEventInterval * 1000);
+      }, ActiveEventInterval * 1000);
     }, (60 - new Date().getSeconds()) * 1000);
   }
 

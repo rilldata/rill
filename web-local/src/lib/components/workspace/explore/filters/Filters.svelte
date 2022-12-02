@@ -13,7 +13,7 @@ The main feature-set component for dashboard filters
     MetricsViewDimensionValues,
     MetricsViewRequestFilter,
   } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-  import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,

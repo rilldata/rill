@@ -4,7 +4,7 @@
     useRuntimeServiceListCatalogEntries,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { Debounce } from "@rilldata/web-local/common/utils/Debounce";
+  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import {
     acceptCompletion,
     autocompletion,

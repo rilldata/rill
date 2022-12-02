@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { slideRight } from "../../transitions";
 
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { Switch } from "@rilldata/web-local/lib/components/button";
 
   import Shortcut from "../tooltip/Shortcut.svelte";
@@ -56,8 +56,8 @@
   style:height="50px"
 >
   <button
-    on:click={() => goBackToLeaderboard()}
     class="flex flex-row items-center"
+    on:click={() => goBackToLeaderboard()}
     style:grid-column-gap=".4rem"
   >
     {#if isFetching}
@@ -74,12 +74,12 @@
 
   <div
     class="flex items-center"
-    style:grid-column-gap=".4rem"
     style:cursor="pointer"
+    style:grid-column-gap=".4rem"
   >
-    <Tooltip location="left" distance={16}>
+    <Tooltip distance={16} location="left">
       <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
-        <Switch on:click={() => toggleFilterMode()} checked={excludeMode}>
+        <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
           Exclude
         </Switch>
       </div>

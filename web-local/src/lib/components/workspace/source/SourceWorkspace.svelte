@@ -1,6 +1,6 @@
 <script lang="ts">
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { ConnectedPreviewTable } from "../../preview-table";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceInspector from "./SourceInspector.svelte";

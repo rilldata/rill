@@ -5,7 +5,6 @@
     useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
@@ -15,6 +14,7 @@
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";

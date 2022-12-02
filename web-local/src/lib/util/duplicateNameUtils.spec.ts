@@ -2,7 +2,7 @@ import { describe, expect } from "@jest/globals";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
-} from "@rilldata/web-local/common/utils/duplicateNameUtils";
+} from "@rilldata/web-local/lib/util/duplicateNameUtils";
 
 function testDuplicateNameChecker(
   name: string,

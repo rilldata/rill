@@ -2,7 +2,7 @@ import { goto } from "$app/navigation";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
-} from "@rilldata/web-local/common/utils/duplicateNameUtils";
+} from "@rilldata/web-local/lib/util/duplicateNameUtils";
 import {
   DuplicateActions,
   duplicateSourceAction,

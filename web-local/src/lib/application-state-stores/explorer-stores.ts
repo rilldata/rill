@@ -1,7 +1,7 @@
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
-import type { TimeSeriesTimeRange } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+import type { TimeSeriesTimeRange } from "@rilldata/web-local/lib/temp/time-control-types";
 import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-import { removeIfExists } from "@rilldata/web-local/common/utils/arrayUtils";
+import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { Readable, writable } from "svelte/store";
 
 export interface LeaderboardValue {

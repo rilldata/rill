@@ -1,4 +1,4 @@
-import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
 
 export function getNextEntityId(
   entities: Array<EntityRecord>,

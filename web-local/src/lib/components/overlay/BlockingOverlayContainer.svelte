@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import { fly } from "svelte/transition";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Overlay from "./Overlay.svelte";
   import Spinner from "../Spinner.svelte";
   export let bg = "rgba(0,0,0,.6)";

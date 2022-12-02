@@ -5,8 +5,6 @@
     V1GetTableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -19,6 +17,7 @@
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import {
     formatBigNumberPercentage,
@@ -98,10 +97,7 @@
   // compute column delta
   let inputColumnNum;
   $: if (tables?.length)
-    inputColumnNum = tables.reduce(
-      (acc, v: DerivedTableEntity) => acc + v.profile.length,
-      0
-    );
+    inputColumnNum = tables.reduce((acc, v) => acc + v.profile.length, 0);
   $: outputColumnNum = model?.schema?.fields?.length ?? 0;
   $: columnDelta = outputColumnNum - inputColumnNum;
 

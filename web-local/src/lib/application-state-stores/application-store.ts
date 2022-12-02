@@ -3,15 +3,7 @@
  * It does not contain any of the state for the entities; instead, it contains information
  * about things like the active entity and the application status.
  */
-import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-import { ServerConfig } from "@rilldata/web-local/common/config/ServerConfig";
 import { writable, Writable } from "svelte/store";
-
-export const config = new RootConfig({
-  server: new ServerConfig({
-    serverUrl: RILL_RUNTIME_URL,
-  }),
-});
 
 export enum DuplicateActions {
   None = "NONE",

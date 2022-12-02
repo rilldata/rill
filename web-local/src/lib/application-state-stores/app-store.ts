@@ -1,6 +1,11 @@
-import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import type { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import { Readable, writable } from "svelte/store";
+
+export interface ActiveEntity {
+  type: EntityType;
+  id?: string;
+  name: string;
+}
 
 /**
  * App wide store to store metadata

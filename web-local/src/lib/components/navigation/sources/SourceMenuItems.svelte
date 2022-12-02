@@ -19,9 +19,9 @@
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";

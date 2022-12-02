@@ -6,7 +6,7 @@ import {
   expect,
 } from "@jest/globals";
 import { expect as playwrightExpect } from "@playwright/test";
-import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
+import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import path from "node:path";
 import { Browser, chromium, Page } from "playwright";
 

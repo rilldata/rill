@@ -1,8 +1,8 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import type { TimeSeriesValue } from "@rilldata/web-local/lib/temp/time-control-types";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";

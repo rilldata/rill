@@ -1,4 +1,4 @@
-import { getName } from "@rilldata/web-local/common/utils/incrementName";
+import { getName } from "@rilldata/web-local/lib/util/incrementName";
 
 export function duplicateNameChecker(
   name: string,

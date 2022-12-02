@@ -1,5 +1,5 @@
-import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import type { MeasureEntity } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+import { ValidationState } from "@rilldata/web-local/lib/temp/metrics";
 import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
 
 import {
