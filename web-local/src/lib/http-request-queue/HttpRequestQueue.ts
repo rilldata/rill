@@ -41,12 +41,17 @@ export class HttpRequestQueue {
     let name: string;
     switch (urlMatch?.[1]) {
       case "metrics-views":
-        name = urlMatch[2];
-        type = urlMatch[3];
+        name = urlMatch[3];
+        type = urlMatch[2];
         break;
       case "queries":
-        name = urlMatch[2];
-        type = urlMatch[4];
+        name = urlMatch[4];
+        type = urlMatch[2];
+        entry.params ??= {};
+        entry.params.priority = QueryPriorities[type] ?? DefaultQueryPriority;
+        if (entry.data) {
+          entry.data.priority = entry.params.priority;
+        }
         break;
       default:
         // make the call directly if the url is not recognised
@@ -82,14 +87,15 @@ export class HttpRequestQueue {
     this.running = true;
 
     while (!this.nameHeap.empty()) {
+      await waitUntil(() => this.activeCount < QueryQueueSize, 30000, 50);
+      if (this.activeCount >= QueryQueueSize) continue;
+      if (this.nameHeap.empty()) break;
+
       const topNameEntry = this.nameHeap.peek();
       const topTypeEntry = topNameEntry.queryHeap.peek();
 
-      await waitUntil(() => this.activeCount < QueryQueueSize, 30000, 50);
-      if (this.activeCount >= QueryQueueSize) continue;
-
       // intentional to not await here
-      this.fireForEntry(topTypeEntry.entries.shift(), topTypeEntry.priority);
+      this.fireForEntry(topTypeEntry.entries.shift());
 
       // cleanup
       if (topTypeEntry.entries.length === 0) {
@@ -133,14 +139,9 @@ export class HttpRequestQueue {
     return typeEntry;
   }
 
-  private async fireForEntry(entry: RequestQueueEntry, priority: number) {
+  private async fireForEntry(entry: RequestQueueEntry) {
     this.activeCount++;
     try {
-      if (entry.params) {
-        entry.params.priority = priority + "";
-      } else if (entry.data) {
-        entry.data.priority = priority;
-      }
       const resp = await fetchWrapper(entry);
       entry.resolve(resp);
     } catch (err) {

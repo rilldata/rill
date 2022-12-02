@@ -17,6 +17,7 @@
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -47,6 +48,9 @@
 
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
+
+  let sanitizedQuery: string;
+  $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
@@ -114,14 +118,19 @@
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
-    httpRequestQueue.removeByName(modelName);
-    // cancel all existing analytical queries currently running.
-    await queryClient.cancelQueries({
-      fetching: true,
-      predicate: (query) => {
-        return invalidateForModel(query.queryHash, modelName);
-      },
-    });
+    const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
+
+    if (hasChanged) {
+      httpRequestQueue.removeByName(modelName);
+      // cancel all existing analytical queries currently running.
+      await queryClient.cancelQueries({
+        fetching: true,
+        predicate: (query) => {
+          return invalidateForModel(query.queryHash, modelName);
+        },
+      });
+    }
+
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
@@ -132,7 +141,9 @@
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
-    if (!resp.errors.length) {
+
+    if (!resp.errors.length && hasChanged) {
+      sanitizedQuery = sanitizeQuery(content);
       // re-fetch existing finished queries
       await queryClient.resetQueries({
         predicate: (query) => {

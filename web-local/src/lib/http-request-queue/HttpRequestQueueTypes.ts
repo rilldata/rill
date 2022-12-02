@@ -4,7 +4,7 @@ export interface RequestQueueEntry {
   url: string;
   method: string;
   headers?: HeadersInit;
-  params?: Record<string, string>;
+  params?: Record<string, unknown>;
   data?: any;
   signal?: AbortSignal;
 

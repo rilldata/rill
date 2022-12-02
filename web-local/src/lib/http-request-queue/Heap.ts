@@ -51,9 +51,10 @@ export class Heap<Item, Key = string> {
   }
 
   public delete(value: Item, key?: Key) {
-    const idx = this.valueToIdxMap.get(key ? key : this.keyGetter(value));
+    key ??= this.keyGetter(value);
+    const idx = this.valueToIdxMap.get(key);
     if (idx >= 0) {
-      this.valueToIdxMap.delete(this.keyGetter(value));
+      this.valueToIdxMap.delete(key);
       if (idx < this.array.length - 1) {
         this.array[idx] = this.array.pop();
         this.valueToIdxMap.set(this.keyGetter(this.array[idx]), idx);

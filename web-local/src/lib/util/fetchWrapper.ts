@@ -13,11 +13,13 @@ export async function fetchWrapper({
   headers ??= { "Content-Type": "application/json" };
 
   if (params) {
-    const u = new URL(url);
+    const paramParts = [];
     for (const p in params) {
-      u.searchParams.append(p, params[p]);
+      paramParts.push(`${p}=${encodeURIComponent(params[p] as string)}`);
     }
-    url = u.toString();
+    if (paramParts.length) {
+      url = `${url}?${paramParts.join("&")}`;
+    }
   }
 
   const resp = await fetch(url, {
