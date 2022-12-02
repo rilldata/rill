@@ -19,7 +19,10 @@ var migrationVersionTable = "runtime_migration_version"
 
 // Migrate implements drivers.Connection.
 // Migrate for SQLite may not be safe for concurrent use.
-func (c *connection) Migrate(ctx context.Context) (err error) {
+func (c *connection) Migrate(_ context.Context) (err error) {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
 	// Create migrationVersionTable if it doesn't exist
 	_, err = c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
 	if err != nil {
@@ -93,7 +96,10 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 }
 
 // MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (c *connection) MigrationStatus(_ context.Context) (current int, desired int, err error) {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
 	// Get current version
 	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {
