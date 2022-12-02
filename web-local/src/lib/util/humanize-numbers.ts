@@ -288,7 +288,7 @@ export function getScaleForLeaderboard(
   if (!leaderboard) return "none";
 
   const numValues = [...leaderboard.values()]
-    // use the first fie dimensions as the sample
+    // use the first five dimensions as the sample
     .slice(0, 5)
     // Take only first 7 values which are shown as input
     .map((values) => values.slice(0, 7))
