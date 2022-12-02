@@ -2,16 +2,16 @@ name: Release Rill CLI
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 0 * * *
+    - cron: "0 0 * * *"
   push:
     tags:
-      - **
+      - "**"
     branches: [ "goreleaser-prototype" ]
     paths:
-      - .github/workflows/cli-release.yml
-      - .goreleaser.yaml
-      - go.mod
-      - cli/**
+      - ".github/workflows/cli-release.yml"
+      - ".goreleaser.yaml"
+      - "go.mod"
+      - "cli/**"
 jobs:
   release:
     name: Release rill-developer
