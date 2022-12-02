@@ -1,4 +1,4 @@
-name: Build and Test web code
+name: Prettier check
 on:
   pull_request:
 jobs:
