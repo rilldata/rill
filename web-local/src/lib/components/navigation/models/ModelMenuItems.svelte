@@ -11,10 +11,11 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { metricsTemplate } from "../../../application-state-stores/metrics-internal-store";
+  import { generateMeasuresAndDimension } from "../../../application-state-stores/metrics-internal-store";
+  import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import {
@@ -34,8 +35,6 @@
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
-  const rillAppStore = getContext("rill:app:store") as ApplicationStore;
-
   const dispatch = createEventDispatcher();
 
   const queryClient = useQueryClient();
@@ -52,21 +51,21 @@
   let model: V1Model;
   $: model = $modelQuery.data?.entry?.model;
 
-  // const metricMigrate = useRuntimeServicePutFileAndReconcile();
-
-  /** functionality for bootstrapping a dashboard */
-  const createDashboardFromModel = (_: string) => {
-    // create dashboard from model
+  const createDashboardFromModel = (modelName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + modelName,
+    });
     const newDashboardName = getName(
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
+    const generatedYAML = generateMeasuresAndDimension(model);
     $createFileMutation.mutate(
       {
         data: {
           instanceId: $runtimeStore.instanceId,
           path: `dashboards/${newDashboardName}.yaml`,
-          blob: metricsTemplate, // TODO: compile a real yaml file
+          blob: generatedYAML,
           create: true,
           createOnly: true,
           strict: false,
@@ -78,9 +77,9 @@
           queryClient.invalidateQueries(
             getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
           );
-          const previousActiveEntity = $rillAppStore?.activeEntity?.type;
+          const previousActiveEntity = $appStore?.activeEntity?.type;
           navigationEvent.fireEvent(
-            newDashboardName, // TODO: we're hashing these to get an unique ID for telemetry, right?
+            newDashboardName,
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,
             EntityTypeToScreenMap[previousActiveEntity],
@@ -90,28 +89,12 @@
         onError: (err) => {
           console.error(err);
         },
+        onSettled: () => {
+          overlay.set(null);
+          toggleMenu(); // unmount component
+        },
       }
     );
-    // const previousActiveEntity = $applicationStore?.activeEntity?.type;
-    // const metricsLabel = `${modelName}_dashboard`;
-    // const generatedYAML = generateMeasuresAndDimension(model, {
-    //   display_name: metricsLabel,
-    // });
-    // await $metricMigrate.mutateAsync({
-    //   data: {
-    //     instanceId: $runtimeStore.instanceId,
-    //     path: `dashboards/${metricsLabel}.yaml`,
-    //     blob: generatedYAML,
-    //     create: false,
-    //   },
-    // });
-    // navigationEvent.fireEvent(
-    //     createdMetricsId,
-    //     BehaviourEventMedium.Menu,
-    //     MetricsEventSpace.LeftPanel,
-    //     EntityTypeToScreenMap[previousActiveEntity],
-    //     MetricsEventScreenName.Dashboard
-    //   );
   };
 
   const handleDeleteModel = async (modelName: string) => {
@@ -124,7 +107,6 @@
       $appStore.activeEntity,
       $modelNames.data
     );
-    // onSettled gets triggered *after* both onSuccess and onError
     toggleMenu();
   };
 </script>
@@ -133,6 +115,7 @@
   disabled={!schemaHasTimestampColumn(model?.schema)}
   icon
   on:select={() => createDashboardFromModel(modelName)}
+  propogateSelect={false}
 >
   <Explore slot="icon" />
   autogenerate dashboard
