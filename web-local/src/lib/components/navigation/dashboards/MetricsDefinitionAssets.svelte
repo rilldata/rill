@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    runtimeServiceGetCatalogEntry,
+    runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
@@ -41,6 +41,7 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -56,16 +57,17 @@
   let showRenameMetricsDefinitionModal = false;
   let renameMetricsDefName = null;
 
-  async function getModelFromDashboardName(
+  async function getDashboardArtifact(
     instanceId: string,
     metricViewName: string
   ) {
-    const metricViewCatalog = await runtimeServiceGetCatalogEntry(
-      instanceId,
-      metricViewName
+    const filePath = getFileFromName(
+      metricViewName,
+      EntityType.MetricsDefinition
     );
-    const metricViewEntry = metricViewCatalog.entry?.metricsView;
-    return metricViewEntry?.from;
+    const resp = await runtimeServiceGetFile(instanceId, filePath);
+    const metricYAMLString = resp.blob;
+    fileArtifactsStore.setJSONRep(filePath, metricYAMLString);
   }
 
   const openRenameMetricsDefModal = (metricsDefName: string) => {
@@ -78,28 +80,34 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
+    const filePath = `dashboards/${newDashboardName}.yaml`;
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
-        path: `dashboards/${newDashboardName}.yaml`,
+        path: filePath,
         blob: metricsTemplate,
         create: true,
         createOnly: true,
         strict: false,
       },
     });
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+
     goto(`/dashboard/${newDashboardName}`);
     return invalidateAfterReconcile(queryClient, instanceId, resp);
   };
 
   const editModel = async (dashboardName: string) => {
-    const sourceModelName = await getModelFromDashboardName(
-      instanceId,
+    await getDashboardArtifact(instanceId, dashboardName);
+
+    const dashboardData = getDashboardData(
+      $fileArtifactsStore.entities,
       dashboardName
     );
-    goto(`/model/${sourceModelName}`);
+    const sourceModelName = dashboardData.jsonRepresentation.from;
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
+    goto(`/model/${sourceModelName}`);
     navigationEvent.fireEvent(
       sourceModelName,
       BehaviourEventMedium.Menu,
@@ -123,8 +131,10 @@
   };
 
   const deleteMetricsDef = async (dashboardName: string) => {
-    const sourceModelName = await getModelFromDashboardName(
-      instanceId,
+    await getDashboardArtifact(instanceId, dashboardName);
+
+    const dashboardData = getDashboardData(
+      $fileArtifactsStore.entities,
       dashboardName
     );
     await deleteFileArtifact(
@@ -137,6 +147,7 @@
       $dashboardNames.data
     );
 
+    const sourceModelName = dashboardData.jsonRepresentation.from;
     if ($appStore.activeEntity.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
@@ -158,7 +169,8 @@
     entities: Record<string, FileArtifactsData>,
     name: string
   ) => {
-    return entities[name];
+    const dashboardPath = getFileFromName(name, EntityType.MetricsDefinition);
+    return entities[dashboardPath];
   };
 </script>
 
