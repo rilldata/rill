@@ -151,7 +151,7 @@
         runtimeInstanceId,
         tableName
       );
-      await queryClient.invalidateQueries(queryKey);
+      await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
     }
