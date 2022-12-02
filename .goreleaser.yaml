@@ -65,6 +65,12 @@ blobs:
     extra_files:
       - glob: ./dist/**
 
+  - provider: gs
+    bucket: stage-cdn.rilldata.io #TODO: testing
+    folder: "rill/latest"
+    extra_files:
+      - glob: ./dist/**
+
 brews:
   - homepage: https://github.com/rilldata/rill-developer
     description: The Rill CLI
