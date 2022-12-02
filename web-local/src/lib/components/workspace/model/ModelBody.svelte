@@ -135,6 +135,15 @@
           return invalidateForModel(query.queryHash, modelName);
         },
       });
+      // reset the inspector model for this entry.
+      await queryClient.resetQueries({
+        predicate: (query) => {
+          return query.queryHash.includes(
+            `/v1/instances/${$runtimeStore?.instanceId}/catalog/${modelName}`
+            //`rill/model/${modelName}/inspector/catalog-entry`
+          );
+        },
+      });
     }
   }
 </script>

@@ -24,7 +24,7 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
-  import { extractSourceTables } from "@rilldata/web-local/lib/util/model-structure";
+  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
@@ -34,7 +34,8 @@
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
-    modelName
+    modelName,
+    { query: { queryKey: `current-model-query-in-inspector-${modelName}` } }
   );
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
@@ -58,7 +59,7 @@
 
   // get source table references.
   $: if (model?.sql) {
-    sourceTableReferences = extractSourceTables(model.sql);
+    sourceTableReferences = getTableReferences(model.sql);
   }
 
   // map and filter these source tables.
