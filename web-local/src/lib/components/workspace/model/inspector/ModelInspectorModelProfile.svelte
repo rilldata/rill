@@ -68,11 +68,11 @@
   // toggle state for inspector sections
   let showSourceTables = true;
 
-  function focus() {
+  function focus(reference) {
     return () => {
       // FIXME
       if (references.length) {
-        queryHighlight.set(references);
+        queryHighlight.set([reference]);
       }
     };
   }
