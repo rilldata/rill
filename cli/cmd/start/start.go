@@ -132,16 +132,17 @@ func StartCmd(ver string) *cobra.Command {
 			logger.Sugar().Infof("Hydration completed!")
 
 			// Build local info for frontend
-			installID, err := local.InstallID()
+			localConf, err := local.Config()
 			if err != nil {
 				return err
 			}
 			inf := &localInfo{
-				InstanceID:  localInstanceID,
-				GRPCPort:    grpcPort,
-				InstallID:   installID,
-				ProjectPath: repoAbs,
-				IsDev:       ver == "",
+				InstanceID:        localInstanceID,
+				GRPCPort:          grpcPort,
+				InstallID:         localConf.InstallID,
+				ProjectPath:       repoAbs,
+				IsDev:             ver == "",
+				SendTelemetryData: localConf.SendTelemetryData,
 			}
 
 			// Create the local server
@@ -213,11 +214,12 @@ func StartCmd(ver string) *cobra.Command {
 }
 
 type localInfo struct {
-	InstanceID  string `json:"instance_id"`
-	GRPCPort    int    `json:"grpc_port"`
-	InstallID   string `json:"install_id"`
-	ProjectPath string `json:"project_path"`
-	IsDev       bool   `json:"is_dev"`
+	InstanceID        string `json:"instance_id"`
+	GRPCPort          int    `json:"grpc_port"`
+	InstallID         string `json:"install_id"`
+	ProjectPath       string `json:"project_path"`
+	IsDev             bool   `json:"is_dev"`
+	SendTelemetryData bool   `json:"send_telemetry_data"`
 }
 
 type localServer struct {
