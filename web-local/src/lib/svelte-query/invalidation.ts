@@ -1,10 +1,13 @@
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceGetTableCardinalityQueryKey,
+  getRuntimeServiceGetTableRowsQueryKey,
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
+  getRuntimeServiceProfileColumnsQueryKey,
+  V1ReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
 
@@ -50,4 +53,22 @@ export const invalidateMetricsViewData = (
         `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/`
       ),
   });
+};
+
+export const invalidateTablewideProfilingQueries = async (
+  queryClient: QueryClient,
+  instanceId: string,
+  sourceName: string
+) => {
+  await Promise.all([
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetTableCardinalityQueryKey(instanceId, sourceName)
+    ),
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetTableRowsQueryKey(instanceId, sourceName)
+    ),
+    queryClient.invalidateQueries(
+      getRuntimeServiceProfileColumnsQueryKey(instanceId, sourceName)
+    ),
+  ]);
 };

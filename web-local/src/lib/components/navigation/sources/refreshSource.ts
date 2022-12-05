@@ -1,5 +1,4 @@
-import {
-  getRuntimeServiceGetTableRowsQueryKey,
+import type {
   V1PutFileAndReconcileResponse,
   V1RefreshAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -12,7 +11,10 @@ import {
 } from "@rilldata/web-local/lib/util/file-upload";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { invalidateAfterReconcile } from "../../../svelte-query/invalidation";
+import {
+  invalidateAfterReconcile,
+  invalidateTablewideProfilingQueries,
+} from "../../../svelte-query/invalidation";
 import { getFileFromName } from "../../../util/entity-mappers";
 
 export async function refreshSource(
@@ -32,9 +34,7 @@ export async function refreshSource(
       },
     });
     invalidateAfterReconcile(queryClient, instanceId, resp);
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetTableRowsQueryKey(instanceId, sourceName)
-    );
+    invalidateTablewideProfilingQueries(queryClient, instanceId, sourceName);
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     return;
   }
@@ -66,8 +66,6 @@ export async function refreshSource(
       strict: true,
     },
   });
-  queryClient.invalidateQueries(
-    getRuntimeServiceGetTableRowsQueryKey(instanceId, sourceName)
-  );
+  invalidateTablewideProfilingQueries(queryClient, instanceId, sourceName);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 }
