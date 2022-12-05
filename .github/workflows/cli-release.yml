@@ -6,12 +6,6 @@ on:
   push:
     tags:
       - "**"
-#    branches: [ "goreleaser-prototype" ]
-#    paths:
-#      - ".github/workflows/cli-release.yml"
-#      - ".goreleaser.yaml"
-#      - "go.mod"
-#      - "cli/**"
 jobs:
   release:
     name: Release rill-developer

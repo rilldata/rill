@@ -5,7 +5,7 @@ release:
   draft: true
 
 builds:
-  - id: darwin_amd4
+  - id: darwin_amd64
     main: ./cli/main.go
     binary: rill
     goos:
@@ -91,13 +91,11 @@ brews:
       email: support@rilldata.com
 
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-    files:
+  - files:
       - README.md
       - LICENSE*
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
 
 checksum:
   name_template: checksums.txt
@@ -107,7 +105,3 @@ snapshot:
 
 changelog:
   sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
