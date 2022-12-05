@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
+    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
@@ -7,6 +9,7 @@
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
@@ -16,7 +19,6 @@
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
-  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
@@ -30,13 +32,18 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { slide } from "svelte/transition";
+  import { getName } from "../../../../common/utils/incrementName";
+  import { overlay } from "../../../application-state-stores/overlay-store";
+  import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
+  import { useDashboardNames } from "../../../svelte-query/dashboards";
+  import { useModelNames } from "../../../svelte-query/models";
   import { getSummaries } from "../../column-profile/queries";
+  import { createModelFromSource } from "../../navigation/models/createModel";
 
   export let sourceName: string;
 
@@ -52,7 +59,9 @@
   $: source = $getSource?.data?.entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: dashboardNames = useDashboardNames(runtimeInstanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let showColumns = true;
 
@@ -79,27 +88,44 @@
     );
   };
 
-  const handleCreateMetric = () => {
-    // A side effect of the createMetricsDefsApi is we switch active assets to
-    // the newly created metrics definition. So, this'll bring us to the
-    // MetricsDefinition page. (The logic for this is contained in the
-    // not-pictured async thunk.)
-    // autoCreateMetricsDefinitionForSource(
-    //   $persistentModelStore.entities,
-    //   $derivedTableStore.entities,
-    //   currentTable.id,
-    //   $persistentTableStore.entities.find(
-    //     (table) => table.tableName === sourceName
-    //   ).tableName
-    // ).then((createdMetricsId) => {
-    //   navigationEvent.fireEvent(
-    //     createdMetricsId,
-    //     BehaviourEventMedium.Button,
-    //     MetricsEventSpace.RightPanel,
-    //     MetricsEventScreenName.Source,
-    //     MetricsEventScreenName.Dashboard
-    //   );
-    // });
+  const handleCreateDashboardFromSource = (sourceName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
+    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      $dashboardNames.data
+    );
+    $createDashboardFromSourceMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          sourceName,
+          newModelName,
+          newDashboardName,
+        },
+      },
+      {
+        onSuccess: async (resp) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+          goto(`/dashboard/${newDashboardName}`);
+          await queryClient.invalidateQueries(
+            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
+          );
+          navigationEvent.fireEvent(
+            newDashboardName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.RightPanel,
+            MetricsEventScreenName.Source,
+            MetricsEventScreenName.Dashboard
+          );
+        },
+        onSettled: () => {
+          overlay.set(null);
+        },
+      }
+    );
   };
 
   /** source summary information */
@@ -198,7 +224,7 @@
         <Button
           type="primary"
           disabled={!timestampColumns?.length}
-          on:click={handleCreateMetric}
+          on:click={() => handleCreateDashboardFromSource(sourceName)}
         >
           <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
           <Explore size="16px" /></Button
