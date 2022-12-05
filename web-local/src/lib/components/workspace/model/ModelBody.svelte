@@ -141,15 +141,6 @@
       },
     })) as V1PutFileAndReconcileResponse;
 
-    // invalidate any direct usage of this catalog entry
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        return query.queryHash.includes(
-          `/v1/instances/${$runtimeStore?.instanceId}/catalog/${modelName}`
-        );
-      },
-    });
-
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
 
