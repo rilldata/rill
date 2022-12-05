@@ -1,5 +1,4 @@
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
-import { config } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
@@ -21,10 +20,7 @@ export async function refreshSource(
     if (!files.length) return Promise.reject();
 
     overlay.set({ title: `Importing ${tableName}` });
-    const filePath = await uploadFile(
-      `${config.database.runtimeUrl}/v1/instances/${instanceId}/files/upload`,
-      files[0]
-    );
+    const filePath = await uploadFile(instanceId, files[0]);
     if (filePath) {
       const yaml = compileCreateSourceYAML(
         {
