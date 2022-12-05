@@ -4,8 +4,7 @@ import { EntityType } from "@rilldata/web-local/common/data-modeler-state-servic
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import type { UseMutationResult } from "@sveltestack/svelte-query";
+import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { getFileFromName } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";
 
@@ -53,7 +52,7 @@ export async function createModelFromSource(
     instanceId,
     newModelName,
     createModelMutation,
-    `select * from ${sourceName}`,
+    `from ${sourceName}`,
     setAsActive
   );
   notifications.send({
