@@ -7,6 +7,7 @@ import {
   V1ReconcileError,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
+import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
@@ -45,9 +46,12 @@ export async function renameFileArtifact(
   goto(getRouteFromName(toName, type), {
     replaceState: true,
   });
+
+  httpRequestQueue.removeByName(fromName);
   notifications.send({
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
+
   return invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 
@@ -72,6 +76,7 @@ export async function deleteFileArtifact(
       goto(getRouteFromName(getNextEntityName(names, name), type));
     }
 
+    httpRequestQueue.removeByName(name);
     notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
     return invalidateAfterReconcile(queryClient, instanceId, resp);

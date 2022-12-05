@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
@@ -15,7 +16,6 @@ import {
   extractFileExtension,
   getTableNameFromFile,
 } from "./extract-table-name";
-import { fetchWrapperDirect } from "./fetchWrapper";
 
 /**
  * Uploads all valid files.
@@ -31,7 +31,6 @@ export async function* uploadTableFiles(
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${instanceId}/files/upload`;
   let lastTableName: string;
 
   for (const validFile of validFiles) {
@@ -46,7 +45,7 @@ export async function* uploadTableFiles(
 
     importOverlayVisible.set(true);
 
-    const filePath = await uploadFile(tableUploadURL, validFile);
+    const filePath = await uploadFile(instanceId, validFile);
     // if upload failed for any reason continue
     if (filePath) {
       lastTableName = resolvedTableName;
@@ -118,15 +117,17 @@ async function checkForDuplicate(
   return undefined;
 }
 
-export async function uploadFile(url: string, file: File): Promise<string> {
+export async function uploadFile(
+  instanceId: string,
+  file: File
+): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
   const filePath = `data/${file.name}`;
 
   try {
-    // TODO: generate client and use it in component
-    await fetchWrapperDirect(`${url}/-/${filePath}`, "POST", formData, {});
+    await runtimeServiceFileUpload(instanceId, filePath, formData);
     return filePath;
   } catch (err) {
     console.error(err);

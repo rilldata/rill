@@ -41,8 +41,7 @@ export async function refreshSource(
   if (!files.length) return Promise.reject();
 
   overlay.set({ title: `Importing ${sourceName}` });
-  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${instanceId}/files/upload`;
-  const filePath = await uploadFile(tableUploadURL, files[0]);
+  const filePath = await uploadFile(instanceId, files[0]);
   if (filePath === null) {
     return Promise.reject();
   }

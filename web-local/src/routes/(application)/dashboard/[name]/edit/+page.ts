@@ -1,4 +1,5 @@
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
   ExplorerSourceColumnDoesntExist,
   ExplorerSourceModelDoesntExist,
@@ -6,15 +7,11 @@ import {
   ExplorerTimeDimensionDoesntExist,
   ExplorerMetricsDefinitionDoesntExist,
 } from "@rilldata/web-local/common/errors/ErrorMessages";
-import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  const localConfig = await fetchWrapperDirect(
-    `${RILL_RUNTIME_URL}/local/config`,
-    "GET"
-  );
+  const localConfig = await runtimeServiceGetConfig();
 
   try {
     const dashboardMeta = await runtimeServiceGetFile(
