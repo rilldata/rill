@@ -30,6 +30,16 @@ func TestServer_TableCardinality(t *testing.T) {
 	require.Equal(t, int64(1), cr.Cardinality)
 }
 
+func TestServer_TableCardinality_EmptyModel(t *testing.T) {
+	server, instanceId := getTableTestServerWithEmptyModel(t)
+	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
+		InstanceId: instanceId,
+		TableName:  "test",
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(0), cr.Cardinality)
+}
+
 func TestServer_ProfileColumns(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
 	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
@@ -40,11 +50,28 @@ func TestServer_ProfileColumns(t *testing.T) {
 	require.Equal(t, 2, len(cr.GetProfileColumns()))
 	require.Equal(t, "a", cr.GetProfileColumns()[0].Name)
 	require.Equal(t, "INTEGER", cr.GetProfileColumns()[0].Type)
-	require.Equal(t, int32(1), cr.GetProfileColumns()[0].LargestStringLength)
+	//require.Equal(t, int32(1), cr.GetProfileColumns()[0].LargestStringLength)
 
 	require.Equal(t, "b\"b", cr.GetProfileColumns()[1].Name)
 	require.Equal(t, "INTEGER", cr.GetProfileColumns()[1].Type)
-	require.Equal(t, int32(len("10")), cr.GetProfileColumns()[1].LargestStringLength)
+	//require.Equal(t, int32(len("10")), cr.GetProfileColumns()[1].LargestStringLength)
+}
+
+func TestServer_ProfileColumns_empty(t *testing.T) {
+	server, instanceId := getTableTestServerWithEmptyModel(t)
+	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+		InstanceId: instanceId,
+		TableName:  "test",
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(cr.GetProfileColumns()))
+	require.Equal(t, "a", cr.GetProfileColumns()[0].Name)
+	require.Equal(t, "INTEGER", cr.GetProfileColumns()[0].Type)
+	require.Equal(t, int32(0), cr.GetProfileColumns()[0].LargestStringLength)
+
+	require.Equal(t, "b\"b", cr.GetProfileColumns()[1].Name)
+	require.Equal(t, "INTEGER", cr.GetProfileColumns()[1].Type)
+	require.Equal(t, int32(0), cr.GetProfileColumns()[1].LargestStringLength)
 }
 
 func TestServer_TableRows(t *testing.T) {
@@ -56,6 +83,17 @@ func TestServer_TableRows(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cr.Data))
+}
+
+func TestServer_TableRows_EmptyModel(t *testing.T) {
+	server, instanceId := getTableTestServerWithEmptyModel(t)
+	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
+		InstanceId: instanceId,
+		TableName:  "test",
+		Limit:      1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(cr.Data))
 }
 
 func getTableTestServer(t *testing.T) (*Server, string) {
@@ -77,4 +115,15 @@ func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
 	}
 	rows.Close()
 	return val
+}
+
+func getTableTestServerWithEmptyModel(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 1::int AS a, 10::int AS "b""b" where 1<>1
+	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	return server, instanceID
 }

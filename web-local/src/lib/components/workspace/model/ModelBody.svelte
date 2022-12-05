@@ -5,6 +5,7 @@
     useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -14,7 +15,9 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -42,8 +45,12 @@
   $: modelPath = getFileFromName(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
+
+  let sanitizedQuery: string;
+  $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
@@ -63,7 +70,7 @@
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
       notifications.send({
         message:
-          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
       });
       e.target.value = modelName; // resets the input
       return;
@@ -111,36 +118,33 @@
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
-    // cancel all existing analytical queries currently running.
-    await queryClient.cancelQueries({
-      fetching: true,
-      predicate: (query) => {
-        return invalidateForModel(query.queryHash, modelName);
-      },
-    });
-    // invalidate any catalog queries for this model.
+    const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
+
+    if (hasChanged) {
+      httpRequestQueue.removeByName(modelName);
+      // cancel all existing analytical queries currently running.
+      await queryClient.cancelQueries({
+        fetching: true,
+        predicate: (query) => {
+          return invalidateForModel(query.queryHash, modelName);
+        },
+      });
+    }
 
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
         instanceId: runtimeInstanceId,
-        path: getFileFromName(modelName, EntityType.Model),
+        path: modelPath,
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
 
-    // invalidate any direct usage of this catalog entry
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        return query.queryHash.includes(
-          `/v1/instances/${$runtimeStore?.instanceId}/catalog/${modelName}`
-        );
-      },
-    });
-
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
 
-    if (!resp.errors.length) {
+    if (!resp.errors.length && hasChanged) {
+      sanitizedQuery = sanitizeQuery(content);
       // re-fetch existing finished queries
       await queryClient.resetQueries({
         predicate: (query) => {

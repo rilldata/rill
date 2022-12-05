@@ -1,4 +1,5 @@
-import Axios, { AxiosRequestConfig } from "axios";
+import { HttpRequestQueue } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueue";
+import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
 
 let RuntimeUrl = "";
 try {
@@ -7,13 +8,10 @@ try {
   // no-op
 }
 
-export const AXIOS_INSTANCE = Axios.create({
-  baseURL: RuntimeUrl,
-});
+export const httpRequestQueue = new HttpRequestQueue(RuntimeUrl);
 
-export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {
-  const { data } = await AXIOS_INSTANCE(config);
-  return data;
+export const httpClient = async <T>(config: RequestQueueEntry): Promise<T> => {
+  return (await httpRequestQueue.add(config)) as Promise<T>;
 };
 
 export default httpClient;

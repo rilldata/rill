@@ -1,6 +1,7 @@
 package fileutil
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"os"
@@ -51,4 +52,56 @@ func CopyToTempFile(r io.Reader, name string, ext string) (string, error) {
 	f.Close()
 
 	return f.Name(), err
+}
+
+// CopyEmbedDir copies an embedded directory to the local file system.
+func CopyEmbedDir(fs embed.FS, src string, dst string) error {
+	// Get items in src
+	entries, err := fs.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	// Create dst dir if not exists
+	err = os.MkdirAll(dst, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	// Check dst is a directory
+	stat, err := os.Stat(dst)
+	if err != nil {
+		return err
+	}
+	if !stat.IsDir() {
+		return fmt.Errorf("destination '%s' is not a directory", dst)
+	}
+
+	// Copy items recursively
+	for _, entry := range entries {
+		entrySrc := filepath.Join(src, entry.Name())
+		entryDst := filepath.Join(dst, entry.Name())
+
+		// If it's a directory, recurse
+		if entry.IsDir() {
+			err := CopyEmbedDir(fs, entrySrc, entryDst)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		// It's a file, copy it
+
+		data, err := fs.ReadFile(entrySrc)
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(entryDst, data, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

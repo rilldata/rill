@@ -1,7 +1,5 @@
 <script lang="ts">
   import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
@@ -12,6 +10,7 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { CATEGORICALS } from "../../../duckdb-data-types";
@@ -61,22 +60,21 @@
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey(instanceId, filePath)
-    );
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, metricsDefName)
-    );
+    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
   }
 
   let metricsInternalRep = createInternalRepresentation(
     yaml,
     callPutAndMigrate
   );
+  function updateInternalRep() {
+    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    if (errors) $metricsInternalRep.updateErrors(errors);
+  }
 
   // reset internal representation in case of deviation from runtime YAML
   $: if (yaml !== $metricsInternalRep.internalYAML) {
-    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    updateInternalRep();
   }
 
   $: measures = $metricsInternalRep.getMeasures();
