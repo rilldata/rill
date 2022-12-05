@@ -11,8 +11,7 @@ import (
 func AddCmd() *cobra.Command {
 	var addCmd = &cobra.Command{
 		Use:   "add <source path>",
-		Short: "Add source to the project",
-		Long:  `Add source to the project`,
+		Short: "Add a source",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("add called with args:%s", strings.Join(args, " "))

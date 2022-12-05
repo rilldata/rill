@@ -19,6 +19,8 @@ export/
 /runtime/release
 /cli/pkg/web/embed/dist
 /rill
+/cli/pkg/examples/embed/dist
+/dev-project
 
 # data files
 *.duckdb
@@ -26,7 +28,6 @@ export/
 *.db
 *.wal
 *.parquet
-*.csv
 *.tsv
 /*_state.json
 /state

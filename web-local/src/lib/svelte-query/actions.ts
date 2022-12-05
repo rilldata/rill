@@ -1,21 +1,31 @@
 import { goto } from "$app/navigation";
 import {
-  getRuntimeServiceListFilesQueryKey,
+  RpcStatus,
+  runtimeServiceGetCatalogEntry,
+  runtimeServicePutFileAndReconcile,
   V1DeleteFileAndReconcileResponse,
+  V1ReconcileError,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
+import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
 import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { notifications } from "@rilldata/web-local/lib/components/notifications";
+import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import {
   getFileFromName,
   getLabel,
   getRouteFromName,
 } from "@rilldata/web-local/lib/util/entity-mappers";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import type { UseMutationResult } from "@sveltestack/svelte-query";
+import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import {
+  MutationFunction,
+  useMutation,
+  UseMutationOptions,
+} from "@sveltestack/svelte-query";
+import { generateMeasuresAndDimension } from "../application-state-stores/metrics-internal-store";
 
 export async function renameFileArtifact(
   queryClient: QueryClient,
@@ -36,12 +46,13 @@ export async function renameFileArtifact(
   goto(getRouteFromName(toName, type), {
     replaceState: true,
   });
+
+  httpRequestQueue.removeByName(fromName);
   notifications.send({
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
-  await queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(instanceId)
-  );
+
+  return invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 
 export async function deleteFileArtifact(
@@ -65,13 +76,84 @@ export async function deleteFileArtifact(
       goto(getRouteFromName(getNextEntityName(names, name), type));
     }
 
+    httpRequestQueue.removeByName(name);
     notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
-    // TODO: update all entities based on affected path
-    return queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    );
+    return invalidateAfterReconcile(queryClient, instanceId, resp);
   } catch (err) {
     console.error(err);
   }
 }
+
+export interface CreateDashboardFromSourceRequest {
+  instanceId: string;
+  sourceName: string;
+  newModelName: string;
+  newDashboardName: string;
+}
+
+export interface CreateDashboardFromSourceResponse {
+  affectedPaths?: string[];
+  errors?: V1ReconcileError[];
+}
+
+export const useCreateDashboardFromSource = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<Promise<CreateDashboardFromSourceResponse>>,
+    TError,
+    { data: CreateDashboardFromSourceRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<Promise<CreateDashboardFromSourceResponse>>,
+    { data: CreateDashboardFromSourceRequest }
+  > = async (props) => {
+    const { data } = props ?? {};
+
+    // first, create model from source
+
+    await runtimeServicePutFileAndReconcile({
+      instanceId: data.instanceId,
+      path: `models/${data.newModelName}.sql`,
+      blob: `select * from ${data.sourceName}`,
+    });
+
+    // second, create dashboard from model
+
+    const model = await runtimeServiceGetCatalogEntry(
+      data.instanceId,
+      data.newModelName
+    );
+    const generatedYAML = generateMeasuresAndDimension(model.entry.model, {
+      display_name: `${data.sourceName} dashboard`,
+      description: `A dashboard automatically generated from the ${data.sourceName} source.`,
+    });
+
+    const response = await runtimeServicePutFileAndReconcile({
+      instanceId: data.instanceId,
+      path: `dashboards/${data.newDashboardName}.yaml`,
+      blob: generatedYAML,
+      create: true,
+      createOnly: true,
+      strict: false,
+    });
+
+    return {
+      affectedPaths: response?.affectedPaths,
+      errors: response?.errors,
+    };
+  };
+
+  return useMutation<
+    Awaited<Promise<CreateDashboardFromSourceResponse>>,
+    TError,
+    { data: CreateDashboardFromSourceRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};

@@ -12,7 +12,8 @@
 
   $: profileColumnsQuery = useRuntimeServiceProfileColumns(
     $runtimeStore?.instanceId,
-    objectName
+    objectName,
+    {}
   );
   $: profileColumns = $profileColumnsQuery?.data?.profileColumns;
 

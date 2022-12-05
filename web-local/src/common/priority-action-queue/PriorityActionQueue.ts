@@ -1,4 +1,4 @@
-import { Heap } from "./Heap";
+import { Heap } from "@rilldata/web-local/lib/http-request-queue/Heap";
 
 export interface ActionMetadata {
   priority: number;
@@ -28,7 +28,7 @@ const heapCompareFunc = (a: QueueEntry, b: QueueEntry) => {
 };
 
 export class PriorityActionQueue {
-  private maxHeap = new Heap<QueueEntry>([], heapCompareFunc);
+  private maxHeap = new Heap<QueueEntry>(heapCompareFunc);
   private heapEntryMap = new Map<string, QueueEntry>();
 
   public enqueue(

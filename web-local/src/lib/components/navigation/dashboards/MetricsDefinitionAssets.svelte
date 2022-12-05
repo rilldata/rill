@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    getRuntimeServiceListFilesQueryKey,
+    runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
@@ -28,6 +28,7 @@
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
@@ -40,6 +41,7 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -55,6 +57,19 @@
   let showRenameMetricsDefinitionModal = false;
   let renameMetricsDefName = null;
 
+  async function getDashboardArtifact(
+    instanceId: string,
+    metricViewName: string
+  ) {
+    const filePath = getFileFromName(
+      metricViewName,
+      EntityType.MetricsDefinition
+    );
+    const resp = await runtimeServiceGetFile(instanceId, filePath);
+    const metricYAMLString = resp.blob;
+    fileArtifactsStore.setJSONRep(filePath, metricYAMLString);
+  }
+
   const openRenameMetricsDefModal = (metricsDefName: string) => {
     showRenameMetricsDefinitionModal = true;
     renameMetricsDefName = metricsDefName;
@@ -65,26 +80,34 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
-    await $createDashboard.mutateAsync({
+    const filePath = `dashboards/${newDashboardName}.yaml`;
+    const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
-        path: `dashboards/${newDashboardName}.yaml`,
+        path: filePath,
         blob: metricsTemplate,
         create: true,
         createOnly: true,
         strict: false,
       },
     });
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+
     goto(`/dashboard/${newDashboardName}`);
-    queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    );
+    return invalidateAfterReconcile(queryClient, instanceId, resp);
   };
 
-  const editModel = (sourceModelName: string) => {
-    goto(`/model/${sourceModelName}`);
+  const editModel = async (dashboardName: string) => {
+    await getDashboardArtifact(instanceId, dashboardName);
+
+    const dashboardData = getDashboardData(
+      $fileArtifactsStore.entities,
+      dashboardName
+    );
+    const sourceModelName = dashboardData.jsonRepresentation.from;
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
+    goto(`/model/${sourceModelName}`);
     navigationEvent.fireEvent(
       sourceModelName,
       BehaviourEventMedium.Menu,
@@ -108,6 +131,12 @@
   };
 
   const deleteMetricsDef = async (dashboardName: string) => {
+    await getDashboardArtifact(instanceId, dashboardName);
+
+    const dashboardData = getDashboardData(
+      $fileArtifactsStore.entities,
+      dashboardName
+    );
     await deleteFileArtifact(
       queryClient,
       instanceId,
@@ -117,13 +146,32 @@
       $appStore.activeEntity,
       $dashboardNames.data
     );
+
+    // redirect to model when metric is deleted
+    const sourceModelName = dashboardData.jsonRepresentation.from;
+    if ($appStore.activeEntity.name === dashboardName) {
+      if (sourceModelName) {
+        goto(`/model/${sourceModelName}`);
+
+        navigationEvent.fireEvent(
+          sourceModelName,
+          BehaviourEventMedium.Menu,
+          MetricsEventSpace.LeftPanel,
+          MetricsEventScreenName.MetricsDefinition,
+          MetricsEventScreenName.Model
+        );
+      } else {
+        goto("/");
+      }
+    }
   };
 
   const getDashboardData = (
     entities: Record<string, FileArtifactsData>,
     name: string
   ) => {
-    return entities[name];
+    const dashboardPath = getFileFromName(name, EntityType.MetricsDefinition);
+    return entities[dashboardPath];
   };
 </script>
 
@@ -163,7 +211,7 @@
           )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""} -->
+            selectionError !== ""}
           <MenuItem
             icon
             disabled={hasSourceError}
