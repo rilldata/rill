@@ -53,13 +53,13 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 		),
 	)
@@ -91,6 +91,22 @@ func CustomErrorToCode(err error) codes.Code {
 	}
 	contextStatus := status.FromContextError(err)
 	return contextStatus.Code()
+}
+
+// GRPCCodeToLevel overrides the log level of various gRPC codes.
+// We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
+func GRPCCodeToLevel(code codes.Code) logging.Level {
+	switch code {
+	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
+		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
+		return logging.INFO
+	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
+		return logging.WARNING
+	case codes.Internal, codes.DataLoss:
+		return logging.ERROR
+	default:
+		return logging.ERROR
+	}
 }
 
 // HTTPHandler HTTP handler serving REST gateway

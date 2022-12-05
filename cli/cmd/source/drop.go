@@ -8,7 +8,7 @@ import (
 )
 
 // dropCmd represents the drop command, it requires min 1 args as source path
-func DropCmd() *cobra.Command {
+func DropCmd(ver string) *cobra.Command {
 	var dropCmd = &cobra.Command{
 		Use:   "drop <source>",
 		Short: "Drop a source",

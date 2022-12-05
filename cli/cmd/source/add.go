@@ -8,9 +8,9 @@ import (
 )
 
 // addCmd represents the add command, it requires min 1 args as source name
-func AddCmd() *cobra.Command {
+func AddCmd(ver string) *cobra.Command {
 	var addCmd = &cobra.Command{
-		Use:   "add <source path>",
+		Use:   "add <source>",
 		Short: "Add a source",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -4,8 +4,10 @@ import (
 	"context"
 	"os"
 
+	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/initialize"
+	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/version"
 	"github.com/spf13/cobra"
@@ -34,10 +36,10 @@ func runCmd(ctx context.Context, ver string, commit string, buildDate string) er
 	v := version.Format(ver, commit, buildDate)
 	rootCmd.Version = v
 
-	rootCmd.AddCommand(initialize.InitCmd())
+	rootCmd.AddCommand(initialize.InitCmd(ver))
 	rootCmd.AddCommand(start.StartCmd(ver))
-	// rootCmd.AddCommand(apply.ApplyCmd())
-	// rootCmd.AddCommand(source.SourceCmd())
+	rootCmd.AddCommand(build.BuildCmd(ver))
+	rootCmd.AddCommand(source.SourceCmd(ver))
 	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(version.VersionCmd(ver, commit, buildDate))
