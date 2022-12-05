@@ -5,11 +5,6 @@
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
@@ -18,6 +13,11 @@
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 
@@ -38,6 +38,7 @@
     const metricsLabel = `${model?.name}_dashboard`;
     const generatedYAML = generateMeasuresAndDimension(model, {
       display_name: metricsLabel,
+      description: `A dashboard generated for ${model?.name}`,
     });
 
     const filePath = `dashboards/${metricsLabel}.yaml`;
