@@ -18,22 +18,52 @@ export const invalidateAfterReconcile = async (
   instanceId: string,
   reconcileResponse: V1ReconcileResponse
 ) => {
+  // invalidate lists of catalog entries and files
   await Promise.all([
     queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId)),
     queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
     ),
   ]);
+
+  // invalidate affected catalog entries and files
   await Promise.all(
     reconcileResponse.affectedPaths
-      .map((affectedPath) => [
+      .map((path) => [
         queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, affectedPath)
+          getRuntimeServiceGetFileQueryKey(instanceId, path)
         ),
         queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
             instanceId,
-            getNameFromFile(affectedPath)
+            getNameFromFile(path)
+          )
+        ),
+      ])
+      .flat()
+  );
+
+  // invalidate tablewide profiling queries
+  // (applies to sources and models, but not dashboards)
+  await Promise.all(
+    reconcileResponse.affectedPaths
+      .map((path) => [
+        queryClient.invalidateQueries(
+          getRuntimeServiceGetTableCardinalityQueryKey(
+            instanceId,
+            getNameFromFile(path)
+          )
+        ),
+        queryClient.invalidateQueries(
+          getRuntimeServiceGetTableRowsQueryKey(
+            instanceId,
+            getNameFromFile(path)
+          )
+        ),
+        queryClient.invalidateQueries(
+          getRuntimeServiceProfileColumnsQueryKey(
+            instanceId,
+            getNameFromFile(path)
           )
         ),
       ])
@@ -53,22 +83,4 @@ export const invalidateMetricsViewData = (
         `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/`
       ),
   });
-};
-
-export const invalidateTablewideProfilingQueries = async (
-  queryClient: QueryClient,
-  instanceId: string,
-  sourceName: string
-) => {
-  await Promise.all([
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetTableCardinalityQueryKey(instanceId, sourceName)
-    ),
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetTableRowsQueryKey(instanceId, sourceName)
-    ),
-    queryClient.invalidateQueries(
-      getRuntimeServiceProfileColumnsQueryKey(instanceId, sourceName)
-    ),
-  ]);
 };
