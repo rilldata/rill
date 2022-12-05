@@ -128,13 +128,13 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          {#key entry?.model?.sql}
-            <ColumnProfile
-              key={entry?.model?.sql}
-              objectName={entry?.model?.name}
-              indentLevel={0}
-            />
-          {/key}
+          <!-- {#key entry?.model?.sql} -->
+          <ColumnProfile
+            key={entry?.model?.sql}
+            objectName={entry?.model?.name}
+            indentLevel={0}
+          />
+          <!-- {/key} -->
         </div>
       {/if}
     </div>
