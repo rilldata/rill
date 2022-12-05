@@ -179,9 +179,6 @@
     const totalCells = source?.schema?.fields?.length * cardinality;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
-
-  // $: if (summariesOuter) console.log($summariesOuter); //summaries = $summariesOuter;
-  // $: if (summaries) console.log($summaries);
 </script>
 
 <div class="table-profile">
