@@ -60,13 +60,13 @@ builds:
 
 blobs:
   - provider: gs
-    bucket: stage-cdn.rilldata.io #TODO: testing
+    bucket: prod-cdn.rilldata.com
     folder: "rill/v{{ .Version }}"
     extra_files:
       - glob: ./dist/**/*
 
   - provider: gs
-    bucket: stage-cdn.rilldata.io #TODO: testing
+    bucket: prod-cdn.rilldata.com
     folder: "rill/latest"
     extra_files:
       - glob: ./dist/**/*
@@ -76,7 +76,7 @@ brews:
     description: The Rill CLI
     name: rill
     license: Apache 2.0
-    url_template: https://cdn.rilldata.io/rill/{{ .Tag }}/{{ .ArtifactName }} #TODO: testing
+    url_template: https://cdn.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
     tap:
       owner: rilldata
       name: homebrew-rill-developer
