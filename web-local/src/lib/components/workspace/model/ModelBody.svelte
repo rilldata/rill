@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { SelectionRange } from "@codemirror/state";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -153,7 +154,7 @@
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection.referenceIndex,
     to: selection.referenceIndex + selection.reference.length,
-  }));
+  })) as SelectionRange[];
 </script>
 
 <svelte:window bind:innerHeight />

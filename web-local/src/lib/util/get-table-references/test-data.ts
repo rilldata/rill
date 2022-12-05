@@ -118,6 +118,14 @@ export const remoteSourceJoin: ReferenceTestCase = {
   ],
 };
 
+export const fromInCTE: ReferenceTestCase = {
+  query: `WITH x as (select * from tbl) FROM x`,
+  references: [
+    { reference: "tbl", type: "from", index: 20, referenceIndex: 25 },
+    { reference: "x", type: "from", index: 30, referenceIndex: 35 },
+  ],
+};
+
 export const tests = [
   singleFrom,
   bigGapInFrom,
@@ -126,4 +134,5 @@ export const tests = [
   remoteSourceFrom,
   remoteSourceFromAlias,
   remoteSourceJoin,
+  fromInCTE,
 ];

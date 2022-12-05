@@ -27,6 +27,7 @@
   } from "@codemirror/language";
   import { lintKeymap } from "@codemirror/lint";
   import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+  import type { SelectionRange } from "@codemirror/state";
   import {
     Compartment,
     EditorState,
@@ -61,7 +62,7 @@
   export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
-  export let selections: any[] = [];
+  export let selections: SelectionRange[] = [];
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
@@ -179,7 +180,10 @@
 
   // UNDERLINES
 
-  const addUnderline = StateEffect.define<{ from: number; to: number }>();
+  const addUnderline = StateEffect.define<{
+    from: number;
+    to: number;
+  }>();
   const underlineMark = Decoration.mark({ class: "cm-underline" });
   const underlineField = StateField.define<DecorationSet>({
     create() {
@@ -307,6 +311,7 @@
     }
   }
 
+  // FIXME: resolve type issues incurred when we type selections as SelectionRange[]
   function underlineSelection(selections: any) {
     if (editor) {
       const effects = selections.map(({ from, to }) =>
