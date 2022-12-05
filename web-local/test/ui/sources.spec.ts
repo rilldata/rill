@@ -1,57 +1,64 @@
-import { describe } from "@jest/globals";
-import path from "node:path";
-import { TestBrowser, TestEntityType } from "./TestBrowser";
-import { useTestServer } from "./useTestServer";
+import { describe, it } from "@jest/globals";
+import { deleteEntity, renameEntityUsingMenu } from "./utils/commonHelpers";
+import {
+  waitForAdBids,
+  waitForAdImpressions,
+} from "./utils/dataSpecifcHelpers";
+import { TestEntityType } from "./utils/helpers";
+import { useRegisteredServer } from "./utils/serverConfigs";
+import { createOrReplaceSource, uploadFile } from "./utils/sourceHelpers";
+import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-const PORT = 8082;
-const DataPath = path.join(__dirname, "../data");
-
-// TODO: these tests cannot run in CI until cli supports custom ports for UI
 describe.skip("sources", () => {
-  useTestServer(PORT, "temp/models");
-  const testBrowser = TestBrowser.useTestBrowser(
-    DataPath,
-    `http://localhost:${PORT}`
-  );
+  const testBrowser = useRegisteredServer("models");
 
   it("Import sources", async () => {
-    await testBrowser.uploadFile("AdBids.csv");
-    await testBrowser.waitForEntity(TestEntityType.Source, "AdBids", true);
+    const { page } = testBrowser;
 
-    await testBrowser.uploadFile("AdImpressions.tsv");
-    await testBrowser.waitForEntity(
-      TestEntityType.Source,
-      "AdImpressions",
-      true
-    );
+    await Promise.all([
+      waitForAdBids(page, "AdBids"),
+      uploadFile(page, "AdBids.csv"),
+    ]);
+
+    await Promise.all([
+      waitForAdImpressions(page, "AdImpressions"),
+      uploadFile(page, "AdImpressions.tsv"),
+    ]);
 
     // upload existing table and keep both
-    await testBrowser.uploadFile("AdBids.csv", true, true);
-    await testBrowser.waitForEntity(TestEntityType.Source, "AdBids", false);
-    await testBrowser.waitForEntity(TestEntityType.Source, "AdBids_1", true);
+    await Promise.all([
+      waitForEntity(page, TestEntityType.Source, "AdBids", false),
+      waitForAdBids(page, "AdBids_1"),
+      uploadFile(page, "AdBids.csv", true, true),
+    ]);
 
     // upload existing table and replace
-    await testBrowser.uploadFile("AdBids.csv", true, false);
-    await testBrowser.waitForEntity(TestEntityType.Source, "AdBids", true);
-    await testBrowser.entityNotPresent(TestEntityType.Source, "AdBids_2");
+    await Promise.all([
+      waitForAdBids(page, "AdBids"),
+      uploadFile(page, "AdBids.csv", true, false),
+    ]);
+    await entityNotPresent(page, TestEntityType.Source, "AdBids_2");
   });
 
   it("Rename and delete sources", async () => {
+    const { page } = testBrowser;
+
     // make sure AdBids is present
-    await testBrowser.createOrReplaceSource("AdBids.csv", "AdBids");
+    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
     // rename
-    await testBrowser.renameEntityUsingMenu(
+    await renameEntityUsingMenu(
+      page,
       TestEntityType.Source,
       "AdBids",
       "AdBids_new"
     );
-    await testBrowser.waitForEntity(TestEntityType.Source, "AdBids_new", true);
-    await testBrowser.entityNotPresent(TestEntityType.Source, "AdBids");
+    await waitForEntity(page, TestEntityType.Source, "AdBids_new", true);
+    await entityNotPresent(page, TestEntityType.Source, "AdBids");
 
     // delete
-    await testBrowser.deleteEntity(TestEntityType.Source, "AdBids_new");
-    await testBrowser.entityNotPresent(TestEntityType.Source, "AdBids_new");
-    await testBrowser.entityNotPresent(TestEntityType.Source, "AdBids");
+    await deleteEntity(page, TestEntityType.Source, "AdBids_new");
+    await entityNotPresent(page, TestEntityType.Source, "AdBids_new");
+    await entityNotPresent(page, TestEntityType.Source, "AdBids");
   });
 });

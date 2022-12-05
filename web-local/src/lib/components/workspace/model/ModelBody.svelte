@@ -18,7 +18,6 @@
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
-    invalidateProfilingQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
