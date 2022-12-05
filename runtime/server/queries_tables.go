@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"database/sql"
-
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -67,26 +65,28 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 		i++
 	}
 
-	for _, pc := range pcs[0:i] {
-		columnName := EscapeDoubleQuotes(pc.Name)
-		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
-			Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
-			Priority: int(req.Priority),
-		})
-		if err != nil {
-			return nil, err
-		}
-		for rows.Next() {
-			var max sql.NullInt32
-			if err := rows.Scan(&max); err != nil {
-				return nil, err
-			}
-			if max.Valid {
-				pc.LargestStringLength = int32(max.Int32)
-			}
-		}
-		rows.Close()
-	}
+	// Disabling this for now. we need to move this to a separate API
+	// It adds a lot of response time to getting columns
+	//for _, pc := range pcs[0:i] {
+	//	columnName := EscapeDoubleQuotes(pc.Name)
+	//	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
+	//		Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
+	//		Priority: int(req.Priority),
+	//	})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	for rows.Next() {
+	//		var max sql.NullInt32
+	//		if err := rows.Scan(&max); err != nil {
+	//			return nil, err
+	//		}
+	//		if max.Valid {
+	//			pc.LargestStringLength = int32(max.Int32)
+	//		}
+	//	}
+	//	rows.Close()
+	//}
 
 	return &runtimev1.ProfileColumnsResponse{
 		ProfileColumns: pcs[0:i],

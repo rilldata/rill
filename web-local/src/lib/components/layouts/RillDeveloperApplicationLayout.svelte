@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
   import {
     duplicateSourceName,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import {
     importOverlayVisible,
     overlay,
@@ -16,7 +16,6 @@
   import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
   import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
@@ -25,10 +24,7 @@
   const queryClient = createQueryClient();
 
   onMount(async () => {
-    const localConfig = await fetchWrapperDirect(
-      `${RuntimeUrl}/local/config`,
-      "GET"
-    );
+    const localConfig = await runtimeServiceGetConfig();
 
     runtimeStore.set({
       instanceId: localConfig.instance_id,

@@ -13,7 +13,7 @@ export function useDashboardNames(repoId: string) {
     },
     {
       query: {
-        refetchInterval: 1000,
+        // refetchInterval: 1000,
         select: (data) =>
           data.paths
             ?.filter((path) => path.includes("dashboards/"))
