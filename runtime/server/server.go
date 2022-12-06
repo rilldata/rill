@@ -53,13 +53,13 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(CustomErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 		),
 	)
@@ -80,10 +80,10 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// CustomErrorToCode returns the Code of the error if it is a Status error
+// ErrorToCode returns the Code of the error if it is a Status error
 // otherwise use status.FromContextError to determine the Code.
 // Log level for error codes is defined in logging.DefaultServerCodeToLevel
-func CustomErrorToCode(err error) codes.Code {
+func ErrorToCode(err error) codes.Code {
 	if se, ok := err.(interface {
 		GRPCStatus() *status.Status
 	}); ok {
