@@ -5,7 +5,6 @@ import {
   ExplorerSourceModelDoesntExist,
   ExplorerSourceModelIsInvalid,
   ExplorerTimeDimensionDoesntExist,
-  ExplorerMetricsDefinitionDoesntExist,
 } from "@rilldata/web-local/common/errors/ErrorMessages";
 import { error } from "@sveltejs/kit";
 
@@ -14,28 +13,26 @@ export async function load({ params }) {
   const localConfig = await runtimeServiceGetConfig();
 
   try {
-    const dashboardMeta = await runtimeServiceGetFile(
+    await runtimeServiceGetFile(
       localConfig.instance_id,
       `dashboards/${params.name}.yaml`
     );
 
-    const dashboardYAML = dashboardMeta.blob;
-
-    // if metric definition exists, go to component
-    if (dashboardYAML) {
-      return {
-        metricsDefName: params.name,
-      };
-    }
+    return {
+      metricsDefName: params.name,
+    };
   } catch (err) {
+    if (err.response?.data?.message.includes("entry not found")) {
+      throw error(404, "Dashboard not found");
+    }
+
+    // The following invalid dashboard errors are displayed by the component
     const invalidDashboardErrors = [
       ExplorerSourceModelDoesntExist,
       ExplorerSourceModelIsInvalid,
       ExplorerSourceColumnDoesntExist,
       ExplorerTimeDimensionDoesntExist,
     ];
-
-    // any invalid dashboard error will be displayed by the component
     if (
       invalidDashboardErrors.some(
         (errMsg) => errMsg.includes(err.message) || err.message.includes(errMsg)
@@ -43,21 +40,11 @@ export async function load({ params }) {
     ) {
       return {
         metricsName: params.name,
-      };
-    } else {
-      if (
-        ExplorerMetricsDefinitionDoesntExist.includes(err.message) ||
-        err.message.includes(ExplorerMetricsDefinitionDoesntExist)
-      ) {
-        throw error(404, "Metrics definition  not found");
-      }
-      // Pass non standard error message to be shown in dialog
-      return {
-        metricsName: params.name,
         error: err.message,
       };
     }
-  }
 
-  throw error(404, "Metrics definition not found");
+    // Throw all other errors
+    throw error(err.response?.status || 500, err.message);
+  }
 }
