@@ -130,7 +130,8 @@ func (a *App) IsProjectInit() bool {
 		panic(err) // checks in New should ensure it never happens
 	}
 
-	return artifactsv0.IsInit(context.Background(), repo, a.Instance.ID)
+	c := artifactsv0.New(repo, a.Instance.ID)
+	return c.IsInit(context.Background())
 }
 
 func (a *App) InitProject(exampleName string) error {
@@ -139,7 +140,8 @@ func (a *App) InitProject(exampleName string) error {
 		panic(err) // checks in New should ensure it never happens
 	}
 
-	if artifactsv0.IsInit(context.Background(), repo, a.Instance.ID) {
+	c := artifactsv0.New(repo, a.Instance.ID)
+	if c.IsInit(context.Background()) {
 		return fmt.Errorf("a Rill project already exists")
 	}
 
@@ -156,7 +158,7 @@ func (a *App) InitProject(exampleName string) error {
 		}
 
 		// Init empty project
-		err := artifactsv0.InitEmpty(context.Background(), repo, a.Instance.ID, defaultName)
+		err := c.InitEmpty(context.Background(), defaultName)
 		if err != nil {
 			if isPwd {
 				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
@@ -171,6 +173,8 @@ func (a *App) InitProject(exampleName string) error {
 		} else {
 			a.Logger.Infof("Initialized empty project at '%s'", a.ProjectPath)
 		}
+
+		return nil
 	}
 
 	// It's an example project. We currently only support examples through direct file unpacking.
@@ -194,8 +198,7 @@ func (a *App) InitProject(exampleName string) error {
 }
 
 func (a *App) Reconcile() error {
-	// Trigger reconciliation
-	a.Logger.Infof("Hydrating project at '%s'", a.ProjectPath)
+	a.Logger.Infof("Hydrating project '%s'", a.ProjectPath)
 	res, err := a.Runtime.Reconcile(context.Background(), a.Instance.ID, nil, nil, false, false)
 	if err != nil {
 		return err
@@ -206,7 +209,32 @@ func (a *App) Reconcile() error {
 	for _, merr := range res.Errors {
 		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 	}
-	a.Logger.Infof("Hydration completed!")
+	if len(res.Errors) == 0 {
+		a.Logger.Infof("Hydration completed!")
+	} else {
+		a.Logger.Infof("Hydration failed")
+	}
+	return nil
+}
+
+func (a *App) ReconcileSource(path string) error {
+	a.Logger.Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
+	paths := []string{path}
+	res, err := a.Runtime.Reconcile(context.Background(), a.Instance.ID, paths, paths, false, false)
+	if err != nil {
+		return err
+	}
+	for _, path := range res.AffectedPaths {
+		a.Logger.Infof("Reconciled: %s", path)
+	}
+	for _, merr := range res.Errors {
+		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
+	}
+	if len(res.Errors) == 0 {
+		a.Logger.Infof("Hydration completed!")
+	} else {
+		a.Logger.Infof("Hydration failed")
+	}
 	return nil
 }
 
