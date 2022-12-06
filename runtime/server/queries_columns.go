@@ -3,12 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
-
-	"database/sql"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -128,121 +125,19 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 }
 
 func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
-	sanitizedColumnName := quoteName(request.ColumnName)
-	querySql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
-		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
-	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    querySql,
-		Priority: int(request.Priority),
-	})
+	q := &queries.ColumnNumericHistogram{
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
+	}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var iqr, rangeVal sql.NullFloat64
-	var count float64
-	for rows.Next() {
-		err = rows.Scan(&iqr, &count, &rangeVal)
-		if err != nil {
-			return nil, err
-		}
-		if !iqr.Valid {
-			return &runtimev1.GetNumericHistogramResponse{
-				NumericSummary: &runtimev1.NumericSummary{
-					Case: &runtimev1.NumericSummary_NumericHistogramBins{
-						NumericHistogramBins: &runtimev1.NumericHistogramBins{},
-					},
-				},
-			}, nil
-		}
-	}
-	var bucketSize float64
-	if count < 40 {
-		// Use cardinality if unique count less than 40
-		bucketSize = count
-	} else {
-		// Use Freedman–Diaconis rule for calculating number of bins
-		bucketWidth := (2 * iqr.Float64) / math.Cbrt(count)
-		FDEstimatorBucketSize := math.Ceil(rangeVal.Float64 / bucketWidth)
-		bucketSize = math.Min(40, FDEstimatorBucketSize)
-	}
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-
-	histogramSql := fmt.Sprintf(`
-          WITH data_table AS (
-            SELECT %[1]s as %[2]s 
-            FROM %[3]s
-            WHERE %[2]s IS NOT NULL
-          ), S AS (
-            SELECT 
-              min(%[2]s) as minVal,
-              max(%[2]s) as maxVal,
-              (max(%[2]s) - min(%[2]s)) as range
-              FROM data_table
-          ), values AS (
-            SELECT %[2]s as value from data_table
-            WHERE %[2]s IS NOT NULL
-          ), buckets AS (
-            SELECT
-              range as bucket,
-              (range) * (select range FROM S) / %[4]v + (select minVal from S) as low,
-              (range + 1) * (select range FROM S) / %[4]v + (select minVal from S) as high
-            FROM range(0, %[4]v, 1)
-          ),
-          -- bin the values
-          binned_data AS (
-            SELECT 
-              FLOOR((value - (select minVal from S)) / (select range from S) * %[4]v) as bucket
-            from values
-          ),
-          -- join the bucket set with the binned values to generate the histogram
-          histogram_stage AS (
-          SELECT
-              buckets.bucket,
-              low,
-              high,
-              SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
-            FROM buckets
-            LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
-            GROUP BY buckets.bucket, low, high
-            ORDER BY buckets.bucket
-          ),
-          -- calculate the right edge, sine in histogram_stage we don't look at the values that
-          -- might be the largest.
-          right_edge AS (
-            SELECT count(*) as c from values WHERE value = (select maxVal from S)
-          )
-          SELECT 
-            bucket,
-            low,
-            high,
-            -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
-            FROM histogram_stage
-	      `, selectColumn, sanitizedColumnName, request.TableName, bucketSize)
-	histogramRows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    histogramSql,
-		Priority: int(request.Priority),
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer histogramRows.Close()
-	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
-	for histogramRows.Next() {
-		bin := &runtimev1.NumericHistogramBins_Bin{}
-		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
-		if err != nil {
-			return nil, err
-		}
-		histogramBins = append(histogramBins, bin)
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 	return &runtimev1.GetNumericHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericHistogramBins{
 				NumericHistogramBins: &runtimev1.NumericHistogramBins{
-					Bins: histogramBins,
+					Bins: q.Result,
 				},
 			},
 		},
