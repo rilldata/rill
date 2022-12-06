@@ -2,6 +2,9 @@ package runtime
 
 import (
 	"context"
+	"fmt"
+	"go.uber.org/zap"
+	"strings"
 )
 
 type Query interface {
@@ -19,7 +22,41 @@ type Query interface {
 	Resolve(ctx context.Context, rt *Runtime, instanceID string, priority int) error
 }
 
+type queryCacheKey struct {
+	instanceID    string
+	queryKey      string
+	dependencyKey string
+}
+
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
-	// TODO: Add caching here
-	return query.Resolve(ctx, r, instanceID, priority)
+	// if key is empty, skip caching
+	if query.Key() == "" {
+		return query.Resolve(ctx, r, instanceID, priority)
+	}
+	deps := query.Deps()
+	depKeys := make([]string, len(deps))
+	for i, dep := range deps {
+		entry, err := r.GetCatalogEntry(ctx, instanceID, dep)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("error getting catalog entry for %s, ignoring it", dep), zap.Error(err))
+			continue
+		}
+		depKeys[i] = entry.Name + ":" + entry.UpdatedOn.String()
+	}
+	depKey := strings.Join(depKeys, ";")
+	key := queryCacheKey{
+		instanceID:    instanceID,
+		queryKey:      query.Key(),
+		dependencyKey: depKey,
+	}
+	val, ok := r.queryCache.get(key)
+	if ok {
+		return query.UnmarshalResult(val)
+	}
+	err := query.Resolve(ctx, r, instanceID, priority)
+	if err != nil {
+		return err
+	}
+	r.queryCache.add(key, query.MarshalResult())
+	return nil
 }

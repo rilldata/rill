@@ -8,7 +8,7 @@ export type V1RuntimeGetConfig = {
   install_id: string;
   project_path: string;
   is_dev: boolean;
-  send_telemetry_data: boolean;
+  analytics_enabled: boolean;
 };
 export const runtimeServiceGetConfig =
   async (): Promise<V1RuntimeGetConfig> => {

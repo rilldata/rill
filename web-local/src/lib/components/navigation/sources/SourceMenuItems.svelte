@@ -6,7 +6,7 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceTriggerRefresh,
+    useRuntimeServiceRefreshAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
@@ -54,7 +54,10 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
-  $: sourceNames = useSourceNames($runtimeStore.instanceId);
+  const dispatch = createEventDispatcher();
+
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
@@ -63,16 +66,15 @@
     runtimeInstanceId,
     sourceName
   );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
+
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: modelNames = useModelNames($runtimeStore.instanceId);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
-  const dispatch = createEventDispatcher();
-
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
@@ -168,7 +170,8 @@
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createFileMutation
+        $createEntityMutation,
+        queryClient
       );
 
       // invalidate the data preview (async)

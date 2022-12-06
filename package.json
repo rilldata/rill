@@ -16,9 +16,8 @@
     "to-esm": "node build-tools/replace_package_type.cjs commonjs module",
     "dev": "sh -c 'npm run dev-runtime & npm run dev-web & wait'",
     "dev-web": "npm run dev -w web-local",
-    "dev-runtime": "go run cli/main.go start --no-ui --dir dev-project",
+    "dev-runtime": "go run cli/main.go start --no-ui --project dev-project",
     "clean": "rm -rf dev-project",
-    "cli": "ts-node-dev --quiet --project web-local/tsconfig.node.json -- web-local/src/cli/data-modeler-cli.ts",
     "test": "npm run test -w web-local"
   },
   "pkg": {

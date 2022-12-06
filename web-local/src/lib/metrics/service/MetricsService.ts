@@ -59,7 +59,7 @@ export class MetricsService
         project_id: MD5(
           projectPathParts[projectPathParts.length - 1]
         ).toString(),
-        send_telemetry_data: localConfig.send_telemetry_data,
+        analytics_enabled: localConfig.analytics_enabled,
       };
     } catch (err) {
       console.error(err);
@@ -70,7 +70,7 @@ export class MetricsService
     action: Action,
     args: MetricsActionDefinition[Action]
   ): Promise<void> {
-    if (!this.commonFields.send_telemetry_data) return;
+    if (!this.commonFields.analytics_enabled) return;
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);
       return;

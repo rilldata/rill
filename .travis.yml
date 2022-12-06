@@ -34,7 +34,7 @@ jobs:
         - echo "NPM Install can take up to 15 mins"
         - npm i
         - echo "Disabling telmetry"
-        - cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
+        - cat <<< "$(jq -c -M '.analyticsEnabled |= false' ~/.rill/local.json)" > ~/.rill/local.json
 
     # Publish binaries on the release
     - stage: Release

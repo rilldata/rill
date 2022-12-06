@@ -9,14 +9,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type LocalConfig struct {
-	InstallID         string `json:"installId"`
-	SendTelemetryData bool   `json:"sendTelemetryData"`
+type localConfig struct {
+	InstallID        string `json:"installId"`
+	AnalyticsEnabled bool   `json:"analyticsEnabled"`
 }
 
-func Config() (*LocalConfig, error) {
-	conf := &LocalConfig{
-		SendTelemetryData: true,
+func config() (*localConfig, error) {
+	conf := &localConfig{
+		AnalyticsEnabled: true,
 	}
 
 	home, err := os.UserHomeDir()
