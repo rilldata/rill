@@ -1,7 +1,13 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    useRuntimeServiceMetricsViewTimeSeries,
+    useRuntimeServiceMetricsViewTotals,
+    V1MetricsViewTimeSeriesResponse,
+    V1MetricsViewTotalsResponse,
+  } from "@rilldata/web-common/runtime-client";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
@@ -22,12 +28,6 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import {
-    useRuntimeServiceMetricsViewTimeSeries,
-    useRuntimeServiceMetricsViewTotals,
-    V1MetricsViewTimeSeriesResponse,
-    V1MetricsViewTotalsResponse,
-  } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName;
 
@@ -101,7 +101,22 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy)
-    formattedData = convertTimestampPreview(dataCopy, timeDimension, true);
+    formattedData = convertTimestampPreview(dataCopy, timeDimension, true)
+      // FIXME: we will need to refactor the graph component animations based on the runtime API return
+      // signature. Previously, we were returning 0s instead of nulls. This was likely due to re-using
+      // the old diagnostic ts code here. Of course, this isn't correct; null is not the same as 0.
+      // For now, let's keep the behavior as-is to ship 0.16. Someone will need to go through and
+      // update the animations to work with line segments in the future.
+      // An ideal way to fix this would be to segmentize the time series per chart and then tween
+      // the individual segments. Alternatively, writing a custom array interpolator could help quite
+      // a bit; null values within the interpolator could tween from 0 or from a contiguous point.
+      .map((di) => {
+        // set nulls to 0, as per the FIXME comment above.
+        Object.keys(di).forEach((k) => {
+          di[k] = di[k] === null ? 0 : di[k];
+        });
+        return di;
+      });
 
   let mouseoverValue = undefined;
 
