@@ -417,6 +417,12 @@ func (s *Service) collectMigrationItems(
 			tempDag.GetChildren(name),
 			s.dag.GetChildren(name)...,
 		))
+		if migration.FromName != "" {
+			children = append(children, arrayutil.Dedupe(append(
+				tempDag.GetChildren(migration.FromName),
+				s.dag.GetChildren(migration.FromName)...,
+			))...)
+		}
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
