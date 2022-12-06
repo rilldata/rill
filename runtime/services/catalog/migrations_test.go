@@ -281,6 +281,33 @@ func TestModelVariations(t *testing.T) {
 	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 }
 
+func TestModelWithMissingSource(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	testutils.CreateModel(t, s, "AdBids_model", "select * from AdImpressions", AdBidsSourceModelRepoPath)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
+
+	// update with a CTE with missing alias but valid and existing source
+	testutils.CreateModel(t, s, "AdBids_model",
+		"with CTEAlias as (select * from AdBids) select * from CTEAlias", AdBidsSourceModelRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsSourceModelRepoPath})
+
+	// update source with same content
+	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		// force update to test DAG
+		ForcedPaths: []string{AdBidsRepoPath},
+	})
+	require.NoError(t, err)
+	// changes propagate to model
+	testutils.AssertMigration(t, result, 0, 0, 4, 0,
+		append([]string{AdBidsSourceModelRepoPath}, AdBidsAffectedPaths...))
+}
+
 func TestReconcileMetricsView(t *testing.T) {
 	s, _ := initBasicService(t)
 
