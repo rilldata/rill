@@ -6,6 +6,7 @@
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
     useRuntimeServicePutFileAndReconcile,
+    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -32,6 +33,7 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -107,12 +109,9 @@
         },
       },
       {
-        onSuccess: async (resp) => {
+        onSuccess: async (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          await queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-          );
           navigationEvent.fireEvent(
             newDashboardName,
             BehaviourEventMedium.Button,
@@ -120,6 +119,7 @@
             MetricsEventScreenName.Source,
             MetricsEventScreenName.Dashboard
           );
+          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
         },
         onSettled: () => {
           overlay.set(null);

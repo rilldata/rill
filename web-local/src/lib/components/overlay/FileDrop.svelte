@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { useQueryClient } from "@sveltestack/svelte-query";
@@ -52,11 +53,6 @@
         console.error(err);
       }
     }
-    return queryClient.invalidateQueries(
-      getRuntimeServiceListCatalogEntriesQueryKey(runtimeInstanceId, {
-        type: RuntimeServiceListCatalogEntriesType.OBJECT_TYPE_SOURCE,
-      })
-    );
   };
 </script>
 
