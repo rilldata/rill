@@ -65,6 +65,7 @@ func StartCmd(ver string) *cobra.Command {
 				ConnectionCacheSize: 100,
 				MetastoreDriver:     "sqlite",
 				MetastoreDSN:        "file:rill?mode=memory&cache=shared",
+				QueryCacheSize:      10000,
 			}
 			rt, err := runtime.New(rtOpts, logger)
 			if err != nil {

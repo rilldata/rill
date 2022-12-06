@@ -45,6 +45,14 @@ const fileArtifactsEntitiesReducers = {
     errors.forEach((error) => {
       const filePath = correctFilePath(error.filePath);
 
+      // empty models should not show error
+      if (
+        filePath.endsWith(".sql") &&
+        error.message.endsWith("No statement to prepare!")
+      ) {
+        return;
+      }
+
       if (!errorsForPaths.has(filePath)) {
         errorsForPaths.set(filePath, []);
       }
