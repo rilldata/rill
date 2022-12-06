@@ -8,7 +8,7 @@ import (
 )
 
 func BuildCmd(ver string) *cobra.Command {
-	var repoDSN string
+	var projectPath string
 	var olapDriver string
 	var olapDSN string
 	var verbose bool
@@ -17,7 +17,7 @@ func BuildCmd(ver string) *cobra.Command {
 		Use:   "build",
 		Short: "Build project without starting web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, repoDSN)
+			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -36,7 +36,7 @@ func BuildCmd(ver string) *cobra.Command {
 	}
 	buildCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
 	buildCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
-	buildCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
+	buildCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	buildCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 
 	return buildCmd

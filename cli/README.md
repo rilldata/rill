@@ -16,5 +16,5 @@ In development, the CLI will serve a dummy frontend and not embed any examples. 
 go run ./cli
 
 # To run start:
-go run ./cli start --dir dev-project
+go run ./cli start --project dev-project
 ```

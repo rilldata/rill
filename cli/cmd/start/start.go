@@ -9,7 +9,7 @@ import (
 func StartCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
-	var repoDSN string
+	var projectPath string
 	var httpPort int
 	var grpcPort int
 	var verbose bool
@@ -20,7 +20,7 @@ func StartCmd(ver string) *cobra.Command {
 		Use:   "start",
 		Short: "Build project and start web application",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, repoDSN)
+			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func StartCmd(ver string) *cobra.Command {
 
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
 	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
-	startCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
+	startCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for the UI and runtime")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for the runtime's gRPC service")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")

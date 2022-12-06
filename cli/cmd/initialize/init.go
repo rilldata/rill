@@ -10,7 +10,7 @@ import (
 
 // InitCmd represents the init command
 func InitCmd(ver string) *cobra.Command {
-	var repoDSN string
+	var projectPath string
 	var olapDriver string
 	var olapDSN string
 	var exampleName string
@@ -32,16 +32,16 @@ func InitCmd(ver string) *cobra.Command {
 				return nil
 			}
 
-			app, err := local.NewApp(ver, false, olapDriver, olapDSN, repoDSN)
+			app, err := local.NewApp(ver, false, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
 
 			if app.IsProjectInit() {
-				if repoDSN == "." {
+				if projectPath == "." {
 					return fmt.Errorf("a Rill project already exists in the current directory")
 				} else {
-					return fmt.Errorf("a Rill project already exists in directory '%s'", repoDSN)
+					return fmt.Errorf("a Rill project already exists in directory '%s'", projectPath)
 				}
 			}
 
@@ -61,7 +61,7 @@ func InitCmd(ver string) *cobra.Command {
 
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
-	initCmd.Flags().StringVar(&repoDSN, "dir", ".", "Directory to initialize")
+	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	initCmd.Flags().StringVar(&exampleName, "example", "", "Name of example project")
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
 

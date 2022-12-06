@@ -14,7 +14,7 @@ import (
 func DropCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
-	var repoDSN string
+	var projectPath string
 	var verbose bool
 
 	var dropCmd = &cobra.Command{
@@ -28,7 +28,7 @@ func DropCmd(ver string) *cobra.Command {
 				return fmt.Errorf("not a valid source name: %s", sourceName)
 			}
 
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, repoDSN)
+			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -59,7 +59,7 @@ func DropCmd(ver string) *cobra.Command {
 
 	dropCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
 	dropCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
-	dropCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
+	dropCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	dropCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 
 	return dropCmd

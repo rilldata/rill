@@ -17,7 +17,7 @@ import (
 func AddCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
-	var repoDSN string
+	var projectPath string
 	var sourceName string
 	var delimiter string
 	var verbose bool
@@ -29,14 +29,14 @@ func AddCmd(ver string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dataPath := args[0]
 			if !filepath.IsAbs(dataPath) {
-				relPath, err := filepath.Rel(repoDSN, dataPath)
+				relPath, err := filepath.Rel(projectPath, dataPath)
 				if err != nil {
 					return err
 				}
 				dataPath = relPath
 			}
 
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, repoDSN)
+			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func AddCmd(ver string) *cobra.Command {
 
 	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
 	addCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
-	addCmd.Flags().StringVar(&repoDSN, "dir", ".", "Project directory")
+	addCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	addCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	addCmd.Flags().StringVar(&sourceName, "name", "", "Source name")
 	addCmd.Flags().StringVar(&delimiter, "delimiter", "", "CSV delimiter override (it will autodetect if not set)")
