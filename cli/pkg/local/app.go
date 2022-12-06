@@ -200,11 +200,11 @@ func (a *App) Reconcile() error {
 	if err != nil {
 		return err
 	}
-	for _, merr := range res.Errors {
-		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
-	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
+	}
+	for _, merr := range res.Errors {
+		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 	}
 	a.Logger.Infof("Hydration completed!")
 	return nil
