@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -161,7 +162,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 	storeObjectsConsumed := make(map[string]bool)
 	storeObjects := s.Catalog.FindEntries(ctx, s.InstId, drivers.ObjectTypeUnspecified)
 	for _, storeObject := range storeObjects {
-		storeObjectsMap[storeObject.Name] = storeObject
+		storeObjectsMap[strings.ToLower(storeObject.Name)] = storeObject
 	}
 
 	migrationMap := make(map[string]*MigrationItem)
@@ -236,7 +237,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 		if add {
 			migrationMap[item.Name] = item
 		}
-		storeObjectsConsumed[item.Name] = true
+		storeObjectsConsumed[strings.ToLower(item.Name)] = true
 
 		if !changedPathsHint {
 			continue
@@ -260,7 +261,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 
 	for _, storeObject := range storeObjectsMap {
 		// ignore consumed store objects
-		if storeObjectsConsumed[storeObject.Name] ||
+		if storeObjectsConsumed[strings.ToLower(storeObject.Name)] ||
 			// ignore tables and unspecified objects
 			storeObject.Type == drivers.ObjectTypeTable || storeObject.Type == drivers.ObjectTypeUnspecified {
 			continue
@@ -336,7 +337,7 @@ func (s *Service) getMigrationItem(
 		}
 	}
 
-	catalogInStore, ok := storeObjectsMap[item.Name]
+	catalogInStore, ok := storeObjectsMap[strings.ToLower(item.Name)]
 	if !ok {
 		if item.CatalogInFile == nil {
 			item.Type = MigrationNoChange
@@ -348,6 +349,12 @@ func (s *Service) getMigrationItem(
 		return item
 	}
 	item.CatalogInStore = catalogInStore
+	if item.Name != catalogInStore.Name {
+		// rename with same name different case
+		item.FromName = catalogInStore.Name
+		catalogInStore.Name = item.Name
+		item.Type = MigrationRename
+	}
 
 	switch item.Type {
 	case MigrationCreate:
@@ -417,6 +424,12 @@ func (s *Service) collectMigrationItems(
 			tempDag.GetChildren(name),
 			s.dag.GetChildren(name)...,
 		))
+		if migration.FromName != "" {
+			children = append(children, arrayutil.Dedupe(append(
+				tempDag.GetChildren(migration.FromName),
+				s.dag.GetChildren(migration.FromName)...,
+			))...)
+		}
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {

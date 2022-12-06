@@ -32,6 +32,19 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 }
 
 func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
+	if strings.ToLower(from) == strings.ToLower(catalogObj.Name) {
+		tempName := fmt.Sprintf("__rill_temp_%s", from)
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, tempName),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+		rows.Close()
+		from = tempName
+	}
+
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -113,14 +114,32 @@ func (c *connection) Put(ctx context.Context, instID string, filePath string, re
 // Rename implements drivers.RepoStore
 func (c *connection) Rename(ctx context.Context, instID string, from string, filePath string) error {
 	filePath = path.Join(c.root, filePath)
-	if _, err := os.Stat(filePath); err == nil {
-		return drivers.ErrFileAlreadyExists
-	}
 
 	from = path.Join(c.root, from)
-	err := os.Rename(from, filePath)
-	if err != nil {
-		return err
+	if strings.ToLower(from) == strings.ToLower(filePath) {
+		// support rename with same name different case
+		content, err := os.ReadFile(from)
+		if err != nil {
+			return err
+		}
+		err = os.Remove(from)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(filePath, content, os.ModePerm)
+		if err != nil {
+			// revert the old file if new file write fails
+			os.WriteFile(from, content, os.ModePerm)
+			return err
+		}
+	} else {
+		if _, err := os.Stat(filePath); err == nil {
+			return drivers.ErrFileAlreadyExists
+		}
+		err := os.Rename(from, filePath)
+		if err != nil {
+			return err
+		}
 	}
 	return os.Chtimes(filePath, time.Now(), time.Now())
 }
