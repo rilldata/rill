@@ -266,10 +266,22 @@ func TestModelRename(t *testing.T) {
 func TestModelVariations(t *testing.T) {
 	s, _ := initBasicService(t)
 
+	// same query with spaces
+	testutils.CreateModel(t, s, "AdBids_model",
+		`
+-- this is a comment
+select id,   timestamp,publisher, domain,
+bid_price from AdBids;
+`, AdBidsModelRepoPath)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// no change
+	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
+
 	// update to invalid model
 	testutils.CreateModel(t, s, "AdBids_model",
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsModelRepoPath)
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsDashboardAffectedPaths)
 	testutils.AssertTableAbsence(t, s, "AdBids_model")

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -72,7 +73,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
 	return cat1.GetModel().Dialect == cat2.GetModel().Dialect &&
 		// TODO: handle same queries but different text
-		strings.TrimSpace(cat1.GetModel().Sql) == strings.TrimSpace(cat2.GetModel().Sql)
+		sanitizeQuery(cat1.GetModel().Sql, true) == sanitizeQuery(cat2.GetModel().Sql, true)
 }
 
 func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -83,4 +84,26 @@ func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore
 		return false, err
 	}
 	return true, nil
+}
+
+var QueryCommentRegex = regexp.MustCompile(`(?m)--.*$`)
+var MultipleSpacesRegex = regexp.MustCompile(`\s\s+`)
+var SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
+
+// TODO: use this while extracting source names to get case insensitive DAG
+// TODO: should this be used to store the sql in catalog?
+func sanitizeQuery(query string, toLower bool) string {
+	// remove all comments
+	query = QueryCommentRegex.ReplaceAllString(query, " ")
+	// new line => space
+	query = strings.ReplaceAll(query, "\n", " ")
+	// multiple spaces => single space
+	query = MultipleSpacesRegex.ReplaceAllString(query, " ")
+	// remove all spaces after a comma
+	query = SpacesAfterCommaRegex.ReplaceAllString(query, ",")
+	query = strings.ReplaceAll(query, ";", "")
+	if toLower {
+		query = strings.ToLower(query)
+	}
+	return strings.TrimSpace(query)
 }
