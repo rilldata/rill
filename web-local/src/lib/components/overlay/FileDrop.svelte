@@ -1,12 +1,7 @@
 <script lang="ts">
-  import {
-    getRuntimeServiceListCatalogEntriesQueryKey,
-    RuntimeServiceListCatalogEntriesType,
-    useRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { useQueryClient } from "@sveltestack/svelte-query";

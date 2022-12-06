@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
