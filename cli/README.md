@@ -12,6 +12,10 @@ make cli
 
 In development, the CLI will serve a dummy frontend and not embed any examples. You can run it like this:
 ```bash
+# optionally run this to update the UI hosted by the cli
+# if running `npm run dev` then this is not needed
+make cli.prepare
+
 # To output usage:
 go run ./cli
 
