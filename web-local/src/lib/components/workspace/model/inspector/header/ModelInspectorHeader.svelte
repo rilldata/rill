@@ -54,8 +54,6 @@
   };
 
   let rollup;
-  let tables;
-  // get source tables?
   let sourceTableReferences;
 
   // get source table references.
