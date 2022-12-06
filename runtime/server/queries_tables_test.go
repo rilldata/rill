@@ -57,7 +57,22 @@ func TestServer_ProfileColumns(t *testing.T) {
 	//require.Equal(t, int32(len("10")), cr.GetProfileColumns()[1].LargestStringLength)
 }
 
-func TestServer_ProfileColumns_empty(t *testing.T) {
+func TestServer_ProfileColumns_DuplicateNames(t *testing.T) {
+	server, instanceId := getTableTestServerWithSql(t, "select * from (select 1 as a) a join (select 1 as a) b on a.a = b.a")
+	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+		InstanceId: instanceId,
+		TableName:  "test",
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(cr.GetProfileColumns()))
+	require.Equal(t, "a", cr.GetProfileColumns()[0].Name)
+	require.Equal(t, "INTEGER", cr.GetProfileColumns()[0].Type)
+
+	require.Equal(t, "a:1", cr.GetProfileColumns()[1].Name)
+	require.Equal(t, "INTEGER", cr.GetProfileColumns()[1].Type)
+}
+
+func TestServer_ProfileColumns_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
@@ -100,6 +115,15 @@ func getTableTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
 		SELECT 1::int AS a, 10::int AS "b""b"
 	`)
+
+	server, err := NewServer(&Options{}, rt, nil)
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getTableTestServerWithSql(t *testing.T, sql string) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
 	server, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)

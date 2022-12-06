@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { SelectionRange } from "@codemirror/state";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -15,7 +16,10 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import {
+    invalidateAfterReconcile,
+    invalidationForProfileQueries,
+  } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
@@ -54,13 +58,6 @@
 
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
-
-  function invalidateForModel(queryHash, modelName) {
-    const r = new RegExp(
-      `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${modelName}`
-    );
-    return r.test(queryHash);
-  }
 
   function formatModelName(str) {
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
@@ -126,7 +123,7 @@
       await queryClient.cancelQueries({
         fetching: true,
         predicate: (query) => {
-          return invalidateForModel(query.queryHash, modelName);
+          return invalidationForProfileQueries(query.queryHash, modelName);
         },
       });
     }
@@ -139,19 +136,26 @@
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
 
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     if (!resp.errors.length && hasChanged) {
       sanitizedQuery = sanitizeQuery(content);
-      // re-fetch existing finished queries
-      await queryClient.resetQueries({
-        predicate: (query) => {
-          return invalidateForModel(query.queryHash, modelName);
-        },
-      });
+    } else {
+      resp.affectedPaths = resp.affectedPaths.filter(
+        (affectedPath) => affectedPath !== modelPath
+      );
     }
+    return invalidateAfterReconcile(
+      queryClient,
+      $runtimeStore.instanceId,
+      resp
+    );
   }
+
+  $: selections = $queryHighlight?.map((selection) => ({
+    from: selection.referenceIndex,
+    to: selection.referenceIndex + selection.reference.length,
+  })) as SelectionRange[];
 </script>
 
 <svelte:window bind:innerHeight />
@@ -171,7 +175,7 @@
           <Editor
             {modelName}
             content={modelSql}
-            selections={$queryHighlight}
+            {selections}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
         {/key}

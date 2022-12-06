@@ -240,7 +240,7 @@ service RuntimeService {
   // Generate time series
   rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (GenerateTimeSeriesResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/timeseries",
+      post: "/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}",
       body: "*"
     };
   }

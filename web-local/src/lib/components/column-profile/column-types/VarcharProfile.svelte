@@ -2,11 +2,11 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { DataTypeIcon } from "../../data-types";
-  import TopK from "../data-graphics/details/TopK.svelte";
-  import ColumnCardinalitySpark from "../data-graphics/sparks/ColumnCardinalitySpark.svelte";
-  import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import { getCountDistinct, getNullPercentage, getTopK } from "../queries";
+  import TopK from "./details/TopK.svelte";
+  import ColumnCardinalitySpark from "./sparks/ColumnCardinalitySpark.svelte";
+  import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   export let columnName: string;
   export let objectName: string;
   export let example;

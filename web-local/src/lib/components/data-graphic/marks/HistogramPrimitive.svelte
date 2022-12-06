@@ -30,9 +30,9 @@ it to do any automatic binning of data, which is done server-side.
   export let separator = 0.5;
   export let closeBottom = false;
 
-  export let outlineColor = "hsla(1,40%, 60%, .9)";
-  export let color = "hsla(1,70%, 80%, .4)";
-  export let stopOpacity = 0.3;
+  export let outlineColor = "hsla(1,90%, 60%, .7)";
+  export let color = "hsla(1,70%, 80%, .5)";
+  export let stopOpacity = 0.4;
 
   const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
   const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
