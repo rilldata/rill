@@ -1,8 +1,8 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import TimestampSpark from "../../data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
-  import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
+  import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
   import { TIMESTAMP_TOKENS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
