@@ -2410,6 +2410,16 @@ func request_RuntimeService_GenerateTimeSeries_0(ctx context.Context, marshaler 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "instance_id", err)
 	}
 
+	val, ok = pathParams["table_name"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "table_name")
+	}
+
+	protoReq.TableName, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
+	}
+
 	msg, err := client.GenerateTimeSeries(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -2442,6 +2452,16 @@ func local_request_RuntimeService_GenerateTimeSeries_0(ctx context.Context, mars
 	protoReq.InstanceId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "instance_id", err)
+	}
+
+	val, ok = pathParams["table_name"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "table_name")
+	}
+
+	protoReq.TableName, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "table_name", err)
 	}
 
 	msg, err := server.GenerateTimeSeries(ctx, &protoReq)
@@ -3551,7 +3571,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/timeseries"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4419,7 +4439,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/timeseries"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GenerateTimeSeries", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -4591,7 +4611,7 @@ var (
 
 	pattern_RuntimeService_GetCardinalityOfColumn_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"v1", "instances", "instance_id", "queries", "cardinality", "tables", "table_name", "columns", "column_name"}, ""))
 
-	pattern_RuntimeService_GenerateTimeSeries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "instances", "instance_id", "queries", "timeseries"}, ""))
+	pattern_RuntimeService_GenerateTimeSeries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "timeseries", "tables", "table_name"}, ""))
 
 	pattern_RuntimeService_GetTableCardinality_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "instances", "instance_id", "queries", "cardinality", "tables", "table_name"}, ""))
 
