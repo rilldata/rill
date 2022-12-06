@@ -2,16 +2,17 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
+    V1ReconcileResponse,
     useRuntimeServiceRefreshAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import {
     useSourceFromYaml,
     useSourceNames,
@@ -132,12 +133,9 @@
         },
       },
       {
-        onSuccess: async (resp) => {
+        onSuccess: async (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          await queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-          );
           const previousActiveEntity = $appStore?.activeEntity?.type;
           navigationEvent.fireEvent(
             newDashboardName,
@@ -146,6 +144,7 @@
             EntityTypeToScreenMap[previousActiveEntity],
             MetricsEventScreenName.Dashboard
           );
+          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
         },
         onSettled: () => {
           overlay.set(null);

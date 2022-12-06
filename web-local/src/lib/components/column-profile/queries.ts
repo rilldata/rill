@@ -112,9 +112,9 @@ export function getTopK(instanceId, objectName, columnName) {
 export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
   const query = useRuntimeServiceGenerateTimeSeries(
     instanceId,
+    objectName,
     // FIXME: convert pixel back to number once the API
     {
-      tableName: objectName,
       timestampColumnName: columnName,
       pixels: 92,
     }
