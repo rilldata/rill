@@ -29,6 +29,19 @@ export async function fetchWrapper({
     signal,
   });
   if (!resp.ok) {
+    const data = await resp.json();
+
+    // Return runtime errors in the same form as the Axios client had previously
+    if (data.code && data.message) {
+      return Promise.reject({
+        response: {
+          status: resp.status,
+          data,
+        },
+      });
+    }
+
+    // Fallback error handling
     const err = new Error();
     (err as any).response = await resp.json();
     return Promise.reject(err);
