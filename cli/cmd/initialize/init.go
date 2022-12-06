@@ -15,10 +15,11 @@ func InitCmd(ver string) *cobra.Command {
 	var olapDSN string
 	var exampleName string
 	var listExamples bool
+	var verbose bool
 
 	var initCmd = &cobra.Command{
 		Use:   "init",
-		Short: "Initialize a new Rill project",
+		Short: "Initialize a new project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// List examples and exit
 			if listExamples {
@@ -32,7 +33,7 @@ func InitCmd(ver string) *cobra.Command {
 				return nil
 			}
 
-			app, err := local.NewApp(ver, false, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -59,11 +60,13 @@ func InitCmd(ver string) *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
-	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
-	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
-	initCmd.Flags().StringVar(&exampleName, "example", "", "Name of example project")
+	initCmd.Flags().SortFlags = false
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
+	initCmd.Flags().StringVar(&exampleName, "example", "", "Name of example project (default \"empty\")")
+	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
+	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
+	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 
 	return initCmd
 }

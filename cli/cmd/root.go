@@ -48,6 +48,7 @@ func runCmd(ctx context.Context, ver string, commit string, buildDate string) er
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cli.yaml)")
+	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

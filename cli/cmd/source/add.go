@@ -24,7 +24,7 @@ func AddCmd(ver string) *cobra.Command {
 
 	var addCmd = &cobra.Command{
 		Use:   "add <file>",
-		Short: "Add a local file source",
+		Short: "Add a local file source (CSV or Parquet)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dataPath := args[0]
@@ -85,12 +85,13 @@ func AddCmd(ver string) *cobra.Command {
 		},
 	}
 
-	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
-	addCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
+	addCmd.Flags().SortFlags = false
+	addCmd.Flags().StringVar(&sourceName, "name", "", "Source name (defaults to file name)")
 	addCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	addCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
+	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
+	addCmd.Flags().StringVar(&delimiter, "delimiter", "", "CSV delimiter override (defaults to autodetect)")
 	addCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	addCmd.Flags().StringVar(&sourceName, "name", "", "Source name")
-	addCmd.Flags().StringVar(&delimiter, "delimiter", "", "CSV delimiter override (it will autodetect if not set)")
 
 	return addCmd
 }

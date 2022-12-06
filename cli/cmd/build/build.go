@@ -34,9 +34,10 @@ func BuildCmd(ver string) *cobra.Command {
 			return nil
 		},
 	}
-	buildCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "OLAP database driver")
-	buildCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "OLAP database DSN")
+	buildCmd.Flags().SortFlags = false
 	buildCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	buildCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
+	buildCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	buildCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 
 	return buildCmd
