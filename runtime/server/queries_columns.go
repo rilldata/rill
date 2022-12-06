@@ -114,125 +114,17 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
  */
 
 func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtimev1.EstimateSmallestTimeGrainRequest) (*runtimev1.EstimateSmallestTimeGrainResponse, error) {
-	sampleSize := int64(500000)
-	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT count(*) as c FROM %s", request.TableName),
-		Priority: int(request.Priority),
-	})
+	q := &queries.ColumnTimeGrain{
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
+	}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	var totalRows int64
-	for rows.Next() {
-		err := rows.Scan(&totalRows)
-		if err != nil {
-			return nil, err
-		}
-	}
-	rows.Close()
-	var useSample string
-	if sampleSize > totalRows {
-		useSample = ""
-	} else {
-		useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
-	}
-
-	estimateSql := fmt.Sprintf(`
-      WITH cleaned_column AS (
-          SELECT %s as cd
-          from %s
-          %s
-      ),
-      time_grains as (
-      SELECT 
-          approx_count_distinct(extract('years' from cd)) as year,
-          approx_count_distinct(extract('months' from cd)) as month,
-          approx_count_distinct(extract('dayofyear' from cd)) as dayofyear,
-          approx_count_distinct(extract('dayofmonth' from cd)) as dayofmonth,
-          min(cd = last_day(cd)) = TRUE as lastdayofmonth,
-          approx_count_distinct(extract('weekofyear' from cd)) as weekofyear,
-          approx_count_distinct(extract('dayofweek' from cd)) as dayofweek,
-          approx_count_distinct(extract('hour' from cd)) as hour,
-          approx_count_distinct(extract('minute' from cd)) as minute,
-          approx_count_distinct(extract('second' from cd)) as second,
-          approx_count_distinct(extract('millisecond' from cd) - extract('seconds' from cd) * 1000) as ms
-      FROM cleaned_column
-      )
-      SELECT 
-        COALESCE(
-            case WHEN ms > 1 THEN 'milliseconds' else NULL END,
-            CASE WHEN second > 1 THEN 'seconds' else NULL END,
-            CASE WHEN minute > 1 THEN 'minutes' else null END,
-            CASE WHEN hour > 1 THEN 'hours' else null END,
-            -- cases above, if equal to 1, then we have some candidates for
-            -- bigger time grains. We need to reverse from here
-            -- years, months, weeks, days.
-            CASE WHEN dayofyear = 1 and year > 1 THEN 'years' else null END,
-            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'months' else null END,
-            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'weeks' else null END,
-            CASE WHEN hour = 1 THEN 'days' else null END
-        ) as estimatedSmallestTimeGrain
-      FROM time_grains
-      `, quoteName(request.ColumnName), request.TableName, useSample)
-	rows, err = s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    estimateSql,
-		Priority: int(request.Priority),
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var timeGrainString sql.NullString
-	for rows.Next() {
-		err := rows.Scan(&timeGrainString)
-		if err != nil {
-			return nil, err
-		}
-		if timeGrainString.Valid {
-			break
-		} else {
-			return &runtimev1.EstimateSmallestTimeGrainResponse{
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED,
-			}, nil
-		}
-	}
-	var timeGrain *runtimev1.EstimateSmallestTimeGrainResponse
-	switch timeGrainString.String {
-	case "milliseconds":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
-		}
-	case "seconds":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
-		}
-	case "minutes":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
-		}
-	case "hours":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
-		}
-	case "days":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		}
-	case "weeks":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
-		}
-	case "months":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-		}
-	case "years":
-		timeGrain = &runtimev1.EstimateSmallestTimeGrainResponse{
-			TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		}
-	}
-	return timeGrain, nil
+	return &runtimev1.EstimateSmallestTimeGrainResponse{
+		TimeGrain: q.Result,
+	}, nil
 }
 
 func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
