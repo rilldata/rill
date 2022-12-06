@@ -4,6 +4,7 @@
     getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
+    useRuntimeServiceProfileColumns,
     useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -41,6 +42,7 @@
   import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
+  import { getSummaries } from "../../column-profile/queries";
   import { createModelFromSource } from "../../navigation/models/createModel";
 
   export let sourceName: string;
@@ -178,13 +180,29 @@
 
   /** total % null cells */
 
+  $: profileColumns = useRuntimeServiceProfileColumns(
+    $runtimeStore?.instanceId,
+    sourceName,
+    {},
+    { query: { keepPreviousData: true } }
+  );
+
+  $: summaries = getSummaries(
+    sourceName,
+    $runtimeStore?.instanceId,
+    $profileColumns?.data?.profileColumns
+  );
+
+  let totalNulls = undefined;
+
+  $: if (summaries) {
+    totalNulls = $summaries.reduce(
+      (total, column) => total + (+column.nullCount || 0),
+      0
+    );
+  }
   $: {
-    // TODO: get null count for tables
     const totalCells = source?.schema?.fields?.length * cardinality;
-    // const totalNulls = currentDerivedTable?.profile
-    //   .map((profile) => profile?.nullCount)
-    //   .reduce((total, count) => total + count, 0);
-    const totalNulls = 0;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 </script>
@@ -234,10 +252,16 @@
 
         <Tooltip location="left" alignment="start" distance={24}>
           <GridCell side="left" classes="text-gray-600 italic">
-            {nullPercentage} null
+            {#if totalNulls !== undefined}
+              {nullPercentage} null
+            {/if}
           </GridCell>
           <TooltipContent slot="tooltip-content">
-            {nullPercentage} of table values are null
+            {#if totalNulls !== undefined}
+              {nullPercentage} of table values are null
+            {:else}
+              awaiting calculation of total null table values
+            {/if}
           </TooltipContent>
         </Tooltip>
         <GridCell side="right" classes="text-gray-800 font-bold">

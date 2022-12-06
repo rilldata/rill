@@ -9,8 +9,49 @@ import {
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
 } from "@rilldata/web-common/runtime-client";
-import { derived } from "svelte/store";
+import { derived, writable } from "svelte/store";
 import { convertTimestampPreview } from "../../util/convertTimestampPreview";
+
+/** for each entry in a profile column results, return the null count and the column cardinality */
+export function getSummaries(objectName, instanceId, profileColumnResults) {
+  if (!profileColumnResults && !profileColumnResults?.length) return;
+  return derived(
+    profileColumnResults.map((column) => {
+      return derived(
+        [
+          writable(column),
+          useRuntimeServiceGetNullCount(
+            instanceId,
+            objectName,
+            column.name,
+            {},
+            {
+              query: { keepPreviousData: true },
+            }
+          ),
+          useRuntimeServiceGetCardinalityOfColumn(
+            instanceId,
+            objectName,
+            column.name,
+            {},
+            { query: { keepPreviousData: true } }
+          ),
+        ],
+        ([col, nullValues, cardinality]) => {
+          return {
+            ...col,
+            nullCount: +nullValues?.data?.count,
+            cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
+          };
+        }
+      );
+    }),
+
+    (combos) => {
+      return combos;
+    }
+  );
+}
 
 export function getNullPercentage(instanceId, objectName, columnName) {
   const nullQuery = useRuntimeServiceGetNullCount(
