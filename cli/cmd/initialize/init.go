@@ -52,12 +52,12 @@ func InitCmd(ver string) *cobra.Command {
 
 			err = app.InitProject(exampleName)
 			if err != nil {
-				return err
+				return fmt.Errorf("init project: %w", err)
 			}
 
 			err = app.Reconcile()
 			if err != nil {
-				return err
+				return fmt.Errorf("reconcile project: %w", err)
 			}
 
 			return nil

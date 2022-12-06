@@ -45,12 +45,12 @@ func DropCmd(ver string) *cobra.Command {
 			c := artifactsv0.New(repo, app.Instance.ID)
 			sourcePath, err := c.DeleteSource(context.Background(), sourceName)
 			if err != nil {
-				return err
+				return fmt.Errorf("delete source: %w", err)
 			}
 
 			err = app.ReconcileSource(sourcePath)
 			if err != nil {
-				return err
+				return fmt.Errorf("reconcile source: %w", err)
 			}
 
 			return nil

@@ -1,6 +1,8 @@
 package start
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/spf13/cobra"
 )
@@ -29,18 +31,18 @@ func StartCmd(ver string) *cobra.Command {
 			if !app.IsProjectInit() {
 				err := app.InitProject("")
 				if err != nil {
-					return err
+					return fmt.Errorf("init project: %w", err)
 				}
 			}
 
 			err = app.Reconcile()
 			if err != nil {
-				return err
+				return fmt.Errorf("reconcile project: %w", err)
 			}
 
 			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen)
 			if err != nil {
-				return err
+				return fmt.Errorf("serve: %w", err)
 			}
 
 			return nil

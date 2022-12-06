@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -55,7 +56,7 @@ func (c *Codec) InitEmpty(ctx context.Context, name string) error {
 	return nil
 }
 
-func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceID string, source *runtimev1.Source) (string, error) {
+func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceID string, source *runtimev1.Source, force bool) (string, error) {
 	props := source.Properties.AsMap()
 
 	out := Source{
@@ -85,6 +86,14 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 	}
 
 	path := path.Join("sources", source.Name+".yaml")
+
+	// TODO: Use create and createOnly when they're added to repo.Put
+	if _, err := os.Stat(path); err == nil {
+		if !force {
+			return "", os.ErrExist
+		}
+	}
+
 	err = repo.Put(ctx, c.InstanceID, path, bytes.NewReader(blob))
 	if err != nil {
 		return "", err

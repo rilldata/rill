@@ -367,7 +367,7 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 }
 
 // trackingHandler proxies events to intake.rilldata.io
-func (s *App) trackingHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) trackingHandler(w http.ResponseWriter, r *http.Request) {
 	// Proxy request to rill intake
 	proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
 	if err != nil {
@@ -390,7 +390,7 @@ func (s *App) trackingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // healthHandler is a basic health check
-func (s *App) healthHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 

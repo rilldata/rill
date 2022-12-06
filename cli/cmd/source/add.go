@@ -3,6 +3,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -20,11 +21,13 @@ func AddCmd(ver string) *cobra.Command {
 	var projectPath string
 	var sourceName string
 	var delimiter string
+	var force bool
 	var verbose bool
 
 	var addCmd = &cobra.Command{
 		Use:   "add <file>",
-		Short: "Add a local file source (CSV or Parquet)",
+		Short: "Add a local file source",
+		Long:  "Add a local file source. Supported file types include .parquet, .csv, .tsv.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dataPath := args[0]
@@ -71,14 +74,17 @@ func AddCmd(ver string) *cobra.Command {
 			}
 
 			c := artifactsv0.New(repo, app.Instance.ID)
-			sourcePath, err := c.PutSource(context.Background(), repo, app.Instance.ID, src)
+			sourcePath, err := c.PutSource(context.Background(), repo, app.Instance.ID, src, force)
 			if err != nil {
-				return err
+				if os.IsExist(err) {
+					return fmt.Errorf("source already exists (pass --force to overwrite)")
+				}
+				return fmt.Errorf("write source: %w", err)
 			}
 
 			err = app.ReconcileSource(sourcePath)
 			if err != nil {
-				return err
+				return fmt.Errorf("reconcile source: %w", err)
 			}
 
 			return nil
@@ -87,6 +93,7 @@ func AddCmd(ver string) *cobra.Command {
 
 	addCmd.Flags().SortFlags = false
 	addCmd.Flags().StringVar(&sourceName, "name", "", "Source name (defaults to file name)")
+	addCmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite the source if it already exists")
 	addCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	addCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
