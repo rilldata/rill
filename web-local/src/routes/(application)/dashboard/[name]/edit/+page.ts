@@ -1,11 +1,8 @@
-import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
-  ExplorerSourceColumnDoesntExist,
-  ExplorerSourceModelDoesntExist,
-  ExplorerSourceModelIsInvalid,
-  ExplorerTimeDimensionDoesntExist,
-} from "@rilldata/web-local/common/errors/ErrorMessages";
+  runtimeServiceGetCatalogEntry,
+  runtimeServiceGetFile,
+} from "@rilldata/web-common/runtime-client";
+import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { error } from "@sveltejs/kit";
 
 /** @type {import('./$types').PageLoad} */
@@ -17,29 +14,26 @@ export async function load({ params }) {
       localConfig.instance_id,
       `dashboards/${params.name}.yaml`
     );
-
-    return {
-      metricsDefName: params.name,
-    };
   } catch (err) {
     if (err.response?.data?.message.includes("entry not found")) {
       throw error(404, "Dashboard not found");
     }
 
-    // The following invalid dashboard errors are displayed by the component
-    const invalidDashboardErrors = [
-      ExplorerSourceModelDoesntExist,
-      ExplorerSourceModelIsInvalid,
-      ExplorerSourceColumnDoesntExist,
-      ExplorerTimeDimensionDoesntExist,
-    ];
-    if (
-      invalidDashboardErrors.some(
-        (errMsg) => errMsg.includes(err.message) || err.message.includes(errMsg)
-      )
-    ) {
+    throw error(err.response?.status || 500, err.message);
+  }
+
+  try {
+    await runtimeServiceGetCatalogEntry(localConfig.instance_id, params.name);
+
+    return {
+      metricsDefName: params.name,
+    };
+  } catch (err) {
+    // If the catalog entry doesn't exist, the dashboard config is invalid
+    // The component should render the specific error
+    if (err.response?.data?.message.includes("entry not found")) {
       return {
-        metricsName: params.name,
+        metricsDefName: params.name,
         error: err.message,
       };
     }
