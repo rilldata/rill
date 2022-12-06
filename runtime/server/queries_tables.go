@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -39,15 +39,12 @@ type ColumnInfo struct {
 	Unknown int
 }
 
-var DoubleQuotesRegexp *regexp.Regexp = regexp.MustCompile("\"")
-var HyphenRegexp *regexp.Regexp = regexp.MustCompile("-")
-
 func EscapeDoubleQuotes(column string) string {
-	return DoubleQuotesRegexp.ReplaceAllString(column, "\"\"")
+	return strings.ReplaceAll(column, "\"", "\"\"")
 }
 
 func EscapeHyphen(column string) string {
-	return HyphenRegexp.ReplaceAllString(column, "_")
+	return strings.ReplaceAll(column, "-", "_")
 }
 
 func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
@@ -61,7 +58,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 		return nil, err
 	}
 	rows.Close()
-	defer s.dropTempTable(ctx, req.InstanceId, int(req.Priority), temporaryTableName)
+	defer s.dropTempTable(req.InstanceId, int(req.Priority), temporaryTableName)
 
 	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
