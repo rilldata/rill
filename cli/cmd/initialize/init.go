@@ -33,6 +33,10 @@ func InitCmd(ver string) *cobra.Command {
 				return nil
 			}
 
+			fmt.Println("This application is extremely alpha and we want to hear from you if you have any questions or ideas to share!")
+			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
+			fmt.Println("")
+
 			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
