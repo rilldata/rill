@@ -145,6 +145,7 @@ func TestReconcileRenames(t *testing.T) {
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
 			AdBidsCapsRepoPath := "/sources/ADBIDS.yaml"
+			AdBidsCapsAffectdPaths := []string{AdBidsCapsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
 			// write to a new file with same name and different case (should rename back to original)
 			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsCapsRepoPath)
 			if len(tt.config.ChangedPaths) > 0 {
@@ -152,26 +153,19 @@ func TestReconcileRenames(t *testing.T) {
 			}
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(
-				t,
-				result,
-				0,
-				0,
-				3,
-				0,
-				[]string{AdBidsCapsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath},
-			)
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectdPaths)
 			testutils.AssertTable(t, s, "ADBIDS", AdBidsCapsRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 
 			// update with same content
 			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
-			tt.config.ForcedPaths = []string{AdBidsRepoPath}
-			result, err = s.Reconcile(context.Background(), tt.config)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+				ChangedPaths: []string{AdBidsCapsRepoPath},
+				ForcedPaths:  []string{AdBidsCapsRepoPath},
+			})
 			require.NoError(t, err)
 			// ForcedPaths updates all dependant items
-			//testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
-			// TODO: make DAG case insensitive
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectdPaths)
 		})
 	}
 }

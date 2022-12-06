@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -128,6 +129,6 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE name = ?", name)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = ?", strings.ToLower(name))
 	return err
 }

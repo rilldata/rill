@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -131,6 +132,6 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND name = ?", instanceID, name)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = ?", instanceID, strings.ToLower(name))
 	return err
 }

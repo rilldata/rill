@@ -21,6 +21,7 @@ import (
 
 type MigrationItem struct {
 	Name           string
+	LowerName      string
 	Path           string
 	CatalogInFile  *drivers.CatalogEntry
 	CatalogInStore *drivers.CatalogEntry
@@ -175,7 +176,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			continue
 		}
 
-		existing, ok := migrationMap[item.Name]
+		existing, ok := migrationMap[item.LowerName]
 		if ok {
 			var errPath string
 			// if existing item was deleted
@@ -186,16 +187,20 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 				(item.Error == nil && item.CatalogInFile != nil && existing.CatalogInFile != nil &&
 					existing.CatalogInFile.UpdatedOn.After(item.CatalogInFile.UpdatedOn)) {
 				// replace the existing with new
-				migrationMap[item.Name] = item
+				migrationMap[item.LowerName] = item
 				errPath = existing.Path
+			} else if existing.Type == MigrationNoChange && item.Type == MigrationRename {
+				migrationMap[item.LowerName] = item
 			} else {
 				errPath = item.Path
 			}
-			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
-				Message:  "item with same name exists",
-				FilePath: errPath,
-			})
+			if errPath != "" {
+				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+					Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
+					Message:  "item with same name exists",
+					FilePath: errPath,
+				})
+			}
 			continue
 		}
 
@@ -207,14 +212,14 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			for _, deletion := range deletions {
 				if migrator.IsEqual(ctx, item.CatalogInFile, deletion.CatalogInStore) {
 					item.renameFrom(deletion)
-					delete(deletions, deletion.Name)
-					delete(migrationMap, deletion.Name)
+					delete(deletions, deletion.LowerName)
+					delete(migrationMap, deletion.LowerName)
 					found = true
 					break
 				}
 			}
 			if !found {
-				additions[item.Name] = item
+				additions[item.LowerName] = item
 			}
 
 		case MigrationDelete:
@@ -223,27 +228,27 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			for _, addition := range additions {
 				if item.CatalogInStore != nil && migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
 					addition.renameFrom(item)
-					delete(additions, addition.Name)
+					delete(additions, addition.LowerName)
 					add = false
 					found = true
 					break
 				}
 			}
 			if !found {
-				deletions[item.Name] = item
+				deletions[item.LowerName] = item
 			}
 		}
 
 		if add {
-			migrationMap[item.Name] = item
+			migrationMap[item.LowerName] = item
 		}
-		storeObjectsConsumed[strings.ToLower(item.Name)] = true
+		storeObjectsConsumed[item.LowerName] = true
 
 		if !changedPathsHint {
 			continue
 		}
-		// go through the children only of forced paths is false
-		children := s.dag.GetChildren(item.Name)
+		// go through the children only if forced paths is false
+		children := s.dag.GetChildren(item.LowerName)
 		for _, child := range children {
 			childPath, ok := s.NameToPath[child]
 			if !ok || (changedPathsHint && changedPathsMap[childPath]) {
@@ -255,13 +260,14 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			if childItem == nil {
 				continue
 			}
-			migrationMap[childItem.Name] = childItem
+			migrationMap[childItem.LowerName] = childItem
 		}
 	}
 
 	for _, storeObject := range storeObjectsMap {
+		lowerStoreName := strings.ToLower(storeObject.Name)
 		// ignore consumed store objects
-		if storeObjectsConsumed[strings.ToLower(storeObject.Name)] ||
+		if storeObjectsConsumed[lowerStoreName] ||
 			// ignore tables and unspecified objects
 			storeObject.Type == drivers.ObjectTypeTable || storeObject.Type == drivers.ObjectTypeUnspecified {
 			continue
@@ -277,15 +283,16 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 				addition.Type = MigrationRename
 				addition.FromName = storeObject.Name
 				addition.FromPath = storeObject.Path
-				delete(additions, addition.Name)
+				delete(additions, addition.LowerName)
 				found = true
 				break
 			}
 		}
 		// if no matching item is found, add as a MigrationDelete
 		if !found {
-			migrationMap[storeObject.Name] = &MigrationItem{
+			migrationMap[lowerStoreName] = &MigrationItem{
 				Name:           storeObject.Name,
+				LowerName:      lowerStoreName,
 				Type:           MigrationDelete,
 				Path:           storeObject.Path,
 				CatalogInStore: storeObject,
@@ -336,8 +343,9 @@ func (s *Service) getMigrationItem(
 			item.Type = MigrationCreate
 		}
 	}
+	item.LowerName = strings.ToLower(item.Name)
 
-	catalogInStore, ok := storeObjectsMap[strings.ToLower(item.Name)]
+	catalogInStore, ok := storeObjectsMap[item.LowerName]
 	if !ok {
 		if item.CatalogInFile == nil {
 			item.Type = MigrationNoChange
@@ -349,7 +357,7 @@ func (s *Service) getMigrationItem(
 		return item
 	}
 	item.CatalogInStore = catalogInStore
-	if item.Name != catalogInStore.Name {
+	if item.Name != catalogInStore.Name && item.CatalogInFile != nil {
 		// rename with same name different case
 		item.FromName = catalogInStore.Name
 		catalogInStore.Name = item.Name
@@ -399,17 +407,17 @@ func (s *Service) collectMigrationItems(
 		tempDag.Add(name, migration.Dependencies)
 	}
 
-	for name, migration := range migrationMap {
-		if migration.Type == MigrationNoChange {
+	for name, item := range migrationMap {
+		if item.Type == MigrationNoChange {
 			if update[name] {
 				// items identified as to created/updated because a parent changed
 				// but was initially marked no change
-				if migration.CatalogInStore == nil {
-					migration.Type = MigrationCreate
+				if item.CatalogInStore == nil {
+					item.Type = MigrationCreate
 				} else {
-					migration.Type = MigrationUpdate
+					item.Type = MigrationUpdate
 				}
-			} else if _, ok := s.PathToName[migration.Path]; ok {
+			} else if _, ok := s.PathToName[item.Path]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -417,17 +425,17 @@ func (s *Service) collectMigrationItems(
 		}
 
 		visited[name] = len(migrationItems)
-		migrationItems = append(migrationItems, migration)
+		migrationItems = append(migrationItems, item)
 
 		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
 			tempDag.GetChildren(name),
 			s.dag.GetChildren(name)...,
 		))
-		if migration.FromName != "" {
+		if item.FromName != "" {
 			children = append(children, arrayutil.Dedupe(append(
-				tempDag.GetChildren(migration.FromName),
-				s.dag.GetChildren(migration.FromName)...,
+				tempDag.GetChildren(strings.ToLower(item.FromName)),
+				s.dag.GetChildren(strings.ToLower(item.FromName))...,
 			))...)
 		}
 		for _, child := range children {
@@ -500,11 +508,11 @@ func (s *Service) runMigrationItems(
 		} else {
 			switch item.Type {
 			case MigrationNoChange:
-				if _, ok := s.PathToName[item.Path]; !ok {
+				if _, ok := s.PathToName[item.LowerName]; !ok {
 					// this is perhaps an init. so populate cache data
-					s.PathToName[item.Path] = item.Name
-					s.NameToPath[item.Name] = item.Path
-					s.dag.Add(item.Name, item.Dependencies)
+					s.PathToName[item.Path] = item.LowerName
+					s.NameToPath[item.LowerName] = item.Path
+					s.dag.Add(item.LowerName, item.Dependencies)
 				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
@@ -565,10 +573,10 @@ func (s *Service) runMigrationItems(
 // TODO: store only valid metrics view
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.Name] = item.Path
-	s.PathToName[item.Path] = item.Name
+	s.NameToPath[item.LowerName] = item.Path
+	s.PathToName[item.Path] = item.LowerName
 	// add the item to DAG
-	s.dag.Add(item.Name, item.Dependencies)
+	s.dag.Add(item.LowerName, item.Dependencies)
 
 	// create in olap
 	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
@@ -591,18 +599,19 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
-	if _, ok := s.NameToPath[item.FromName]; ok {
-		delete(s.NameToPath, item.FromName)
+	fromLowerName := strings.ToLower(item.FromName)
+	if _, ok := s.NameToPath[fromLowerName]; ok {
+		delete(s.NameToPath, fromLowerName)
 	}
-	s.NameToPath[item.Name] = item.Path
+	s.NameToPath[item.LowerName] = item.Path
 	if _, ok := s.PathToName[item.FromPath]; ok {
 		delete(s.PathToName, item.FromPath)
 	}
-	s.PathToName[item.Path] = item.Name
+	s.PathToName[item.Path] = item.LowerName
 
 	// delete old item and add new item to dag
-	s.dag.Delete(item.FromName)
-	s.dag.Add(item.Name, item.Dependencies)
+	s.dag.Delete(fromLowerName)
+	s.dag.Add(item.LowerName, item.Dependencies)
 
 	// rename the item in olap
 	err := migrator.Rename(ctx, s.Olap, item.FromName, item.CatalogInFile)
@@ -622,10 +631,10 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.Name] = item.Path
-	s.PathToName[item.Path] = item.Name
+	s.NameToPath[item.LowerName] = item.Path
+	s.PathToName[item.Path] = item.LowerName
 	// add the item to DAG with new dependencies
-	s.dag.Add(item.Name, item.Dependencies)
+	s.dag.Add(item.LowerName, item.Dependencies)
 
 	// update in olap
 	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
@@ -641,15 +650,15 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
-	if _, ok := s.NameToPath[item.Name]; ok {
-		delete(s.NameToPath, item.Name)
+	if _, ok := s.NameToPath[item.LowerName]; ok {
+		delete(s.NameToPath, item.LowerName)
 	}
 	if _, ok := s.PathToName[item.FromPath]; ok {
 		delete(s.PathToName, item.FromPath)
 	}
 
 	// delete item from dag
-	s.dag.Delete(item.Name)
+	s.dag.Delete(item.LowerName)
 	// delete item from olap
 	err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 	if err != nil {

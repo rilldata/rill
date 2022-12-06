@@ -3,6 +3,7 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -80,7 +81,12 @@ func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drive
 		// no error here. not all migrators are needed
 		return []string{}
 	}
-	return migrator.GetDependencies(ctx, olap, catalog)
+	// convert dependencies to lower case here
+	dependencies := migrator.GetDependencies(ctx, olap, catalog)
+	for i, dep := range dependencies {
+		dependencies[i] = strings.ToLower(dep)
+	}
+	return dependencies
 }
 
 // Validate also returns list of dependents
