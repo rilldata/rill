@@ -3,7 +3,7 @@ import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-que
 
 let RuntimeUrl = "";
 try {
-  RuntimeUrl = (window as any).RILL_RUNTIME_URL;
+  RuntimeUrl = RILL_RUNTIME_URL;
 } catch (e) {
   // no-op
 }

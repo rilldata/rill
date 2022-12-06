@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { SelectionRange } from "@codemirror/state";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -139,6 +140,7 @@
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
+
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
 
@@ -152,6 +154,11 @@
       });
     }
   }
+
+  $: selections = $queryHighlight?.map((selection) => ({
+    from: selection.referenceIndex,
+    to: selection.referenceIndex + selection.reference.length,
+  })) as SelectionRange[];
 </script>
 
 <svelte:window bind:innerHeight />
@@ -171,7 +178,7 @@
           <Editor
             {modelName}
             content={modelSql}
-            selections={$queryHighlight}
+            {selections}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
         {/key}

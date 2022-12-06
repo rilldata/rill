@@ -1,18 +1,16 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCardinalityOfColumn,
-    useRuntimeServiceGetNullCount,
     useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { derived, writable } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
   import { getColumnType } from "./column-types";
+  import { getSummaries } from "./queries";
 
   export let containerWidth = 0;
   // const queryClient = useQueryClient();
@@ -67,46 +65,6 @@
     objectName,
     { limit: 1 }
   );
-
-  /** composes a bunch of runtime queries to create a flattened array of column metadata, null counts, and unique value counts */
-  function getSummaries(objectName, instanceId, profileColumnResults) {
-    return derived(
-      profileColumnResults.map((column) => {
-        return derived(
-          [
-            writable(column),
-            useRuntimeServiceGetNullCount(
-              instanceId,
-              objectName,
-              column.name,
-              {},
-              {
-                query: { keepPreviousData: true },
-              }
-            ),
-            useRuntimeServiceGetCardinalityOfColumn(
-              instanceId,
-              objectName,
-              column.name,
-              {},
-              { query: { keepPreviousData: true } }
-            ),
-          ],
-          ([col, nullValues, cardinality]) => {
-            return {
-              ...col,
-              nullCount: +nullValues?.data?.count,
-              cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
-            };
-          }
-        );
-      }),
-
-      (combos) => {
-        return combos;
-      }
-    );
-  }
 
   let nestedColumnProfileQuery;
   $: if ($profileColumns?.data?.profileColumns) {

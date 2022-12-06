@@ -8,7 +8,6 @@ import {
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
-  RuntimeState,
 } from "../application-state-stores/application-store";
 import { importOverlayVisible } from "../application-state-stores/overlay-store";
 import { notifications } from "../components/notifications";
@@ -27,7 +26,7 @@ import {
 export async function* uploadTableFiles(
   files: Array<File>,
   [models, sources]: [Array<string>, Array<string>],
-  runtimeState: RuntimeState
+  instanceId: string
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
@@ -46,7 +45,7 @@ export async function* uploadTableFiles(
 
     importOverlayVisible.set(true);
 
-    const filePath = await uploadFile(runtimeState.instanceId, validFile);
+    const filePath = await uploadFile(instanceId, validFile);
     // if upload failed for any reason continue
     if (filePath) {
       lastTableName = resolvedTableName;
