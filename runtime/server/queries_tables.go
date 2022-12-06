@@ -16,7 +16,7 @@ func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTabl
 	q := &queries.TableCardinality{
 		TableName: req.TableName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority)
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
