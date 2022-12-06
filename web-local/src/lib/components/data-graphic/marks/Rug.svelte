@@ -4,7 +4,6 @@
   import type { ScaleStore } from "$lib/components/data-graphic/state/types";
   import { interpolateReds } from "d3-scale-chromatic";
   import { getContext } from "svelte";
-  import { fly } from "svelte/transition";
   import type { SimpleConfigurationStore } from "../state/types";
 
   export let data;
@@ -52,15 +51,9 @@
       ? $config.bodyBottom - size
       : $config.top})"
   >
-    <WithSimpleLinearScale domain={[0, 1]} range={[0.2, 1]} clamp let:scale>
+    <WithSimpleLinearScale domain={[0, 1]} range={[0.2, 0.65]} clamp let:scale>
       {#each counts as countSet, i}
-        <g
-          transition:fly={{
-            duration: 200,
-            delay: (tiers - i) * 5,
-            y: (i / 16) * -8 * (i % 2 === 0 ? -1 : 1),
-          }}
-        >
+        <g>
           <path
             d={drawSegments(countSet, $xScale)}
             stroke-width={1}
