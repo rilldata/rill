@@ -19,7 +19,7 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID string, n
 		return err
 	}
 
-	err = repo.Put(ctx, instanceID, ".gitignore", strings.NewReader("*.db\n"))
+	err = repo.Put(ctx, instanceID, ".gitignore", strings.NewReader("*.db\ndata/\n"))
 	if err != nil {
 		return err
 	}
