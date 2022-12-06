@@ -68,7 +68,7 @@ func (s *Server) GetNullCount(ctx context.Context, request *runtimev1.GetNullCou
 }
 
 func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
-	q := queries.ColumnDescriptiveStatistics{
+	q := &queries.ColumnDescriptiveStatistics{
 		TableName:  request.TableName,
 		ColumnName: request.ColumnName,
 	}
