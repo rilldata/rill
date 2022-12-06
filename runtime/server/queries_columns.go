@@ -18,25 +18,25 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
+func (s *Server) GetTopK(ctx context.Context, request *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := "count(*)"
-	if req.Agg != "" {
-		agg = req.Agg
+	if request.Agg != "" {
+		agg = request.Agg
 	}
 
 	k := 50
-	if req.K != 0 {
-		k = int(req.K)
+	if request.K != 0 {
+		k = int(request.K)
 	}
 
 	q := &queries.ColumnTopK{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
 		Agg:        agg,
 		K:          k,
 	}
 
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -50,80 +50,36 @@ func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*r
 	}, nil
 }
 
-func (s *Server) GetNullCount(ctx context.Context, nullCountRequest *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
-	nullCountSql := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
-		nullCountRequest.TableName,
-		quoteName(nullCountRequest.ColumnName),
-	)
-	rows, err := s.query(ctx, nullCountRequest.InstanceId, &drivers.Statement{
-		Query:    nullCountSql,
-		Priority: int(nullCountRequest.Priority),
-	})
-	if err != nil {
-		return nil, err
+func (s *Server) GetNullCount(ctx context.Context, request *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
+	q := &queries.ColumnNullCount{
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
 	}
-	defer rows.Close()
 
-	var count float64
-	for rows.Next() {
-		err = rows.Scan(&count)
-		if err != nil {
-			return nil, err
-		}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.GetNullCountResponse{
-		Count: count,
+		Count: q.Result,
 	}, nil
+
 }
 
 func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
-	sanitizedColumnName := quoteName(request.ColumnName)
-	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
-		"min(%s) as min, "+
-		"approx_quantile(%s, 0.25) as q25, "+
-		"approx_quantile(%s, 0.5)  as q50, "+
-		"approx_quantile(%s, 0.75) as q75, "+
-		"max(%s) as max, "+
-		"avg(%s)::FLOAT as mean, "+
-		"stddev_pop(%s) as sd "+
-		"FROM %s",
-		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, request.TableName)
-	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    descriptiveStatisticsSql,
-		Priority: int(request.Priority),
-	})
+	q := queries.ColumnDescriptiveStatistics{
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
+	}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	defer rows.Close()
 
-	stats := new(runtimev1.NumericStatistics)
-	var min, q25, q50, q75, max, mean, sd sql.NullFloat64
-	for rows.Next() {
-		err = rows.Scan(&min, &q25, &q50, &q75, &max, &mean, &sd)
-		if err != nil {
-			return nil, err
-		}
-		if !min.Valid {
-			return &runtimev1.GetDescriptiveStatisticsResponse{
-				NumericSummary: &runtimev1.NumericSummary{
-					Case: &runtimev1.NumericSummary_NumericStatistics{},
-				},
-			}, nil
-		} else {
-			stats.Min = min.Float64
-			stats.Max = max.Float64
-			stats.Q25 = q25.Float64
-			stats.Q50 = q50.Float64
-			stats.Q75 = q75.Float64
-			stats.Mean = mean.Float64
-			stats.Sd = sd.Float64
-		}
-	}
 	resp := &runtimev1.NumericSummary{
 		Case: &runtimev1.NumericSummary_NumericStatistics{
-			NumericStatistics: stats,
+			NumericStatistics: q.Result,
 		},
 	}
 	return &runtimev1.GetDescriptiveStatisticsResponse{
