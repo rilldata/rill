@@ -3,6 +3,7 @@ package sources
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -38,6 +39,19 @@ func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, rep
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
+	if strings.ToLower(from) == strings.ToLower(catalogObj.Name) {
+		tempName := fmt.Sprintf("__rill_temp_%s", from)
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, tempName),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+		rows.Close()
+		from = tempName
+	}
+
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,

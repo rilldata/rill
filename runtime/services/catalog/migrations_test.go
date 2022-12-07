@@ -109,6 +109,10 @@ func TestReconcile(t *testing.T) {
 }
 
 func TestReconcileRenames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("renames: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -143,6 +147,29 @@ func TestReconcileRenames(t *testing.T) {
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBidsNew")
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			AdBidsCapsRepoPath := "/sources/ADBIDS.yaml"
+			AdBidsCapsAffectedPaths := []string{AdBidsCapsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+			// write to a new file with same name and different case
+			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsCapsRepoPath)
+			if len(tt.config.ChangedPaths) > 0 {
+				tt.config.ChangedPaths = append(tt.config.ChangedPaths, AdBidsCapsRepoPath)
+			}
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectedPaths)
+			testutils.AssertTable(t, s, "ADBIDS", AdBidsCapsRepoPath)
+			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			// update with same content
+			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+				ChangedPaths: []string{AdBidsCapsRepoPath},
+				ForcedPaths:  []string{AdBidsCapsRepoPath},
+			})
+			require.NoError(t, err)
+			// ForcedPaths updates all dependant items
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectedPaths)
 		})
 	}
 }
