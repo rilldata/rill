@@ -17,6 +17,8 @@ dimensions:
   - label: Domain
     property: domain
     description: ""
+  - label: Id
+    property: id
 
 measures:
   - label: "Number of bids"
