@@ -94,7 +94,7 @@
   }
 
   function onLeaderboardValues(event) {
-    leaderboards.set(event.detail.dimensionId, event.detail.values);
+    leaderboards.set(event.detail.dimensionName, event.detail.values);
     if (
       formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY
