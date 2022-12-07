@@ -34,7 +34,6 @@ export interface MeasureEntity {
   expression?: string;
   description?: string;
   format_preset?: string;
-  visible?: boolean;
   __GUID__?: string;
   __ERROR__?: string;
 }
@@ -42,7 +41,6 @@ export interface DimensionEntity {
   label?: string;
   property?: string;
   description?: string;
-  visible?: boolean;
   __ERROR__?: string;
 }
 
@@ -186,7 +184,6 @@ export class MetricsInternalRepresentation {
       expression: "",
       description: "",
       format_preset: "humanize",
-      visible: true,
       __GUID__: guidGenerator(),
     });
 
@@ -214,7 +211,6 @@ export class MetricsInternalRepresentation {
       label: "",
       property: "",
       description: "",
-      visible: true,
     });
 
     this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
@@ -267,7 +263,6 @@ export function generateMeasuresAndDimension(
     expression: "count(*)",
     description: "Total number of records present",
     format_preset: "humanize",
-    visible: true,
   });
   template.addIn(["measures"], measureNode);
 
@@ -280,7 +275,6 @@ export function generateMeasuresAndDimension(
         label: capitalize(field.name),
         property: field.name,
         description: "",
-        visible: true,
       };
     });
 
