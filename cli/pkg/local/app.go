@@ -241,16 +241,17 @@ func (a *App) ReconcileSource(path string) error {
 
 func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool) error {
 	// Build local info for frontend
-	installID, err := InstallID()
+	localConf, err := config()
 	if err != nil {
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
 	inf := &localInfo{
-		InstanceID:  a.Instance.ID,
-		GRPCPort:    grpcPort,
-		InstallID:   installID,
-		ProjectPath: a.ProjectPath,
-		IsDev:       a.IsDevelopment(),
+		InstanceID:       a.Instance.ID,
+		GRPCPort:         grpcPort,
+		InstallID:        localConf.InstallID,
+		ProjectPath:      a.ProjectPath,
+		IsDev:            a.IsDevelopment(),
+		AnalyticsEnabled: localConf.AnalyticsEnabled,
 	}
 
 	// Create server logger.
@@ -286,7 +287,7 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 	}
 	mux.Handle("/v1/", runtimeHandler)
 	mux.Handle("/local/config", a.infoHandler(inf))
-	mux.Handle("/local/track", http.HandlerFunc(a.trackingHandler))
+	mux.Handle("/local/track", a.trackingHandler(inf))
 	mux.Handle("/local/health", http.HandlerFunc(a.healthHandler))
 
 	// Start the gRPC server
@@ -346,11 +347,12 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 }
 
 type localInfo struct {
-	InstanceID  string `json:"instance_id"`
-	GRPCPort    int    `json:"grpc_port"`
-	InstallID   string `json:"install_id"`
-	ProjectPath string `json:"project_path"`
-	IsDev       bool   `json:"is_dev"`
+	InstanceID       string `json:"instance_id"`
+	GRPCPort         int    `json:"grpc_port"`
+	InstallID        string `json:"install_id"`
+	ProjectPath      string `json:"project_path"`
+	IsDev            bool   `json:"is_dev"`
+	AnalyticsEnabled bool   `json:"analytics_enabled"`
 }
 
 // infoHandler servers the local info struct
@@ -367,26 +369,33 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 }
 
 // trackingHandler proxies events to intake.rilldata.io
-func (a *App) trackingHandler(w http.ResponseWriter, r *http.Request) {
-	// Proxy request to rill intake
-	proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
+func (a *App) trackingHandler(info *localInfo) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !info.AnalyticsEnabled {
+			w.WriteHeader(200)
+			return
+		}
 
-	// Copy the auth header
-	proxyReq.Header = http.Header{
-		"Authorization": r.Header["Authorization"],
-	}
+		// Proxy request to rill intake
+		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
 
-	// Send proxied request
-	resp, err := http.DefaultClient.Do(proxyReq)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
-	defer resp.Body.Close()
+		// Copy the auth header
+		proxyReq.Header = http.Header{
+			"Authorization": r.Header["Authorization"],
+		}
+
+		// Send proxied request
+		resp, err := http.DefaultClient.Do(proxyReq)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+	})
 }
 
 // healthHandler is a basic health check

@@ -59,6 +59,7 @@ export class MetricsService
         project_id: MD5(
           projectPathParts[projectPathParts.length - 1]
         ).toString(),
+        analytics_enabled: localConfig.analytics_enabled,
       };
     } catch (err) {
       console.error(err);
@@ -69,6 +70,7 @@ export class MetricsService
     action: Action,
     args: MetricsActionDefinition[Action]
   ): Promise<void> {
+    if (!this.commonFields.analytics_enabled) return;
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);
       return;

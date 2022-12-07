@@ -9,10 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-func InstallID() (string, error) {
+type localConfig struct {
+	InstallID        string `json:"installId"`
+	AnalyticsEnabled bool   `json:"analyticsEnabled"`
+}
+
+func config() (*localConfig, error) {
+	conf := &localConfig{
+		AnalyticsEnabled: true,
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return conf, err
 	}
 
 	confFolder := path.Join(home, ".rill")
@@ -22,54 +31,47 @@ func InstallID() (string, error) {
 			// create folder if not exists
 			err := os.MkdirAll(confFolder, os.ModePerm)
 			if err != nil {
-				return "", err
+				return conf, err
 			}
 		} else {
 			// unknown error
-			return "", err
+			return conf, err
 		}
 	}
-
-	globalConf := map[string]any{}
-	var installId string
 
 	confFile := path.Join(confFolder, "local.json")
 	_, err = os.Stat(confFile)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			// return if unknown error
-			return "", err
+			return conf, err
 		}
 	} else {
 		// read file if exists
-		conf, err := os.ReadFile(confFile)
+		confStr, err := os.ReadFile(confFile)
 		if err != nil {
-			return "", err
+			return conf, err
 		}
-		err = json.Unmarshal(conf, &globalConf)
+		err = json.Unmarshal(confStr, &conf)
 		if err != nil {
-			return "", err
+			return conf, err
 		}
 	}
 
 	// installId was used in nodejs.
 	// keeping it as is to retain the same ID for existing users
-	installIdAny, ok := globalConf["installId"]
-	if !ok {
+	if conf.InstallID == "" {
 		// create install id if not exists
-		installId = uuid.New().String()
-		globalConf["installId"] = installId
-		globalConfJson, err := json.Marshal(&globalConf)
+		conf.InstallID = uuid.New().String()
+		confJson, err := json.Marshal(&conf)
 		if err != nil {
-			return "", err
+			return conf, err
 		}
-		err = os.WriteFile(confFile, globalConfJson, 0644)
+		err = os.WriteFile(confFile, confJson, 0644)
 		if err != nil {
-			return "", err
+			return conf, err
 		}
-	} else {
-		installId = installIdAny.(string)
 	}
 
-	return installId, nil
+	return conf, nil
 }
