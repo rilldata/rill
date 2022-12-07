@@ -16,7 +16,7 @@ type RepoStore interface {
 	Get(ctx context.Context, instID string, path string) (string, error)
 	Stat(ctx context.Context, instID string, path string) (*RepoObjectStat, error)
 	Put(ctx context.Context, instID string, path string, reader io.Reader) error
-	Rename(ctx context.Context, instID string, from string, path string) error
+	Rename(ctx context.Context, instID string, fromPath string, toPath string) error
 	Delete(ctx context.Context, instID string, path string) error
 }
 

@@ -112,36 +112,18 @@ func (c *connection) Put(ctx context.Context, instID string, filePath string, re
 }
 
 // Rename implements drivers.RepoStore
-func (c *connection) Rename(ctx context.Context, instID string, from string, filePath string) error {
-	filePath = path.Join(c.root, filePath)
+func (c *connection) Rename(ctx context.Context, instID string, fromPath string, toPath string) error {
+	toPath = path.Join(c.root, toPath)
 
-	from = path.Join(c.root, from)
-	if strings.ToLower(from) == strings.ToLower(filePath) {
-		// support rename with same name different case
-		content, err := os.ReadFile(from)
-		if err != nil {
-			return err
-		}
-		err = os.Remove(from)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(filePath, content, os.ModePerm)
-		if err != nil {
-			// revert the old file if new file write fails
-			os.WriteFile(from, content, os.ModePerm)
-			return err
-		}
-	} else {
-		if _, err := os.Stat(filePath); err == nil {
-			return drivers.ErrFileAlreadyExists
-		}
-		err := os.Rename(from, filePath)
-		if err != nil {
-			return err
-		}
+	fromPath = path.Join(c.root, fromPath)
+	if _, err := os.Stat(toPath); strings.ToLower(fromPath) != strings.ToLower(toPath) && err == nil {
+		return drivers.ErrFileAlreadyExists
 	}
-	return os.Chtimes(filePath, time.Now(), time.Now())
+	err := os.Rename(fromPath, toPath)
+	if err != nil {
+		return err
+	}
+	return os.Chtimes(toPath, time.Now(), time.Now())
 }
 
 // Delete implements drivers.RepoStore

@@ -20,16 +20,16 @@ import (
 )
 
 type MigrationItem struct {
-	Name           string
-	LowerName      string
-	Path           string
-	CatalogInFile  *drivers.CatalogEntry
-	CatalogInStore *drivers.CatalogEntry
-	Type           int
-	FromName       string
-	FromPath       string
-	Dependencies   []string
-	Error          *runtimev1.ReconcileError
+	Name                   string
+	NormalizedName         string
+	Path                   string
+	CatalogInFile          *drivers.CatalogEntry
+	CatalogInStore         *drivers.CatalogEntry
+	Type                   int
+	FromName               string
+	FromPath               string
+	NormalizedDependencies []string
+	Error                  *runtimev1.ReconcileError
 }
 
 func (i *MigrationItem) renameFrom(from *MigrationItem) {
@@ -176,7 +176,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			continue
 		}
 
-		existing, ok := migrationMap[item.LowerName]
+		existing, ok := migrationMap[item.NormalizedName]
 		if ok {
 			var errPath string
 			// if existing item was deleted
@@ -187,10 +187,10 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 				(item.Error == nil && item.CatalogInFile != nil && existing.CatalogInFile != nil &&
 					existing.CatalogInFile.UpdatedOn.After(item.CatalogInFile.UpdatedOn)) {
 				// replace the existing with new
-				migrationMap[item.LowerName] = item
+				migrationMap[item.NormalizedName] = item
 				errPath = existing.Path
 			} else if existing.Type == MigrationNoChange && item.Type == MigrationRename {
-				migrationMap[item.LowerName] = item
+				migrationMap[item.NormalizedName] = item
 			} else {
 				errPath = item.Path
 			}
@@ -212,14 +212,14 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			for _, deletion := range deletions {
 				if migrator.IsEqual(ctx, item.CatalogInFile, deletion.CatalogInStore) {
 					item.renameFrom(deletion)
-					delete(deletions, deletion.LowerName)
-					delete(migrationMap, deletion.LowerName)
+					delete(deletions, deletion.NormalizedName)
+					delete(migrationMap, deletion.NormalizedName)
 					found = true
 					break
 				}
 			}
 			if !found {
-				additions[item.LowerName] = item
+				additions[item.NormalizedName] = item
 			}
 
 		case MigrationDelete:
@@ -228,27 +228,27 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			for _, addition := range additions {
 				if item.CatalogInStore != nil && migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
 					addition.renameFrom(item)
-					delete(additions, addition.LowerName)
+					delete(additions, addition.NormalizedName)
 					add = false
 					found = true
 					break
 				}
 			}
 			if !found {
-				deletions[item.LowerName] = item
+				deletions[item.NormalizedName] = item
 			}
 		}
 
 		if add {
-			migrationMap[item.LowerName] = item
+			migrationMap[item.NormalizedName] = item
 		}
-		storeObjectsConsumed[item.LowerName] = true
+		storeObjectsConsumed[item.NormalizedName] = true
 
 		if !changedPathsHint {
 			continue
 		}
 		// go through the children only if forced paths is false
-		children := s.dag.GetChildren(item.LowerName)
+		children := s.dag.GetChildren(item.NormalizedName)
 		for _, child := range children {
 			childPath, ok := s.NameToPath[child]
 			if !ok || (changedPathsHint && changedPathsMap[childPath]) {
@@ -260,7 +260,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			if childItem == nil {
 				continue
 			}
-			migrationMap[childItem.LowerName] = childItem
+			migrationMap[childItem.NormalizedName] = childItem
 		}
 	}
 
@@ -283,7 +283,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 				addition.Type = MigrationRename
 				addition.FromName = storeObject.Name
 				addition.FromPath = storeObject.Path
-				delete(additions, addition.LowerName)
+				delete(additions, addition.NormalizedName)
 				found = true
 				break
 			}
@@ -292,7 +292,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 		if !found {
 			migrationMap[lowerStoreName] = &MigrationItem{
 				Name:           storeObject.Name,
-				LowerName:      lowerStoreName,
+				NormalizedName: lowerStoreName,
 				Type:           MigrationDelete,
 				Path:           storeObject.Path,
 				CatalogInStore: storeObject,
@@ -335,7 +335,11 @@ func (s *Service) getMigrationItem(
 		item.Name = catalog.Name
 		item.CatalogInFile = catalog
 
-		item.Dependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
+		item.NormalizedDependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
+		// convert dependencies to lower case
+		for i, dep := range item.NormalizedDependencies {
+			item.NormalizedDependencies[i] = strings.ToLower(dep)
+		}
 		repoStat, _ := s.Repo.Stat(ctx, s.InstId, repoPath)
 		item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
 		if repoStat.LastUpdated.After(s.LastMigration) {
@@ -343,9 +347,9 @@ func (s *Service) getMigrationItem(
 			item.Type = MigrationCreate
 		}
 	}
-	item.LowerName = strings.ToLower(item.Name)
+	item.NormalizedName = strings.ToLower(item.Name)
 
-	catalogInStore, ok := storeObjectsMap[item.LowerName]
+	catalogInStore, ok := storeObjectsMap[item.NormalizedName]
 	if !ok {
 		if item.CatalogInFile == nil {
 			item.Type = MigrationNoChange
@@ -404,7 +408,7 @@ func (s *Service) collectMigrationItems(
 	// TODO: is there a better way to do this?
 	tempDag := dag.NewDAG()
 	for name, migration := range migrationMap {
-		tempDag.Add(name, migration.Dependencies)
+		tempDag.Add(name, migration.NormalizedDependencies)
 	}
 
 	for name, item := range migrationMap {
@@ -508,11 +512,11 @@ func (s *Service) runMigrationItems(
 		} else {
 			switch item.Type {
 			case MigrationNoChange:
-				if _, ok := s.PathToName[item.LowerName]; !ok {
+				if _, ok := s.PathToName[item.NormalizedName]; !ok {
 					// this is perhaps an init. so populate cache data
-					s.PathToName[item.Path] = item.LowerName
-					s.NameToPath[item.LowerName] = item.Path
-					s.dag.Add(item.LowerName, item.Dependencies)
+					s.PathToName[item.Path] = item.NormalizedName
+					s.NameToPath[item.NormalizedName] = item.Path
+					s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
@@ -573,10 +577,10 @@ func (s *Service) runMigrationItems(
 // TODO: store only valid metrics view
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.LowerName] = item.Path
-	s.PathToName[item.Path] = item.LowerName
+	s.NameToPath[item.NormalizedName] = item.Path
+	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG
-	s.dag.Add(item.LowerName, item.Dependencies)
+	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// create in olap
 	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
@@ -603,15 +607,15 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 	if _, ok := s.NameToPath[fromLowerName]; ok {
 		delete(s.NameToPath, fromLowerName)
 	}
-	s.NameToPath[item.LowerName] = item.Path
+	s.NameToPath[item.NormalizedName] = item.Path
 	if _, ok := s.PathToName[item.FromPath]; ok {
 		delete(s.PathToName, item.FromPath)
 	}
-	s.PathToName[item.Path] = item.LowerName
+	s.PathToName[item.Path] = item.NormalizedName
 
 	// delete old item and add new item to dag
 	s.dag.Delete(fromLowerName)
-	s.dag.Add(item.LowerName, item.Dependencies)
+	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// rename the item in olap
 	err := migrator.Rename(ctx, s.Olap, item.FromName, item.CatalogInFile)
@@ -631,10 +635,10 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.LowerName] = item.Path
-	s.PathToName[item.Path] = item.LowerName
+	s.NameToPath[item.NormalizedName] = item.Path
+	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG with new dependencies
-	s.dag.Add(item.LowerName, item.Dependencies)
+	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// update in olap
 	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
@@ -650,15 +654,15 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
-	if _, ok := s.NameToPath[item.LowerName]; ok {
-		delete(s.NameToPath, item.LowerName)
+	if _, ok := s.NameToPath[item.NormalizedName]; ok {
+		delete(s.NameToPath, item.NormalizedName)
 	}
 	if _, ok := s.PathToName[item.FromPath]; ok {
 		delete(s.PathToName, item.FromPath)
 	}
 
 	// delete item from dag
-	s.dag.Delete(item.LowerName)
+	s.dag.Delete(item.NormalizedName)
 	// delete item from olap
 	err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 	if err != nil {

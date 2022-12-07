@@ -25,7 +25,7 @@ func TestAll(t *testing.T) {
 		withFile,
 		withPostgres,
 		withSQLite,
-		// Druid only tested in driver due to complicated ingestion setupf
+		// Druid only tested in driver due to complicated ingestion setup
 	}
 
 	for _, withDriver := range matrix {
