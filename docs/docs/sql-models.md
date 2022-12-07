@@ -1,6 +1,8 @@
 ---
 title: Model SQL transformations
 description: Data is modeled into One Big Table using DuckDB.
+sidebar_label: Model SQL transformations
+sidebar_position: 40
 ---
 
 ## SQL transformations with DuckDB

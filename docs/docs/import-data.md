@@ -1,6 +1,8 @@
 ---
 title: Import data source
 description: Import local files, remote sources, and existing DuckDB databases
+sidebar_label: Import data source
+sidebar_position: 30
 ---
 
 There are several ways to import data in Rill Developer: local files, remotely stored files, and existing DuckDB databases.

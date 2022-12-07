@@ -1,6 +1,8 @@
 ---
 title: CLI documentation
 description: You can create and augment projects in Rill Developer using the CLI.
+sidebar_label: CLI documentation
+sidebar_position: 60
 ---
 
 :::tip

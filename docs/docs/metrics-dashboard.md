@@ -1,6 +1,8 @@
 ---
 title: Define metrics dashboard
 description: Define your time dimension, measures and dimensions to create a dashboard
+sidebar_label: Define metrics dashboard
+sidebar_position: 50
 ---
 
 In Rill, your dashboards are defined by _metrics_. Metrics are composed of:

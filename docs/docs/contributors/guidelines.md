@@ -1,8 +1,8 @@
 ---
-title: Community policy
+title: We believe in strong community
+sidebar_label: Contributing policy
+sidebar_position: 20
 ---
-
-# We believe in strong community
 
 Our goal is to foster a community that can grow in our data practice and build new tools that break the mold on what people think is possible today. Trust and safety is critical in building a strong community where we can share ideas and ask questions. This is impossible if people feel threatened, harassed or discriminated against.
 
