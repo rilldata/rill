@@ -80,7 +80,7 @@
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();
 
-  $: modelName = $metricsInternalRep.getMetricKey("from");
+  $: modelName = $metricsInternalRep.getMetricKey("model");
   $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
   $: model = $getModel.data?.entry?.model;
 

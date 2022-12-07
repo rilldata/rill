@@ -1673,9 +1673,6 @@ definitions:
         items:
           $ref: '#/definitions/MetricsViewDimension'
         title: Dimensions in the metrics view
-      from:
-        type: string
-        title: Name of the source or model that the metrics view is based on
       label:
         type: string
         title: User friendly label for the dashboard
@@ -1684,6 +1681,9 @@ definitions:
         items:
           $ref: '#/definitions/MetricsViewMeasure'
         title: Measures in the metrics view
+      model:
+        type: string
+        title: Name of the source or model that the metrics view is based on
       name:
         type: string
         title: Name of the metrics view

@@ -26,7 +26,7 @@ export interface MetricsConfig {
   timeseries: string;
   timegrains?: Array<string>;
   default_timegrain?: Array<string>;
-  from: string;
+  model: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
 }

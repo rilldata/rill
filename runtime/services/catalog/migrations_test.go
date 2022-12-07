@@ -398,7 +398,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 
 	testutils.CreateMetricsView(t, s, &runtimev1.MetricsView{
 		Name:          "AdBids_dashboard",
-		From:          "AdBids_model",
+		Model:         "AdBids_model",
 		TimeDimension: "timestamp",
 		TimeGrains:    []string{"1 day", "1 month"},
 		Dimensions: []*runtimev1.MetricsView_Dimension{
