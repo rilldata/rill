@@ -43,7 +43,7 @@
 
   let tooltipText = "";
   let buttonDisabled = true;
-  $: if ($metricsInternalRep.getMetricKey("from") === "") {
+  $: if ($metricsInternalRep.getMetricKey("model") === "") {
     tooltipText = "Select a model before populating these metrics";
     buttonDisabled = true;
   } else if (timestampColumns.length === 0) {

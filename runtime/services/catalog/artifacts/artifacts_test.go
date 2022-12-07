@@ -87,7 +87,7 @@ region: us-east-2
 				Type: drivers.ObjectTypeMetricsView,
 				Object: &runtimev1.MetricsView{
 					Name:          "MetricsView",
-					From:          "Model",
+					Model:         "Model",
 					TimeDimension: "time",
 					TimeGrains:    []string{"1 day", "1 month"},
 					Dimensions: []*runtimev1.MetricsView_Dimension{
@@ -125,7 +125,7 @@ region: us-east-2
 			`version: 0.0.1
 display_name: dashboard name
 description: long description for dashboard
-from: Model
+model: Model
 timeseries: time
 timegrains:
 - 1 day

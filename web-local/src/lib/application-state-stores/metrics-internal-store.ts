@@ -10,29 +10,12 @@ import { CATEGORICALS } from "../duckdb-data-types";
 import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
 export const metricsTemplate = `
+# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
+
 display_name: "Dashboard"
-description: "a description that appears in the UI"
-
-# model
-#optional to declare this, otherwise it is the model.sql file in the same directory
-from: ""
-
-# populate with the first datetime type in the OBT
+model: ""
 timeseries: ""
-
-# default to opionated option around estimated timegrain,
-# first in order is default time grain
-timegrains:
-  - day
-# the timegrain that users will see when they first visit the dashboard.
-default_timegrain: "day"
-
-# measures
-# measures are presented in the order that they are written in this file.
 measures: []
-
-# dimensions
-# dimensions are presented in the order that they are written in this file.
 dimensions: []
 `;
 
@@ -42,7 +25,7 @@ export interface MetricsConfig {
   timeseries: string;
   timegrains?: Array<string>;
   default_timegrain?: Array<string>;
-  from: string;
+  model: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
 }
@@ -51,7 +34,6 @@ export interface MeasureEntity {
   expression?: string;
   description?: string;
   format_preset?: string;
-  visible?: boolean;
   __GUID__?: string;
   __ERROR__?: string;
 }
@@ -59,7 +41,6 @@ export interface DimensionEntity {
   label?: string;
   property?: string;
   description?: string;
-  visible?: boolean;
   __ERROR__?: string;
 }
 
@@ -203,7 +184,6 @@ export class MetricsInternalRepresentation {
       expression: "",
       description: "",
       format_preset: "humanize",
-      visible: true,
       __GUID__: guidGenerator(),
     });
 
@@ -231,7 +211,6 @@ export class MetricsInternalRepresentation {
       label: "",
       property: "",
       description: "",
-      visible: true,
     });
 
     this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
@@ -274,7 +253,7 @@ export function generateMeasuresAndDimension(
   const fields = model.schema.fields;
 
   const template = parseDocument(metricsTemplate);
-  template.set("from", model.name);
+  template.set("model", model.name);
 
   const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
   template.set("timeseries", timestampColumns[0]);
@@ -284,7 +263,6 @@ export function generateMeasuresAndDimension(
     expression: "count(*)",
     description: "Total number of records present",
     format_preset: "humanize",
-    visible: true,
   });
   template.addIn(["measures"], measureNode);
 
@@ -297,7 +275,6 @@ export function generateMeasuresAndDimension(
         label: capitalize(field.name),
         property: field.name,
         description: "",
-        visible: true,
       };
     });
 

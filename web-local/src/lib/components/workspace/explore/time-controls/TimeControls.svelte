@@ -47,7 +47,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
-      $metaQuery.data.from,
+      $metaQuery.data.model,
       $metaQuery.data.timeDimension
     );
   }
@@ -147,8 +147,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
 <div class="flex flex-row">
   <TimeRangeNameSelector
-    {metricViewName}
     {allTimeRange}
+    {metricViewName}
     on:select-time-range-name={setSelectedTimeRangeName}
     {selectedTimeRangeName}
   />

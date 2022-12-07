@@ -33,7 +33,7 @@
   };
 
   $: if (
-    $metricsInternalRep.getMetricKey("from") === "" ||
+    $metricsInternalRep.getMetricKey("model") === "" ||
     $metricsInternalRep.getMetricKey("timeseries") === ""
   ) {
     buttonDisabled = true;

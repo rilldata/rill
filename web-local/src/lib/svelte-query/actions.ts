@@ -132,7 +132,6 @@ export const useCreateDashboardFromSource = <
     );
     const generatedYAML = generateMeasuresAndDimension(model.entry.model, {
       display_name: `${data.sourceName} dashboard`,
-      description: `A dashboard automatically generated from the ${data.sourceName} source.`,
     });
 
     const response = await runtimeServicePutFileAndReconcile({

@@ -369,7 +369,7 @@ func TestReconcileMetricsView(t *testing.T) {
 	// ignore invalid measure and dimension
 	time.Sleep(time.Millisecond * 10)
 	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`version: 0.0.1
-from: AdBids_model
+model: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -437,7 +437,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 
 	testutils.CreateMetricsView(t, s, &runtimev1.MetricsView{
 		Name:          "AdBids_dashboard",
-		From:          "AdBids_model",
+		Model:         "AdBids_model",
 		TimeDimension: "timestamp",
 		TimeGrains:    []string{"1 day", "1 month"},
 		Dimensions: []*runtimev1.MetricsView_Dimension{
