@@ -6,8 +6,7 @@
   import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithParentClientRect } from "../../../data-graphic/functional-components";
   import WithTween from "../../../data-graphic/functional-components/WithTween.svelte";
-  import { Rug } from "../../../data-graphic/guides";
-  import HistogramPrimitive from "../../../data-graphic/marks/HistogramPrimitive.svelte";
+  import { HistogramPrimitive, Rug } from "../../../data-graphic/marks";
   import SummaryStatistics from "../../../icons/SummaryStatistics.svelte";
   import TopKIcon from "../../../icons/TopK.svelte";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
@@ -129,14 +128,16 @@
           <Rug xAccessor="low" densityAccessor="count" data={rug} />
         </SimpleDataGraphic>
         {#if summaryMode === "summary"}
-          <SummaryNumberPlot
-            min={summary?.min}
-            max={summary?.max}
-            mean={summary?.mean}
-            q25={summary?.q25}
-            q50={summary?.q50}
-            q75={summary?.q75}
-          />
+          <div class="pt-1">
+            <SummaryNumberPlot
+              min={summary?.min}
+              max={summary?.max}
+              mean={summary?.mean}
+              q25={summary?.q25}
+              q50={summary?.q50}
+              q75={summary?.q75}
+            />
+          </div>
         {:else if summaryMode === "topk"}
           <div class="pt-1 px-1">
             <TopK

@@ -12,6 +12,7 @@ type Options struct {
 	ConnectionCacheSize int
 	MetastoreDriver     string
 	MetastoreDSN        string
+	QueryCacheSize      int
 }
 
 type Runtime struct {
@@ -20,6 +21,7 @@ type Runtime struct {
 	logger       *zap.Logger
 	connCache    *connectionCache
 	catalogCache *catalogCache
+	queryCache   *queryCache
 }
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
@@ -45,5 +47,6 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		logger:       logger,
 		connCache:    newConnectionCache(opts.ConnectionCacheSize),
 		catalogCache: newCatalogCache(),
+		queryCache:   newQueryCache(opts.QueryCacheSize),
 	}, nil
 }
