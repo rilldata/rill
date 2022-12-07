@@ -72,9 +72,9 @@ export class MetricsInternalRepresentation {
 
   decorateInternalRepresentation(yamlString: string) {
     const internalRepresentationDoc = parseDocument(yamlString);
-    const numberOfMeasures = (
-      internalRepresentationDoc.get("measures") as Collection
-    ).items.length;
+    const numberOfMeasures =
+      (internalRepresentationDoc.get("measures") as Collection)?.items
+        ?.length || 0;
 
     Array(numberOfMeasures)
       .fill(0)
@@ -99,9 +99,11 @@ export class MetricsInternalRepresentation {
     // remove fields that are not to be sent as yaml
     const temporaryRepresentation = this.internalRepresentationDocument.clone();
 
-    const numberOfMeasures = (
-      temporaryRepresentation.get("measures") as Collection
-    ).items.length;
+    const numberOfMeasures =
+      (temporaryRepresentation.get("measures") as Collection)?.items?.length ||
+      0;
+
+    // if no measures, this block is skipped.
     for (let i = 0; i < numberOfMeasures; i++) {
       const measure = temporaryRepresentation.getIn(["measures", i]) as YAMLMap;
 
@@ -114,7 +116,9 @@ export class MetricsInternalRepresentation {
 
     const numberOfDimensions = (
       temporaryRepresentation.get("dimensions") as Collection
-    ).items.length;
+    )?.items?.length;
+
+    // if no dimensions, this block is skipped.
     for (let i = 0; i < numberOfDimensions; i++) {
       const dimension = temporaryRepresentation.getIn([
         "dimensions",
