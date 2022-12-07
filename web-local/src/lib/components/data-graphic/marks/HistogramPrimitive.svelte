@@ -77,7 +77,7 @@ it to do any automatic binning of data, which is done server-side.
   );
 </script>
 
-{#if $xScale && $yScale}
+{#if d?.length && $xScale && $yScale}
   <defs>
     <linearGradient id="gradient-{markID}" x1="0" x2="0" y1="0" y2="1">
       <stop offset="5%" stop-color={color} />

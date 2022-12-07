@@ -108,6 +108,7 @@ export function barplotPolyline(
   closeBottom = false,
   inflator = 1
 ) {
+  if (!data?.length) return [];
   const path = data
     //.filter((d) => d[yAccessor])
     .reduce((pointsPathString, datum, i) => {
