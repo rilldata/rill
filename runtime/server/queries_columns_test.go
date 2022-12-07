@@ -22,7 +22,7 @@ func TestServer_GetTopK_HugeInt(t *testing.T) {
 		&runtimev1.GetTopKRequest{
 			InstanceId: instanceId,
 			TableName:  "test",
-			ColumnName: "metric",
+			ColumnName: "dim",
 			Agg:        "sum(metric)",
 		},
 	)
