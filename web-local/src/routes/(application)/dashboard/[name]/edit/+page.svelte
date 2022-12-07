@@ -20,8 +20,7 @@
 </script>
 
 <svelte:head>
-  <!-- TODO: add the dashboard name to the title -->
-  <title>Rill Developer</title>
+  <title>Rill Developer | {metricsDefName}</title>
 </svelte:head>
 
 {#if yaml}
