@@ -128,6 +128,6 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE name = ?", name)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
 	return err
 }

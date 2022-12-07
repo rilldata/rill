@@ -3,16 +3,16 @@
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRefreshAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
-    useRuntimeServiceTriggerRefresh,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
-  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
+  import { renameFileArtifact } from "../../../svelte-query/actions";
   import { IconButton } from "../../button";
   import Import from "../../icons/Import.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
@@ -29,7 +29,7 @@
   const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createSource = useRuntimeServicePutFileAndReconcile();
 
   $: getSource = useRuntimeServiceGetCatalogEntry(
@@ -70,7 +70,8 @@
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createSource
+        $createSource,
+        queryClient
       );
       // invalidate the data preview (async)
       // TODO: use new runtime approach

@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/rilldata/rill/cli/cmd"
 )
@@ -12,7 +11,7 @@ import (
 // These are set using -Idflags
 var Version string
 var Commit string
-var BuildDate = time.Now().String()
+var BuildDate string
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)

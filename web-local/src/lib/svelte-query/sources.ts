@@ -17,7 +17,7 @@ export function useSourceNames(instanceId: string) {
     },
     {
       query: {
-        refetchInterval: 1000,
+        // refetchInterval: 1000,
         select: (data) =>
           data.paths
             ?.filter((path) => path.includes("sources/"))

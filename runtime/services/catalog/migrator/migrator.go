@@ -116,7 +116,7 @@ func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.
 }
 
 func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
-	// TODO: do we need too push this to individual implementations?
+	// TODO: do we need to push this to individual implementations?
 	if catalog.Type == drivers.ObjectTypeMetricsView {
 		return nil
 	}

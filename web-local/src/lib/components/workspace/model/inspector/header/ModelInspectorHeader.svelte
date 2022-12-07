@@ -2,10 +2,10 @@
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
+    useRuntimeServiceProfileColumns,
     V1GetTableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -24,8 +24,9 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
-  import { extractSourceTables } from "@rilldata/web-local/lib/util/model-structure";
-  import { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { derived } from "svelte/store";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
@@ -34,7 +35,8 @@
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
-    modelName
+    modelName,
+    { query: { queryKey: `current-model-query-in-inspector-${modelName}` } }
   );
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
@@ -52,21 +54,52 @@
   };
 
   let rollup;
-  let tables;
-  // get source tables?
   let sourceTableReferences;
 
   // get source table references.
   $: if (model?.sql) {
-    sourceTableReferences = extractSourceTables(model.sql);
+    sourceTableReferences = getTableReferences(model.sql);
   }
 
-  // map and filter these source tables.
+  // get the cardinalitie & table information.
+  let cardinalityQueries = [];
+  let sourceProfileColumns = [];
   $: if (sourceTableReferences?.length) {
-    // TODO: get cardinality values
-  } else {
-    tables = [];
+    cardinalityQueries = sourceTableReferences.map((table) => {
+      return useRuntimeServiceGetTableCardinality(
+        $runtimeStore?.instanceId,
+        table.reference,
+        {},
+        { query: { select: (data) => +data?.cardinality || 0 } }
+      );
+    });
+    sourceProfileColumns = sourceTableReferences.map((table) => {
+      return useRuntimeServiceProfileColumns(
+        $runtimeStore?.instanceId,
+        table.reference,
+        {},
+        { query: { select: (data) => data?.profileColumns?.length || 0 } }
+      );
+    });
   }
+
+  // get input table cardinalities. We use this to determine the rollup factor.
+  $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {
+    return $cardinalities
+      .map((c: { data: number }) => c.data)
+      .reduce((total: number, cardinality: number) => total + cardinality, 0);
+  });
+
+  // get all source column amounts. We will use this determine the number of dropped columns.
+  $: sourceColumns = derived(
+    sourceProfileColumns,
+    ($columns) => {
+      return $columns
+        .map((col) => col.data)
+        .reduce((total: number, columns: number) => columns + total, 0);
+    },
+    0
+  );
 
   let modelCardinalityQuery: UseQueryStoreResult<V1GetTableCardinalityResponse>;
   $: if (model?.name)
@@ -76,34 +109,20 @@
     );
   $: outputRowCardinalityValue = $modelCardinalityQuery?.data?.cardinality;
 
-  let inputRowCardinalityValue;
-  $: if (tables?.length)
-    inputRowCardinalityValue = tables.reduce(
-      (acc, v) => acc + v.cardinality,
-      0
-    );
-
   $: if (
-    (inputRowCardinalityValue !== undefined &&
+    ($inputCardinalities !== undefined &&
       outputRowCardinalityValue !== undefined) ||
-    inputRowCardinalityValue
+    $inputCardinalities
   ) {
-    rollup = outputRowCardinalityValue / inputRowCardinalityValue;
+    rollup = outputRowCardinalityValue / $inputCardinalities;
   }
 
   function validRollup(number) {
     return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
   }
 
-  // compute column delta
-  let inputColumnNum;
-  $: if (tables?.length)
-    inputColumnNum = tables.reduce(
-      (acc, v: DerivedTableEntity) => acc + v.profile.length,
-      0
-    );
   $: outputColumnNum = model?.schema?.fields?.length ?? 0;
-  $: columnDelta = outputColumnNum - inputColumnNum;
+  $: columnDelta = outputColumnNum - $sourceColumns;
 
   $: modelHasError = !!modelError;
 </script>
@@ -208,9 +227,9 @@
       class:italic={modelHasError}
       class:text-gray-500={modelHasError}
     >
-      {#if inputRowCardinalityValue > 0}
-        {formatInteger(~~outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
-      {:else if inputRowCardinalityValue === 0}
+      {#if $inputCardinalities > 0}
+        {formatInteger(~~outputRowCardinalityValue)} row{#if $inputCardinalities !== 1}s{/if}
+      {:else if $inputCardinalities === 0}
         no rows selected
       {:else}
         &nbsp;

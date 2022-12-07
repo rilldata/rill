@@ -1,10 +1,12 @@
 <script lang="ts">
+  import type { SelectionRange } from "@codemirror/state";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -14,8 +16,12 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import {
+    invalidateAfterReconcile,
+    invalidationForProfileQueries,
+  } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -47,15 +53,11 @@
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
 
+  let sanitizedQuery: string;
+  $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
+
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
-
-  function invalidateForModel(queryHash, modelName) {
-    const r = new RegExp(
-      `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${modelName}`
-    );
-    return r.test(queryHash);
-  }
 
   function formatModelName(str) {
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
@@ -101,7 +103,7 @@
   ) as Writable<number>;
 
   const inspectorVisibilityTween = getContext(
-    "ril:app:inspector-visibility-tween"
+    "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
 
   const navigationWidth = getContext(
@@ -113,13 +115,19 @@
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
-    // cancel all existing analytical queries currently running.
-    await queryClient.cancelQueries({
-      fetching: true,
-      predicate: (query) => {
-        return invalidateForModel(query.queryHash, modelName);
-      },
-    });
+    const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
+
+    if (hasChanged) {
+      httpRequestQueue.removeByName(modelName);
+      // cancel all existing analytical queries currently running.
+      await queryClient.cancelQueries({
+        fetching: true,
+        predicate: (query) => {
+          return invalidationForProfileQueries(query.queryHash, modelName);
+        },
+      });
+    }
+
     // TODO: why is the response type not present?
     const resp = (await $updateModel.mutateAsync({
       data: {
@@ -128,17 +136,26 @@
         blob: content,
       },
     })) as V1PutFileAndReconcileResponse;
+
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
-    if (!resp.errors.length) {
-      // re-fetch existing finished queries
-      await queryClient.resetQueries({
-        predicate: (query) => {
-          return invalidateForModel(query.queryHash, modelName);
-        },
-      });
+    if (!resp.errors.length && hasChanged) {
+      sanitizedQuery = sanitizeQuery(content);
+    } else {
+      resp.affectedPaths = resp.affectedPaths.filter(
+        (affectedPath) => affectedPath !== modelPath
+      );
     }
+    return invalidateAfterReconcile(
+      queryClient,
+      $runtimeStore.instanceId,
+      resp
+    );
   }
+
+  $: selections = $queryHighlight?.map((selection) => ({
+    from: selection.referenceIndex,
+    to: selection.referenceIndex + selection.reference.length,
+  })) as SelectionRange[];
 </script>
 
 <svelte:window bind:innerHeight />
@@ -158,14 +175,13 @@
           <Editor
             {modelName}
             content={modelSql}
-            selections={$queryHighlight}
+            {selections}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
         {/key}
       </div>
     {/if}
   </div>
-
   <Portal target=".body">
     <div
       class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"

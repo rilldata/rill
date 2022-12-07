@@ -109,6 +109,10 @@ func TestReconcile(t *testing.T) {
 }
 
 func TestReconcileRenames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("renames: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -128,23 +132,44 @@ func TestReconcileRenames(t *testing.T) {
 
 			// write to a new file (should rename)
 			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsNewRepoPath)
-			testutils.CreateModel(t, s, "AdBids_model", "select * from AdBidsNew", AdBidsModelRepoPath)
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsNewAffectedPaths)
+			testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsNewAffectedPaths)
 			testutils.AssertTableAbsence(t, s, "AdBids")
 			testutils.AssertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
-			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
-			// write a new file with same name
-			testutils.CreateSource(t, s, "AdBidsNew", AdImpressionsCsvPath, AdBidsRepoPath)
+			// write to the previous file (should rename back to original)
+			testutils.RenameFile(t, dir, AdBidsNewRepoPath, AdBidsRepoPath)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			// name is derived from file path, so there is no error here and AdBids is added
-			testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsRepoPath})
+			testutils.AssertMigration(t, result, 0, 2, 1, 0, AdBidsAffectedPaths)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
-			testutils.AssertTable(t, s, "AdBidsNew", AdBidsNewRepoPath)
+			testutils.AssertTableAbsence(t, s, "AdBidsNew")
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			AdBidsCapsRepoPath := "/sources/ADBIDS.yaml"
+			AdBidsCapsAffectedPaths := []string{AdBidsCapsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+			// write to a new file with same name and different case
+			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsCapsRepoPath)
+			if len(tt.config.ChangedPaths) > 0 {
+				tt.config.ChangedPaths = append(tt.config.ChangedPaths, AdBidsCapsRepoPath)
+			}
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectedPaths)
+			testutils.AssertTable(t, s, "ADBIDS", AdBidsCapsRepoPath)
+			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			// update with same content
+			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+				ChangedPaths: []string{AdBidsCapsRepoPath},
+				ForcedPaths:  []string{AdBidsCapsRepoPath},
+			})
+			require.NoError(t, err)
+			// ForcedPaths updates all dependant items
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectedPaths)
 		})
 	}
 }
@@ -266,10 +291,22 @@ func TestModelRename(t *testing.T) {
 func TestModelVariations(t *testing.T) {
 	s, _ := initBasicService(t)
 
+	// same query with spaces
+	testutils.CreateModel(t, s, "AdBids_model",
+		`
+-- this is a comment
+select id,   timestamp,publisher, domain,
+bid_price from AdBids;
+`, AdBidsModelRepoPath)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// no change
+	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
+
 	// update to invalid model
 	testutils.CreateModel(t, s, "AdBids_model",
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsModelRepoPath)
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsDashboardAffectedPaths)
 	testutils.AssertTableAbsence(t, s, "AdBids_model")
@@ -281,6 +318,33 @@ func TestModelVariations(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
 	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
+}
+
+func TestModelWithMissingSource(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	testutils.CreateModel(t, s, "AdBids_model", "select * from AdImpressions", AdBidsSourceModelRepoPath)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
+
+	// update with a CTE with missing alias but valid and existing source
+	testutils.CreateModel(t, s, "AdBids_model",
+		"with CTEAlias as (select * from AdBids) select * from CTEAlias", AdBidsSourceModelRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsSourceModelRepoPath})
+
+	// update source with same content
+	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		// force update to test DAG
+		ForcedPaths: []string{AdBidsRepoPath},
+	})
+	require.NoError(t, err)
+	// changes propagate to model
+	testutils.AssertMigration(t, result, 0, 0, 4, 0,
+		append([]string{AdBidsSourceModelRepoPath}, AdBidsAffectedPaths...))
 }
 
 func TestReconcileMetricsView(t *testing.T) {

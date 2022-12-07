@@ -1,42 +1,87 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
-  import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTableCardinality,
+    useRuntimeServiceListCatalogEntries,
+  } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
+  import * as classes from "@rilldata/web-local/lib/util/component-classes";
+  import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
+  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
+  import { getContext } from "svelte";
+  import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
   export let modelName: string;
 
-  // FIXME: re-integrate
-  // const queryHighlight = getContext("rill:app:query-highlight");
+  const queryHighlight = getContext("rill:app:query-highlight");
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore?.instanceId,
     modelName
   );
+  let entry;
+  // refresh entry value only if the data has changed
+  $: entry = $getModel?.data?.entry || entry;
 
-  $: entry = $getModel?.data?.entry;
+  $: references = getTableReferences(entry?.model?.sql);
+  $: getAllSources = useRuntimeServiceListCatalogEntries(
+    $runtimeStore?.instanceId,
+    { type: "OBJECT_TYPE_SOURCE" }
+  );
 
+  $: viableSources = derived(
+    $getAllSources?.data?.entries
+      ?.filter((entry) => {
+        return references.some((ref) => ref.reference === entry.name);
+      })
+      .map((entry) => {
+        return [entry, references.find((ref) => ref.reference === entry.name)];
+      })
+      .map(([entry, reference]) => {
+        return derived(
+          [
+            writable(entry),
+            writable(reference),
+            useRuntimeServiceGetTableCardinality(
+              $runtimeStore?.instanceId,
+              entry.name
+            ),
+          ],
+          ([entry, reference, $cardinality]) => {
+            return {
+              ...entry,
+              ...reference,
+              totalRows: +$cardinality?.data?.cardinality,
+            };
+          }
+        );
+      }),
+    ($row) => $row
+  );
   let showColumns = true;
 
   // toggle state for inspector sections
   let showSourceTables = true;
 
-  // function focus(reference) {
-  //   return () => {
-  //     // FIXME
-  //     // if (!currentDerivedModel?.error && reference) {
-  //     //   queryHighlight.set(reference.tables);
-  //     // }
-  //   };
-  // }
-  // function blur() {
-  //   queryHighlight.set(undefined);
-  // }
+  function focus(reference) {
+    return () => {
+      // FIXME
+      if (references.length) {
+        queryHighlight.set([reference]);
+      }
+    };
+  }
+  function blur() {
+    queryHighlight.set(undefined);
+  }
 
   // FIXME
-  // let modelHasError = false;
+  let modelHasError = false;
 </script>
 
 <div class="model-profile">
@@ -56,60 +101,41 @@
           transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
           class="mt-1"
         >
-          <!-- FIXME -->
-          <!-- {#each sourceTableReferences as table}
-            {@const persistentTableRef = $persistentTableStore.entities.find(
-              (t) => table.name === t.tableName
-            )}
-            {@const derivedTableRef = $derivedTableStore.entities.find(
-              (derivedTable) => derivedTable?.id === persistentTableRef?.id
-            )}
-            {@const correspondingTableCardinality =
-              derivedTableRef?.cardinality}
+          {#if viableSources && $viableSources}
+            {#each $viableSources as table (table.name)}
+              <WithModelResultTooltip {modelHasError}>
+                <div
+                  class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
+                  style:grid-template-columns="auto max-content"
+                  on:focus={focus(table)}
+                  on:mouseover={focus(table)}
+                  on:mouseleave={blur}
+                  on:blur={blur}
+                  class:text-gray-500={modelHasError}
+                  class:italic={modelHasError}
+                >
+                  <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+                    {table.name}
+                  </div>
 
-            {@const sourceName =
-              persistentTableRef?.tableName || "unknown source"}
-
-            {@const sourceIsDefined = !!persistentTableRef?.tableName}
-
-            <WithModelResultTooltip {modelHasError}>
-              <div
-                class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
-                style:grid-template-columns="auto max-content"
-                on:focus={focus(table)}
-                on:mouseover={focus(table)}
-                on:mouseleave={blur}
-                on:blur={blur}
-                class:text-gray-500={modelHasError}
-                class:italic={modelHasError}
-              >
-                <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                  {sourceName}
+                  <div class="text-gray-500 italic">
+                    {#if table.totalRows}
+                      {`${formatInteger(table.totalRows)} rows` || ""}
+                    {/if}
+                  </div>
                 </div>
 
-                <div class="text-gray-500 italic">
-                  {#if correspondingTableCardinality}
-                    {`${formatInteger(correspondingTableCardinality)} rows` ||
-                      ""}
-                  {/if}
-                </div>
-              </div>
+                <svelte:fragment slot="tooltip-title"
+                  >{table.name}</svelte:fragment
+                >
+                <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
 
-              <svelte:fragment slot="tooltip-title"
-                >{sourceName}</svelte:fragment
-              >
-              <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
-
-              <svelte:fragment slot="tooltip-description">
-                {#if sourceIsDefined}
-                  This source table is referenced in the model query.
-                {:else}
-                  Data source is not known. This is likely due to a source name
-                  changing.
-                {/if}
-              </svelte:fragment>
-            </WithModelResultTooltip>
-          {/each} -->
+                <svelte:fragment slot="tooltip-description">
+                  This source table is referenced in the model query
+                </svelte:fragment>
+              </WithModelResultTooltip>
+            {/each}
+          {/if}
         </div>
       {/if}
     </div>
@@ -128,13 +154,13 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          {#key entry?.model?.sql}
-            <ColumnProfile
-              key={entry?.model?.sql}
-              objectName={entry?.model?.name}
-              indentLevel={0}
-            />
-          {/key}
+          <!-- {#key entry?.model?.sql} -->
+          <ColumnProfile
+            key={entry?.model?.sql}
+            objectName={entry?.model?.name}
+            indentLevel={0}
+          />
+          <!-- {/key} -->
         </div>
       {/if}
     </div>
