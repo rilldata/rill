@@ -68,8 +68,6 @@
     getFileFromName(sourceName, EntityType.Table)
   );
 
-  $: console.log(source, schemaHasTimestampColumn(source?.schema));
-
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: modelNames = useModelNames($runtimeStore.instanceId);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
