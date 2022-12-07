@@ -9,6 +9,9 @@ export type RuntimeServiceReconcileBody = {
 reconciliation to execute faster by not scanning all code artifacts for changes. */
   changedPaths?: string[];
   dry?: boolean;
+  /** Forced paths is used to force run reconcile on certain files.
+This is mainly used by UI to reconcile paths missing in catalog and get errors if any. */
+  forcedPaths?: string[];
   strict?: boolean;
 };
 
