@@ -15,10 +15,10 @@ see more button
   import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
 
+  import { createShiftClickAction } from "../../../../util/shift-click-action";
+  import { notifications } from "../../../notifications";
   import Shortcut from "../../../tooltip/Shortcut.svelte";
   import StackingWord from "../../../tooltip/StackingWord.svelte";
-  import { createShiftClickAction } from "../../../../util/shift-click-action";
-  import notificationStore from "../../../notifications";
 
   export let values;
   export let activeValues: Array<unknown>;
@@ -59,7 +59,7 @@ see more button
     }}
     on:shift-click={async () => {
       await navigator.clipboard.writeText(value);
-      notificationStore.send({
+      notifications.send({
         message: `copied column name "${value}" to clipboard`,
       });
     }}
@@ -82,7 +82,7 @@ see more button
       <svelte:fragment slot="tooltip">
         <TooltipTitle>
           <svelte:fragment slot="name">
-            `{label}` is {value}
+            {label}
           </svelte:fragment>
         </TooltipTitle>
 
@@ -94,7 +94,7 @@ see more button
               {excluded ? "in" : "from"} output
             </div>
           {:else}
-            <div>
+            <div class="text-ellipsis overflow-hidden whitespace-nowrap">
               filter {filterExcludeMode ? "out" : "on"}
               <span class="italic"
                 >{label?.length > TOOLTIP_STRING_LIMIT
