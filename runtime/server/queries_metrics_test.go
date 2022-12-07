@@ -378,6 +378,33 @@ func TestServer_MetricsViewToplist(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
 }
 
+func TestServer_MetricsViewToplist_HugeInt(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "id",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name: "measure_2",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[1].Fields))
+
+	require.Equal(t, "170141183460469231731687303715884105727", tr.Data[0].Fields["Id"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, "170141183460469231731687303715884105726", tr.Data[1].Fields["Id"].GetStringValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
 func TestServer_MetricsViewToplist_asc(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
