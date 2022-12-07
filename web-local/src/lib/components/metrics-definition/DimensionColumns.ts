@@ -7,7 +7,7 @@ import {
 export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
-      name: "labelSingle",
+      name: "label",
       // FIXME: should this be "label (single)" when we add the plural back in?
       label: "label",
       headerTooltip: "a human readable name for this dimension (optional)",
@@ -15,7 +15,7 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
     },
 
     {
-      name: "dimensionColumn",
+      name: "property",
       label: "dimension column",
       headerTooltip:
         "a categorical column from the data model that this metrics set is based on",

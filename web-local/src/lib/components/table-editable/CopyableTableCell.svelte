@@ -1,10 +1,10 @@
 <script lang="ts">
-  import FormattedDataType from "../data-types/FormattedDataType.svelte";
+  import { fade } from "svelte/transition";
   import { INTERVALS, TIMESTAMPS } from "../../duckdb-data-types";
   import { formatDataType } from "../../util/formatters";
   import { createShiftClickAction } from "../../util/shift-click-action";
-  import { fade } from "svelte/transition";
-  import { createNotificationStore as notificationStore } from "../notifications";
+  import FormattedDataType from "../data-types/FormattedDataType.svelte";
+  import { notifications } from "../notifications";
   import type { ColumnConfig } from "./ColumnConfig";
 
   const { shiftClickAction } = createShiftClickAction();
@@ -25,7 +25,7 @@
       exportedValue = `TIMESTAMP '${value}'`;
     }
     await navigator.clipboard.writeText(exportedValue);
-    notificationStore.send({ message: `copied value to clipboard` });
+    notifications.send({ message: `copied value to clipboard` });
     // update this to set the active animation in the tooltip text
   }}
 >

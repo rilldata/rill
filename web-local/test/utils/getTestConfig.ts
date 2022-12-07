@@ -9,15 +9,18 @@ export function getTestConfig(
     profileWithUpdate,
     socketPort,
     autoSync,
+    serveStaticFile,
   }: {
     profileWithUpdate?: boolean;
     socketPort?: number;
     autoSync?: boolean;
+    serveStaticFile?: boolean;
   } = {}
 ) {
   profileWithUpdate ??= true;
   socketPort ??= 8080;
   autoSync ??= true;
+  serveStaticFile ??= false;
 
   return new RootConfig({
     database: new DatabaseConfig({
@@ -25,7 +28,7 @@ export function getTestConfig(
       spawnRuntime: false,
     }),
     state: new StateConfig({ autoSync: autoSync, syncInterval: 50 }),
-    server: new ServerConfig({ serverPort: socketPort }),
+    server: new ServerConfig({ serverPort: socketPort, serveStaticFile }),
     projectFolder,
     profileWithUpdate,
   });

@@ -47,10 +47,11 @@ export class StartCommand extends DataModelerCliCommand {
         )
       ),
       this.dataModelerStateService,
-      this.notificationService,
-      this.metricsService
+      this.notificationService
     ).init();
-    execSync(`open ${this.config.server.serverUrl}`);
+    execSync(`open ${this.config.server.serverUrl} | true`, {
+      stdio: "ignore",
+    });
   }
 
   protected async teardown(): Promise<void> {

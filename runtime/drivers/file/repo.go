@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -27,7 +28,7 @@ func (c *connection) DSN() string {
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, repoID string, glob string) ([]string, error) {
+func (c *connection) ListRecursive(ctx context.Context, instID string, glob string) ([]string, error) {
 	// Check that folder hasn't been moved
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -62,7 +63,7 @@ func (c *connection) ListRecursive(ctx context.Context, repoID string, glob stri
 }
 
 // Get implements drivers.RepoStore
-func (c *connection) Get(ctx context.Context, repoID string, filePath string) (string, error) {
+func (c *connection) Get(ctx context.Context, instID string, filePath string) (string, error) {
 	filePath = filepath.Join(c.root, filePath)
 
 	b, err := os.ReadFile(filePath)
@@ -74,7 +75,7 @@ func (c *connection) Get(ctx context.Context, repoID string, filePath string) (s
 }
 
 // Stat implements drivers.RepoStore
-func (c *connection) Stat(ctx context.Context, repoID string, filePath string) (*drivers.RepoObjectStat, error) {
+func (c *connection) Stat(ctx context.Context, instID string, filePath string) (*drivers.RepoObjectStat, error) {
 	filePath = filepath.Join(c.root, filePath)
 
 	info, err := os.Stat(filePath)
@@ -87,8 +88,8 @@ func (c *connection) Stat(ctx context.Context, repoID string, filePath string) (
 	}, nil
 }
 
-// PutBlob implements drivers.RepoStore
-func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string, blob string) error {
+// Put implements drivers.RepoStore
+func (c *connection) Put(ctx context.Context, instID string, filePath string, reader io.Reader) error {
 	filePath = filepath.Join(c.root, filePath)
 
 	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
@@ -96,7 +97,13 @@ func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string
 		return err
 	}
 
-	err = os.WriteFile(filePath, []byte(blob), 0644)
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, reader)
 	if err != nil {
 		return err
 	}
@@ -104,42 +111,23 @@ func (c *connection) PutBlob(ctx context.Context, repoID string, filePath string
 	return nil
 }
 
-// PutReader implements drivers.RepoStore
-func (c *connection) PutReader(ctx context.Context, repoID string, filePath string, reader io.Reader) (string, error) {
-	filePath = filepath.Join(c.root, filePath)
-
-	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
-	f, err := os.Create(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, reader)
-	if err != nil {
-		return "", err
-	}
-
-	return filePath, nil
-}
-
 // Rename implements drivers.RepoStore
-func (c *connection) Rename(ctx context.Context, repoID string, from string, filePath string) error {
-	filePath = path.Join(c.root, filePath)
-	from = path.Join(c.root, from)
-	err := os.Rename(from, filePath)
+func (c *connection) Rename(ctx context.Context, instID string, fromPath string, toPath string) error {
+	toPath = path.Join(c.root, toPath)
+
+	fromPath = path.Join(c.root, fromPath)
+	if _, err := os.Stat(toPath); strings.ToLower(fromPath) != strings.ToLower(toPath) && err == nil {
+		return drivers.ErrFileAlreadyExists
+	}
+	err := os.Rename(fromPath, toPath)
 	if err != nil {
 		return err
 	}
-	return os.Chtimes(filePath, time.Now(), time.Now())
+	return os.Chtimes(toPath, time.Now(), time.Now())
 }
 
 // Delete implements drivers.RepoStore
-func (c *connection) Delete(ctx context.Context, repoID string, filePath string) error {
+func (c *connection) Delete(ctx context.Context, instID string, filePath string) error {
 	filePath = filepath.Join(c.root, filePath)
 	return os.Remove(filePath)
 }

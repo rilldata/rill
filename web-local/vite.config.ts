@@ -21,6 +21,13 @@ try {
   console.log("Could not get commit hash - most likely not in a git repo");
 }
 
+let runtimeUrl = "";
+try {
+  runtimeUrl = process.env.RILL_DEV ? "http://localhost:9009" : "";
+} catch (e) {
+  console.error(e);
+}
+
 const config = defineConfig({
   resolve: {
     alias: {
@@ -41,6 +48,7 @@ const config = defineConfig({
   define: {
     RILL_VERSION: `"${pkg.version}"`,
     RILL_COMMIT: `"${commitHash}"`,
+    RILL_RUNTIME_URL: `"${runtimeUrl}"`,
   },
   plugins: [sveltekit()],
 });

@@ -1,35 +1,34 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogObject,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { getLabel } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import {
-    dataModelerService,
-    runtimeStore,
-  } from "../../application-state-stores/application-store";
-  import { updateMetricsDefsWrapperApi } from "../../redux-store/metrics-definition/metrics-definition-apis";
-  import { store } from "../../redux-store/store-root";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import Input from "../forms/Input.svelte";
   import SubmissionError from "../forms/SubmissionError.svelte";
   import { Dialog } from "../modal/index";
-  import notifications from "../notifications";
-  export let entityId = null;
 
   export let closeModal: () => void;
   export let entityType: EntityType;
   export let currentAssetName: string;
 
+  const queryClient = useQueryClient();
+
   let error: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getCatalog = useRuntimeServiceGetCatalogObject(
+  $: getCatalog = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentAssetName
   );
-  const renameSource = useRuntimeServiceMigrateSingle();
+
+  const renameAsset = useRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -45,91 +44,22 @@
         .required("Enter a name!")
         .notOneOf([currentAssetName], `That's the current name!`),
     }),
-    onSubmit: (values) => {
-      // TODO: remove this branching logic once we have a unified backend for all entities
-      switch (entityType) {
-        case EntityType.Table: {
-          const currentSql = $getCatalog.data.object.source.sql;
-          const newSql = currentSql.replace(
-            `CREATE SOURCE ${currentAssetName}`,
-            `CREATE SOURCE ${values.newName}`
-          );
-          dataModelerService.dispatch("updateTableName", [
-            entityId,
-            values.newName,
-          ]);
-          $renameSource.mutate(
-            {
-              instanceId: runtimeInstanceId,
-              data: {
-                sql: newSql,
-                renameFrom: currentAssetName,
-              },
-            },
-            {
-              onSuccess: () => {
-                closeModal();
-                notifications.send({
-                  message: `renamed ${entityLabel} ${currentAssetName} to ${values.newName}`,
-                });
-              },
-              onError: (err) => {
-                error = err.response.data.message;
-                // reset the new table name
-                dataModelerService.dispatch("updateTableName", [entityId, ""]);
-              },
-            }
-          );
-          break;
-        }
-        case EntityType.Model: {
-          dataModelerService
-            .dispatch("updateModelName", [entityId, values.newName])
-            .then((response) => {
-              if (response.status === 0) {
-                notifications.send({ message: response.messages[0].message });
-                closeModal();
-              } else if (response.status === 1) {
-                error = response.messages[0].message;
-              }
-            });
-          break;
-        }
-        case EntityType.MetricsDefinition: {
-          store.dispatch(
-            updateMetricsDefsWrapperApi({
-              id: entityId,
-              changes: { metricDefLabel: values.newName },
-            })
-          );
-          closeModal();
-          notifications.send({
-            message: `dashboard renamed to ${values.newName}`,
-          });
-          break;
-        }
-        default:
-          throw new Error(
-            "entityType must be either 'Table', 'Model', or 'MetricsDefinition'"
-          );
+    onSubmit: async (values) => {
+      try {
+        await renameFileArtifact(
+          queryClient,
+          runtimeInstanceId,
+          currentAssetName,
+          values.newName,
+          entityType,
+          $renameAsset
+        );
+        closeModal();
+      } catch (err) {
+        error = err.response.data.message;
       }
     },
   });
-
-  function getLabel(entityType: EntityType) {
-    switch (entityType) {
-      case EntityType.Table:
-        return "source";
-      case EntityType.Model:
-        return "model";
-      case EntityType.MetricsDefinition:
-        return "dashboard";
-      default:
-        throw new Error(
-          "entityType must be either 'Table', 'Model', or 'MetricsDefinition'"
-        );
-    }
-  }
 
   $: entityLabel = getLabel(entityType);
 </script>

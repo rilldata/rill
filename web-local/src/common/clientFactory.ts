@@ -7,8 +7,6 @@ import { DerivedTableEntityService } from "./data-modeler-state-service/entity-s
 import { PersistentModelEntityService } from "./data-modeler-state-service/entity-state-service/PersistentModelEntityService";
 import { DerivedModelEntityService } from "./data-modeler-state-service/entity-state-service/DerivedModelEntityService";
 import { ApplicationStateService } from "./data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import type { MetricsService } from "./metrics-service/MetricsService";
-import { MetricsSocketService } from "./socket/MetricsSocketService";
 import { MetricsDefinitionStateService } from "./data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
 import { MeasureDefinitionStateService } from "./data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
 import { DimensionDefinitionStateService } from "./data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
@@ -31,16 +29,13 @@ export function dataModelerStateServiceClientFactory() {
 
 export function clientFactory(config: RootConfig): {
   dataModelerStateService: DataModelerStateService;
-  metricsService: MetricsService;
   dataModelerService: DataModelerService;
 } {
   const dataModelerStateService = dataModelerStateServiceClientFactory();
-  const metricsService = new MetricsSocketService(config);
   const dataModelerService = new DataModelerSocketService(
     dataModelerStateService,
-    metricsService,
     config.server
   );
 
-  return { dataModelerStateService, metricsService, dataModelerService };
+  return { dataModelerStateService, dataModelerService };
 }

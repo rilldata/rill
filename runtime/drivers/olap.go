@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 )
 
@@ -14,6 +14,7 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries
 type OLAPStore interface {
+	Dialect() Dialect
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
 	InformationSchema() InformationSchema
@@ -30,7 +31,7 @@ type Statement struct {
 // Result wraps the results of query
 type Result struct {
 	*sqlx.Rows
-	Schema *api.StructType
+	Schema *runtimev1.StructType
 }
 
 // InformationSchema contains information about existing tables in an OLAP driver
@@ -44,5 +45,27 @@ type Table struct {
 	Database       string
 	DatabaseSchema string
 	Name           string
-	Schema         *api.StructType
+	Schema         *runtimev1.StructType
+}
+
+// Dialect enumerates OLAP query languages
+type Dialect int
+
+const (
+	DialectUnspecified Dialect = iota
+	DialectDuckDB
+	DialectDruid
+)
+
+func (d Dialect) String() string {
+	switch d {
+	case DialectUnspecified:
+		return ""
+	case DialectDuckDB:
+		return "duckdb"
+	case DialectDruid:
+		return "druid"
+	default:
+		panic("not implemented")
+	}
 }

@@ -1,33 +1,29 @@
-# runtime
+# `runtime`
 
-The runtime is our data plane. It connects to data infrastructure and is will be responsible for transpiling queries, applying migrations, implementing connectors, enforcing row-based access policies, scheduling tasks, triggering alerts, and much more.
+The runtime a data infrastructure proxy and orchestrator – our data plane. It connects to data infrastructure and is or will be responsible for transpiling queries, parsing code artifacts, reconciling infra state, implementing connectors, enforcing (row-based) access policies, scheduling tasks, triggering alerts, and much more.
 
-It's designed as a stand-alone component that can be embedded in local applications (as it is into Rill Developer) or deployed in a cloud environment.
+It's designed as a modular component that can be embedded in local applications (as it is into Rill Developer) or deployed stand-alone in a cloud environment.
 
 ## Code structure
 
-- `api` describes the runtime's API using Protocol Buffers (see `runtime.proto`) and generates gRPC and OpenAPI interfaces for it.
 - `cmd` contains a `main.go` file that starts the runtime as a standalone server.
 - `connectors` contains connector implementations.
-- `drivers` contains interfaces and drivers for all the data infrastructure (and other persistant stores) we support.
+- `drivers` contains interfaces and drivers for external data infrastructure that the runtime interfaces with (like DuckDB and Druid).
 - `pkg` contains utility libraries.
-- `server` contains a server that implements the APIs described in `api`.
+- `queries` contains pre-defined analytical queries that the runtime can serve (used for profiling and dashboards).
+- `server` contains a server that implements the runtime's APIs.
 - `sql` contains bindings for the SQL native library (see the `sql` folder at the repo root for details).
+- `testruntime` contains helper functions for initializing a test runtime with test data.
 
 ## How to test and run
 
-The runtime relies on the SQL native library being present in `runtime/sql/deps`. We don't check that into the repo, so you must manually download it by running:
-```bash
-go generate ./runtime/sql
-```
-
-Now, you can run and test the runtime as any other Go application. Start the server using:
+You can run and test the runtime as any other Go application. Start the server using:
 ```bash
 go run ./runtime/cmd
 ```
 Or run all tests using:
 ```bash
-go test ./...
+go test ./runtime/...
 ```
 
 ## Configuration
@@ -45,48 +41,70 @@ RILL_RUNTIME_DATABASE_URL=":memory:"
 
 ## Adding a new endpoint
 
-To add a new endpoint:
-1. Describe the endpoint in `runtime/api/runtime.proto`
-2. Re-generate gRPC and OpenAPI interfaces by running `go generate ./runtime/api`
-3. Copy the new handler signature from the `RuntimeServiceServer` interface in `runtime/api/runtime_grpc_pb.go`
-4. Paste the handler signature and implement it in a file in `./runtime/server`
+We define our APIs using gRPC and use [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) to map the RPCs to a RESTful API. See `proto/README.md` for details.
 
-## Example: Creating an instance and ingesting a source
+To add a new endpoint:
+1. Describe the endpoint in `proto/rill/runtime/v1/api.proto`
+2. Re-generate gRPC and OpenAPI interfaces by running `make proto.generate`
+3. Copy the new handler signature from the `RuntimeServiceServer` interface in `proto/gen/rill/runtime/v1/api_grpc_pb.go`
+4. Paste the handler signature and implement it in a relevant file in `runtime/server/`
+
+## Adding a new analytical query endpoint
+
+1. Add a new endpoint for the query by following the steps in the section above ("Adding a new endpoint")
+2. Implement the query in `runtime/queries` by following the instructions in `runtime/queries/README.md`
+
+## Example: Creating an instance and rehydrating from code artifacts
 
 ```bash
 # Start runtime
 go run ./runtime/cmd/main.go
 
-# Create instance (copy the resulting instance ID into the following queries)
-curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' --data '{ "driver": "duckdb", "dsn": "test.db?access_mode=read_write", "exposed": true, "embed_catalog": true, "instance_id": "default" }'
+# Create instance
+curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' \
+  --data '{
+    "instance_id": "default",
+    "olap_driver": "duckdb",
+    "olap_dsn": "test.db",
+    "repo_driver": "file",
+    "repo_dsn": "./examples/ad_bids",
+    "embed_catalog": true
+}'
 
-# Create table
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "create table foo(x int)"}'
-
-# Insert data into table
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "insert into foo(x) values (10,), (20,), (30,)"}'
+# Apply code artifacts
+curl --request POST --url http://localhost:8080/v1/instances/default/reconcile --header 'Content-Type: application/json'
 
 # Query data
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "select * from foo"}'
+curl --request POST --url http://localhost:8080/v1/instances/default/query --header 'Content-Type: application/json' \
+  --data '{ "sql": "select * from ad_bids limit 10" }'
+
+# Query explore API
+curl --request POST --url http://localhost:8080/v1/instances/default/metrics-views/ad_bids_metrics/toplist/domain --header 'Content-Type: application/json' \
+  --data '{
+    "measure_names": ["measure_0"],
+    "limit": 10,
+    "sort": [{ "name": "measure_0", "ascending": false }]
+}'
+
+# Query profiling API
+curl --request GET --url http://localhost:8080/v1/instances/default/null-count/ad_bids/publisher
+
+# Get catalog info
+curl --request GET --url http://localhost:8080/v1/instances/default/catalog
+
+# Refresh source named "ad_bids_source"
+curl --request POST --url http://localhost:8080/v1/instances/default/catalog/ad_bids_source/refresh
 
 # Get available connectors
 curl --request GET   --url http://localhost:8080/v1/connectors/meta
 
-# Create a source
-curl --request POST  --url http://localhost:8080/v1/instances/default/migrate/single  --header 'Content-Type: application/json'  --data "{\"sql\": \"create source bar with connector = 'file', path = './web-local/test/data/AdBids.csv' \"}"
+# List files in project
+curl --request GET --url http://localhost:8080/v1/instances/default/files
 
-# Select from source
-curl --request POST  --url http://localhost:8080/v1/instances/default/query  --header 'Content-Type: application/json'  --data '{"sql": "select * from bar limit 100"}'
+# Fetch file in project
+curl --request GET --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql
 
-# Get info about all sources in catalog
-curl --request GET   --url http://localhost:8080/v1/instances/default/catalog
-
-# Get info about source named "bar" in catalog
-curl --request GET   --url http://localhost:8080/v1/instances/default/catalog/bar
-
-# Refresh source named "bar"
-curl --request POST --url http://localhost:8080/v1/instances/default/catalog/bar/refresh
-
-# Delete source named "bar"
-curl --request POST  --url http://localhost:8080/v1/instances/default/migrate/single/delete  --header 'Content-Type: application/json'  --data '{ "name": "bar"}'
+# Update file in project
+curl --request POST --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql --header 'Content-Type: application/json' \
+  --data '{ "blob": "select id, timestamp, publisher, domain, bid_price from ad_bids_source" }'
 ```

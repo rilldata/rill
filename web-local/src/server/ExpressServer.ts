@@ -1,7 +1,6 @@
 import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
 import type { DataModelerService } from "@rilldata/web-local/common/data-modeler-service/DataModelerService";
 import type { DataModelerStateService } from "@rilldata/web-local/common/data-modeler-state-service/DataModelerStateService";
-import type { MetricsService } from "@rilldata/web-local/common/metrics-service/MetricsService";
 import type { RillDeveloperService } from "@rilldata/web-local/common/rill-developer-service/RillDeveloperService";
 import type { SocketNotificationService } from "@rilldata/web-local/common/socket/SocketNotificationService";
 import { FileActionsController } from "./controllers/FileActionsController";
@@ -9,7 +8,6 @@ import { MetricsDefinitionController } from "./controllers/MetricsDefinitionCont
 import { MetricsDimensionController } from "./controllers/MetricsDimensionController";
 import { MetricsMeasureController } from "./controllers/MetricsMeasureController";
 import { MetricsViewController } from "./controllers/MetricsViewController";
-import { TelemetryController } from "./controllers/TelemetryController";
 import { SocketServer } from "./SocketServer";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -34,8 +32,7 @@ export class ExpressServer {
     private readonly dataModelerService: DataModelerService,
     private readonly rillDeveloperService: RillDeveloperService,
     dataModelerStateService: DataModelerStateService,
-    notificationService: SocketNotificationService,
-    metricsService: MetricsService
+    notificationService: SocketNotificationService
   ) {
     this.app = express();
     this.server = http.createServer(this.app);
@@ -47,7 +44,6 @@ export class ExpressServer {
       config,
       dataModelerService,
       dataModelerStateService,
-      metricsService,
       this.server
     );
     notificationService.setSocketServer(this.socketServer.getSocketServer());
@@ -82,7 +78,10 @@ export class ExpressServer {
     this.app.use(bodyParser.json());
 
     const tmpFolder = `${this.config.projectFolder}/tmp`;
-    if (!existsSync(tmpFolder)) mkdirSync(tmpFolder);
+    if (!existsSync(tmpFolder))
+      mkdirSync(tmpFolder, {
+        recursive: true,
+      });
     this.app.use(
       fileUpload({
         useTempFiles: true,
@@ -104,7 +103,6 @@ export class ExpressServer {
       MetricsDimensionController,
       MetricsMeasureController,
       MetricsViewController,
-      TelemetryController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(
         this.config,
@@ -121,10 +119,20 @@ export class ExpressServer {
             .getDatabaseService()
             .getDatabaseClient()
             .getInstanceId(),
-          repoId: this.dataModelerService
-            .getStateService()
-            .getApplicationState().repoId,
         },
+      })
+    );
+
+    // Temporary mirror to test before new CLI is merged
+    this.app.get("/local/config", (req: Request, res: Response) =>
+      res.json({
+        instanceId: this.dataModelerService
+          .getDatabaseService()
+          .getDatabaseClient()
+          .getInstanceId(),
+        install_id: this.config.local.installId,
+        project_path: path.resolve(this.config.projectFolder),
+        is_dev: this.config.local.isDev,
       })
     );
   }

@@ -4,10 +4,14 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 )
+
+func (c *connection) Dialect() drivers.Dialect {
+	return drivers.DialectDruid
+}
 
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	return drivers.ErrUnsupportedConnector
@@ -37,7 +41,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return &drivers.Result{Rows: rows, Schema: schema}, nil
 }
 
-func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
+func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
 	}
@@ -47,7 +51,7 @@ func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
 		return nil, err
 	}
 
-	fields := make([]*api.StructType_Field, len(cts))
+	fields := make([]*runtimev1.StructType_Field, len(cts))
 	for i, ct := range cts {
 		nullable, ok := ct.Nullable()
 		if !ok {
@@ -59,13 +63,13 @@ func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
 			return nil, err
 		}
 
-		fields[i] = &api.StructType_Field{
+		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
 			Type: t,
 		}
 	}
 
-	return &api.StructType{Fields: fields}, nil
+	return &runtimev1.StructType{Fields: fields}, nil
 }
 
 type informationSchema struct {
@@ -170,7 +174,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				Database:       database,
 				DatabaseSchema: schema,
 				Name:           name,
-				Schema:         &api.StructType{},
+				Schema:         &runtimev1.StructType{},
 			}
 			res = append(res, t)
 		}
@@ -182,7 +186,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 
 		// append column
-		t.Schema.Fields = append(t.Schema.Fields, &api.StructType_Field{
+		t.Schema.Fields = append(t.Schema.Fields, &runtimev1.StructType_Field{
 			Name: columnName,
 			Type: colType,
 		})
@@ -195,37 +199,37 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*api.Type, error) {
-	t := &api.Type{Nullable: nullable}
+func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "BOOLEAN":
-		t.Code = api.Type_CODE_BOOL
+		t.Code = runtimev1.Type_CODE_BOOL
 	case "TINYINT":
-		t.Code = api.Type_CODE_INT8
+		t.Code = runtimev1.Type_CODE_INT8
 	case "SMALLINT":
-		t.Code = api.Type_CODE_INT16
+		t.Code = runtimev1.Type_CODE_INT16
 	case "INTEGER":
-		t.Code = api.Type_CODE_INT32
+		t.Code = runtimev1.Type_CODE_INT32
 	case "BIGINT":
-		t.Code = api.Type_CODE_INT64
+		t.Code = runtimev1.Type_CODE_INT64
 	case "FLOAT":
-		t.Code = api.Type_CODE_FLOAT32
+		t.Code = runtimev1.Type_CODE_FLOAT32
 	case "DOUBLE":
-		t.Code = api.Type_CODE_FLOAT64
+		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "REAL":
-		t.Code = api.Type_CODE_FLOAT64
+		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "DECIMAL":
-		t.Code = api.Type_CODE_FLOAT64
+		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "CHAR":
-		t.Code = api.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_STRING
 	case "VARCHAR":
-		t.Code = api.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_STRING
 	case "TIMESTAMP":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATE":
-		t.Code = api.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "OTHER":
-		t.Code = api.Type_CODE_JSON
+		t.Code = runtimev1.Type_CODE_JSON
 	}
 
 	return t, nil

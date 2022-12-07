@@ -1,8 +1,8 @@
 import { DATABASE_POLLING_INTERVAL } from "@rilldata/web-local/common/constants";
 import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
 import {
-  runtimeServiceListCatalogObjects,
-  RuntimeServiceListCatalogObjectsType,
+  runtimeServiceListCatalogEntries,
+  RuntimeServiceListCatalogEntriesType,
 } from "@rilldata/web-common/runtime-client";
 import type { RootConfig } from "../config/RootConfig";
 import type { DataModelerService } from "../data-modeler-service/DataModelerService";
@@ -34,22 +34,22 @@ export class DuckDbConnection extends DataConnection {
   public async init(): Promise<void> {
     if (this.config.database.databaseName === ":memory:") return;
 
-    await this.sync();
+    // await this.sync();
 
-    await this.dataModelerService.dispatch("loadModels", []);
+    // await this.dataModelerService.dispatch("loadModels", []);
 
     this.syncTimer = setInterval(() => {
-      this.sync();
+      // this.sync();
     }, DATABASE_POLLING_INTERVAL);
   }
 
   public async sync(): Promise<void> {
-    const catalogs = await runtimeServiceListCatalogObjects(
+    const catalogs = await runtimeServiceListCatalogEntries(
       this.duckDbClient.getInstanceId(),
-      { type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE }
+      { type: RuntimeServiceListCatalogEntriesType.OBJECT_TYPE_SOURCE }
     );
     const catalogsMap = getMapFromArray(
-      catalogs.objects,
+      catalogs.entries,
       (object) => object.source?.name
     );
     const persistentTables = this.dataModelerStateService

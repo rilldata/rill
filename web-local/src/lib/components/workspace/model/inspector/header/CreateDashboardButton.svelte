@@ -1,72 +1,103 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { goto } from "$app/navigation";
   import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServicePutFileAndReconcile,
+    V1ReconcileResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { autoCreateMetricsDefinitionForModel } from "@rilldata/web-local/lib/redux-store/source/source-apis";
-  import { selectTimestampColumnFromProfileEntity } from "@rilldata/web-local/lib/redux-store/source/source-selectors";
-  import { getContext } from "svelte";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getName } from "../../../../../../common/utils/incrementName";
+  import { overlay } from "../../../../../application-state-stores/overlay-store";
+  import { useDashboardNames } from "../../../../../svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "../../../../../svelte-query/invalidation";
 
-  export let activeEntityID: string;
+  export let modelName: string;
   export let hasError = false;
   export let width = undefined;
 
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
+  );
+  $: model = $getModel.data?.entry?.model;
+  $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
+  const queryClient = useQueryClient();
+  const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
-  $: timestampColumns =
-    selectTimestampColumnFromProfileEntity(currentDerivedModel);
-
-  const handleCreateMetric = () => {
-    // A side effect of the createMetricsDefsApi is we switch active assets to
-    // the newly created metrics definition. So, this'll bring us to the
-    // MetricsDefinition page. (The logic for this is contained in the
-    // not-pictured async thunk.)
-    autoCreateMetricsDefinitionForModel(
-      $persistentModelStore.entities.find(
-        (model) => model.id === activeEntityID
-      ).tableName,
-      activeEntityID,
-      timestampColumns[0].name
-    ).then((createdMetricsId) => {
-      navigationEvent.fireEvent(
-        createdMetricsId,
-        BehaviourEventMedium.Button,
-        MetricsEventSpace.RightPanel,
-        MetricsEventScreenName.Model,
-        MetricsEventScreenName.Dashboard
-      );
+  async function handleCreateDashboard() {
+    overlay.set({
+      title: "Creating a dashboard for " + modelName,
     });
-  };
+    const newDashboardName = getName(
+      `${modelName}_dashboard`,
+      $dashboardNames.data
+    );
+    const generatedYAML = generateMeasuresAndDimension(model, {
+      display_name: `${newDashboardName} dashboard`,
+      description: `A dashboard generated for ${modelName}`,
+    });
+
+    $createFileMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          path: `dashboards/${newDashboardName}.yaml`,
+          blob: generatedYAML,
+          create: true,
+          createOnly: true,
+          strict: false,
+        },
+      },
+      {
+        onSuccess: (resp: V1ReconcileResponse) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+          goto(`/dashboard/${newDashboardName}`);
+          navigationEvent.fireEvent(
+            newDashboardName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.RightPanel,
+            MetricsEventScreenName.Model,
+            MetricsEventScreenName.Dashboard
+          );
+          return invalidateAfterReconcile(
+            queryClient,
+            $runtimeStore.instanceId,
+            resp
+          );
+        },
+        onError: (err) => {
+          console.error(err);
+        },
+        onSettled: () => {
+          overlay.set(null);
+        },
+      }
+    );
+  }
 </script>
 
-<Tooltip location="bottom" alignment="right" distance={16}>
+<Tooltip alignment="right" distance={16} location="bottom">
   <Button
-    type="primary"
     disabled={!timestampColumns?.length}
-    on:click={handleCreateMetric}
+    on:click={handleCreateDashboard}
+    type="primary"
   >
     <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
     <Explore size="16px" /></Button

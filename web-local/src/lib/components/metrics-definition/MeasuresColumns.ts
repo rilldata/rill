@@ -1,11 +1,12 @@
-import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+import type { MeasureEntity } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
 
 import {
-  ColumnConfig,
   CellConfigInput,
   CellConfigSelector,
+  ColumnConfig,
 } from "../table-editable/ColumnConfig";
-import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
 
 export const initMeasuresColumns = (
   inputChangeHandler,
@@ -22,9 +23,12 @@ export const initMeasuresColumns = (
       headerTooltip: "a valid SQL aggregation expression for this measure",
       cellRenderer: new CellConfigInput(
         inputChangeHandler,
-        (row: MeasureDefinitionEntity) => ({
-          state: row.expressionIsValid,
-          message: row.expressionValidationError,
+        (row) => ({
+          // TODO: remove the entity record type in validation
+          state: !(row as MeasureEntity).__ERROR__
+            ? ValidationState.OK
+            : ValidationState.ERROR,
+          message: (row as MeasureEntity).__ERROR__,
         }),
         expressionValidationHandler
       ),
@@ -36,7 +40,7 @@ export const initMeasuresColumns = (
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
-      name: "formatPreset",
+      name: "format_preset",
       label: "number formatting",
       headerTooltip:
         "the number formatting used for this measure in the Metrics Explorer",

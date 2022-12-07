@@ -6,10 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(completionCmd)
-}
-
 // See: https://github.com/spf13/cobra/blob/main/shell_completions.md
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
@@ -40,6 +36,7 @@ PowerShell:
   # and source this file from your PowerShell profile.
 `,
 	DisableFlagsInUseLine: true,
+	Hidden:                true,
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
 	Args:                  cobra.ExactValidArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

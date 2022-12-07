@@ -19,6 +19,8 @@ export/
 /runtime/release
 /cli/pkg/web/embed/dist
 /rill
+/cli/pkg/examples/embed/dist
+/dev-project
 
 # data files
 *.duckdb
@@ -26,16 +28,19 @@ export/
 *.db
 *.wal
 *.parquet
-*.csv
 *.tsv
 /*_state.json
 /state
 /models
+/dashboards
+/sources
 
 # check in generated data files
 !/web-local/test/data/*.parquet
 !/web-local/test/data/*.csv
 !/web-local/test/data/*.tsv
+!/runtime/testruntime/**/*.parquet
+!/runtime/testruntime/**/*.csv
 
 # generated content
 log
@@ -59,3 +64,10 @@ release.properties
 *.ipr
 *.iml
 *.iws
+
+dist/*
+rill-binary-sa.json
+.release-env
+# runtime test resources
+!runtime/testdata/**
+sysroot/

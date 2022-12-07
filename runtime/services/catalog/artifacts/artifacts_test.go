@@ -7,7 +7,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -22,16 +22,16 @@ func TestSourceReadWrite(t *testing.T) {
 		// Adding explicit name and using it in the title,
 		// adds the run button on goland for each test case.
 		Name    string
-		Catalog *api.CatalogObject
+		Catalog *drivers.CatalogEntry
 		Raw     string
 	}{
 		{
 			"Source",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "Source",
 				Path: "sources/Source.yaml",
-				Type: api.CatalogObject_TYPE_SOURCE,
-				Source: &api.Source{
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
 					Name:      "Source",
 					Connector: "file",
 					Properties: toProtoStruct(map[string]any{
@@ -46,11 +46,11 @@ path: data/source.csv
 		},
 		{
 			"S3Source",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "S3Source",
 				Path: "sources/S3Source.yaml",
-				Type: api.CatalogObject_TYPE_SOURCE,
-				Source: &api.Source{
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
 					Name:      "S3Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
@@ -67,30 +67,30 @@ region: us-east-2
 		},
 		{
 			"Model",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "Model",
 				Path: "models/Model.sql",
-				Type: api.CatalogObject_TYPE_MODEL,
-				Model: &api.Model{
+				Type: drivers.ObjectTypeModel,
+				Object: &runtimev1.Model{
 					Name:    "Model",
 					Sql:     "select * from A",
-					Dialect: api.Model_DIALECT_DUCKDB,
+					Dialect: runtimev1.Model_DIALECT_DUCKDB,
 				},
 			},
 			"select * from A",
 		},
 		{
 			"MetricsView",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "MetricsView",
 				Path: "dashboards/MetricsView.yaml",
-				Type: api.CatalogObject_TYPE_METRICS_VIEW,
-				MetricsView: &api.MetricsView{
+				Type: drivers.ObjectTypeMetricsView,
+				Object: &runtimev1.MetricsView{
 					Name:          "MetricsView",
 					From:          "Model",
 					TimeDimension: "time",
 					TimeGrains:    []string{"1 day", "1 month"},
-					Dimensions: []*api.MetricsView_Dimension{
+					Dimensions: []*runtimev1.MetricsView_Dimension{
 						{
 							Name:        "dim0",
 							Label:       "Dim0_L",
@@ -102,7 +102,7 @@ region: us-east-2
 							Description: "Dim1_D",
 						},
 					},
-					Measures: []*api.MetricsView_Measure{
+					Measures: []*runtimev1.MetricsView_Measure{
 						{
 							Name:        "measure_0",
 							Label:       "Mea0_L",
@@ -118,13 +118,15 @@ region: us-east-2
 							Format:      "humanise",
 						},
 					},
+					Label:       "dashboard name",
+					Description: "long description for dashboard",
 				},
 			},
 			`version: 0.0.1
-display_name: ""
-description: ""
+display_name: dashboard name
+description: long description for dashboard
 from: Model
-time_dimension: time
+timeseries: time
 timegrains:
 - 1 day
 - 1 month

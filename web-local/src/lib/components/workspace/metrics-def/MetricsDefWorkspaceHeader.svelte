@@ -1,30 +1,18 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
-  import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../../redux-store/store-root";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
-  export let metricsDefId;
+  export let metricsDefName;
+  export let metricsInternalRep;
 
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-
-  $: titleInput = $selectedMetricsDef?.metricDefLabel;
+  $: titleInput = $metricsInternalRep.getMetricKey("display_name");
 
   const onChangeCallback = async (e) => {
-    store.dispatch(
-      updateMetricsDefsWrapperApi({
-        id: metricsDefId,
-        changes: { metricDefLabel: e.target.value },
-      })
-    );
+    $metricsInternalRep.updateMetricKey("display_name", e.target.value);
   };
 
-  $: metricsSourceSelectionError = $selectedMetricsDef
-    ? MetricsSourceSelectionError($selectedMetricsDef)
-    : "";
+  $: metricsSourceSelectionError = false;
 </script>
 
 <div
@@ -36,6 +24,9 @@
   </WorkspaceHeader>
 
   {#if !metricsSourceSelectionError}
-    <MetricsDefinitionExploreMetricsButton {metricsDefId} />
+    <MetricsDefinitionExploreMetricsButton
+      {metricsDefName}
+      {metricsInternalRep}
+    />
   {/if}
 </div>

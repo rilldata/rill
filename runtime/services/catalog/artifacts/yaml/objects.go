@@ -2,11 +2,10 @@ package yaml
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/jinzhu/copier"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -27,10 +26,10 @@ type Source struct {
 
 type MetricsView struct {
 	Version          string
-	DisplayName      string `yaml:"display_name"`
+	Label            string `yaml:"display_name"`
 	Description      string
 	From             string
-	TimeDimension    string `yaml:"time_dimension"`
+	TimeDimension    string `yaml:"timeseries"`
 	TimeGrains       []string
 	DefaultTimeGrain string `yaml:"default_timegrain"`
 	Dimensions       []*Dimension
@@ -42,24 +41,26 @@ type Measure struct {
 	Expression  string
 	Description string
 	Format      string `yaml:"format_preset"`
+	Ignore      bool   `yaml:"ignore,omitempty"`
 }
 
 type Dimension struct {
 	Label       string
 	Property    string `copier:"Name"`
 	Description string
+	Ignore      bool `yaml:"ignore,omitempty"`
 }
 
-func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
+func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 	source := &Source{
 		Version: Version,
-		Type:    catalog.Source.Connector,
+		Type:    catalog.GetSource().Connector,
 	}
 
-	props := catalog.Source.Properties.AsMap()
+	props := catalog.GetSource().Properties.AsMap()
 	path, ok := props["path"].(string)
 	if ok {
-		if catalog.Source.Connector == "file" {
+		if catalog.GetSource().Connector == "file" {
 			source.Path = path
 		} else {
 			source.URI = path
@@ -73,9 +74,9 @@ func toSourceArtifact(catalog *api.CatalogObject) (*Source, error) {
 	return source, nil
 }
 
-func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
+func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
-	err := copier.Copy(metricsArtifact, catalog.MetricsView)
+	err := copier.Copy(metricsArtifact, catalog.Object)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func toMetricsViewArtifact(catalog *api.CatalogObject) (*MetricsView, error) {
 	return metricsArtifact, nil
 }
 
-func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error) {
+func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, error) {
 	props := map[string]interface{}{}
 	if source.Type == "file" {
 		props["path"] = source.Path
@@ -99,12 +100,12 @@ func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error)
 		return nil, err
 	}
 
-	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
-	return &api.CatalogObject{
+	name := fileutil.Stem(path)
+	return &drivers.CatalogEntry{
 		Name: name,
-		Type: api.CatalogObject_TYPE_SOURCE,
+		Type: drivers.ObjectTypeSource,
 		Path: path,
-		Source: &api.Source{
+		Object: &runtimev1.Source{
 			Name:       name,
 			Connector:  source.Type,
 			Properties: propsPB,
@@ -112,8 +113,27 @@ func fromSourceArtifact(source *Source, path string) (*api.CatalogObject, error)
 	}, nil
 }
 
-func fromMetricsViewArtifact(metrics *MetricsView, path string) (*api.CatalogObject, error) {
-	apiMetrics := &api.MetricsView{}
+func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
+	// remove ignored measures and dimensions
+	var measures []*Measure
+	for _, measure := range metrics.Measures {
+		if measure.Ignore {
+			continue
+		}
+		measures = append(measures, measure)
+	}
+	metrics.Measures = measures
+
+	var dimensions []*Dimension
+	for _, dimension := range metrics.Dimensions {
+		if dimension.Ignore {
+			continue
+		}
+		dimensions = append(dimensions, dimension)
+	}
+	metrics.Dimensions = dimensions
+
+	apiMetrics := &runtimev1.MetricsView{}
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
 		return nil, err
@@ -124,12 +144,12 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*api.CatalogObj
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
-	name := strings.TrimSuffix(filepath.Base(path), fileutil.FullExt(path))
+	name := fileutil.Stem(path)
 	apiMetrics.Name = name
-	return &api.CatalogObject{
-		Name:        name,
-		Type:        api.CatalogObject_TYPE_METRICS_VIEW,
-		Path:        path,
-		MetricsView: apiMetrics,
+	return &drivers.CatalogEntry{
+		Name:   name,
+		Type:   drivers.ObjectTypeMetricsView,
+		Path:   path,
+		Object: apiMetrics,
 	}, nil
 }

@@ -1,5 +1,5 @@
 {
-  "name": "docs",
+  "name": "docs-enterprise",
   "version": "0.0.1",
   "scripts": {
     "dev": "docusaurus start --port 4002",
