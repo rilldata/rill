@@ -33,7 +33,7 @@
     const uploadedFiles = uploadTableFiles(
       files,
       [$sourceNames?.data, $modelNames?.data],
-      $runtimeStore
+      $runtimeStore.instanceId
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {

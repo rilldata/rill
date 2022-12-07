@@ -2,16 +2,17 @@
   import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
-    getRuntimeServiceListFilesQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceTriggerRefresh,
+    V1ReconcileResponse,
+    useRuntimeServiceRefreshAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import {
     useSourceFromYaml,
     useSourceNames,
@@ -54,7 +55,10 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
-  $: sourceNames = useSourceNames($runtimeStore.instanceId);
+  const dispatch = createEventDispatcher();
+
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
@@ -63,16 +67,15 @@
     runtimeInstanceId,
     sourceName
   );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
+
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: modelNames = useModelNames($runtimeStore.instanceId);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
-  const dispatch = createEventDispatcher();
-
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
@@ -130,12 +133,9 @@
         },
       },
       {
-        onSuccess: async (resp) => {
+        onSuccess: async (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          await queryClient.invalidateQueries(
-            getRuntimeServiceListFilesQueryKey($runtimeStore.instanceId)
-          );
           const previousActiveEntity = $appStore?.activeEntity?.type;
           navigationEvent.fireEvent(
             newDashboardName,
@@ -144,6 +144,7 @@
             EntityTypeToScreenMap[previousActiveEntity],
             MetricsEventScreenName.Dashboard
           );
+          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
         },
         onSettled: () => {
           overlay.set(null);
@@ -168,7 +169,8 @@
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createFileMutation
+        $createEntityMutation,
+        queryClient
       );
 
       // invalidate the data preview (async)
