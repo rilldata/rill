@@ -31,8 +31,8 @@ In Rill, all data sources, data models, and dashboard definitions are saved as c
 For this tutorial, let's checkout an example project from the git repository:
 
 ```bash
-git clone https://github.com/rilldata/rill-developer.git
-cd rill-developer/examples/sf_props
+git clone https://github.com/rilldata/rill-developer-example.git
+cd rill-developer-example
 ```
 
 Alternatively, you can create a new, empty Rill project:
