@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/marcboeker/go-duckdb"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) GetTopK(ctx context.Context, request *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
@@ -165,36 +163,17 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 }
 
 func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
-	sanitizedColumnName := quoteName(request.ColumnName)
-	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query: fmt.Sprintf("SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
-			sanitizedColumnName, request.TableName),
-		Priority: int(request.Priority),
-	})
+	q := &queries.ColumnTimeRange{
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
+	}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	defer rows.Close()
-	if rows.Next() {
-		summary := &runtimev1.TimeRangeSummary{}
-		rowMap := make(map[string]any)
-		err = rows.MapScan(rowMap)
-		if err != nil {
-			return nil, err
-		}
-		if v := rowMap["min"]; v != nil {
-			summary.Min = timestamppb.New(v.(time.Time))
-			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-			summary.Interval, err = handleInterval(rowMap["interval"])
-			if err != nil {
-				return nil, err
-			}
-		}
-		return &runtimev1.GetTimeRangeSummaryResponse{
-			TimeRangeSummary: summary,
-		}, nil
-	}
-	return nil, status.Error(codes.Internal, "no rows returned")
+	return &runtimev1.GetTimeRangeSummaryResponse{
+		TimeRangeSummary: q.Result,
+	}, nil
 }
 
 func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {

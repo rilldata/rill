@@ -78,3 +78,17 @@ func BenchmarkColumnRugHistogram(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
+
+func BenchmarkColumnTimeRange(b *testing.B) {
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		q := &ColumnTimeRange{
+			TableName:  "ad_bids",
+			ColumnName: "timestamp",
+		}
+		err := q.Resolve(context.Background(), rt, instanceID, 0)
+		require.NoError(b, err)
+		require.NotEmpty(b, q.Result)
+	}
+}
