@@ -1,7 +1,6 @@
 package source
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,7 +38,7 @@ func AddCmd(ver string) *cobra.Command {
 				dataPath = relPath
 			}
 
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -68,13 +67,13 @@ func AddCmd(ver string) *cobra.Command {
 				Properties: propsPB,
 			}
 
-			repo, err := app.Runtime.Repo(context.Background(), app.Instance.ID)
+			repo, err := app.Runtime.Repo(cmd.Context(), app.Instance.ID)
 			if err != nil {
 				panic(err) // Should never happen
 			}
 
 			c := artifactsv0.New(repo, app.Instance.ID)
-			sourcePath, err := c.PutSource(context.Background(), repo, app.Instance.ID, src, force)
+			sourcePath, err := c.PutSource(cmd.Context(), repo, app.Instance.ID, src, force)
 			if err != nil {
 				if os.IsExist(err) {
 					return fmt.Errorf("source already exists (pass --force to overwrite)")

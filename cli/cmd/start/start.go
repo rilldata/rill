@@ -22,7 +22,7 @@ func StartCmd(ver string) *cobra.Command {
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
