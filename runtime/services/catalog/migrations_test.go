@@ -341,8 +341,7 @@ func TestReconcileMetricsView(t *testing.T) {
 
 	// ignore invalid measure and dimension
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`version: 0.0.1
-from: AdBids_model
+	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`from: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -375,8 +374,7 @@ func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`version: 0.0.1
-type: file
+	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: file
 path:
  - data/source.csv`))
 	require.NoError(t, err)

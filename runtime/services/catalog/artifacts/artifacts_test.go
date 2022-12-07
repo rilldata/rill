@@ -39,8 +39,7 @@ func TestSourceReadWrite(t *testing.T) {
 					}),
 				},
 			},
-			`version: 0.0.1
-type: file
+			`type: file
 path: data/source.csv
 `,
 		},
@@ -59,8 +58,7 @@ path: data/source.csv
 					}),
 				},
 			},
-			`version: 0.0.1
-type: s3
+			`type: s3
 uri: s3://bucket/path/file.csv
 region: us-east-2
 `,
@@ -122,8 +120,7 @@ region: us-east-2
 					Description: "long description for dashboard",
 				},
 			},
-			`version: 0.0.1
-display_name: dashboard name
+			`display_name: dashboard name
 description: long description for dashboard
 from: Model
 timeseries: time
@@ -182,8 +179,7 @@ func TestReadFailure(t *testing.T) {
 		{
 			"InvalidSource",
 			"sources/InvalidSource.yaml",
-			`version: 0.0.1
-type: file
+			`type: file
   uri: data/source.csv
 `,
 		},

@@ -14,18 +14,14 @@ import (
  * This file contains the mapping from CatalogObject to Yaml files
  */
 
-const Version = "0.0.1"
-
 type Source struct {
-	Version string
-	Type    string
-	URI     string `yaml:"uri,omitempty"`
-	Path    string `yaml:"path,omitempty"`
-	Region  string `yaml:"region,omitempty"`
+	Type   string
+	URI    string `yaml:"uri,omitempty"`
+	Path   string `yaml:"path,omitempty"`
+	Region string `yaml:"region,omitempty"`
 }
 
 type MetricsView struct {
-	Version          string
 	Label            string `yaml:"display_name"`
 	Description      string
 	From             string
@@ -53,8 +49,7 @@ type Dimension struct {
 
 func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 	source := &Source{
-		Version: Version,
-		Type:    catalog.GetSource().Connector,
+		Type: catalog.GetSource().Connector,
 	}
 
 	props := catalog.GetSource().Properties.AsMap()
@@ -81,7 +76,6 @@ func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) 
 		return nil, err
 	}
 
-	metricsArtifact.Version = Version
 	return metricsArtifact, nil
 }
 

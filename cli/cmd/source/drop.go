@@ -6,7 +6,7 @@ import (
 	"regexp"
 
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func DropCmd(ver string) *cobra.Command {
 				panic(err) // Should never happen
 			}
 
-			c := artifactsv0.New(repo, app.Instance.ID)
+			c := rillv1beta.New(repo, app.Instance.ID)
 			sourcePath, err := c.DeleteSource(context.Background(), sourceName)
 			if err != nil {
 				return fmt.Errorf("delete source: %w", err)
