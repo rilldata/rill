@@ -1,6 +1,6 @@
 ---
 title: How to install a Rill binary
-sidebar_label: Installation
+sidebar_label: Install options
 sidebar_position: 20
 ---
 
