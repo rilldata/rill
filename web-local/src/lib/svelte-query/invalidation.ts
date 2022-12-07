@@ -1,3 +1,4 @@
+import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
@@ -6,7 +7,6 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceProfileColumnsQueryKey,
-  V1ReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
@@ -42,7 +42,6 @@ export const invalidateAfterReconcile = async (
       ])
       .flat()
   );
-
   // invalidate tablewide profiling queries
   // (applies to sources and models, but not dashboards)
   await Promise.all(
@@ -66,21 +65,51 @@ export const invalidateAfterReconcile = async (
             getNameFromFile(path)
           )
         ),
+        getInvalidationsForPath(queryClient, path),
       ])
       .flat()
   );
 };
 
+const getInvalidationsForPath = (
+  queryClient: QueryClient,
+  filePath: string
+) => {
+  const name = getNameFromFile(filePath);
+  if (filePath.startsWith("/dashboards")) {
+    return invalidateMetricsViewData(queryClient, name);
+  } else {
+    return invalidateProfilingQueries(queryClient, name);
+  }
+};
+
 export const invalidateMetricsViewData = (
   queryClient: QueryClient,
-  instanceId: string,
   metricsViewName: string
 ) => {
   return queryClient.refetchQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
       query.queryKey[0].startsWith(
-        `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/`
+        `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
       ),
   });
 };
+
+export function invalidationForProfileQueries(queryHash, name: string) {
+  const r = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
+  );
+  return r.test(queryHash);
+}
+
+export function invalidateProfilingQueries(
+  queryClient: QueryClient,
+  name: string
+) {
+  return queryClient.refetchQueries({
+    predicate: (query) => {
+      return invalidationForProfileQueries(query.queryHash, name);
+    },
+  });
+}

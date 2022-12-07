@@ -25,7 +25,7 @@
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
-  import { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";

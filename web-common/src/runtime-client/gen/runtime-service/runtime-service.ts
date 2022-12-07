@@ -2186,10 +2186,11 @@ export const useRuntimeServiceGetTimeRangeSummary = <
  */
 export const runtimeServiceGenerateTimeSeries = (
   instanceId: string,
+  tableName: string,
   runtimeServiceGenerateTimeSeriesBody: RuntimeServiceGenerateTimeSeriesBody
 ) => {
   return httpClient<V1GenerateTimeSeriesResponse>({
-    url: `/v1/instances/${instanceId}/queries/timeseries`,
+    url: `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceGenerateTimeSeriesBody,
@@ -2198,9 +2199,10 @@ export const runtimeServiceGenerateTimeSeries = (
 
 export const getRuntimeServiceGenerateTimeSeriesQueryKey = (
   instanceId: string,
+  tableName: string,
   runtimeServiceGenerateTimeSeriesBody: RuntimeServiceGenerateTimeSeriesBody
 ) => [
-  `/v1/instances/${instanceId}/queries/timeseries`,
+  `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
   runtimeServiceGenerateTimeSeriesBody,
 ];
 
@@ -2214,6 +2216,7 @@ export const useRuntimeServiceGenerateTimeSeries = <
   TError = RpcStatus
 >(
   instanceId: string,
+  tableName: string,
   runtimeServiceGenerateTimeSeriesBody: RuntimeServiceGenerateTimeSeriesBody,
   options?: {
     query?: UseQueryOptions<
@@ -2234,6 +2237,7 @@ export const useRuntimeServiceGenerateTimeSeries = <
     queryOptions?.queryKey ??
     getRuntimeServiceGenerateTimeSeriesQueryKey(
       instanceId,
+      tableName,
       runtimeServiceGenerateTimeSeriesBody
     );
 
@@ -2242,6 +2246,7 @@ export const useRuntimeServiceGenerateTimeSeries = <
   > = () =>
     runtimeServiceGenerateTimeSeries(
       instanceId,
+      tableName,
       runtimeServiceGenerateTimeSeriesBody
     );
 
@@ -2250,7 +2255,7 @@ export const useRuntimeServiceGenerateTimeSeries = <
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!instanceId,
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGenerateTimeSeries>>,

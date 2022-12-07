@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { error, redirect } from "@sveltejs/kit";
+import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
 export const ssr = false;
 
@@ -17,7 +18,7 @@ export async function load({ params }) {
       `dashboards/${params.name}.yaml`
     );
   } catch (err) {
-    if (err.response?.data?.message.includes("entry not found")) {
+    if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
       throw error(404, "Dashboard not found");
     }
 

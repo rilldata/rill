@@ -34,7 +34,6 @@ export type RuntimeServiceGenerateTimeSeriesBody = {
   pixels?: number;
   priority?: number;
   sampleSize?: number;
-  tableName?: string;
   timeRange?: V1TimeSeriesTimeRange;
   timestampColumnName?: string;
 };

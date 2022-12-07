@@ -881,7 +881,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/timeseries:
+  /v1/instances/{instanceId}/queries/timeseries/tables/{tableName}:
     post:
       summary: Generate time series
       operationId: RuntimeService_GenerateTimeSeries
@@ -896,6 +896,10 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
           in: path
           required: true
           type: string
@@ -920,8 +924,6 @@ paths:
               sampleSize:
                 type: integer
                 format: int32
-              tableName:
-                type: string
               timeRange:
                 $ref: '#/definitions/v1TimeSeriesTimeRange'
               timestampColumnName:
