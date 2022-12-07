@@ -22,5 +22,7 @@ export async function getArtifactErrors(
   );
   return runtimeServiceReconcile(instanceId, {
     changedPaths: missingFiles,
+    forcedPaths: missingFiles,
+    dry: true,
   });
 }

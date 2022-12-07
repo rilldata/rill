@@ -117,17 +117,15 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	// order the items to have parents before children
 	migrations := s.collectMigrationItems(migrationMap)
 
-	if conf.DryRun {
-		return result, nil
-	}
-
 	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: changes to the file will not be picked up if done while running migration
-	s.LastMigration = time.Now()
+	if !conf.DryRun {
+		// TODO: changes to the file will not be picked up if done while running migration
+		s.LastMigration = time.Now()
+	}
 	result.collectAffectedPaths()
 	return result, nil
 }
@@ -336,6 +334,10 @@ func (s *Service) getMigrationItem(
 		}
 	}
 
+	if item.Type == MigrationNoChange && forcedPathMap[repoPath] {
+		item.Type = MigrationUpdate
+	}
+
 	catalogInStore, ok := storeObjectsMap[item.Name]
 	if !ok {
 		if item.CatalogInFile == nil {
@@ -360,12 +362,8 @@ func (s *Service) getMigrationItem(
 		}
 
 	case MigrationNoChange:
-		if forcedPathMap[repoPath] {
-			item.Type = MigrationUpdate
-			break
-		}
-
 		// if item doesn't exist in olap, mark as create
+		// TODO: is this path ever hit?
 		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
 		if !ok {
 			item.Type = MigrationCreate
@@ -490,7 +488,8 @@ func (s *Service) runMigrationItems(
 			// do not run migration if validation failed
 			result.Errors = append(result.Errors, validationErrors...)
 			failed = true
-		} else {
+		} else if !conf.DryRun {
+			// only run the actual migration if in dry run
 			switch item.Type {
 			case MigrationNoChange:
 				if _, ok := s.PathToName[item.Path]; !ok {
@@ -523,7 +522,7 @@ func (s *Service) runMigrationItems(
 			failed = true
 		}
 
-		if failed {
+		if failed && !conf.DryRun {
 			// remove entity from catalog and OLAP if it failed validation or during migration
 			err := s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
 			if err != nil {
