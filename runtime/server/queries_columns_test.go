@@ -54,20 +54,41 @@ func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
 }
 
 func TestServer_GetTopK(t *testing.T) {
-	server, instanceId := getColumnTestServer(t)
+	server, instanceId := getColumnTestServerWithModel(
+		t,
+		`
+		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
+		UNION ALL 
+		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
+		UNION ALL 
+		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
+		UNION ALL 
+		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
+		UNION ALL 
+		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
+		`,
+		5,
+	)
 
-	res, err := server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
+	res, err := server.GetTopK(
+		context.Background(),
+		&runtimev1.GetTopKRequest{
+			InstanceId: instanceId,
+			TableName:  "test",
+			ColumnName: "col",
+		},
+	)
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	topk := res.CategoricalSummary.GetTopK()
 	require.Equal(t, 4, len(topk.Entries))
 	require.Equal(t, "abc", topk.Entries[0].Value.GetStringValue())
 	require.Equal(t, 2, int(topk.Entries[0].Count))
-	require.Equal(t, "def", topk.Entries[1].Value.GetStringValue())
+	require.Equal(t, structpb.NewNullValue(), topk.Entries[1].Value)
 	require.Equal(t, 1, int(topk.Entries[1].Count))
-	require.Equal(t, structpb.NewNullValue(), topk.Entries[2].Value)
+	require.Equal(t, "12", topk.Entries[2].Value.GetStringValue())
 	require.Equal(t, 1, int(topk.Entries[2].Count))
-	require.Equal(t, "12", topk.Entries[3].Value.GetStringValue())
+	require.Equal(t, "def", topk.Entries[3].Value.GetStringValue())
 	require.Equal(t, 1, int(topk.Entries[3].Count))
 
 	agg := "sum(val)"
