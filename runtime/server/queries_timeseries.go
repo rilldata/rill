@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/google/uuid"
@@ -280,16 +281,15 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	pixels int,
 ) ([]*runtimev1.TimeSeriesValue, error) {
 	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumn)
-	cardinality, err := s.GetTableCardinality(ctx, &runtimev1.GetTableCardinalityRequest{
-		InstanceId: instanceId,
-		TableName:  tableName,
-		Priority:   priority,
-	})
+	q := &queries.TableCardinality{
+		TableName: tableName,
+	}
+	err := q.Resolve(ctx, s.runtime, instanceId, int(priority))
 	if err != nil {
 		return nil, err
 	}
 
-	if cardinality.Cardinality < int64(pixels*4) {
+	if q.Result < int64(pixels*4) {
 		rows, err := s.query(ctx, instanceId, &drivers.Statement{
 			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 			Priority: int(priority),
