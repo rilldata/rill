@@ -103,7 +103,7 @@
   ) as Writable<number>;
 
   const inspectorVisibilityTween = getContext(
-    "ril:app:inspector-visibility-tween"
+    "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
 
   const navigationWidth = getContext(
@@ -182,7 +182,6 @@
       </div>
     {/if}
   </div>
-
   <Portal target=".body">
     <div
       class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
