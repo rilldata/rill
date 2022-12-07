@@ -64,3 +64,17 @@ func BenchmarkColumnNumericHistogram(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
+
+func BenchmarkColumnRugHistogram(b *testing.B) {
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		q := &ColumnRugHistogram{
+			TableName:  "ad_bids",
+			ColumnName: "bid_price",
+		}
+		err := q.Resolve(context.Background(), rt, instanceID, 0)
+		require.NoError(b, err)
+		require.NotEmpty(b, q.Result)
+	}
+}
