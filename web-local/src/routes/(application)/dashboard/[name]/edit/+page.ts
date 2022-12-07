@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { error } from "@sveltejs/kit";
+import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
@@ -15,7 +16,7 @@ export async function load({ params }) {
       `dashboards/${params.name}.yaml`
     );
   } catch (err) {
-    if (err.response?.data?.message.includes("entry not found")) {
+    if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
       throw error(404, "Dashboard not found");
     }
 
@@ -31,7 +32,7 @@ export async function load({ params }) {
   } catch (err) {
     // If the catalog entry doesn't exist, the dashboard config is invalid
     // The component should render the specific error
-    if (err.response?.data?.message.includes("entry not found")) {
+    if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
       return {
         metricsDefName: params.name,
         error: err.message,
