@@ -298,7 +298,6 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 	mux.Handle("/v1/", runtimeHandler)
 	mux.Handle("/local/config", a.infoHandler(inf))
 	mux.Handle("/local/track", a.trackingHandler(inf))
-	mux.Handle("/local/health", http.HandlerFunc(a.healthHandler))
 
 	// Start the gRPC server
 	group.Go(func() error {
@@ -334,7 +333,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 		}
 
 		// Check if server is up
-		resp, err := client.Get(uri + "/local/health")
+		resp, err := client.Get(uri + "/v1/ping")
 		if err == nil {
 			defer resp.Body.Close()
 			if resp.StatusCode < http.StatusInternalServerError {
@@ -343,7 +342,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 		}
 
 		// Wait a bit and retry
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Health check succeeded
@@ -405,12 +404,10 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 		defer resp.Body.Close()
-	})
-}
 
-// healthHandler is a basic health check
-func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
+		// Done
+		w.WriteHeader(200)
+	})
 }
 
 // Fully open CORS policy. This is very much local-only.
