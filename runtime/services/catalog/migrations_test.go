@@ -420,6 +420,50 @@ path:
 	require.Equal(t, "invalid file name", result.Errors[0].Message)
 }
 
+func TestReconcileDryRun(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	AdBidsModelDashboardPath := []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+
+	testutils.CreateModel(t, s, "AdBids_model", "select * from AdImpressions", AdBidsModelRepoPath)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		DryRun: true,
+	})
+	require.NoError(t, err)
+	// only one error returned. dashboard is still valid since model was not removed
+	testutils.AssertMigration(t, result, 1, 0, 0, 0,
+		[]string{AdBidsModelRepoPath})
+	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+	testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
+	// commit the update
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsModelDashboardPath)
+
+	// error should be returned after reconcile
+	time.Sleep(time.Millisecond * 10)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		DryRun:       true,
+		ChangedPaths: AdBidsModelDashboardPath,
+		ForcedPaths:  AdBidsModelDashboardPath,
+	})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsModelDashboardPath)
+
+	testutils.CreateModel(t, s, "AdBids_model",
+		"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		DryRun: true,
+	})
+	require.NoError(t, err)
+	// error is still returned for dashboard since model is not updated in dry run
+	testutils.AssertMigration(t, result, 1, 0, 0, 0,
+		[]string{AdBidsDashboardRepoPath})
+	require.Equal(t, AdBidsDashboardRepoPath, result.Errors[0].FilePath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	testutils.AssertMigration(t, result, 0, 2, 0, 0, AdBidsModelDashboardPath)
+}
+
 func initBasicService(t *testing.T) (*catalog.Service, string) {
 	s, dir := getService(t)
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)

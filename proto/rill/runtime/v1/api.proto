@@ -493,12 +493,15 @@ message ReconcileRequest {
   // Changed paths provides a way to "hint" what files have changed in the repo, enabling
   // reconciliation to execute faster by not scanning all code artifacts for changes.
   repeated string changed_paths = 2;
+  // Forced paths is used to force run reconcile on certain files.
+  // This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
+  repeated string forced_paths = 3;
   // If true, will validate the file artifacts, but not actually execute any migrations
-  bool dry = 3;
+  bool dry = 4;
   // If true, will not execute any migrations if any artifact fails to validate.
   // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
   // artifacts that fail to validate.)
-  bool strict = 4;
+  bool strict = 5;
 }
 
 // Response message for RuntimeService.Reconcile
