@@ -15,7 +15,11 @@
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
-  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import {
+    isDuplicateName,
+    renameFileArtifact,
+    useAllNames,
+  } from "@rilldata/web-local/lib/svelte-query/actions";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
@@ -56,6 +60,8 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
+  $: allNamesQuery = useAllNames(runtimeInstanceId);
+
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
 
@@ -68,6 +74,13 @@
       notifications.send({
         message:
           "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = modelName; // resets the input
+      return;
+    }
+    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+      notifications.send({
+        message: `Name ${e.target.value} is already in use`,
       });
       e.target.value = modelName; // resets the input
       return;

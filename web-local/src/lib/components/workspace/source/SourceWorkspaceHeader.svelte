@@ -12,7 +12,11 @@
   import { fade } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
-  import { renameFileArtifact } from "../../../svelte-query/actions";
+  import {
+    isDuplicateName,
+    renameFileArtifact,
+    useAllNames,
+  } from "../../../svelte-query/actions";
   import { IconButton } from "../../button";
   import Import from "../../icons/Import.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
@@ -39,11 +43,20 @@
 
   $: connector = $getSource.data?.entry?.source.connector as string;
 
+  $: allNamesQuery = useAllNames(runtimeInstanceId);
+
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
       notifications.send({
         message:
           "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = sourceName; // resets the input
+      return;
+    }
+    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+      notifications.send({
+        message: `Name ${e.target.value} is already in use`,
       });
       e.target.value = sourceName; // resets the input
       return;
