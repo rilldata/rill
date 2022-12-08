@@ -120,7 +120,7 @@ func (pw *PriorityWorker[V]) work() {
 				}
 				// Wait for all running jobs to finish
 				for job := range pw.runningJobs {
-					<- job.doneCh
+					<-job.doneCh
 				}
 
 				// Exit
@@ -162,7 +162,7 @@ func (pw *PriorityWorker[V]) work() {
 	}
 }
 
-func (pw *PriorityWorker[V]) cleanUpJobState(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted )  {
+func (pw *PriorityWorker[V]) cleanUpJobState(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted) {
 	delete(pw.runningJobs, job)
 	sem.Release(1)
 	close(job.doneCh)
