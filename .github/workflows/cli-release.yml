@@ -5,7 +5,7 @@ on:
     tags:
       - "**"
   schedule:
-    - cron: "0,10,20,30,40,50 * * * *"
+    - cron: '0,10,20,30,40,50 * * * *'
 jobs:
   release:
     name: Release rill-developer
