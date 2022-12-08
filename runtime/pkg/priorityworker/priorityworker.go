@@ -153,8 +153,8 @@ func (pw *PriorityWorker[V]) work() {
 			}
 		case p := <-pw.pausedToggleCh:
 			pw.paused = p
-			if !pw.paused && pq.Len() > 0 && sem.TryAcquire(1) == true {
-				// We just unpaused, we're idle, and the queue is not empty – start the next job
+			for !pw.paused && pq.Len() > 0 && sem.TryAcquire(1) == true {
+				// We just unpaused, we're idle, and the queue is not empty – start as many jobs as possible
 				job := heap.Pop(&pq).(*item[V])
 				go pw.handle(job, jobDoneCh, sem)
 			}
