@@ -26,6 +26,7 @@ type PriorityWorker[V any] struct {
 	stoppedMu      sync.RWMutex
 	stopDoneCh     chan struct{}
 	concurrency    int
+	runningJobs    map[*item[V]]bool
 }
 
 // New creates a new PriorityWorker that calls the provided handler for every
@@ -42,6 +43,7 @@ func New[V any](handler Handler[V], concurrency int) *PriorityWorker[V] {
 		stoppedMu:      sync.RWMutex{},
 		stopDoneCh:     make(chan struct{}),
 		concurrency:    concurrency,
+		runningJobs:    make(map[*item[V]]bool),
 	}
 
 	go pw.work()
@@ -116,10 +118,11 @@ func (pw *PriorityWorker[V]) work() {
 					job.err = ErrStopped
 					close(job.doneCh)
 				}
-				// Let the current items finish
-				for range pq {
-					<-jobDoneCh
+				// Wait for all running jobs to finish
+				for job := range pw.runningJobs {
+					<- job.doneCh
 				}
+
 				// Exit
 				close(pw.stopDoneCh)
 				return
@@ -129,7 +132,6 @@ func (pw *PriorityWorker[V]) work() {
 			// check count of running jobs here and if less than concurrency then start otherwise push in queue
 			if !pw.paused && sem.TryAcquire(1) == true {
 				// If we're currently idle, we process the item directly
-				//currentDoneCh = job.doneCh
 				go pw.handle(job, jobDoneCh, sem)
 			} else {
 				// Else we add it to the priority queue
@@ -160,8 +162,16 @@ func (pw *PriorityWorker[V]) work() {
 	}
 }
 
+func (pw *PriorityWorker[V]) cleanUpJobState(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted )  {
+	delete(pw.runningJobs, job)
+	sem.Release(1)
+	close(job.doneCh)
+	jobDoneCh <- struct{}{}
+}
+
 func (pw *PriorityWorker[V]) handle(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted) {
-	defer sem.Release(1)
+	pw.runningJobs[job] = true
+	defer pw.cleanUpJobState(job, jobDoneCh, sem)
 	// Bail if the job's ctx is cancelled
 	// (Unlikely to happen given other safeguards)
 	if job.ctx.Err() != nil {
@@ -171,10 +181,7 @@ func (pw *PriorityWorker[V]) handle(job *item[V], jobDoneCh chan struct{}, sem *
 	}
 
 	// Run
-	err := pw.handler(job.ctx, job.val)
-	job.err = err
-	close(job.doneCh)
-	jobDoneCh <- struct{}{}
+	job.err = pw.handler(job.ctx, job.val)
 }
 
 // item represents a job enqueued in priorityQueue.
