@@ -17,7 +17,7 @@ func TestPriorityQueue(t *testing.T) {
 	pw := New(func(ctx context.Context, i int) error {
 		results <- i
 		return nil
-	})
+	}, 4)
 	pw.Pause() // ensure predictable output
 
 	for i := n; i > 0; i-- {
@@ -50,7 +50,7 @@ func TestCancel(t *testing.T) {
 		time.Sleep(2 * time.Millisecond)
 		results <- i
 		return nil
-	})
+	}, 4)
 	pw.Pause() // ensure predictable output
 
 	for i := n; i > 0; i-- {
@@ -95,7 +95,7 @@ func TestStop(t *testing.T) {
 		time.Sleep(2 * time.Millisecond)
 		results <- i
 		return nil
-	})
+	}, 4)
 	pw.Pause() // ensure predictable output
 
 	for i := n; i > 0; i-- {

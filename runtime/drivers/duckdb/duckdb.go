@@ -16,17 +16,9 @@ func init() {
 
 type driver struct{}
 
+var numConnections = 4
+
 func (d driver) Open(dsn string) (drivers.Connection, error) {
-	db, err := sqlx.Open("duckdb", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	// database/sql has a built-in connection pool, but DuckDB loads extensions on a per-connection basis.
-	// So we allow only one open connection at a time. In the future, we may instead consider using db.Conn()
-	// and building our own connection pool to work around DuckDB's idiosyncracies.
-	db.SetMaxOpenConns(1)
-
 	bootQueries := []string{
 		"INSTALL 'json'",
 		"LOAD 'json'",
@@ -36,47 +28,85 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		"LOAD 'httpfs'",
 		"SET max_expression_depth TO 250",
 	}
-
-	for _, qry := range bootQueries {
-		_, err = db.Exec(qry)
+	connectionPool := NewConnectionPool(numConnections)
+	for i := 0; i < numConnections; i++ {
+		db, err := sqlx.Open("duckdb", dsn)
 		if err != nil {
 			return nil, err
 		}
+		// database/sql has a built-in connection pool, but DuckDB loads extensions on a per-connection basis.
+		// So we allow only one open connection at a time. In the future, we may instead consider using db.Conn()
+		// and building our own connection pool to work around DuckDB's idiosyncracies.
+		db.SetMaxOpenConns(1)
+		for _, qry := range bootQueries {
+			_, err = db.Exec(qry)
+			if err != nil {
+				return nil, err
+			}
+		}
+		connectionPool.enqueue(db)
 	}
 
-	conn := &connection{db: db}
-	conn.worker = priorityworker.New(conn.executeQuery)
+	conn := &connection{connectionPool: connectionPool}
+	conn.worker = priorityworker.New(conn.executeQuery, numConnections)
 
 	return conn, nil
 }
 
 type connection struct {
-	db     *sqlx.DB
-	worker *priorityworker.PriorityWorker[*job]
+	connectionPool *ConnectionPool
+	worker         *priorityworker.PriorityWorker[*job]
 }
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.worker.Stop()
-	return c.db.Close()
+	for db := range c.connectionPool.dbChan {
+		err := db.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// Registry implements drivers.Connection.
+// RegistryStore Registry implements drivers.Connection.
 func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection.
+// CatalogStore Catalog implements drivers.Connection.
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return c, true
 }
 
-// Repo implements drivers.Connection.
+// RepoStore Repo implements drivers.Connection.
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection.
+// OLAPStore OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+type ConnectionPool struct {
+	dbChan chan *sqlx.DB
+}
+
+func NewConnectionPool(numConnections int) *ConnectionPool {
+	dbChan := make(chan *sqlx.DB, numConnections)
+	return &ConnectionPool{dbChan: dbChan}
+}
+
+// enqueue adds a DB handle to the buffered channel, it will block if the channel is full which should not happen in
+// normal scenarios. Make sure to enqueue() after dequeue() to ensure the DB handle is returned to the pool.
+func (p *ConnectionPool) enqueue(db *sqlx.DB) {
+	p.dbChan <- db
+}
+
+// dequeue removes a DB handle from the buffered channel, it will block if the channel is empty.
+// Make sure to enqueue() after dequeue() to ensure the DB handle is returned to the pool.
+func (p *ConnectionPool) dequeue() *sqlx.DB {
+	return <-p.dbChan
 }

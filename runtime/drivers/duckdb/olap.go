@@ -41,17 +41,21 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 }
 
 func (c *connection) executeQuery(ctx context.Context, j *job) error {
+	db := c.connectionPool.dequeue()
+	defer c.connectionPool.enqueue(db)
 	if j.stmt.DryRun {
 		// TODO: Find way to validate with args
-		prepared, err := c.db.PrepareContext(ctx, j.stmt.Query)
+		prepared, err := db.PrepareContext(ctx, j.stmt.Query)
 		if err != nil {
 			return err
 		}
-		prepared.Close()
+		err = prepared.Close()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
-
-	rows, err := c.db.QueryxContext(ctx, j.stmt.Query, j.stmt.Args...)
+	rows, err := db.QueryxContext(ctx, j.stmt.Query, j.stmt.Args...)
 	j.result = rows
 	return err
 }

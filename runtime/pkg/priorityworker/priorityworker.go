@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"golang.org/x/sync/semaphore"
 	"sync"
 )
 
@@ -24,12 +25,13 @@ type PriorityWorker[V any] struct {
 	stopped        bool
 	stoppedMu      sync.RWMutex
 	stopDoneCh     chan struct{}
+	concurrency    int
 }
 
 // New creates a new PriorityWorker that calls the provided handler for every
 // item submitted using Process. It starts a goroutine for the worker's event
 // loop. You must call Stop on the worker when you're done using it.
-func New[V any](handler Handler[V]) *PriorityWorker[V] {
+func New[V any](handler Handler[V], concurrency int) *PriorityWorker[V] {
 	pw := &PriorityWorker[V]{
 		handler:        handler,
 		enqueueJobCh:   make(chan *item[V]),
@@ -39,6 +41,7 @@ func New[V any](handler Handler[V]) *PriorityWorker[V] {
 		stopped:        false,
 		stoppedMu:      sync.RWMutex{},
 		stopDoneCh:     make(chan struct{}),
+		concurrency:    concurrency,
 	}
 
 	go pw.work()
@@ -100,7 +103,8 @@ func (pw *PriorityWorker[V]) work() {
 	pq := priorityQueue[V]{}
 	heap.Init(&pq)
 
-	var currentDoneCh chan struct{}
+	jobDoneCh := make(chan struct{})
+	sem := semaphore.NewWeighted(int64(pw.concurrency))
 
 	for {
 		select {
@@ -112,9 +116,9 @@ func (pw *PriorityWorker[V]) work() {
 					job.err = ErrStopped
 					close(job.doneCh)
 				}
-				// Let the current item finish
-				if currentDoneCh != nil {
-					<-currentDoneCh
+				// Let the current items finish
+				for range pq {
+					<-jobDoneCh
 				}
 				// Exit
 				close(pw.stopDoneCh)
@@ -122,10 +126,11 @@ func (pw *PriorityWorker[V]) work() {
 			}
 
 			// Process or enqueue item
-			if !pw.paused && currentDoneCh == nil {
+			// check count of running jobs here and if less than concurrency then start otherwise push in queue
+			if !pw.paused && sem.TryAcquire(1) == true {
 				// If we're currently idle, we process the item directly
-				currentDoneCh = job.doneCh
-				go pw.handle(job)
+				//currentDoneCh = job.doneCh
+				go pw.handle(job, jobDoneCh, sem)
 			} else {
 				// Else we add it to the priority queue
 				heap.Push(&pq, job)
@@ -135,29 +140,28 @@ func (pw *PriorityWorker[V]) work() {
 			if job.index >= 0 {
 				heap.Remove(&pq, job.index)
 			}
-		case <-currentDoneCh:
-			if !pw.paused && pq.Len() > 0 {
+		case <-jobDoneCh:
+			// some job completed, so we are sure that we have a free slot since channel will get messages in order,
+			// but we need to acquire semaphore to make sure that we don't start more than concurrency jobs
+			if !pw.paused && pq.Len() > 0 && sem.TryAcquire(1) == true {
 				// If the queue isn't empty, start a new item
 				job := heap.Pop(&pq).(*item[V])
-				currentDoneCh = job.doneCh
-				go pw.handle(job)
-			} else {
-				// Else, go idle until next query
-				currentDoneCh = nil
+				//currentDoneCh = job.doneCh
+				go pw.handle(job, jobDoneCh, sem)
 			}
 		case p := <-pw.pausedToggleCh:
 			pw.paused = p
-			if !pw.paused && currentDoneCh == nil && pq.Len() > 0 {
+			if !pw.paused && pq.Len() > 0 && sem.TryAcquire(1) == true {
 				// We just unpaused, we're idle, and the queue is not empty – start the next job
 				job := heap.Pop(&pq).(*item[V])
-				currentDoneCh = job.doneCh
-				go pw.handle(job)
+				go pw.handle(job, jobDoneCh, sem)
 			}
 		}
 	}
 }
 
-func (pw *PriorityWorker[V]) handle(job *item[V]) {
+func (pw *PriorityWorker[V]) handle(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted) {
+	defer sem.Release(1)
 	// Bail if the job's ctx is cancelled
 	// (Unlikely to happen given other safeguards)
 	if job.ctx.Err() != nil {
@@ -170,6 +174,7 @@ func (pw *PriorityWorker[V]) handle(job *item[V]) {
 	err := pw.handler(job.ctx, job.val)
 	job.err = err
 	close(job.doneCh)
+	jobDoneCh <- struct{}{}
 }
 
 // item represents a job enqueued in priorityQueue.

@@ -20,27 +20,30 @@ var migrationVersionTable = "rill.migration_version"
 // Migrate implements drivers.Connection.
 // Migrate for DuckDB may not be safe for concurrent use.
 func (c *connection) Migrate(ctx context.Context) (err error) {
-	// Create rill schema if it doens't exist
-	_, err = c.db.ExecContext(ctx, "create schema if not exists rill")
+	db := c.connectionPool.dequeue()
+	defer c.connectionPool.enqueue(db)
+
+	// Create rill schema if it doesn't exist
+	_, err = db.ExecContext(ctx, "create schema if not exists rill")
 	if err != nil {
 		return err
 	}
 
 	// Create migrationVersionTable if it doesn't exist
-	_, err = c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
 	if err != nil {
 		return err
 	}
 
 	// Set the version to 0 if table is empty
-	_, err = c.db.ExecContext(ctx, fmt.Sprintf("insert into %s(version) select 0 where 0=(select count(*) from %s)", migrationVersionTable, migrationVersionTable))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("insert into %s(version) select 0 where 0=(select count(*) from %s)", migrationVersionTable, migrationVersionTable))
 	if err != nil {
 		return err
 	}
 
 	// Get version of latest migration
 	var currentVersion int
-	err = c.db.QueryRowContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&currentVersion)
+	err = db.QueryRowContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&currentVersion)
 	if err != nil {
 		return err
 	}
@@ -113,9 +116,11 @@ func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte,
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+	db := c.connectionPool.dequeue()
+	defer c.connectionPool.enqueue(db)
 	// Get current version
-	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
+	err = db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {
 		return 0, 0, err
 	}
