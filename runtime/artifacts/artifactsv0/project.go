@@ -85,28 +85,28 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		return "", err
 	}
 
-	path := path.Join("sources", source.Name+".yaml")
+	p := path.Join("sources", source.Name+".yaml")
 
 	// TODO: Use create and createOnly when they're added to repo.Put
-	if _, err := os.Stat(path); err == nil {
+	if _, err := os.Stat(path.Join(repo.DSN(), p)); err == nil {
 		if !force {
 			return "", os.ErrExist
 		}
 	}
 
-	err = repo.Put(ctx, c.InstanceID, path, bytes.NewReader(blob))
+	err = repo.Put(ctx, c.InstanceID, p, bytes.NewReader(blob))
 	if err != nil {
 		return "", err
 	}
 
-	return path, nil
+	return p, nil
 }
 
 func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
-	path := path.Join("sources", name+".yaml")
-	err := c.Repo.Delete(ctx, c.InstanceID, path)
+	p := path.Join("sources", name+".yaml")
+	err := c.Repo.Delete(ctx, c.InstanceID, p)
 	if err != nil {
 		return "", err
 	}
-	return path, nil
+	return p, nil
 }

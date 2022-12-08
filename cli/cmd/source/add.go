@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -63,7 +64,7 @@ func AddCmd(ver string) *cobra.Command {
 			}
 
 			src := &runtimev1.Source{
-				Name:       sourceName,
+				Name:       artifacts.SanitizedName(sourceName),
 				Connector:  "file",
 				Properties: propsPB,
 			}
