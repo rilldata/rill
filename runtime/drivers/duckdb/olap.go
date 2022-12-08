@@ -41,8 +41,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 }
 
 func (c *connection) executeQuery(ctx context.Context, j *job) error {
-	db := c.connectionPool.dequeue()
+	db, err := c.connectionPool.dequeue()
 	defer c.connectionPool.enqueue(db)
+	if err != nil {
+		return err
+	}
 	if j.stmt.DryRun {
 		// TODO: Find way to validate with args
 		prepared, err := db.PrepareContext(ctx, j.stmt.Query)

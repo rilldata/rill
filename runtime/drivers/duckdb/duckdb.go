@@ -101,11 +101,17 @@ func NewConnectionPool(numConnections int) *ConnectionPool {
 // enqueue adds a DB handle to the buffered channel, it will block if the channel is full which should not happen in
 // normal scenarios. Make sure to enqueue() after dequeue() to ensure the DB handle is returned to the pool.
 func (p *ConnectionPool) enqueue(db *sqlx.DB) {
-	p.dbChan <- db
+	if db != nil {
+		p.dbChan <- db
+	}
 }
 
 // dequeue removes a DB handle from the buffered channel, it will block if the channel is empty.
 // Make sure to enqueue() after dequeue() to ensure the DB handle is returned to the pool.
-func (p *ConnectionPool) dequeue() *sqlx.DB {
-	return <-p.dbChan
+func (p *ConnectionPool) dequeue() (*sqlx.DB, error) {
+	db, ok := <-p.dbChan
+	if !ok {
+		return nil, drivers.ErrClosed
+	}
+	return db, nil
 }

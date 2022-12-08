@@ -26,9 +26,8 @@ func TestQuery(t *testing.T) {
 
 	err = conn.Close()
 	require.NoError(t, err)
-	db := conn.(*connection).connectionPool.dequeue()
+	db, err := conn.(*connection).connectionPool.dequeue()
 	defer conn.(*connection).connectionPool.enqueue(db)
-	err = db.Ping()
 	require.Error(t, err)
 }
 

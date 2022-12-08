@@ -34,8 +34,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
-	db := i.c.connectionPool.dequeue()
+	db, err := i.c.connectionPool.dequeue()
 	defer i.c.connectionPool.enqueue(db)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := db.QueryxContext(ctx, q)
 	if err != nil {
 		return nil, err
@@ -67,8 +70,11 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 		order by 1, 2, 3, 4
 	`
 
-	db := i.c.connectionPool.dequeue()
+	db, err := i.c.connectionPool.dequeue()
 	defer i.c.connectionPool.enqueue(db)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := db.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
