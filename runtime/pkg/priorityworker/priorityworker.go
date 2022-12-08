@@ -27,6 +27,7 @@ type PriorityWorker[V any] struct {
 	stopDoneCh     chan struct{}
 	concurrency    int
 	runningJobs    map[*item[V]]bool
+	runningJobsMu  sync.RWMutex
 }
 
 // New creates a new PriorityWorker that calls the provided handler for every
@@ -44,6 +45,7 @@ func New[V any](handler Handler[V], concurrency int) *PriorityWorker[V] {
 		stopDoneCh:     make(chan struct{}),
 		concurrency:    concurrency,
 		runningJobs:    make(map[*item[V]]bool),
+		runningJobsMu:  sync.RWMutex{},
 	}
 
 	go pw.work()
@@ -118,11 +120,19 @@ func (pw *PriorityWorker[V]) work() {
 					job.err = ErrStopped
 					close(job.doneCh)
 				}
-				// Wait for all running jobs to finish
+				// Gather all running jobs doneCh
+				pw.runningJobsMu.RLock()
+				doneChs := make([]chan struct{}, len(pw.runningJobs))
+				i := 0
 				for job := range pw.runningJobs {
-					<-job.doneCh
+					doneChs[i] = job.doneCh
+					i++
 				}
-
+				pw.runningJobsMu.RUnlock()
+				// Wait for all running jobs to finish
+				for _, doneCh := range doneChs {
+					<-doneCh
+				}
 				// Exit
 				close(pw.stopDoneCh)
 				return
@@ -163,14 +173,18 @@ func (pw *PriorityWorker[V]) work() {
 }
 
 func (pw *PriorityWorker[V]) cleanUpJobState(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted) {
+	pw.runningJobsMu.Lock()
 	delete(pw.runningJobs, job)
+	pw.runningJobsMu.Unlock()
 	sem.Release(1)
 	close(job.doneCh)
 	jobDoneCh <- struct{}{}
 }
 
 func (pw *PriorityWorker[V]) handle(job *item[V], jobDoneCh chan struct{}, sem *semaphore.Weighted) {
+	pw.runningJobsMu.Lock()
 	pw.runningJobs[job] = true
+	pw.runningJobsMu.Unlock()
 	defer pw.cleanUpJobState(job, jobDoneCh, sem)
 	// Bail if the job's ctx is cancelled
 	// (Unlikely to happen given other safeguards)

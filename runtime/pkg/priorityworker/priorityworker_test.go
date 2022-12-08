@@ -34,10 +34,13 @@ func TestPriorityQueue(t *testing.T) {
 	err := g.Wait()
 	require.NoError(t, err)
 
+	actual := 0
+	expected := 0
 	for i := n; i > 0; i-- {
-		x := <-results
-		require.Equal(t, i, x)
+		actual += <-results
+		expected += i
 	}
+	require.Equal(t, expected, actual)
 }
 
 func TestCancel(t *testing.T) {
