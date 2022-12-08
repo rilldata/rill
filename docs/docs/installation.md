@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 On macOS, we recommend installing `rill` using Brew:
 
 ```bash
-brew install rilldata/rill-developer/rill
+brew install rilldata/tap/rill
 ```
 
 Alternatively, you can install `rill` using our installation script:

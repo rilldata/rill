@@ -11,7 +11,7 @@ Follow this tutorial to install Rill and create a project on your local computer
 On macOS, we recommend installing `rill` using Brew:
 
 ```bash
-brew install rilldata/rill-developer/rill
+brew install rilldata/tap/rill
 ```
 
 On Linux, we recommend installing `rill` using our installation script:

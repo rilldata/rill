@@ -14,7 +14,7 @@ Rill Developer makes it effortless to transform your datasets with SQL and creat
 On macOS, we recommend installing `rill` using Brew:
 
 ```bash
-brew install rilldata/rill-developer/rill
+brew install rilldata/tap/rill
 ```
 
 On Linux, we recommend installing `rill` using our installation script:
