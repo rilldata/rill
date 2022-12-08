@@ -77,6 +77,7 @@ func IsValidName(itemName string) bool {
 
 var invalidChars = regexp.MustCompile(`[^a-zA-Z_\d]`)
 
+// SanitizedName returns a sanitized name for an artifact from file path.
 func SanitizedName(filePath string) string {
 	name := invalidChars.ReplaceAllString(fileutil.Stem(filePath), "_")
 	if unicode.IsNumber(rune(name[0])) {
