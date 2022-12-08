@@ -61,6 +61,7 @@ type connection struct {
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.worker.Stop()
+	close(c.connectionPool.dbChan)
 	for db := range c.connectionPool.dbChan {
 		err := db.Close()
 		if err != nil {
