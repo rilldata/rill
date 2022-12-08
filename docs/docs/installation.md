@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 ## macOS
 
-On macOS, we recommend installing `rill` using Brew:
+On macOS, we recommend installing `rill` using Homebrew:
 
 ```bash
 brew install rilldata/tap/rill
@@ -46,7 +46,7 @@ On both macOS and Linux, you can install the latest nightly build using the inst
 curl -s https://cdn.rilldata.com/install.sh | bash -s -- --nightly
 ```
 
-Note for macOS users: If you previously installed Rill using Brew, the Brew-installed binary will take precedent. You can remove it by running `brew uninstall rill`.
+Note for macOS users: If you previously installed Rill using `brew`, the brew-managed binary will take precedent. You can remove it by running `brew uninstall rill`.
 
 ## Manual install
 

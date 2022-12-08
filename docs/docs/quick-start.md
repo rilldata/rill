@@ -8,7 +8,7 @@ Follow this tutorial to install Rill and create a project on your local computer
 
 ## Installation
 
-On macOS, we recommend installing `rill` using Brew:
+On macOS, we recommend installing `rill` using Homebrew:
 
 ```bash
 brew install rilldata/tap/rill
@@ -20,7 +20,7 @@ On Linux, we recommend installing `rill` using our installation script:
 curl -s https://cdn.rilldata.com/install.sh | bash
 ```
 
-See [Install options](./sql-models.md) for more information about different ways to install Rill.
+See [Install options](./installation.md) for more information about different ways to install Rill.
 
 <!-- TODO: Add docs link here -->
 
