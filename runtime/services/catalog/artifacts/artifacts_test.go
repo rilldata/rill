@@ -215,6 +215,41 @@ type: file
 	}
 }
 
+func TestSanitizedName(t *testing.T) {
+	variations := []struct {
+		fileName     string
+		expectedName string
+	}{
+		{"table", "table"},
+		{"table.parquet", "table"},
+		{"table.v1.parquet", "table"},
+		{"table.parquet.tgz", "table"},
+		{"22-02-10.parquet", "_22_02_10"},
+		{"-22-02-11.parquet", "_22_02_11"},
+		{"_22-02-12.parquet", "_22_02_12"},
+	}
+
+	for _, variation := range variations {
+		filePathVariations := []struct {
+			filePath     string
+			expectedName string
+		}{
+			{variation.fileName, variation.expectedName},
+			{"/" + variation.fileName, variation.expectedName},
+			{"./" + variation.fileName, variation.expectedName},
+			{"path/to/file/" + variation.fileName, variation.expectedName},
+			{"/path/to/file/" + variation.fileName, variation.expectedName},
+			{"./path/to/file/" + variation.fileName, variation.expectedName},
+		}
+
+		for _, filePathVariation := range filePathVariations {
+			t.Run(filePathVariation.filePath, func(t *testing.T) {
+				require.Equal(t, filePathVariation.expectedName, artifacts.SanitizedName(filePathVariation.filePath))
+			})
+		}
+	}
+}
+
 func toProtoStruct(obj map[string]any) *structpb.Struct {
 	s, err := structpb.NewStruct(obj)
 	if err != nil {
