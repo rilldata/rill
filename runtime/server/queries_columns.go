@@ -2,12 +2,8 @@ package server
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/marcboeker/go-duckdb"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -176,50 +172,20 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 	}, nil
 }
 
-func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
-	switch i := interval.(type) {
-	case duckdb.Interval:
-		var result = new(runtimev1.TimeRangeSummary_Interval)
-		result.Days = i.Days
-		result.Months = i.Months
-		result.Micros = i.Micros
-		return result, nil
-	case int64:
-		// for date type column interval is difference in num days for two dates
-		var result = new(runtimev1.TimeRangeSummary_Interval)
-		result.Days = int32(i)
-		return result, nil
-	}
-	return nil, fmt.Errorf("cannot handle interval type %T", interval)
-}
-
 func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
-	sanitizedColumnName := quoteName(request.ColumnName)
-	rows, err := s.query(ctx, request.InstanceId, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, request.TableName),
-		Priority: int(request.Priority),
-	})
+	q := &queries.ColumnCardinality{
+		TableName:  request.TableName,
+		ColumnName: request.ColumnName,
+	}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var count float64
-	for rows.Next() {
-		err = rows.Scan(&count)
-		if err != nil {
-			return nil, err
-		}
-		return &runtimev1.GetCardinalityOfColumnResponse{
-			CategoricalSummary: &runtimev1.CategoricalSummary{
-				Case: &runtimev1.CategoricalSummary_Cardinality{
-					Cardinality: count,
-				},
+	return &runtimev1.GetCardinalityOfColumnResponse{
+		CategoricalSummary: &runtimev1.CategoricalSummary{
+			Case: &runtimev1.CategoricalSummary_Cardinality{
+				Cardinality: q.Result,
 			},
-		}, nil
-	}
-	return nil, status.Error(codes.Internal, "no rows returned")
-}
-
-func quoteName(columnName string) string {
-	return fmt.Sprintf("\"%s\"", columnName)
+		},
+	}, nil
 }

@@ -92,3 +92,17 @@ func BenchmarkColumnTimeRange(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
+
+func BenchmarkColumnCardinality(b *testing.B) {
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		q := &ColumnCardinality{
+			TableName:  "ad_bids",
+			ColumnName: "publisher",
+		}
+		err := q.Resolve(context.Background(), rt, instanceID, 0)
+		require.NoError(b, err)
+		require.NotEmpty(b, q.Result)
+	}
+}
