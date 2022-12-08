@@ -41,6 +41,7 @@ const DefaultOLAPDSN = "stage.db"
 // Here, a local environment means a non-authenticated, single-instance and single-project setup on localhost.
 // App encapsulates logic shared between different CLI commands, like start, init, build and source.
 type App struct {
+	Context     context.Context
 	Runtime     *runtime.Runtime
 	Instance    *drivers.Instance
 	Logger      *zap.SugaredLogger
@@ -50,7 +51,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
+func NewApp(ctx context.Context, version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
 	// Setup a friendly-looking colored logger
 	conf := zap.NewDevelopmentEncoderConfig()
 	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -103,13 +104,14 @@ func NewApp(version string, verbose bool, olapDriver string, olapDSN string, pro
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
 	}
-	err = rt.CreateInstance(context.Background(), inst)
+	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
 	}
 
 	// Done
 	app := &App{
+		Context:     ctx,
 		Runtime:     rt,
 		Instance:    inst,
 		Logger:      logger.Sugar(),
@@ -126,23 +128,23 @@ func (a *App) IsDevelopment() bool {
 }
 
 func (a *App) IsProjectInit() bool {
-	repo, err := a.Runtime.Repo(context.Background(), a.Instance.ID)
+	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
 
 	c := artifactsv0.New(repo, a.Instance.ID)
-	return c.IsInit(context.Background())
+	return c.IsInit(a.Context)
 }
 
 func (a *App) InitProject(exampleName string) error {
-	repo, err := a.Runtime.Repo(context.Background(), a.Instance.ID)
+	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
 
 	c := artifactsv0.New(repo, a.Instance.ID)
-	if c.IsInit(context.Background()) {
+	if c.IsInit(a.Context) {
 		return fmt.Errorf("a Rill project already exists")
 	}
 
@@ -159,7 +161,7 @@ func (a *App) InitProject(exampleName string) error {
 		}
 
 		// Init empty project
-		err := c.InitEmpty(context.Background(), defaultName)
+		err := c.InitEmpty(a.Context, defaultName)
 		if err != nil {
 			if isPwd {
 				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
@@ -190,9 +192,9 @@ func (a *App) InitProject(exampleName string) error {
 	}
 
 	if isPwd {
-		fmt.Printf("Initialized example project '%s' in the current directory\n", exampleName)
+		a.Logger.Infof("Initialized example project '%s' in the current directory", exampleName)
 	} else {
-		fmt.Printf("Initialized example project '%s' in directory '%s'\n", exampleName, a.ProjectPath)
+		a.Logger.Infof("Initialized example project '%s' in directory '%s'", exampleName, a.ProjectPath)
 	}
 
 	return nil
@@ -200,9 +202,13 @@ func (a *App) InitProject(exampleName string) error {
 
 func (a *App) Reconcile() error {
 	a.Logger.Infof("Hydrating project '%s'", a.ProjectPath)
-	res, err := a.Runtime.Reconcile(context.Background(), a.Instance.ID, nil, nil, false, false)
+	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
 	if err != nil {
 		return err
+	}
+	if a.Context.Err() != nil {
+		a.Logger.Errorf("Hydration canceled")
+		return nil
 	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
@@ -221,9 +227,13 @@ func (a *App) Reconcile() error {
 func (a *App) ReconcileSource(path string) error {
 	a.Logger.Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
 	paths := []string{path}
-	res, err := a.Runtime.Reconcile(context.Background(), a.Instance.ID, paths, paths, false, false)
+	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
 	if err != nil {
 		return err
+	}
+	if a.Context.Err() != nil {
+		a.Logger.Errorf("Hydration canceled")
+		return nil
 	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
@@ -263,7 +273,7 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 	serverLogger := a.BaseLogger.WithOptions(zap.IncreaseLevel(lvl))
 
 	// Prepare errgroup and context with graceful shutdown
-	gctx := graceful.WithCancelOnTerminate(context.Background())
+	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
 	// Create a runtime server
