@@ -2,7 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
-  draft: false
+  draft: true
 
 builds:
   - id: darwin_amd64
