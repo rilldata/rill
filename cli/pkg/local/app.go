@@ -349,8 +349,6 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	// Health check succeeded
 	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
-		// TODO: figure out why the service can be unavailable just after health check is ok
-		time.Sleep(time.Second)
 		err := browser.Open(uri)
 		if err != nil {
 			a.Logger.Debugf("could not open browser: %v", err)
