@@ -151,49 +151,16 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 
 // Metrics/Timeseries APIs
 func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.EstimateRollupIntervalRequest) (*runtimev1.EstimateRollupIntervalResponse, error) {
-	trr, err := s.GetTimeRangeSummary(ctx, &runtimev1.GetTimeRangeSummaryRequest{
-		InstanceId: request.InstanceId,
+	q := &queries.RollupInterval{
 		TableName:  request.TableName,
 		ColumnName: request.ColumnName,
-		Priority:   request.Priority,
-	})
+	}
+	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
 	if err != nil {
 		return nil, err
 	}
-	if trr.GetTimeRangeSummary().Interval == nil {
-		return &runtimev1.EstimateRollupIntervalResponse{}, nil
-	}
-	r := trr.TimeRangeSummary.Interval
 
-	const (
-		MICROS_SECOND = 1000 * 1000
-		MICROS_MINUTE = 1000 * 1000 * 60
-		MICROS_HOUR   = 1000 * 1000 * 60 * 60
-		MICROS_DAY    = 1000 * 1000 * 60 * 60 * 24
-	)
-
-	var rollupInterval runtimev1.TimeGrain
-	if r.Days == 0 && r.Micros <= MICROS_MINUTE {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
-	} else if r.Days == 0 && r.Micros > MICROS_MINUTE && r.Micros <= MICROS_HOUR {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_SECOND
-	} else if r.Days == 0 && r.Micros <= MICROS_DAY {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_MINUTE
-	} else if r.Days <= 7 {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_HOUR
-	} else if r.Days <= 365*20 {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_DAY
-	} else if r.Days <= 365*500 {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_MONTH
-	} else {
-		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_YEAR
-	}
-
-	return &runtimev1.EstimateRollupIntervalResponse{
-		Interval: rollupInterval,
-		Start:    trr.TimeRangeSummary.Min,
-		End:      trr.TimeRangeSummary.Max,
-	}, nil
+	return q.Result, nil
 }
 
 func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.TimeSeriesTimeRange, error) {
