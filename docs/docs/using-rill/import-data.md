@@ -1,62 +1,98 @@
 ---
-title: Import data source
-description: Import local files, remote sources, and existing DuckDB databases
-sidebar_label: Import data source
-sidebar_position: 30
+title: Import data
+description: Import local files or remote data sources
+sidebar_label: Import data
+sidebar_position: 10
 ---
 
-There are several ways to import data in Rill Developer: local files, remotely stored files, and existing DuckDB databases.
+Rill supports several connectors for importing data: local files, download using HTTP(S), and download from an S3 or GCS bucket. 
 
-## Local files
+## Adding a local file
+
+### Using the UI
+
 To import a file using the UI, click "+" by Sources in the left hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
 
-To import a file with the CLI use the [`rill import-source`](/cli#import-your-data) CLI command from the terminal.
+When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project.
 
+### Using the CLI
+
+You can also add a local file source directly using the Rill CLI. To do so, `cd` into your Rill project and run:
+```bash
+rill source add /path/to/file.csv
 ```
-rill import-source /path/to/data_1.parquet
-rill import-source /path/to/data_2.csv
-rill import-source /path/to/data_3.tsv
+
+We recommend only using the CLI to import data when the Rill web app is *not* running. The Rill web app does not currently get notified when a source is added using the CLI, so you may experience an inconsistent UI. (We're working on fixing this.)
+
+### Using code
+
+In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following contents:
+
+```yaml
+type: file
+path: /path/to/data.csv
 ```
 
-## Remote sources
-To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your files are stored ("Google Cloud Storage", "Amazon S3", or "Local File"). Enter your file's URI and source name before clicking "Add Source".
+Rill will ingest the data next time you run `rill start`.
 
-To access private data, you'll need to configure your local machine with credentials to the relevant cloud provider (see instructions below). Rill uses official cloud SDKs to automatically detect your local credentials and pass them on to the cloud platform. Your credentials are never stored in Rill.
+Note that if you provide a relative path, the path should be relative to your Rill project root (where your `rill.yaml` file is located), not relative to the `sources` directory.
 
-After import, you'll be able to reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
+## Adding a remote source
 
-Creating remote sources is not currently available through the CLI.
+### Using the UI
 
-### Setting Google GCS credentials
-Google Cloud Platform credentials are enabled through `gcloud` authentication in the terminal.
+To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the protocol you wish to use to connect to your remote files ("Google Cloud Storage", "Amazon S3", or "http(s)"). Enter a source name and your file's URI before clicking "Add Source".
 
-First, ensure you have the `gcloud` CLI installed locally by running the following CLI command. If it is not installed, go through the [gcloud install steps](https://cloud.google.com/sdk/docs/install).
+When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project.
 
+After import, you can reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
+
+### Using code
+
+To create a remote http(s) source, create a `source_name.yaml` file in the `sources` directory with the following contents:
+
+```yaml
+type: https
+uri: https://data.example.org/path/to/file.parquet
 ```
+
+For details about all available properties, as well as how to define code artifacts for other remote connectors, see the source syntax [reference](../reference/sources.md).
+
+## Authenticating for private remote sources
+
+When attempting to access private data in AWS S3 or Google Cloud Storage, you need to configure your local machine with credentials to the relevant cloud provider (see instructions below).
+
+Rill uses the official AWS and Google Cloud SDKs to automatically detect and connect to the cloud. Your credentials are never stored in Rill.
+
+### Setting local credentials for Google Cloud Storage (GCS)
+
+First, ensure you have the `gcloud` CLI installed locally by running the following CLI command. If it is not installed, go through the [`gcloud` install steps](https://cloud.google.com/sdk/docs/install).
+
+```bash
 gcloud --version
 ```
 
-Next, authenticate your local machine. The following command opens a browser window and takes you through the Google authentication flow:
+Second, authenticate your local machine by running the following command, which opens a browser window and takes you through the Google authentication flow:
 
-```
+```bash
 gcloud auth application-default login
 ```
 
-Upon login, private GCS files available to this account can be pulled into Rill.
+You can now access all the private GCS files that your account has access to through Rill.
 
-
-### Setting Amazon S3 credentials
-You can use an access key and access secret to ingest privately stored data from S3 into Rill. This can be configured using the CLI.
+### Setting local credentials for AWS S3
 
 First, ensure you have the AWS CLI installed locally by running the following command. If it is not installed, go through the [AWS CLI install steps](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
 
-```
+```bash
 aws --version
 ```
 
-Next, create an [access key and secret](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) for a user that has _S3 read access_. Use the information from this account to configure your local AWS credentials:
+Second, create an [access key and secret](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) for a user that has _S3 read access_.
 
-```
+Third, run the following command to configure your local AWS credentials:
+
+```bash
 aws configure
 ```
 
@@ -69,13 +105,13 @@ Default region name [None]: <your region>
 Default output format [None]: <None>
 ```
 
-Private S3 files available to this account can now be pulled into Rill.
+You can now access all the private S3 files that this account has access to through Rill.
 
 ## Limitations
 
-Today, a few constraints apply to the data sources you can import:
-- Only Parquet and CSV files are supported.
-- You can only import a single file at a time.
+- Rill supports `.csv`, `.tsv`, and `.parquet` files, as well as gzipped (`.gz`) versions of these
+- You can only import a single data file at a time
 
 ## Request a new connector
-If you don't see your data source listed above, [please let us know](https://discord.gg/eEvSYHdfWK)! We're continually adding new connectors, so your feedback will help us prioritize what data sources to support next.
+
+If you don't see your data source listed above, please reach out on our [Discord](https://discord.gg/eEvSYHdfWK)! We're continually adding new connectors, so your feedback will help us prioritize what data sources to support next.

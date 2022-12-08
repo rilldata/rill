@@ -1,8 +1,14 @@
 ---
-title: We believe in strong community
-sidebar_label: Contributing policy
-sidebar_position: 20
+title: Contributing
+sidebar_label: Contributing
+sidebar_position: 100
 ---
+
+## Developer guide
+
+We keep all information about developing and testing Rill in our monorepo at [github.com/rilldata/rill-developer](http://github.com/rilldata/rill-developer/). See the [`CONTRIBUTING.md`](https://github.com/rilldata/rill-developer/blob/main/CONTRIBUTING.md) file as an entrypoint.
+
+## We believe in strong community
 
 Our goal is to foster a community that can grow in our data practice and build new tools that break the mold on what people think is possible today. Trust and safety is critical in building a strong community where we can share ideas and ask questions. This is impossible if people feel threatened, harassed or discriminated against.
 

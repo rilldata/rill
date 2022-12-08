@@ -2,7 +2,7 @@
 title: Define metrics dashboard
 description: Define your time dimension, measures and dimensions to create a dashboard
 sidebar_label: Define metrics dashboard
-sidebar_position: 50
+sidebar_position: 30
 ---
 
 In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
@@ -21,7 +21,7 @@ To get you up and running quickly, Rill can generate a dashboard directly from a
 
 :::
 
-# Editing your dashboard
+## Editing dashboard metrics in the UI
 
 Dashboards can be created and improved using the metrics editor. The metrics editor helps you define a time series, set of measures, and categorical dimensions that are directly tied to your dashboard.
 
@@ -62,3 +62,36 @@ Try creating categorical columns from numeric columns in your data model by usin
 
 :::
 
+## Editing dashboard metrics using code
+
+In your Rill project directory, create a `dashboard_name.yaml` file in the `dashboards` directory and adapt its defintion from the following template:
+
+```yaml
+model: model_name
+display_name: Dashboard name
+description: 
+
+timeseries: timestamp_column_name
+default_timegrain: ""
+timegrains:
+  - day
+  - month
+  - year
+
+dimensions:
+  - property: model_column_1
+    label: Column label 1
+    description: ""
+  - property: model_column_2
+    label: Column label 2
+    description: ""
+  # Add more dimensions here
+
+measures:
+  - label: "Count"
+    expression: count(*)
+    description: ""
+  # Add more measures here
+```
+
+Rill will ingest the dashboard definition next time you run `rill start`. For details about all available properties, see the metrics syntax [reference](../reference/metrics.md).
