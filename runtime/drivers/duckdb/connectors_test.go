@@ -80,3 +80,53 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		})
 	}
 }
+
+func TestCSVDelimiter(t *testing.T) {
+	ctx := context.Background()
+	conn, err := driver{}.Open("?access_mode=read_write")
+	require.NoError(t, err)
+	olap, _ := conn.OLAPStore()
+
+	testdataPathAbs, err := filepath.Abs("../../../web-local/test/data")
+	require.NoError(t, err)
+	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
+
+	err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}, &connectors.Source{
+		Name:      "foo",
+		Connector: "file",
+		Properties: map[string]any{
+			"path": testDelimiterCsvPath,
+		},
+	})
+	require.NoError(t, err)
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	// 3 columns because no delimiter is passed
+	require.Len(t, cols, 3)
+	require.NoError(t, rows.Close())
+
+	err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}, &connectors.Source{
+		Name:      "foo",
+		Connector: "file",
+		Properties: map[string]any{
+			"path":          testDelimiterCsvPath,
+			"csv.delimiter": "+",
+		},
+	})
+	require.NoError(t, err)
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
+	require.NoError(t, err)
+	cols, err = rows.Columns()
+	require.NoError(t, err)
+	// 3 columns because no delimiter is passed
+	require.Len(t, cols, 2)
+	require.NoError(t, rows.Close())
+}

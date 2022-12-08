@@ -35,13 +35,15 @@ func TestSourceReadWrite(t *testing.T) {
 					Name:      "Source",
 					Connector: "file",
 					Properties: toProtoStruct(map[string]any{
-						"path": "data/source.csv",
+						"path":          "data/source.csv",
+						"csv.delimiter": "|",
 					}),
 				},
 			},
 			`version: 0.0.1
 type: file
 path: data/source.csv
+csv.delimiter: '|'
 `,
 		},
 		{

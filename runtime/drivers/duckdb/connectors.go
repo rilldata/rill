@@ -53,7 +53,7 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 	// Also, it's a source, so the caller can be trusted.
 
 	var from string
-	if conf.Format == "csv" && conf.CSVDelimiter != "" {
+	if conf.Format == ".csv" && conf.CSVDelimiter != "" {
 		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", path, conf.CSVDelimiter)
 	} else {
 		from, err = getSourceReader(path)
