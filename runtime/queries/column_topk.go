@@ -55,7 +55,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	}
 
 	// Build SQL
-	qry := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
+	qry := fmt.Sprintf("SELECT CAST(%s as VARCHAR) AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
 		quoteName(q.ColumnName),
 		q.Agg,
 		quoteName(q.TableName),

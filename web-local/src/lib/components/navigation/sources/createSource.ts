@@ -28,13 +28,13 @@ export async function createSource(
       strict: true,
     },
   });
+  goto(`/source/${tableName}`);
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   if (resp.errors.length) {
     // TODO: make sure to get the right error
     return resp.errors;
   }
-  goto(`/source/${tableName}`);
   notifications.send({ message: `Created source ${tableName}` });
   return [];
 }

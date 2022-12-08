@@ -104,7 +104,7 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    const sourceModelName = dashboardData.jsonRepresentation.from;
+    const sourceModelName = dashboardData.jsonRepresentation.model;
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
     goto(`/model/${sourceModelName}`);
@@ -148,7 +148,7 @@
     );
 
     // redirect to model when metric is deleted
-    const sourceModelName = dashboardData.jsonRepresentation.from;
+    const sourceModelName = dashboardData.jsonRepresentation.model;
     if ($appStore.activeEntity.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);

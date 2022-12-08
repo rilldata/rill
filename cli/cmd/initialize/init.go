@@ -37,7 +37,7 @@ func InitCmd(ver string) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -48,6 +48,12 @@ func InitCmd(ver string) *cobra.Command {
 				} else {
 					return fmt.Errorf("a Rill project already exists in directory '%s'", projectPath)
 				}
+			}
+
+			// Only use example=default if --example was explicitly set.
+			// Otherwise, default to an empty project.
+			if !cmd.Flags().Changed("example") {
+				exampleName = ""
 			}
 
 			err = app.InitProject(exampleName)
@@ -66,7 +72,8 @@ func InitCmd(ver string) *cobra.Command {
 
 	initCmd.Flags().SortFlags = false
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
-	initCmd.Flags().StringVar(&exampleName, "example", "", "Name of example project (default \"empty\")")
+	initCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
+	initCmd.Flags().Lookup("example").NoOptDefVal = "default" // Allows "--example" without a specific name
 	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")

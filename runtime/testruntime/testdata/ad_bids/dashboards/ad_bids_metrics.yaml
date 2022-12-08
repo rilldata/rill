@@ -1,4 +1,4 @@
-from: ad_bids
+model: ad_bids
 display_name: Ad bids
 description:
 

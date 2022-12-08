@@ -148,6 +148,7 @@ func AssertMigration(
 }
 
 func RenameFile(t *testing.T, dir string, from string, to string) {
+	time.Sleep(time.Millisecond * 10)
 	err := os.Rename(path.Join(dir, from), path.Join(dir, to))
 	require.NoError(t, err)
 	err = os.Chtimes(path.Join(dir, to), time.Now(), time.Now())

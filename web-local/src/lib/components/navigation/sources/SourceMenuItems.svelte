@@ -57,15 +57,15 @@
 
   const dispatch = createEventDispatcher();
 
+  $: getSource = useRuntimeServiceGetCatalogEntry(
+    runtimeInstanceId,
+    sourceName
+  );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
     getFileFromName(sourceName, EntityType.Table)
-  );
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
   );
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
