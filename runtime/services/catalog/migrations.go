@@ -375,7 +375,7 @@ func (s *Service) getMigrationItem(
 	return item
 }
 
-//isInvalidDuplicate checks if one of the existing or a new item is invalid duplicate
+// isInvalidDuplicate checks if one of the existing or a new item is invalid duplicate
 func (s *Service) isInvalidDuplicate(
 	migrationMap map[string]*MigrationItem,
 	changedPathsHint bool,
@@ -412,8 +412,7 @@ func (s *Service) isInvalidDuplicate(
 	}
 
 	if changedPathsHint {
-		if existingPath, ok := s.NameToPath[item.NormalizedName];
-			ok && existingPath != item.Path && !changedPathsMap[existingPath] {
+		if existingPath, ok := s.NameToPath[item.NormalizedName]; ok && existingPath != item.Path && !changedPathsMap[existingPath] {
 			return false, item.Path
 		}
 	}
