@@ -16,13 +16,16 @@ export function shorthandTitle(str: string) {
     .filter((word: string) => word !== "") as string[];
 
   if (out.length === 1) {
+    // take first two letters
     const first = out[0].slice(0, 2);
     if (first.length === 2) {
       const chars = first.split("");
       chars[1] = chars[1].toLowerCase();
       return chars.join("");
     }
-  } else
+  }
+  // take first letter of first two words
+  else
     return out
       .map((word) => word?.[0])
       .join("")
