@@ -23,13 +23,15 @@ func InitCmd(ver string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// List examples and exit
 			if listExamples {
+				fmt.Println("The built-in examples are: ")
 				names, err := examples.List()
 				if err != nil {
 					return err
 				}
 				for _, name := range names {
-					fmt.Println(name)
+					fmt.Printf("- %s\n", name)
 				}
+				fmt.Println("\nVisit our documentation for more examples: https://docs.rilldata.com")
 				return nil
 			}
 
@@ -54,6 +56,11 @@ func InitCmd(ver string) *cobra.Command {
 			// Otherwise, default to an empty project.
 			if !cmd.Flags().Changed("example") {
 				exampleName = ""
+			}
+
+			if exampleName != "" {
+				fmt.Println("Visit our documentation for more examples: https://docs.rilldata.com.")
+				fmt.Println("")
 			}
 
 			err = app.InitProject(exampleName)
