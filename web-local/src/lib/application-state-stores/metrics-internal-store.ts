@@ -12,7 +12,7 @@ import { selectTimestampColumnFromSchema } from "../svelte-query/column-selector
 export const metricsTemplate = `
 # Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
 
-display_name: "Dashboard"
+display_name: ""
 model: ""
 timeseries: ""
 measures: []

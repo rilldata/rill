@@ -62,7 +62,7 @@
       $dashboardNames.data
     );
     const generatedYAML = generateMeasuresAndDimension(model, {
-      display_name: `${newDashboardName} dashboard`,
+      display_name: `${modelName} dashboard`,
     });
     $createFileMutation.mutate(
       {
