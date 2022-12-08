@@ -29,3 +29,21 @@ func TestConnectionCache(t *testing.T) {
 	require.True(t, conn1 == conn2)
 	require.False(t, conn2 == conn3)
 }
+
+func TestNilValues(t *testing.T) {
+	qc := newQueryCache(10)
+
+	qc.add(queryCacheKey{"1", "1", "1"}, "value")
+	v, ok := qc.get(queryCacheKey{"1", "1", "1"})
+	require.Equal(t, "value", v)
+	require.True(t, ok)
+
+	qc.add(queryCacheKey{"1", "1", "1"}, nil)
+	v, ok = qc.get(queryCacheKey{"1", "1", "1"})
+	require.Nil(t, v)
+	require.True(t, ok)
+
+	v, ok = qc.get(queryCacheKey{"nosuch", "nosuch", "nosuch"})
+	require.Nil(t, v)
+	require.False(t, ok)
+}

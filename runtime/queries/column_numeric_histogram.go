@@ -39,28 +39,36 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 	return nil
 }
 
-func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := quoteName(q.ColumnName)
-	querySql := fmt.Sprintf("SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) as IQR, approx_count_distinct(%s) as count, max(%s) - min(%s) as range FROM %s",
-		sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, sanitizedColumnName, quoteName(q.TableName))
+	querySql := fmt.Sprintf(
+		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		quoteName(q.TableName),
+	)
 
 	rows, err := rt.Execute(ctx, instanceID, priority, querySql)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer rows.Close()
 
 	var iqr, rangeVal sql.NullFloat64
 	var count float64
-	for rows.Next() {
+	if rows.Next() {
 		err = rows.Scan(&iqr, &count, &rangeVal)
 		if err != nil {
-			return err
-		}
-		if !iqr.Valid {
-			return nil
+			return 0, err
 		}
 	}
+	if !iqr.Valid || !rangeVal.Valid || rangeVal.Float64 == 0.0 {
+		return 0, nil
+	}
+
 	var bucketSize float64
 	if count < 40 {
 		// Use cardinality if unique count less than 40
@@ -71,9 +79,22 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		FDEstimatorBucketSize := math.Ceil(rangeVal.Float64 / bucketWidth)
 		bucketSize = math.Min(40, FDEstimatorBucketSize)
 	}
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	return bucketSize, nil
+}
 
-	histogramSql := fmt.Sprintf(`
+func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	sanitizedColumnName := quoteName(q.ColumnName)
+	bucketSize, err := q.calculateBucketSize(ctx, rt, instanceID, priority)
+	if err != nil {
+		return err
+	}
+	if bucketSize == 0 {
+		return nil
+	}
+
+	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	histogramSql := fmt.Sprintf(
+		`
           WITH data_table AS (
             SELECT %[1]s as %[2]s 
             FROM %[3]s
@@ -124,7 +145,13 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
             -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
-	      `, selectColumn, sanitizedColumnName, q.TableName, bucketSize)
+	      `,
+		selectColumn,
+		sanitizedColumnName,
+		q.TableName,
+		bucketSize,
+	)
+
 	histogramRows, err := rt.Execute(ctx, instanceID, priority, histogramSql)
 	if err != nil {
 		return err
@@ -132,10 +159,17 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	defer histogramRows.Close()
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
 	for histogramRows.Next() {
+		var low, high sql.NullFloat64
 		bin := &runtimev1.NumericHistogramBins_Bin{}
-		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
+		err = histogramRows.Scan(&bin.Bucket, &low, &high, &bin.Count)
 		if err != nil {
 			return err
+		}
+		if !low.Valid || !high.Valid {
+			break
+		} else {
+			bin.Low = low.Float64
+			bin.High = high.Float64
 		}
 		histogramBins = append(histogramBins, bin)
 	}

@@ -37,6 +37,7 @@ func (q *ColumnDescriptiveStatistics) UnmarshalResult(v any) error {
 	q.Result = res
 	return nil
 }
+
 func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	sanitizedColumnName := quoteName(q.ColumnName)
 	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
@@ -64,21 +65,22 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 
 	stats := new(runtimev1.NumericStatistics)
 	var min, q25, q50, q75, max, mean, sd sql.NullFloat64
-	for rows.Next() {
+	if rows.Next() {
 		err = rows.Scan(&min, &q25, &q50, &q75, &max, &mean, &sd)
 		if err != nil {
 			return err
 		}
-		if min.Valid {
-			stats.Min = min.Float64
-			stats.Max = max.Float64
-			stats.Q25 = q25.Float64
-			stats.Q50 = q50.Float64
-			stats.Q75 = q75.Float64
-			stats.Mean = mean.Float64
-			stats.Sd = sd.Float64
-			q.Result = stats
-		}
 	}
+	if min.Valid {
+		stats.Min = min.Float64
+		stats.Max = max.Float64
+		stats.Q25 = q25.Float64
+		stats.Q50 = q50.Float64
+		stats.Q75 = q75.Float64
+		stats.Mean = mean.Float64
+		stats.Sd = sd.Float64
+		q.Result = stats
+	}
+
 	return nil
 }

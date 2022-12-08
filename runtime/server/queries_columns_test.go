@@ -98,6 +98,65 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 	require.Equal(t, 3.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
 }
 
+func TestServer_Model_Nulls(t *testing.T) {
+	sql := `SELECT null as val`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 1)
+	require.NotNil(t, server)
+	require.NotEmpty(t, instanceId)
+}
+
+func TestServer_GetNumericHistogram_2rows_all_nulls(t *testing.T) {
+	sql := `
+		SELECT null as val
+		UNION ALL
+		SELECT null as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, 0, len(res.NumericSummary.GetNumericHistogramBins().Bins))
+}
+
+func TestServer_GetNumericHistogram_2rows_single_null(t *testing.T) {
+	sql := `
+		SELECT null as val
+		UNION ALL
+		SELECT 2 as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, 0, len(res.NumericSummary.GetNumericHistogramBins().Bins))
+}
+
+func TestServer_GetNumericHistogram_2rows(t *testing.T) {
+	sql := `
+		SELECT 2 as val
+		UNION ALL
+		SELECT 4 as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	bins := res.NumericSummary.GetNumericHistogramBins().Bins
+	require.Equal(t, 2, len(bins))
+	require.Equal(t, int32(0), bins[0].Bucket)
+	require.Equal(t, 2.0, bins[0].Low)
+	require.Equal(t, 3.0, bins[0].High)
+	require.Equal(t, 1.0, bins[0].Count)
+
+	require.Equal(t, int32(1), bins[1].Bucket)
+	require.Equal(t, 3.0, bins[1].Low)
+	require.Equal(t, 4.0, bins[1].High)
+	require.Equal(t, 1.0, bins[1].Count)
+}
+
 func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
