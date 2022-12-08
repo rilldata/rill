@@ -44,7 +44,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := driver{}.Open("?access_mode=read_write")
+	conn, err := driver{}.Open("?access_mode=read_write", 1)
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 

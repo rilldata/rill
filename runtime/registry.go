@@ -17,8 +17,13 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 }
 
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
+	poolSize := inst.OLAPPoolSize
+	if poolSize == 0 {
+		// default pool size
+		poolSize = 4
+	}
 	// Check OLAP connection
-	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN)
+	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, poolSize)
 	if err != nil {
 		return err
 	}
@@ -28,7 +33,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	}
 
 	// Check repo connection
-	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
+	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, 1)
 	if err != nil {
 		return err
 	}

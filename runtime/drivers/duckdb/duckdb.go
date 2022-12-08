@@ -16,9 +16,7 @@ func init() {
 
 type driver struct{}
 
-var numConnections = 4
-
-func (d driver) Open(dsn string) (drivers.Connection, error) {
+func (d driver) Open(dsn string, poolSize int) (drivers.Connection, error) {
 	bootQueries := []string{
 		"INSTALL 'json'",
 		"LOAD 'json'",
@@ -28,8 +26,8 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		"LOAD 'httpfs'",
 		"SET max_expression_depth TO 250",
 	}
-	connectionPool := NewConnectionPool(numConnections)
-	for i := 0; i < numConnections; i++ {
+	connectionPool := NewConnectionPool(poolSize)
+	for i := 0; i < poolSize; i++ {
 		db, err := sqlx.Open("duckdb", dsn)
 		if err != nil {
 			return nil, err
@@ -48,7 +46,7 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 	}
 
 	conn := &connection{connectionPool: connectionPool}
-	conn.worker = priorityworker.New(conn.executeQuery, numConnections)
+	conn.worker = priorityworker.New(conn.executeQuery, poolSize)
 
 	return conn, nil
 }

@@ -14,7 +14,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string) (drivers.Connection, error) {
+func (d driver) Open(dsn string, poolSize int) (drivers.Connection, error) {
 	db, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
 		return nil, err
