@@ -2,7 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
-  draft: true
+  draft: false
 
 builds:
   - id: darwin_amd64
@@ -79,7 +79,7 @@ brews:
     url_template: https://cdn.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
     tap:
       owner: rilldata
-      name: homebrew-rill-developer
+      name: homebrew-tap
       branch: main
       token: "{{ .Env.GITHUB_TOKEN }}"
     test: |

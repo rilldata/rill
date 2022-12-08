@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -45,7 +46,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, fileP
 		return nil, err
 	}
 
-	if !isValidName(fileutil.Stem(filePath)) {
+	if !IsValidName(fileutil.Stem(filePath)) {
 		return nil, InvalidFileName
 	}
 
@@ -70,6 +71,18 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, cata
 
 var regex = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
 
-func isValidName(itemName string) bool {
+func IsValidName(itemName string) bool {
 	return regex.MatchString(itemName)
+}
+
+var invalidChars = regexp.MustCompile(`[^a-zA-Z_\d]`)
+
+// SanitizedName returns a sanitized name for an artifact from file path.
+func SanitizedName(filePath string) string {
+	name := invalidChars.ReplaceAllString(fileutil.Stem(filePath), "_")
+	if unicode.IsNumber(rune(name[0])) {
+		// prepend underscore if name starts with a number
+		name = "_" + name
+	}
+	return name
 }

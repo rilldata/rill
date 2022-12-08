@@ -131,6 +131,6 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND name = ?", instanceID, name)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
 	return err
 }

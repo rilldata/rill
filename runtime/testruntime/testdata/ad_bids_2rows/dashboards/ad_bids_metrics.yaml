@@ -1,6 +1,4 @@
-version: 0.0.1
-
-from: ad_bids
+model: ad_bids
 display_name: Ad bids
 description:
 
@@ -17,6 +15,8 @@ dimensions:
   - label: Domain
     property: domain
     description: ""
+  - label: Id
+    property: id
 
 measures:
   - label: "Number of bids"

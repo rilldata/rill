@@ -109,6 +109,10 @@ func TestReconcile(t *testing.T) {
 }
 
 func TestReconcileRenames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("renames: skipping test in short mode")
+	}
+
 	configs := []struct {
 		title  string
 		config catalog.ReconcileConfig
@@ -143,6 +147,29 @@ func TestReconcileRenames(t *testing.T) {
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBidsNew")
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			AdBidsCapsRepoPath := "/sources/ADBIDS.yaml"
+			AdBidsCapsAffectedPaths := []string{AdBidsCapsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+			// write to a new file with same name and different case
+			testutils.RenameFile(t, dir, AdBidsRepoPath, AdBidsCapsRepoPath)
+			if len(tt.config.ChangedPaths) > 0 {
+				tt.config.ChangedPaths = append(tt.config.ChangedPaths, AdBidsCapsRepoPath)
+			}
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectedPaths)
+			testutils.AssertTable(t, s, "ADBIDS", AdBidsCapsRepoPath)
+			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+			// update with same content
+			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+				ChangedPaths: []string{AdBidsCapsRepoPath},
+				ForcedPaths:  []string{AdBidsCapsRepoPath},
+			})
+			require.NoError(t, err)
+			// ForcedPaths updates all dependant items
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsCapsAffectedPaths)
 		})
 	}
 }
@@ -341,8 +368,7 @@ func TestReconcileMetricsView(t *testing.T) {
 
 	// ignore invalid measure and dimension
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`version: 0.0.1
-from: AdBids_model
+	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -375,8 +401,7 @@ func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`version: 0.0.1
-type: file
+	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: file
 path:
  - data/source.csv`))
 	require.NoError(t, err)
@@ -391,6 +416,50 @@ path:
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{"/sources/Ad-Bids.yaml"})
 	require.Equal(t, "/sources/Ad-Bids.yaml", result.Errors[0].FilePath)
 	require.Equal(t, "invalid file name", result.Errors[0].Message)
+}
+
+func TestReconcileDryRun(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	AdBidsModelDashboardPath := []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+
+	testutils.CreateModel(t, s, "AdBids_model", "select * from AdImpressions", AdBidsModelRepoPath)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		DryRun: true,
+	})
+	require.NoError(t, err)
+	// only one error returned. dashboard is still valid since model was not removed
+	testutils.AssertMigration(t, result, 1, 0, 0, 0,
+		[]string{AdBidsModelRepoPath})
+	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+	testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
+	// commit the update
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsModelDashboardPath)
+
+	// error should be returned after reconcile
+	time.Sleep(time.Millisecond * 10)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		DryRun:       true,
+		ChangedPaths: AdBidsModelDashboardPath,
+		ForcedPaths:  AdBidsModelDashboardPath,
+	})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 2, 0, 0, 0, AdBidsModelDashboardPath)
+
+	testutils.CreateModel(t, s, "AdBids_model",
+		"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsModelRepoPath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		DryRun: true,
+	})
+	require.NoError(t, err)
+	// error is still returned for dashboard since model is not updated in dry run
+	testutils.AssertMigration(t, result, 1, 0, 0, 0,
+		[]string{AdBidsDashboardRepoPath})
+	require.Equal(t, AdBidsDashboardRepoPath, result.Errors[0].FilePath)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	testutils.AssertMigration(t, result, 0, 2, 0, 0, AdBidsModelDashboardPath)
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {
@@ -410,7 +479,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 
 	testutils.CreateMetricsView(t, s, &runtimev1.MetricsView{
 		Name:          "AdBids_dashboard",
-		From:          "AdBids_model",
+		Model:         "AdBids_model",
 		TimeDimension: "timestamp",
 		TimeGrains:    []string{"1 day", "1 month"},
 		Dimensions: []*runtimev1.MetricsView_Dimension{

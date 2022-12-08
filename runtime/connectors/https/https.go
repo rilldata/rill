@@ -60,11 +60,17 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
 	}
 
-	resp, err := http.Get(conf.Path)
+	req, err := http.NewRequestWithContext(ctx, "GET", conf.Path, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
 	}
 	defer resp.Body.Close()
+
 	return fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 }
 

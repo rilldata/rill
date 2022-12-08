@@ -43,16 +43,16 @@ export async function renameFileArtifact(
     },
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  goto(getRouteFromName(toName, type), {
-    replaceState: true,
-  });
 
   httpRequestQueue.removeByName(fromName);
   notifications.send({
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
 
-  return invalidateAfterReconcile(queryClient, instanceId, resp);
+  invalidateAfterReconcile(queryClient, instanceId, resp);
+  goto(getRouteFromName(toName, type), {
+    replaceState: true,
+  });
 }
 
 export async function deleteFileArtifact(
@@ -72,14 +72,14 @@ export async function deleteFileArtifact(
       },
     });
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    if (activeEntity?.name === name) {
-      goto(getRouteFromName(getNextEntityName(names, name), type));
-    }
 
     httpRequestQueue.removeByName(name);
     notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
-    return invalidateAfterReconcile(queryClient, instanceId, resp);
+    invalidateAfterReconcile(queryClient, instanceId, resp);
+    if (activeEntity?.name === name) {
+      goto(getRouteFromName(getNextEntityName(names, name), type));
+    }
   } catch (err) {
     console.error(err);
   }
@@ -132,7 +132,6 @@ export const useCreateDashboardFromSource = <
     );
     const generatedYAML = generateMeasuresAndDimension(model.entry.model, {
       display_name: `${data.sourceName} dashboard`,
-      description: `A dashboard automatically generated from the ${data.sourceName} source.`,
     });
 
     const response = await runtimeServicePutFileAndReconcile({

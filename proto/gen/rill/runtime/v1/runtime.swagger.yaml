@@ -1058,6 +1058,13 @@ paths:
               dry:
                 type: boolean
                 title: If true, will validate the file artifacts, but not actually execute any migrations
+              forcedPaths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Forced paths is used to force run reconcile on certain files.
+                  This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
               strict:
                 type: boolean
                 title: |-
@@ -1675,9 +1682,6 @@ definitions:
         items:
           $ref: '#/definitions/MetricsViewDimension'
         title: Dimensions in the metrics view
-      from:
-        type: string
-        title: Name of the source or model that the metrics view is based on
       label:
         type: string
         title: User friendly label for the dashboard
@@ -1686,6 +1690,9 @@ definitions:
         items:
           $ref: '#/definitions/MetricsViewMeasure'
         title: Measures in the metrics view
+      model:
+        type: string
+        title: Name of the source or model that the metrics view is based on
       name:
         type: string
         title: Name of the metrics view
