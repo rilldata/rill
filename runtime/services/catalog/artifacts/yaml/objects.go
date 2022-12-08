@@ -28,7 +28,7 @@ type MetricsView struct {
 	Version          string
 	Label            string `yaml:"display_name"`
 	Description      string
-	From             string
+	Model            string
 	TimeDimension    string `yaml:"timeseries"`
 	TimeGrains       []string
 	DefaultTimeGrain string `yaml:"default_timegrain"`

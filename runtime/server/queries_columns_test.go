@@ -10,8 +10,109 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func TestServer_GetTopK_HugeInt(t *testing.T) {
+	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric, 'a' as dim", 1)
+
+	res, err := server.GetTopK(
+		context.Background(),
+		&runtimev1.GetTopKRequest{
+			InstanceId: instanceId,
+			TableName:  "test",
+			ColumnName: "dim",
+			Agg:        "sum(metric)",
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, res)
+	topk := res.CategoricalSummary.GetTopK()
+	require.Equal(t, 1, len(topk.Entries))
+	require.Equal(t, "a", topk.Entries[0].Value.GetStringValue())
+	require.True(t, topk.Entries[0].Count >= 170141183460469231731687303715884105727.0)
+}
+
+func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
+	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric", 1)
+
+	res, err := server.GetTopK(
+		context.Background(),
+		&runtimev1.GetTopKRequest{
+			InstanceId: instanceId,
+			TableName:  "test",
+			ColumnName: "metric",
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, res)
+	topk := res.CategoricalSummary.GetTopK()
+	require.Equal(t, 1, len(topk.Entries))
+	require.Equal(t, "170141183460469231731687303715884105727", topk.Entries[0].Value.GetStringValue())
+	require.Equal(t, 1.0, topk.Entries[0].Count)
+}
+
+func TestServer_GetTopK(t *testing.T) {
+	server, instanceId := getColumnTestServerWithModel(
+		t,
+		`
+		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
+		UNION ALL 
+		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
+		UNION ALL 
+		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
+		UNION ALL 
+		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
+		UNION ALL 
+		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
+		`,
+		5,
+	)
+
+	res, err := server.GetTopK(
+		context.Background(),
+		&runtimev1.GetTopKRequest{
+			InstanceId: instanceId,
+			TableName:  "test",
+			ColumnName: "col",
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, res)
+	topk := res.CategoricalSummary.GetTopK()
+	require.Equal(t, 4, len(topk.Entries))
+	require.Equal(t, "abc", topk.Entries[0].Value.GetStringValue())
+	require.Equal(t, 2, int(topk.Entries[0].Count))
+	require.Equal(t, structpb.NewNullValue(), topk.Entries[1].Value)
+	require.Equal(t, 1, int(topk.Entries[1].Count))
+	require.Equal(t, "12", topk.Entries[2].Value.GetStringValue())
+	require.Equal(t, 1, int(topk.Entries[2].Count))
+	require.Equal(t, "def", topk.Entries[3].Value.GetStringValue())
+	require.Equal(t, 1, int(topk.Entries[3].Count))
+
+	agg := "sum(val)"
+	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: agg})
+	require.NoError(t, err)
+	require.NotEmpty(t, res)
+	require.Equal(t, 4, len(res.CategoricalSummary.GetTopK().Entries))
+	require.Equal(t, "def", res.CategoricalSummary.GetTopK().Entries[0].Value.GetStringValue())
+	require.Equal(t, 5, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
+	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[1].Value.GetStringValue())
+	require.Equal(t, 4, int(res.CategoricalSummary.GetTopK().Entries[1].Count))
+	require.Equal(t, structpb.NewNullValue(), res.CategoricalSummary.GetTopK().Entries[2].Value)
+	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[2].Count))
+	require.Equal(t, "12", res.CategoricalSummary.GetTopK().Entries[3].Value.GetStringValue())
+	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[3].Count))
+
+	k := int32(1)
+	res, err = server.GetTopK(context.Background(), &runtimev1.GetTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: k})
+	require.NoError(t, err)
+	require.NotEmpty(t, res)
+	require.Equal(t, 1, len(res.CategoricalSummary.GetTopK().Entries))
+	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[0].Value.GetStringValue())
+	require.Equal(t, 2, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
+}
 
 func TestServer_GetNullCount(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)

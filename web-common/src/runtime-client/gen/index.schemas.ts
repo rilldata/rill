@@ -486,9 +486,9 @@ export interface V1MetricsViewToplistResponse {
 export interface V1MetricsView {
   description?: string;
   dimensions?: MetricsViewDimension[];
-  from?: string;
   label?: string;
   measures?: MetricsViewMeasure[];
+  model?: string;
   name?: string;
   timeDimension?: string;
   /** Recommended granularities for rolling up the time dimension.

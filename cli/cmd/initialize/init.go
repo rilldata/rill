@@ -50,6 +50,12 @@ func InitCmd(ver string) *cobra.Command {
 				}
 			}
 
+			// Only use example=default if --example was explicitly set.
+			// Otherwise, default to an empty project.
+			if !cmd.Flags().Changed("example") {
+				exampleName = ""
+			}
+
 			err = app.InitProject(exampleName)
 			if err != nil {
 				return fmt.Errorf("init project: %w", err)
@@ -66,7 +72,8 @@ func InitCmd(ver string) *cobra.Command {
 
 	initCmd.Flags().SortFlags = false
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
-	initCmd.Flags().StringVar(&exampleName, "example", "", "Name of example project (default \"empty\")")
+	initCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
+	initCmd.Flags().Lookup("example").NoOptDefVal = "default" // Allows "--example" without a specific name
 	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
