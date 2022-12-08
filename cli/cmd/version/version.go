@@ -34,8 +34,8 @@ func init() {
 }
 
 func Format(ver string, commit string, buildDate string) string {
-	if ver == "" {
-		return fmt.Sprintf("rill version development (built from source)")
+	if ver == "dev" {
+		return "rill version development (built from source)"
 	}
 	ver = strings.TrimPrefix(ver, "v")
 	return fmt.Sprintf("rill version %s (build commit: %s date: %s)\n", ver, commit, buildDate)

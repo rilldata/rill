@@ -1,5 +1,3 @@
-version: 0.0.1
-
 model: ad_bids
 display_name: Ad bids
 description:

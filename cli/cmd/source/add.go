@@ -7,7 +7,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/local"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/spf13/cobra"
@@ -73,7 +73,7 @@ func AddCmd(ver string) *cobra.Command {
 				panic(err) // Should never happen
 			}
 
-			c := artifactsv0.New(repo, app.Instance.ID)
+			c := rillv1beta.New(repo, app.Instance.ID)
 			sourcePath, err := c.PutSource(cmd.Context(), repo, app.Instance.ID, src, force)
 			if err != nil {
 				if os.IsExist(err) {

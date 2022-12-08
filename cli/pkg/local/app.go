@@ -15,7 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -133,7 +133,7 @@ func (a *App) IsProjectInit() bool {
 		panic(err) // checks in New should ensure it never happens
 	}
 
-	c := artifactsv0.New(repo, a.Instance.ID)
+	c := rillv1beta.New(repo, a.Instance.ID)
 	return c.IsInit(a.Context)
 }
 
@@ -143,7 +143,7 @@ func (a *App) InitProject(exampleName string) error {
 		panic(err) // checks in New should ensure it never happens
 	}
 
-	c := artifactsv0.New(repo, a.Instance.ID)
+	c := rillv1beta.New(repo, a.Instance.ID)
 	if c.IsInit(a.Context) {
 		return fmt.Errorf("a Rill project already exists")
 	}
@@ -161,7 +161,7 @@ func (a *App) InitProject(exampleName string) error {
 		}
 
 		// Init empty project
-		err := c.InitEmpty(a.Context, defaultName)
+		err := c.InitEmpty(a.Context, defaultName, a.Version)
 		if err != nil {
 			if isPwd {
 				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
@@ -181,7 +181,7 @@ func (a *App) InitProject(exampleName string) error {
 	}
 
 	// It's an example project. We currently only support examples through direct file unpacking.
-	// TODO: Support unpacking examples through artifactsv0, instead of unpacking files.
+	// TODO: Support unpacking examples through rillv1beta, instead of unpacking files.
 
 	err = examples.Init(exampleName, a.ProjectPath)
 	if err != nil {

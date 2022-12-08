@@ -27,7 +27,7 @@ type Config struct {
 	Env                 string        `default:"development"`
 	HTTPPort            int           `default:"8080" split_words:"true"`
 	GRPCPort            int           `default:"9090" split_words:"true"`
-	LogLevel            zapcore.Level `default:"warn" split_words:"true"`
+	LogLevel            zapcore.Level `default:"info" split_words:"true"`
 	DatabaseDriver      string        `default:"sqlite"`
 	DatabaseURL         string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	ConnectionCacheSize int           `default:"100" split_words:"true"`
