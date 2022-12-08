@@ -177,8 +177,7 @@
           description={measure?.description ||
             measure?.label ||
             measure?.expression}
-          formatPreset={NicelyFormattedTypes[measure?.format] ||
-            NicelyFormattedTypes.HUMANIZE}
+          formatPreset={measure?.format}
           status={$totalsQuery?.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
