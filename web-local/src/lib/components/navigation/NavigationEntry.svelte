@@ -108,6 +108,7 @@
           !contextMenuHovered}
       >
         <ContextButton
+          id="more-actions-{name}"
           tooltipText="more actions"
           suppressTooltip={contextMenuOpen}
           on:click={toggleFloatingElement}
