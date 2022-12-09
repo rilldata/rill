@@ -39,8 +39,8 @@ initTmpDir() {
 
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
-    CDN="cdn.rilldata.io"
-    BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.tar.gz"
+    CDN="cdn.rilldata.com"
+    BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
     printf "Downloading binary: ${BINARY_URL}\n"
@@ -50,7 +50,7 @@ downloadBinary() {
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
     #shasum --algorithm 256 --ignore-missing --check checksum.txt
     printf "\nUnpacking rill_${PLATFORM}.tar.gz\n"
-    tar xf rill_${PLATFORM}.tar.gz
+    unzip rill_${PLATFORM}.tar.gz
 }
 
 # Install the binary and ask for elevated permissions if needed

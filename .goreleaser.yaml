@@ -2,7 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
-  draft: false
+  draft: true #testing
 
 builds:
   - id: darwin_amd64
@@ -95,6 +95,7 @@ archives:
       - README.md
       - LICENSE*
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
 
 checksum:
   name_template: checksums.txt
