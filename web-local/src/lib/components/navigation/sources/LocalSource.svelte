@@ -22,6 +22,7 @@
   import { slide } from "svelte/transition";
   import { Callout } from "../../callout";
   import { createSource } from "./createSource";
+  import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
 
   const dispatch = createEventDispatcher();
 
@@ -101,7 +102,11 @@
       <Callout level="error">
         <ul style:max-width="400px">
           {#each errors as error}
-            <li>{error.message}</li>
+            <li>
+              {hasDuckDBUnicodeError(error.message)
+                ? niceDuckdbUnicodeError(error.message)
+                : error.message}
+            </li>
           {/each}
         </ul>
       </Callout>
