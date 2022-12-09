@@ -1,0 +1,122 @@
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - bidichk
+    - decorder
+    - containedctx
+    - contextcheck
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - errchkjson
+    - errname
+    - execinquery
+    - errorlint
+    - exportloopref
+    - exhaustive
+    - goconst
+    - godot
+    - gocritic
+    - gofmt
+    - goimports
+    - gomnd
+    - gocyclo
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ireturn
+    - ineffassign
+    - misspell
+    - nestif
+    - nilerr
+    - nilnil
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - staticcheck
+    - stylecheck
+    - thelper
+    - tagliatelle
+    - tparallel
+    - testpackage
+    - tenv
+    - typecheck
+    - unconvert
+    - usestdlibvars
+    - unparam
+    - unused
+    - varnamelen
+    - whitespace
+    - wsl
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+  goimports:
+    # ensure placement of imports with this prefix after all other imports
+    # corresponds to `goimports -local`
+    local-prefixes: github.com/rilldata/rill-developer
+  gomnd:
+    settings:
+      mnd:
+        # don't include the "operation" and "assign" checks
+        checks: argument,case,condition,return
+  govet:
+    check-shadowing: true
+    enable:
+      - fieldalignment
+  nestif:
+    min-complexity: 15
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+  tagliatelle:
+    case:
+      rules:
+        json: snake
+  varnamelen:
+    max-distance: 10
+    ignore-decls:
+      - t testing.T
+      - i int
+      - j int
+      - ch Change
+      - ch *Change
+      - c *cli.Context
+      - op *Operation
+
+issues:
+  fix: true
+  exclude-rules:
+    - path: _test\.go # disable some linters for test files
+      linters:
+        - gocyclo
+        - gosec
+        - dupl
+        - varnamelen
+    - linters:
+        - gosec
+      text: 'weak cryptographic primitive'
+    - linters:
+        - stylecheck
+      text: 'error strings should not be capitalized'
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  issues-exit-code: 1
