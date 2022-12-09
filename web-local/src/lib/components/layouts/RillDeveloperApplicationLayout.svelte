@@ -4,6 +4,7 @@
     duplicateSourceName,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import {
     importOverlayVisible,
     overlay,
@@ -15,6 +16,7 @@
   import PreparingImport from "@rilldata/web-local/lib/components/overlay/PreparingImport.svelte";
   import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
   import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { getArtifactErrors } from "@rilldata/web-local/lib/svelte-query/getArtifactErrors";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
@@ -29,6 +31,9 @@
     runtimeStore.set({
       instanceId: localConfig.instance_id,
     });
+
+    const res = await getArtifactErrors(localConfig.instance_id);
+    fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
     return initMetrics();
   });

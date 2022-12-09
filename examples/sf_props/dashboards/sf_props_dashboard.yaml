@@ -1,9 +1,6 @@
-version: 0.0.1
-
+model: sf_props
 display_name: Ad bids
 description:
-
-from: sf_props
 
 timeseries: date
 default_timegrain: ""

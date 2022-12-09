@@ -119,17 +119,15 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	// order the items to have parents before children
 	migrations := s.collectMigrationItems(migrationMap)
 
-	if conf.DryRun {
-		return result, nil
-	}
-
 	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: changes to the file will not be picked up if done while running migration
-	s.LastMigration = time.Now()
+	if !conf.DryRun {
+		// TODO: changes to the file will not be picked up if done while running migration
+		s.LastMigration = time.Now()
+	}
 	result.collectAffectedPaths()
 	return result, nil
 }
@@ -176,31 +174,15 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			continue
 		}
 
-		existing, ok := migrationMap[item.NormalizedName]
-		if ok {
-			var errPath string
-			// if existing item was deleted
-			if existing.Type == MigrationDelete ||
-				// or if the existing has error whereas new one doest
-				(item.Error != nil && existing.Error != nil) ||
-				// or if the existing file was updated after new (this makes it so that the old one will be retained)
-				(item.Error == nil && item.CatalogInFile != nil && existing.CatalogInFile != nil &&
-					existing.CatalogInFile.UpdatedOn.After(item.CatalogInFile.UpdatedOn)) {
-				// replace the existing with new
-				migrationMap[item.NormalizedName] = item
-				errPath = existing.Path
-			} else if existing.Type == MigrationNoChange && item.Type == MigrationRename {
-				migrationMap[item.NormalizedName] = item
-			} else {
-				errPath = item.Path
-			}
-			if errPath != "" {
-				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-					Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
-					Message:  "item with same name exists",
-					FilePath: errPath,
-				})
-			}
+		keepNew, errPath := s.isInvalidDuplicate(migrationMap, changedPathsHint, changedPathsMap, item)
+		if errPath != "" {
+			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
+				Message:  "item with same name exists",
+				FilePath: errPath,
+			})
+		}
+		if !keepNew {
 			continue
 		}
 
@@ -349,6 +331,10 @@ func (s *Service) getMigrationItem(
 	}
 	item.NormalizedName = strings.ToLower(item.Name)
 
+	if item.Type == MigrationNoChange && forcedPathMap[repoPath] {
+		item.Type = MigrationUpdate
+	}
+
 	catalogInStore, ok := storeObjectsMap[item.NormalizedName]
 	if !ok {
 		if item.CatalogInFile == nil {
@@ -364,7 +350,6 @@ func (s *Service) getMigrationItem(
 	if item.Name != catalogInStore.Name && item.CatalogInFile != nil {
 		// rename with same name different case
 		item.FromName = catalogInStore.Name
-		catalogInStore.Name = item.Name
 		item.Type = MigrationRename
 	}
 
@@ -379,12 +364,8 @@ func (s *Service) getMigrationItem(
 		}
 
 	case MigrationNoChange:
-		if forcedPathMap[repoPath] {
-			item.Type = MigrationUpdate
-			break
-		}
-
 		// if item doesn't exist in olap, mark as create
+		// TODO: is this path ever hit?
 		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
 		if !ok {
 			item.Type = MigrationCreate
@@ -392,6 +373,51 @@ func (s *Service) getMigrationItem(
 	}
 
 	return item
+}
+
+// isInvalidDuplicate checks if one of the existing or a new item is invalid duplicate
+func (s *Service) isInvalidDuplicate(
+	migrationMap map[string]*MigrationItem,
+	changedPathsHint bool,
+	changedPathsMap map[string]bool,
+	item *MigrationItem,
+) (bool, string) {
+	errPath := ""
+
+	existing, ok := migrationMap[item.NormalizedName]
+	if ok {
+		keepNew := false
+		if existing.Name != item.Name {
+			// where it is a MigrationRename with different case
+			// keep the one marked as rename
+			if item.Type == MigrationRename {
+				keepNew = true
+			}
+		} else {
+			// if existing item was deleted
+			if existing.Type == MigrationDelete ||
+				// or if the existing has error whereas new one doest
+				(item.Error != nil && existing.Error != nil) ||
+				// or if the existing file was updated after new (this makes it so that the old one will be retained)
+				(item.Error == nil && item.CatalogInFile != nil && existing.CatalogInFile != nil &&
+					existing.CatalogInFile.UpdatedOn.After(item.CatalogInFile.UpdatedOn)) {
+				// replace the existing with new
+				keepNew = true
+				errPath = existing.Path
+			} else {
+				errPath = item.Path
+			}
+		}
+		return keepNew, errPath
+	}
+
+	if changedPathsHint {
+		if existingPath, ok := s.NameToPath[item.NormalizedName]; ok && existingPath != item.Path && !changedPathsMap[existingPath] {
+			return false, item.Path
+		}
+	}
+
+	return true, errPath
 }
 
 // collectMigrationItems collects all valid MigrationItem
@@ -509,7 +535,13 @@ func (s *Service) runMigrationItems(
 			// do not run migration if validation failed
 			result.Errors = append(result.Errors, validationErrors...)
 			failed = true
-		} else {
+		} else if !conf.DryRun {
+			if item.CatalogInStore != nil {
+				// make sure store catalog has the correct name
+				// could be different in cases like "rename with different case"
+				item.CatalogInStore.Name = item.Name
+			}
+			// only run the actual migration if in dry run
 			switch item.Type {
 			case MigrationNoChange:
 				if _, ok := s.PathToName[item.NormalizedName]; !ok {
@@ -542,7 +574,7 @@ func (s *Service) runMigrationItems(
 			failed = true
 		}
 
-		if failed {
+		if failed && !conf.DryRun {
 			// remove entity from catalog and OLAP if it failed validation or during migration
 			err := s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
 			if err != nil {

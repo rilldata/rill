@@ -15,7 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -41,6 +41,7 @@ const DefaultOLAPDSN = "stage.db"
 // Here, a local environment means a non-authenticated, single-instance and single-project setup on localhost.
 // App encapsulates logic shared between different CLI commands, like start, init, build and source.
 type App struct {
+	Context     context.Context
 	Runtime     *runtime.Runtime
 	Instance    *drivers.Instance
 	Logger      *zap.SugaredLogger
@@ -50,7 +51,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
+func NewApp(ctx context.Context, version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
 	// Setup a friendly-looking colored logger
 	conf := zap.NewDevelopmentEncoderConfig()
 	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -103,13 +104,14 @@ func NewApp(version string, verbose bool, olapDriver string, olapDSN string, pro
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
 	}
-	err = rt.CreateInstance(context.Background(), inst)
+	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
 	}
 
 	// Done
 	app := &App{
+		Context:     ctx,
 		Runtime:     rt,
 		Instance:    inst,
 		Logger:      logger.Sugar(),
@@ -126,23 +128,23 @@ func (a *App) IsDevelopment() bool {
 }
 
 func (a *App) IsProjectInit() bool {
-	repo, err := a.Runtime.Repo(context.Background(), a.Instance.ID)
+	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
 
-	c := artifactsv0.New(repo, a.Instance.ID)
-	return c.IsInit(context.Background())
+	c := rillv1beta.New(repo, a.Instance.ID)
+	return c.IsInit(a.Context)
 }
 
 func (a *App) InitProject(exampleName string) error {
-	repo, err := a.Runtime.Repo(context.Background(), a.Instance.ID)
+	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
 
-	c := artifactsv0.New(repo, a.Instance.ID)
-	if c.IsInit(context.Background()) {
+	c := rillv1beta.New(repo, a.Instance.ID)
+	if c.IsInit(a.Context) {
 		return fmt.Errorf("a Rill project already exists")
 	}
 
@@ -159,7 +161,7 @@ func (a *App) InitProject(exampleName string) error {
 		}
 
 		// Init empty project
-		err := c.InitEmpty(context.Background(), defaultName)
+		err := c.InitEmpty(a.Context, defaultName, a.Version)
 		if err != nil {
 			if isPwd {
 				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
@@ -179,7 +181,7 @@ func (a *App) InitProject(exampleName string) error {
 	}
 
 	// It's an example project. We currently only support examples through direct file unpacking.
-	// TODO: Support unpacking examples through artifactsv0, instead of unpacking files.
+	// TODO: Support unpacking examples through rillv1beta, instead of unpacking files.
 
 	err = examples.Init(exampleName, a.ProjectPath)
 	if err != nil {
@@ -190,9 +192,9 @@ func (a *App) InitProject(exampleName string) error {
 	}
 
 	if isPwd {
-		fmt.Printf("Initialized example project '%s' in the current directory\n", exampleName)
+		a.Logger.Infof("Initialized example project '%s' in the current directory", exampleName)
 	} else {
-		fmt.Printf("Initialized example project '%s' in directory '%s'\n", exampleName, a.ProjectPath)
+		a.Logger.Infof("Initialized example project '%s' in directory '%s'", exampleName, a.ProjectPath)
 	}
 
 	return nil
@@ -200,9 +202,13 @@ func (a *App) InitProject(exampleName string) error {
 
 func (a *App) Reconcile() error {
 	a.Logger.Infof("Hydrating project '%s'", a.ProjectPath)
-	res, err := a.Runtime.Reconcile(context.Background(), a.Instance.ID, nil, nil, false, false)
+	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
 	if err != nil {
 		return err
+	}
+	if a.Context.Err() != nil {
+		a.Logger.Errorf("Hydration canceled")
+		return nil
 	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
@@ -221,9 +227,13 @@ func (a *App) Reconcile() error {
 func (a *App) ReconcileSource(path string) error {
 	a.Logger.Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
 	paths := []string{path}
-	res, err := a.Runtime.Reconcile(context.Background(), a.Instance.ID, paths, paths, false, false)
+	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
 	if err != nil {
 		return err
+	}
+	if a.Context.Err() != nil {
+		a.Logger.Errorf("Hydration canceled")
+		return nil
 	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
@@ -263,7 +273,7 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 	serverLogger := a.BaseLogger.WithOptions(zap.IncreaseLevel(lvl))
 
 	// Prepare errgroup and context with graceful shutdown
-	gctx := graceful.WithCancelOnTerminate(context.Background())
+	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
 	// Create a runtime server
@@ -288,7 +298,6 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 	mux.Handle("/v1/", runtimeHandler)
 	mux.Handle("/local/config", a.infoHandler(inf))
 	mux.Handle("/local/track", a.trackingHandler(inf))
-	mux.Handle("/local/health", http.HandlerFunc(a.healthHandler))
 
 	// Start the gRPC server
 	group.Go(func() error {
@@ -324,7 +333,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 		}
 
 		// Check if server is up
-		resp, err := client.Get(uri + "/local/health")
+		resp, err := client.Get(uri + "/v1/ping")
 		if err == nil {
 			defer resp.Body.Close()
 			if resp.StatusCode < http.StatusInternalServerError {
@@ -333,7 +342,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 		}
 
 		// Wait a bit and retry
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Health check succeeded
@@ -395,12 +404,10 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 		defer resp.Body.Close()
-	})
-}
 
-// healthHandler is a basic health check
-func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
+		// Done
+		w.WriteHeader(200)
+	})
 }
 
 // Fully open CORS policy. This is very much local-only.
