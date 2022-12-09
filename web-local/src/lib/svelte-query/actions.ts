@@ -3,7 +3,6 @@ import {
   RpcStatus,
   runtimeServiceGetCatalogEntry,
   runtimeServicePutFileAndReconcile,
-  useRuntimeServiceListFiles,
   V1DeleteFileAndReconcileResponse,
   V1ReconcileError,
   V1RenameFileAndReconcileResponse,
@@ -18,7 +17,6 @@ import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/i
 import {
   getFileFromName,
   getLabel,
-  getNameFromFile,
   getRouteFromName,
 } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
@@ -28,25 +26,6 @@ import {
   UseMutationOptions,
 } from "@sveltestack/svelte-query";
 import { generateMeasuresAndDimension } from "../application-state-stores/metrics-internal-store";
-
-export function useAllNames(instanceId: string) {
-  return useRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    },
-    {
-      query: {
-        select: (data) =>
-          data.paths?.map((path) => getNameFromFile(path)) ?? [],
-      },
-    }
-  );
-}
-
-export function isDuplicateName(name: string, names: Array<string>) {
-  return names.findIndex((n) => n.toLowerCase() === name.toLowerCase()) >= 0;
-}
 
 export async function renameFileArtifact(
   queryClient: QueryClient,
