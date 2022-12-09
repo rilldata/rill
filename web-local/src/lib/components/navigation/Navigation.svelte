@@ -107,12 +107,11 @@
               <a href="/">
                 <div
                   style:width="20px"
-                  style:font-size="10px"
-                  class="grid place-items-center rounded bg-gray-800 text-white font-light"
+                  style:font-size="9px"
+                  class="grid place-items-center rounded bg-gray-800 text-white font-normal"
                   style:height="20px"
                 >
-                  <!-- a temp fix to make MD IO nudged down-->
-                  <div style:transform="translateY(.5px)">
+                  <div>
                     {shorthandTitle(yaml?.name || "Ri")}
                   </div>
                 </div>
