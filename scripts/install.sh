@@ -70,8 +70,8 @@ installBinary() {
 
 # Run the installed binary and print the version
 testInstalledBinary() {
-    RILL_VERSION=$(rill --version)
-    printf "\nInstallation of Rill version ${RILL_VERSION} completed!\n"
+    RILL_VERSION=$(rill version)
+    printf "\nInstallation of ${RILL_VERSION} completed!\n"
     printf "\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! You can reach us in our Rill Discord server at https://rilldata.link/cli.\n"
 }
 
