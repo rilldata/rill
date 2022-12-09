@@ -47,15 +47,7 @@
     $checkForSourceInCatalog?.error?.response?.data?.message !==
     "entry not found";
 
-  $: connectors = useRuntimeServiceListConnectors({
-    query: {
-      // arrange connectors in the way we would like to display them
-      select: (data) => {
-        data.connectors = data.connectors;
-        return data;
-      },
-    },
-  });
+  $: connectors = useRuntimeServiceListConnectors();
 
   // get the connector for this source type, if valid
   $: currentConnector = $connectors?.data?.connectors?.find(
