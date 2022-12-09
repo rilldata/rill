@@ -1,15 +1,22 @@
 <script lang="ts">
   import {
+    getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
     useRuntimeServiceListConnectors,
+    useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
 
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Button from "../../button/Button.svelte";
+  import Callout from "../../callout/Callout.svelte";
+  import { refreshSource } from "../../navigation/sources/refreshSource";
   import { ConnectedPreviewTable } from "../../preview-table";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import SourceInspector from "./SourceInspector.svelte";
@@ -54,6 +61,43 @@
   $: currentConnector = $connectors?.data?.connectors?.find(
     (connector) => connector.name === source?.type
   );
+
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createSource = useRuntimeServicePutFileAndReconcile();
+
+  const queryClient = useQueryClient();
+
+  let uploadErrors = undefined;
+  const onRefreshClick = async (tableName: string) => {
+    try {
+      const resp = await refreshSource(
+        currentConnector.name,
+        tableName,
+        $runtimeStore?.instanceId,
+        $refreshSourceMutation,
+        $createSource,
+        queryClient
+      );
+      // if there are errors, set them to be displayed
+      if (resp?.errors) {
+        uploadErrors = resp.errors;
+      }
+      // invalidate the data preview (async)
+      // TODO: use new runtime approach
+      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
+
+      // invalidate the "refreshed_on" time
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
+        $runtimeStore?.instanceId,
+        tableName
+      );
+      await queryClient.refetchQueries(queryKey);
+    } catch (err) {
+      // no-op
+      console.log(err);
+    }
+    overlay.set(null);
+  };
 </script>
 
 {#key sourceName}
@@ -82,8 +126,8 @@
           style:width="500px"
         >
           {#if source?.type === "file"}
-            {#if !source?.path}
-              <div class="text-gray-500">
+            <!-- {#if !source?.path} -->
+            <!-- <div class="text-gray-500">
                 The source <span class="font-bold">{sourceName}</span> does not
                 have a defined path. Edit <b>{`sources/${sourceName}.yaml`}</b>
                 to add "path:
@@ -94,14 +138,20 @@
                 <a href="https://docs.rilldata.com/using-rill/import-data"
                   >view the documentation</a
                 >.
-              </div>
-            {:else}
-              <div class="text-gray-500">
-                The data file for <span class="font-bold">{sourceName}</span> has
-                not been imported as a source.
-              </div>
-              <Button>Import file</Button>
-            {/if}
+              </div> -->
+            <!-- {:else} -->
+            <div class="text-gray-500">
+              The data file for <span class="font-bold">{sourceName}</span> has not
+              been imported as a source.
+            </div>
+            <Button
+              type="primary"
+              on:click={async () => {
+                uploadErrors = undefined;
+                await onRefreshClick(sourceName);
+              }}>Import a CSV or Parquet file</Button
+            >
+            <!-- {/if} -->
           {:else if !Object.keys(source || {})?.length}
             <!-- source is empty -->
             <div class="text-gray-500">
@@ -147,7 +197,20 @@
               The source <span class="font-bold">{sourceName}</span> has not been
               imported.
             </div>
-            <Button>Import data</Button>
+            <Button
+              type="primary"
+              on:click={async () => {
+                uploadErrors = undefined;
+                await onRefreshClick(sourceName);
+              }}>Import data</Button
+            >
+          {/if}
+          {#if uploadErrors}
+            <Callout level="error">
+              {#each uploadErrors as error}
+                {error.message}
+              {/each}
+            </Callout>
           {/if}
         </div>
       {/if}

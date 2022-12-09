@@ -30,9 +30,10 @@ export async function refreshSource(
         path: `sources/${sourceName}.yaml`,
       },
     });
+    console.log("resp: ", resp);
     invalidateAfterReconcile(queryClient, instanceId, resp);
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    return;
+    return resp;
   }
 
   // different logic for the file connector
@@ -63,4 +64,5 @@ export async function refreshSource(
   });
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+  return resp;
 }
