@@ -94,7 +94,7 @@
     {/if}
 
     <div class="w-full flex flex-col h-full">
-      <div class="grow" style:outline="1px solid black">
+      <div class="grow">
         <header
           style:height="var(--header-height)"
           class="sticky top-0 grid align-center bg-white z-50"
