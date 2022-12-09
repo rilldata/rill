@@ -77,4 +77,4 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/
+          destination: prod-cdn.rilldata.com/test/
