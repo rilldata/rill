@@ -72,4 +72,4 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: dist/
-          destination: cdn.rilldata.io/rill/nightly/ #TODO Testing
+          destination: stage-cdn.rilldata.io/rill/nightly/
