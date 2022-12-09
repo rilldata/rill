@@ -5,8 +5,7 @@ on:
     tags:
       - "**"
   schedule:
-    - cron: '0 0 * * *'
-    #TODO test nightly
+    - cron: '0 * * * *'
 jobs:
   release:
     name: Release rill-developer
