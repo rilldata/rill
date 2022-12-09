@@ -6,11 +6,11 @@ initPlatform() {
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
     if [ $OS == "darwin" ] && [ $ARCH == "arm64" ]; then
-        PLATFORM="Darwin_arm64"
+        PLATFORM="darwin_arm64"
     elif [ $OS == "darwin" ] && [ $ARCH == "x86_64" ]; then
-        PLATFORM="Darwin_amd64"
+        PLATFORM="darwin_amd64"
     elif [ $OS == "linux" ] && [ $ARCH == "x86_64" ]; then
-        PLATFORM="Linux-amd64"
+        PLATFORM="linux_amd64"
     else
         printf "Platform not supported: os=$OS arch=$ARCH\n"
         exit 1
@@ -44,13 +44,16 @@ downloadBinary() {
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
     printf "Downloading binary: ${BINARY_URL}\n"
-    curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.tar.gz
-    printf "\nDownloading checksum: checksums.txt\n"
-    curl --location --progress-bar "${CHECKSUM_URL}" --output checksum.txt
+    curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.zip
+
+    printf "\nDownloading checksum: ${CHECKSUM_URL}\n"
+    curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
+
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
-    #shasum --algorithm 256 --ignore-missing --check checksum.txt
-    printf "\nUnpacking rill_${PLATFORM}.tar.gz\n"
-    unzip rill_${PLATFORM}.tar.gz
+    shasum --algorithm 256 --ignore-missing --check checksums.txt
+
+    printf "\nUnpacking rill_${PLATFORM}.zip\n"
+    unzip rill_${PLATFORM}.zip
 }
 
 # Install the binary and ask for elevated permissions if needed

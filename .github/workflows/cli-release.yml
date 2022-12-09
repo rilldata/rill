@@ -76,5 +76,5 @@ jobs:
       - name: Upload install script to CDN
         uses: google-github-actions/upload-cloud-storage@v1
         with:
-          path: script/install.sh
+          path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
