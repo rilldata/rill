@@ -75,21 +75,6 @@ func NewInstanceWithModel(t TestingT, name string, sql string) (*runtime.Runtime
 	return rt, instanceID
 }
 
-func NewInstanceWithDefaultModel(t TestingT) (*runtime.Runtime, string) {
-	rt, instanceID := NewInstanceWithModel(t, "test", `
-		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
-		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
-		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
-		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
-		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
-	`)
-	return rt, instanceID
-}
-
 // NewInstanceForProject creates a runtime and an instance for use in tests.
 // The passed name should match a test project in the testdata folder.
 // You should not do mutable repo operations on the returned instance.

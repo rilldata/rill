@@ -37,6 +37,7 @@ func (q *ColumnTimeGrain) UnmarshalResult(v any) error {
 	q.Result = res
 	return nil
 }
+
 func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	sampleSize := int64(500000)
 	cq := &TableCardinality{
@@ -89,7 +90,12 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
             CASE WHEN hour = 1 THEN 'days' else null END
         ) as estimatedSmallestTimeGrain
       FROM time_grains
-      `, quoteName(q.ColumnName), quoteName(q.TableName), useSample)
+      `,
+		quoteName(q.ColumnName),
+		quoteName(q.TableName),
+		useSample,
+	)
+
 	rows, err := rt.Execute(ctx, instanceID, priority, estimateSql)
 	if err != nil {
 		return err
@@ -97,15 +103,17 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	defer rows.Close()
 
 	var timeGrainString sql.NullString
-	for rows.Next() {
+	if rows.Next() {
 		err := rows.Scan(&timeGrainString)
 		if err != nil {
 			return err
 		}
-		if !timeGrainString.Valid {
-			return nil
-		}
 	}
+
+	if !timeGrainString.Valid {
+		return nil
+	}
+
 	switch timeGrainString.String {
 	case "milliseconds":
 		q.Result = runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND

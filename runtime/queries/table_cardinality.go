@@ -8,9 +8,8 @@ import (
 )
 
 type TableCardinality struct {
-	TableName  string
-	ColumnName string
-	Result     int64
+	TableName string
+	Result    int64
 }
 
 var _ runtime.Query = &TableCardinality{}

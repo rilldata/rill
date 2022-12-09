@@ -9,25 +9,25 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) GetTopK(ctx context.Context, request *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
+func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
 	agg := "count(*)"
-	if request.Agg != "" {
-		agg = request.Agg
+	if req.Agg != "" {
+		agg = req.Agg
 	}
 
 	k := 50
-	if request.K != 0 {
-		k = int(request.K)
+	if req.K != 0 {
+		k = int(req.K)
 	}
 
 	q := &queries.ColumnTopK{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 		Agg:        agg,
 		K:          k,
 	}
 
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -41,13 +41,13 @@ func (s *Server) GetTopK(ctx context.Context, request *runtimev1.GetTopKRequest)
 	}, nil
 }
 
-func (s *Server) GetNullCount(ctx context.Context, request *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
+func (s *Server) GetNullCount(ctx context.Context, req *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
 	q := &queries.ColumnNullCount{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
 
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -58,12 +58,12 @@ func (s *Server) GetNullCount(ctx context.Context, request *runtimev1.GetNullCou
 
 }
 
-func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
+func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
 	q := &queries.ColumnDescriptiveStatistics{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -104,12 +104,12 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, request *runtimev
  * we've thrown at it.
  */
 
-func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtimev1.EstimateSmallestTimeGrainRequest) (*runtimev1.EstimateSmallestTimeGrainResponse, error) {
+func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, req *runtimev1.EstimateSmallestTimeGrainRequest) (*runtimev1.EstimateSmallestTimeGrainResponse, error) {
 	q := &queries.ColumnTimeGrain{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -118,12 +118,12 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, request *runtime
 	}, nil
 }
 
-func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
+func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
 	q := &queries.ColumnNumericHistogram{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -138,12 +138,12 @@ func (s *Server) GetNumericHistogram(ctx context.Context, request *runtimev1.Get
 	}, nil
 }
 
-func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugHistogramRequest) (*runtimev1.GetRugHistogramResponse, error) {
+func (s *Server) GetRugHistogram(ctx context.Context, req *runtimev1.GetRugHistogramRequest) (*runtimev1.GetRugHistogramResponse, error) {
 	q := &queries.ColumnRugHistogram{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -158,12 +158,12 @@ func (s *Server) GetRugHistogram(ctx context.Context, request *runtimev1.GetRugH
 	}, nil
 }
 
-func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
+func (s *Server) GetTimeRangeSummary(ctx context.Context, req *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
 	q := &queries.ColumnTimeRange{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -172,12 +172,12 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, request *runtimev1.Get
 	}, nil
 }
 
-func (s *Server) GetCardinalityOfColumn(ctx context.Context, request *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
+func (s *Server) GetCardinalityOfColumn(ctx context.Context, req *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
 	q := &queries.ColumnCardinality{
-		TableName:  request.TableName,
-		ColumnName: request.ColumnName,
+		TableName:  req.TableName,
+		ColumnName: req.ColumnName,
 	}
-	err := s.runtime.Query(ctx, request.InstanceId, q, int(request.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}

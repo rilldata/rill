@@ -157,6 +157,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 	defer histogramRows.Close()
+
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
 	for histogramRows.Next() {
 		var low, high sql.NullFloat64

@@ -2,14 +2,13 @@ package queries
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -43,10 +42,9 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	sanitizedColumnName := quoteName(q.ColumnName)
 	rangeSql := fmt.Sprintf(
 		"SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
-		sanitizedColumnName,
+		quoteName(q.ColumnName),
 		quoteName(q.TableName),
 	)
 
@@ -55,6 +53,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 	defer rows.Close()
+
 	if rows.Next() {
 		summary := &runtimev1.TimeRangeSummary{}
 		rowMap := make(map[string]any)
@@ -63,7 +62,11 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			return err
 		}
 		if v := rowMap["min"]; v != nil {
-			summary.Min = timestamppb.New(v.(time.Time))
+			minTime, ok := v.(time.Time)
+			if !ok {
+				return fmt.Errorf("not a timestamp column")
+			}
+			summary.Min = timestamppb.New(minTime)
 			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
 			summary.Interval, err = handleInterval(rowMap["interval"])
 			if err != nil {
@@ -73,7 +76,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		q.Result = summary
 		return nil
 	}
-	return status.Error(codes.Internal, "no rows returned")
+	return errors.New("no rows returned")
 }
 
 func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
