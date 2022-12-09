@@ -9,15 +9,9 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { getName } from "@rilldata/web-local/common/utils/incrementName";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     FileArtifactsData,
@@ -26,9 +20,16 @@
   import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
@@ -41,7 +42,6 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -180,7 +180,7 @@
   on:add={dispatchAddEmptyMetricsDef}
   tooltipText="create a new dashboard"
 >
-  <Explore size="16px" /> Dashboards
+  <Explore size="14px" /> Dashboards
 </NavigationHeader>
 
 {#if showMetricsDefs && $dashboardNames.data}

@@ -59,7 +59,7 @@
   on:add={openShowAddSourceModal}
   tooltipText="add a new data source"
 >
-  <Source size="16px" /> Sources
+  <Source size="14px" /> Sources
 </NavigationHeader>
 
 {#if showTables}

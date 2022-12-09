@@ -21,7 +21,7 @@
     info: {
       primary: `bg-gray-800 border border-gray-800 hover:bg-gray-900 hover:border-gray-900 text-gray-100 hover:text-white focus:ring-blue-300`,
       secondary:
-        "border border-gray-500 hover:bg-gray-200 hover:border-gray-200 focus:ring-blue-300",
+        "border border-gray-500 hover:bg-gray-200 hover:border-gray-500 focus:ring-blue-300",
       text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
     },
     error: {
@@ -43,7 +43,7 @@
   }) {
     return `
   ${
-    compact ? "px-2 py-1" : "px-4 py-2"
+    compact ? "px-2 py-1" : "px-3 py-1"
   } rounded flex flex-row gap-x-2 items-center transition-transform duration-100
   focus:outline-none focus:ring-2
   ${customClasses ? customClasses : levels[status][type]}
@@ -53,7 +53,7 @@
 </script>
 
 <button
-  style:height={compact ? "auto" : "36px"}
+  style:height={compact ? "auto" : "32px"}
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}

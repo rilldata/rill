@@ -1,13 +1,13 @@
 <script lang="ts">
+  import { format } from "d3-format";
+  import { COLUMN_PROFILE_CONFIG } from "../../application-config";
+  import Shortcut from "../tooltip/Shortcut.svelte";
+  import StackingWord from "../tooltip/StackingWord.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import StackingWord from "../tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "../tooltip/Shortcut.svelte";
-  import { format } from "d3-format";
   import BarAndLabel from "./BarAndLabel.svelte";
   import notificationStore from "./TopKSummary.svelte";
-  import { COLUMN_PROFILE_CONFIG } from "../../application-config";
 
   import { createShiftClickAction } from "../../util/shift-click-action";
 
@@ -89,6 +89,7 @@
         >
           <BarAndLabel value={count / totalRows} {color}>
             <span
+              class="ui-copy-number"
               class:text-gray-500={negligiblePercentage &&
                 containerWidth >= COLUMN_PROFILE_CONFIG.hideRight}
               >{formatCount(count)}

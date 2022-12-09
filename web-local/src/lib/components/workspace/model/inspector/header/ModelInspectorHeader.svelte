@@ -148,7 +148,7 @@
         type="secondary"
       >
         <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
-        <Export size="16px" />
+        <Export size="14px" />
       </Button>
       <Menu
         dark

@@ -53,7 +53,7 @@
   on:add={handleAddModel}
   tooltipText="create a new model"
 >
-  <ModelIcon size="16px" /> Models
+  <ModelIcon size="14px" /> Models
 </NavigationHeader>
 
 {#if showModels}

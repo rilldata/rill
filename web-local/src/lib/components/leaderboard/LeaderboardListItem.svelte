@@ -73,7 +73,7 @@
           <slot name="title" />
         </div>
       </div>
-      <div class="justify-self-end  overflow-hidden">
+      <div class="justify-self-end overflow-hidden ui-copy-number">
         <slot name="right" />
       </div>
     </div>

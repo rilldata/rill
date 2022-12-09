@@ -99,7 +99,7 @@
     type="primary"
   >
     <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
-    <Explore size="16px" /></Button
+    <Explore size="14px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if hasError}
