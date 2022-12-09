@@ -78,7 +78,9 @@
           yaml,
           $createSourceMutation
         );
-      } catch (err) {}
+      } catch (err) {
+        // no-op
+      }
       overlay.set(null);
       if (!errors?.length) {
         dispatch("close");
