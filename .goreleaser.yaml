@@ -95,6 +95,7 @@ archives:
       - README.md
       - LICENSE*
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
 
 checksum:
   name_template: checksums.txt
