@@ -110,10 +110,10 @@ issues:
         - varnamelen
     - linters:
         - gosec
-      text: 'weak cryptographic primitive'
+      text: "weak cryptographic primitive"
     - linters:
         - stylecheck
-      text: 'error strings should not be capitalized'
+      text: "error strings should not be capitalized"
 
   max-issues-per-linter: 0
   max-same-issues: 0
