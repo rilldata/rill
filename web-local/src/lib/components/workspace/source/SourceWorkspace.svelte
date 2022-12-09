@@ -61,10 +61,12 @@
   $: currentConnector = $connectors?.data?.connectors?.find(
     (connector) => connector.name === source?.type
   );
+  $: remoteConnectorNames = $connectors?.data?.connectors
+    ?.map((connector) => connector.name)
+    ?.filter((name) => name !== "file");
 
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createSource = useRuntimeServicePutFileAndReconcile();
-
   const queryClient = useQueryClient();
 
   let uploadErrors = undefined;
@@ -82,11 +84,6 @@
       if (resp?.errors) {
         uploadErrors = resp.errors;
       }
-      // invalidate the data preview (async)
-      // TODO: use new runtime approach
-      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
-
-      // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         $runtimeStore?.instanceId,
         tableName
@@ -94,7 +91,6 @@
       await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
-      console.log(err);
     }
     overlay.set(null);
   };
@@ -109,6 +105,7 @@
       style:height="100vh"
     >
       <SourceWorkspaceHeader {sourceName} />
+
       {#if entryExists}
         <div
           style:overflow="auto"
@@ -122,25 +119,11 @@
       {:else}
         <!-- error states -->
         <div
-          class="errors flex flex-col items-center pt-8 gap-y-4 m-auto mt-0"
+          class="errors flex flex-col items-center pt-8 gap-y-4 m-auto mt-0 text-gray-500"
           style:width="500px"
         >
           {#if source?.type === "file"}
-            <!-- {#if !source?.path} -->
-            <!-- <div class="text-gray-500">
-                The source <span class="font-bold">{sourceName}</span> does not
-                have a defined path. Edit <b>{`sources/${sourceName}.yaml`}</b>
-                to add "path:
-                {"<path>"}"
-              </div>
-              <div>
-                For more information,
-                <a href="https://docs.rilldata.com/using-rill/import-data"
-                  >view the documentation</a
-                >.
-              </div> -->
-            <!-- {:else} -->
-            <div class="text-gray-500">
+            <div>
               The data file for <span class="font-bold">{sourceName}</span> has not
               been imported as a source.
             </div>
@@ -154,7 +137,7 @@
             <!-- {/if} -->
           {:else if !Object.keys(source || {})?.length}
             <!-- source is empty -->
-            <div class="text-gray-500">
+            <div>
               The source <span class="font-bold">{sourceName}</span>
               is empty. Edit <b>{`sources/${sourceName}.yaml`}</b> to add a source
               definition.
@@ -166,7 +149,7 @@
               >.
             </div>
           {:else if !source?.type}
-            <div class="text-gray-500">
+            <div>
               The source <span class="font-bold">{sourceName}</span> does not
               have a defined type. Edit <b>{`sources/${sourceName}.yaml`}</b> to
               add "type:
@@ -178,8 +161,8 @@
                 >view the documentation</a
               >.
             </div>
-          {:else if ["gcs", "s3", "https"].includes(currentConnector.name) && !source?.uri}
-            <div class="text-gray-500">
+          {:else if remoteConnectorNames.includes(currentConnector.name) && !source?.uri}
+            <div>
               The source URI has not been defined. Edit <b
                 >{`sources/${sourceName}.yaml`}</b
               >
@@ -193,7 +176,7 @@
               >.
             </div>
           {:else}
-            <div class="text-gray-500 text-center">
+            <div class="text-center">
               The source <span class="font-bold">{sourceName}</span> has not been
               imported.
             </div>
@@ -205,6 +188,7 @@
               }}>Import data</Button
             >
           {/if}
+          <!-- show any remaining errors -->
           {#if uploadErrors}
             <Callout level="error">
               {#each uploadErrors as error}
