@@ -16,6 +16,10 @@
   import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Button from "../../button/Button.svelte";
   import Callout from "../../callout/Callout.svelte";
+  import {
+    hasDuckDBUnicodeError,
+    niceDuckdbUnicodeError,
+  } from "../../navigation/sources/errors";
   import { refreshSource } from "../../navigation/sources/refreshSource";
   import { ConnectedPreviewTable } from "../../preview-table";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
@@ -115,7 +119,7 @@
           style:width="500px"
         >
           {#if source?.type === "file"}
-            <div>
+            <div class="text-center">
               The data file for <span class="font-bold">{sourceName}</span> has not
               been imported as a source.
             </div>
@@ -184,7 +188,9 @@
           {#if uploadErrors}
             <Callout level="error">
               {#each uploadErrors as error}
-                {error.message}
+                {hasDuckDBUnicodeError(error.message)
+                  ? niceDuckdbUnicodeError(error.message)
+                  : error.message}
               {/each}
             </Callout>
           {/if}
