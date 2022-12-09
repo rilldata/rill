@@ -122,7 +122,7 @@
             <Tooltip distance={8}>
               <a
                 href="/"
-                class="font-bold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
+                class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
               >
                 {yaml?.name || "Untitled Rill Project"}
               </a>
@@ -156,7 +156,7 @@
   show={true}
 >
   {#if $navigationLayout?.visible}
-    <HideLeftSidebar size="20px" />
+    <HideLeftSidebar size="18px" />
   {:else}
     <SurfaceViewIcon size="16px" mode={"hamburger"} />
   {/if}

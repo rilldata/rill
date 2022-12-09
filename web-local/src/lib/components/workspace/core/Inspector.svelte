@@ -88,7 +88,7 @@
   }}
 >
   {#if $inspectorLayout.visible}
-    <HideRightSidebar size="20px" />
+    <HideRightSidebar size="18px" />
   {:else}
     <MoreHorizontal size="16px" />
   {/if}
