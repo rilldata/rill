@@ -31,10 +31,12 @@ func TestPriorityQueue(t *testing.T) {
 	// We need to check two things -
 	// 1. That the concurrency limit is respected and we are running as many jobs as concurrency
 	// 2. That the priority is respected
-	// Since we can't guarantee the order of the results, we are checking that sum of every n results is equal to sum
-	// of topN priorities, where n is the concurrency limit
-	// At this point all jobs are already present the priority worker
-	// After getting n results we are unPausing and letting next n jobs to run and pausing again unless we get n results
+	//
+	// Since we can't guarantee the order of the results from the concurrent running jobs, we are checking sum of every
+	// n results is equal to sum of topN priorities, where n is the concurrency limit
+	//
+	// At this point all jobs are already present in the priority worker
+	// After getting every n results we are unPausing and letting next n jobs to run and pausing again unless we get n results
 	actual := 0
 	expected := 0
 	res := 0

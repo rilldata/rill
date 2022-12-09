@@ -158,7 +158,6 @@ func (pw *PriorityWorker[V]) work() {
 			if !pw.paused && pq.Len() > 0 && sem.TryAcquire(1) == true {
 				// If the queue isn't empty, start a new item
 				job := heap.Pop(&pq).(*item[V])
-				//currentDoneCh = job.doneCh
 				go pw.handle(job, jobDoneCh, sem)
 			}
 		case p := <-pw.pausedToggleCh:
