@@ -5,7 +5,7 @@ on:
     tags:
       - "**"
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 0 * * *'
 jobs:
   release:
     name: Release rill-developer
@@ -66,15 +66,15 @@ jobs:
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      - name: Upload to GCS for nightly
-        if: github.event_name == 'schedule'
-        uses: google-github-actions/upload-cloud-storage@v1
-        with:
-          path: dist/
-          destination: stage-cdn.rilldata.io/rill/nightly/
-
       - name: Upload install script to CDN
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
+
+      - name: Upload nightly to CDN
+        if: github.event_name == 'schedule'
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: dist/
+          destination: prod-cdn.rilldata.com/rill/nightly/
