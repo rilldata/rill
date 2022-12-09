@@ -315,7 +315,7 @@ export function generateMeasuresAndDimensions(yaml: string, model: V1Model) {
     description: "Total number of records present",
     format_preset: "humanize",
   });
-  doc.addIn(["measures"], measureNode);
+  doc.set("measures", [measureNode]);
 
   const fields = model.schema.fields;
   const diemensionSeq = fields
