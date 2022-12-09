@@ -250,6 +250,7 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
 
 const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
+// FIXME: we should deprecate use of this function in favor of the more modular functions below
 export function generateMeasuresAndDimension(
   model: V1Model,
   options?: { [key: string]: string }
@@ -293,4 +294,55 @@ export function generateMeasuresAndDimension(
   }
 
   return template.toString({ collectionStyle: "block" });
+}
+
+export function compileCreateBlankDashboardYAML(dashboardName: string) {
+  const template = parseDocument(metricsTemplate);
+  template.set("display_name", dashboardName);
+  return template.toString();
+}
+
+export function generateMeasuresAndDimensions(yaml: string, model: V1Model) {
+  const doc = parseDocument(yaml);
+  doc.set("model", model.name);
+
+  const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  doc.set("timeseries", timestampColumns[0]);
+
+  const measureNode = doc.createNode({
+    label: "Total records",
+    expression: "count(*)",
+    description: "Total number of records present",
+    format_preset: "humanize",
+  });
+  doc.addIn(["measures"], measureNode);
+
+  const fields = model.schema.fields;
+  const diemensionSeq = fields
+    .filter((field) => {
+      return CATEGORICALS.has(field.type.code);
+    })
+    .map((field) => {
+      return {
+        label: capitalize(field.name),
+        property: field.name,
+        description: "",
+      };
+    });
+
+  const dimensionNode = doc.createNode(diemensionSeq);
+  doc.set("dimensions", dimensionNode);
+
+  return doc.toString({ collectionStyle: "block" });
+}
+
+export function editDashboardYAML(
+  yaml: string,
+  options: { [key: string]: string }
+) {
+  const doc = parseDocument(yaml);
+  for (const key in options) {
+    doc.set(key, options[key]);
+  }
+  return doc.toString({ collectionStyle: "block" });
 }
