@@ -121,7 +121,7 @@ body {
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   margin: 0;
   padding: 0;
-  --header-height: 3.5rem;
+  --header-height: 52px;
   --right-drawer-width: 400px;
 
   --left-sidebar-width: 400px;
