@@ -7,8 +7,7 @@ import { EntityType } from "@rilldata/web-local/common/data-modeler-state-servic
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import type { UseMutationResult } from "@sveltestack/svelte-query";
+import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { notifications } from "../../notifications";
 
 export async function createSource(
@@ -28,13 +27,13 @@ export async function createSource(
       strict: true,
     },
   });
+
+  if (resp.errors.length) {
+    return resp.errors;
+  }
   goto(`/source/${tableName}`);
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  if (resp.errors.length) {
-    // TODO: make sure to get the right error
-    return resp.errors;
-  }
   notifications.send({ message: `Created source ${tableName}` });
   return [];
 }

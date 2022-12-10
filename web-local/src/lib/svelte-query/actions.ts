@@ -83,7 +83,8 @@ export async function deleteFileArtifact(
   type: EntityType,
   deleteMutation: UseMutationResult<V1DeleteFileAndReconcileResponse>,
   activeEntity: ActiveEntity,
-  names: Array<string>
+  names: Array<string>,
+  showNotification = true
 ) {
   try {
     const resp = await deleteMutation.mutateAsync({
@@ -95,7 +96,9 @@ export async function deleteFileArtifact(
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     httpRequestQueue.removeByName(name);
-    notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+    if (showNotification) {
+      notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+    }
 
     invalidateAfterReconcile(queryClient, instanceId, resp);
     if (activeEntity?.name === name) {
