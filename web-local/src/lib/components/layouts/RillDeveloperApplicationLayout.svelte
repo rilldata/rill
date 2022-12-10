@@ -20,6 +20,7 @@
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { onMount } from "svelte";
+  import CmdVSource from "../CmdVSource.svelte";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
   import BasicLayout from "./BasicLayout.svelte";
 
@@ -62,6 +63,8 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
+  <CmdVSource />
+
   <div class="body">
     {#if $importOverlayVisible}
       <PreparingImport />
