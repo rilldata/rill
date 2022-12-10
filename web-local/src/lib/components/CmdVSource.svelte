@@ -16,6 +16,7 @@
     compileCreateSourceYAML,
     inferSourceName,
   } from "./navigation/sources/sourceUtils";
+  import notificationStore from "./notifications/notificationStore";
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
   const queryClient = useQueryClient();
@@ -61,6 +62,10 @@
           $sourceNames.data,
           false
         );
+        notificationStore.send({
+          message: error.message,
+          type: "error",
+        });
       }
     } catch (err) {
       // no-op
