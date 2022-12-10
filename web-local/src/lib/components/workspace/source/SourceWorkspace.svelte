@@ -130,7 +130,6 @@
                 await onRefreshClick(sourceName);
               }}>Import a CSV or Parquet file</Button
             >
-            <!-- {/if} -->
           {:else if !Object.keys(source || {})?.length}
             <!-- source is empty -->
             <div>
