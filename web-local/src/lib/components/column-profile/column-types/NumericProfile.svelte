@@ -79,6 +79,7 @@
   />
   <div slot="details" class="pl-10 pr-4 py-4">
     <NumericPlot
+      {type}
       data={$numericHistogram}
       rug={$rug}
       summary={$summary}

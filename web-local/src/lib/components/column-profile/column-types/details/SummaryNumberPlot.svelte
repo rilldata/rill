@@ -3,6 +3,7 @@
     GraphicContext,
     SimpleDataGraphic,
   } from "$lib/components/data-graphic/elements";
+  import { INTEGERS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { format } from "d3-format";
   import { DynamicallyPlacedLabel } from "../../../data-graphic/guides";
   export let min;
@@ -12,14 +13,20 @@
   export let q75;
   export let mean;
   export let rowHeight = 24;
+  export let type: string;
 
+  const formatter = INTEGERS.has(type) ? format(".0r") : format(".4f");
   $: values = [
-    { label: "min", value: min },
-    { label: "max", value: max },
-    { label: "q25", value: q25 },
-    { label: "q50", value: q50 },
-    { label: "q75", value: q75 },
-    { label: "mean", value: mean, format: format(".2f") },
+    { label: "min", value: min, format: formatter },
+    { label: "max", value: max, format: formatter },
+    { label: "q25", value: q25, format: formatter },
+    { label: "q50", value: q50, format: formatter },
+    {
+      label: "q75",
+      value: q75,
+      format: formatter,
+    },
+    { label: "mean", value: mean, format: format(".4f") },
   ].reverse();
 </script>
 

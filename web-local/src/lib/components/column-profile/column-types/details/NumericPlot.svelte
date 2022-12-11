@@ -17,6 +17,7 @@
   export let summary;
   export let topK;
   export let totalRows;
+  export let type;
 
   let summaryMode: "summary" | "topk" = "summary";
 
@@ -136,6 +137,7 @@
               q25={summary?.q25}
               q50={summary?.q50}
               q75={summary?.q75}
+              {type}
             />
           </div>
         {:else if summaryMode === "topk"}
