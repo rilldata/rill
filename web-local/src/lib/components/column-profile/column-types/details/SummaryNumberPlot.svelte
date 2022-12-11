@@ -26,7 +26,11 @@
       value: q75,
       format: formatter,
     },
-    { label: "mean", value: mean, format: format(".4f") },
+    {
+      label: "mean",
+      value: mean,
+      format: INTEGERS.has(type) ? format(".2f") : format(".4f"),
+    },
   ].reverse();
 </script>
 
