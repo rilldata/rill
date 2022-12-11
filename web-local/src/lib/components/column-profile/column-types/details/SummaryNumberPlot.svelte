@@ -15,7 +15,7 @@
   export let rowHeight = 24;
   export let type: string;
 
-  const formatter = INTEGERS.has(type) ? format(".0r") : format(".4f");
+  $: formatter = INTEGERS.has(type) ? format(".0r") : format(".4f");
   $: values = [
     { label: "min", value: min, format: formatter },
     { label: "max", value: max, format: formatter },
