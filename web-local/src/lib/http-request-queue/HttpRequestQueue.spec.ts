@@ -162,10 +162,16 @@ function getProfilingQueries(table: string, cols: number) {
   return [
     ...Array(cols)
       .fill(0)
-      .map((_, i) => runtimeServiceGetNumericHistogram("i", table, { columnName: `c${i}` })),
+      .map((_, i) =>
+        runtimeServiceGetNumericHistogram("i", table, { columnName: `c${i}` })
+      ),
     ...Array(cols)
       .fill(0)
-      .map((_, i) => runtimeServiceGetCardinalityOfColumn("i", table, { columnName: `c${i}` })),
+      .map((_, i) =>
+        runtimeServiceGetCardinalityOfColumn("i", table, {
+          columnName: `c${i}`,
+        })
+      ),
   ];
 }
 
@@ -178,10 +184,14 @@ function getProfilingRequests(
   const requests = [
     ...Array(cols)
       .fill(0)
-      .map((_, i) => `queries/column-cardinality/tables/${table}?column_name=c${i}`),
+      .map(
+        (_, i) => `queries/column-cardinality/tables/${table}?column_name=c${i}`
+      ),
     ...Array(cols)
       .fill(0)
-      .map((_, i) => `queries/numeric-histogram/tables/${table}?column_name=c${i}`),
+      .map(
+        (_, i) => `queries/numeric-histogram/tables/${table}?column_name=c${i}`
+      ),
   ];
   if (end === -1) {
     return requests.slice(start);
