@@ -5,5 +5,6 @@ SELECT
     domain,
     bid_price,
     volume,
-    impressions
+    impressions,
+    "ad words"
 FROM ad_bids_source
