@@ -17,18 +17,6 @@ initPlatform() {
     fi
 }
 
-# Verify that a binary is available for the current combination of 'PLATFORM' and 'VERSION'
-verifyAvailability() {
-    if [ $VERSION == nightly ] && [ $PLATFORM == macos-arm64 ]; then
-        printf "\nNightly builds are currently not published for ${PLATFORM}.\n\n"
-        read -p "Do you want to install the nightly macos-x64 build which can run using Rosetta 2 instead? [y/N]" -n 1 -r -s < /dev/tty
-        printf "\n\n"
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 0
-        fi
-        PLATFORM=macos-x64
-    fi
-}
 
 # Create a temporary directory and setup deletion on script exit using the 'EXIT' signal
 initTmpDir() {
@@ -82,7 +70,6 @@ case $1 in
 esac
 
 initPlatform
-verifyAvailability
 initTmpDir
 downloadBinary
 installBinary
