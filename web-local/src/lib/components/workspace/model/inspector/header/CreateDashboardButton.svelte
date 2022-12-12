@@ -5,6 +5,7 @@
     useRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
@@ -20,6 +21,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getName } from "../../../../../../common/utils/incrementName";
   import { overlay } from "../../../../../application-state-stores/overlay-store";
@@ -57,7 +59,10 @@
       {
         data: {
           instanceId: $runtimeStore.instanceId,
-          path: `dashboards/${newDashboardName}.yaml`,
+          path: getFilePathFromNameAndType(
+            newDashboardName,
+            EntityType.MetricsDefinition
+          ),
           blob: generatedYAML,
           create: true,
           createOnly: true,

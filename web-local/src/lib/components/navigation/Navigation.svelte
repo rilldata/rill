@@ -39,7 +39,7 @@
   $: thing = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
     `rill.yaml`
-    //getFileFromName(metricsDefName, EntityType.MetricsDefinition)
+    //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
 
   import { parseDocument } from "yaml";

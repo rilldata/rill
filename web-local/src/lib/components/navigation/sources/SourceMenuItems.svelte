@@ -5,8 +5,8 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    V1ReconcileResponse,
     useRuntimeServiceRefreshAndReconcile,
+    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
@@ -36,7 +36,7 @@
   } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
-  import { getFileFromName } from "../../../util/entity-mappers";
+  import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -65,7 +65,7 @@
   $: source = $getSource?.data?.entry?.source;
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
-    getFileFromName(sourceName, EntityType.Table)
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
