@@ -23,7 +23,6 @@ var migrationVersionTable = "admin_migration_version"
 // Migrate runs migrations. It's safe for concurrent invocations.
 // Adapted from: https://github.com/jackc/tern
 func (c *connection) Migrate(ctx context.Context) (err error) {
-
 	// Acquire advisory lock
 	_, err = c.db.ExecContext(ctx, "select pg_advisory_lock($1)", migrationLockNumber)
 	if err != nil {

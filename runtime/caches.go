@@ -3,8 +3,9 @@ package runtime
 import (
 	"context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"

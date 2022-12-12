@@ -153,7 +153,6 @@ func (pw *PriorityWorker[V]) work() {
 				currentDoneCh = job.doneCh
 				go pw.handle(job)
 			}
-
 		}
 	}
 }

@@ -75,7 +75,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 
 	// Disabling this for now. we need to move this to a separate API
 	// It adds a lot of response time to getting columns
-	//for _, pc := range pcs[0:i] {
+	// for _, pc := range pcs[0:i] {
 	//	columnName := EscapeDoubleQuotes(pc.Name)
 	//	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
 	//		Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),

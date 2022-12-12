@@ -60,7 +60,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", conf.Path, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", conf.Path, http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
 	}

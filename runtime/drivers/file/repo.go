@@ -116,7 +116,7 @@ func (c *connection) Rename(ctx context.Context, instID string, fromPath string,
 	toPath = path.Join(c.root, toPath)
 
 	fromPath = path.Join(c.root, fromPath)
-	if _, err := os.Stat(toPath); strings.ToLower(fromPath) != strings.ToLower(toPath) && err == nil {
+	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
 		return drivers.ErrFileAlreadyExists
 	}
 	err := os.Rename(fromPath, toPath)
