@@ -1,7 +1,7 @@
+# syntax = docker/dockerfile:1.1-experimental
 FROM ubuntu:focal
 
 WORKDIR /app
-RUN apt-get update && apt-get install -y curl unzip bash libdigest-sha-perl
 
 RUN apt-get update && apt-get install -y curl unzip make g++
 
