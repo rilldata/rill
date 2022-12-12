@@ -62,6 +62,7 @@ export class MetricsInternalRepresentation {
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
+    this.internalYAML = yamlString;
 
     this.updateRuntime = updateRuntime;
   }
