@@ -42,8 +42,6 @@ import type {
   RuntimeServiceMetricsViewToplistBody,
   V1MetricsViewTotalsResponse,
   RuntimeServiceMetricsViewTotalsBody,
-  V1GetTableCardinalityResponse,
-  RuntimeServiceGetTableCardinalityParams,
   V1GetCardinalityOfColumnResponse,
   RuntimeServiceGetCardinalityOfColumnParams,
   V1ProfileColumnsResponse,
@@ -62,6 +60,8 @@ import type {
   RuntimeServiceGetRugHistogramParams,
   V1EstimateSmallestTimeGrainResponse,
   RuntimeServiceEstimateSmallestTimeGrainParams,
+  V1GetTableCardinalityResponse,
+  RuntimeServiceGetTableCardinalityParams,
   V1GetTimeRangeSummaryResponse,
   RuntimeServiceGetTimeRangeSummaryParams,
   V1GenerateTimeSeriesResponse,
@@ -1012,11 +1012,10 @@ It's a convenience API for querying a metrics view.
 export const runtimeServiceMetricsViewToplist = (
   instanceId: string,
   metricsViewName: string,
-  dimensionName: string,
   runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody
 ) => {
   return httpClient<V1MetricsViewToplistResponse>({
-    url: `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist/${dimensionName}`,
+    url: `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceMetricsViewToplistBody,
@@ -1026,10 +1025,9 @@ export const runtimeServiceMetricsViewToplist = (
 export const getRuntimeServiceMetricsViewToplistQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  dimensionName: string,
   runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody
 ) => [
-  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist/${dimensionName}`,
+  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist`,
   runtimeServiceMetricsViewToplistBody,
 ];
 
@@ -1044,7 +1042,6 @@ export const useRuntimeServiceMetricsViewToplist = <
 >(
   instanceId: string,
   metricsViewName: string,
-  dimensionName: string,
   runtimeServiceMetricsViewToplistBody: RuntimeServiceMetricsViewToplistBody,
   options?: {
     query?: UseQueryOptions<
@@ -1066,7 +1063,6 @@ export const useRuntimeServiceMetricsViewToplist = <
     getRuntimeServiceMetricsViewToplistQueryKey(
       instanceId,
       metricsViewName,
-      dimensionName,
       runtimeServiceMetricsViewToplistBody
     );
 
@@ -1076,7 +1072,6 @@ export const useRuntimeServiceMetricsViewToplist = <
     runtimeServiceMetricsViewToplist(
       instanceId,
       metricsViewName,
-      dimensionName,
       runtimeServiceMetricsViewToplistBody
     );
 
@@ -1085,7 +1080,7 @@ export const useRuntimeServiceMetricsViewToplist = <
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && metricsViewName && dimensionName),
+    enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceMetricsViewToplist>>,
@@ -1189,98 +1184,16 @@ export const useRuntimeServiceMetricsViewTotals = <
 };
 
 /**
- * @summary TableCardinality (TODO: add description)
- */
-export const runtimeServiceGetTableCardinality = (
-  instanceId: string,
-  tableName: string,
-  params?: RuntimeServiceGetTableCardinalityParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1GetTableCardinalityResponse>({
-    url: `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getRuntimeServiceGetTableCardinalityQueryKey = (
-  instanceId: string,
-  tableName: string,
-  params?: RuntimeServiceGetTableCardinalityParams
-) => [
-  `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
-
-export type RuntimeServiceGetTableCardinalityQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
->;
-export type RuntimeServiceGetTableCardinalityQueryError = RpcStatus;
-
-export const useRuntimeServiceGetTableCardinality = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  tableName: string,
-  params?: RuntimeServiceGetTableCardinalityParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceGetTableCardinalityQueryKey(instanceId, tableName, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
-  > = ({ signal }) =>
-    runtimeServiceGetTableCardinality(instanceId, tableName, params, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
  * @summary Get cardinality for a column
  */
 export const runtimeServiceGetCardinalityOfColumn = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetCardinalityOfColumnParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetCardinalityOfColumnResponse>({
-    url: `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -1290,10 +1203,9 @@ export const runtimeServiceGetCardinalityOfColumn = (
 export const getRuntimeServiceGetCardinalityOfColumnQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetCardinalityOfColumnParams
 ) => [
-  `/v1/instances/${instanceId}/queries/cardinality/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -1308,7 +1220,6 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetCardinalityOfColumnParams,
   options?: {
     query?: UseQueryOptions<
@@ -1330,27 +1241,20 @@ export const useRuntimeServiceGetCardinalityOfColumn = <
     getRuntimeServiceGetCardinalityOfColumnQueryKey(
       instanceId,
       tableName,
-      columnName,
       params
     );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetCardinalityOfColumn>>
   > = ({ signal }) =>
-    runtimeServiceGetCardinalityOfColumn(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetCardinalityOfColumn(instanceId, tableName, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetCardinalityOfColumn>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetCardinalityOfColumn>>,
@@ -1448,12 +1352,11 @@ export const useRuntimeServiceProfileColumns = <
 export const runtimeServiceGetDescriptiveStatistics = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetDescriptiveStatisticsParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetDescriptiveStatisticsResponse>({
-    url: `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -1463,10 +1366,9 @@ export const runtimeServiceGetDescriptiveStatistics = (
 export const getRuntimeServiceGetDescriptiveStatisticsQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetDescriptiveStatisticsParams
 ) => [
-  `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -1481,7 +1383,6 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetDescriptiveStatisticsParams,
   options?: {
     query?: UseQueryOptions<
@@ -1503,7 +1404,6 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
     getRuntimeServiceGetDescriptiveStatisticsQueryKey(
       instanceId,
       tableName,
-      columnName,
       params
     );
 
@@ -1513,7 +1413,6 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
     runtimeServiceGetDescriptiveStatistics(
       instanceId,
       tableName,
-      columnName,
       params,
       signal
     );
@@ -1523,7 +1422,7 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetDescriptiveStatistics>>,
@@ -1543,12 +1442,11 @@ export const useRuntimeServiceGetDescriptiveStatistics = <
 export const runtimeServiceGetNullCount = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetNullCountParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetNullCountResponse>({
-    url: `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -1558,10 +1456,9 @@ export const runtimeServiceGetNullCount = (
 export const getRuntimeServiceGetNullCountQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetNullCountParams
 ) => [
-  `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -1576,7 +1473,6 @@ export const useRuntimeServiceGetNullCount = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetNullCountParams,
   options?: {
     query?: UseQueryOptions<
@@ -1595,30 +1491,19 @@ export const useRuntimeServiceGetNullCount = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetNullCountQueryKey(
-      instanceId,
-      tableName,
-      columnName,
-      params
-    );
+    getRuntimeServiceGetNullCountQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetNullCount>>
   > = ({ signal }) =>
-    runtimeServiceGetNullCount(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetNullCount(instanceId, tableName, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetNullCount>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetNullCount>>,
@@ -1638,12 +1523,11 @@ export const useRuntimeServiceGetNullCount = <
 export const runtimeServiceGetNumericHistogram = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetNumericHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetNumericHistogramResponse>({
-    url: `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -1653,10 +1537,9 @@ export const runtimeServiceGetNumericHistogram = (
 export const getRuntimeServiceGetNumericHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetNumericHistogramParams
 ) => [
-  `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -1671,7 +1554,6 @@ export const useRuntimeServiceGetNumericHistogram = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetNumericHistogramParams,
   options?: {
     query?: UseQueryOptions<
@@ -1690,30 +1572,19 @@ export const useRuntimeServiceGetNumericHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetNumericHistogramQueryKey(
-      instanceId,
-      tableName,
-      columnName,
-      params
-    );
+    getRuntimeServiceGetNumericHistogramQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>
   > = ({ signal }) =>
-    runtimeServiceGetNumericHistogram(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetNumericHistogram(instanceId, tableName, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetNumericHistogram>>,
@@ -1902,12 +1773,11 @@ export const useRuntimeServiceGetTableRows = <
 export const runtimeServiceGetRugHistogram = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetRugHistogramParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetRugHistogramResponse>({
-    url: `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -1917,10 +1787,9 @@ export const runtimeServiceGetRugHistogram = (
 export const getRuntimeServiceGetRugHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetRugHistogramParams
 ) => [
-  `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -1935,7 +1804,6 @@ export const useRuntimeServiceGetRugHistogram = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetRugHistogramParams,
   options?: {
     query?: UseQueryOptions<
@@ -1954,30 +1822,19 @@ export const useRuntimeServiceGetRugHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetRugHistogramQueryKey(
-      instanceId,
-      tableName,
-      columnName,
-      params
-    );
+    getRuntimeServiceGetRugHistogramQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>
   > = ({ signal }) =>
-    runtimeServiceGetRugHistogram(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetRugHistogram(instanceId, tableName, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetRugHistogram>>,
@@ -1997,12 +1854,11 @@ export const useRuntimeServiceGetRugHistogram = <
 export const runtimeServiceEstimateSmallestTimeGrain = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceEstimateSmallestTimeGrainParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1EstimateSmallestTimeGrainResponse>({
-    url: `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -2012,10 +1868,9 @@ export const runtimeServiceEstimateSmallestTimeGrain = (
 export const getRuntimeServiceEstimateSmallestTimeGrainQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceEstimateSmallestTimeGrainParams
 ) => [
-  `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -2030,7 +1885,6 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceEstimateSmallestTimeGrainParams,
   options?: {
     query?: UseQueryOptions<
@@ -2052,7 +1906,6 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
     getRuntimeServiceEstimateSmallestTimeGrainQueryKey(
       instanceId,
       tableName,
-      columnName,
       params
     );
 
@@ -2062,7 +1915,6 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
     runtimeServiceEstimateSmallestTimeGrain(
       instanceId,
       tableName,
-      columnName,
       params,
       signal
     );
@@ -2072,10 +1924,91 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceEstimateSmallestTimeGrain>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary TableCardinality (TODO: add description)
+ */
+export const runtimeServiceGetTableCardinality = (
+  instanceId: string,
+  tableName: string,
+  params?: RuntimeServiceGetTableCardinalityParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetTableCardinalityResponse>({
+    url: `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetTableCardinalityQueryKey = (
+  instanceId: string,
+  tableName: string,
+  params?: RuntimeServiceGetTableCardinalityParams
+) => [
+  `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
+  ...(params ? [params] : []),
+];
+
+export type RuntimeServiceGetTableCardinalityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
+>;
+export type RuntimeServiceGetTableCardinalityQueryError = RpcStatus;
+
+export const useRuntimeServiceGetTableCardinality = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  params?: RuntimeServiceGetTableCardinalityParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetTableCardinalityQueryKey(instanceId, tableName, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>
+  > = ({ signal }) =>
+    runtimeServiceGetTableCardinality(instanceId, tableName, params, signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof runtimeServiceGetTableCardinality>>,
     TError,
     TData,
     QueryKey
@@ -2092,12 +2025,11 @@ export const useRuntimeServiceEstimateSmallestTimeGrain = <
 export const runtimeServiceGetTimeRangeSummary = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetTimeRangeSummaryParams,
   signal?: AbortSignal
 ) => {
   return httpClient<V1GetTimeRangeSummaryResponse>({
-    url: `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
     method: "get",
     params,
     signal,
@@ -2107,10 +2039,9 @@ export const runtimeServiceGetTimeRangeSummary = (
 export const getRuntimeServiceGetTimeRangeSummaryQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetTimeRangeSummaryParams
 ) => [
-  `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
@@ -2125,7 +2056,6 @@ export const useRuntimeServiceGetTimeRangeSummary = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   params?: RuntimeServiceGetTimeRangeSummaryParams,
   options?: {
     query?: UseQueryOptions<
@@ -2144,30 +2074,19 @@ export const useRuntimeServiceGetTimeRangeSummary = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetTimeRangeSummaryQueryKey(
-      instanceId,
-      tableName,
-      columnName,
-      params
-    );
+    getRuntimeServiceGetTimeRangeSummaryQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetTimeRangeSummary>>
   > = ({ signal }) =>
-    runtimeServiceGetTimeRangeSummary(
-      instanceId,
-      tableName,
-      columnName,
-      params,
-      signal
-    );
+    runtimeServiceGetTimeRangeSummary(instanceId, tableName, params, signal);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetTimeRangeSummary>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetTimeRangeSummary>>,
@@ -2276,11 +2195,10 @@ agg function and k are optional, defaults are count(*) and 50 respectively
 export const runtimeServiceGetTopK = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody
 ) => {
   return httpClient<V1GetTopKResponse>({
-    url: `/v1/instances/${instanceId}/queries/topk/tables/${tableName}/columns/${columnName}`,
+    url: `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceGetTopKBody,
@@ -2290,10 +2208,9 @@ export const runtimeServiceGetTopK = (
 export const getRuntimeServiceGetTopKQueryKey = (
   instanceId: string,
   tableName: string,
-  columnName: string,
   runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody
 ) => [
-  `/v1/instances/${instanceId}/queries/topk/tables/${tableName}/columns/${columnName}`,
+  `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
   runtimeServiceGetTopKBody,
 ];
 
@@ -2308,7 +2225,6 @@ export const useRuntimeServiceGetTopK = <
 >(
   instanceId: string,
   tableName: string,
-  columnName: string,
   runtimeServiceGetTopKBody: RuntimeServiceGetTopKBody,
   options?: {
     query?: UseQueryOptions<
@@ -2330,26 +2246,20 @@ export const useRuntimeServiceGetTopK = <
     getRuntimeServiceGetTopKQueryKey(
       instanceId,
       tableName,
-      columnName,
       runtimeServiceGetTopKBody
     );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetTopK>>
   > = () =>
-    runtimeServiceGetTopK(
-      instanceId,
-      tableName,
-      columnName,
-      runtimeServiceGetTopKBody
-    );
+    runtimeServiceGetTopK(instanceId, tableName, runtimeServiceGetTopKBody);
 
   const query = useQuery<
     Awaited<ReturnType<typeof runtimeServiceGetTopK>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName && columnName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof runtimeServiceGetTopK>>,

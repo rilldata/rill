@@ -413,7 +413,7 @@ paths:
             title: Request message for RuntimeService.MetricsViewTimeSeries
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/metrics-views/{metricsViewName}/toplist/{dimensionName}:
+  /v1/instances/{instanceId}/metrics-views/{metricsViewName}/toplist:
     post:
       summary: |-
         MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
@@ -437,16 +437,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: dimensionName
-          in: path
-          required: true
-          type: string
         - name: body
           in: body
           required: true
           schema:
             type: object
             properties:
+              dimensionName:
+                type: string
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               limit:
@@ -523,36 +521,7 @@ paths:
             title: Request message for RuntimeService.MetricsViewTotals
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}:
-    get:
-      summary: 'TableCardinality (TODO: add description)'
-      operationId: RuntimeService_GetTableCardinality
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetTableCardinalityResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: priority
-          in: query
-          required: false
-          type: integer
-          format: int32
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/queries/cardinality/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
       operationId: RuntimeService_GetCardinalityOfColumn
@@ -575,8 +544,8 @@ paths:
           required: true
           type: string
         - name: columnName
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
         - name: priority
           in: query
@@ -614,7 +583,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
     get:
       summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
       operationId: RuntimeService_GetDescriptiveStatistics
@@ -637,8 +606,8 @@ paths:
           required: true
           type: string
         - name: columnName
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
         - name: priority
           in: query
@@ -647,7 +616,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
     get:
       summary: Get the number of nulls in a column
       operationId: RuntimeService_GetNullCount
@@ -670,8 +639,8 @@ paths:
           required: true
           type: string
         - name: columnName
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
         - name: priority
           in: query
@@ -680,7 +649,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}:
     get:
       summary: Get the histogram for values in a column
       operationId: RuntimeService_GetNumericHistogram
@@ -703,8 +672,8 @@ paths:
           required: true
           type: string
         - name: columnName
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
         - name: priority
           in: query
@@ -782,7 +751,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}:
     get:
       summary: Get outliers for a numeric column
       operationId: RuntimeService_GetRugHistogram
@@ -805,8 +774,8 @@ paths:
           required: true
           type: string
         - name: columnName
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
         - name: priority
           in: query
@@ -815,7 +784,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}:
     get:
       summary: Estimates the smallest time grain present in the column
       operationId: RuntimeService_EstimateSmallestTimeGrain
@@ -838,6 +807,35 @@ paths:
           required: true
           type: string
         - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}:
+    get:
+      summary: 'TableCardinality (TODO: add description)'
+      operationId: RuntimeService_GetTableCardinality
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTableCardinalityResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
           in: path
           required: true
           type: string
@@ -848,7 +846,7 @@ paths:
           format: int32
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}:
     get:
       summary: Get the time range summaries (min, max) for a column
       operationId: RuntimeService_GetTimeRangeSummary
@@ -871,8 +869,8 @@ paths:
           required: true
           type: string
         - name: columnName
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
         - name: priority
           in: query
@@ -930,7 +928,7 @@ paths:
                 type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/topk/tables/{tableName}/columns/{columnName}:
+  /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
     post:
       summary: |-
         Get TopK elements from a table for a column given an agg function
@@ -954,10 +952,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: columnName
-          in: path
-          required: true
-          type: string
         - name: body
           in: body
           required: true
@@ -967,6 +961,8 @@ paths:
               agg:
                 type: string
                 title: default is count(*)
+              columnName:
+                type: string
               k:
                 type: integer
                 format: int32
