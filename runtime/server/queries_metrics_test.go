@@ -24,7 +24,7 @@ func TestServer_LookupMetricsView(t *testing.T) {
 
 	mv, err := server.lookupMetricsView(context.Background(), instanceId, "ad_bids_metrics")
 	require.NoError(t, err)
-	require.Equal(t, 3, len(mv.Measures))
+	require.Equal(t, 4, len(mv.Measures))
 	require.Equal(t, 3, len(mv.Dimensions))
 }
 
