@@ -21,7 +21,11 @@ export function useSourceNames(instanceId: string) {
         select: (data) =>
           data.paths
             ?.filter((path) => path.includes("sources/"))
-            .map((path) => path.replace("/sources/", "").replace(".yaml", "")),
+            .map((path) => path.replace("/sources/", "").replace(".yaml", ""))
+            // sort alphabetically case-insensitive
+            .sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" })
+            ),
       },
     }
   );
