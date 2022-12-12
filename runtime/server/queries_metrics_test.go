@@ -24,7 +24,7 @@ func TestServer_LookupMetricsView(t *testing.T) {
 
 	mv, err := server.lookupMetricsView(context.Background(), instanceId, "ad_bids_metrics")
 	require.NoError(t, err)
-	require.Equal(t, 3, len(mv.Measures))
+	require.Equal(t, 4, len(mv.Measures))
 	require.Equal(t, 3, len(mv.Dimensions))
 }
 
@@ -454,6 +454,59 @@ func TestServer_MetricsViewToplist_asc(t *testing.T) {
 
 	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
 	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewToplist_nulls_last(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_3"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_3",
+				Ascending: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[1].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_3"].GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, structpb.NullValue(0), tr.Data[1].Fields["measure_3"].GetNullValue())
+
+	tr, err = server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_3"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_3",
+				Ascending: false,
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[1].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_3"].GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, structpb.NullValue(0), tr.Data[1].Fields["measure_3"].GetNullValue())
 }
 
 func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {

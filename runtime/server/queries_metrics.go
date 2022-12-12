@@ -174,6 +174,7 @@ func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
+		orderClause += " NULLS LAST"
 	}
 
 	if req.Limit == 0 {
