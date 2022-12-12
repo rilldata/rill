@@ -38,8 +38,8 @@ rill start
 You can also check out the Rill Developer repository and explore one of our example projects. For example:
 
 ```bash
-git clone https://github.com/rilldata/rill-developer.git
-cd rill-developer/examples/sf_props
+git clone https://github.com/rilldata/rill-developer-example.git
+cd rill-developer-example
 rill start
 ```
 
