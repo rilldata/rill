@@ -10,13 +10,13 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import type { ActiveEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/ApplicationEntityService";
-import type { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { getNextEntityName } from "@rilldata/web-local/common/utils/getNextEntityId";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import {
-  getFileFromName,
+  getFilePathFromNameAndType,
   getLabel,
   getNameFromFile,
   getRouteFromName,
@@ -59,8 +59,8 @@ export async function renameFileArtifact(
   const resp = await renameMutation.mutateAsync({
     data: {
       instanceId,
-      fromPath: getFileFromName(fromName, type),
-      toPath: getFileFromName(toName, type),
+      fromPath: getFilePathFromNameAndType(fromName, type),
+      toPath: getFilePathFromNameAndType(toName, type),
     },
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
@@ -83,19 +83,22 @@ export async function deleteFileArtifact(
   type: EntityType,
   deleteMutation: UseMutationResult<V1DeleteFileAndReconcileResponse>,
   activeEntity: ActiveEntity,
-  names: Array<string>
+  names: Array<string>,
+  showNotification = true
 ) {
   try {
     const resp = await deleteMutation.mutateAsync({
       data: {
         instanceId,
-        path: getFileFromName(name, type),
+        path: getFilePathFromNameAndType(name, type),
       },
     });
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     httpRequestQueue.removeByName(name);
-    notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+    if (showNotification) {
+      notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+    }
 
     invalidateAfterReconcile(queryClient, instanceId, resp);
     if (activeEntity?.name === name) {
@@ -157,7 +160,10 @@ export const useCreateDashboardFromSource = <
 
     const response = await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
-      path: `dashboards/${data.newDashboardName}.yaml`,
+      path: getFilePathFromNameAndType(
+        data.newDashboardName,
+        EntityType.MetricsDefinition
+      ),
       blob: generatedYAML,
       create: true,
       createOnly: true,

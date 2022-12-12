@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getContext, onMount } from "svelte";
   import { drag } from "../../drag";
-  import RillLogo from "../icons/RillLogo.svelte";
   import Spacer from "../icons/Spacer.svelte";
   import Portal from "../Portal.svelte";
   import Footer from "./Footer.svelte";
 
+  import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
   import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
@@ -34,6 +35,19 @@
   const navVisibilityTween =
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
+
+  $: thing = useRuntimeServiceGetFile(
+    $runtimeStore?.instanceId,
+    `rill.yaml`
+    //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+  );
+
+  import { parseDocument } from "yaml";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import { shorthandTitle } from "./shorthand-title";
+
+  $: yaml = parseDocument($thing?.data?.blob || "{}")?.toJS();
 </script>
 
 <div
@@ -85,17 +99,40 @@
           style:height="var(--header-height)"
           class="sticky top-0 grid align-center bg-white z-50"
         >
+          <!-- the pl-[.875rem] is a fix to move this new element over a pinch.-->
           <h1
-            class="grid grid-flow-col justify-start gap-x-3 p-4 items-center content-center"
+            class="grid grid-flow-col justify-start gap-x-3 p-4 pl-[.875rem] items-center content-center"
           >
             {#if mounted}
               <a href="/">
-                <RillLogo size="16px" iconOnly />
+                <div
+                  style:width="20px"
+                  style:font-size="10px"
+                  class="grid place-items-center rounded bg-gray-800 text-white font-light"
+                  style:height="20px"
+                >
+                  <!-- a temp fix to make MD IO nudged down-->
+                  <div style:transform="translateY(.5px)">
+                    {shorthandTitle(yaml?.name || "Ri")}
+                  </div>
+                </div>
               </a>
             {:else}
               <Spacer size="16px" />
             {/if}
-            <a href="/" class="font-bold text-black"> Rill Developer </a>
+            <Tooltip distance={8}>
+              <a
+                href="/"
+                class="font-bold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
+              >
+                {yaml?.name || "Untitled Rill Project"}
+              </a>
+              <TooltipContent maxWidth="300px" slot="tooltip-content">
+                <div class="font-bold">
+                  {yaml?.name || "Untitled Rill Project"}
+                </div>
+              </TooltipContent>
+            </Tooltip>
           </h1>
         </header>
         <TableAssets />
