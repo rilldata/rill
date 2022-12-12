@@ -16,7 +16,7 @@ import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-st
 import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import {
-  getFileFromName,
+  getFilePathFromNameAndType,
   getLabel,
   getNameFromFile,
   getRouteFromName,
@@ -59,8 +59,8 @@ export async function renameFileArtifact(
   const resp = await renameMutation.mutateAsync({
     data: {
       instanceId,
-      fromPath: getFileFromName(fromName, type),
-      toPath: getFileFromName(toName, type),
+      fromPath: getFilePathFromNameAndType(fromName, type),
+      toPath: getFilePathFromNameAndType(toName, type),
     },
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
@@ -90,7 +90,7 @@ export async function deleteFileArtifact(
     const resp = await deleteMutation.mutateAsync({
       data: {
         instanceId,
-        path: getFileFromName(name, type),
+        path: getFilePathFromNameAndType(name, type),
       },
     });
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
@@ -160,7 +160,7 @@ export const useCreateDashboardFromSource = <
 
     const response = await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
-      path: getFileFromName(
+      path: getFilePathFromNameAndType(
         data.newDashboardName,
         EntityType.MetricsDefinition
       ),

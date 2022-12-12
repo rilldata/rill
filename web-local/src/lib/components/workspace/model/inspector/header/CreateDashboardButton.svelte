@@ -21,7 +21,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getName } from "../../../../../../common/utils/incrementName";
   import { overlay } from "../../../../../application-state-stores/overlay-store";
@@ -59,7 +59,10 @@
       {
         data: {
           instanceId: $runtimeStore.instanceId,
-          path: getFileFromName(newDashboardName, EntityType.MetricsDefinition),
+          path: getFilePathFromNameAndType(
+            newDashboardName,
+            EntityType.MetricsDefinition
+          ),
           blob: generatedYAML,
           create: true,
           createOnly: true,

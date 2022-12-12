@@ -6,7 +6,7 @@ import type {
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { notifications } from "../../notifications";
 
@@ -20,7 +20,7 @@ export async function createSource(
   const resp = await createSourceMutation.mutateAsync({
     data: {
       instanceId,
-      path: getFileFromName(tableName, EntityType.Table),
+      path: getFilePathFromNameAndType(tableName, EntityType.Table),
       blob: yaml,
       create: true,
       createOnly: true,

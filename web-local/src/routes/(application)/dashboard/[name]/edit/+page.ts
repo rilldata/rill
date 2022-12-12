@@ -4,7 +4,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error } from "@sveltejs/kit";
 import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
@@ -15,7 +15,7 @@ export async function load({ params }) {
   try {
     await runtimeServiceGetFile(
       localConfig.instance_id,
-      getFileFromName(params.name, EntityType.MetricsDefinition)
+      getFilePathFromNameAndType(params.name, EntityType.MetricsDefinition)
     );
   } catch (err) {
     if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
