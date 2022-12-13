@@ -27,7 +27,7 @@ export async function refreshSource(
     const resp = await refreshSource.mutateAsync({
       data: {
         instanceId,
-        path: `sources/${sourceName}.yaml`,
+        path: getFilePathFromNameAndType(sourceName, EntityType.Table),
       },
     });
     invalidateAfterReconcile(queryClient, instanceId, resp);
