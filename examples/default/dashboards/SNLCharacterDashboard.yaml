@@ -4,7 +4,6 @@ display_name: "SNL Character Dashboard"
 model: "impressions_and_characters"
 timeseries: "event_date"
 measures:
-
   - label: "Unique Episodes"
     expression: "COUNT(DISTINCT episode_id)"
     description: ""
