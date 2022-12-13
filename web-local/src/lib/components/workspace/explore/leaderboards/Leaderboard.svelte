@@ -118,8 +118,8 @@
     topListQuery = useRuntimeServiceMetricsViewToplist(
       $runtimeStore.instanceId,
       metricViewName,
-      dimensionName,
       {
+        dimensionName: dimensionName,
         measureNames: [measure.name],
         limit: "250",
         offset: "0",
