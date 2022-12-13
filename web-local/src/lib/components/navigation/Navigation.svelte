@@ -122,12 +122,12 @@
             <Tooltip distance={8}>
               <a
                 href="/"
-                class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
+                class="ui-copy-strong text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
               >
                 {yaml?.name || "Untitled Rill Project"}
               </a>
               <TooltipContent maxWidth="300px" slot="tooltip-content">
-                <div class="ui-copy-strong">
+                <div class="ui-copy-strong:dark">
                   {yaml?.name || "Untitled Rill Project"}
                 </div>
               </TooltipContent>
