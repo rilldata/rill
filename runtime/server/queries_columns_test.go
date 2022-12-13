@@ -309,12 +309,12 @@ func TestServer_GetRugHistogram_2rows_null(t *testing.T) {
 		UNION ALL
 		SELECT 2 as val
 	`
-	server, instanceId := getColumnTestServerWithModel(t, sql, 1)
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
 	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, 0, len(res.NumericSummary.GetNumericOutliers().Outliers))
+	require.Equal(t, 500, len(res.NumericSummary.GetNumericOutliers().Outliers))
 }
 
 func TestServer_GetRugHistogram_3rows_null(t *testing.T) {
