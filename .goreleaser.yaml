@@ -4,6 +4,10 @@ release:
   prerelease: auto
   draft: false
 
+before:
+  hooks:
+    - docker login ghcr.io -u ${{ .Env.GITHUB_ACTOR }} -p ${{ .Env.GITHUB_TOKEN }}
+
 builds:
 #  - id: darwin_amd64
 #    main: ./cli/main.go
