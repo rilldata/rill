@@ -98,7 +98,7 @@ func getSourceReader(path string) (string, error) {
 	ext := fileutil.FullExt(path)
 	if ext == "" {
 		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") {
+	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") || strings.Contains(ext, ".txt") {
 		return fmt.Sprintf("read_csv_auto('%s')", path), nil
 	} else if strings.Contains(ext, ".parquet") {
 		return fmt.Sprintf("read_parquet('%s')", path), nil

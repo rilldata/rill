@@ -188,7 +188,7 @@ export function openFileUploadDialog(multiple = true) {
     };
     window.addEventListener("focus", focusHandler);
     input.multiple = multiple;
-    input.accept = ".csv,.tsv,.parquet";
+    input.accept = ".csv,.tsv,.txt,.parquet";
     input.click();
   });
 }

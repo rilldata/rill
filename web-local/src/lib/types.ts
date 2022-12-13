@@ -67,6 +67,7 @@ export const FILE_EXTENSION_TO_TABLE_TYPE = {
   parquet: TableSourceType.ParquetFile,
   csv: TableSourceType.CSVFile,
   tsv: TableSourceType.CSVFile,
+  txt: TableSourceType.CSVFile,
 };
 
 export interface Table extends ColumnarItem {

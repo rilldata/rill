@@ -27,6 +27,7 @@ export type RuntimeServiceQueryBody = {
  */
 export type RuntimeServiceGetTopKBody = {
   agg?: string;
+  columnName?: string;
   k?: number;
   priority?: number;
 };
@@ -41,13 +42,22 @@ export type RuntimeServiceGenerateTimeSeriesBody = {
   timestampColumnName?: string;
 };
 
-export type RuntimeServiceGetTimeRangeSummaryParams = { priority?: number };
-
-export type RuntimeServiceEstimateSmallestTimeGrainParams = {
+export type RuntimeServiceGetTimeRangeSummaryParams = {
+  columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceGetRugHistogramParams = { priority?: number };
+export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
+
+export type RuntimeServiceEstimateSmallestTimeGrainParams = {
+  columnName?: string;
+  priority?: number;
+};
+
+export type RuntimeServiceGetRugHistogramParams = {
+  columnName?: string;
+  priority?: number;
+};
 
 export type RuntimeServiceGetTableRowsParams = {
   limit?: number;
@@ -59,19 +69,27 @@ export type RuntimeServiceEstimateRollupIntervalBody = {
   priority?: number;
 };
 
-export type RuntimeServiceGetNumericHistogramParams = { priority?: number };
+export type RuntimeServiceGetNumericHistogramParams = {
+  columnName?: string;
+  priority?: number;
+};
 
-export type RuntimeServiceGetNullCountParams = { priority?: number };
+export type RuntimeServiceGetNullCountParams = {
+  columnName?: string;
+  priority?: number;
+};
 
 export type RuntimeServiceGetDescriptiveStatisticsParams = {
+  columnName?: string;
   priority?: number;
 };
 
 export type RuntimeServiceProfileColumnsParams = { priority?: number };
 
-export type RuntimeServiceGetCardinalityOfColumnParams = { priority?: number };
-
-export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
+export type RuntimeServiceGetCardinalityOfColumnParams = {
+  columnName?: string;
+  priority?: number;
+};
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
@@ -82,6 +100,7 @@ export type RuntimeServiceMetricsViewTotalsBody = {
 };
 
 export type RuntimeServiceMetricsViewToplistBody = {
+  dimensionName?: string;
   filter?: V1MetricsViewFilter;
   limit?: string;
   measureNames?: string[];
