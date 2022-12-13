@@ -160,17 +160,10 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
 	for histogramRows.Next() {
-		var low, high sql.NullFloat64
 		bin := &runtimev1.NumericHistogramBins_Bin{}
-		err = histogramRows.Scan(&bin.Bucket, &low, &high, &bin.Count)
+		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
 		if err != nil {
 			return err
-		}
-		if !low.Valid || !high.Valid {
-			break
-		} else {
-			bin.Low = low.Float64
-			bin.High = high.Float64
 		}
 		histogramBins = append(histogramBins, bin)
 	}
