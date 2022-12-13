@@ -92,7 +92,7 @@ brews:
 
 dockers:
   - image_templates:
-    - rilldata/rill
+    - ghcr.io/rilldata/rill
 
 archives:
   - files:
