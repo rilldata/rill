@@ -289,14 +289,3 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
 
   return doc.toString({ collectionStyle: "block" });
 }
-
-export function editDashboardYAML(
-  yaml: string,
-  options: { [key: string]: string }
-) {
-  const doc = parseDocument(yaml);
-  for (const key in options) {
-    doc.set(key, options[key]);
-  }
-  return doc.toString({ collectionStyle: "block" });
-}
