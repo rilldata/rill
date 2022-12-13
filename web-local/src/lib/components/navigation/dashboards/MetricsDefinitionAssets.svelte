@@ -38,7 +38,6 @@
   import { default as Explore } from "../../icons/Explore.svelte";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import { MenuItem } from "../../menu";
-  import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
@@ -207,10 +206,6 @@
         open={$page.url.pathname === `/dashboard/${dashboardName}` ||
           $page.url.pathname === `/dashboard/${dashboardName}/edit`}
       >
-        <svelte:fragment slot="summary" let:containerWidth>
-          <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
-        </svelte:fragment>
-
         <svelte:fragment slot="menu-items">
           {@const selectionError = MetricsSourceSelectionError(
             dashboardData?.errors
