@@ -5,6 +5,7 @@ on:
     #   - v*
     branches:
       - main
+      - golangci-lint-setup
     pull_request:
 permissions:
   contents: read
