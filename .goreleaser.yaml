@@ -2,47 +2,47 @@ project_name: rill
 
 release:
   prerelease: auto
-  draft: true #TODO: Testing
+  draft: false
 
 before:
   hooks:
     - echo ${{ .Env.DOCKERHUB_PASS }} | docker login -u ${{ .Env.DOCKERHUB_USER }} --password-stdin
 
 builds:
-#  - id: darwin_amd64
-#    main: ./cli/main.go
-#    binary: rill
-#    goos:
-#      - darwin
-#    goarch:
-#      - amd64
-#    env:
-#      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-#      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-#      - CC=o64-clang
-#      - CXX=o64-clang++
-#    flags:
-#      - "-mod=readonly"
-#    ldflags:
-#      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-#
-#  - id: darwin_arm64
-#    main: ./cli/main.go
-#    binary: rill
-#    goos:
-#      - darwin
-#    goarch:
-#      - arm64
-#    env:
-#      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-#      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-#      - CC=oa64-clang
-#      - CXX=oa64-clang++
-#    flags:
-#      - "-mod=readonly"
-#    ldflags:
-#      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-#
+  - id: darwin_amd64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    env:
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+  - id: darwin_arm64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
   - id: linux
     main: ./cli/main.go
     binary: rill
@@ -96,7 +96,8 @@ brews:
 
 dockers:
   - image_templates:
-    - rilldata/rill
+    - rilldata/rill:latest
+    - rilldata/rill:{{ .Tag }}
     extra_files:
       - scripts/entrypoint.sh
 
