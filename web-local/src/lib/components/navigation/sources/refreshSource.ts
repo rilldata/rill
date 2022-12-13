@@ -12,7 +12,7 @@ import {
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { invalidateAfterReconcile } from "../../../svelte-query/invalidation";
-import { getFileFromName } from "../../../util/entity-mappers";
+import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
 
 export async function refreshSource(
   connector: string,
@@ -32,7 +32,7 @@ export async function refreshSource(
     });
     invalidateAfterReconcile(queryClient, instanceId, resp);
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    return;
+    return resp;
   }
 
   // different logic for the file connector
@@ -55,7 +55,7 @@ export async function refreshSource(
   const resp = await createSource.mutateAsync({
     data: {
       instanceId,
-      path: getFileFromName(sourceName, EntityType.Table),
+      path: getFilePathFromNameAndType(sourceName, EntityType.Table),
       blob: yaml,
       create: true,
       strict: true,
@@ -63,4 +63,5 @@ export async function refreshSource(
   });
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+  return resp;
 }

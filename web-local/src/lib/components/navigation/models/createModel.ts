@@ -4,9 +4,8 @@ import { EntityType } from "@rilldata/web-local/common/data-modeler-state-servic
 import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import type { UseMutationResult } from "@sveltestack/svelte-query";
-import { getFileFromName } from "../../../util/entity-mappers";
+import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";
 
 export async function createModel(
@@ -20,7 +19,7 @@ export async function createModel(
   const resp = await createModelMutation.mutateAsync({
     data: {
       instanceId,
-      path: getFileFromName(newModelName, EntityType.Model),
+      path: getFilePathFromNameAndType(newModelName, EntityType.Model),
       blob: sql,
       create: true,
       createOnly: true,

@@ -26,7 +26,8 @@ import {
 export async function* uploadTableFiles(
   files: Array<File>,
   [models, sources]: [Array<string>, Array<string>],
-  instanceId: string
+  instanceId: string,
+  goToIfSuccessful = true
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
@@ -55,7 +56,7 @@ export async function* uploadTableFiles(
     importOverlayVisible.set(false);
   }
 
-  if (lastTableName) {
+  if (lastTableName && goToIfSuccessful) {
     goto(`/source/${lastTableName}`);
   }
 
