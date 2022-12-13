@@ -6,84 +6,74 @@ sidebar_position: 30
 ---
 
 In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
-* a _time dimension_, which will be a time stamp column from your data model. The time dimension will be the x-axis in the line charts shown on your dashboard, as well as serving as the grouping dimension over which _measure_ time grain aggregates are computed.
+* _**a model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
+* _**a timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time perioids
+* _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
+* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
 
-* _measures_ which are numerical aggregates of columns from your data model, and are shown on the y-axis of the line charts in your dashboard as well as the "big number" summaries next to the line charts. 
 
-* _dimensions_ which are categorical columns from your data model. Dimensions are shown in _leaderboards_, which display the most frequently occurring values in each dimension, allow you to filter the data shown in your dashboard to only include data points that have the values you have selected from these leaderboards.
+## Creating valid metrics
 
-:::tip
+### Timeseries
 
-To get you up and running quickly, Rill can generate a dashboard directly from a data source or a data model. These dashboards will be populated using:
-* the first time stamp column from your data set as the time dimension
-* the number of events per time period (based on the selected time dimension) as the default measure
-* all available categorical columns as dimensions.
+Your timeseries must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid timeseries types.
 
-:::
-
-## Editing dashboard metrics in the UI
-
-Dashboards can be created and improved using the metrics editor. The metrics editor helps you define a time series, set of measures, and categorical dimensions that are directly tied to your dashboard.
-
-### Time dimension
-
-Your time dimension must be a column from your data model of type [`TIMESTAMP`](https://duckdb.org/docs/sql/data_types/timestamp), [`TIME`](https://duckdb.org/docs/sql/data_types/overview), or [`DATE`](https://duckdb.org/docs/sql/data_types/date).
-
-:::tip
-
-Strings representing dates are not supported, but you may be able to [`CAST`](https://duckdb.org/docs/sql/expressions/cast) such a string to one of these types while developing your data model.
-
-:::
 
 ### Measures
-Measures are numeric aggregates of columns from your data model, and power the line charts that you see in Rill.
 
-A measure must be defined with a [DuckSQL](./sql-models.md) aggregation function over columns from your data model, or a mathematical expression built with one or more such aggregates.
+Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckSQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and function are allowed in a measure expression:
 
-For example, if you have a table of sales events with columns including a timestamp for the sales date, the sales price, and customer id, you could calculate the following metrics per time period with these expressions:
-* number of sales: `COUNT(*)` (note that this would be equivalent to counting the total number of rows for any column, e.g. `COUNT(sales_date)`)
+* any DuckSQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
+* this set of  DuckSQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
+
+As an example, if you have a table of sales events with the sales price and customer id, you could calculate the following metrics with these aggregates and expressions:
+* number of sales: `COUNT(*)`
 * total revenue: `SUM(sales_price)` 
-* revenue per customer: `SUM(sales_price)/COUNT(DISTINCT customer_id)`
+* revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
 
-Any [DuckSQL numeric operator or function](https://duckdb.org/docs/sql/functions/numeric) is allowed in a measure expression, as are any of the following [DuckSQL aggregation expression](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, and `VAR_SAMP`.
+You can also add labels, descriptions, and your choice of number formatting to customize how they are shown in the dashboard.
 
-You can also add labels, descriptions, and your choice of number formatting to your measures to customize how they are shown in the dashboard.
 
 ### Dimensions
 
-
-Dimensions in Rill are used for filtering the data shown in your dashboard, and must come from "categorical" columns in your data model, which correspond to the following DuckDB data types: `BOOLEAN`, `BOOL`, `LOGICAL`, `BYTE_ARRAY`, `VARCHAR`, `CHAR`, `BPCHAR`, `TEXT`, and `STRING`.
+Dimensions are used for exploring segments and filtering the dashboard. Valid dimensions must be "categorical" columns of type `BOOLEAN`, `BOOL`, `LOGICAL`, `BYTE_ARRAY`, `VARCHAR`, `CHAR`, `BPCHAR`, `TEXT`, or `STRING`. If you have a column that is not formatted correctly to be a dimension, try creating categorical columns in the data model using SQL [`CASE`](https://duckdb.org/docs/sql/expressions/case#:~:text=DuckDB%20%2D%20Case%20Statement&text=The%20CASE%20statement%20performs%20a,a%20%3A%20b%20) statements.
 
 You can also add labels and descriptions to your dimensions to customize how they are shown in the dashboard.
 
-:::tip
 
-Try creating categorical columns from numeric columns in your data model by using SQL [`CASE`](https://duckdb.org/docs/sql/expressions/case#:~:text=DuckDB%20%2D%20Case%20Statement&text=The%20CASE%20statement%20performs%20a,a%20%3A%20b%20) statements to convert numeric ranges into meaningful categories.
+## Using the UI
 
-:::
+Dashboards can be created and improved on using the metrics editor. The metrics editor helps you define a model, a timeseries, set of measures, and categorical dimensions that are directly tied to your dashboard. 
 
-## Editing dashboard metrics using code
+To create a new dashboard from scratch, click "+" by Dashboards in the left hand navigation pane to open the metrics editor.
+
+In addition, you can quickly generate a dashboard with opionated defaults using the "Create Dashboard" button in the upper right hand corner of the source or model views or "Quick Start" button in the metrics editor itself. These dashboards will be populated using:
+
+- the first time stamp column from your model set as the timeseries
+- the number of records as the default measure (`COUNT(*)`)
+- all available categorical columns as dimensions
+
+If you want to revisit these configurations, you can open the metrics editor by clicking on the "Edit Metrics" button in the upper right hand corner of the dashboard view.
+
+
+## Using the CLI
+
+We do not currently support adding or editing metrics from the CLI.
+
+## Using code
+When you add a metrics definition using the UI, a code definition will automatically be created as a .yaml file in your Rill project in the dashboards directory. However, you can also create metrics definitions more directly by creating the artifact.
 
 In your Rill project directory, create a `dashboard_name.yaml` file in the `dashboards` directory and adapt its defintion from the following template:
 
 ```yaml
 model: model_name
 display_name: Dashboard name
-description: 
 
 timeseries: timestamp_column_name
-default_timegrain: ""
-timegrains:
-  - day
-  - month
-  - year
 
 dimensions:
   - property: model_column_1
     label: Column label 1
-    description: ""
-  - property: model_column_2
-    label: Column label 2
     description: ""
   # Add more dimensions here
 
@@ -91,7 +81,9 @@ measures:
   - label: "Count"
     expression: count(*)
     description: ""
+    format_preset: "humanize"
   # Add more measures here
 ```
 
-Rill will ingest the dashboard definition next time you run `rill start`. For details about all available properties, see the metrics syntax [reference](../reference/metrics.md).
+Rill will ingest the dashboard definition next time you run `rill start`. For details about all available properties, see the syntax [reference](../references/project-files.md#dashboard-metrics).
+

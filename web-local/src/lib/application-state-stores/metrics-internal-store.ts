@@ -10,7 +10,7 @@ import { CATEGORICALS } from "../duckdb-data-types";
 import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
 export const metricsTemplate = `
-# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
+# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
 
 display_name: "Dashboard"
 model: ""

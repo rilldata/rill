@@ -1,4 +1,10 @@
-# Rill Developer **_(tech preview)_**
+---
+title: Rill Developer (tech preview)
+slug: /
+sidebar_label: What is Rill?
+sidebar_position: 10
+---
+
 Rill Developer makes it effortless to transform your datasets with SQL and create powerful, opinionated dashboards. Rill's principles:
 
 - _**feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
@@ -26,11 +32,4 @@ rill init --example
 ## We want to hear from you
 
 You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
-
-
-## Legal
-By downloading and using our application you are agreeing to the [Privacy Policy](https://www.rilldata.com/legal/privacy) and [Rill Terms of Service](https://www.rilldata.com/legal/tos).
-
-
-
 

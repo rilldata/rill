@@ -1,11 +1,11 @@
 ---
-title: CLI tutorial
+title: CLI
 description: Start and manage Rill using the command-line interface (CLI)
-sidebar_label: CLI tutorial
+sidebar_label: CLI
 sidebar_position: 40
 ---
 
-## Quick start a new project
+## Start a new project
 
 In any empty folder, simply run:
 
@@ -45,19 +45,19 @@ to initialize an empty project.
 
 We recommend following our [quick start](../quick-start.md) to experience how well Rill ties together with Git. However, Rill also bundles some built-in examples to help you get started quickly. To initialize the default example, run:
 
-```bash
+```
 rill init --example
 ```
 
 To view a list of all built-in example projects:
 
-```bash
+```
 rill init --list-examples
 ```
 
 To use a non-default example, pass it as a parameter to `--example`:
 
-```bash
+```
 rill init --example=sf_props
 ```
 
@@ -65,7 +65,7 @@ rill init --example=sf_props
 
 You can explicity specify a project folder outside of the current folder using the `--project` option:
 
-```bash
+```
 rill init --project /path/to/project
 rill source add /path/to/data.parquet --project /path/to/project
 rill start --project /path/to/project
@@ -75,17 +75,17 @@ rill start --project /path/to/project
 
 You can create a local file source by running:
 
-```bash
+```
 rill source add /path/to/data.parquet
 ```
 
-See [Import data](./import-data.md) for more details.
+See [Import data](../using-rill/import-data.md) for more details.
 
 ### Override the source name
 
 By default the source name will be a sanitized version of the dataset file name. You can specify a name using the `name` command.
 
-```bash
+```
 rill source add /path/to/data.parquet --name my_source
 ```
 
@@ -93,7 +93,7 @@ rill source add /path/to/data.parquet --name my_source
 
 If you have a CSV file that is delimited by a character other than a comma or tab, you can use the `--delimiter` option. If a delimiter is not set, Rill automatically tries to detect the delimiter, so this is not strictly necessary:
 
-```bash
+```
 rill source add /path/to/data.csv --delimiter "|"
 ```
 
