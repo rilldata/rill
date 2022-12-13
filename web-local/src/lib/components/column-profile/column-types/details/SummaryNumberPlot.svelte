@@ -4,6 +4,7 @@
     SimpleDataGraphic,
   } from "$lib/components/data-graphic/elements";
   import { INTEGERS } from "@rilldata/web-local/lib/duckdb-data-types";
+  import { justEnoughPrecision } from "@rilldata/web-local/lib/util/formatters";
   import { format } from "d3-format";
   import { DynamicallyPlacedLabel } from "../../../data-graphic/guides";
   export let min;
@@ -15,7 +16,7 @@
   export let rowHeight = 24;
   export let type: string;
 
-  $: formatter = INTEGERS.has(type) ? format(".0r") : format(".4f");
+  $: formatter = INTEGERS.has(type) ? format(".0r") : justEnoughPrecision;
   $: values = [
     { label: "min", value: min, format: formatter },
     { label: "max", value: max, format: formatter },
@@ -29,7 +30,7 @@
     {
       label: "mean",
       value: mean,
-      format: INTEGERS.has(type) ? format(".2f") : format(".4f"),
+      format: justEnoughPrecision,
     },
   ].reverse();
 </script>
