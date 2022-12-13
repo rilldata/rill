@@ -39,7 +39,6 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Printf("failed to load godotenv: %s", err.Error())
-		os.Exit(1)
 	}
 
 	// Init config
