@@ -1,4 +1,4 @@
-package local_file
+package localfile
 
 import (
 	"context"
