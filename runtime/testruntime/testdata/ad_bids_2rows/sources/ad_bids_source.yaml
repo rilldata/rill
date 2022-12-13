@@ -1,2 +1,2 @@
-type: file
+type: local_file
 path: data/AdBids_2rows.csv

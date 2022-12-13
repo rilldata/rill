@@ -59,7 +59,7 @@
   );
   $: remoteConnectorNames = $connectors?.data?.connectors
     ?.map((connector) => connector.name)
-    ?.filter((name) => name !== "file");
+    ?.filter((name) => name !== "local_file");
 
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createSource = useRuntimeServicePutFileAndReconcile();
@@ -118,7 +118,7 @@
           class="errors flex flex-col items-center pt-8 gap-y-4 m-auto mt-0 text-gray-500"
           style:width="500px"
         >
-          {#if source?.type === "file"}
+          {#if source?.type === "local_file"}
             <div class="text-center">
               The data file for <span class="font-bold">{sourceName}</span> has not
               been imported as a source.

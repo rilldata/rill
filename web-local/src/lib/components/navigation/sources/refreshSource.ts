@@ -22,7 +22,7 @@ export async function refreshSource(
   createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
   queryClient: QueryClient
 ) {
-  if (connector !== "file") {
+  if (connector !== "local_file") {
     overlay.set({ title: `Importing ${sourceName}` });
     const resp = await refreshSource.mutateAsync({
       data: {
@@ -50,7 +50,7 @@ export async function refreshSource(
       sourceName,
       path: filePath,
     },
-    "file"
+    "local_file"
   );
   const resp = await createSource.mutateAsync({
     data: {

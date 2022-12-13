@@ -210,7 +210,7 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.entry?.source?.connector === "file"}
+{#if $getSource?.data?.entry?.source?.connector === "local_file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />

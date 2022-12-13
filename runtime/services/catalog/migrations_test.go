@@ -500,7 +500,7 @@ func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: file
+	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: local_file
 path:
  - data/source.csv`))
 	require.NoError(t, err)
