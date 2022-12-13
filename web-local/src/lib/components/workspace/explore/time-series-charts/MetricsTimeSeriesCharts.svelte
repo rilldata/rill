@@ -120,12 +120,11 @@
   let mouseoverValue = undefined;
 
   $: startValue = removeTimezoneOffset(
-    new Date(metricsExplorer.selectedTimeRange.start)
+    new Date(metricsExplorer?.selectedTimeRange?.start)
   );
   $: endValue = removeTimezoneOffset(
-    new Date(metricsExplorer.selectedTimeRange.end)
+    new Date(metricsExplorer?.selectedTimeRange?.end)
   );
-  $: key = `${startValue}` + `${endValue}`;
 </script>
 
 <WithBisector
@@ -196,7 +195,6 @@
               data={formattedData}
               accessor={measure.name}
               mouseover={point}
-              timeRangeKey={key}
               timeGrain={metricsExplorer.selectedTimeRange?.interval}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
