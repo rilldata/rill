@@ -65,6 +65,10 @@ jobs:
               goreleaser/goreleaser-cross:v1.19.2 \
               release ${NIGHTLY} --snapshot
 
+          echo ${{ secrets.DOCKERHUB_PASS }} | docker login -u ${{ secrets.DOCKERHUB_USER }} --password-stdin
+          docker images
+          docker push rilldata/rill
+
       - name: Authenticate GCS for nightly upload
         if: github.event_name == 'schedule'
         uses: google-github-actions/auth@v0
