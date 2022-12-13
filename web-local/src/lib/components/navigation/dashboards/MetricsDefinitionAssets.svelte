@@ -17,7 +17,7 @@
     FileArtifactsData,
     fileArtifactsStore,
   } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
-  import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -38,7 +38,6 @@
   import { default as Explore } from "../../icons/Explore.svelte";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import { MenuItem } from "../../menu";
-  import MetricsDefinitionSummary from "../../metrics-definition/MetricsDefinitionSummary.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
@@ -84,11 +83,12 @@
       newDashboardName,
       EntityType.MetricsDefinition
     );
+    const yaml = initBlankDashboardYAML(newDashboardName);
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
         path: filePath,
-        blob: metricsTemplate,
+        blob: yaml,
         create: true,
         createOnly: true,
         strict: false,
@@ -207,10 +207,6 @@
         open={$page.url.pathname === `/dashboard/${dashboardName}` ||
           $page.url.pathname === `/dashboard/${dashboardName}/edit`}
       >
-        <svelte:fragment slot="summary" let:containerWidth>
-          <MetricsDefinitionSummary indentLevel={1} {containerWidth} />
-        </svelte:fragment>
-
         <svelte:fragment slot="menu-items">
           {@const selectionError = MetricsSourceSelectionError(
             dashboardData?.errors

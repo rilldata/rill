@@ -125,8 +125,8 @@
     topListQuery = useRuntimeServiceMetricsViewToplist(
       instanceId,
       metricViewName,
-      dimensionName,
       {
+        dimensionName: dimensionName,
         measureNames: selectedMeasureNames,
         limit: "250",
         offset: "0",

@@ -9,16 +9,6 @@ import type { Collection } from "yaml/dist/nodes/Collection";
 import { CATEGORICALS } from "../duckdb-data-types";
 import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
-export const metricsTemplate = `
-# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
-
-display_name: "Dashboard"
-model: ""
-timeseries: ""
-measures: []
-dimensions: []
-`;
-
 export interface MetricsConfig {
   display_name: string;
   description: string;
@@ -62,6 +52,7 @@ export class MetricsInternalRepresentation {
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
+    this.internalYAML = yamlString;
 
     this.updateRuntime = updateRuntime;
   }
@@ -250,26 +241,37 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
 
 const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
-export function generateMeasuresAndDimension(
-  model: V1Model,
-  options?: { [key: string]: string }
-) {
-  const fields = model.schema.fields;
+export function initBlankDashboardYAML(dashboardName: string) {
+  const metricsTemplate = `
+# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
 
+display_name: ""
+model: ""
+timeseries: ""
+measures: []
+dimensions: []
+`;
   const template = parseDocument(metricsTemplate);
-  template.set("model", model.name);
+  template.set("display_name", dashboardName);
+  return template.toString();
+}
+
+export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
+  const doc = parseDocument(yaml);
+  doc.set("model", model.name);
 
   const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
-  template.set("timeseries", timestampColumns[0]);
+  doc.set("timeseries", timestampColumns[0]);
 
-  const measureNode = template.createNode({
+  const measureNode = doc.createNode({
     label: "Total records",
     expression: "count(*)",
     description: "Total number of records present",
     format_preset: "humanize",
   });
-  template.addIn(["measures"], measureNode);
+  doc.set("measures", [measureNode]);
 
+  const fields = model.schema.fields;
   const diemensionSeq = fields
     .filter((field) => {
       return CATEGORICALS.has(field.type.code);
@@ -282,15 +284,8 @@ export function generateMeasuresAndDimension(
       };
     });
 
-  const dimensionNode = template.createNode(diemensionSeq);
-  template.set("dimensions", dimensionNode);
+  const dimensionNode = doc.createNode(diemensionSeq);
+  doc.set("dimensions", dimensionNode);
 
-  // override default values
-  if (options) {
-    for (const key in options) {
-      template.set(key, options[key]);
-    }
-  }
-
-  return template.toString({ collectionStyle: "block" });
+  return doc.toString({ collectionStyle: "block" });
 }

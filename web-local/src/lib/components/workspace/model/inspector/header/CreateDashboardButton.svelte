@@ -8,7 +8,10 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
@@ -51,9 +54,11 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
-    const generatedYAML = generateMeasuresAndDimension(model, {
-      display_name: `${newDashboardName} dashboard`,
-    });
+    const blankDashboardYAML = initBlankDashboardYAML(newDashboardName);
+    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
+      blankDashboardYAML,
+      model
+    );
 
     $createFileMutation.mutate(
       {
@@ -63,7 +68,7 @@
             newDashboardName,
             EntityType.MetricsDefinition
           ),
-          blob: generatedYAML,
+          blob: fullDashboardYAML,
           create: true,
           createOnly: true,
           strict: false,

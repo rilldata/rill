@@ -1,0 +1,51 @@
+# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+
+display_name: "SNL Character Dashboard"
+model: "impressions_and_characters"
+timeseries: "event_date"
+measures:
+  - label: "Unique Episodes"
+    expression: "COUNT(DISTINCT episode_id)"
+    description: ""
+    format_preset: humanize
+  - label: "Unique Segments"
+    expression: "COUNT(DISTINCT appearance_id)"
+    description: ""
+    format_preset: humanize
+  - label: "Unique Actors"
+    expression: "COUNT(DISTINCT actor)"
+    description: ""
+    format_preset: humanize
+  - label: "Unique Roles"
+    expression: "COUNT(DISTINCT actor_role)"
+    description: ""
+    format_preset: humanize
+  - label: "Unique Seasons"
+    expression: "COUNT(DISTINCT season_id)"
+    description: ""
+    format_preset: humanize
+dimensions:
+  - label: Role
+    property: actor_role
+    description: ""
+  - label: Actor
+    property: actor
+    description: ""
+  - label: Actor Capacity
+    property: actor_capacity
+    description: ""
+  - label: Actor Gender
+    property: actor_gender
+    description: ""
+  - label: Voice
+    property: voice
+    description: ""
+  - label: "Role Category"
+    property: "role_category"
+    description: ""
+  - label: "Season Number"
+    property: "season_number"
+    description: ""
+  - label: "Segment Number"
+    property: "appearance_number"
+    description: ""

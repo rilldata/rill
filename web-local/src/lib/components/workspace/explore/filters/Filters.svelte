@@ -68,8 +68,8 @@ The main feature-set component for dashboard filters
       topListQuery = useRuntimeServiceMetricsViewToplist(
         $runtimeStore.instanceId,
         metricViewName,
-        activeDimensionName,
         {
+          dimensionName: activeDimensionName,
           limit: "15",
           offset: "0",
           sort: [],
