@@ -58,7 +58,7 @@ _**`measures:`**_ — numeric [aggregates](../using-rill/metrics-dashboard#measu
   - _**`label`**_ — a label for your dashboard measure _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
   - _**`format_preset`**_ — one of a set of values that format dashboard measures. _(optional; default is humanize)_. Possible values include:
-      - _`humanize`_ — round off numbers in an opionated way to thousands (K), millions (M), billions B), etc
+      - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions B), etc
       - _`none`_ — raw output
       - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
@@ -69,5 +69,5 @@ See our Using Rill guide for an [example](../using-rill/metrics-dashboard#using-
 ## Project definition
 
 - _**`name`**_ — the name of your project which will be displayed in the upper left hand corner
-- _**`compiler`**_ — the verison of the runtime compiler that is compatible with the artifacts (ex: `rill-beta`)
+- _**`compiler`**_ — the version of the runtime compiler that is compatible with the artifacts (ex: `rill-beta`)
 - _**`rill_version`**_ — the version of Rill Developer  that is compatible with the artifacts (ex: `v0.16`)
