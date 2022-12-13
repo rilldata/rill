@@ -24,7 +24,7 @@
   role="tab"
   aria-selected={selected}
   style:min-width="40px"
-  class:font-bold={element === $selectedValue}
+  class:ui-copy-strong={element === $selectedValue}
   class="px-4 pb-0 mb-0"
   on:click={() => {
     if (!selected) callback(element, value);

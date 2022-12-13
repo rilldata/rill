@@ -36,7 +36,7 @@
 <WorkspaceContainer assetID="onboarding" inspector={false}>
   <div class="mt-10 p-2 place-content-center h-screen" slot="body">
     <div class="text-center">
-      <div class="font-bold">Getting started</div>
+      <div class="ui-copy-strong">Getting started</div>
       <p>Building data intuition at every step of analysis</p>
     </div>
     <div class="p-5 pt-2">
@@ -48,7 +48,7 @@
             <svelte:component this={step.icon} color="grey" size="3em" />
           </div>
           <div class="ml-5">
-            <h5 class="font-bold">{step.heading}</h5>
+            <h5 class="ui-copy-strong">{step.heading}</h5>
             <p class="italic">{step.description}</p>
           </div>
         </div>

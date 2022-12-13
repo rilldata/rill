@@ -25,7 +25,7 @@
 <div class="metrics-def-section w-fit">
   <div class="flex flex-row pt-6 pb-3" bind:this={sectionHeaderContainer}>
     <h4
-      class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase align-middle flex-none"
+      class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 ui-copy-strong uppercase align-middle flex-none"
     >
       {label}
     </h4>

@@ -37,7 +37,7 @@
   }
 
   .ui-copy-strong {
-    @apply text-red-700 dark:text-white font-medium;
+    @apply text-gray-900 dark:text-white font-medium;
   }
 
   .ui-copy-icon {

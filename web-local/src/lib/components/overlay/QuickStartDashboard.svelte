@@ -8,10 +8,11 @@
   bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
 >
   <div slot="title">
-    <span class="font-bold">Creating a metrics dashboard for source</span>
+    <span class="ui-copy-strong">Creating a metrics dashboard for source</span>
     <span class="italic">{sourceName}</span>
     <div>
-      using <span class="font-bold">{timeDimension}</span> as time dimension column.
+      using <span class="ui-copy-strong">{timeDimension}</span> as time dimension
+      column.
     </div>
   </div>
 </BlockingOverlayContainer>

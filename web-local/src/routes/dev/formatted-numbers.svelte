@@ -82,7 +82,7 @@
     {#each humanizedTable as { __formatted_value, label }}
       <div>
         <span>{label}</span>
-        <span class="font-bold float-right">{__formatted_value}</span>
+        <span class="ui-copy-strong float-right">{__formatted_value}</span>
       </div>
     {/each}
   </div>
@@ -90,7 +90,7 @@
     {#each humanizedTable2 as { __formatted_value, label }}
       <div>
         <span>{label}</span>
-        <span class="font-bold float-right">{__formatted_value}</span>
+        <span class="ui-copy-strong float-right">{__formatted_value}</span>
       </div>
     {/each}
   </div>
@@ -98,7 +98,7 @@
     {#each humanizedTableCurrency as { __formatted_value, label }}
       <div>
         <span>{label}</span>
-        <span class="font-bold float-right">{__formatted_value}</span>
+        <span class="ui-copy-strong float-right">{__formatted_value}</span>
       </div>
     {/each}
   </div>

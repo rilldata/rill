@@ -55,7 +55,7 @@
               editingTitle = true;
             }}
             class="bg-gray-100 border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
-            class:font-bold={editingTitle === false}
+            class:ui-copy-strong={editingTitle === false}
             on:blur={() => {
               editingTitle = false;
             }}

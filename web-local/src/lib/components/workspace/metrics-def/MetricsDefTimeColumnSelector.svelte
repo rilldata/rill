@@ -51,7 +51,7 @@
       suppress={tooltipText === undefined}
     >
       <select
-        class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:font-bold hover:border-gray-100"
+        class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:ui-copy-strong hover:border-gray-100"
         disabled={dropdownDisabled}
         on:change={updateMetricsDefinitionHandler}
         style="background-color: #FFF; width:18em;"

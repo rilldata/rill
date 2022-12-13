@@ -7,7 +7,7 @@
 <div class="p-5" style="font-size:14px">
   <pre class="bg-slate-800  text-white p-12 rounded-lg">
 <span class="text-red-100">CREATE AND GENERATE AGGREGATING INDEX</span>
-	<span class="font-bold text-yellow-500">idx_store_sales</span> 
+	<span class="ui-copy-strong text-yellow-500">idx_store_sales</span> 
 <span class="text-red-100">ON</span> (
 	<span class="text-slate-500">
 	-- <span class="text-blue-400 underline">@name</span> Date Sold

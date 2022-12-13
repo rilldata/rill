@@ -39,7 +39,7 @@
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
   $: columnFontWeight = isSelected
-    ? "font-bold"
+    ? "ui-copy-strong"
     : config.columnHeaderFontWeightClass;
 </script>
 

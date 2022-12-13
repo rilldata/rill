@@ -23,7 +23,7 @@
       positionClasses = "absolute left-0 top-0 text-center font-semibold";
       offsetTop = true;
     } else if (position === "top-left") {
-      positionClasses = "sticky left-0 top-0 z-40 font-bold";
+      positionClasses = "sticky left-0 top-0 z-40 ui-copy-strong";
     }
   }
 

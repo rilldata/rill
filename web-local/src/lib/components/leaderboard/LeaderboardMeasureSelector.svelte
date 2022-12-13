@@ -81,7 +81,7 @@
         alignment="end"
         on:select={handleMeasureUpdate}
       >
-        <span class="font-bold">{selection?.main}</span>
+        <span class="ui-copy-strong">{selection?.main}</span>
       </SelectMenu>
     </div>
   {:else}

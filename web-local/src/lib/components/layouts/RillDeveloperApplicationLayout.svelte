@@ -77,7 +77,7 @@
         bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
       >
         <div slot="title">
-          <span class="font-bold">{$overlay?.title}</span>
+          <span class="ui-copy-strong">{$overlay?.title}</span>
         </div>
       </BlockingOverlayContainer>
     {/if}

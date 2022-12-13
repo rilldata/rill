@@ -3,7 +3,7 @@
     class="grid justify-between pl-3 pr-1 items-center"
     style:grid-template-columns="max-content max-content"
   >
-    <div class="font-bold">
+    <div class="ui-copy-strong">
       <slot name="title" />
     </div>
     <div>

@@ -222,7 +222,7 @@
       </WithModelResultTooltip>
     </div>
     <div
-      class="text-gray-800 font-bold"
+      class="text-gray-800 ui-copy-strong"
       class:font-normal={modelHasError}
       class:italic={modelHasError}
       class:text-gray-500={modelHasError}
@@ -263,7 +263,7 @@
       >
     </WithModelResultTooltip>
     <div
-      class="text-gray-800 font-bold"
+      class="text-gray-800 ui-copy-strong"
       class:font-normal={modelHasError}
       class:italic={modelHasError}
       class:text-gray-500={modelHasError}

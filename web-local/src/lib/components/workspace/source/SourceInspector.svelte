@@ -245,7 +245,7 @@
           >{connectorType}
           {fileExtension !== "" ? `(${fileExtension})` : ""}</GridCell
         >
-        <GridCell side="right" classes="text-gray-800 font-bold">
+        <GridCell side="right" classes="text-gray-800 ui-copy-strong">
           {rowCount}
         </GridCell>
 
@@ -263,7 +263,7 @@
             {/if}
           </TooltipContent>
         </Tooltip>
-        <GridCell side="right" classes="text-gray-800 font-bold">
+        <GridCell side="right" classes="text-gray-800 ui-copy-strong">
           {columnCount}
         </GridCell>
       </LeftRightGrid>

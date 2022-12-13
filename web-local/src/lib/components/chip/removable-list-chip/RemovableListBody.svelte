@@ -17,7 +17,7 @@
 
 <div class="flex gap-x-2">
   <div
-    class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
+    class="ui-copy-strong text-ellipsis overflow-hidden whitespace-nowrap"
     style:max-width={labelMaxWidth}
   >
     {label}

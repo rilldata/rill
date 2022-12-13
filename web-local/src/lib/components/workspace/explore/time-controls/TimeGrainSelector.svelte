@@ -40,7 +40,7 @@
       class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 transition-tranform duration-100"
       on:click={toggleMenu}
     >
-      <span class="font-bold"
+      <span class="ui-copy-strong"
         >by {prettyTimeGrain(selectedTimeGrain)} increments</span
       >
       <span class="transition-transform" class:-rotate-180={active}>

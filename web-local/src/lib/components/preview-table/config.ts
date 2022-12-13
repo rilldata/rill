@@ -8,7 +8,7 @@ export const config: VirtualizedTableConfig = {
   rowHeight: 36,
   columnHeaderHeight: 32,
   indexWidth: 60,
-  columnHeaderFontWeightClass: "font-bold",
+  columnHeaderFontWeightClass: "ui-copy-strong",
   defaultFontWeightClass: "font-semibold",
   table: "PreviewTable",
 };

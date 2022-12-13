@@ -127,7 +127,7 @@
                 {yaml?.name || "Untitled Rill Project"}
               </a>
               <TooltipContent maxWidth="300px" slot="tooltip-content">
-                <div class="font-bold">
+                <div class="ui-copy-strong">
                   {yaml?.name || "Untitled Rill Project"}
                 </div>
               </TooltipContent>

@@ -82,7 +82,7 @@
   on:click={buttonClickHandler}
 >
   <div class="flex flew-row gap-x-3">
-    <div class="font-bold flex flex-row items-center gap-x-3">
+    <div class="ui-copy-strong flex flex-row items-center gap-x-3">
       <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
       <span class="ui-copy-icon"><Calendar size="16px" /></span>
       <span style:transform="translateY(1px)">

@@ -56,7 +56,7 @@
         <slot name="icon" />
       </div>
       <div
-        class:font-bold={emphasize}
+        class:ui-copy-strong={emphasize}
         class="text-left w-full text-left text-ellipsis overflow-hidden whitespace-nowrap"
       >
         <slot name="left" />

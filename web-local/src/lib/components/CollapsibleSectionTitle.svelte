@@ -40,7 +40,7 @@
       }}
     >
       <div
-        class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase"
+        class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 ui-copy-strong uppercase"
       >
         <slot />
       </div>

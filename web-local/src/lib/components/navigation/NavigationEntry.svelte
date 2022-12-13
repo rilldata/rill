@@ -55,7 +55,7 @@
     on:mouseleave={onContainerFocus(false)}
     on:blur={onContainerFocus(false)}
     style:height="24px"
-    class:font-bold={open}
+    class:ui-copy-strong={open}
     class:bg-gray-200={open}
     class="navigation-entry-title grid gap-x-1 items-center pl-4 pr-3 {!open
       ? 'hover:bg-gray-100'
