@@ -25,7 +25,7 @@ func newConnectionCache(size int) *connectionCache {
 	return &connectionCache{cache: cache}
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID string, driver string, dsn string) (drivers.Connection, error) {
+func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string) (drivers.Connection, error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 

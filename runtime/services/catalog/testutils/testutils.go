@@ -115,7 +115,7 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 	require.Equal(t, schema.Fields, table.Schema.Fields)
 }
 
-func AssertInCatalogStore(t *testing.T, s *catalog.Service, name string, path string) *drivers.CatalogEntry {
+func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, path string) *drivers.CatalogEntry {
 	catalogEntry, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
 	require.True(t, ok)
 	require.Equal(t, name, catalogEntry.Name)
@@ -147,7 +147,7 @@ func AssertMigration(
 	require.ElementsMatch(t, result.AffectedPaths, affectedPaths)
 }
 
-func RenameFile(t *testing.T, dir string, from string, to string) {
+func RenameFile(t *testing.T, dir, from, to string) {
 	time.Sleep(time.Millisecond * 10)
 	err := os.Rename(path.Join(dir, from), path.Join(dir, to))
 	require.NoError(t, err)

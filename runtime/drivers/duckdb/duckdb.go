@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"github.com/jmoiron/sqlx"
+	// Register some standard stuff
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"

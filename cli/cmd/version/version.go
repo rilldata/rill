@@ -8,7 +8,7 @@ import (
 )
 
 // VersionCmd represents the version command
-func VersionCmd(ver string, commit string, buildDate string) *cobra.Command {
+func VersionCmd(ver, commit, buildDate string) *cobra.Command {
 	var versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Show rill version",
@@ -33,7 +33,7 @@ func init() {
 	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func Format(ver string, commit string, buildDate string) string {
+func Format(ver, commit, buildDate string) string {
 	if ver == "dev" {
 		return "rill version development (built from source)"
 	}

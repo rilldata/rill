@@ -2,8 +2,7 @@ package server
 
 import (
 	"context"
-
-	// "encoding/gob"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -89,7 +88,7 @@ func (s *Server) Serve(ctx context.Context, port int) error {
 		return func(c echo.Context) error {
 			defer func() {
 				if r := recover(); r != nil {
-					if r == http.ErrAbortHandler {
+					if errors.Is(r.(error), http.ErrAbortHandler) {
 						panic(r)
 					}
 					err, ok := r.(error)

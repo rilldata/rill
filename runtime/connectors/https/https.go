@@ -52,22 +52,22 @@ func (c connector) Spec() connectors.Spec {
 func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	extension, err := getUrlExtension(conf.Path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", conf.Path, http.NoBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
+		return "", fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
+		return "", fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
 	defer resp.Body.Close()
 

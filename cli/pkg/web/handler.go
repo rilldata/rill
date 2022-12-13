@@ -45,13 +45,12 @@ type SPARoutingFS struct {
 
 func (spaFS *SPARoutingFS) Open(name string) (http.File, error) {
 	file, err := spaFS.FileSystem.Open(name)
-
 	if err == nil {
 		return file, nil
 	}
 
 	if errors.Is(err, fs.ErrNotExist) {
-		file, err := spaFS.FileSystem.Open("index.html")
+		file, err = spaFS.FileSystem.Open("index.html")
 		return file, err
 	}
 

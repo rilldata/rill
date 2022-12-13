@@ -74,12 +74,12 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		defer func() { _ = tx.Rollback() }()
+		defer tx.Rollback()
 
 		// Run migration
 		_, err = tx.ExecContext(ctx, string(sql))
 		if err != nil {
-			return fmt.Errorf("failed to run migration '%s': %s", file.Name(), err.Error())
+			return fmt.Errorf("failed to run migration '%s': %w", file.Name(), err)
 		}
 
 		// Update migration version
@@ -105,7 +105,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 }
 
 // MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	// Get current version
 	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {

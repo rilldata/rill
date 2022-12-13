@@ -2,6 +2,7 @@ package metrics_views
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -53,7 +54,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	}
 	model, err := olap.InformationSchema().Lookup(ctx, mv.Model)
 	if err != nil {
-		if err == drivers.ErrNotFound {
+		if errors.Is(err, drivers.ErrNotFound) {
 			return migrator.CreateValidationError(catalog.Path, SourceNotFound)
 		}
 		return migrator.CreateValidationError(catalog.Path, err.Error())
@@ -111,7 +112,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	return validationErrors
 }
 
-func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	// TODO: do we need a deep check here?
 	return false
 }

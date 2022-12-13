@@ -94,7 +94,7 @@ func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cata
 }
 
 // IsEqual checks everything but the name
-func IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+func IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	if cat1.Type != cat2.Type {
 		return false
 	}
@@ -138,7 +138,7 @@ func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cat
 	return nil
 }
 
-func CreateValidationError(filePath string, message string) []*runtimev1.ReconcileError {
+func CreateValidationError(filePath, message string) []*runtimev1.ReconcileError {
 	return []*runtimev1.ReconcileError{
 		{
 			Code:     runtimev1.ReconcileError_CODE_VALIDATION,

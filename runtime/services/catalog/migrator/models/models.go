@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -87,7 +88,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 	return nil
 }
 
-func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+func (m *modelMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	return cat1.GetModel().Dialect == cat2.GetModel().Dialect &&
 		// TODO: handle same queries but different text
 		sanitizeQuery(cat1.GetModel().Sql, true) == sanitizeQuery(cat2.GetModel().Sql, true)
@@ -95,7 +96,7 @@ func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry,
 
 func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
-	if err == drivers.ErrNotFound {
+	if errors.Is(err, drivers.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
 		return false, err

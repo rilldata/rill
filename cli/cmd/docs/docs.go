@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var docsUrl = "https://docs.rilldata.com"
+var docsURL = "https://docs.rilldata.com"
 
 // docsCmd represents the docs command
 func DocsCmd() *cobra.Command {

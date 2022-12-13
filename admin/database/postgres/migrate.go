@@ -98,7 +98,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 		// Run migration
 		_, err = tx.ExecContext(ctx, string(sql))
 		if err != nil {
-			return fmt.Errorf("failed to run migration '%s': %s", file.Name(), err.Error())
+			return fmt.Errorf("failed to run migration '%s': %w", file.Name(), err)
 		}
 
 		// Update migration version

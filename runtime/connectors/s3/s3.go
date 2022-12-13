@@ -75,13 +75,13 @@ func (c connector) Spec() connectors.Spec {
 func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	// The session the S3 Downloader will use
 	sess, err := getAwsSessionConfig(conf)
 	if err != nil {
-		return "", fmt.Errorf("failed to start session: %v", err)
+		return "", fmt.Errorf("failed to start session: %w", err)
 	}
 
 	// Create a downloader with the session and default options
@@ -89,7 +89,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 
 	bucket, key, extension, err := getAwsUrlParts(conf.Path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
 
 	f, err := os.CreateTemp(
@@ -97,7 +97,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		fmt.Sprintf("%s*%s", source.Name, extension),
 	)
 	if err != nil {
-		return "", fmt.Errorf("os.Create: %v", err)
+		return "", fmt.Errorf("os.Create: %w", err)
 	}
 	defer f.Close()
 
@@ -108,7 +108,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	})
 	if err != nil {
 		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to download f, %v", err)
+		return "", fmt.Errorf("failed to download f, %w", err)
 	}
 
 	return f.Name(), nil

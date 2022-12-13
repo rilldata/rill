@@ -126,9 +126,8 @@ func getFallbackMeasureName(index int, sqlName string) string {
 	if sqlName == "" {
 		s := fmt.Sprintf("measure_%d", index)
 		return s
-	} else {
-		return sqlName
 	}
+	return sqlName
 }
 
 var countName = "count"
@@ -508,8 +507,8 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 	return results, converr
 }
 
-func (s *Server) dropTempTable(instanceId string, priority int, tableName string) {
-	rs, er := s.query(context.Background(), instanceId, &drivers.Statement{
+func (s *Server) dropTempTable(instanceID string, priority int, tableName string) {
+	rs, er := s.query(context.Background(), instanceID, &drivers.Statement{
 		Query:    `DROP TABLE "` + tableName + `"`,
 		Priority: priority,
 	})

@@ -16,10 +16,14 @@ import (
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+
+	// Register some standard stuff
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
+
+	// Register some standard stuff
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -51,7 +55,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
+func NewApp(ctx context.Context, version string, verbose bool, olapDriver, olapDSN, projectPath string) (*App, error) {
 	// Setup a friendly-looking colored logger
 	conf := zap.NewDevelopmentEncoderConfig()
 	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -165,9 +169,8 @@ func (a *App) InitProject(exampleName string) error {
 		if err != nil {
 			if isPwd {
 				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
-			} else {
-				return fmt.Errorf("failed to initialize project in '%s' (detailed error: %s)", a.ProjectPath, err.Error())
 			}
+			return fmt.Errorf("failed to initialize project in '%s' (detailed error: %s)", a.ProjectPath, err.Error())
 		}
 
 		// Log success
@@ -224,9 +227,9 @@ func (a *App) Reconcile() error {
 	return nil
 }
 
-func (a *App) ReconcileSource(path string) error {
+func (a *App) ReconcileSource(sourcePath string) error {
 	a.Logger.Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
-	paths := []string{path}
+	paths := []string{sourcePath}
 	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
 	if err != nil {
 		return err
@@ -249,7 +252,7 @@ func (a *App) ReconcileSource(path string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser bool) error {
 	// Build local info for frontend
 	localConf, err := config()
 	if err != nil {
@@ -376,6 +379,7 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 		_, err = w.Write(data)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+			return
 		}
 	})
 }

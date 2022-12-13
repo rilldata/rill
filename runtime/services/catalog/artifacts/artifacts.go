@@ -14,8 +14,8 @@ import (
 
 var Artifacts = make(map[string]Artifact)
 
-var FileReadError = errors.New("failed to read artifact")
-var InvalidFileName = errors.New("invalid file name")
+var ErrFileRead = errors.New("failed to read artifact")
+var ErrInvalidFileName = errors.New("invalid file name")
 
 func Register(name string, artifact Artifact) {
 	if Artifacts[name] != nil {
@@ -29,7 +29,7 @@ type Artifact interface {
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, filePath string) (*drivers.CatalogEntry, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, instID, filePath string) (*drivers.CatalogEntry, error) {
 	extension := fileutil.FullExt(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
@@ -38,7 +38,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, fileP
 
 	blob, err := repoStore.Get(ctx, instID, filePath)
 	if err != nil {
-		return nil, FileReadError
+		return nil, ErrFileRead
 	}
 
 	catalog, err := artifact.DeSerialise(ctx, filePath, blob)
@@ -47,7 +47,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instID string, fileP
 	}
 
 	if !IsValidName(fileutil.Stem(filePath)) {
-		return nil, InvalidFileName
+		return nil, ErrInvalidFileName
 	}
 
 	catalog.Path = filePath

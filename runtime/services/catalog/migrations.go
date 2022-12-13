@@ -11,9 +11,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+
+	// Register some standard stuff
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+
+	// Register some standard stuff
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
@@ -298,7 +302,7 @@ func (s *Service) getMigrationItem(
 
 	catalog, err := artifacts.Read(ctx, s.Repo, s.InstId, repoPath)
 	if err != nil {
-		if err != artifacts.FileReadError {
+		if err != artifacts.ErrFileRead {
 			item.Error = &runtimev1.ReconcileError{
 				Code:     runtimev1.ReconcileError_CODE_SYNTAX,
 				Message:  err.Error(),
@@ -339,7 +343,7 @@ func (s *Service) getMigrationItem(
 	if !ok {
 		if item.CatalogInFile == nil {
 			item.Type = MigrationNoChange
-			if err == artifacts.FileReadError {
+			if err == artifacts.ErrFileRead {
 				// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
 				return nil
 			}
@@ -629,9 +633,8 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	// create or updated
 	if found {
 		return s.Catalog.UpdateEntry(ctx, s.InstId, catalog)
-	} else {
-		return s.Catalog.CreateEntry(ctx, s.InstId, catalog)
 	}
+	return s.Catalog.CreateEntry(ctx, s.InstId, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {

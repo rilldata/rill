@@ -95,7 +95,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	return resp, nil
 }
 
-func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*runtimev1.MetricsView, error) {
+func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
 	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -134,7 +134,7 @@ func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				expr := fmt.Sprintf(`%s as %q`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
 				found = true
 				break
@@ -200,7 +200,7 @@ func buildMetricsTimeSeriesSQL(req *runtimev1.MetricsViewTimeSeriesRequest, mv *
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				expr := fmt.Sprintf(`%s as %q`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
 				found = true
 				break
@@ -249,7 +249,7 @@ func buildMetricsTotalsSql(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				expr := fmt.Sprintf(`%s as %q`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
 				found = true
 				break

@@ -3,6 +3,7 @@ package druid
 import (
 	"context"
 
+	// Register some standard stuff
 	_ "github.com/apache/calcite-avatica-go/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -61,6 +62,6 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 }
 
 // MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }

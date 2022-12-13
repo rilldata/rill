@@ -71,12 +71,12 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		defer func() { _ = tx.Rollback() }()
+		defer tx.Rollback()
 
 		// Run migration
 		_, err = tx.ExecContext(ctx, string(sql))
 		if err != nil {
-			return fmt.Errorf("failed to run migration '%s': %s", file.Name(), err.Error())
+			return fmt.Errorf("failed to run migration '%s': %w", file.Name(), err)
 		}
 
 		// Update migration version
@@ -96,7 +96,7 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 }
 
 // MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(_ context.Context) (current int, desired int, err error) {
+func (c *connection) MigrationStatus(_ context.Context) (current, desired int, err error) {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 

@@ -9,6 +9,8 @@ import (
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+
+	// Register some standard stuff
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
@@ -61,7 +63,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 
 // NewInstanceWithModel creates a runtime and an instance for use in tests.
 // The passed model name and SQL SELECT statement will be loaded into the instance.
-func NewInstanceWithModel(t TestingT, name string, sql string) (*runtime.Runtime, string) {
+func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, string) {
 	rt, instanceID := NewInstance(t)
 
 	path := filepath.Join("models", name+".sql")
