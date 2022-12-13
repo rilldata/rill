@@ -47,9 +47,9 @@ Dashboards can be created and improved on using the metrics editor. The metrics 
 
 To create a new dashboard from scratch, click "+" by Dashboards in the left hand navigation pane to open the metrics editor.
 
-In addition, you can quickly generate a dashboard with opionated defaults using the "Create Dashboard" button in the upper right hand corner of the source or model views or "Quick Start" button in the metrics editor itself. These dashboards will be populated using:
+In addition, you can quickly generate a dashboard with opinionated defaults using the "Create Dashboard" button in the upper right hand corner of the source or model views or "Quick Start" button in the metrics editor itself. These dashboards will be populated using:
 
-- the first time stamp column from your model set as the timeseries
+- the first timestamp column from your model set as the timeseries
 - the number of records as the default measure (`COUNT(*)`)
 - all available categorical columns as dimensions
 
@@ -63,7 +63,7 @@ We do not currently support adding or editing metrics from the CLI.
 ## Using code
 When you add a metrics definition using the UI, a code definition will automatically be created as a .yaml file in your Rill project in the dashboards directory. However, you can also create metrics definitions more directly by creating the artifact.
 
-In your Rill project directory, create a `dashboard_name.yaml` file in the `dashboards` directory and adapt its defintion from the following template:
+In your Rill project directory, create a `dashboard_name.yaml` file in the `dashboards` directory and adapt its definition from the following template:
 
 ```yaml
 model: model_name
