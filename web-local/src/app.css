@@ -103,6 +103,10 @@
   }
 }
 
+th {
+  @apply font-medium;
+}
+
 html {
   @apply ui-copy;
 }
