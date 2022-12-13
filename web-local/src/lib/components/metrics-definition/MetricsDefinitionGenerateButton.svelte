@@ -2,7 +2,7 @@
   import type { V1Model } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import {
-    generateMeasuresAndDimension,
+    addQuickMetricsToDashboardYAML,
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
   import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
@@ -10,22 +10,19 @@
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
-  $: measures = $metricsInternalRep.getMeasures();
-  $: dimensions = $metricsInternalRep.getDimensions();
-
   export let selectedModel: V1Model;
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
   export let handlePutAndMigrate;
 
-  async function handleGenerateClick() {
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
+
+  async function handleGenerateClick(yaml: string) {
     // if the timeseries field is empty or does not exist,
     // add in the first timestamp column available.
     // if no timestamp column available, we currently do nothing in this case.
     // later, we'll remove the requiremen t for a timeseries field.
-    const newYAMLString = generateMeasuresAndDimension(selectedModel, {
-      timeseries:
-        $metricsInternalRep.getMetricKey("timeseries") || timestampColumns[0],
-    });
+    const newYAMLString = addQuickMetricsToDashboardYAML(yaml, selectedModel);
     handlePutAndMigrate(newYAMLString);
 
     // invalidateMetricsView(queryClient, metricsDefId);
@@ -65,7 +62,7 @@
     if (measures?.length > 0 || dimensions?.length > 0) {
       openModal();
     } else {
-      handleGenerateClick();
+      handleGenerateClick($metricsInternalRep.internalYAML);
     }
   };
 
@@ -118,6 +115,7 @@
   <QuickMetricsModal
     on:cancel={closeModal}
     on:click-outside={closeModal}
-    on:replace-metrics={handleGenerateClick}
+    on:replace-metrics={() =>
+      handleGenerateClick($metricsInternalRep.internalYAML)}
   />
 {/if}

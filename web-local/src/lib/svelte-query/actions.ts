@@ -27,7 +27,10 @@ import {
   useMutation,
   UseMutationOptions,
 } from "@sveltestack/svelte-query";
-import { generateMeasuresAndDimension } from "../application-state-stores/metrics-internal-store";
+import {
+  addQuickMetricsToDashboardYAML,
+  initBlankDashboardYAML,
+} from "../application-state-stores/metrics-internal-store";
 
 export function useAllNames(instanceId: string) {
   return useRuntimeServiceListFiles(
@@ -154,9 +157,11 @@ export const useCreateDashboardFromSource = <
       data.instanceId,
       data.newModelName
     );
-    const generatedYAML = generateMeasuresAndDimension(model.entry.model, {
-      display_name: `${data.sourceName} dashboard`,
-    });
+    const blankDashboardYAML = initBlankDashboardYAML(data.newDashboardName);
+    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
+      blankDashboardYAML,
+      model.entry.model
+    );
 
     const response = await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
@@ -164,7 +169,7 @@ export const useCreateDashboardFromSource = <
         data.newDashboardName,
         EntityType.MetricsDefinition
       ),
-      blob: generatedYAML,
+      blob: fullDashboardYAML,
       create: true,
       createOnly: true,
       strict: false,

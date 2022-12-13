@@ -17,7 +17,7 @@
     FileArtifactsData,
     fileArtifactsStore,
   } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
-  import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -83,11 +83,12 @@
       newDashboardName,
       EntityType.MetricsDefinition
     );
+    const yaml = initBlankDashboardYAML(newDashboardName);
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
         path: filePath,
-        blob: metricsTemplate,
+        blob: yaml,
         create: true,
         createOnly: true,
         strict: false,
