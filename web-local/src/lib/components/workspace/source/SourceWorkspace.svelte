@@ -56,9 +56,12 @@
 
   // get the connector for this source type, if valid
   $: currentConnector = $connectors?.data?.connectors?.find(
-    (connector) => connector.name === source?.type
+    (connector) => connector?.name === source?.type
   );
-  $: remoteConnectorNames = $connectors?.data?.connectors
+  $: allConnectors = $connectors?.data?.connectors?.map(
+    (connector) => connector.name
+  );
+  $: remoteConnectorNames = allConnectors
     ?.map((connector) => connector.name)
     ?.filter((name) => name !== "local_file");
 
@@ -70,7 +73,7 @@
   const onRefreshClick = async (tableName: string) => {
     try {
       const resp = await refreshSource(
-        currentConnector.name,
+        currentConnector?.name,
         tableName,
         $runtimeStore?.instanceId,
         $refreshSourceMutation,
@@ -119,7 +122,25 @@
           class="errors flex flex-col items-center pt-8 gap-y-4 m-auto mt-0 text-gray-500"
           style:width="500px"
         >
-          {#if source?.type === "local_file"}
+          {#if !allConnectors.includes(source?.type)}
+            <div>
+              {#if source?.type}
+                Rill does not support a connector for <span class="font-bold"
+                  >{source?.type}</span
+                >.
+              {:else}
+                Connector not defined.
+              {/if}
+              Edit <b>{`sources/${sourceName}.yaml`}</b> to add a valid "type:
+              {"<filetype>"}" to get started.
+            </div>
+            <div>
+              For more information,
+              <a href="https://docs.rilldata.com/using-rill/import-data"
+                >view the documentation</a
+              >.
+            </div>
+          {:else if source?.type === "local_file"}
             <div class="text-center">
               The data file for <span class="font-bold">{sourceName}</span> has not
               been imported as a source.
@@ -157,7 +178,7 @@
                 >view the documentation</a
               >.
             </div>
-          {:else if remoteConnectorNames.includes(currentConnector.name) && !source?.uri}
+          {:else if remoteConnectorNames.includes(currentConnector?.name) && !source?.uri}
             <div>
               The source URI has not been defined. Edit <b
                 >{`sources/${sourceName}.yaml`}</b
