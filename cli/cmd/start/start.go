@@ -29,7 +29,7 @@ func StartCmd(ver string) *cobra.Command {
 
 			// If not initialized, init repo with an empty project
 			if !app.IsProjectInit() {
-				err := app.InitProject("")
+				err = app.InitProject("")
 				if err != nil {
 					return fmt.Errorf("init project: %w", err)
 				}

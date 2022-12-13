@@ -138,7 +138,7 @@ func (pw *PriorityWorker[V]) work() {
 		case <-currentDoneCh:
 			if !pw.paused && pq.Len() > 0 {
 				// If the queue isn't empty, start a new item
-				job := heap.Pop(&pq).(*item[V])
+				job, _ := heap.Pop(&pq).(*item[V])
 				currentDoneCh = job.doneCh
 				go pw.handle(job)
 			} else {
@@ -149,7 +149,7 @@ func (pw *PriorityWorker[V]) work() {
 			pw.paused = p
 			if !pw.paused && currentDoneCh == nil && pq.Len() > 0 {
 				// We just unpaused, we're idle, and the queue is not empty – start the next job
-				job := heap.Pop(&pq).(*item[V])
+				job, _ := heap.Pop(&pq).(*item[V])
 				currentDoneCh = job.doneCh
 				go pw.handle(job)
 			}
@@ -204,7 +204,7 @@ func (pq priorityQueue[V]) Swap(i, j int) {
 
 func (pq *priorityQueue[V]) Push(x any) {
 	n := len(*pq)
-	itm := x.(*item[V])
+	itm, _ := x.(*item[V])
 	itm.index = n
 	*pq = append(*pq, itm)
 }
