@@ -132,7 +132,14 @@ async function mockedQuery(url: string, _entry: RequestQueueEntry) {
 
   switch (type) {
     case "queries":
-      key = type + "__" + parts[0] + "__" + parts[2] + "__" + (u.searchParams.get("columnName") ?? "");
+      key =
+        type +
+        "__" +
+        parts[0] +
+        "__" +
+        parts[2] +
+        "__" +
+        (u.searchParams.get("columnName") ?? "");
       break;
 
     case "metrics-views":
