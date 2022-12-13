@@ -93,6 +93,8 @@ brews:
 dockers:
   - image_templates:
     - ghcr.io/rilldata/rill
+    extra_files:
+      - scripts/entrypoint.sh
 
 archives:
   - files:

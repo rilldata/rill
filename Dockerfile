@@ -2,7 +2,7 @@
 FROM ubuntu:focal
 
 WORKDIR /app
-COPY dist/ .
+COPY rill .
 
-COPY scripts/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT /entrypoint.sh
