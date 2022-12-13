@@ -61,7 +61,7 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release ${NIGHTLY} --snapshot
+              release ${NIGHTLY}
 
       - name: Authenticate GCS for nightly upload
         if: github.event_name == 'schedule'
