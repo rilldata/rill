@@ -1,15 +1,15 @@
 package source
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/local"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -39,7 +39,7 @@ func AddCmd(ver string) *cobra.Command {
 				dataPath = relPath
 			}
 
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -63,18 +63,18 @@ func AddCmd(ver string) *cobra.Command {
 			}
 
 			src := &runtimev1.Source{
-				Name:       sourceName,
-				Connector:  "file",
+				Name:       artifacts.SanitizedName(sourceName),
+				Connector:  "local_file",
 				Properties: propsPB,
 			}
 
-			repo, err := app.Runtime.Repo(context.Background(), app.Instance.ID)
+			repo, err := app.Runtime.Repo(cmd.Context(), app.Instance.ID)
 			if err != nil {
 				panic(err) // Should never happen
 			}
 
-			c := artifactsv0.New(repo, app.Instance.ID)
-			sourcePath, err := c.PutSource(context.Background(), repo, app.Instance.ID, src, force)
+			c := rillv1beta.New(repo, app.Instance.ID)
+			sourcePath, err := c.PutSource(cmd.Context(), repo, app.Instance.ID, src, force)
 			if err != nil {
 				if os.IsExist(err) {
 					return fmt.Errorf("source already exists (pass --force to overwrite)")

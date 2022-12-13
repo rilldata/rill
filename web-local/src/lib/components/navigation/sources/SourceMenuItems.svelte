@@ -5,8 +5,8 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    V1ReconcileResponse,
     useRuntimeServiceRefreshAndReconcile,
+    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
@@ -36,7 +36,7 @@
   } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
-  import { getFileFromName } from "../../../util/entity-mappers";
+  import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -57,15 +57,15 @@
 
   const dispatch = createEventDispatcher();
 
+  $: getSource = useRuntimeServiceGetCatalogEntry(
+    runtimeInstanceId,
+    sourceName
+  );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
-    getFileFromName(sourceName, EntityType.Table)
-  );
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
@@ -210,7 +210,7 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.entry?.source?.connector === "file"}
+{#if $getSource?.data?.entry?.source?.connector === "local_file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />

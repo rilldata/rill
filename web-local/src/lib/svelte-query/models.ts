@@ -12,7 +12,11 @@ export function useModelNames(instanceId: string) {
         select: (data) =>
           data.paths
             ?.filter((path) => path.includes("models/"))
-            .map((path) => path.replace("/models/", "").replace(".sql", "")),
+            .map((path) => path.replace("/models/", "").replace(".sql", ""))
+            // sort alphabetically case-insensitive
+            .sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" })
+            ),
       },
     }
   );

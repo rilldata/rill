@@ -1,6 +1,4 @@
-version: 0.0.1
-
-from: no_rows
+model: no_rows
 display_name: Ad bids (no rows)
 description:
 

@@ -9,15 +9,9 @@
   import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { getName } from "@rilldata/web-local/common/utils/incrementName";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     FileArtifactsData,
@@ -26,9 +20,16 @@
   import { metricsTemplate } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
@@ -41,7 +42,6 @@
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -61,7 +61,7 @@
     instanceId: string,
     metricViewName: string
   ) {
-    const filePath = getFileFromName(
+    const filePath = getFilePathFromNameAndType(
       metricViewName,
       EntityType.MetricsDefinition
     );
@@ -80,7 +80,10 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
-    const filePath = `dashboards/${newDashboardName}.yaml`;
+    const filePath = getFilePathFromNameAndType(
+      newDashboardName,
+      EntityType.MetricsDefinition
+    );
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
@@ -104,7 +107,7 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    const sourceModelName = dashboardData.jsonRepresentation.from;
+    const sourceModelName = dashboardData.jsonRepresentation.model;
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
     goto(`/model/${sourceModelName}`);
@@ -148,7 +151,7 @@
     );
 
     // redirect to model when metric is deleted
-    const sourceModelName = dashboardData.jsonRepresentation.from;
+    const sourceModelName = dashboardData.jsonRepresentation.model;
     if ($appStore.activeEntity.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
@@ -170,7 +173,10 @@
     entities: Record<string, FileArtifactsData>,
     name: string
   ) => {
-    const dashboardPath = getFileFromName(name, EntityType.MetricsDefinition);
+    const dashboardPath = getFilePathFromNameAndType(
+      name,
+      EntityType.MetricsDefinition
+    );
     return entities[dashboardPath];
   };
 </script>

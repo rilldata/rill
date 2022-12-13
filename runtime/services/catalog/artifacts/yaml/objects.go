@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/copier"
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -14,21 +15,18 @@ import (
  * This file contains the mapping from CatalogObject to Yaml files
  */
 
-const Version = "0.0.1"
-
 type Source struct {
-	Version string
-	Type    string
-	URI     string `yaml:"uri,omitempty"`
-	Path    string `yaml:"path,omitempty"`
-	Region  string `yaml:"region,omitempty"`
+	Type         string
+	Path         string `yaml:"path,omitempty"`
+	CsvDelimiter string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
+	URI          string `yaml:"uri,omitempty"`
+	Region       string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
 }
 
 type MetricsView struct {
-	Version          string
 	Label            string `yaml:"display_name"`
 	Description      string
-	From             string
+	Model            string
 	TimeDimension    string `yaml:"timeseries"`
 	TimeGrains       []string
 	DefaultTimeGrain string `yaml:"default_timegrain"`
@@ -53,22 +51,19 @@ type Dimension struct {
 
 func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 	source := &Source{
-		Version: Version,
-		Type:    catalog.GetSource().Connector,
+		Type: catalog.GetSource().Connector,
 	}
 
 	props := catalog.GetSource().Properties.AsMap()
-	path, ok := props["path"].(string)
-	if ok {
-		if catalog.GetSource().Connector == "file" {
-			source.Path = path
-		} else {
-			source.URI = path
-		}
+
+	err := mapstructure.Decode(props, source)
+	if err != nil {
+		return nil, err
 	}
-	region, ok := props["aws.region"].(string)
-	if ok {
-		source.Region = region
+
+	if source.Path != "" && catalog.GetSource().Connector != "local_file" {
+		source.URI = source.Path
+		source.Path = ""
 	}
 
 	return source, nil
@@ -81,19 +76,21 @@ func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) 
 		return nil, err
 	}
 
-	metricsArtifact.Version = Version
 	return metricsArtifact, nil
 }
 
 func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, error) {
 	props := map[string]interface{}{}
-	if source.Type == "file" {
+	if source.Type == "local_file" {
 		props["path"] = source.Path
 	} else {
 		props["path"] = source.URI
 	}
 	if source.Region != "" {
 		props["aws.region"] = source.Region
+	}
+	if source.CsvDelimiter != "" {
+		props["csv.delimiter"] = source.CsvDelimiter
 	}
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {

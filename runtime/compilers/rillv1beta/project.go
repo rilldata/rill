@@ -1,4 +1,4 @@
-package artifactsv0
+package rillv1beta
 
 import (
 	"bytes"
@@ -12,6 +12,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
+
+const Version = "rill-beta"
 
 type Codec struct {
 	Repo       drivers.RepoStore
@@ -27,13 +29,13 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 	return err == nil
 }
 
-func (c *Codec) InitEmpty(ctx context.Context, name string) error {
-	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("version: 0.0.1\n\nname: %s\n", name)))
+func (c *Codec) InitEmpty(ctx context.Context, name string, rillVersion string) error {
+	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\nname: %s\n", Version, rillVersion, name)))
 	if err != nil {
 		return err
 	}
 
-	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader("*.db\n"))
+	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader("*.db\n*.db.wal\ndata/\n"))
 	if err != nil {
 		return err
 	}
@@ -60,8 +62,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 	props := source.Properties.AsMap()
 
 	out := Source{
-		Version: "0.0.1",
-		Type:    source.Connector,
+		Type: source.Connector,
 	}
 
 	if val, ok := props["uri"].(string); ok {
@@ -85,28 +86,28 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		return "", err
 	}
 
-	path := path.Join("sources", source.Name+".yaml")
+	p := path.Join("sources", source.Name+".yaml")
 
 	// TODO: Use create and createOnly when they're added to repo.Put
-	if _, err := os.Stat(path); err == nil {
+	if _, err := os.Stat(path.Join(repo.DSN(), p)); err == nil {
 		if !force {
 			return "", os.ErrExist
 		}
 	}
 
-	err = repo.Put(ctx, c.InstanceID, path, bytes.NewReader(blob))
+	err = repo.Put(ctx, c.InstanceID, p, bytes.NewReader(blob))
 	if err != nil {
 		return "", err
 	}
 
-	return path, nil
+	return p, nil
 }
 
 func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
-	path := path.Join("sources", name+".yaml")
-	err := c.Repo.Delete(ctx, c.InstanceID, path)
+	p := path.Join("sources", name+".yaml")
+	err := c.Repo.Delete(ctx, c.InstanceID, p)
 	if err != nil {
 		return "", err
 	}
-	return path, nil
+	return p, nil
 }

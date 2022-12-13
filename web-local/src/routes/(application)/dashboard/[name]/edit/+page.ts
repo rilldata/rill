@@ -1,63 +1,47 @@
-import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
-  ExplorerSourceColumnDoesntExist,
-  ExplorerSourceModelDoesntExist,
-  ExplorerSourceModelIsInvalid,
-  ExplorerTimeDimensionDoesntExist,
-  ExplorerMetricsDefinitionDoesntExist,
-} from "@rilldata/web-local/common/errors/ErrorMessages";
+  runtimeServiceGetCatalogEntry,
+  runtimeServiceGetFile,
+} from "@rilldata/web-common/runtime-client";
+import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error } from "@sveltejs/kit";
+import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   const localConfig = await runtimeServiceGetConfig();
 
   try {
-    const dashboardMeta = await runtimeServiceGetFile(
+    await runtimeServiceGetFile(
       localConfig.instance_id,
-      `dashboards/${params.name}.yaml`
+      getFilePathFromNameAndType(params.name, EntityType.MetricsDefinition)
     );
+  } catch (err) {
+    if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
+      throw error(404, "Dashboard not found");
+    }
 
-    const dashboardYAML = dashboardMeta.blob;
+    throw error(err.response?.status || 500, err.message);
+  }
 
-    // if metric definition exists, go to component
-    if (dashboardYAML) {
+  try {
+    await runtimeServiceGetCatalogEntry(localConfig.instance_id, params.name);
+
+    return {
+      metricsDefName: params.name,
+    };
+  } catch (err) {
+    // If the catalog entry doesn't exist, the dashboard config is invalid
+    // The component should render the specific error
+    if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
       return {
         metricsDefName: params.name,
-      };
-    }
-  } catch (err) {
-    const invalidDashboardErrors = [
-      ExplorerSourceModelDoesntExist,
-      ExplorerSourceModelIsInvalid,
-      ExplorerSourceColumnDoesntExist,
-      ExplorerTimeDimensionDoesntExist,
-    ];
-
-    // any invalid dashboard error will be displayed by the component
-    if (
-      invalidDashboardErrors.some(
-        (errMsg) => errMsg.includes(err.message) || err.message.includes(errMsg)
-      )
-    ) {
-      return {
-        metricsName: params.name,
-      };
-    } else {
-      if (
-        ExplorerMetricsDefinitionDoesntExist.includes(err.message) ||
-        err.message.includes(ExplorerMetricsDefinitionDoesntExist)
-      ) {
-        throw error(404, "Metrics definition  not found");
-      }
-      // Pass non standard error message to be shown in dialog
-      return {
-        metricsName: params.name,
         error: err.message,
       };
     }
-  }
 
-  throw error(404, "Metrics definition not found");
+    // Throw all other errors
+    throw error(err.response?.status || 500, err.message);
+  }
 }

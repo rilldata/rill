@@ -14,6 +14,10 @@ var Commit string
 var BuildDate string
 
 func main() {
+	if Version == "" {
+		Version = "dev"
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	cmd.Execute(ctx, Version, Commit, BuildDate)

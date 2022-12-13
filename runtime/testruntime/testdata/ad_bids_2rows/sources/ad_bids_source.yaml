@@ -1,4 +1,2 @@
-version: 0.0.1
-
-type: file
+type: local_file
 path: data/AdBids_2rows.csv

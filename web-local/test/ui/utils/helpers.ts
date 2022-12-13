@@ -50,7 +50,7 @@ export async function waitForProfiling(
       ),
       columns.map((column) =>
         page.waitForResponse(
-          new RegExp(`/queries/null-count/tables/${name}/columns/${column}`)
+          new RegExp(`/queries/null-count/tables/${name}?column_name=${column}`)
         )
       ),
     ].flat()

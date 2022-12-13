@@ -1,12 +1,11 @@
 package source
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/artifacts/artifactsv0"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +27,7 @@ func DropCmd(ver string) *cobra.Command {
 				return fmt.Errorf("not a valid source name: %s", sourceName)
 			}
 
-			app, err := local.NewApp(ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
 			if err != nil {
 				return err
 			}
@@ -37,13 +36,13 @@ func DropCmd(ver string) *cobra.Command {
 				return fmt.Errorf("not a valid Rill project")
 			}
 
-			repo, err := app.Runtime.Repo(context.Background(), app.Instance.ID)
+			repo, err := app.Runtime.Repo(cmd.Context(), app.Instance.ID)
 			if err != nil {
 				panic(err) // Should never happen
 			}
 
-			c := artifactsv0.New(repo, app.Instance.ID)
-			sourcePath, err := c.DeleteSource(context.Background(), sourceName)
+			c := rillv1beta.New(repo, app.Instance.ID)
+			sourcePath, err := c.DeleteSource(cmd.Context(), sourceName)
 			if err != nil {
 				return fmt.Errorf("delete source: %w", err)
 			}

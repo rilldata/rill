@@ -31,12 +31,12 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { getName } from "../../../../common/utils/incrementName";
   import { overlay } from "../../../application-state-stores/overlay-store";
@@ -48,7 +48,7 @@
 
   export let sourceName: string;
 
-  const queryClient = createQueryClient();
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -140,7 +140,7 @@
         return "GCS";
       case "https":
         return "http(s)";
-      case "file":
+      case "local_file":
         return "Local file";
       default:
         return "";

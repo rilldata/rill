@@ -14,7 +14,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { CATEGORICALS } from "../../../duckdb-data-types";
-  import { getFileFromName } from "../../../util/entity-mappers";
+  import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
@@ -46,7 +46,7 @@
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
   async function callPutAndMigrate(internalYamlString) {
-    const filePath = getFileFromName(
+    const filePath = getFilePathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
     );
@@ -63,10 +63,12 @@
     invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
   }
 
+  // create initial internal representation
   let metricsInternalRep = createInternalRepresentation(
     yaml,
     callPutAndMigrate
   );
+
   function updateInternalRep() {
     metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
     if (errors) $metricsInternalRep.updateErrors(errors);
@@ -80,7 +82,7 @@
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();
 
-  $: modelName = $metricsInternalRep.getMetricKey("from");
+  $: modelName = $metricsInternalRep.getMetricKey("model");
   $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
   $: model = $getModel.data?.entry?.model;
 
@@ -136,7 +138,7 @@
   let errors: Array<V1ReconcileError>;
   $: errors =
     $fileArtifactsStore.entities[
-      getFileFromName(metricsDefName, EntityType.MetricsDefinition)
+      getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
     ]?.errors;
 
   $: metricsSourceSelectionError = nonStandardError
@@ -144,71 +146,69 @@
     : MetricsSourceSelectionError(errors);
 </script>
 
-{#if measures && dimensions}
-  <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
-    <div slot="body">
-      <MetricsDefWorkspaceHeader {metricsDefName} {metricsInternalRep} />
+<WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
+  <div slot="body">
+    <MetricsDefWorkspaceHeader {metricsDefName} {metricsInternalRep} />
 
-      <div
-        class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
-        style:height="calc(100vh - var(--header-height))"
-      >
-        <div class="flex-none flex flex-row">
-          <div>
-            <MetricsDefModelSelector {metricsInternalRep} />
-            <MetricsDefTimeColumnSelector
+    <div
+      class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
+      style:height="calc(100vh - var(--header-height))"
+    >
+      <div class="flex-none flex flex-row">
+        <div>
+          <MetricsDefModelSelector {metricsInternalRep} />
+          <MetricsDefTimeColumnSelector
+            selectedModel={model}
+            {metricsInternalRep}
+          />
+        </div>
+        <div class="self-center pl-10">
+          {#if metricsSourceSelectionError}
+            <Callout level="error">
+              {metricsSourceSelectionError}
+            </Callout>
+          {:else}
+            <MetricsDefinitionGenerateButton
+              handlePutAndMigrate={callPutAndMigrate}
               selectedModel={model}
               {metricsInternalRep}
             />
-          </div>
-          <div class="self-center pl-10">
-            {#if metricsSourceSelectionError}
-              <Callout level="error">
-                {metricsSourceSelectionError}
-              </Callout>
-            {:else}
-              <MetricsDefinitionGenerateButton
-                handlePutAndMigrate={callPutAndMigrate}
-                selectedModel={model}
-                {metricsInternalRep}
-              />
-            {/if}
-          </div>
-        </div>
-
-        <div
-          style="display: flex; flex-direction:column; overflow:hidden;"
-          class="flex-1"
-        >
-          <LayoutManager let:topResizeCallback let:bottomResizeCallback>
-            <MetricsDefEntityTable
-              slot="top-item"
-              resizeCallback={topResizeCallback}
-              label={"Measures"}
-              addEntityHandler={handleCreateMeasure}
-              updateEntityHandler={handleUpdateMeasure}
-              deleteEntityHandler={handleDeleteMeasure}
-              rows={measures ?? []}
-              columnNames={MeasuresColumns}
-              tooltipText={"add a new measure"}
-              addButtonId={"add-measure-button"}
-            />
-
-            <MetricsDefEntityTable
-              slot="bottom-item"
-              resizeCallback={bottomResizeCallback}
-              label={"Dimensions"}
-              addEntityHandler={handleCreateDimension}
-              updateEntityHandler={handleUpdateDimension}
-              deleteEntityHandler={handleDeleteDimension}
-              rows={dimensions ?? []}
-              columnNames={DimensionColumns}
-              tooltipText={"add a new dimension"}
-              addButtonId={"add-dimension-button"}
-            />
-          </LayoutManager>
+          {/if}
         </div>
       </div>
+
+      <div
+        style="display: flex; flex-direction:column; overflow:hidden;"
+        class="flex-1"
+      >
+        <LayoutManager let:topResizeCallback let:bottomResizeCallback>
+          <MetricsDefEntityTable
+            slot="top-item"
+            resizeCallback={topResizeCallback}
+            label={"Measures"}
+            addEntityHandler={handleCreateMeasure}
+            updateEntityHandler={handleUpdateMeasure}
+            deleteEntityHandler={handleDeleteMeasure}
+            rows={measures ?? []}
+            columnNames={MeasuresColumns}
+            tooltipText={"add a new measure"}
+            addButtonId={"add-measure-button"}
+          />
+
+          <MetricsDefEntityTable
+            slot="bottom-item"
+            resizeCallback={bottomResizeCallback}
+            label={"Dimensions"}
+            addEntityHandler={handleCreateDimension}
+            updateEntityHandler={handleUpdateDimension}
+            deleteEntityHandler={handleDeleteDimension}
+            rows={dimensions ?? []}
+            columnNames={DimensionColumns}
+            tooltipText={"add a new dimension"}
+            addButtonId={"add-dimension-button"}
+          />
+        </LayoutManager>
+      </div>
     </div>
-  </WorkspaceContainer>
-{/if}
+  </div>
+</WorkspaceContainer>

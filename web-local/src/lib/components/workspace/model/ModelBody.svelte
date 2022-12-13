@@ -15,12 +15,16 @@
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
-  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import {
+    isDuplicateName,
+    renameFileArtifact,
+    useAllNames,
+  } from "@rilldata/web-local/lib/svelte-query/actions";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
@@ -46,7 +50,7 @@
 
   let showPreview = true;
   let modelPath: string;
-  $: modelPath = getFileFromName(modelName, EntityType.Model);
+  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
@@ -55,6 +59,8 @@
 
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
+
+  $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   // TODO: does this need any sanitization?
   $: titleInput = modelName;
@@ -68,6 +74,13 @@
       notifications.send({
         message:
           "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = modelName; // resets the input
+      return;
+    }
+    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+      notifications.send({
+        message: `Name ${e.target.value} is already in use`,
       });
       e.target.value = modelName; // resets the input
       return;
@@ -103,7 +116,7 @@
   ) as Writable<number>;
 
   const inspectorVisibilityTween = getContext(
-    "ril:app:inspector-visibility-tween"
+    "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
 
   const navigationWidth = getContext(
@@ -182,7 +195,6 @@
       </div>
     {/if}
   </div>
-
   <Portal target=".body">
     <div
       class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"

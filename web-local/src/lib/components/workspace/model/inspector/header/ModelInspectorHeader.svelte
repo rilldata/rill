@@ -19,13 +19,13 @@
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
-  import { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
@@ -41,7 +41,7 @@
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
 
-  $: modelPath = getFileFromName(modelName, EntityType.Model);
+  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
   let contextMenuOpen = false;

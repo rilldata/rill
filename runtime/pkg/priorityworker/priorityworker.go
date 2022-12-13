@@ -162,6 +162,7 @@ func (pw *PriorityWorker[V]) handle(job *item[V]) {
 	// Bail if the job's ctx is cancelled
 	// (Unlikely to happen given other safeguards)
 	if job.ctx.Err() != nil {
+		job.err = job.ctx.Err()
 		close(job.doneCh)
 		return
 	}

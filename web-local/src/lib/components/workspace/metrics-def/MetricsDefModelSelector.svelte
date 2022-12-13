@@ -8,11 +8,11 @@
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
   $: sourceModelDisplayValue =
-    $metricsInternalRep.getMetricKey("from") || "__DEFAULT_VALUE__";
+    $metricsInternalRep.getMetricKey("model") || "__DEFAULT_VALUE__";
 
   $: allModels = useModelNames($runtimeStore.instanceId);
   function updateMetricsDefinitionHandler(sourceModelName) {
-    $metricsInternalRep.updateMetricKey("from", sourceModelName);
+    $metricsInternalRep.updateMetricKey("model", sourceModelName);
   }
 </script>
 

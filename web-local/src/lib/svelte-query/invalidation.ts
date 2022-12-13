@@ -7,7 +7,6 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceProfileColumnsQueryKey,
-  V1ReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
@@ -43,7 +42,6 @@ export const invalidateAfterReconcile = async (
       ])
       .flat()
   );
-
   // invalidate tablewide profiling queries
   // (applies to sources and models, but not dashboards)
   await Promise.all(
@@ -67,7 +65,7 @@ export const invalidateAfterReconcile = async (
             getNameFromFile(path)
           )
         ),
-        getInvalidationsForPath(queryClient, affectedPath),
+        getInvalidationsForPath(queryClient, path),
       ])
       .flat()
   );

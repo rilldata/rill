@@ -9,6 +9,7 @@ export const QueryPriorities = {
   "columns-profile": 45,
   "null-count": 40,
   cardinality: 35,
+  "column-cardinality": 35,
   "numeric-histogram": 30,
   topk: 10,
   "rug-histogram": 10,

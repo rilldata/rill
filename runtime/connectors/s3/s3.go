@@ -102,7 +102,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	defer f.Close()
 
 	// Write the contents of S3 Object to the f
-	_, err = downloader.Download(f, &s3.GetObjectInput{
+	_, err = downloader.DownloadWithContext(ctx, f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})

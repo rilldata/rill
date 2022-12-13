@@ -74,7 +74,7 @@ message MetricsView {
   // Name of the metrics view
   string name = 1;
   // Name of the source or model that the metrics view is based on
-  string from = 2;
+  string model = 2;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 3;
   // Recommended granularities for rolling up the time dimension.

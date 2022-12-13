@@ -1,7 +1,6 @@
-package artifactsv0
+package rillv1beta
 
 type Source struct {
-	Version      string
 	Type         string
 	URI          string `yaml:"uri,omitempty"`
 	Path         string `yaml:"path,omitempty"`

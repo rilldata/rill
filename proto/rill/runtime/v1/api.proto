@@ -160,7 +160,7 @@ service RuntimeService {
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/toplist/{dimension_name}",
+      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/toplist",
       body: "*"
     };
   }
@@ -197,44 +197,44 @@ service RuntimeService {
   // agg function and k are optional, defaults are count(*) and 50 respectively
   rpc GetTopK(GetTopKRequest) returns (GetTopKResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}/columns/{column_name}",
+      post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}",
       body: "*"
     };
   }
 
   // Get the number of nulls in a column
   rpc GetNullCount(GetNullCountRequest) returns (GetNullCountResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}"};
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
   rpc GetDescriptiveStatistics(GetDescriptiveStatisticsRequest) returns (GetDescriptiveStatisticsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}"};
   }
 
   // Estimates the smallest time grain present in the column
   rpc EstimateSmallestTimeGrain(EstimateSmallestTimeGrainRequest) returns (EstimateSmallestTimeGrainResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}"};
   }
 
   // Get the histogram for values in a column
   rpc GetNumericHistogram(GetNumericHistogramRequest) returns (GetNumericHistogramResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}"};
   }
 
   // Get outliers for a numeric column
   rpc GetRugHistogram(GetRugHistogramRequest) returns (GetRugHistogramResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}"};
   }
 
   // Get the time range summaries (min, max) for a column
   rpc GetTimeRangeSummary(GetTimeRangeSummaryRequest) returns (GetTimeRangeSummaryResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}"};
   }
 
   // Get cardinality for a column
   rpc GetCardinalityOfColumn(GetCardinalityOfColumnRequest) returns (GetCardinalityOfColumnResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}/columns/{column_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/column-cardinality/tables/{table_name}"};
   }
 
   // Generate time series
@@ -249,7 +249,7 @@ service RuntimeService {
 
   // TableCardinality (TODO: add description)
   rpc GetTableCardinality(GetTableCardinalityRequest) returns (GetTableCardinalityResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/cardinality/tables/{table_name}"};
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/table-cardinality/tables/{table_name}"};
   }
 
   // ProfileColumns (TODO: add description)
@@ -493,12 +493,15 @@ message ReconcileRequest {
   // Changed paths provides a way to "hint" what files have changed in the repo, enabling
   // reconciliation to execute faster by not scanning all code artifacts for changes.
   repeated string changed_paths = 2;
+  // Forced paths is used to force run reconcile on certain files.
+  // This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
+  repeated string forced_paths = 3;
   // If true, will validate the file artifacts, but not actually execute any migrations
-  bool dry = 3;
+  bool dry = 4;
   // If true, will not execute any migrations if any artifact fails to validate.
   // Otherwise, it will execute a best-effort reconciliation (including dropping objects with
   // artifacts that fail to validate.)
-  bool strict = 4;
+  bool strict = 5;
 }
 
 // Response message for RuntimeService.Reconcile

@@ -3,9 +3,11 @@
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    V1PutFileAndReconcileResponse,
+    V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
@@ -19,7 +21,12 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getName } from "../../../../../../common/utils/incrementName";
+  import { overlay } from "../../../../../application-state-stores/overlay-store";
+  import { useDashboardNames } from "../../../../../svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "../../../../../svelte-query/invalidation";
 
   export let modelName: string;
   export let hasError = false;
@@ -31,43 +38,69 @@
   );
   $: model = $getModel.data?.entry?.model;
   $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
-  const metricMigrate = useRuntimeServicePutFileAndReconcile();
+  const queryClient = useQueryClient();
+  const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
-  async function handleCreateMetric() {
-    const metricsLabel = `${model?.name}_dashboard`;
+  async function handleCreateDashboard() {
+    overlay.set({
+      title: "Creating a dashboard for " + modelName,
+    });
+    const newDashboardName = getName(
+      `${modelName}_dashboard`,
+      $dashboardNames.data
+    );
     const generatedYAML = generateMeasuresAndDimension(model, {
-      display_name: metricsLabel,
-      description: `A dashboard generated for ${model?.name}`,
+      display_name: `${newDashboardName} dashboard`,
     });
 
-    const filePath = `dashboards/${metricsLabel}.yaml`;
-    const resp = (await $metricMigrate.mutateAsync({
-      data: {
-        instanceId: $runtimeStore.instanceId,
-        path: filePath,
-        blob: generatedYAML,
-        create: true,
+    $createFileMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          path: getFilePathFromNameAndType(
+            newDashboardName,
+            EntityType.MetricsDefinition
+          ),
+          blob: generatedYAML,
+          create: true,
+          createOnly: true,
+          strict: false,
+        },
       },
-    })) as V1PutFileAndReconcileResponse;
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
-    navigationEvent.fireEvent(
-      metricsLabel,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Model,
-      MetricsEventScreenName.Dashboard
+      {
+        onSuccess: (resp: V1ReconcileResponse) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+          goto(`/dashboard/${newDashboardName}`);
+          navigationEvent.fireEvent(
+            newDashboardName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.RightPanel,
+            MetricsEventScreenName.Model,
+            MetricsEventScreenName.Dashboard
+          );
+          return invalidateAfterReconcile(
+            queryClient,
+            $runtimeStore.instanceId,
+            resp
+          );
+        },
+        onError: (err) => {
+          console.error(err);
+        },
+        onSettled: () => {
+          overlay.set(null);
+        },
+      }
     );
-
-    goto(`/dashboard/${metricsLabel}`);
   }
 </script>
 
 <Tooltip alignment="right" distance={16} location="bottom">
   <Button
     disabled={!timestampColumns?.length}
-    on:click={handleCreateMetric}
+    on:click={handleCreateDashboard}
     type="primary"
   >
     <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>

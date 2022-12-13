@@ -14,8 +14,10 @@
   export let value: number;
   export let status: EntityStatus;
   export let description: string = undefined;
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: string; // workaround, since unable to cast `string` to `NicelyFormattedTypes` within MetricsTimeSeriesCharts.svelte's `#each` block
 
+  $: formatPresetEnum =
+    (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
   $: valusIsPresent = value !== undefined && value !== null;
 
   const [send, receive] = crossfade({ fallback: fly });
@@ -38,8 +40,8 @@
         {#if valusIsPresent && status === EntityStatus.Idle}
           <div>
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {#if formatPreset !== NicelyFormattedTypes.NONE}
-                {humanizeDataType(output, formatPreset)}
+              {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                {humanizeDataType(output, formatPresetEnum)}
               {:else}
                 {output}
               {/if}

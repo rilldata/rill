@@ -1,9 +1,16 @@
 <script lang="ts">
-  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServicePutFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import {
@@ -12,7 +19,10 @@
   } from "@rilldata/web-local/lib/util/file-upload";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
+  import { slide } from "svelte/transition";
+  import { Callout } from "../../callout";
   import { createSource } from "./createSource";
+  import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
 
   const dispatch = createEventDispatcher();
 
@@ -24,16 +34,33 @@
   $: modelNames = useModelNames(runtimeInstanceId);
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
   }
 
+  const handleDeleteSource = async (tableName: string) => {
+    await deleteFileArtifact(
+      queryClient,
+      runtimeInstanceId,
+      tableName,
+      EntityType.Table,
+      $deleteSource,
+      $appStore.activeEntity,
+      $sourceNames.data,
+      false
+    );
+  };
+
+  let errors;
+
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
       [$sourceNames?.data, $modelNames?.data],
-      $runtimeStore.instanceId
+      $runtimeStore.instanceId,
+      false
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -42,10 +69,10 @@
             sourceName: tableName,
             path: filePath,
           },
-          "file"
+          "local_file"
         );
         // TODO: errors
-        await createSource(
+        errors = await createSource(
           queryClient,
           runtimeInstanceId,
           tableName,
@@ -53,10 +80,15 @@
           $createSourceMutation
         );
       } catch (err) {
-        console.error(err);
+        // no-op
       }
       overlay.set(null);
-      dispatch("close");
+      if (!errors?.length) {
+        dispatch("close");
+      } else {
+        // if the upload didn't work, delete the source file.
+        handleDeleteSource(tableName);
+      }
     }
   }
 </script>
@@ -65,4 +97,19 @@
   <Button on:click={handleOpenFileDialog} type="primary"
     >Upload a CSV or Parquet file</Button
   >
+  {#if errors?.length}
+    <div transition:slide={{ duration: LIST_SLIDE_DURATION * 2 }}>
+      <Callout level="error">
+        <ul style:max-width="400px">
+          {#each errors as error}
+            <li>
+              {hasDuckDBUnicodeError(error.message)
+                ? niceDuckdbUnicodeError(error.message)
+                : error.message}
+            </li>
+          {/each}
+        </ul>
+      </Callout>
+    </div>
+  {/if}
 </div>

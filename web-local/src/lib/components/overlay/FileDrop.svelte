@@ -25,7 +25,7 @@
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
       [$sourceNames?.data, $modelNames?.data],
-      $runtimeStore
+      $runtimeStore.instanceId
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -34,7 +34,7 @@
             sourceName: tableName,
             path: filePath,
           },
-          "file"
+          "local_file"
         );
         // TODO: errors
         await createSource(
