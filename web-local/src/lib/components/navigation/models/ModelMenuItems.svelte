@@ -12,11 +12,15 @@
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { generateMeasuresAndDimension } from "../../../application-state-stores/metrics-internal-store";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "../../../application-state-stores/metrics-internal-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -61,15 +65,20 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
-    const generatedYAML = generateMeasuresAndDimension(model, {
-      display_name: `${newDashboardName} dashboard`,
-    });
+    const blankDashboardYAML = initBlankDashboardYAML(newDashboardName);
+    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
+      blankDashboardYAML,
+      model
+    );
     $createFileMutation.mutate(
       {
         data: {
           instanceId: $runtimeStore.instanceId,
-          path: `dashboards/${newDashboardName}.yaml`,
-          blob: generatedYAML,
+          path: getFilePathFromNameAndType(
+            newDashboardName,
+            EntityType.MetricsDefinition
+          ),
+          blob: fullDashboardYAML,
           create: true,
           createOnly: true,
           strict: false,

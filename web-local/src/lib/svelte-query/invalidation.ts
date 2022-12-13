@@ -2,11 +2,8 @@ import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
-  getRuntimeServiceGetTableCardinalityQueryKey,
-  getRuntimeServiceGetTableRowsQueryKey,
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
-  getRuntimeServiceProfileColumnsQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
@@ -45,29 +42,9 @@ export const invalidateAfterReconcile = async (
   // invalidate tablewide profiling queries
   // (applies to sources and models, but not dashboards)
   await Promise.all(
-    reconcileResponse.affectedPaths
-      .map((path) => [
-        queryClient.invalidateQueries(
-          getRuntimeServiceGetTableCardinalityQueryKey(
-            instanceId,
-            getNameFromFile(path)
-          )
-        ),
-        queryClient.invalidateQueries(
-          getRuntimeServiceGetTableRowsQueryKey(
-            instanceId,
-            getNameFromFile(path)
-          )
-        ),
-        queryClient.invalidateQueries(
-          getRuntimeServiceProfileColumnsQueryKey(
-            instanceId,
-            getNameFromFile(path)
-          )
-        ),
-        getInvalidationsForPath(queryClient, path),
-      ])
-      .flat()
+    reconcileResponse.affectedPaths.map((path) =>
+      getInvalidationsForPath(queryClient, path)
+    )
   );
 };
 
@@ -87,12 +64,12 @@ export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricsViewName: string
 ) => {
+  const r = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
+  );
   return queryClient.refetchQueries({
     predicate: (query) =>
-      typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith(
-        `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
-      ),
+      typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]),
   });
 };
 

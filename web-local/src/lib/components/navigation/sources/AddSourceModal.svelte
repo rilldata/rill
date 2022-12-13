@@ -14,7 +14,7 @@
 
   let selectedConnector: V1Connector;
 
-  const TAB_ORDER = ["gcs", "s3", "https", "file"];
+  const TAB_ORDER = ["gcs", "s3", "https", "local_file"];
 
   const connectors = useRuntimeServiceListConnectors({
     query: {
@@ -71,7 +71,7 @@
         <RemoteSource connector={selectedConnector} on:close />
       {/key}
     {/if}
-    {#if selectedConnector?.name === "file"}
+    {#if selectedConnector?.name === "local_file"}
       <LocalSource on:close />
     {/if}
   </div>

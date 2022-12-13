@@ -14,7 +14,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { CATEGORICALS } from "../../../duckdb-data-types";
-  import { getFileFromName } from "../../../util/entity-mappers";
+  import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
@@ -46,7 +46,7 @@
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
   async function callPutAndMigrate(internalYamlString) {
-    const filePath = getFileFromName(
+    const filePath = getFilePathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
     );
@@ -138,7 +138,7 @@
   let errors: Array<V1ReconcileError>;
   $: errors =
     $fileArtifactsStore.entities[
-      getFileFromName(metricsDefName, EntityType.MetricsDefinition)
+      getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
     ]?.errors;
 
   $: metricsSourceSelectionError = nonStandardError

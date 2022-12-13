@@ -25,8 +25,6 @@
 
   // the recycled mouseover event, in case anyone else has one set
   export let mouseover = undefined;
-  // this is the time range key. We use it to trigger animation when the time range changes.
-  export let timeRangeKey: string;
   // we use this is a key as well.
   export let timeGrain: string;
   // bind and send up to parent to create global mouseover
@@ -59,10 +57,13 @@
   $: allZeros = dataCopy.every((di) => di[accessor] === 0);
   $: dataInDomain = dataCopy.some((di) => di.ts >= start && di.ts <= end);
 
+  $: [xMin, xMax] = extent(dataCopy, (d) => d.ts);
   $: [_, yMax] = extent(dataCopy, (d) => d[accessor]);
 
   let yms = writable(yMax);
   $: yms.set(yMax);
+
+  $: timeRangeKey = xMin + xMax + dataCopy.length;
 
   let keyStore = writable(timeRangeKey);
   $: keyStore.set(timeRangeKey);

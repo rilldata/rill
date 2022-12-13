@@ -5,9 +5,13 @@
     useRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { generateMeasuresAndDimension } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
@@ -20,6 +24,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getName } from "../../../../../../common/utils/incrementName";
   import { overlay } from "../../../../../application-state-stores/overlay-store";
@@ -49,16 +54,21 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
-    const generatedYAML = generateMeasuresAndDimension(model, {
-      display_name: `${newDashboardName} dashboard`,
-    });
+    const blankDashboardYAML = initBlankDashboardYAML(newDashboardName);
+    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
+      blankDashboardYAML,
+      model
+    );
 
     $createFileMutation.mutate(
       {
         data: {
           instanceId: $runtimeStore.instanceId,
-          path: `dashboards/${newDashboardName}.yaml`,
-          blob: generatedYAML,
+          path: getFilePathFromNameAndType(
+            newDashboardName,
+            EntityType.MetricsDefinition
+          ),
+          blob: fullDashboardYAML,
           create: true,
           createOnly: true,
           strict: false,

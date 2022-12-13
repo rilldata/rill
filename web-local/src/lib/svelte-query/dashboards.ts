@@ -19,6 +19,10 @@ export function useDashboardNames(repoId: string) {
             ?.filter((path) => path.includes("dashboards/"))
             .map((path) =>
               path.replace("/dashboards/", "").replace(".yaml", "")
+            )
+            // sort alphabetically case-insensitive
+            .sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" })
             ),
       },
     }

@@ -27,7 +27,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 		Path: "sources/bar.yaml",
 		Object: &runtimev1.Source{
 			Name:       "bar",
-			Connector:  "file",
+			Connector:  "local_file",
 			Properties: &structpb.Struct{Fields: map[string]*structpb.Value{"path": structpb.NewStringValue("/path/to/file.csv")}},
 			Schema:     &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{{Name: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}}}},
 		},

@@ -19,7 +19,7 @@
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -41,7 +41,7 @@
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
 
-  $: modelPath = getFileFromName(modelName, EntityType.Model);
+  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
   let contextMenuOpen = false;
