@@ -55,12 +55,12 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	extension, err := getUrlExtension(conf.Path)
+	extension, err := getURLExtension(conf.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", conf.Path, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, conf.Path, http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
@@ -74,7 +74,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	return fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 }
 
-func getUrlExtension(path string) (string, error) {
+func getURLExtension(path string) (string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
 		return "", err

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -28,7 +29,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	inst, err := s.runtime.FindInstance(ctx, req.InstanceId)
 	if err != nil {
-		if err == drivers.ErrNotFound {
+		if errors.Is(err, drivers.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "instance not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())

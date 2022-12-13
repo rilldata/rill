@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -168,9 +169,9 @@ func (a *App) InitProject(exampleName string) error {
 		err := c.InitEmpty(a.Context, defaultName, a.Version)
 		if err != nil {
 			if isPwd {
-				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
+				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %w)", err)
 			}
-			return fmt.Errorf("failed to initialize project in '%s' (detailed error: %s)", a.ProjectPath, err.Error())
+			return fmt.Errorf("failed to initialize project in '%s' (detailed error: %w)", a.ProjectPath, err)
 		}
 
 		// Log success
@@ -188,10 +189,10 @@ func (a *App) InitProject(exampleName string) error {
 
 	err = examples.Init(exampleName, a.ProjectPath)
 	if err != nil {
-		if err == examples.ErrExampleNotFound {
+		if errors.Is(err, examples.ErrExampleNotFound) {
 			return fmt.Errorf("example project '%s' not found", exampleName)
 		}
-		return fmt.Errorf("failed to initialize project (detailed error: %s)", err.Error())
+		return fmt.Errorf("failed to initialize project (detailed error: %w)", err)
 	}
 
 	if isPwd {

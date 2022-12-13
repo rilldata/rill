@@ -23,7 +23,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 
 	ctx := context.Background()
 	time.Sleep(time.Millisecond * 10)
-	err = artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
+	err = artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeSource,
 		Path: path,
@@ -36,7 +36,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstId, path)
+	blob, err := s.Repo.Get(ctx, s.InstID, path)
 	require.NoError(t, err)
 	return blob
 }
@@ -44,7 +44,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
 	ctx := context.Background()
 	time.Sleep(time.Millisecond * 10)
-	err := artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
+	err := artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeModel,
 		Path: path,
@@ -55,7 +55,7 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstId, path)
+	blob, err := s.Repo.Get(ctx, s.InstID, path)
 	require.NoError(t, err)
 	return blob
 }
@@ -63,14 +63,14 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
 	ctx := context.Background()
 	time.Sleep(time.Millisecond * 10)
-	err := artifacts.Write(ctx, s.Repo, s.InstId, &drivers.CatalogEntry{
+	err := artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
 		Name:   metricsView.Name,
 		Type:   drivers.ObjectTypeMetricsView,
 		Path:   path,
 		Object: metricsView,
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstId, path)
+	blob, err := s.Repo.Get(ctx, s.InstID, path)
 	require.NoError(t, err)
 	return blob
 }
@@ -116,7 +116,7 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 }
 
 func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, path string) *drivers.CatalogEntry {
-	catalogEntry, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
+	catalogEntry, ok := s.Catalog.FindEntry(context.Background(), s.InstID, name)
 	require.True(t, ok)
 	require.Equal(t, name, catalogEntry.Name)
 	require.Equal(t, path, catalogEntry.Path)
@@ -124,7 +124,7 @@ func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, path string) *
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
-	_, ok := s.Catalog.FindEntry(context.Background(), s.InstId, name)
+	_, ok := s.Catalog.FindEntry(context.Background(), s.InstID, name)
 	require.False(t, ok)
 
 	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)

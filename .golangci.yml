@@ -44,7 +44,7 @@ linters:
     - goconst
     - gofmt
     - goimports
-    - gomnd
+    # - gomnd This requires all numbers to be converted into const vars, should we use this?
     - gocritic
     - gocyclo
     - goprintffuncname
@@ -56,7 +56,7 @@ linters:
     - nakedret
     - nilerr
     - revive
-    - staticcheck
+    # - staticcheck uncomment after testing
     - stylecheck
     - tparallel
     - testpackage
@@ -121,7 +121,6 @@ linters-settings:
       - name: errorf
       - name: empty-block
       - name: superfluous-else
-      # - name: unused-parameter
       - name: unreachable-code
       - name: redefines-builtin-id
     # ignore-generated-header: true

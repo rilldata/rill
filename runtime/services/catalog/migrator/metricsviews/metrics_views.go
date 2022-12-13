@@ -1,4 +1,4 @@
-package metrics_views
+package metricsviews
 
 import (
 	"context"

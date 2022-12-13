@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 
 	// Register some standard stuff
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 )
@@ -44,10 +45,10 @@ func (i *MigrationItem) renameFrom(from *MigrationItem) {
 
 const (
 	MigrationNoChange int = 0
-	MigrationCreate       = 1
-	MigrationRename       = 2
-	MigrationUpdate       = 3
-	MigrationDelete       = 4
+	MigrationCreate   int = 1
+	MigrationRename   int = 2
+	MigrationUpdate   int = 3
+	MigrationDelete   int = 4
 )
 
 type ReconcileConfig struct {
@@ -150,7 +151,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 		}
 	} else {
 		var err error
-		repoPaths, err = s.Repo.ListRecursive(ctx, s.InstId, "{sources,models,dashboards}/*.{sql,yaml,yml}")
+		repoPaths, err = s.Repo.ListRecursive(ctx, s.InstID, "{sources,models,dashboards}/*.{sql,yaml,yml}")
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +164,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 
 	storeObjectsMap := make(map[string]*drivers.CatalogEntry)
 	storeObjectsConsumed := make(map[string]bool)
-	storeObjects := s.Catalog.FindEntries(ctx, s.InstId, drivers.ObjectTypeUnspecified)
+	storeObjects := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeUnspecified)
 	for _, storeObject := range storeObjects {
 		storeObjectsMap[strings.ToLower(storeObject.Name)] = storeObject
 	}
@@ -300,9 +301,9 @@ func (s *Service) getMigrationItem(
 		Path: repoPath,
 	}
 
-	catalog, err := artifacts.Read(ctx, s.Repo, s.InstId, repoPath)
+	catalog, err := artifacts.Read(ctx, s.Repo, s.InstID, repoPath)
 	if err != nil {
-		if err != artifacts.ErrFileRead {
+		if !errors.Is(err, artifacts.ErrFileRead) {
 			item.Error = &runtimev1.ReconcileError{
 				Code:     runtimev1.ReconcileError_CODE_SYNTAX,
 				Message:  err.Error(),
@@ -326,7 +327,7 @@ func (s *Service) getMigrationItem(
 		for i, dep := range item.NormalizedDependencies {
 			item.NormalizedDependencies[i] = strings.ToLower(dep)
 		}
-		repoStat, _ := s.Repo.Stat(ctx, s.InstId, repoPath)
+		repoStat, _ := s.Repo.Stat(ctx, s.InstID, repoPath)
 		item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
 		if repoStat.LastUpdated.After(s.LastMigration) {
 			// assume creation until we see a catalog object
@@ -343,7 +344,7 @@ func (s *Service) getMigrationItem(
 	if !ok {
 		if item.CatalogInFile == nil {
 			item.Type = MigrationNoChange
-			if err == artifacts.ErrFileRead {
+			if errors.Is(err, artifacts.ErrFileRead) {
 				// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
 				return nil
 			}
@@ -580,7 +581,7 @@ func (s *Service) runMigrationItems(
 
 		if failed && !conf.DryRun {
 			// remove entity from catalog and OLAP if it failed validation or during migration
-			err := s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
+			err := s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
 			if err != nil {
 				// shouldn't ideally happen
 				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
@@ -629,12 +630,12 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	_, found := s.Catalog.FindEntry(ctx, s.InstId, item.Name)
+	_, found := s.Catalog.FindEntry(ctx, s.InstID, item.Name)
 	// create or updated
 	if found {
-		return s.Catalog.UpdateEntry(ctx, s.InstId, catalog)
+		return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstId, catalog)
+	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
@@ -660,13 +661,16 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 	// delete the old catalog object
 	// TODO: do we need a rename here?
-	err = s.Catalog.DeleteEntry(ctx, s.InstId, item.FromName)
+	err = s.Catalog.DeleteEntry(ctx, s.InstID, item.FromName)
+	if err != nil {
+		return err
+	}
 	// update the catalog object and create it in store
 	catalog, err := s.updateCatalogObject(ctx, item)
 	if err != nil {
 		return err
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstId, catalog)
+	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
@@ -685,7 +689,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	return s.Catalog.UpdateEntry(ctx, s.InstId, catalog)
+	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
@@ -705,12 +709,12 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 	}
 
 	// delete from catalog store
-	return s.Catalog.DeleteEntry(ctx, s.InstId, item.Name)
+	return s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
 }
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
-	repoStat, err := s.Repo.Stat(ctx, s.InstId, item.Path)
+	repoStat, err := s.Repo.Stat(ctx, s.InstID, item.Path)
 	if err != nil {
 		return nil, err
 	}

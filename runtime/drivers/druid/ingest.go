@@ -81,9 +81,9 @@ func Ingest(coordinatorURL, specJSON, datasourceName string, timeout time.Durati
 	}
 }
 
-func getTaskReport(coordinatorURL, taskId string) (*taskReport, error) {
+func getTaskReport(coordinatorURL, taskID string) (*taskReport, error) {
 	var res taskReport
-	path := fmt.Sprintf("/druid/indexer/v1/task/%s/reports", taskId)
+	path := fmt.Sprintf("/druid/indexer/v1/task/%s/reports", taskID)
 	err := sendRequest(coordinatorURL, http.MethodGet, path, "", &res)
 	if err != nil {
 		return nil, err

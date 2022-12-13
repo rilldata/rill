@@ -108,8 +108,8 @@ func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string)
 	return obj.GetMetricsView(), nil
 }
 
-func (s *Server) metricsQuery(ctx context.Context, instanceId string, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
-	rows, err := s.query(ctx, instanceId, &drivers.Statement{
+func (s *Server) metricsQuery(ctx context.Context, instanceID string, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
+	rows, err := s.query(ctx, instanceID, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
 		Priority: priority,
@@ -324,7 +324,7 @@ func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, e
 	for _, cond := range conds {
 		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude)
 		if err != nil {
-			return "", nil, fmt.Errorf("filter error: %s", err.Error())
+			return "", nil, fmt.Errorf("filter error: %w", err)
 		}
 		if condClause == "" {
 			continue
@@ -360,7 +360,7 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 			}
 			arg, err := protobufValueToAny(val)
 			if err != nil {
-				return "", nil, fmt.Errorf("filter error: %s", err.Error())
+				return "", nil, fmt.Errorf("filter error: %w", err)
 			}
 			args = append(args, arg)
 		}
@@ -380,7 +380,7 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 		for _, val := range cond.Like {
 			arg, err := protobufValueToAny(val)
 			if err != nil {
-				return "", nil, fmt.Errorf("filter error: %s", err.Error())
+				return "", nil, fmt.Errorf("filter error: %w", err)
 			}
 			args = append(args, arg)
 			// <dimension> (NOT) ILIKE ?

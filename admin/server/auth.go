@@ -123,7 +123,7 @@ func (s *Server) callback(c echo.Context) error {
 }
 
 func (s *Server) logout(c echo.Context) error {
-	logoutUrl, err := url.Parse("https://" + s.conf.AuthDomain + "/v2/logout")
+	logoutURL, err := url.Parse("https://" + s.conf.AuthDomain + "/v2/logout")
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -141,9 +141,9 @@ func (s *Server) logout(c echo.Context) error {
 	parameters := url.Values{}
 	parameters.Add("returnTo", returnTo.String())
 	parameters.Add("client_id", s.conf.AuthClientID)
-	logoutUrl.RawQuery = parameters.Encode()
+	logoutURL.RawQuery = parameters.Encode()
 
-	return c.Redirect(http.StatusTemporaryRedirect, logoutUrl.String())
+	return c.Redirect(http.StatusTemporaryRedirect, logoutURL.String())
 }
 
 func (s *Server) logoutCallback(c echo.Context) error {

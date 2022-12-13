@@ -63,7 +63,7 @@ func newCatalogCache() *catalogCache {
 	}
 }
 
-func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*catalog.Service, error) {
+func (c *catalogCache) get(ctx context.Context, rt *Runtime, instID string) (*catalog.Service, error) {
 	// TODO 1: opening a driver shouldn't take too long but we should still have an instance specific lock
 	// TODO 2: This is a cache on a cache, which may lead to undefined behavior
 	// TODO 3: Use LRU and not a map
@@ -71,7 +71,7 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	key := instId
+	key := instID
 
 	service, ok := c.cache[key]
 	if ok {
@@ -79,12 +79,12 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 	}
 
 	registry, _ := rt.metastore.RegistryStore()
-	inst, err := registry.FindInstance(ctx, instId)
+	inst, err := registry.FindInstance(ctx, instID)
 	if err != nil {
 		return nil, err
 	}
 
-	olapConn, err := rt.connCache.get(ctx, instId, inst.OLAPDriver, inst.OLAPDSN)
+	olapConn, err := rt.connCache.get(ctx, instID, inst.OLAPDriver, inst.OLAPDSN)
 	if err != nil {
 		return nil, err
 	}
@@ -111,13 +111,13 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 		catalogStore = store
 	}
 
-	repoConn, err := rt.connCache.get(ctx, instId, inst.RepoDriver, inst.RepoDSN)
+	repoConn, err := rt.connCache.get(ctx, instID, inst.RepoDriver, inst.RepoDSN)
 	if err != nil {
 		return nil, err
 	}
 	repoStore, _ := repoConn.RepoStore()
 
-	service = catalog.NewService(catalogStore, repoStore, olap, instId)
+	service = catalog.NewService(catalogStore, repoStore, olap, instID)
 	c.cache[key] = service
 	return service, nil
 }

@@ -12,7 +12,7 @@ type Service struct {
 	Catalog drivers.CatalogStore
 	Repo    drivers.RepoStore
 	Olap    drivers.OLAPStore
-	InstId  string
+	InstID  string
 
 	// temporary information. should this be persisted into olap?
 	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
@@ -25,12 +25,12 @@ type Service struct {
 	PathToName map[string]string
 }
 
-func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drivers.OLAPStore, instId string) *Service {
+func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drivers.OLAPStore, instID string) *Service {
 	return &Service{
 		Catalog: catalog,
 		Repo:    repo,
 		Olap:    olap,
-		InstId:  instId,
+		InstID:  instID,
 
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
@@ -39,9 +39,9 @@ func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drive
 }
 
 func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
-	return s.Catalog.FindEntries(ctx, s.InstId, typ)
+	return s.Catalog.FindEntries(ctx, s.InstID, typ)
 }
 
 func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
-	return s.Catalog.FindEntry(ctx, s.InstId, name)
+	return s.Catalog.FindEntry(ctx, s.InstID, name)
 }

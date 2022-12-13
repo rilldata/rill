@@ -239,7 +239,7 @@ func sMap(k string, v float64) map[string]float64 {
  */
 func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	ctx context.Context,
-	instanceId string,
+	instanceID string,
 	priority int32,
 	tableName string,
 	timestampColumn string,
@@ -312,7 +312,7 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
       ORDER BY bin
     `
 
-	rows, err := s.query(ctx, instanceId, &drivers.Statement{
+	rows, err := s.query(ctx, instanceID, &drivers.Statement{
 		Query:    sql,
 		Priority: int(priority),
 	})
