@@ -48,7 +48,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
       $metaQuery.data.model,
-      { columnName: $metaQuery.data.timeDimension },
+      { columnName: $metaQuery.data.timeDimension }
     );
   }
 
