@@ -2,7 +2,7 @@
   import type { V1Model } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import {
-    generateMeasuresAndDimensions,
+    addQuickMetricsToDashboardYAML,
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
   import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
@@ -22,7 +22,7 @@
     // add in the first timestamp column available.
     // if no timestamp column available, we currently do nothing in this case.
     // later, we'll remove the requiremen t for a timeseries field.
-    const newYAMLString = generateMeasuresAndDimensions(yaml, selectedModel);
+    const newYAMLString = addQuickMetricsToDashboardYAML(yaml, selectedModel);
     handlePutAndMigrate(newYAMLString);
 
     // invalidateMetricsView(queryClient, metricsDefId);
