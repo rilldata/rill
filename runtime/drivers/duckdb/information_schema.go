@@ -114,8 +114,8 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 
 		for idx, colName := range columnNames {
-			databaseType := columnTypes[idx].(string)
-			nullable := columnNullable[idx].(bool)
+			databaseType, _ := columnTypes[idx].(string)
+			nullable, _ := columnNullable[idx].(bool)
 			colType, err := databaseTypeToPB(databaseType, nullable)
 			if err != nil {
 				return nil, err

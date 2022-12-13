@@ -71,7 +71,7 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		defer tx.Rollback()
+		defer func() { _ = tx.Rollback() }()
 
 		// Run migration
 		_, err = tx.ExecContext(ctx, string(sql))

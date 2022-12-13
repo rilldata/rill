@@ -101,5 +101,8 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(res)
+	_, err = w.Write(res)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+	}
 }

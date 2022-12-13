@@ -373,7 +373,10 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 			return
 		}
 		w.Header().Add("Content-Type", "application/json")
-		w.Write(data)
+		_, err = w.Write(data)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+		}
 	})
 }
 
