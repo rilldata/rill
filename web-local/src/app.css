@@ -29,7 +29,7 @@
   }
 
   .ui-copy {
-    @apply text-gray-700 dark:text-white;
+    @apply text-gray-700 dark:text-white font-light;
   }
 
   .ui-copy-muted {
@@ -37,7 +37,7 @@
   }
 
   .ui-copy-strong {
-    @apply text-gray-700 dark:text-white font-semibold;
+    @apply text-red-700 dark:text-white font-medium;
   }
 
   .ui-copy-icon {
@@ -99,7 +99,7 @@
   h2,
   h3,
   h4 {
-    @apply font-bold;
+    @apply font-semibold;
   }
 }
 
