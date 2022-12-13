@@ -118,7 +118,7 @@
                     {table.name}
                   </div>
 
-                  <div class="text-gray-500 italic">
+                  <div class="text-gray-500">
                     {#if table.totalRows}
                       {`${formatInteger(table.totalRows)} rows` || ""}
                     {/if}

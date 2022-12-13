@@ -140,7 +140,7 @@
       <div style:padding-left="24px">
         {#if point?.ts}
           <div
-            class="absolute italic text-gray-600"
+            class="absolute text-gray-500"
             transition:fly|local={{ duration: 100, y: 4 }}
           >
             {formatDateByInterval(interval, point.ts)}
