@@ -63,7 +63,7 @@ rill init --example=sf_props
 
 ## Running Rill in another directory
 
-You can explicity specify a project folder outside of the current folder using the `--project` option:
+You can explicitly specify a project folder outside of the current folder using the `--project` option:
 
 ```
 rill init --project /path/to/project
