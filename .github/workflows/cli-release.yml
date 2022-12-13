@@ -2,10 +2,12 @@ name: Release Rill CLI
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "**"
-  schedule:
-    - cron: '0 0 * * *'
+    branches:
+      - docker
+#    tags:
+#      - "**"
+#  schedule:
+#    - cron: '0 0 * * *'
 jobs:
   release:
     name: Release rill-developer
@@ -59,7 +61,7 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release ${NIGHTLY}
+              release ${NIGHTLY} --snapshot
 
       - name: Authenticate GCS for nightly upload
         if: github.event_name == 'schedule'

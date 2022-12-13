@@ -5,40 +5,40 @@ release:
   draft: false
 
 builds:
-  - id: darwin_amd64
-    main: ./cli/main.go
-    binary: rill
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    env:
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-      - CC=o64-clang
-      - CXX=o64-clang++
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
-  - id: darwin_arm64
-    main: ./cli/main.go
-    binary: rill
-    goos:
-      - darwin
-    goarch:
-      - arm64
-    env:
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-      - CC=oa64-clang
-      - CXX=oa64-clang++
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
+#  - id: darwin_amd64
+#    main: ./cli/main.go
+#    binary: rill
+#    goos:
+#      - darwin
+#    goarch:
+#      - amd64
+#    env:
+#      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+#      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+#      - CC=o64-clang
+#      - CXX=o64-clang++
+#    flags:
+#      - "-mod=readonly"
+#    ldflags:
+#      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+#
+#  - id: darwin_arm64
+#    main: ./cli/main.go
+#    binary: rill
+#    goos:
+#      - darwin
+#    goarch:
+#      - arm64
+#    env:
+#      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+#      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+#      - CC=oa64-clang
+#      - CXX=oa64-clang++
+#    flags:
+#      - "-mod=readonly"
+#    ldflags:
+#      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+#
   - id: linux
     main: ./cli/main.go
     binary: rill
@@ -89,6 +89,10 @@ brews:
     commit_author:
       name: rilldata
       email: support@rilldata.com
+
+dockers:
+  - image_templates:
+    - rilldata/rill
 
 archives:
   - files:
