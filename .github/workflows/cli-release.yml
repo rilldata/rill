@@ -44,6 +44,12 @@ jobs:
           echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Release Publish
         run: |-
           if [[ ${{ github.event_name }} == "schedule" ]]; then
