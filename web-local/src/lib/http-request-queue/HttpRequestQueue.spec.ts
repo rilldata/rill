@@ -132,7 +132,7 @@ async function mockedQuery(url: string, _entry: RequestQueueEntry) {
 
   switch (type) {
     case "queries":
-      key = type + "__" + parts[0] + "__" + parts[2] + "__" + (parts[4] ?? "");
+      key = type + "__" + parts[0] + "__" + parts[2] + "__" + (u.searchParams.get("columnName") ?? "");
       break;
 
     case "metrics-views":
@@ -154,7 +154,7 @@ async function mockedQuery(url: string, _entry: RequestQueueEntry) {
 
 function getActualUrls(fetchMock: Mock) {
   return fetchMock.mock.calls.map((args) =>
-    args[0].replace("/v1/instances/i/", "").replace(/\?.*$/, "")
+    args[0].replace("/v1/instances/i/", "").replace(/&?priority=[0-9]+$/, "")
   );
 }
 
@@ -185,12 +185,12 @@ function getProfilingRequests(
     ...Array(cols)
       .fill(0)
       .map(
-        (_, i) => `queries/column-cardinality/tables/${table}?column_name=c${i}`
+        (_, i) => `queries/column-cardinality/tables/${table}?columnName=c${i}`
       ),
     ...Array(cols)
       .fill(0)
       .map(
-        (_, i) => `queries/numeric-histogram/tables/${table}?column_name=c${i}`
+        (_, i) => `queries/numeric-histogram/tables/${table}?columnName=c${i}`
       ),
   ];
   if (end === -1) {
