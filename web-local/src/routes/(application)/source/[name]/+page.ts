@@ -1,5 +1,7 @@
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error } from "@sveltejs/kit";
 
 export const ssr = false;
@@ -11,7 +13,7 @@ export async function load({ params }) {
 
     await runtimeServiceGetFile(
       localConfig.instance_id,
-      `sources/${params.name}.yaml`
+      getFilePathFromNameAndType(params.name, EntityType.Table)
     );
 
     return {

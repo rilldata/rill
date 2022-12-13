@@ -10,6 +10,7 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
 
@@ -43,7 +44,7 @@
 
   $: getSource = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
-    `sources/${sourceName}.yaml`
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
