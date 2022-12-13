@@ -61,12 +61,12 @@
   }
 
   .ui-copy-disabled {
-    @apply ui-copy-inactive italic;
+    @apply ui-copy-inactive;
   }
 
   /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
   .ui-copy-disabled-faint {
-    @apply italic text-gray-400 dark:text-gray-400;
+    @apply text-gray-400 dark:text-gray-400;
   }
 
   .ui-divider {
