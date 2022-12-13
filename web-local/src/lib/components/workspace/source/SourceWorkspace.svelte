@@ -10,6 +10,7 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
 
@@ -43,7 +44,7 @@
 
   $: getSource = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
-    `sources/${sourceName}.yaml`
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
@@ -59,7 +60,7 @@
   );
   $: remoteConnectorNames = $connectors?.data?.connectors
     ?.map((connector) => connector.name)
-    ?.filter((name) => name !== "file");
+    ?.filter((name) => name !== "local_file");
 
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createSource = useRuntimeServicePutFileAndReconcile();
@@ -118,7 +119,7 @@
           class="errors flex flex-col items-center pt-8 gap-y-4 m-auto mt-0 text-gray-500"
           style:width="500px"
         >
-          {#if source?.type === "file"}
+          {#if source?.type === "local_file"}
             <div class="text-center">
               The data file for <span class="font-bold">{sourceName}</span> has not
               been imported as a source.

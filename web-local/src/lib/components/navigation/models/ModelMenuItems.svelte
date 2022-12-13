@@ -12,6 +12,7 @@
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { getName } from "../../../../common/utils/incrementName";
@@ -68,7 +69,10 @@
       {
         data: {
           instanceId: $runtimeStore.instanceId,
-          path: `dashboards/${newDashboardName}.yaml`,
+          path: getFilePathFromNameAndType(
+            newDashboardName,
+            EntityType.MetricsDefinition
+          ),
           blob: generatedYAML,
           create: true,
           createOnly: true,

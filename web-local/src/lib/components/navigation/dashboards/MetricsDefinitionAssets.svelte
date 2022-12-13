@@ -29,7 +29,7 @@
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
@@ -61,7 +61,7 @@
     instanceId: string,
     metricViewName: string
   ) {
-    const filePath = getFileFromName(
+    const filePath = getFilePathFromNameAndType(
       metricViewName,
       EntityType.MetricsDefinition
     );
@@ -80,7 +80,10 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
-    const filePath = `dashboards/${newDashboardName}.yaml`;
+    const filePath = getFilePathFromNameAndType(
+      newDashboardName,
+      EntityType.MetricsDefinition
+    );
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
@@ -170,7 +173,10 @@
     entities: Record<string, FileArtifactsData>,
     name: string
   ) => {
-    const dashboardPath = getFileFromName(name, EntityType.MetricsDefinition);
+    const dashboardPath = getFilePathFromNameAndType(
+      name,
+      EntityType.MetricsDefinition
+    );
     return entities[dashboardPath];
   };
 </script>

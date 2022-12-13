@@ -1,4 +1,4 @@
-package file
+package localfile
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	connectors.Register("file", connector{})
+	connectors.Register("local_file", connector{})
 }
 
 var spec = connectors.Spec{

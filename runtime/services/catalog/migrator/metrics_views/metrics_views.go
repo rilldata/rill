@@ -18,6 +18,8 @@ const SourceNotSelected = "metrics view source not selected"
 const SourceNotFound = "metrics view source not found"
 const TimestampNotSelected = "metrics view timestamp not selected"
 const TimestampNotFound = "metrics view selected timestamp not found"
+const MissingDimension = "at least one dimension should be present"
+const MissingMeasure = "at least one measure should be present"
 
 type metricsViewMigrator struct{}
 
@@ -79,6 +81,13 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 		}
 	}
+	if len(mv.Dimensions) == 0 {
+		validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
+			FilePath: catalog.Path,
+			Message:  MissingDimension,
+		})
+	}
 
 	for i, measure := range mv.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
@@ -90,6 +99,13 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 				PropertyPath: []string{"Measures", strconv.Itoa(i)},
 			})
 		}
+	}
+	if len(mv.Measures) == 0 {
+		validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
+			FilePath: catalog.Path,
+			Message:  MissingMeasure,
+		})
 	}
 
 	return validationErrors

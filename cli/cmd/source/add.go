@@ -64,7 +64,7 @@ func AddCmd(ver string) *cobra.Command {
 
 			src := &runtimev1.Source{
 				Name:       artifacts.SanitizedName(sourceName),
-				Connector:  "file",
+				Connector:  "local_file",
 				Properties: propsPB,
 			}
 

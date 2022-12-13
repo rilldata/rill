@@ -16,7 +16,7 @@ import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
 
 // TODO: timeseries
 const UrlExtractorRegex =
-  /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)\/)?/;
+  /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
 
 // intentionally 1 less than max to allow for non profiling query calls
 const QueryQueueSize = 5;
