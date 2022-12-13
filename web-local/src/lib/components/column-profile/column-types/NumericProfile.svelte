@@ -45,7 +45,7 @@
     useRuntimeServiceGetDescriptiveStatistics(
       $runtimeStore?.instanceId,
       objectName,
-      columnName
+      { columnName: columnName },
     ),
     ($query) => {
       return $query?.data?.numericSummary?.numericStatistics;

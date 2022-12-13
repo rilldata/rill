@@ -23,8 +23,7 @@ export function getSummaries(objectName, instanceId, profileColumnResults) {
           useRuntimeServiceGetNullCount(
             instanceId,
             objectName,
-            column.name,
-            {},
+            { columnName: column.name },
             {
               query: { keepPreviousData: true },
             }
@@ -32,8 +31,7 @@ export function getSummaries(objectName, instanceId, profileColumnResults) {
           useRuntimeServiceGetCardinalityOfColumn(
             instanceId,
             objectName,
-            column.name,
-            {},
+            { columnName: column.name },
             { query: { keepPreviousData: true } }
           ),
         ],
@@ -57,7 +55,7 @@ export function getNullPercentage(instanceId, objectName, columnName) {
   const nullQuery = useRuntimeServiceGetNullCount(
     instanceId,
     objectName,
-    columnName
+    { columnName },
   );
   const totalRowsQuery = useRuntimeServiceGetTableCardinality(
     instanceId,
@@ -75,7 +73,7 @@ export function getCountDistinct(instanceId, objectName, columnName) {
   const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
     instanceId,
     objectName,
-    columnName
+    { columnName },
   );
 
   const totalRowsQuery = useRuntimeServiceGetTableCardinality(
@@ -98,8 +96,8 @@ export function getTopK(instanceId, objectName, columnName) {
   const topKQuery = useRuntimeServiceGetTopK(
     instanceId,
     objectName,
-    columnName,
     {
+      columnName: columnName,
       agg: "count(*)",
       k: 75,
     }
@@ -128,7 +126,7 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
   const smallestTimeGrain = useRuntimeServiceEstimateSmallestTimeGrain(
     instanceId,
     objectName,
-    columnName
+    { columnName },
   );
 
   return derived(
@@ -160,7 +158,7 @@ export function getNumericHistogram(instanceId, objectName, columnName) {
   const histogramQuery = useRuntimeServiceGetNumericHistogram(
     instanceId,
     objectName,
-    columnName
+    { columnName },
   );
   return derived(histogramQuery, ($query) => {
     return $query?.data?.numericSummary?.numericHistogramBins?.bins;
@@ -171,7 +169,7 @@ export function getRugPlotData(instanceId, objectName, columnName) {
   const outliersQuery = useRuntimeServiceGetRugHistogram(
     instanceId,
     objectName,
-    columnName
+    { columnName },
   );
   return derived(outliersQuery, ($query) => {
     return $query?.data?.numericSummary?.numericOutliers?.outliers;
