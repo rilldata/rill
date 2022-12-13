@@ -28,6 +28,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
 		{"file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
 		{"file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
+		{"file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
 		//{"file", testdataPath + "AdBids.parquet.gz", nil},
