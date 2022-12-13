@@ -25,6 +25,15 @@ initTmpDir() {
     cd $TMP_DIR
 }
 
+# Check for dependent commands
+checkCommand() {
+    if ! command -v $1 &> /dev/null
+    then
+        echo "'$1' command not be found. This scripts depends on this command. Please install and retry."
+        exit
+    fi
+}
+
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
     CDN="cdn.rilldata.com"
@@ -69,6 +78,9 @@ case $1 in
     *) VERSION=latest;;
 esac
 
+checkCommand shasum
+checkCommand curl
+checkCommand unzip
 initPlatform
 initTmpDir
 downloadBinary
