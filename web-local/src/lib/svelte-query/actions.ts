@@ -144,7 +144,7 @@ export const useCreateDashboardFromSource = <
 
     await runtimeServicePutFileAndReconcile({
       instanceId: data.instanceId,
-      path: `models/${data.newModelName}.sql`,
+      path: getFilePathFromNameAndType(data.newModelName, EntityType.Model),
       blob: `select * from ${data.sourceName}`,
     });
 
