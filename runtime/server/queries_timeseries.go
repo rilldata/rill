@@ -179,7 +179,7 @@ func (s *Server) normaliseTimeRange(ctx context.Context, request *runtimev1.Gene
 		if err != nil {
 			return nil, err
 		}
-		if r.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		if r == nil || r.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			return &result, nil
 		}
 		result = runtimev1.TimeSeriesTimeRange{
