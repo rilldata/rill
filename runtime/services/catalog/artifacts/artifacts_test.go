@@ -40,7 +40,7 @@ func TestSourceReadWrite(t *testing.T) {
 					}),
 				},
 			},
-			`type: file
+			`type: local_file
 path: data/source.csv
 csv.delimiter: '|'
 `,
@@ -181,7 +181,7 @@ func TestReadFailure(t *testing.T) {
 		{
 			"InvalidSource",
 			"sources/InvalidSource.yaml",
-			`type: file
+			`type: local_file
   uri: data/source.csv
 `,
 		},
