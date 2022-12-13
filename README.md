@@ -20,8 +20,7 @@ After installation, launch the application by running `rill start` or try an exa
 rill init --example
 ```
 
-![home-demo](https://user-images.githubusercontent.com/5587788/180313797-ef50ec6e-fc2d-4072-bb77-b2acf59205d7.gif "770784519")
-
+![home-demo](https://user-images.githubusercontent.com/5587788/207410129-bd4fb84b-dc3d-494c-9cf1-2322fcf0d503.gif "770784519")
 
 ## We want to hear from you
 
