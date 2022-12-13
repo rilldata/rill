@@ -6,7 +6,7 @@ release:
 
 before:
   hooks:
-    - docker login ghcr.io -u ${{ .Env.GITHUB_ACTOR }} -p ${{ .Env.GITHUB_TOKEN }}
+    - echo ${{ .Env.DOCKERHUB_PASS }} | docker login -u ${{ .Env.DOCKERHUB_USER }} --password-stdin
 
 builds:
 #  - id: darwin_amd64
