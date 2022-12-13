@@ -69,7 +69,7 @@
             sourceName: tableName,
             path: filePath,
           },
-          "file"
+          "local_file"
         );
         // TODO: errors
         errors = await createSource(

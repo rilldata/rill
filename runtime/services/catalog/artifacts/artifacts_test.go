@@ -33,7 +33,7 @@ func TestSourceReadWrite(t *testing.T) {
 				Type: drivers.ObjectTypeSource,
 				Object: &runtimev1.Source{
 					Name:      "Source",
-					Connector: "file",
+					Connector: "local_file",
 					Properties: toProtoStruct(map[string]any{
 						"path":          "data/source.csv",
 						"csv.delimiter": "|",

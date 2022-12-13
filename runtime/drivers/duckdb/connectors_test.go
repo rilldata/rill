@@ -23,14 +23,14 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		Path            string
 		AdditionalProps map[string]any
 	}{
-		{"file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
-		{"file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
-		{"file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
-		{"file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
-		{"file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
-		//{"file", testdataPath + "AdBids.parquet.gz", nil},
+		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},
 		// only enable to do adhoc tests. needs credentials to work
 		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv", nil},
 		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv.gz", nil},
@@ -96,7 +96,7 @@ func TestCSVDelimiter(t *testing.T) {
 		RepoDSN:    ".",
 	}, &connectors.Source{
 		Name:      "foo",
-		Connector: "file",
+		Connector: "local_file",
 		Properties: map[string]any{
 			"path": testDelimiterCsvPath,
 		},
@@ -115,7 +115,7 @@ func TestCSVDelimiter(t *testing.T) {
 		RepoDSN:    ".",
 	}, &connectors.Source{
 		Name:      "foo",
-		Connector: "file",
+		Connector: "local_file",
 		Properties: map[string]any{
 			"path":          testDelimiterCsvPath,
 			"csv.delimiter": "+",

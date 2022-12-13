@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/connectors/file"
+	"github.com/rilldata/rill/runtime/connectors/local_file"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -21,7 +21,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 	// Driver-specific overrides
 	switch source.Connector {
-	case "file":
+	case "local_file":
 		return c.ingestFile(ctx, env, source)
 	}
 
@@ -35,7 +35,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 }
 
 func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	conf, err := file.ParseConfig(source.Properties)
+	conf, err := local_file.ParseConfig(source.Properties)
 	if err != nil {
 		return err
 	}
