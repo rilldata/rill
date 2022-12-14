@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func CreateSource(t *testing.T, s *catalog.Service, name string, file string, path string) string {
+func CreateSource(t *testing.T, s *catalog.Service, name string, file string, sourcePath string) string {
 	absFile, err := filepath.Abs(file)
 	require.NoError(t, err)
 
@@ -26,7 +26,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 	err = artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeSource,
-		Path: path,
+		Path: sourcePath,
 		Object: &runtimev1.Source{
 			Name:      name,
 			Connector: "local_file",
@@ -36,18 +36,18 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstID, path)
+	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
 
-func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path string) string {
+func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, sourcePath string) string {
 	ctx := context.Background()
 	time.Sleep(time.Millisecond * 10)
 	err := artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
 		Name: name,
 		Type: drivers.ObjectTypeModel,
-		Path: path,
+		Path: sourcePath,
 		Object: &runtimev1.Model{
 			Name:    name,
 			Sql:     sql,
@@ -55,22 +55,22 @@ func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, path
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstID, path)
+	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
 
-func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, path string) string {
+func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.MetricsView, sourcePath string) string {
 	ctx := context.Background()
 	time.Sleep(time.Millisecond * 10)
 	err := artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
 		Name:   metricsView.Name,
 		Type:   drivers.ObjectTypeMetricsView,
-		Path:   path,
+		Path:   sourcePath,
 		Object: metricsView,
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstID, path)
+	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -83,8 +83,8 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 	return s
 }
 
-func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
-	catalogEntry := AssertInCatalogStore(t, s, name, path)
+func AssertTable(t *testing.T, s *catalog.Service, name string, sourcePath string) {
+	catalogEntry := AssertInCatalogStore(t, s, name, sourcePath)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{
 		Query:    fmt.Sprintf("select count(*) as count from %s", name),
@@ -115,11 +115,11 @@ func AssertTable(t *testing.T, s *catalog.Service, name string, path string) {
 	require.Equal(t, schema.Fields, table.Schema.Fields)
 }
 
-func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, path string) *drivers.CatalogEntry {
+func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {
 	catalogEntry, ok := s.Catalog.FindEntry(context.Background(), s.InstID, name)
 	require.True(t, ok)
 	require.Equal(t, name, catalogEntry.Name)
-	require.Equal(t, path, catalogEntry.Path)
+	require.Equal(t, sourcePath, catalogEntry.Path)
 	return catalogEntry
 }
 

@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, ver string, commit string, buildDate string) {
+func Execute(ctx context.Context, ver, commit, buildDate string) {
 	err := runCmd(ctx, ver, commit, buildDate)
 	if err != nil {
 		os.Exit(1)

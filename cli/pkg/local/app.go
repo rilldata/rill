@@ -373,7 +373,7 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := json.Marshal(info)
 		if err != nil {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		w.Header().Add("Content-Type", "application/json")
@@ -389,7 +389,7 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 func (a *App) trackingHandler(info *localInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !info.AnalyticsEnabled {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -414,7 +414,7 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		defer resp.Body.Close()
 
 		// Done
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	})
 }
 

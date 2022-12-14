@@ -93,7 +93,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		defer func() { _ = tx.Rollback() }()
+		defer tx.Rollback()
 
 		// Run migration
 		_, err = tx.ExecContext(ctx, string(sql))
