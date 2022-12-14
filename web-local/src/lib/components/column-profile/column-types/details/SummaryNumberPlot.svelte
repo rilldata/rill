@@ -51,7 +51,7 @@
             colorClass="ui-copy-muted"
           >
             <tspan>
-              <tspan class="font-semibold ui-copy-muted">{label}</tspan>
+              <tspan class="ui-copy-strong ui-copy-muted">{label}</tspan>
               <tspan class="ui-copy-disabled"
                 >{format ? format(value) : value}</tspan
               >
