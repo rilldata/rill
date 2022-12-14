@@ -63,7 +63,7 @@
     >
   {/each}
   <div
-    class="italic px-4 py-1 text-gray-600 flex flex-row  gap-x-2"
+    class="px-4 py-1 text-gray-600 flex flex-row  gap-x-2"
     style:font-size="10px"
   >
     <span class="text-gray-400">

@@ -44,7 +44,7 @@
       {@const printValue = value === null ? " null ∅" : value}
       <Tooltip location="right" alignment="center" distance={16}>
         <div
-          class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
+          class="text-gray-500 text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
           use:shiftClickAction
           on:shift-click={async () => {
             await navigator.clipboard.writeText(value);
@@ -58,7 +58,7 @@
           {printValue}
         </div>
         <TooltipContent slot="tooltip-content">
-          <div class="pt-1 pb-1 italic" style:max-width="360px">
+          <div class="pt-1 pb-1" style:max-width="360px">
             {printValue}
           </div>
           <TooltipShortcutContainer>
@@ -104,7 +104,7 @@
         </div>
 
         <TooltipContent slot="tooltip-content">
-          <div class="pt-1 pb-1 italic" style:max-width="360px">
+          <div class="pt-1 pb-1" style:max-width="360px">
             {formatCount(count)} ({percentage})
           </div>
           <TooltipShortcutContainer>
