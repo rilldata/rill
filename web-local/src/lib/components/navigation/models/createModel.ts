@@ -1,9 +1,9 @@
 import { goto } from "$app/navigation";
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
-import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import { getName } from "@rilldata/web-local/common/utils/incrementName";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+import { getName } from "@rilldata/web-local/lib/util/incrementName";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
 import { notifications } from "../../notifications";

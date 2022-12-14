@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
+  import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
+  import { ValidationState } from "@rilldata/web-local/lib/temp/metrics";
   import AlertCircle from "../icons/AlertCircle.svelte";
   import AlertTriangle from "../icons/AlertTriangle.svelte";
 
@@ -8,7 +9,6 @@
     CellConfigInput,
     InputValidation,
   } from "./ColumnConfig";
-  import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 

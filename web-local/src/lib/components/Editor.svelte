@@ -53,8 +53,8 @@
     useRuntimeServiceListCatalogEntries,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { Debounce } from "@rilldata/web-local/common/utils/Debounce";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import { createEventDispatcher, onMount } from "svelte";
   import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
