@@ -29,7 +29,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 		Path: path,
 		Object: &runtimev1.Source{
 			Name:      name,
-			Connector: "file",
+			Connector: "local_file",
 			Properties: toProtoStruct(map[string]any{
 				"path": absFile,
 			}),

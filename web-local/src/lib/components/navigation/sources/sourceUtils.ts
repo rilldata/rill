@@ -7,7 +7,7 @@ export function compileCreateSourceYAML(
 ) {
   const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.`;
 
-  if (connectorName !== "file") {
+  if (connectorName !== "local_file") {
     values.uri = values.path;
     delete values.path;
   }

@@ -33,14 +33,14 @@ func TestSourceReadWrite(t *testing.T) {
 				Type: drivers.ObjectTypeSource,
 				Object: &runtimev1.Source{
 					Name:      "Source",
-					Connector: "file",
+					Connector: "local_file",
 					Properties: toProtoStruct(map[string]any{
 						"path":          "data/source.csv",
 						"csv.delimiter": "|",
 					}),
 				},
 			},
-			`type: file
+			`type: local_file
 path: data/source.csv
 csv.delimiter: '|'
 `,
@@ -181,7 +181,7 @@ func TestReadFailure(t *testing.T) {
 		{
 			"InvalidSource",
 			"sources/InvalidSource.yaml",
-			`type: file
+			`type: local_file
   uri: data/source.csv
 `,
 		},

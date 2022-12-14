@@ -128,7 +128,8 @@ func (s *Server) metricsQuery(ctx context.Context, instanceId string, priority i
 }
 
 func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtimev1.MetricsView) (string, []any, error) {
-	selectCols := []string{req.DimensionName}
+	dimName := quoteName(req.DimensionName)
+	selectCols := []string{dimName}
 	for _, n := range req.MeasureNames {
 		found := false
 		for _, m := range mv.Measures {
@@ -173,6 +174,7 @@ func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
+		orderClause += " NULLS LAST"
 	}
 
 	if req.Limit == 0 {
@@ -183,7 +185,7 @@ func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
-		req.DimensionName,
+		dimName,
 		orderClause,
 		req.Limit,
 	)

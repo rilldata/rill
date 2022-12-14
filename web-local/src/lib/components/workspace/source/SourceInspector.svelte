@@ -140,7 +140,7 @@
         return "GCS";
       case "https":
         return "http(s)";
-      case "file":
+      case "local_file":
         return "Local file";
       default:
         return "";

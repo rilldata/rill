@@ -51,8 +51,10 @@
             colorClass="ui-copy-muted"
           >
             <tspan>
-              <tspan class="ui-copy-strong">{label}:</tspan>
-              <tspan class="">{format ? format(value) : value}</tspan>
+              <tspan class="font-semibold ui-copy-muted">{label}</tspan>
+              <tspan class="ui-copy-disabled"
+                >{format ? format(value) : value}</tspan
+              >
             </tspan>
           </DynamicallyPlacedLabel>
         </GraphicContext>

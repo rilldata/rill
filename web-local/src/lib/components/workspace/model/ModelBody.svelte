@@ -24,7 +24,7 @@
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
@@ -50,7 +50,7 @@
 
   let showPreview = true;
   let modelPath: string;
-  $: modelPath = getFileFromName(modelName, EntityType.Model);
+  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 

@@ -444,13 +444,63 @@ measures:
 	require.Equal(t, "count(*)", mv.Measures[0].Expression)
 	require.Len(t, mv.Dimensions, 1)
 	require.Equal(t, "publisher", mv.Dimensions[0].Name)
+
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+timeseries: timestamp
+timegrains:
+- 1 day
+- 1 month
+default_timegrain: ""
+dimensions:
+- label: Publisher
+  property: publisher
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+  ignore: true
+- expression: avg(bid_price)
+  ignore: true
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
+	require.Equal(t, metrics_views.MissingMeasure, result.Errors[0].Message)
+
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+timeseries: timestamp
+timegrains:
+- 1 day
+- 1 month
+default_timegrain: ""
+dimensions:
+- label: Publisher
+  property: publisher
+  ignore: true
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+- expression: avg(bid_price)
+  ignore: true
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
+	require.Equal(t, metrics_views.MissingDimension, result.Errors[0].Message)
 }
 
 func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: file
+	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: local_file
 path:
  - data/source.csv`))
 	require.NoError(t, err)

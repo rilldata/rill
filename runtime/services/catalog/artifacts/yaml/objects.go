@@ -61,7 +61,7 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 		return nil, err
 	}
 
-	if source.Path != "" && catalog.GetSource().Connector != "file" {
+	if source.Path != "" && catalog.GetSource().Connector != "local_file" {
 		source.URI = source.Path
 		source.Path = ""
 	}
@@ -81,7 +81,7 @@ func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) 
 
 func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, error) {
 	props := map[string]interface{}{}
-	if source.Type == "file" {
+	if source.Type == "local_file" {
 		props["path"] = source.Path
 	} else {
 		props["path"] = source.URI

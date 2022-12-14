@@ -37,7 +37,7 @@
 </script>
 
 <TooltipContent>
-  <div class="pt-1 pb-1 italic">
+  <div class="pt-1 pb-1">
     {#if zoomed}
       <div
         class="grid space-between w-full"
