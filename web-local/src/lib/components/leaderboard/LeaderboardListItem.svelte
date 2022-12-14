@@ -69,7 +69,7 @@
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
-        <div class:font-italic={isActive}>
+        <div>
           <slot name="title" />
         </div>
       </div>

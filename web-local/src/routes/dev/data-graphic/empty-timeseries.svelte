@@ -78,7 +78,7 @@
   <TimeSeriesChartContainer start={startValue} end={endValue}>
     <div style:padding-left="10px" style:padding-top="30px">
       {#if point?.ts}
-        <div class="absolute italic text-gray-600">
+        <div class="absolute text-gray-600">
           {new Intl.DateTimeFormat("en-US", {
             dateStyle: "medium",
             timeStyle: "medium",

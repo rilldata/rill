@@ -49,7 +49,7 @@
           </div>
           <div class="ml-5">
             <h5 class="ui-copy-strong">{step.heading}</h5>
-            <p class="italic">{step.description}</p>
+            <p>{step.description}</p>
           </div>
         </div>
       {/each}

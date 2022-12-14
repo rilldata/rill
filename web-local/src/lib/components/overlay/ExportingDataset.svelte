@@ -8,6 +8,6 @@
 >
   <div slot="title">
     <span class="ui-copy-strong">Exporting dataset</span>
-    <div class="italic">{tableName}</div>
+    <div>{tableName}</div>
   </div>
 </BlockingOverlayContainer>

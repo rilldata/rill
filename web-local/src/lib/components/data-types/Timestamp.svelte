@@ -9,7 +9,7 @@
 
 <Base
   {isNull}
-  classes="ui-copy-number mono italic font-semibold {customStyle} {dark
+  classes="ui-copy-number mono font-semibold {customStyle} {dark
     ? 'text-slate-200'
     : 'text-slate-500'} {inTable && 'text-left'}"
   {dark}

@@ -190,11 +190,7 @@
     class="flex flex-row items-center justify-between"
     class:text-gray-300={modelHasError}
   >
-    <div
-      class="italic text-gray-500"
-      class:italic={modelHasError}
-      class:text-gray-500={modelHasError}
-    >
+    <div class="text-gray-500" class:text-gray-500={modelHasError}>
       <WithModelResultTooltip {modelHasError}>
         <div>
           {#if validRollup(rollup)}
@@ -224,7 +220,6 @@
     <div
       class="text-gray-800 ui-copy-strong"
       class:font-normal={modelHasError}
-      class:italic={modelHasError}
       class:text-gray-500={modelHasError}
     >
       {#if $inputCardinalities > 0}
@@ -242,7 +237,6 @@
     <WithModelResultTooltip {modelHasError}>
       <div
         class:font-normal={modelHasError}
-        class:italic={modelHasError}
         class:text-gray-500={modelHasError}
       >
         {#if columnDelta > 0}
@@ -265,7 +259,6 @@
     <div
       class="text-gray-800 ui-copy-strong"
       class:font-normal={modelHasError}
-      class:italic={modelHasError}
       class:text-gray-500={modelHasError}
     >
       {outputColumnNum} columns

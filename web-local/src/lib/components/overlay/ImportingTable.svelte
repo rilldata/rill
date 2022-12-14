@@ -9,7 +9,7 @@
 >
   <div slot="title">
     <span class="ui-copy-strong">Importing source</span>
-    <span class="italic">{importName}</span>
+    <span>{importName}</span>
     <div>as <span class="ui-copy-strong">{tableName}</span></div>
   </div>
 </BlockingOverlayContainer>

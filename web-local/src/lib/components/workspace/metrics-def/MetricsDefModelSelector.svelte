@@ -22,7 +22,7 @@
   </div>
   <div>
     <select
-      class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:ui-copy-strong hover:border-gray-100"
+      class="hover:bg-gray-100 rounded border border-6 border-transparent hover:ui-copy-strong hover:border-gray-100"
       on:change={(evt) => {
         updateMetricsDefinitionHandler(evt.target?.value);
       }}
