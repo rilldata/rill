@@ -20,7 +20,7 @@
     if (position === "top") {
       positionClasses = "absolute left-0 top-0";
     } else if (position === "left") {
-      positionClasses = "absolute left-0 top-0 text-center font-semibold";
+      positionClasses = "absolute left-0 top-0 text-center ui-copy-strong";
       offsetTop = true;
     } else if (position === "top-left") {
       positionClasses = "sticky left-0 top-0 z-40 ui-copy-strong";
@@ -67,7 +67,6 @@
 >
   <div
     class="
-    ui-copy
     text-ellipsis overflow-hidden
     {isDimensionTable ? (position === 'left' ? '' : 'px-1') : 'px-4'}
     {borderClassesInnerDiv}

@@ -9,6 +9,6 @@ export const config: VirtualizedTableConfig = {
   columnHeaderHeight: 32,
   indexWidth: 60,
   columnHeaderFontWeightClass: "ui-copy-strong",
-  defaultFontWeightClass: "font-semibold",
+  defaultFontWeightClass: "ui-copy",
   table: "PreviewTable",
 };
