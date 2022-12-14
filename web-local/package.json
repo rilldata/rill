@@ -57,6 +57,7 @@
     "prettier": "^2.6.1",
     "prettier-plugin-svelte": "^2.6.0",
     "should": "^13.2.3",
+    "sinon": "^15.0.0",
     "supertest": "^6.2.4",
     "svelte-check": "^2.8.0",
     "svelte-jester": "^2.3.2",
