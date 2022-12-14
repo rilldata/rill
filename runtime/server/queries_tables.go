@@ -40,6 +40,16 @@ func EscapeHyphen(column string) string {
 	return strings.ReplaceAll(column, "-", "_")
 }
 
+func (s *Server) dropTempTable(instanceId string, priority int, tableName string) { // todo reuse from queries package
+	rs, er := s.query(context.Background(), instanceId, &drivers.Statement{
+		Query:    `DROP TABLE "` + tableName + `"`,
+		Priority: priority,
+	})
+	if er == nil {
+		rs.Close()
+	}
+}
+
 func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
 	temporaryTableName := "profile_columns_" + EscapeHyphen(uuid.New().String())
 	// views return duplicate column names, so we need to create a temporary table
