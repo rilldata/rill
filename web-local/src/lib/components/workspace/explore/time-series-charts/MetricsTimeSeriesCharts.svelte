@@ -6,7 +6,6 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
@@ -120,13 +119,12 @@
 
   let mouseoverValue = undefined;
 
-  $: [minVal, maxVal] = extent(
-    dataCopy ?? [],
-    (d: TimeSeriesValue) => d[timeDimension]
+  $: startValue = removeTimezoneOffset(
+    new Date(metricsExplorer?.selectedTimeRange?.start)
   );
-  $: startValue = removeTimezoneOffset(new Date(minVal));
-  $: endValue = removeTimezoneOffset(new Date(maxVal));
-  $: key = `${startValue}` + `${endValue}`;
+  $: endValue = removeTimezoneOffset(
+    new Date(metricsExplorer?.selectedTimeRange?.end)
+  );
 </script>
 
 <WithBisector
@@ -197,7 +195,6 @@
               data={formattedData}
               accessor={measure.name}
               mouseover={point}
-              timeRangeKey={key}
               timeGrain={metricsExplorer.selectedTimeRange?.interval}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
