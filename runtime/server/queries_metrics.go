@@ -429,3 +429,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	}
 	return res
 }
+
+func quoteName(name string) string {
+	return fmt.Sprintf("\"%s\"", name)
+}
