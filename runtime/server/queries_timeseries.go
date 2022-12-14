@@ -250,13 +250,13 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 	q := &queries.TableCardinality{
 		TableName: tableName,
 	}
-	err := q.Resolve(ctx, s.runtime, instanceId, int(priority))
+	err := q.Resolve(ctx, s.runtime, instanceID, int(priority))
 	if err != nil {
 		return nil, err
 	}
 
 	if q.Result < int64(pixels*4) {
-		rows, err := s.query(ctx, instanceId, &drivers.Statement{
+		rows, err := s.query(ctx, instanceID, &drivers.Statement{
 			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 			Priority: int(priority),
 		})
