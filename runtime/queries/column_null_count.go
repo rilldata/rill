@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type ColumnNullCount struct {
@@ -37,12 +38,24 @@ func (q *ColumnNullCount) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
 	nullCountSql := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
 		q.TableName,
 		quoteName(q.ColumnName),
 	)
 
-	rows, err := rt.Execute(ctx, instanceID, priority, nullCountSql)
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    nullCountSql,
+		Priority: priority,
+	})
 	if err != nil {
 		return err
 	}

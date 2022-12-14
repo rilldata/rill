@@ -9,6 +9,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -48,7 +49,19 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		quoteName(q.TableName),
 	)
 
-	rows, err := rt.Execute(ctx, instanceID, priority, rangeSql)
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    rangeSql,
+		Priority: priority,
+	})
 	if err != nil {
 		return err
 	}

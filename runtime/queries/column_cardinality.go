@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -39,15 +40,29 @@ func (q *ColumnCardinality) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
 	sanitizedColumnName := quoteName(q.ColumnName)
 	requestSql := fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, quoteName(q.TableName))
-	rows, err := rt.Execute(ctx, instanceID, priority, requestSql)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    requestSql,
+		Priority: priority,
+	})
+
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	var count float64
-	for rows.Next() {
+	if rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
 			return err

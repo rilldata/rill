@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type ColumnDescriptiveStatistics struct {
@@ -39,6 +40,15 @@ func (q *ColumnDescriptiveStatistics) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
 	sanitizedColumnName := quoteName(q.ColumnName)
 	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
 		"min(%s) as min, "+
@@ -57,7 +67,11 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		sanitizedColumnName,
 		sanitizedColumnName,
 		quoteName(q.TableName))
-	rows, err := rt.Execute(ctx, instanceID, int(priority), descriptiveStatisticsSql)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    descriptiveStatisticsSql,
+		Priority: priority,
+	})
 	if err != nil {
 		return err
 	}

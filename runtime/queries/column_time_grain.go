@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type ColumnTimeGrain struct {
@@ -96,7 +97,19 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		useSample,
 	)
 
-	rows, err := rt.Execute(ctx, instanceID, priority, estimateSql)
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    estimateSql,
+		Priority: priority,
+	})
 	if err != nil {
 		return err
 	}

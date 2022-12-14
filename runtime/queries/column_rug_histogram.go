@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type ColumnRugHistogram struct {
@@ -38,6 +39,15 @@ func (q *ColumnRugHistogram) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
 	sanitizedColumnName := quoteName(q.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -103,7 +113,11 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	  FROM histrogram_with_edge
 	  WHERE present=true`, selectColumn, sanitizedColumnName, quoteName(q.TableName), outlierPseudoBucketSize)
 
-	outlierResults, err := rt.Execute(ctx, instanceID, priority, rugSql)
+	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    rugSql,
+		Priority: priority,
+	})
+
 	if err != nil {
 		return err
 	}

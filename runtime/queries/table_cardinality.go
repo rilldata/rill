@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type TableCardinality struct {
@@ -40,7 +41,19 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		quoteName(q.TableName),
 	)
 
-	rows, err := rt.Execute(ctx, instanceID, priority, countSql)
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    countSql,
+		Priority: priority,
+	})
 	if err != nil {
 		return err
 	}

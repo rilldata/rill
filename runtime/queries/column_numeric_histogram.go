@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type ColumnNumericHistogram struct {
@@ -39,7 +40,7 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 	return nil
 }
 
-func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (float64, error) {
+func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := quoteName(q.ColumnName)
 	querySql := fmt.Sprintf(
 		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
@@ -51,7 +52,10 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, rt *ru
 		quoteName(q.TableName),
 	)
 
-	rows, err := rt.Execute(ctx, instanceID, priority, querySql)
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    querySql,
+		Priority: priority,
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -83,8 +87,17 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, rt *ru
 }
 
 func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	olap, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if olap.Dialect() != drivers.DialectDuckDB {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
 	sanitizedColumnName := quoteName(q.ColumnName)
-	bucketSize, err := q.calculateBucketSize(ctx, rt, instanceID, priority)
+	bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
 	if err != nil {
 		return err
 	}
@@ -152,7 +165,10 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		bucketSize,
 	)
 
-	histogramRows, err := rt.Execute(ctx, instanceID, priority, histogramSql)
+	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    histogramSql,
+		Priority: priority,
+	})
 	if err != nil {
 		return err
 	}

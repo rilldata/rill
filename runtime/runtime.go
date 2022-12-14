@@ -50,21 +50,3 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		queryCache:   newQueryCache(opts.QueryCacheSize),
 	}, nil
 }
-
-func (rt *Runtime) Execute(ctx context.Context, instanceID string, priority int, sql string) (*drivers.Result, error) {
-	// Get OLAP connection
-	olap, err := rt.OLAP(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	if olap.Dialect() != drivers.DialectDuckDB {
-		return nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	result, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Priority: priority,
-	})
-	return result, err
-}
