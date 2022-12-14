@@ -18,6 +18,25 @@ Running `make cli` will build a production-ready binary and output it to `./rill
 
 For detailed instructions on how to run or test the application in development, see the `README.md` file in the individual components' directories (e.g. `web-local/README.md` for the local web app).
 
+## Release a new version
+
+To release a new version of Rill, simply add a Git tag with the new version number on `main` and push it to Github:
+
+```bash
+git tag -a v0.16.0 -m "v0.16.0 release"
+git push origin v0.16.0
+```
+
+This will trigger the `cli-release.yml` Github Action, which will:
+
+- Build binaries for macOS (arm64, amd64) and Linux (amd64)
+- Upload the binaries to `https://cdn.rilldata.com/rill/$VERSION/$NAME`
+- Upload the newest version of the install script (in `scripts/install.sh`) to `https://cdn.rilldata.com/install.sh`
+- Create a Github release containing an auto-generated changelog and the new binaries
+- Publish the new version to our brew tap `rilldata/tap/rill`
+
+You can follow the progress of the release action from the ["Actions" tab](https://github.com/rilldata/rill-developer/actions). It usually completes in about 10 minutes. See our internal [release run book](https://www.notion.so/rilldata/Release-Run-Book-20a4afb8f2f64d06814a0c89d51bfdcf) for more details.
+
 ## Technologies
 
 Here's a high-level overview of the technologies we use for different parts of the project:
