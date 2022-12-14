@@ -218,7 +218,7 @@ The main feature-set component for dashboard filters
   {:else if currentDimensionFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic ui-copy-disabled grid items-center"
+      class="ui-copy-disabled grid items-center"
       style:min-height="26px"
     >
       no filters selected

@@ -239,7 +239,7 @@
         </div>
         <!--TODO {:else}-->
         <!--  <div-->
-        <!--    class="grid items-center justify-center italic pt-3 text-gray-600"-->
+        <!--    class="grid items-center justify-center pt-3 text-gray-600"-->
         <!--  >-->
         <!--    no columns selected-->
         <!--  </div>-->

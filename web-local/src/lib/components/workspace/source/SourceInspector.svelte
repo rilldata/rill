@@ -250,7 +250,7 @@
         </GridCell>
 
         <Tooltip location="left" alignment="start" distance={24}>
-          <GridCell side="left" classes="text-gray-600 italic">
+          <GridCell side="left" classes="text-gray-600">
             {#if totalNulls !== undefined}
               {nullPercentage} null
             {/if}

@@ -112,7 +112,6 @@
                   on:mouseleave={blur}
                   on:blur={blur}
                   class:text-gray-500={modelHasError}
-                  class:italic={modelHasError}
                 >
                   <div class="text-ellipsis overflow-hidden whitespace-nowrap">
                     {table.name}

@@ -30,25 +30,24 @@
 {#if interval}
   <div class="grid space-between grid-cols-2 items-baseline pr-6">
     <Tooltip location="top" distance={16}>
-      <div class="italic pt-1 pb-2">
+      <div class="pt-1 pb-2">
         {timeLength}
       </div>
       <TooltipContent slot="tooltip-content">
         <div style:width="240px">
-          This column represents <span class="italic">{timeLength}</span> of data.
+          This column represents {timeLength} of data.
         </div>
       </TooltipContent>
     </Tooltip>
     {#if estimatedSmallestTimeGrain}
       <Tooltip location="top" distance={16}>
         <div class="justify-self-end text-gray-500 text-right leading-4">
-          time grain in <span class="italic">{estimatedSmallestTimeGrain}</span>
+          time grain in {estimatedSmallestTimeGrain}
         </div>
         <TooltipContent slot="tooltip-content">
           <div style:width="240px">
-            The smallest estimated time grain of this column is at the <span
-              class="italic">{estimatedSmallestTimeGrain}</span
-            > level.
+            The smallest estimated time grain of this column is at the {estimatedSmallestTimeGrain}
+            level.
           </div>
         </TooltipContent>
       </Tooltip>
@@ -78,7 +77,7 @@
       start.getMonth() === end.getMonth() &&
       start.getDate() === end.getDate()}
     {@const emphasize = "font-semibold"}
-    {@const deEmphasize = "fill-gray-500 italic"}
+    {@const deEmphasize = "fill-gray-500"}
     <g>
       <text x={xStart} y={yStart} class={isSameDay ? deEmphasize : emphasize}>
         {datePortion(start)}
