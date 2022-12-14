@@ -18,8 +18,6 @@
   },
   "files": [
     "dist",
-    "build-tools/post_install.cjs",
-    "build-tools/postinstall_runtime.sh",
     "build",
     "static",
     "package.json",
