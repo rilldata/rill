@@ -65,5 +65,9 @@ release.properties
 *.iml
 *.iws
 
+dist/*
+rill-binary-sa.json
+.release-env
 # runtime test resources
 !runtime/testdata/**
+sysroot/

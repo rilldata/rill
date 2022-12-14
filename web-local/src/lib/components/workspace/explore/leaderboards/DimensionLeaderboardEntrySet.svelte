@@ -12,6 +12,14 @@ see more button
   import { createEventDispatcher } from "svelte";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
+  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
+
+  import { createShiftClickAction } from "../../../../util/shift-click-action";
+  import { notifications } from "../../../notifications";
+  import Shortcut from "../../../tooltip/Shortcut.svelte";
+  import StackingWord from "../../../tooltip/StackingWord.svelte";
+
   export let values;
   export let activeValues: Array<unknown>;
   // false = include, true = exclude
@@ -20,6 +28,8 @@ see more button
   export let referenceValue;
   export let atLeastOneActive;
   export let loading = false;
+
+  const { shiftClickAction } = createShiftClickAction();
 
   const dispatch = createEventDispatcher();
   let renderValues = [];
@@ -40,7 +50,20 @@ see more button
 </script>
 
 {#each renderValues as { label, value, __formatted_value, active, excluded } (label)}
-  <div>
+  <div
+    use:shiftClickAction
+    on:click={() => {
+      dispatch("select-item", {
+        label,
+      });
+    }}
+    on:shift-click={async () => {
+      await navigator.clipboard.writeText(value);
+      notifications.send({
+        message: `copied column name "${value}" to clipboard`,
+      });
+    }}
+  >
     <DimensionLeaderboardEntry
       measureValue={value}
       {loading}
@@ -49,11 +72,6 @@ see more button
       {atLeastOneActive}
       {active}
       {excluded}
-      on:click={() => {
-        dispatch("select-item", {
-          label,
-        });
-      }}
     >
       <svelte:fragment slot="label">
         {label}
@@ -62,22 +80,40 @@ see more button
         {__formatted_value || value || "∅"}
       </svelte:fragment>
       <svelte:fragment slot="tooltip">
-        {#if atLeastOneActive}
+        <TooltipTitle>
+          <svelte:fragment slot="name">
+            {label}
+          </svelte:fragment>
+        </TooltipTitle>
+
+        <TooltipShortcutContainer>
+          {#if atLeastOneActive}
+            <div>
+              {excluded ? "include" : "exclude"}
+              <span class="italic">{label}</span>
+              {excluded ? "in" : "from"} output
+            </div>
+          {:else}
+            <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+              filter {filterExcludeMode ? "out" : "on"}
+              <span class="italic"
+                >{label?.length > TOOLTIP_STRING_LIMIT
+                  ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."
+                  : label}</span
+              >
+            </div>
+          {/if}
+          <Shortcut>Click</Shortcut>
+        </TooltipShortcutContainer>
+        <TooltipShortcutContainer>
           <div>
-            {excluded ? "include" : "exclude"}
-            <span class="italic">{label}</span>
-            {excluded ? "in" : "from"} output
+            <StackingWord key="shift">copy</StackingWord>
+            {value} to clipboard
           </div>
-        {:else}
-          <div>
-            filter {filterExcludeMode ? "out" : "on"}
-            <span class="italic"
-              >{label?.length > TOOLTIP_STRING_LIMIT
-                ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."
-                : label}</span
-            >
-          </div>
-        {/if}
+          <Shortcut>
+            <span style="font-family: var(--system);">⇧</span> + Click
+          </Shortcut>
+        </TooltipShortcutContainer>
       </svelte:fragment>
     </DimensionLeaderboardEntry>
   </div>

@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
@@ -7,7 +8,6 @@ import {
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
-  RuntimeState,
 } from "../application-state-stores/application-store";
 import { importOverlayVisible } from "../application-state-stores/overlay-store";
 import { notifications } from "../components/notifications";
@@ -16,7 +16,6 @@ import {
   extractFileExtension,
   getTableNameFromFile,
 } from "./extract-table-name";
-import { fetchWrapperDirect } from "./fetchWrapper";
 
 /**
  * Uploads all valid files.
@@ -27,12 +26,12 @@ import { fetchWrapperDirect } from "./fetchWrapper";
 export async function* uploadTableFiles(
   files: Array<File>,
   [models, sources]: [Array<string>, Array<string>],
-  runtimeState: RuntimeState
+  instanceId: string,
+  goToIfSuccessful = true
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  const tableUploadURL = `${RILL_RUNTIME_URL}/v1/instances/${runtimeState.instanceId}/files/upload`;
   let lastTableName: string;
 
   for (const validFile of validFiles) {
@@ -47,7 +46,7 @@ export async function* uploadTableFiles(
 
     importOverlayVisible.set(true);
 
-    const filePath = await uploadFile(tableUploadURL, validFile);
+    const filePath = await uploadFile(instanceId, validFile);
     // if upload failed for any reason continue
     if (filePath) {
       lastTableName = resolvedTableName;
@@ -57,7 +56,7 @@ export async function* uploadTableFiles(
     importOverlayVisible.set(false);
   }
 
-  if (lastTableName) {
+  if (lastTableName && goToIfSuccessful) {
     goto(`/source/${lastTableName}`);
   }
 
@@ -119,15 +118,17 @@ async function checkForDuplicate(
   return undefined;
 }
 
-export async function uploadFile(url: string, file: File): Promise<string> {
+export async function uploadFile(
+  instanceId: string,
+  file: File
+): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
   const filePath = `data/${file.name}`;
 
   try {
-    // TODO: generate client and use it in component
-    await fetchWrapperDirect(`${url}/-/${filePath}`, "POST", formData, {});
+    await runtimeServiceFileUpload(instanceId, filePath, formData);
     return filePath;
   } catch (err) {
     console.error(err);
@@ -187,7 +188,7 @@ export function openFileUploadDialog(multiple = true) {
     };
     window.addEventListener("focus", focusHandler);
     input.multiple = multiple;
-    input.accept = ".csv,.tsv,.parquet";
+    input.accept = ".csv,.tsv,.txt,.parquet";
     input.click();
   });
 }

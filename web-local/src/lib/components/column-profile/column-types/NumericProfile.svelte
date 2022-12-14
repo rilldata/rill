@@ -4,9 +4,6 @@
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { derived } from "svelte/store";
   import { DataTypeIcon } from "../../data-types";
-  import NumericPlot from "../data-graphics/details/NumericPlot.svelte";
-  import NullPercentageSpark from "../data-graphics/sparks/NullPercentageSpark.svelte";
-  import NumericSpark from "../data-graphics/sparks/NumericSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
     getNullPercentage,
@@ -14,6 +11,9 @@
     getRugPlotData,
     getTopK,
   } from "../queries";
+  import NumericPlot from "./details/NumericPlot.svelte";
+  import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
+  import NumericSpark from "./sparks/NumericSpark.svelte";
   export let columnName: string;
   export let objectName: string;
   export let type: string;
@@ -45,7 +45,7 @@
     useRuntimeServiceGetDescriptiveStatistics(
       $runtimeStore?.instanceId,
       objectName,
-      columnName
+      { columnName: columnName }
     ),
     ($query) => {
       return $query?.data?.numericSummary?.numericStatistics;

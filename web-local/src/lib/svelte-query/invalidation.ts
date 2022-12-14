@@ -1,10 +1,10 @@
+import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
 
@@ -15,41 +15,78 @@ export const invalidateAfterReconcile = async (
   instanceId: string,
   reconcileResponse: V1ReconcileResponse
 ) => {
+  // invalidate lists of catalog entries and files
   await Promise.all([
-    queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    ),
-    queryClient.invalidateQueries(
+    queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId)),
+    queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
     ),
   ]);
+
+  // invalidate affected catalog entries and files
   await Promise.all(
     reconcileResponse.affectedPaths
-      .map((affectedPath) => [
-        queryClient.invalidateQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, affectedPath)
+      .map((path) => [
+        queryClient.refetchQueries(
+          getRuntimeServiceGetFileQueryKey(instanceId, path)
         ),
-        queryClient.invalidateQueries(
+        queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
             instanceId,
-            getNameFromFile(affectedPath)
+            getNameFromFile(path)
           )
         ),
       ])
       .flat()
   );
+  // invalidate tablewide profiling queries
+  // (applies to sources and models, but not dashboards)
+  await Promise.all(
+    reconcileResponse.affectedPaths.map((path) =>
+      getInvalidationsForPath(queryClient, path)
+    )
+  );
+};
+
+const getInvalidationsForPath = (
+  queryClient: QueryClient,
+  filePath: string
+) => {
+  const name = getNameFromFile(filePath);
+  if (filePath.startsWith("/dashboards")) {
+    return invalidateMetricsViewData(queryClient, name);
+  } else {
+    return invalidateProfilingQueries(queryClient, name);
+  }
 };
 
 export const invalidateMetricsViewData = (
   queryClient: QueryClient,
-  instanceId: string,
   metricsViewName: string
 ) => {
-  return queryClient.invalidateQueries({
+  const r = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
+  );
+  return queryClient.refetchQueries({
     predicate: (query) =>
-      typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith(
-        `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/`
-      ),
+      typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]),
   });
 };
+
+export function invalidationForProfileQueries(queryHash, name: string) {
+  const r = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
+  );
+  return r.test(queryHash);
+}
+
+export function invalidateProfilingQueries(
+  queryClient: QueryClient,
+  name: string
+) {
+  return queryClient.refetchQueries({
+    predicate: (query) => {
+      return invalidationForProfileQueries(query.queryHash, name);
+    },
+  });
+}

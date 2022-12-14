@@ -1,95 +1,120 @@
-import { describe } from "@jest/globals";
-import path from "node:path";
-import { TestBrowser, TestEntityType } from "./TestBrowser";
-import { useTestServer } from "./useTestServer";
+import { describe, it } from "@jest/globals";
+import {
+  deleteEntity,
+  gotoEntity,
+  renameEntityUsingMenu,
+} from "./utils/commonHelpers";
+import { TestEntityType, waitForProfiling } from "./utils/helpers";
+import {
+  createModel,
+  createModelFromSource,
+  modelHasError,
+  updateModelSql,
+} from "./utils/modelHelpers";
+import { useRegisteredServer } from "./utils/serverConfigs";
+import { createOrReplaceSource } from "./utils/sourceHelpers";
+import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-const PORT = 8081;
-const DataPath = path.join(__dirname, "../data");
-
-// TODO: these tests cannot run in CI until cli supports custom ports for UI
 describe.skip("models", () => {
-  useTestServer(PORT, "temp/models");
-  const testBrowser = TestBrowser.useTestBrowser(
-    DataPath,
-    `http://localhost:${PORT}`
-  );
+  const testBrowser = useRegisteredServer("models");
 
   it("Create and edit model", async () => {
-    await testBrowser.createOrReplaceSource("AdBids.csv", "AdBids");
-    await testBrowser.createOrReplaceSource(
+    await createOrReplaceSource(testBrowser.page, "AdBids.csv", "AdBids");
+    await createOrReplaceSource(
+      testBrowser.page,
       "AdImpressions.tsv",
       "AdImpressions"
     );
 
-    await testBrowser.createModel("AdBids_model_t");
-    await testBrowser.waitForEntity(
+    await createModel(testBrowser.page, "AdBids_model_t");
+    await waitForEntity(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_model_t",
       true
     );
-    await testBrowser.updateModelSql("select * from AdBids");
-    await testBrowser.modelHasError(false);
+    await updateModelSql(testBrowser.page, "select * from AdBids");
+    await modelHasError(testBrowser.page, false);
 
     // Catalog error
-    await testBrowser.updateModelSql("select * from AdBid");
-    await testBrowser.modelHasError(true, "Catalog Error");
+    await updateModelSql(testBrowser.page, "select * from AdBid");
+    await modelHasError(testBrowser.page, true, "Catalog Error");
 
     // Query parse error
-    await testBrowser.updateModelSql("select from AdBids");
-    await testBrowser.modelHasError(true, "Parser Error");
+    await updateModelSql(testBrowser.page, "select from AdBids");
+    await modelHasError(testBrowser.page, true, "Parser Error");
   });
 
   it("Rename and delete model", async () => {
     // make sure AdBids_rename_delete is present
-    await testBrowser.createModel("AdBids_rename_delete");
+    await createModel(testBrowser.page, "AdBids_rename_delete");
 
     // rename
-    await testBrowser.renameEntityUsingMenu(
+    await renameEntityUsingMenu(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_rename_delete",
       "AdBids_rename_delete_new"
     );
-    await testBrowser.waitForEntity(
+    await waitForEntity(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_rename_delete_new",
       true
     );
-    await testBrowser.entityNotPresent(
+    await entityNotPresent(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_rename_delete"
     );
 
     // delete
-    await testBrowser.deleteEntity(
+    await deleteEntity(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_rename_delete_new"
     );
-    await testBrowser.entityNotPresent(
+    await entityNotPresent(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_rename_delete_new"
     );
-    await testBrowser.entityNotPresent(
+    await entityNotPresent(
+      testBrowser.page,
       TestEntityType.Model,
       "AdBids_rename_delete"
     );
   });
 
   it("Create model from source", async () => {
-    await testBrowser.createOrReplaceSource("AdBids.csv", "AdBids");
+    await createOrReplaceSource(testBrowser.page, "AdBids.csv", "AdBids");
 
-    await testBrowser.createModelFromSource("AdBids");
-    await testBrowser.waitForEntity(TestEntityType.Model, "AdBids_model", true);
+    await Promise.all([
+      waitForProfiling(testBrowser.page, "AdBids_model", [
+        "publisher",
+        "domain",
+        "timestamp",
+      ]),
+      createModelFromSource(testBrowser.page, "AdBids"),
+    ]);
+    await waitForEntity(
+      testBrowser.page,
+      TestEntityType.Model,
+      "AdBids_model",
+      true
+    );
 
     // navigate to another source
-    await testBrowser.createOrReplaceSource(
+    await createOrReplaceSource(
+      testBrowser.page,
       "AdImpressions.tsv",
       "AdImpressions"
     );
     // delete the source of model
-    await testBrowser.deleteEntity(TestEntityType.Source, "AdBids");
+    await deleteEntity(testBrowser.page, TestEntityType.Source, "AdBids");
     // go to model
-    await testBrowser.gotoEntity(TestEntityType.Model, "AdBids_model");
+    await gotoEntity(testBrowser.page, TestEntityType.Model, "AdBids_model");
     // make sure error has propagated
-    await testBrowser.modelHasError(true, "Catalog Error");
+    await modelHasError(testBrowser.page, true, "Catalog Error");
   });
 });

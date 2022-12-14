@@ -1,11 +1,15 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
+    useRuntimeServiceProfileColumns,
     useRuntimeServicePutFileAndReconcile,
+    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
@@ -15,7 +19,6 @@
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
-  import { createModelFromSource } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
@@ -28,17 +31,24 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
+  import { overlay } from "../../../application-state-stores/overlay-store";
+  import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
+  import { useDashboardNames } from "../../../svelte-query/dashboards";
+  import { useModelNames } from "../../../svelte-query/models";
+  import { getSummaries } from "../../column-profile/queries";
+  import { createModelFromSource } from "../../navigation/models/createModel";
 
   export let sourceName: string;
 
-  const queryClient = createQueryClient();
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -50,7 +60,9 @@
   $: source = $getSource?.data?.entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: dashboardNames = useDashboardNames(runtimeInstanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let showColumns = true;
 
@@ -77,27 +89,42 @@
     );
   };
 
-  const handleCreateMetric = () => {
-    // A side effect of the createMetricsDefsApi is we switch active assets to
-    // the newly created metrics definition. So, this'll bring us to the
-    // MetricsDefinition page. (The logic for this is contained in the
-    // not-pictured async thunk.)
-    // autoCreateMetricsDefinitionForSource(
-    //   $persistentModelStore.entities,
-    //   $derivedTableStore.entities,
-    //   currentTable.id,
-    //   $persistentTableStore.entities.find(
-    //     (table) => table.tableName === sourceName
-    //   ).tableName
-    // ).then((createdMetricsId) => {
-    //   navigationEvent.fireEvent(
-    //     createdMetricsId,
-    //     BehaviourEventMedium.Button,
-    //     MetricsEventSpace.RightPanel,
-    //     MetricsEventScreenName.Source,
-    //     MetricsEventScreenName.Dashboard
-    //   );
-    // });
+  const handleCreateDashboardFromSource = (sourceName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
+    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      $dashboardNames.data
+    );
+    $createDashboardFromSourceMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          sourceName,
+          newModelName,
+          newDashboardName,
+        },
+      },
+      {
+        onSuccess: async (resp: V1ReconcileResponse) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+          goto(`/dashboard/${newDashboardName}`);
+          navigationEvent.fireEvent(
+            newDashboardName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.RightPanel,
+            MetricsEventScreenName.Source,
+            MetricsEventScreenName.Dashboard
+          );
+          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
+        },
+        onSettled: () => {
+          overlay.set(null);
+        },
+      }
+    );
   };
 
   /** source summary information */
@@ -113,7 +140,7 @@
         return "GCS";
       case "https":
         return "http(s)";
-      case "file":
+      case "local_file":
         return "Local file";
       default:
         return "";
@@ -152,13 +179,29 @@
 
   /** total % null cells */
 
+  $: profileColumns = useRuntimeServiceProfileColumns(
+    $runtimeStore?.instanceId,
+    sourceName,
+    {},
+    { query: { keepPreviousData: true } }
+  );
+
+  $: summaries = getSummaries(
+    sourceName,
+    $runtimeStore?.instanceId,
+    $profileColumns?.data?.profileColumns
+  );
+
+  let totalNulls = undefined;
+
+  $: if (summaries) {
+    totalNulls = $summaries.reduce(
+      (total, column) => total + (+column.nullCount || 0),
+      0
+    );
+  }
   $: {
-    // TODO: get null count for tables
     const totalCells = source?.schema?.fields?.length * cardinality;
-    // const totalNulls = currentDerivedTable?.profile
-    //   .map((profile) => profile?.nullCount)
-    //   .reduce((total, count) => total + count, 0);
-    const totalNulls = 0;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 </script>
@@ -170,8 +213,8 @@
       <Tooltip location="left" distance={16}>
         <Button type="secondary" on:click={handleCreateModelFromSource}>
           <ResponsiveButtonText {width}>Create Model</ResponsiveButtonText>
-          <Model size="16px" /></Button
-        >
+          <Model size="16px" />
+        </Button>
         <TooltipContent slot="tooltip-content">
           Create a model with these source columns
         </TooltipContent>
@@ -180,11 +223,11 @@
         <Button
           type="primary"
           disabled={!timestampColumns?.length}
-          on:click={handleCreateMetric}
+          on:click={() => handleCreateDashboardFromSource(sourceName)}
         >
           <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
-          <Explore size="16px" /></Button
-        >
+          <Explore size="16px" />
+        </Button>
         <TooltipContent slot="tooltip-content">
           {#if timestampColumns?.length}
             Auto create metrics based on your data source and go to dashboard
@@ -208,10 +251,16 @@
 
         <Tooltip location="left" alignment="start" distance={24}>
           <GridCell side="left" classes="text-gray-600 italic">
-            {nullPercentage} null
+            {#if totalNulls !== undefined}
+              {nullPercentage} null
+            {/if}
           </GridCell>
           <TooltipContent slot="tooltip-content">
-            {nullPercentage} of table values are null
+            {#if totalNulls !== undefined}
+              {nullPercentage} of table values are null
+            {:else}
+              awaiting calculation of total null table values
+            {/if}
           </TooltipContent>
         </Tooltip>
         <GridCell side="right" classes="text-gray-800 font-bold">

@@ -1,33 +1,42 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceTriggerRefresh,
+    useRuntimeServiceRefreshAndReconcile,
+    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { fileArtifactsStore } from "../../../application-state-stores/file-artifacts-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { deleteFileArtifact } from "../../../svelte-query/actions";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
+  import {
+    deleteFileArtifact,
+    useCreateDashboardFromSource,
+  } from "../../../svelte-query/actions";
+  import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
-  import { getFileFromName } from "../../../util/entity-mappers";
+  import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -39,36 +48,35 @@
   import { refreshSource } from "./refreshSource";
 
   export let sourceName: string;
-
-  const queryClient = useQueryClient();
-
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
 
-  $: sourceNames = useSourceNames($runtimeStore.instanceId);
-  $: sourceFromYaml = useSourceFromYaml(
-    $runtimeStore.instanceId,
-    getFileFromName(sourceName, EntityType.Table)
-  );
+  const queryClient = useQueryClient();
+
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+
+  const dispatch = createEventDispatcher();
+
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
-
-  const dispatch = createEventDispatcher();
-
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
+  $: sourceFromYaml = useSourceFromYaml(
+    $runtimeStore.instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceTriggerRefresh();
-  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
+
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
+  const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
@@ -91,7 +99,7 @@
         runtimeInstanceId,
         $modelNames.data,
         tableName,
-        $createEntityMutation
+        $createFileMutation
       );
 
       navigationEvent.fireEvent(
@@ -106,22 +114,44 @@
     }
   };
 
-  const bootstrapDashboard = async (_tableName: string) => {
-    // const previousActiveEntity = $rillAppStore?.activeEntity?.type;
-    // const createdMetricsId = await autoCreateMetricsDefinitionForSource(
-    //   $persistentModelStore.entities,
-    //   $derivedTableStore.entities,
-    //   sourceID,
-    //   tableName
-    // );
-    //
-    // navigationEvent.fireEvent(
-    //   createdMetricsId,
-    //   BehaviourEventMedium.Menu,
-    //   MetricsEventSpace.LeftPanel,
-    //   EntityTypeToScreenMap[previousActiveEntity],
-    //   MetricsEventScreenName.Dashboard
-    // );
+  const handleCreateDashboardFromSource = (sourceName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
+    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      $dashboardNames.data
+    );
+    $createDashboardFromSourceMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          sourceName,
+          newModelName,
+          newDashboardName,
+        },
+      },
+      {
+        onSuccess: async (resp: V1ReconcileResponse) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+          goto(`/dashboard/${newDashboardName}`);
+          const previousActiveEntity = $appStore?.activeEntity?.type;
+          navigationEvent.fireEvent(
+            newDashboardName,
+            BehaviourEventMedium.Menu,
+            MetricsEventSpace.LeftPanel,
+            EntityTypeToScreenMap[previousActiveEntity],
+            MetricsEventScreenName.Dashboard
+          );
+          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
+        },
+        onSettled: () => {
+          overlay.set(null);
+          toggleMenu(); // unmount component
+        },
+      }
+    );
   };
 
   const onRefreshSource = async (tableName: string) => {
@@ -139,7 +169,8 @@
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createEntityMutation
+        $createEntityMutation,
+        queryClient
       );
 
       // invalidate the data preview (async)
@@ -151,7 +182,7 @@
         runtimeInstanceId,
         tableName
       );
-      await queryClient.invalidateQueries(queryKey);
+      await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
     }
@@ -167,7 +198,8 @@
 <MenuItem
   disabled={!schemaHasTimestampColumn(source?.schema)}
   icon
-  on:select={() => bootstrapDashboard(sourceName)}
+  on:select={() => handleCreateDashboardFromSource(sourceName)}
+  propogateSelect={false}
 >
   <Explore slot="icon" />
   autogenerate dashboard
@@ -178,7 +210,7 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.entry?.source?.connector === "file"}
+{#if $getSource?.data?.entry?.source?.connector === "local_file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />
@@ -212,5 +244,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  delete</MenuItem
->
+  delete
+</MenuItem>

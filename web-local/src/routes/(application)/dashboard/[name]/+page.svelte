@@ -6,7 +6,6 @@
 </script>
 
 <svelte:head>
-  <!-- TODO: add the dashboard name to the title -->
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 

@@ -23,14 +23,15 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		Path            string
 		AdditionalProps map[string]any
 	}{
-		{"file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
-		{"file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
-		{"file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
-		{"file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
-		{"file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
-		//{"file", testdataPath + "AdBids.parquet.gz", nil},
+		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},
 		// only enable to do adhoc tests. needs credentials to work
 		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv", nil},
 		//{"s3", "s3://rill-developer.rilldata.io/AdBids.csv.gz", nil},
@@ -74,9 +75,59 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, rows.Next())
 			require.NoError(t, rows.Scan(&count))
-			require.Equal(t, 100000, count)
+			require.GreaterOrEqual(t, count, 100)
 			require.False(t, rows.Next())
 			require.NoError(t, rows.Close())
 		})
 	}
+}
+
+func TestCSVDelimiter(t *testing.T) {
+	ctx := context.Background()
+	conn, err := driver{}.Open("?access_mode=read_write")
+	require.NoError(t, err)
+	olap, _ := conn.OLAPStore()
+
+	testdataPathAbs, err := filepath.Abs("../../../web-local/test/data")
+	require.NoError(t, err)
+	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
+
+	err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}, &connectors.Source{
+		Name:      "foo",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": testDelimiterCsvPath,
+		},
+	})
+	require.NoError(t, err)
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	// 3 columns because no delimiter is passed
+	require.Len(t, cols, 3)
+	require.NoError(t, rows.Close())
+
+	err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}, &connectors.Source{
+		Name:      "foo",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path":          testDelimiterCsvPath,
+			"csv.delimiter": "+",
+		},
+	})
+	require.NoError(t, err)
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
+	require.NoError(t, err)
+	cols, err = rows.Columns()
+	require.NoError(t, err)
+	// 3 columns because no delimiter is passed
+	require.Len(t, cols, 2)
+	require.NoError(t, rows.Close())
 }

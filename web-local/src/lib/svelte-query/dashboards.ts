@@ -13,12 +13,16 @@ export function useDashboardNames(repoId: string) {
     },
     {
       query: {
-        refetchInterval: 1000,
+        // refetchInterval: 1000,
         select: (data) =>
           data.paths
             ?.filter((path) => path.includes("dashboards/"))
             .map((path) =>
               path.replace("/dashboards/", "").replace(".yaml", "")
+            )
+            // sort alphabetically case-insensitive
+            .sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" })
             ),
       },
     }

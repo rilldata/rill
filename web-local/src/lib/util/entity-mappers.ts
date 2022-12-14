@@ -1,6 +1,9 @@
 import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 
-export function getFileFromName(name: string, type: EntityType): string {
+export function getFilePathFromNameAndType(
+  name: string,
+  type: EntityType
+): string {
   switch (type) {
     case EntityType.Table:
       return `/sources/${name}.yaml`;

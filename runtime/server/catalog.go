@@ -48,7 +48,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 // Reconcile implements RuntimeService
 func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, nil, req.Dry, req.Strict)
+	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.ForcedPaths, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

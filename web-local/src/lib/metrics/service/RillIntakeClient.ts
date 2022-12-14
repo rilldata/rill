@@ -1,4 +1,4 @@
-import axios from "axios";
+import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
 import type { MetricsEvent } from "./MetricsTypes";
 
 const RillIntakeUser = "data-modeler";
@@ -16,7 +16,10 @@ export class RillIntakeClient {
 
   public async fireEvent(event: MetricsEvent) {
     try {
-      await axios.post(`${RILL_RUNTIME_URL}/local/track`, event, {
+      await fetchWrapper({
+        url: `${RILL_RUNTIME_URL}/local/track`,
+        method: "POST",
+        data: event,
         headers: {
           Authorization: this.authHeader,
         },

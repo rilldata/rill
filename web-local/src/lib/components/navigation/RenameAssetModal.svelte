@@ -3,8 +3,12 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { renameFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import {
+    isDuplicateName,
+    renameFileArtifact,
+    useAllNames,
+  } from "@rilldata/web-local/lib/svelte-query/actions";
   import { getLabel } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";
@@ -27,6 +31,7 @@
     runtimeInstanceId,
     currentAssetName
   );
+  $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const renameAsset = useRuntimeServiceRenameFileAndReconcile();
 
@@ -45,6 +50,10 @@
         .notOneOf([currentAssetName], `That's the current name!`),
     }),
     onSubmit: async (values) => {
+      if (isDuplicateName(values.newName, $allNamesQuery.data)) {
+        error = `Name ${values.newName} is already in use`;
+        return;
+      }
       try {
         await renameFileArtifact(
           queryClient,

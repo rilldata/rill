@@ -2,11 +2,16 @@
   import {
     ConnectorProperty,
     ConnectorPropertyType,
+    useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
     V1Connector,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -30,7 +35,10 @@
   export let connector: V1Connector;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: sourceNames = useSourceNames(runtimeInstanceId);
+
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
 
   const dispatch = createEventDispatcher();
 
@@ -81,10 +89,20 @@
           error = errors[0];
           if (!error) {
             dispatch("close");
+          } else {
+            await deleteFileArtifact(
+              queryClient,
+              runtimeInstanceId,
+              values.sourceName,
+              EntityType.Table,
+              $deleteSource,
+              $appStore.activeEntity,
+              $sourceNames.data,
+              false
+            );
           }
         } catch (err) {
-          // TODO
-          console.error(err);
+          // no-op
         }
         waitingOnSourceImport = false;
         overlay.set(null);
@@ -120,7 +138,7 @@
   }
 </script>
 
-<div class="h-full flex flex-col">
+<div class="h-full w-full flex flex-col">
   <form
     on:submit|preventDefault={handleSubmit}
     id="remote-source-{connector.name}-form"
@@ -135,8 +153,8 @@
       <SubmissionError
         message={humanReadableErrorMessage(
           connector.name,
-          $createSourceMutation.error.response.data.code ?? 3,
-          $createSourceMutation.error.response.data.message ?? error.message
+          $createSourceMutation?.error?.response?.data?.code ?? 3,
+          $createSourceMutation?.error?.response?.data?.message ?? error.message
         )}
       />
     {/if}

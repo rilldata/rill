@@ -474,7 +474,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 		Query:    sql,
 		Priority: int(request.Priority),
 	})
-	defer s.dropTempTable(context.Background(), request.InstanceId, int(request.Priority), temporaryTableName)
+	defer s.dropTempTable(request.InstanceId, int(request.Priority), temporaryTableName)
 	if err != nil {
 		return nil, err
 	}
@@ -541,8 +541,8 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 	return results, converr
 }
 
-func (s *Server) dropTempTable(ctx context.Context, instanceId string, priority int, tableName string) {
-	rs, er := s.query(ctx, instanceId, &drivers.Statement{
+func (s *Server) dropTempTable(instanceId string, priority int, tableName string) {
+	rs, er := s.query(context.Background(), instanceId, &drivers.Statement{
 		Query:    `DROP TABLE "` + tableName + `"`,
 		Priority: priority,
 	})

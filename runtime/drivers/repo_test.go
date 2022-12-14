@@ -76,10 +76,17 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
 
+	// rename to existing with different case
+	err = repo.Rename(ctx, instID, "foo.sql", "FOO.sql")
+	require.NoError(t, err)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/FOO.sql", "/foo.yml"}, paths)
+
 	// valid rename
 	err = repo.Rename(ctx, instID, "foo.yml", "foo_new.yml")
 	require.NoError(t, err)
 	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
 	require.NoError(t, err)
-	require.Equal(t, []string{"/foo.sql", "/foo_new.yml"}, paths)
+	require.Equal(t, []string{"/FOO.sql", "/foo_new.yml"}, paths)
 }

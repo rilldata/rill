@@ -5,7 +5,9 @@ export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string
 ) {
-  if (connectorName !== "file") {
+  const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.`;
+
+  if (connectorName !== "local_file") {
     values.uri = values.path;
     delete values.path;
   }
@@ -15,7 +17,7 @@ export function compileCreateSourceYAML(
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
-  return `type: "${connectorName}"\n` + compiledKeyValues;
+  return `${topLineComment}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
 }
 
 export function inferSourceName(connector: V1Connector, path: string) {

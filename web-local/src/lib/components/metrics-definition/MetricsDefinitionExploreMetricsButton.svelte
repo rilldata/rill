@@ -33,15 +33,21 @@
   };
 
   $: if (
-    $metricsInternalRep.getMetricKey("from") === "" ||
+    $metricsInternalRep.getMetricKey("model") === "" ||
     $metricsInternalRep.getMetricKey("timeseries") === ""
   ) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
-  } else if (measures?.length === 0 || dimensions?.length === 0) {
+  } else if (
+    // check if all the measures have a valid expression
+    measures?.filter((measure) => measure?.expression?.length)?.length === 0 ||
+    // and if the dimensions all have a valid property
+    dimensions?.filter((dimension) => dimension?.property?.length)?.length === 0
+  ) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {
+    buttonStatus = "NO_ERROR";
     buttonDisabled = false;
   }
 </script>

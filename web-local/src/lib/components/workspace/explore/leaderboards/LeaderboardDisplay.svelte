@@ -1,27 +1,27 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import {
-    LeaderboardValue,
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../../../../application-state-stores/explorer-stores";
-  import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
-  import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
-  import {
-    getScaleForLeaderboard,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "../../../../util/humanize-numbers";
-  import Leaderboard from "./Leaderboard.svelte";
   import {
     MetricsViewDimension,
     useRuntimeServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
+  import {
+    LeaderboardValue,
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+  } from "../../../../application-state-stores/explorer-stores";
+  import {
+    getScaleForLeaderboard,
+    NicelyFormattedTypes,
+    ShortHandSymbols,
+  } from "../../../../util/humanize-numbers";
+  import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
+  import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
+  import Leaderboard from "./Leaderboard.svelte";
 
   export let metricViewName: string;
 
@@ -43,7 +43,7 @@
     );
 
   $: formatPreset =
-    NicelyFormattedTypes[activeMeasure?.format] ??
+    (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
@@ -94,7 +94,7 @@
   }
 
   function onLeaderboardValues(event) {
-    leaderboards.set(event.detail.dimensionId, event.detail.values);
+    leaderboards.set(event.detail.dimensionName, event.detail.values);
     if (
       formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY

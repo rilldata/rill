@@ -1,3 +1,4 @@
+import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import type { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import { Readable, writable } from "svelte/store";
 
@@ -29,6 +30,9 @@ const appStoreReducers = {
         type,
       };
       state.previousActiveEntity = state.activeEntity;
+      if (state.previousActiveEntity) {
+        httpRequestQueue.inactiveByName(name);
+      }
       return state;
     });
   },

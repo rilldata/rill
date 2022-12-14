@@ -1,20 +1,19 @@
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error } from "@sveltejs/kit";
-import { fetchWrapperDirect } from "../../../../lib/util/fetchWrapper";
 
 export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   try {
-    const localConfig = await fetchWrapperDirect(
-      `${RILL_RUNTIME_URL}/local/config`,
-      "GET"
-    );
+    const localConfig = await runtimeServiceGetConfig();
 
     await runtimeServiceGetFile(
       localConfig.instance_id,
-      `models/${params.name}.sql`
+      getFilePathFromNameAndType(params.name, EntityType.Model)
     );
 
     return {

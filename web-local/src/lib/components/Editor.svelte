@@ -1,11 +1,5 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceListCatalogEntries,
-    V1Model,
-  } from "@rilldata/web-common/runtime-client";
-  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
-  import {
     acceptCompletion,
     autocompletion,
     closeBrackets,
@@ -33,6 +27,7 @@
   } from "@codemirror/language";
   import { lintKeymap } from "@codemirror/lint";
   import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+  import type { SelectionRange } from "@codemirror/state";
   import {
     Compartment,
     EditorState,
@@ -53,7 +48,13 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceListCatalogEntries,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import { createEventDispatcher, onMount } from "svelte";
   import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
@@ -61,7 +62,7 @@
   export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
-  export let selections: any[] = [];
+  export let selections: SelectionRange[] = [];
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
@@ -179,7 +180,10 @@
 
   // UNDERLINES
 
-  const addUnderline = StateEffect.define<{ from: number; to: number }>();
+  const addUnderline = StateEffect.define<{
+    from: number;
+    to: number;
+  }>();
   const underlineMark = Decoration.mark({ class: "cm-underline" });
   const underlineField = StateField.define<DecorationSet>({
     create() {
@@ -307,11 +311,12 @@
     }
   }
 
+  // FIXME: resolve type issues incurred when we type selections as SelectionRange[]
   function underlineSelection(selections: any) {
     if (editor) {
-      const effects = selections
-        .map(({ start, end }) => ({ from: start, to: end }))
-        .map(({ from, to }) => addUnderline.of({ from, to }));
+      const effects = selections.map(({ from, to }) =>
+        addUnderline.of({ from, to })
+      );
 
       if (!editor.state.field(underlineField, false))
         effects.push(StateEffect.appendConfig.of([underlineField]));

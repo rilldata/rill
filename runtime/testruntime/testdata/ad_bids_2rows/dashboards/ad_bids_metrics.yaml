@@ -1,6 +1,4 @@
-version: 0.0.1
-
-from: ad_bids
+model: ad_bids
 display_name: Ad bids
 description:
 
@@ -17,6 +15,8 @@ dimensions:
   - label: Domain
     property: domain
     description: ""
+  - label: Id
+    property: id
 
 measures:
   - label: "Number of bids"
@@ -29,5 +29,5 @@ measures:
     format_preset: ""
   - label: "Total impressions"
     expression: sum(impressions)
-    description: ""
-    format_preset: ""
+  - label: "Total clicks"
+    expression: sum(clicks)

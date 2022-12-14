@@ -128,7 +128,8 @@ func (s *Server) metricsQuery(ctx context.Context, instanceId string, priority i
 }
 
 func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtimev1.MetricsView) (string, []any, error) {
-	selectCols := []string{req.DimensionName}
+	dimName := quoteName(req.DimensionName)
+	selectCols := []string{dimName}
 	for _, n := range req.MeasureNames {
 		found := false
 		for _, m := range mv.Measures {
@@ -173,6 +174,7 @@ func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
+		orderClause += " NULLS LAST"
 	}
 
 	if req.Limit == 0 {
@@ -181,9 +183,9 @@ func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 
 	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
 		strings.Join(selectCols, ", "),
-		mv.From,
+		mv.Model,
 		whereClause,
-		req.DimensionName,
+		dimName,
 		orderClause,
 		req.Limit,
 	)
@@ -234,7 +236,7 @@ func buildMetricsTimeSeriesSQL(req *runtimev1.MetricsViewTimeSeriesRequest, mv *
 	sql := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s GROUP BY 1 ORDER BY %s LIMIT 1000",
 		strings.Join(selectCols, ", "),
-		mv.From,
+		mv.Model,
 		whereClause,
 		mv.TimeDimension,
 	)
@@ -283,7 +285,7 @@ func buildMetricsTotalsSql(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev
 	sql := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s",
 		strings.Join(selectCols, ", "),
-		mv.From,
+		mv.Model,
 		whereClause,
 	)
 	return sql, args, nil

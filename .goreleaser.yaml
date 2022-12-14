@@ -1,0 +1,107 @@
+project_name: rill
+
+release:
+  prerelease: auto
+  draft: false
+
+builds:
+  - id: darwin_amd64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    env:
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+  - id: darwin_arm64
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+  - id: linux
+    main: ./cli/main.go
+    binary: rill
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+      - CGO_CFLAGS=--sysroot=/sysroot/linux/amd64
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
+      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
+    flags:
+      - "-mod=readonly"
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+
+blobs:
+  - provider: gs
+    bucket: prod-cdn.rilldata.com
+    folder: "rill/v{{ .Version }}"
+    extra_files:
+      - glob: ./dist/**/*
+
+  - provider: gs
+    bucket: prod-cdn.rilldata.com
+    folder: "rill/latest"
+    extra_files:
+      - glob: ./dist/**/*
+
+brews:
+  - homepage: https://github.com/rilldata/rill-developer
+    description: The Rill CLI
+    name: rill
+    license: Apache 2.0
+    url_template: https://cdn.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
+    tap:
+      owner: rilldata
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    test: |
+      system "#{bin}/rill --version"
+    install: |
+      bin.install "rill"
+    commit_author:
+      name: rilldata
+      email: support@rilldata.com
+
+archives:
+  - files:
+      - README.md
+      - LICENSE*
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-snapshot"
+
+changelog:
+  sort: asc

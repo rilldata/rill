@@ -9,6 +9,9 @@ export type RuntimeServiceReconcileBody = {
 reconciliation to execute faster by not scanning all code artifacts for changes. */
   changedPaths?: string[];
   dry?: boolean;
+  /** Forced paths is used to force run reconcile on certain files.
+This is mainly used by UI to reconcile paths missing in catalog and get errors if any. */
+  forcedPaths?: string[];
   strict?: boolean;
 };
 
@@ -24,6 +27,7 @@ export type RuntimeServiceQueryBody = {
  */
 export type RuntimeServiceGetTopKBody = {
   agg?: string;
+  columnName?: string;
   k?: number;
   priority?: number;
 };
@@ -34,18 +38,26 @@ export type RuntimeServiceGenerateTimeSeriesBody = {
   pixels?: number;
   priority?: number;
   sampleSize?: number;
-  tableName?: string;
   timeRange?: V1TimeSeriesTimeRange;
   timestampColumnName?: string;
 };
 
-export type RuntimeServiceGetTimeRangeSummaryParams = { priority?: number };
-
-export type RuntimeServiceEstimateSmallestTimeGrainParams = {
+export type RuntimeServiceGetTimeRangeSummaryParams = {
+  columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceGetRugHistogramParams = { priority?: number };
+export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
+
+export type RuntimeServiceEstimateSmallestTimeGrainParams = {
+  columnName?: string;
+  priority?: number;
+};
+
+export type RuntimeServiceGetRugHistogramParams = {
+  columnName?: string;
+  priority?: number;
+};
 
 export type RuntimeServiceGetTableRowsParams = {
   limit?: number;
@@ -57,19 +69,27 @@ export type RuntimeServiceEstimateRollupIntervalBody = {
   priority?: number;
 };
 
-export type RuntimeServiceGetNumericHistogramParams = { priority?: number };
+export type RuntimeServiceGetNumericHistogramParams = {
+  columnName?: string;
+  priority?: number;
+};
 
-export type RuntimeServiceGetNullCountParams = { priority?: number };
+export type RuntimeServiceGetNullCountParams = {
+  columnName?: string;
+  priority?: number;
+};
 
 export type RuntimeServiceGetDescriptiveStatisticsParams = {
+  columnName?: string;
   priority?: number;
 };
 
 export type RuntimeServiceProfileColumnsParams = { priority?: number };
 
-export type RuntimeServiceGetCardinalityOfColumnParams = { priority?: number };
-
-export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
+export type RuntimeServiceGetCardinalityOfColumnParams = {
+  columnName?: string;
+  priority?: number;
+};
 
 export type RuntimeServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
@@ -80,6 +100,7 @@ export type RuntimeServiceMetricsViewTotalsBody = {
 };
 
 export type RuntimeServiceMetricsViewToplistBody = {
+  dimensionName?: string;
   filter?: V1MetricsViewFilter;
   limit?: string;
   measureNames?: string[];
@@ -484,9 +505,9 @@ export interface V1MetricsViewToplistResponse {
 export interface V1MetricsView {
   description?: string;
   dimensions?: MetricsViewDimension[];
-  from?: string;
   label?: string;
   measures?: MetricsViewMeasure[];
+  model?: string;
   name?: string;
   timeDimension?: string;
   /** Recommended granularities for rolling up the time dimension.

@@ -17,11 +17,15 @@ export function useSourceNames(instanceId: string) {
     },
     {
       query: {
-        refetchInterval: 1000,
+        // refetchInterval: 1000,
         select: (data) =>
           data.paths
             ?.filter((path) => path.includes("sources/"))
-            .map((path) => path.replace("/sources/", "").replace(".yaml", "")),
+            .map((path) => path.replace("/sources/", "").replace(".yaml", ""))
+            // sort alphabetically case-insensitive
+            .sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" })
+            ),
       },
     }
   );

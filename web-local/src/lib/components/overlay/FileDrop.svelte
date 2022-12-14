@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    getRuntimeServiceListCatalogEntriesQueryKey,
-    RuntimeServiceListCatalogEntriesType,
-    useRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
@@ -29,7 +25,7 @@
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
       [$sourceNames?.data, $modelNames?.data],
-      $runtimeStore
+      $runtimeStore.instanceId
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -38,7 +34,7 @@
             sourceName: tableName,
             path: filePath,
           },
-          "file"
+          "local_file"
         );
         // TODO: errors
         await createSource(
@@ -52,11 +48,6 @@
         console.error(err);
       }
     }
-    return queryClient.invalidateQueries(
-      getRuntimeServiceListCatalogEntriesQueryKey(runtimeInstanceId, {
-        type: RuntimeServiceListCatalogEntriesType.OBJECT_TYPE_SOURCE,
-      })
-    );
   };
 </script>
 

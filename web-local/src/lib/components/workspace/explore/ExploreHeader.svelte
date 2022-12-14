@@ -7,18 +7,14 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { invalidateMetricsViewData } from "../../../svelte-query/invalidation";
   import { Button } from "../../button";
   import MetricsIcon from "../../icons/Metrics.svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricViewName: string;
-
-  const queryClient = useQueryClient();
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
@@ -34,13 +30,6 @@
       !$metaQuery.data?.dimensions?.length
     ) {
       goto(`/dashboard/${metricViewName}/edit`);
-    } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
-      // FIXME: understand this logic before removing invalidateMetricsViewData
-      invalidateMetricsViewData(
-        queryClient,
-        $runtimeStore.instanceId,
-        metricViewName
-      );
     }
     displayName = $metaQuery.data.label;
     metricsExplorerStore.sync(metricViewName, $metaQuery.data);

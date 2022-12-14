@@ -1,4 +1,4 @@
-import { fetchWrapperDirect } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import type {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
@@ -45,10 +45,7 @@ export class MetricsService
   }
 
   public async loadCommonFields() {
-    const localConfig = await fetchWrapperDirect(
-      `${RILL_RUNTIME_URL}/local/config`,
-      "GET"
-    );
+    const localConfig = await runtimeServiceGetConfig();
     try {
       const projectPathParts = localConfig.project_path.split("/");
       this.commonFields = {
@@ -62,6 +59,7 @@ export class MetricsService
         project_id: MD5(
           projectPathParts[projectPathParts.length - 1]
         ).toString(),
+        analytics_enabled: localConfig.analytics_enabled,
       };
     } catch (err) {
       console.error(err);
@@ -72,6 +70,7 @@ export class MetricsService
     action: Action,
     args: MetricsActionDefinition[Action]
   ): Promise<void> {
+    if (!this.commonFields.analytics_enabled) return;
     if (!this.actionsMap[action]?.[action]) {
       console.log(`${action} not found`);
       return;

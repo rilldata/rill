@@ -3,10 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"strings"
 
-	"database/sql"
-
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -40,16 +39,30 @@ type ColumnInfo struct {
 	Unknown int
 }
 
-var DoubleQuotesRegexp *regexp.Regexp = regexp.MustCompile("\"")
-
 func EscapeDoubleQuotes(column string) string {
-	return DoubleQuotesRegexp.ReplaceAllString(column, "\"\"")
+	return strings.ReplaceAll(column, "\"", "\"\"")
+}
+
+func EscapeHyphen(column string) string {
+	return strings.ReplaceAll(column, "-", "_")
 }
 
 func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
+	temporaryTableName := "profile_columns_" + EscapeHyphen(uuid.New().String())
+	// views return duplicate column names, so we need to create a temporary table
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
+		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, req.TableName),
+		Priority: int(req.Priority),
+	})
+	if err != nil {
+		return nil, err
+	}
+	rows.Close()
+	defer s.dropTempTable(req.InstanceId, int(req.Priority), temporaryTableName)
+
+	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
-		where table_name = '%s' and table_schema = current_schema()`, req.TableName),
+		where table_name = '%s' and table_schema = 'temp'`, temporaryTableName),
 		Priority: int(req.Priority),
 	})
 	if err != nil {
@@ -67,26 +80,28 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 		i++
 	}
 
-	for _, pc := range pcs[0:i] {
-		columnName := EscapeDoubleQuotes(pc.Name)
-		rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
-			Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
-			Priority: int(req.Priority),
-		})
-		if err != nil {
-			return nil, err
-		}
-		for rows.Next() {
-			var max sql.NullInt32
-			if err := rows.Scan(&max); err != nil {
-				return nil, err
-			}
-			if max.Valid {
-				pc.LargestStringLength = int32(max.Int32)
-			}
-		}
-		rows.Close()
-	}
+	// Disabling this for now. we need to move this to a separate API
+	// It adds a lot of response time to getting columns
+	//for _, pc := range pcs[0:i] {
+	//	columnName := EscapeDoubleQuotes(pc.Name)
+	//	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
+	//		Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
+	//		Priority: int(req.Priority),
+	//	})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	for rows.Next() {
+	//		var max sql.NullInt32
+	//		if err := rows.Scan(&max); err != nil {
+	//			return nil, err
+	//		}
+	//		if max.Valid {
+	//			pc.LargestStringLength = int32(max.Int32)
+	//		}
+	//	}
+	//	rows.Close()
+	//}
 
 	return &runtimev1.ProfileColumnsResponse{
 		ProfileColumns: pcs[0:i],

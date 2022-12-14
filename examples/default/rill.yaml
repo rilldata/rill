@@ -1,3 +1,4 @@
-version: 0.0.1
+compiler: rill-beta
+rill_version: v0.16
 
-name: rill-developer-example
+name: Saturday Night Live

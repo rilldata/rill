@@ -1,6 +1,6 @@
 module github.com/rilldata/rill
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/storage v1.27.0
@@ -22,13 +22,13 @@ require (
 	github.com/marcboeker/go-duckdb v1.0.6
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
 	google.golang.org/grpc v1.49.0
-	modernc.org/sqlite v1.20.0
+	modernc.org/sqlite v1.10.6
 )
 
 require (
@@ -62,7 +62,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/icholy/digest v0.1.15 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.8.0 // indirect

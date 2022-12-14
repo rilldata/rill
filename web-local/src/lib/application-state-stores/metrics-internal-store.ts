@@ -9,40 +9,13 @@ import type { Collection } from "yaml/dist/nodes/Collection";
 import { CATEGORICALS } from "../duckdb-data-types";
 import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
-export const metricsTemplate = `
-display_name: "Dashboard"
-description: "a description that appears in the UI"
-
-# model
-#optional to declare this, otherwise it is the model.sql file in the same directory
-from: ""
-
-# populate with the first datetime type in the OBT
-timeseries: ""
-
-# default to opionated option around estimated timegrain,
-# first in order is default time grain
-timegrains:
-  - day
-# the timegrain that users will see when they first visit the dashboard.
-default_timegrain: "day"
-
-# measures
-# measures are presented in the order that they are written in this file.
-measures: []
-
-# dimensions
-# dimensions are presented in the order that they are written in this file.
-dimensions: []
-`;
-
 export interface MetricsConfig {
   display_name: string;
   description: string;
   timeseries: string;
   timegrains?: Array<string>;
   default_timegrain?: Array<string>;
-  from: string;
+  model: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
 }
@@ -51,7 +24,6 @@ export interface MeasureEntity {
   expression?: string;
   description?: string;
   format_preset?: string;
-  visible?: boolean;
   __GUID__?: string;
   __ERROR__?: string;
 }
@@ -59,8 +31,6 @@ export interface DimensionEntity {
   label?: string;
   property?: string;
   description?: string;
-  visible?: boolean;
-  expression?: string;
   __ERROR__?: string;
 }
 
@@ -82,6 +52,7 @@ export class MetricsInternalRepresentation {
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
+    this.internalYAML = yamlString;
 
     this.updateRuntime = updateRuntime;
   }
@@ -92,9 +63,9 @@ export class MetricsInternalRepresentation {
 
   decorateInternalRepresentation(yamlString: string) {
     const internalRepresentationDoc = parseDocument(yamlString);
-    const numberOfMeasures = (
-      internalRepresentationDoc.get("measures") as Collection
-    ).items.length;
+    const numberOfMeasures =
+      (internalRepresentationDoc.get("measures") as Collection)?.items
+        ?.length || 0;
 
     Array(numberOfMeasures)
       .fill(0)
@@ -119,9 +90,11 @@ export class MetricsInternalRepresentation {
     // remove fields that are not to be sent as yaml
     const temporaryRepresentation = this.internalRepresentationDocument.clone();
 
-    const numberOfMeasures = (
-      temporaryRepresentation.get("measures") as Collection
-    ).items.length;
+    const numberOfMeasures =
+      (temporaryRepresentation.get("measures") as Collection)?.items?.length ||
+      0;
+
+    // if no measures, this block is skipped.
     for (let i = 0; i < numberOfMeasures; i++) {
       const measure = temporaryRepresentation.getIn(["measures", i]) as YAMLMap;
 
@@ -134,7 +107,9 @@ export class MetricsInternalRepresentation {
 
     const numberOfDimensions = (
       temporaryRepresentation.get("dimensions") as Collection
-    ).items.length;
+    )?.items?.length;
+
+    // if no dimensions, this block is skipped.
     for (let i = 0; i < numberOfDimensions; i++) {
       const dimension = temporaryRepresentation.getIn([
         "dimensions",
@@ -204,7 +179,6 @@ export class MetricsInternalRepresentation {
       expression: "",
       description: "",
       format_preset: "humanize",
-      visible: true,
       __GUID__: guidGenerator(),
     });
 
@@ -232,8 +206,6 @@ export class MetricsInternalRepresentation {
       label: "",
       property: "",
       description: "",
-      expression: "",
-      visible: true,
     });
 
     this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
@@ -267,46 +239,53 @@ export function createInternalRepresentation(yamlString, updateRuntime) {
   });
 }
 
-export function generateMeasuresAndDimension(
-  model: V1Model,
-  options?: { [key: string]: string }
-) {
-  const fields = model.schema.fields;
+const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
+export function initBlankDashboardYAML(dashboardName: string) {
+  const metricsTemplate = `
+# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
+
+display_name: ""
+model: ""
+timeseries: ""
+measures: []
+dimensions: []
+`;
   const template = parseDocument(metricsTemplate);
-  template.set("from", model.name);
+  template.set("display_name", dashboardName);
+  return template.toString();
+}
 
-  if (options?.timeseries) {
-    template.set("timeseries", options.timeseries);
-  } else {
-    const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
-    template.set("timeseries", timestampColumns[0]);
-  }
-  const measureNode = template.createNode({
+export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
+  const doc = parseDocument(yaml);
+  doc.set("model", model.name);
+
+  const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  doc.set("timeseries", timestampColumns[0]);
+
+  const measureNode = doc.createNode({
     label: "Total records",
     expression: "count(*)",
     description: "Total number of records present",
     format_preset: "humanize",
-    visible: true,
   });
-  template.addIn(["measures"], measureNode);
+  doc.set("measures", [measureNode]);
 
+  const fields = model.schema.fields;
   const diemensionSeq = fields
     .filter((field) => {
       return CATEGORICALS.has(field.type.code);
     })
     .map((field) => {
       return {
-        label: "",
+        label: capitalize(field.name),
         property: field.name,
         description: "",
-        expression: "",
-        visible: true,
       };
     });
 
-  const dimensionNode = template.createNode(diemensionSeq);
-  template.set("dimensions", dimensionNode);
+  const dimensionNode = doc.createNode(diemensionSeq);
+  doc.set("dimensions", dimensionNode);
 
-  return template.toString({ collectionStyle: "block" });
+  return doc.toString({ collectionStyle: "block" });
 }

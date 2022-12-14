@@ -3,7 +3,7 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { MetricsDefinitionWorkspace } from "@rilldata/web-local/lib/components/workspace";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
-  import { getFileFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 
   export let data;
 
@@ -12,7 +12,7 @@
 
   $: dashboardYAML = useRuntimeServiceGetFile(
     instanceId,
-    getFileFromName(metricsDefName, EntityType.MetricsDefinition)
+    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
 
   $: yaml = $dashboardYAML.data?.blob || "";
@@ -20,8 +20,7 @@
 </script>
 
 <svelte:head>
-  <!-- TODO: add the dashboard name to the title -->
-  <title>Rill Developer</title>
+  <title>Rill Developer | {metricsDefName}</title>
 </svelte:head>
 
 {#if yaml}

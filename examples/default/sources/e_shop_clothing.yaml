@@ -1,4 +1,0 @@
-version: 0.0.1
-
-type: "https"
-uri: https://cdn.rilldata.com/examples/0.16/ecomm-click-stream/e-shop-clothing.csv

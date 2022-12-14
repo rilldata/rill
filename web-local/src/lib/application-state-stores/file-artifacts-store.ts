@@ -1,8 +1,11 @@
 import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
 import { Readable, writable } from "svelte/store";
+import { parseDocument } from "yaml";
+import type { MetricsConfig } from "./metrics-internal-store";
 
 export type FileArtifactsData = {
-  errors: Array<V1ReconcileError>;
+  errors?: Array<V1ReconcileError>;
+  jsonRepresentation?: MetricsConfig | Record<string, never>;
 };
 
 /**
@@ -24,6 +27,7 @@ const createOrUpdateFileArtifact = (
     if (!state[path]) {
       state.entities[path] = {
         errors: [],
+        jsonRepresentation: {},
       };
     }
     callback(state.entities[path]);
@@ -41,6 +45,14 @@ const fileArtifactsEntitiesReducers = {
     errors.forEach((error) => {
       const filePath = correctFilePath(error.filePath);
 
+      // empty models should not show error
+      if (
+        filePath.endsWith(".sql") &&
+        error.message.endsWith("No statement to prepare!")
+      ) {
+        return;
+      }
+
       if (!errorsForPaths.has(filePath)) {
         errorsForPaths.set(filePath, []);
       }
@@ -52,6 +64,17 @@ const fileArtifactsEntitiesReducers = {
         entityData.errors = errors;
       });
     });
+  },
+
+  // reducer for storing Metric artifact
+  setJSONRep(affectedPath: string, fileData: string) {
+    const jsonRepresentation = parseDocument(fileData).toJSON();
+    createOrUpdateFileArtifact(
+      affectedPath,
+      (entityData: FileArtifactsData) => {
+        entityData.jsonRepresentation = jsonRepresentation;
+      }
+    );
   },
 };
 
