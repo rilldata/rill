@@ -68,7 +68,7 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 	if err != nil {
 		return err
 	}
-	if err := rows.Close(); err != nil {
+	if err = rows.Close(); err != nil {
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.S
 	if err != nil {
 		return err
 	}
-	if err := rows.Close(); err != nil {
+	if err = rows.Close(); err != nil {
 		return err
 	}
 

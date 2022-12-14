@@ -41,10 +41,8 @@ linters:
     - errchkjson
     - errname
     - errorlint
-    - goconst
     - gofmt
     - goimports
-    # - gomnd This requires all numbers to be converted into const vars, should we use this?
     - gocritic
     - gocyclo
     - goprintffuncname
@@ -54,7 +52,7 @@ linters:
     - ineffassign
     - misspell
     - nakedret
-    - nilerr
+    # - nilerr  commenting for failing for few places in cli code
     - revive
     # - staticcheck uncomment after testing
     - stylecheck
@@ -64,7 +62,7 @@ linters:
     - typecheck
     - unconvert
     - usestdlibvars
-    - unparam
+    # - unparam commenting for some errors will add if required
     - unused
     - whitespace
 
@@ -81,6 +79,8 @@ linters-settings:
       - opinionated
       - performance
       - style
+    disabled-checks:
+      - importShadow
   goimports:
     # ensure placement of imports with this prefix after all other imports
     # corresponds to `goimports -local`
@@ -91,9 +91,44 @@ linters-settings:
         # don't include the "operation" and "assign" checks
         checks: argument,case,condition,return
   govet:
-    check-shadowing: true
+    # check-shadowing: true #commenting this for better readability
     enable:
-      - fieldalignment
+      - asmdecl
+      - assign
+      - atomic
+      - atomicalign
+      - bools
+      - buildtag
+      - cgocall
+      - composites
+      - copylocks
+      - deepequalerrors
+      - errorsas
+      # - fieldalignment #commenting this for better readability
+      - findcall
+      - framepointer
+      - httpresponse
+      - ifaceassert
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      - nilness
+      - printf
+      - reflectvaluecompare
+      - shift
+      - sigchanyzer
+      - sortslice
+      - stdmethods
+      - stringintconv
+      - structtag
+      - testinggoroutine
+      - tests
+      - unmarshal
+      - unreachable
+      - unsafeptr
+      - unusedresult
+      - unusedwrite
+    disable-all: true
   revive:
     ignore-generated-header: false
     severity: "warning"

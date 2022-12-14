@@ -123,13 +123,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// One-off REST-only path for multipart file upload
 	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	// One-off REST-only path for file export
 	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	// Register CORS

@@ -277,7 +277,7 @@ func (f *posixFunc) Call(args ...uintptr) (uintptr, uintptr, error) {
 		panic(fmt.Errorf("sharedlibrary: cannot call function with more than 12 args"))
 	}
 
-	//Can give any better name here
+	// We can give any better name here, just adding res1 and res2
 	res1 := uintptr(res)
 	res2 := uintptr(res >> 32)
 	return res1, res2, nil

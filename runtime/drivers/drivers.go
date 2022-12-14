@@ -24,7 +24,7 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver string, dsn string) (Connection, error) {
+func Open(driver, dsn string) (Connection, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)

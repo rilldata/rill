@@ -55,7 +55,6 @@ func (s *Server) GetNullCount(ctx context.Context, req *runtimev1.GetNullCountRe
 	return &runtimev1.GetNullCountResponse{
 		Count: q.Result,
 	}, nil
-
 }
 
 func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {

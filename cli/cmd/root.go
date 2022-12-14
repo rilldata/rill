@@ -32,7 +32,7 @@ func Execute(ctx context.Context, ver, commit, buildDate string) {
 	}
 }
 
-func runCmd(ctx context.Context, ver string, commit string, buildDate string) error {
+func runCmd(ctx context.Context, ver, commit, buildDate string) error {
 	v := version.Format(ver, commit, buildDate)
 	rootCmd.Version = v
 

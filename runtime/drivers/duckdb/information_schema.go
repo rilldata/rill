@@ -172,7 +172,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "TIME":
 		t.Code = runtimev1.Type_CODE_TIME
 	case "INTERVAL":
-		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - add detail/assignee to this TODO
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - Consider adding interval type
 	case "HUGEINT":
 		t.Code = runtimev1.Type_CODE_INT128
 	case "VARCHAR":
@@ -186,7 +186,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "TIMESTAMP_NS":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "ENUM":
-		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - add detail/assignee to this TODO
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - Consider how to handle enums
 	case "UUID":
 		t.Code = runtimev1.Type_CODE_UUID
 	case "JSON":

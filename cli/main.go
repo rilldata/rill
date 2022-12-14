@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd"
 )
 
-// These are set using -Idflags
+// Version info is set using -Idflags
 var Version string
 var Commit string
 var BuildDate string

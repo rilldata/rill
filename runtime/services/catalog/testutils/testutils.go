@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func CreateSource(t *testing.T, s *catalog.Service, name string, file string, sourcePath string) string {
+func CreateSource(t *testing.T, s *catalog.Service, name, file, sourcePath string) string {
 	absFile, err := filepath.Abs(file)
 	require.NoError(t, err)
 
@@ -41,7 +41,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, so
 	return blob
 }
 
-func CreateModel(t *testing.T, s *catalog.Service, name string, sql string, sourcePath string) string {
+func CreateModel(t *testing.T, s *catalog.Service, name, sql, sourcePath string) string {
 	ctx := context.Background()
 	time.Sleep(time.Millisecond * 10)
 	err := artifacts.Write(ctx, s.Repo, s.InstID, &drivers.CatalogEntry{
@@ -83,7 +83,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 	return s
 }
 
-func AssertTable(t *testing.T, s *catalog.Service, name string, sourcePath string) {
+func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) {
 	catalogEntry := AssertInCatalogStore(t, s, name, sourcePath)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{

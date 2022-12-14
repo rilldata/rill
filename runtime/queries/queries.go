@@ -3,5 +3,5 @@ package queries
 import "fmt"
 
 func quoteName(name string) string {
-	return fmt.Sprintf("%q", name)
+	return fmt.Sprintf("\"%s\"", name)
 }

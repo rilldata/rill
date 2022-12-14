@@ -43,7 +43,7 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	rangeSql := fmt.Sprintf(
+	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
 		quoteName(q.ColumnName),
 		quoteName(q.TableName),
@@ -59,7 +59,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rangeSql,
+		Query:    rangeSQL,
 		Priority: priority,
 	})
 	if err != nil {
