@@ -98,8 +98,6 @@ dockers:
   - image_templates:
       - rilldata/rill:latest
       - rilldata/rill:{{ .Tag }}
-    extra_files:
-      - scripts/entrypoint.sh
 
 archives:
   - files:
