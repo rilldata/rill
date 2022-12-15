@@ -121,7 +121,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		Query:    sql,
 		Priority: priority,
 	})
-	defer dropTempTable(olap, priority, temporaryTableName)
+	defer DropTempTable(olap, priority, temporaryTableName)
 	if err != nil {
 		return err
 	}
@@ -534,14 +534,4 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 		}
 	}
 	return results, converr
-}
-
-func dropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
-	rs, er := olap.Execute(context.Background(), &drivers.Statement{
-		Query:    `DROP TABLE "` + tableName + `"`,
-		Priority: priority,
-	})
-	if er == nil {
-		rs.Close()
-	}
 }

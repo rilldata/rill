@@ -1,8 +1,11 @@
 package queries
 
 import (
+	"context"
 	"fmt"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func quoteName(name string) string {
@@ -15,4 +18,18 @@ func EscapeSingleQuotes(value string) string {
 
 func EscapeDoubleQuotes(column string) string {
 	return strings.ReplaceAll(column, "\"", "\"\"")
+}
+
+func DropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
+	rs, er := olap.Execute(context.Background(), &drivers.Statement{
+		Query:    `DROP TABLE "` + tableName + `"`,
+		Priority: priority,
+	})
+	if er == nil {
+		rs.Close()
+	}
+}
+
+func EscapeHyphen(column string) string {
+	return strings.ReplaceAll(column, "-", "_")
 }
