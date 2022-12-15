@@ -1,6 +1,5 @@
 <script lang="ts">
   import EditIcon from "@rilldata/web-local/lib/components/icons/EditIcon.svelte";
-  import ModelIcon from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
@@ -44,9 +43,9 @@
         style:font-size="16px"
         class="grid grid-flow-col justify-start items-center gap-x-1"
       >
-        <slot name="icon">
+        <!-- <slot name="icon">
           <ModelIcon />
-        </slot>
+        </slot> -->
 
         <Tooltip
           distance={8}

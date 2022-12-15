@@ -13,7 +13,6 @@
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
-  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
@@ -23,9 +22,8 @@
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
-  import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
-  import { slide } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
 
   export let modelName: string;
@@ -55,14 +53,20 @@
 
   /** model body layout elements */
   // TODO: should there be a session lived ID here instead of name?
-  const outputLayout = localStorageStore(`${modelName}-output`, {
-    value: 500,
-    visible: true,
-  });
-  const outputPosition = tweened($outputLayout.value, { duration: 50 });
-  outputLayout.subscribe((state) => {
-    outputPosition.set(state.value);
-  });
+  // const outputLayout = localStorageStore(`${modelName}-output`, {
+  //   value: 500,
+  //   visible: true,
+  // });
+  // const outputPosition = tweened($outputLayout.value, { duration: 50 });
+  // outputLayout.subscribe((state) => {
+  //   outputPosition.set(state.value);
+  // });
+
+  const outputLayout = getContext("rill:app:output-layout");
+  const outputPosition = getContext("rill:app:output-height-tween");
+  const outputVisibilityTween = getContext(
+    "rill:app:output-visibility-tween"
+  ) as Writable<number>;
 
   const inspectorWidth = getContext(
     "rill:app:inspector-width-tween"
@@ -128,8 +132,8 @@
 
 <div class="editor-pane bg-gray-100">
   <div
-    style:height="calc({innerHeight}px - {$outputPosition}px -
-    var(--header-height))"
+    style:height="calc({innerHeight}px - {$outputPosition *
+      $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
       <div class="h-full pb-5 grid overflow-auto">
@@ -145,29 +149,32 @@
     {/if}
   </div>
   <Portal target=".body">
-    <div
-      class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center"
-      style:bottom="{$outputPosition}px"
-      style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
-      style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
-      style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
-      style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
-      use:drag={{
-        minSize: 200,
-        maxSize: innerHeight - 200,
-        side: "modelPreviewHeight",
-        store: outputLayout,
-        orientation: "vertical",
-        reverse: true,
-      }}
-    >
-      <div class="border-t border-gray-300" />
-      <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
-        <div
-          class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
-        />
+    {#if $outputLayout.visible}
+      <div
+        transition:fade
+        class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center"
+        style:bottom="{$outputPosition * $outputVisibilityTween}px"
+        style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
+        style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
+        style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
+        style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
+        use:drag={{
+          minSize: 200,
+          maxSize: innerHeight - 200,
+          side: "modelPreviewHeight",
+          store: outputLayout,
+          orientation: "vertical",
+          reverse: true,
+        }}
+      >
+        <div class="border-t border-gray-300" />
+        <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
+          <div
+            class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
+          />
+        </div>
       </div>
-    </div>
+    {/if}
   </Portal>
 
   {#if hasModelSql}

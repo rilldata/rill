@@ -35,9 +35,41 @@
     easing: SURFACE_SLIDE_EASING,
   });
 
+  /** when the inspector visibility changes, trigger the tween. */
+  inspectorLayout.subscribe((state) => {
+    visibilityTween.set(state.visible ? 1 : 0);
+  });
+
   setContext("rill:app:inspector-layout", inspectorLayout);
   setContext("rill:app:inspector-width-tween", inspectorWidth);
   setContext("rill:app:inspector-visibility-tween", visibilityTween);
+
+  const outputLayout = localStorageStore<LayoutElement>(`${assetID}-output`, {
+    value: inspector ? 400 : 0,
+    visible: true,
+  });
+  const outputHeight = tweened(inspector ? $inspectorLayout?.value || 400 : 0, {
+    duration: 50,
+  });
+  outputLayout.subscribe((state) => {
+    outputHeight.set(state.value);
+  });
+
+  export const outputVisibilityTween = tweened(
+    $inspectorLayout?.visible ? 1 : 0,
+    {
+      duration: SURFACE_SLIDE_DURATION,
+      easing: SURFACE_SLIDE_EASING,
+    }
+  );
+
+  outputLayout.subscribe((state) => {
+    outputVisibilityTween.set(state.visible ? 1 : 0);
+  });
+
+  setContext("rill:app:output-layout", outputLayout);
+  setContext("rill:app:output-height-tween", outputHeight);
+  setContext("rill:app:output-visibility-tween", outputVisibilityTween);
 
   const navigationWidth = getContext(
     "rill:app:navigation-width-tween"

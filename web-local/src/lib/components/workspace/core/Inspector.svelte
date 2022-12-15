@@ -18,14 +18,6 @@
     "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
 
-  let inspectorVisible = $inspectorLayout.visible;
-  inspectorLayout.subscribe((state) => {
-    if (state.visible !== inspectorVisible) {
-      visibilityTween.set(state.visible ? 1 : 0);
-      inspectorVisible = state.visible;
-    }
-  });
-
   let hasNoError = 1;
 </script>
 
