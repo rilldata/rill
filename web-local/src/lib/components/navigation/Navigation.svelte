@@ -161,6 +161,6 @@
     <SurfaceViewIcon size="16px" mode={"hamburger"} />
   {/if}
   <svelte:fragment slot="tooltip-content">
-    {#if $navVisibilityTween === 0} close {:else} show {/if} sidebar
+    {#if $navVisibilityTween === 0} Close {:else} Show {/if} sidebar
   </svelte:fragment>
 </SurfaceControlButton>

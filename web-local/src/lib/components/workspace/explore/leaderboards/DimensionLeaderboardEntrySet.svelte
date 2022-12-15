@@ -89,13 +89,13 @@ see more button
         <TooltipShortcutContainer>
           {#if atLeastOneActive}
             <div>
-              {excluded ? "include" : "exclude"}
+              {excluded ? "Include" : "Exclude"}
               <span class="italic">{label}</span>
               {excluded ? "in" : "from"} output
             </div>
           {:else}
             <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-              filter {filterExcludeMode ? "out" : "on"}
+              Filter {filterExcludeMode ? "out" : "on"}
               <span class="italic"
                 >{label?.length > TOOLTIP_STRING_LIMIT
                   ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."

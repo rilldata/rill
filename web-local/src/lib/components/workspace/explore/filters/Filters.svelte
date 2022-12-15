@@ -190,7 +190,7 @@ The main feature-set component for dashboard filters
             {searchedValues}
           >
             <svelte:fragment slot="body-tooltip-content">
-              click to edit the the filters in this dimension
+              Click to edit the the filters in this dimension
             </svelte:fragment>
           </RemovableListChip>
         </div>
@@ -210,7 +210,7 @@ The main feature-set component for dashboard filters
             <span slot="icon" class="ui-copy-disabled-faint">
               <FilterRemove size="16px" />
             </span>
-            <svelte:fragment slot="body">clear filters</svelte:fragment>
+            <svelte:fragment slot="body">Clear filters</svelte:fragment>
           </Chip>
         </div>
       {/if}

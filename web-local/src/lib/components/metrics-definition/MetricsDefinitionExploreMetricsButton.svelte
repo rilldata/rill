@@ -64,11 +64,11 @@
   <TooltipContent slot="tooltip-content">
     <div>
       {#if buttonStatus === "MISSING_MODEL_OR_TIMESTAMP"}
-        select a model and a timestamp column before exploring metrics
+        Select a model and a timestamp column before exploring metrics
       {:else if buttonStatus === "MISSING_MEASURES_OR_DIMENSIONS"}
-        add measures and dimensions before exploring metrics
+        Add measures and dimensions before exploring metrics
       {:else}
-        explore your metrics dashboard
+        Explore your metrics dashboard
       {/if}
     </div>
   </TooltipContent>

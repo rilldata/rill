@@ -14,7 +14,7 @@
   <svelte:fragment slot="description" />
 </TooltipTitle>
 <TooltipShortcutContainer>
-  <div>open in workspace</div>
+  <div>Open in workspace</div>
   <Shortcut>Click</Shortcut>
   <div>
     <StackingWord key="shift">Copy</StackingWord> name to clipboard

@@ -220,7 +220,7 @@
             on:select={() => editModel(dashboardName)}
           >
             <Model slot="icon" />
-            edit model
+            Edit model
             <svelte:fragment slot="description">
               {#if hasSourceError}
                 {selectionError}
@@ -233,7 +233,7 @@
             on:select={() => editMetrics(dashboardName)}
           >
             <MetricsIcon slot="icon" />
-            edit metrics
+            Edit metrics
           </MenuItem>
           <Divider />
           <MenuItem
@@ -241,11 +241,11 @@
             on:select={() => openRenameMetricsDefModal(dashboardName)}
           >
             <EditIcon slot="icon" />
-            rename...</MenuItem
+            Rename...</MenuItem
           >
           <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
-            delete</MenuItem
+            Delete</MenuItem
           >
         </svelte:fragment>
       </NavigationEntry>

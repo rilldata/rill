@@ -16,7 +16,7 @@
 </TooltipTitle>
 <TooltipShortcutContainer>
   <div>
-    <StackingWord key="command">query</StackingWord> in workspace
+    <StackingWord key="command">Query</StackingWord> in workspace
   </div>
   <Shortcut>
     {#if isMac()}<span
