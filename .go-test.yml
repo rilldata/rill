@@ -45,7 +45,7 @@ linters:
     - goimports
     - gocritic
     - goprintffuncname
-    - gosec 
+    - gosec
     - gosimple
     - govet
     - ineffassign
@@ -96,7 +96,6 @@ linters-settings:
         # don't include the "operation" and "assign" checks
         checks: argument,case,condition,return
   govet:
-    # check-shadowing: true #commenting this for better readability
     enable:
       - asmdecl
       - assign
