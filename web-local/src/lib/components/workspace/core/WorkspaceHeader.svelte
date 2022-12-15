@@ -3,6 +3,11 @@
   import ModelIcon from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import { IconButton } from "../../button";
+  import HideRightSidebar from "../../icons/HideRightSidebar.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
@@ -13,7 +18,9 @@
   let editingTitle = false;
   let titleInputValue;
   let tooltipActive;
-
+  const inspectorLayout = getContext(
+    "rill:app:inspector-layout"
+  ) as Writable<LayoutElement>;
   function onKeydown(event) {
     if (editingTitle && event.key === "Enter") {
       titleInputElement.blur();
@@ -28,7 +35,7 @@
 
 <header
   style:height="var(--header-height)"
-  class="grid items-center content-stretch justify-between bg-gray-100 pl-6 pr-6"
+  class="grid items-center content-stretch justify-between pl-6 pr-6 border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
 >
   <div>
@@ -54,7 +61,7 @@
               titleInputValue = evt.target.value;
               editingTitle = true;
             }}
-            class="bg-gray-100 border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
+            class="bg-transparent border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
             class:font-bold={editingTitle === false}
             on:blur={() => {
               editingTitle = false;
@@ -72,7 +79,20 @@
       </h1>
     {/if}
   </div>
-  <div>
+  <div class="flex items-center gap-x-2">
+    <IconButton
+      on:click={() => {
+        inspectorLayout.update((state) => {
+          state.visible = !state.visible;
+          return state;
+        });
+      }}
+    >
+      <HideRightSidebar size="20px" />
+      <svelte:fragment slot="tooltip-content">
+        {#if $inspectorLayout.visible} close {:else} show {/if} sidebar
+      </svelte:fragment>
+    </IconButton>
     <slot name="right" />
     {#if showStatus}
       <WorkspaceHeaderStatusSpinner />

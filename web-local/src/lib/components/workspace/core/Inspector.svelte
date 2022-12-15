@@ -1,8 +1,5 @@
 <script lang="ts">
-  import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
-  import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
-  import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
@@ -36,6 +33,7 @@
   class="fixed"
   aria-hidden={!$inspectorLayout.visible}
   style:right="{$inspectorWidth * $visibilityTween}px"
+  style:top="var(--header-height)"
 >
   <div
     class="
@@ -49,7 +47,6 @@
       "
     class:hidden={$visibilityTween === 0}
     class:pointer-events-none={!$inspectorLayout.visible}
-    style:top="0px"
     style:width="{$inspectorWidth}px"
   >
     <!-- draw handler -->
@@ -58,6 +55,8 @@
         <div
           class="fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen"
           style:right="{$visibilityTween * $inspectorWidth}px"
+          style:top="var(--header-height)"
+          style:bottom="0px"
           use:drag={{ minSize: 300, store: inspectorLayout, reverse: true }}
           on:dblclick={() => {
             inspectorLayout.update((state) => {
@@ -74,25 +73,3 @@
     </div>
   </div>
 </div>
-
-<SurfaceControlButton
-  show={true}
-  right="{($inspectorWidth - 12 - 24) * ($visibilityTween * hasNoError) +
-    12 * (1 - $visibilityTween) * hasNoError}px"
-  on:click={() => {
-    //inspectorVisible.set(!$inspecto);
-    inspectorLayout.update((state) => {
-      state.visible = !state.visible;
-      return state;
-    });
-  }}
->
-  {#if $inspectorLayout.visible}
-    <HideRightSidebar size="20px" />
-  {:else}
-    <MoreHorizontal size="16px" />
-  {/if}
-  <svelte:fragment slot="tooltip-content">
-    {#if $visibilityTween === 1} close {:else} show {/if} sidebar
-  </svelte:fragment>
-</SurfaceControlButton>

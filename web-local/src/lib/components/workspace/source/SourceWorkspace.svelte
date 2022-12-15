@@ -97,14 +97,15 @@
 
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
+    <div slot="header">
+      <SourceWorkspaceHeader {sourceName} />
+    </div>
     <div
       slot="body"
       class="grid pb-6"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader {sourceName} />
-
       {#if entryExists}
         <div
           style:overflow="auto"

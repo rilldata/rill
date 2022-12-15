@@ -51,7 +51,15 @@
 </script>
 
 <div
+  class="fixed bg-white"
+  style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
+  style:right="0px"
+>
+  <slot name="header" />
+</div>
+<div
   class="box-border fixed {bgClass}"
+  style:top="var(--header-height)"
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
   style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
   style:padding-right="{(1 - $visibilityTween) *
@@ -61,7 +69,6 @@
   style:right="{hasInspector && hasNoError
     ? $inspectorWidth * $visibilityTween
     : 0}px"
-  style:top="0px"
 >
   <slot name="body" />
 </div>
