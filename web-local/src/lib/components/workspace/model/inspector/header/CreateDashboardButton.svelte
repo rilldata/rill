@@ -109,8 +109,8 @@
     type="primary"
   >
     <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
-    <Explore size="14px" />
-  </Button>
+    <Explore size="14px" /></Button
+  >
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
