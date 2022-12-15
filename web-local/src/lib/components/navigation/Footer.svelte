@@ -3,6 +3,7 @@
   import { fly } from "svelte/transition";
   import type { ApplicationMetadata } from "../../types";
   import Discord from "../icons/Discord.svelte";
+  import Docs from "../icons/Docs.svelte";
   import Github from "../icons/Github.svelte";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import Shortcut from "../tooltip/Shortcut.svelte";
@@ -14,13 +15,13 @@
   const metadata: ApplicationMetadata = getContext("rill:app:metadata");
 
   const lineItems = [
-    // {
-    //   icon: Docs,
-    //   label: "Documentation",
-    //   href: "https://docs.rilldata.com",
-    //   className: "fill-gray-600",
-    //   shrinkIcon: false,
-    // },
+    {
+      icon: Docs,
+      label: "Documentation",
+      href: "https://docs.rilldata.com",
+      className: "fill-gray-600",
+      shrinkIcon: false,
+    },
     {
       icon: Discord,
       label: "Ask a question",
