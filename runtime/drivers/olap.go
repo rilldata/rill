@@ -12,9 +12,16 @@ import (
 // ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
 var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 
+// WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
+// It's called with two contexts: wrappedContext wraps the input context (including cancellation),
+// and ensuredContext wraps a background context (ensuring it can never be cancelled).
+type WithConnectionFunc func(wrappedContext context.Context, ensuredContext context.Context) error
+
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {
 	Dialect() Dialect
+	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
+	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
 	InformationSchema() InformationSchema
