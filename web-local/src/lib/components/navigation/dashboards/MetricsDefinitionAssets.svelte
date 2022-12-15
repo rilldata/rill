@@ -184,14 +184,14 @@
 <NavigationHeader
   bind:show={showMetricsDefs}
   on:add={dispatchAddEmptyMetricsDef}
-  tooltipText="create a new dashboard"
+  tooltipText="Create a new dashboard"
 >
-  <Explore size="16px" /> Dashboards
+  <Explore size="14px" /> Dashboards
 </NavigationHeader>
 
 {#if showMetricsDefs && $dashboardNames.data}
   <div
-    class="pb-6 justify-self-end"
+    class="pb-3 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
@@ -220,7 +220,7 @@
             on:select={() => editModel(dashboardName)}
           >
             <Model slot="icon" />
-            edit model
+            Edit model
             <svelte:fragment slot="description">
               {#if hasSourceError}
                 {selectionError}
@@ -233,7 +233,7 @@
             on:select={() => editMetrics(dashboardName)}
           >
             <MetricsIcon slot="icon" />
-            edit metrics
+            Edit metrics
           </MenuItem>
           <Divider />
           <MenuItem
@@ -241,11 +241,11 @@
             on:select={() => openRenameMetricsDefModal(dashboardName)}
           >
             <EditIcon slot="icon" />
-            rename...</MenuItem
+            Rename...</MenuItem
           >
           <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
-            delete</MenuItem
+            Delete</MenuItem
           >
         </svelte:fragment>
       </NavigationEntry>

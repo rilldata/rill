@@ -42,7 +42,7 @@
     >
       <SummaryStatistics />
       <svelte:fragment slot="tooltip-content">
-        show basic summary statistics
+        Show basic summary statistics
       </svelte:fragment>
     </IconButton>
     <IconButton
@@ -55,7 +55,7 @@
     >
       <TopKIcon />
       <svelte:fragment slot="tooltip-content"
-        >show the top values</svelte:fragment
+        >Show the top values</svelte:fragment
       >
     </IconButton>
   </div>

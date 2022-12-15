@@ -6,7 +6,7 @@
   $: nullColor = dark ? "text-gray-300" : "text-gray-400";
 </script>
 
-<span class="{classes} {isNull ? `${nullColor} italic` : '{color}'}">
+<span class="{classes} {isNull ? `${nullColor}` : '{color}'}">
   {#if isNull}
     null
   {:else}

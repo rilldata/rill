@@ -93,7 +93,7 @@
           ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
         `}
     disabled={buttonDisabled}
-    on:click={openModelIfNeeded}>quick metrics</button
+    on:click={openModelIfNeeded}>Quick Metrics</button
   >
   <TooltipContent slot="tooltip-content">
     <div>

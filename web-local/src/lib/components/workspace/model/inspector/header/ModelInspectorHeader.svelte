@@ -148,7 +148,7 @@
         type="secondary"
       >
         <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
-        <Export size="16px" />
+        <Export size="14px" />
       </Button>
       <Menu
         dark
@@ -190,22 +190,18 @@
     class="flex flex-row items-center justify-between"
     class:text-gray-300={modelHasError}
   >
-    <div
-      class="italic text-gray-500"
-      class:italic={modelHasError}
-      class:text-gray-500={modelHasError}
-    >
+    <div class="text-gray-500" class:text-gray-500={modelHasError}>
       <WithModelResultTooltip {modelHasError}>
         <div>
           {#if validRollup(rollup)}
             {#if isNaN(rollup)}
               ~
             {:else if rollup === 0}
-              resultset is empty
+              Result set is empty
             {:else if rollup !== 1}
               {formatBigNumberPercentage(rollup)}
               of source rows
-            {:else}no change in row
+            {:else}No change in row
               {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
             {/if}
           {:else if rollup === Infinity}
@@ -217,7 +213,7 @@
 
         <!-- tooltip content -->
         <svelte:fragment slot="tooltip-title"
-          >rollup percentage
+          >Rollup percentage
         </svelte:fragment>
         <svelte:fragment slot="tooltip-description"
           >The ratio of resultset rows to source rows, as a percentage.
@@ -227,14 +223,12 @@
     <div
       class="text-gray-800 font-bold"
       class:font-normal={modelHasError}
-      class:italic={modelHasError}
       class:text-gray-500={modelHasError}
     >
       {#if $inputCardinalities > 0}
-        {formatInteger(~~outputRowCardinalityValue)} row
-        {#if $inputCardinalities !== 1}s{/if}
+        {formatInteger(~~outputRowCardinalityValue)} row{#if $inputCardinalities !== 1}s{/if}
       {:else if $inputCardinalities === 0}
-        no rows selected
+        No rows selected
       {:else}
         &nbsp;
       {/if}
@@ -246,7 +240,6 @@
     <WithModelResultTooltip {modelHasError}>
       <div
         class:font-normal={modelHasError}
-        class:italic={modelHasError}
         class:text-gray-500={modelHasError}
       >
         {#if columnDelta > 0}
@@ -256,14 +249,14 @@
           {formatInteger(-columnDelta)} column
           {#if -columnDelta !== 1}s{/if} dropped
         {:else if columnDelta === 0}
-          no change in column count
+          No change in column count
         {:else}
-          no change in column count
+          No change in column count
         {/if}
       </div>
 
       <!-- tooltip content -->
-      <svelte:fragment slot="tooltip-title">column diff</svelte:fragment>
+      <svelte:fragment slot="tooltip-title">Column diff</svelte:fragment>
       <svelte:fragment slot="tooltip-description">
         The difference in column counts between the sources and model.
       </svelte:fragment>
@@ -271,7 +264,6 @@
     <div
       class="text-gray-800 font-bold"
       class:font-normal={modelHasError}
-      class:italic={modelHasError}
       class:text-gray-500={modelHasError}
     >
       {outputColumnNum} columns

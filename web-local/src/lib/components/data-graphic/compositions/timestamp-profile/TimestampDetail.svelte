@@ -436,7 +436,6 @@
           x={$plotConfig.plotRight}
           y={fontSize}
           text-anchor="end"
-          style:font-style="italic"
           style:user-select="none"
           style:cursor="pointer"
           class="transition-color fill-gray-500 hover:fill-black"

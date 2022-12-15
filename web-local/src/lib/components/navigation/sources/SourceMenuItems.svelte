@@ -192,7 +192,7 @@
 
 <MenuItem icon on:select={() => handleCreateModel(sourceName)}>
   <Model slot="icon" />
-  create new model
+  Create new model
 </MenuItem>
 
 <MenuItem
@@ -202,10 +202,10 @@
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  autogenerate dashboard
+  Autogenerate dashboard
   <svelte:fragment slot="description">
     {#if !schemaHasTimestampColumn(source?.schema)}
-      requires a timestamp column
+      Requires a timestamp column
     {/if}
   </svelte:fragment>
 </MenuItem>
@@ -215,14 +215,14 @@
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
-    import local file to refresh source
+    Import local file to refresh source
   </MenuItem>
 {:else}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <RefreshIcon />
     </svelte:fragment>
-    refresh source data
+    Refresh source data
   </MenuItem>
 {/if}
 
@@ -234,8 +234,7 @@
   }}
 >
   <EditIcon slot="icon" />
-
-  rename...
+  Rename...
 </MenuItem>
 <!-- FIXME: this should pop up an "are you sure?" modal -->
 <MenuItem
@@ -244,5 +243,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  delete
+  Delete
 </MenuItem>

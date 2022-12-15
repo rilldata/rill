@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { singleDigitPercentage } from "@rilldata/web-local/lib/util/formatters";
   import Tooltip from "../../../tooltip/Tooltip.svelte";
@@ -15,12 +16,16 @@
 {#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage)}
   <Tooltip location="right" alignment="center" distance={8}>
     <BarAndLabel
+      compact
       showBackground={nullCount !== 0}
       color={DATA_TYPE_COLORS[type]?.bgClass}
       value={percentage || 0}
     >
-      <span class:text-gray-300={nullCount === 0}
-        >∅ {singleDigitPercentage(percentage)}</span
+      <span
+        style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
+        class="ui-copy-number"
+        class:text-gray-300={nullCount === 0}
+        >{singleDigitPercentage(percentage)}</span
       >
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">

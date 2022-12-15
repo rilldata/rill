@@ -191,7 +191,7 @@
             deleteEntityHandler={handleDeleteMeasure}
             rows={measures ?? []}
             columnNames={MeasuresColumns}
-            tooltipText={"add a new measure"}
+            tooltipText={"Add a new measure"}
             addButtonId={"add-measure-button"}
           />
 
@@ -204,7 +204,7 @@
             deleteEntityHandler={handleDeleteDimension}
             rows={dimensions ?? []}
             columnNames={DimensionColumns}
-            tooltipText={"add a new dimension"}
+            tooltipText={"Add a new dimension"}
             addButtonId={"add-dimension-button"}
           />
         </LayoutManager>

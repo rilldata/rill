@@ -90,7 +90,7 @@
           </svelte:fragment>
         </TooltipTitle>
         <TooltipShortcutContainer>
-          <div>toggle to {otherFilterKey} values</div>
+          <div>Toggle to {otherFilterKey} values</div>
           <Shortcut>Click</Shortcut>
         </TooltipShortcutContainer>
       </TooltipContent>

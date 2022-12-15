@@ -126,9 +126,8 @@
               <div class="flex justify-between w-full gap-x-4">
                 {singleSelection?.main}
                 <span
-                  class="{level === 'error'
-                    ? 'text-red-600'
-                    : 'text-gray-500'} italic">{singleSelection?.right}</span
+                  class={level === "error" ? "text-red-600" : "text-gray-500"}
+                  >{singleSelection?.right}</span
                 >
               </div>
             </SelectMenu>

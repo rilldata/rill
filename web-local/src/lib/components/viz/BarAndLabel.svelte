@@ -5,6 +5,7 @@
   export let value = 0;
   export let color;
   export let showBackground = true;
+  export let compact = false;
   export let showHover = false;
   export let customBackgroundColor = undefined;
   export let justify: string | boolean = "end"; // or left
@@ -22,7 +23,7 @@
   $: valueTween.set(value);
   /** for the tailwind compiler: we're creating these optional classes */
   // justify-items-stretch justify-items-end justify-items-start
-  // justify-stretch justify-end -justify-start
+  // justify-stretch justify-end -justify-start pl-2 pr-2 pl-1 pr-1
 </script>
 
 <div
@@ -40,7 +41,11 @@
   style:flex="1"
 >
   <div
-    class="pl-2 pr-2 text-right overflow-x-hidden "
+    class:pl-2={!compact}
+    class:pr-2={!compact}
+    class:pr-1={compact}
+    class:pl-1={compact}
+    class="text-right overflow-x-hidden "
     style="position: relative;"
   >
     <slot />
