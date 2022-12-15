@@ -221,7 +221,7 @@ The main feature-set component for dashboard filters
       class="ui-copy-disabled grid items-center"
       style:min-height="26px"
     >
-      no filters selected
+      No filters selected
     </div>
   {:else}
     &nbsp;

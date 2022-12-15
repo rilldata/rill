@@ -44,7 +44,7 @@
         style="grid-template-columns: auto max-content;"
       >
         <div>
-          {#if zooming}<span>zoomed</span>{:else}<span>zooming</span>{/if}
+          {#if zooming}<span>Zoomed</span>{:else}<span>Zooming</span>{/if}
           to {formatInteger(zoomedRows)} row{#if zoomedRows !== 1}s{/if}
         </div>
         <div class="text-right text-gray-300">
@@ -52,7 +52,7 @@
         </div>
       </div>
     {:else}
-      showing all {formatInteger(totalRows)} rows
+      Showing all {formatInteger(totalRows)} rows
     {/if}
   </div>
   <TooltipShortcutContainer>
@@ -68,11 +68,11 @@
       > + Click
     </Shortcut>
     <div>
-      <div style:transform="translateX({tooltipPanShakeAmount}px)">pan</div>
+      <div style:transform="translateX({tooltipPanShakeAmount}px)">Pan</div>
     </div>
     <Shortcut>Click + Drag</Shortcut>
     <div>
-      zoom
+      Zoom
       <div style:display="inline-grid">
         <TimestampSpark
           area

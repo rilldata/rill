@@ -17,11 +17,11 @@
   $: debounceStatus(EntityStatus.Idle);
 
   const applicationStatusTooltipMap = {
-    [EntityStatus.Idle]: "idle",
-    [EntityStatus.Running]: "running",
-    [EntityStatus.Exporting]: "exporting a model resultset",
-    [EntityStatus.Importing]: "importing a source",
-    [EntityStatus.Profiling]: "profiling",
+    [EntityStatus.Idle]: "Idle",
+    [EntityStatus.Running]: "Running",
+    [EntityStatus.Exporting]: "Exporting a model resultset",
+    [EntityStatus.Importing]: "Importing a source",
+    [EntityStatus.Profiling]: "Profiling",
   };
 
   $: applicationStatusTooltip = applicationStatusTooltipMap[applicationStatus];
