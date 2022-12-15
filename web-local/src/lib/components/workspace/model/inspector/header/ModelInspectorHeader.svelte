@@ -6,7 +6,6 @@
     V1GetTableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -19,6 +18,7 @@
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import {
     formatBigNumberPercentage,
@@ -197,24 +197,27 @@
             {#if isNaN(rollup)}
               ~
             {:else if rollup === 0}
-              resultset is empty
+              Result set is empty
             {:else if rollup !== 1}
               {formatBigNumberPercentage(rollup)}
               of source rows
-            {:else}no change in row {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
+            {:else}No change in row
+              {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
             {/if}
           {:else if rollup === Infinity}
-            &nbsp; {formatInteger(outputRowCardinalityValue)} row{#if outputRowCardinalityValue !== 1}s{/if}
+            &nbsp; {formatInteger(outputRowCardinalityValue)} row
+            {#if outputRowCardinalityValue !== 1}s{/if}
             selected
           {/if}
         </div>
 
         <!-- tooltip content -->
-        <svelte:fragment slot="tooltip-title">rollup percentage</svelte:fragment
-        >
+        <svelte:fragment slot="tooltip-title"
+          >Rollup percentage
+        </svelte:fragment>
         <svelte:fragment slot="tooltip-description"
-          >The ratio of resultset rows to source rows, as a percentage.</svelte:fragment
-        >
+          >The ratio of resultset rows to source rows, as a percentage.
+        </svelte:fragment>
       </WithModelResultTooltip>
     </div>
     <div
@@ -225,7 +228,7 @@
       {#if $inputCardinalities > 0}
         {formatInteger(~~outputRowCardinalityValue)} row{#if $inputCardinalities !== 1}s{/if}
       {:else if $inputCardinalities === 0}
-        no rows selected
+        No rows selected
       {:else}
         &nbsp;
       {/if}
@@ -240,21 +243,23 @@
         class:text-gray-500={modelHasError}
       >
         {#if columnDelta > 0}
-          {formatInteger(columnDelta)} column{#if columnDelta !== 1}s{/if} added
+          {formatInteger(columnDelta)} column
+          {#if columnDelta !== 1}s{/if} added
         {:else if columnDelta < 0}
-          {formatInteger(-columnDelta)} column{#if -columnDelta !== 1}s{/if} dropped
+          {formatInteger(-columnDelta)} column
+          {#if -columnDelta !== 1}s{/if} dropped
         {:else if columnDelta === 0}
-          no change in column count
+          No change in column count
         {:else}
-          no change in column count
+          No change in column count
         {/if}
       </div>
 
       <!-- tooltip content -->
-      <svelte:fragment slot="tooltip-title">column diff</svelte:fragment>
+      <svelte:fragment slot="tooltip-title">Column diff</svelte:fragment>
       <svelte:fragment slot="tooltip-description">
-        The difference in column counts between the sources and model.</svelte:fragment
-      >
+        The difference in column counts between the sources and model.
+      </svelte:fragment>
     </WithModelResultTooltip>
     <div
       class="text-gray-800 ui-copy-strong"

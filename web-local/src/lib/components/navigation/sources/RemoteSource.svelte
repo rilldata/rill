@@ -7,14 +7,13 @@
     V1Connector,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";

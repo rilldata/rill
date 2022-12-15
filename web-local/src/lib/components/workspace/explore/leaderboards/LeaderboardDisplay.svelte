@@ -4,9 +4,9 @@
     useRuntimeServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import {

@@ -48,14 +48,14 @@
 </script>
 
 <div class="relative">
-  <span class="invisible">{active ? "hide" : "show"}</span>
+  <span class="invisible">{active ? "Hide" : "Show"}</span>
   {#key active}
     <span
       class="absolute"
       style:left="0"
       style:top="0px"
       transition:hackedLocalKeyFly={{ y: 7.5 * (!active ? 1 : -1) }}
-      >{active ? "hide" : "show"}</span
+      >{active ? "Hide" : "Show"}</span
     >
   {/key}
   <slot />

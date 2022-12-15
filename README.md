@@ -1,49 +1,35 @@
 # Rill Developer **_(tech preview)_**
 Rill Developer makes it effortless to transform your datasets with SQL and create powerful, opinionated dashboards. Rill's principles:
 
-- *feels good to use* – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
-- *works with your local and remote datasets* – imports and exports Parquet and CSV
-- *no more data analysis "side-quests"* – helps you build intuition about your dataset through automatic profiling
-- *no "run query" button required* – responds to each keystroke by re-profiling the resulting dataset
-- *radically simple dashboards* - thoughtful, opinionated defaults to help you quickly derive insights from your data
+- _**feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
+- _**works with your local and remote datasets**_ – imports and exports Parquet and CSV (s3, gcs, https, local)
+- _**no more data analysis "side-quests"**_ – helps you build intuition about your dataset through automatic profiling
+- _**no "run query" button required**_ – responds to each keystroke by re-profiling the resulting dataset
+- _**radically simple dashboards**_ – thoughtful, opinionated defaults to help you quickly derive insights from your data
+- _**dashboards as code**_ – each step from data to dashboard has versioning, git sharing, and easy project rehydration 
 
-## Pick an install option:
-Want to try for yourself? You can get started in less than 2 minutes with our installation script (Mac and Linux):
+## Pick an install option
+You can get started in less than 2 minutes with our install script (Mac, Linux).
+
 ```
 curl -s https://cdn.rilldata.com/install.sh | bash
 ```
 
-![Kapture 2022-07-21 at 15 34 45](https://user-images.githubusercontent.com/5587788/180313544-a7a03fcc-ea85-4b51-8ec3-ad5ed5043571.gif)
+After installation, launch the application by running `rill start` or try an example project:
+```
+rill init --example
+```
 
+![home-demo](https://user-images.githubusercontent.com/5587788/207410129-bd4fb84b-dc3d-494c-9cf1-2322fcf0d503.gif "770784519")
 
 ## We want to hear from you
 
-You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) directly in this repository or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
+You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [rill community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
-Our binary script is the fastest way to install Rill Developer on Mac or Linux. You can install it using this command:
-
-- [script](https://docs.rilldata.com/install/binary) : run the following script and you are ready to start using the Rill [CLI](https://docs.rilldata.com/cli).
-
-```
-curl -s https://cdn.rilldata.com/install.sh | bash
-```
-
-## Quick start a new project
-
-You can create and augment your own projects in Rill Developer using the [CLI](https://docs.rilldata.com/cli). Or simply start the application and enrich your project from there:
-
-```
-rill start
-```
-
-You can also try our example:
-
-```
-rill init-example
-```
-
-## More information
-See our [documentation](https://docs.rilldata.com) for more information.
 
 ## Legal
-By downloading and using our application you are agreeing to the [Rill Terms of Service](https://www.rilldata.com/legal/tos) and [Privacy Policy](https://www.rilldata.com/legal/privacy).
+By downloading and using our application you are agreeing to the [Privacy Policy](https://www.rilldata.com/legal/privacy) and [Rill Terms of Service](https://www.rilldata.com/legal/tos).
+
+
+
+

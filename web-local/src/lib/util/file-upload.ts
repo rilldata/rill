@@ -3,7 +3,7 @@ import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/ma
 import {
   duplicateNameChecker,
   incrementedNameGetter,
-} from "@rilldata/web-local/common/utils/duplicateNameUtils";
+} from "@rilldata/web-local/lib/util/duplicateNameUtils";
 import {
   DuplicateActions,
   duplicateSourceAction,

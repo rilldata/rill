@@ -5,12 +5,12 @@
     V1PutFileAndReconcileResponse,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
   import { CATEGORICALS } from "../../../duckdb-data-types";
@@ -191,7 +191,7 @@
             deleteEntityHandler={handleDeleteMeasure}
             rows={measures ?? []}
             columnNames={MeasuresColumns}
-            tooltipText={"add a new measure"}
+            tooltipText={"Add a new measure"}
             addButtonId={"add-measure-button"}
           />
 
@@ -204,7 +204,7 @@
             deleteEntityHandler={handleDeleteDimension}
             rows={dimensions ?? []}
             columnNames={DimensionColumns}
-            tooltipText={"add a new dimension"}
+            tooltipText={"Add a new dimension"}
             addButtonId={"add-dimension-button"}
           />
         </LayoutManager>

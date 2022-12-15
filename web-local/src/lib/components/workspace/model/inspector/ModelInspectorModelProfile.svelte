@@ -89,7 +89,7 @@
     <div class="pt-4 pb-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="sources"
+          tooltipText="Sources"
           bind:active={showSourceTables}
         >
           Sources

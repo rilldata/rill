@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
 
   let applicationStatus = 0;
   let asTimer;
@@ -17,11 +17,11 @@
   $: debounceStatus(EntityStatus.Idle);
 
   const applicationStatusTooltipMap = {
-    [EntityStatus.Idle]: "idle",
-    [EntityStatus.Running]: "running",
-    [EntityStatus.Exporting]: "exporting a model resultset",
-    [EntityStatus.Importing]: "importing a source",
-    [EntityStatus.Profiling]: "profiling",
+    [EntityStatus.Idle]: "Idle",
+    [EntityStatus.Running]: "Running",
+    [EntityStatus.Exporting]: "Exporting a model resultset",
+    [EntityStatus.Importing]: "Importing a source",
+    [EntityStatus.Profiling]: "Profiling",
   };
 
   $: applicationStatusTooltip = applicationStatusTooltipMap[applicationStatus];

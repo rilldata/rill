@@ -3,7 +3,6 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -13,6 +12,7 @@
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import {
     openFileUploadDialog,
     uploadTableFiles,
@@ -95,8 +95,8 @@
 
 <div class="grid place-items-center h-full">
   <Button on:click={handleOpenFileDialog} type="primary"
-    >Upload a CSV or Parquet file</Button
-  >
+    >Upload a CSV or Parquet file
+  </Button>
   {#if errors?.length}
     <div transition:slide={{ duration: LIST_SLIDE_DURATION * 2 }}>
       <Callout level="error">

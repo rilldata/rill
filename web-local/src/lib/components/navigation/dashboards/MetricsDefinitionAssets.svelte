@@ -6,17 +6,7 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { SourceModelValidationStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService.js";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages.js";
-  import { getName } from "@rilldata/web-local/common/utils/incrementName";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    FileArtifactsData,
-    fileArtifactsStore,
-  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
@@ -29,6 +19,16 @@
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
+  import { SourceModelValidationStatus } from "@rilldata/web-local/lib/temp/metrics.js";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    FileArtifactsData,
+    fileArtifactsStore,
+  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
@@ -184,7 +184,7 @@
 <NavigationHeader
   bind:show={showMetricsDefs}
   on:add={dispatchAddEmptyMetricsDef}
-  tooltipText="create a new dashboard"
+  tooltipText="Create a new dashboard"
 >
   <Explore size="14px" /> Dashboards
 </NavigationHeader>
@@ -220,7 +220,7 @@
             on:select={() => editModel(dashboardName)}
           >
             <Model slot="icon" />
-            edit model
+            Edit model
             <svelte:fragment slot="description">
               {#if hasSourceError}
                 {selectionError}
@@ -233,7 +233,7 @@
             on:select={() => editMetrics(dashboardName)}
           >
             <MetricsIcon slot="icon" />
-            edit metrics
+            Edit metrics
           </MenuItem>
           <Divider />
           <MenuItem
@@ -241,11 +241,11 @@
             on:select={() => openRenameMetricsDefModal(dashboardName)}
           >
             <EditIcon slot="icon" />
-            rename...</MenuItem
+            Rename...</MenuItem
           >
           <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
-            delete</MenuItem
+            Delete</MenuItem
           >
         </svelte:fragment>
       </NavigationEntry>

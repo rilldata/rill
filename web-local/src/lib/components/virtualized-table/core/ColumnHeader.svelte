@@ -120,7 +120,7 @@
         </TooltipTitle>
         <TooltipShortcutContainer>
           <div>
-            <StackingWord key="shift">copy</StackingWord>
+            <StackingWord key="shift">Copy</StackingWord>
             column name to clipboard
           </div>
           <Shortcut>

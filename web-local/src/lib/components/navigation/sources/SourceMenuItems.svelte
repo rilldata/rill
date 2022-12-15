@@ -17,10 +17,10 @@
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { fileArtifactsStore } from "../../../application-state-stores/file-artifacts-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
@@ -192,7 +192,7 @@
 
 <MenuItem icon on:select={() => handleCreateModel(sourceName)}>
   <Model slot="icon" />
-  create new model
+  Create new model
 </MenuItem>
 
 <MenuItem
@@ -202,10 +202,10 @@
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  autogenerate dashboard
+  Autogenerate dashboard
   <svelte:fragment slot="description">
     {#if !schemaHasTimestampColumn(source?.schema)}
-      requires a timestamp column
+      Requires a timestamp column
     {/if}
   </svelte:fragment>
 </MenuItem>
@@ -215,14 +215,14 @@
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
-    import local file to refresh source
+    Import local file to refresh source
   </MenuItem>
 {:else}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <RefreshIcon />
     </svelte:fragment>
-    refresh source data
+    Refresh source data
   </MenuItem>
 {/if}
 
@@ -234,8 +234,7 @@
   }}
 >
   <EditIcon slot="icon" />
-
-  rename...
+  Rename...
 </MenuItem>
 <!-- FIXME: this should pop up an "are you sure?" modal -->
 <MenuItem
@@ -244,5 +243,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  delete</MenuItem
->
+  Delete
+</MenuItem>

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { getName } from "../../../../common/utils/incrementName";
+  import { getName } from "../../../util/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
   import ModelIcon from "../../icons/Model.svelte";
@@ -51,7 +51,7 @@
   bind:show={showModels}
   contextButtonID={"create-model-button"}
   on:add={handleAddModel}
-  tooltipText="create a new model"
+  tooltipText="Create a new model"
 >
   <ModelIcon size="14px" /> Models
 </NavigationHeader>
