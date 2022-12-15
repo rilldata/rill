@@ -63,7 +63,7 @@
 </NavigationHeader>
 
 {#if showTables}
-  <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#if $sourceNames?.data}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}

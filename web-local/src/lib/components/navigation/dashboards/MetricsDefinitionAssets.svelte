@@ -191,7 +191,7 @@
 
 {#if showMetricsDefs && $dashboardNames.data}
   <div
-    class="pb-6 justify-self-end"
+    class="pb-3 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >

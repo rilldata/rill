@@ -58,7 +58,7 @@
 
 {#if showModels}
   <div
-    class="pb-6 justify-self-end"
+    class="pb-3 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
