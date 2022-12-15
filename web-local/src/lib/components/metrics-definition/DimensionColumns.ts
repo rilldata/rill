@@ -9,14 +9,14 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
     {
       name: "label",
       // FIXME: should this be "label (single)" when we add the plural back in?
-      label: "label",
+      label: "Label",
       headerTooltip: "a human readable name for this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
 
     {
       name: "property",
-      label: "dimension column",
+      label: "Dimension column",
       headerTooltip:
         "a categorical column from the data model that this metrics set is based on",
       cellRenderer: new CellConfigSelector(
@@ -27,7 +27,7 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
       ),
     },
     {
-      name: "description",
+      name: "Description",
       headerTooltip:
         "a human readable description of this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
