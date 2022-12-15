@@ -1,10 +1,9 @@
 # syntax = docker/dockerfile:1.1-experimental
 FROM ubuntu:focal
+WORKDIR /project
 
-WORKDIR /app
+COPY rill /usr/local/bin
+RUN chmod 777 /usr/local/bin/rill
 
-COPY rill .
-
-COPY scripts/entrypoint.sh /entrypoint.sh
-
-ENTRYPOINT /entrypoint.sh
+ENTRYPOINT ["rill"]
+CMD ["start"]
