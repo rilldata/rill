@@ -274,7 +274,7 @@
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="source tables"
+          tooltipText="Source tables"
           bind:active={showColumns}
         >
           columns

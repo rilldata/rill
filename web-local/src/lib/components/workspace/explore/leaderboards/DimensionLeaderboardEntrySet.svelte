@@ -107,7 +107,7 @@ see more button
         </TooltipShortcutContainer>
         <TooltipShortcutContainer>
           <div>
-            <StackingWord key="shift">copy</StackingWord>
+            <StackingWord key="shift">Copy</StackingWord>
             {value} to clipboard
           </div>
           <Shortcut>

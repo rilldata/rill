@@ -184,7 +184,7 @@
 <NavigationHeader
   bind:show={showMetricsDefs}
   on:add={dispatchAddEmptyMetricsDef}
-  tooltipText="create a new dashboard"
+  tooltipText="Create a new dashboard"
 >
   <Explore size="14px" /> Dashboards
 </NavigationHeader>
