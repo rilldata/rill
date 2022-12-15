@@ -12,46 +12,48 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type MetricsViewTotals struct {
-	// TableName  string
-	// ColumnName string
+type MetricsViewToplist struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
+	DimensionName   string                       `json:"dimension_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
+	Limit           int64                        `json:"limit,omitempty"`
+	Offset          int64                        `json:"offset,omitempty"`
+	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
-	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
+	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
 
-var _ runtime.Query = &MetricsViewTotals{}
+var _ runtime.Query = &MetricsViewToplist{}
 
-func (q *MetricsViewTotals) Key() string {
+func (q *MetricsViewToplist) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewTotals: failed to marshal: %w", err))
+		panic(fmt.Errorf("MetricsViewToplist: failed to marshal: %w", err))
 	}
-	return fmt.Sprintf("MetricsViewTotals:%s", string(r))
+	return fmt.Sprintf("MetricsViewToplist:%s", string(r))
 }
 
-func (q *MetricsViewTotals) Deps() []string {
+func (q *MetricsViewToplist) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewTotals) MarshalResult() any {
+func (q *MetricsViewToplist) MarshalResult() any {
 	return q.Result
 }
 
-func (q *MetricsViewTotals) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.MetricsViewTotalsResponse)
+func (q *MetricsViewToplist) UnmarshalResult(v any) error {
+	res, ok := v.(*runtimev1.MetricsViewToplistResponse)
 	if !ok {
-		return fmt.Errorf("MetricsViewTotals: mismatched unmarshal input")
+		return fmt.Errorf("MetricsViewToplist: mismatched unmarshal input")
 	}
 	q.Result = res
 	return nil
 }
 
-func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
@@ -66,30 +68,29 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	ql, args, err := q.buildMetricsTotalsSql(mv)
+	// Build query
+	sql, args, err := q.buildMetricsTopListSql(mv)
 	if err != nil {
 		return fmt.Errorf("error building query: %s", err.Error())
 	}
 
-	meta, data, err := metricsQuery(ctx, olap, priority, ql, args)
+	// Execute
+	meta, data, err := metricsQuery(ctx, olap, priority, sql, args)
 	if err != nil {
 		return err
 	}
 
-	if len(data) == 0 {
-		return fmt.Errorf("no rows received from totals query")
-	}
-
-	q.Result = &runtimev1.MetricsViewTotalsResponse{
+	q.Result = &runtimev1.MetricsViewToplistResponse{
 		Meta: meta,
-		Data: data[0],
+		Data: data,
 	}
 
 	return nil
 }
 
-func (q *MetricsViewTotals) buildMetricsTotalsSql(mv *runtimev1.MetricsView) (string, []any, error) {
-	selectCols := []string{}
+func (q *MetricsViewToplist) buildMetricsTopListSql(mv *runtimev1.MetricsView) (string, []any, error) {
+	dimName := quoteName(q.DimensionName)
+	selectCols := []string{dimName}
 	for _, n := range q.MeasureNames {
 		found := false
 		for _, m := range mv.Measures {
@@ -105,8 +106,8 @@ func (q *MetricsViewTotals) buildMetricsTotalsSql(mv *runtimev1.MetricsView) (st
 		}
 	}
 
-	whereClause := "1=1"
 	args := []any{}
+	whereClause := "1=1"
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
 			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
@@ -123,15 +124,32 @@ func (q *MetricsViewTotals) buildMetricsTotalsSql(mv *runtimev1.MetricsView) (st
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		whereClause += " " + clause
 		args = append(args, clauseArgs...)
 	}
 
-	sql := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s",
+	orderClause := "true"
+	for _, s := range q.Sort {
+		orderClause += ", "
+		orderClause += s.Name
+		if !s.Ascending {
+			orderClause += " DESC"
+		}
+		orderClause += " NULLS LAST"
+	}
+
+	if q.Limit == 0 {
+		q.Limit = 100
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
+		dimName,
+		orderClause,
+		q.Limit,
 	)
+
 	return sql, args, nil
 }
