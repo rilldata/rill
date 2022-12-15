@@ -616,12 +616,12 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// create in olap
-	s.logger.Info(fmt.Sprintf("Reconciling: %s", item.Path))
-	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	err := s.wrapMigrator(item.CatalogInFile, func() error {
+		return migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	})
 	if err != nil {
 		return err
 	}
-	s.logger.Info(fmt.Sprintf("Reconciled: %s", item.Path))
 
 	// update the catalog object and create it in store
 	catalog, err := s.updateCatalogObject(ctx, item)
@@ -676,12 +676,12 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// update in olap
-	s.logger.Info(fmt.Sprintf("Reconciling: %s", item.Path))
-	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	err := s.wrapMigrator(item.CatalogInFile, func() error {
+		return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	})
 	if err != nil {
 		return err
 	}
-	s.logger.Info(fmt.Sprintf("Reconciled: %s", item.Path))
 	// update the catalog object and update it in store
 	catalog, err := s.updateCatalogObject(ctx, item)
 	if err != nil {
@@ -732,4 +732,21 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 	}
 
 	return catalogEntry, nil
+}
+
+// wrapMigrator is a temporary solution to log source related messages.
+func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() error) error {
+	if catalogEntry.Type == drivers.ObjectTypeSource {
+		s.logger.Info(fmt.Sprintf("Ingesting source %s from %s",
+			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue()))
+	}
+	err := run()
+	if catalogEntry.Type == drivers.ObjectTypeSource {
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Ingestion failed for %s : %s", catalogEntry.Name, err.Error()))
+		} else {
+			s.logger.Info(fmt.Sprintf("Finished ingesting %s", catalogEntry.Name))
+		}
+	}
+	return err
 }
