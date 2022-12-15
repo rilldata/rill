@@ -637,7 +637,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 func getService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), 1)
+	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"))
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
@@ -646,7 +646,7 @@ func getService(t *testing.T) (*catalog.Service, string) {
 	catalogObject, ok := duckdbStore.CatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", dir, 1)
+	fileStore, err := drivers.Open("file", dir)
 	require.NoError(t, err)
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)

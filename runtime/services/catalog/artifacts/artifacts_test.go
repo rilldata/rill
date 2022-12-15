@@ -151,7 +151,7 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, 1)
+	fileStore, err := drivers.Open("file", dir)
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -188,7 +188,7 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, 1)
+	fileStore, err := drivers.Open("file", dir)
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()

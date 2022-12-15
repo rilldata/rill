@@ -31,7 +31,7 @@ func TestAll(t *testing.T) {
 	for _, withDriver := range matrix {
 		err := withDriver(t, func(driver string, dsn string) {
 			// Open
-			conn, err := drivers.Open(driver, dsn, 1)
+			conn, err := drivers.Open(driver, dsn)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 

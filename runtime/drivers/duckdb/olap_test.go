@@ -203,7 +203,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Connection {
-	conn, err := driver{}.Open("?access_mode=read_write", 1)
+	conn, err := driver{}.Open("?access_mode=read_write")
 	require.NoError(t, err)
 
 	olap, ok := conn.OLAPStore()

@@ -44,7 +44,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := driver{}.Open("?access_mode=read_write", 1)
+	conn, err := driver{}.Open("?access_mode=read_write")
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 
@@ -84,7 +84,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 
 func TestCSVDelimiter(t *testing.T) {
 	ctx := context.Background()
-	conn, err := driver{}.Open("?access_mode=read_write", 1)
+	conn, err := driver{}.Open("?access_mode=read_write")
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 

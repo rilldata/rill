@@ -14,7 +14,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string, poolSize int) (drivers.Connection, error) {
+func (d driver) Open(dsn string) (drivers.Connection, error) {
 	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		return nil, err

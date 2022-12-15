@@ -108,7 +108,7 @@ func TestDruid(t *testing.T) {
 	avaticaURL, err := url.JoinPath(brokerURL, "/druid/v2/sql/avatica-protobuf/")
 	require.NoError(t, err)
 
-	conn, err := driver{}.Open(avaticaURL, 1)
+	conn, err := driver{}.Open(avaticaURL)
 	require.NoError(t, err)
 
 	olap, ok := conn.OLAPStore()

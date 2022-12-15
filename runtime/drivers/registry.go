@@ -33,6 +33,4 @@ type Instance struct {
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is when the instance was last updated in the registry
 	UpdatedOn time.Time `db:"updated_on"`
-	// OLAPPoolSize is the number of DB handles to keep open to the OLAP store
-	OLAPPoolSize int
 }
