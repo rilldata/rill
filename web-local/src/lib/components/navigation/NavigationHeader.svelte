@@ -19,9 +19,9 @@
   out:slide|local={{ duration: LIST_SLIDE_DURATION }}
 >
   <CollapsibleSectionTitle tooltipText={"models"} bind:active={show}>
-    <h4 class="flex flex-row items-center gap-x-2">
+    <div class="flex flex-row items-center gap-x-2">
       <slot />
-    </h4>
+    </div>
   </CollapsibleSectionTitle>
   <ContextButton
     id={contextButtonID}

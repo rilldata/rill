@@ -95,11 +95,7 @@
     : '4'} pr-5 pb-2 flex justify-between text-gray-500"
   class:flex-col={containerWidth < 325}
 >
-  <select
-    style:transform="translateX(-4px)"
-    bind:value={sortMethod}
-    class={NATIVE_SELECT}
-  >
+  <select bind:value={sortMethod} class={NATIVE_SELECT}>
     <option value={sortByOriginalOrder}>show original order</option>
     <option value={defaultSort}>sort by type</option>
     <option value={sortByNullity}>sort by null %</option>
