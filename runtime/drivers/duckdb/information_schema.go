@@ -197,6 +197,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "TIME WITH TIME ZONE":
 		t.Code = runtimev1.Type_CODE_TIME
+	case "NULL":
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	default:
 		match = false
 	}

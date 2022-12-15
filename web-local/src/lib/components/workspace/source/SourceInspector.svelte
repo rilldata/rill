@@ -36,9 +36,9 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { getName } from "../../../../common/utils/incrementName";
   import { overlay } from "../../../application-state-stores/overlay-store";
   import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
@@ -213,8 +213,8 @@
       <Tooltip location="left" distance={16}>
         <Button type="secondary" on:click={handleCreateModelFromSource}>
           <ResponsiveButtonText {width}>Create Model</ResponsiveButtonText>
-          <Model size="16px" /></Button
-        >
+          <Model size="16px" />
+        </Button>
         <TooltipContent slot="tooltip-content">
           Create a model with these source columns
         </TooltipContent>
@@ -226,8 +226,8 @@
           on:click={() => handleCreateDashboardFromSource(sourceName)}
         >
           <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
-          <Explore size="16px" /></Button
-        >
+          <Explore size="16px" />
+        </Button>
         <TooltipContent slot="tooltip-content">
           {#if timestampColumns?.length}
             Auto create metrics based on your data source and go to dashboard

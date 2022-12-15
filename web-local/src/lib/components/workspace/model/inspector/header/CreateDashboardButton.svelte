@@ -5,7 +5,6 @@
     useRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import {
@@ -24,9 +23,10 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getName } from "../../../../../../common/utils/incrementName";
   import { overlay } from "../../../../../application-state-stores/overlay-store";
   import { useDashboardNames } from "../../../../../svelte-query/dashboards";
   import { invalidateAfterReconcile } from "../../../../../svelte-query/invalidation";

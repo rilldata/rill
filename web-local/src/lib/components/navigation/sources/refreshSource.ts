@@ -5,12 +5,12 @@ import type {
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
+import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import {
   openFileUploadDialog,
   uploadFile,
 } from "@rilldata/web-local/lib/util/file-upload";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
-import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
 import { invalidateAfterReconcile } from "../../../svelte-query/invalidation";
 import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
 

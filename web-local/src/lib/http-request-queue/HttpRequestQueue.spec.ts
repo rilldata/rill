@@ -4,11 +4,8 @@ import {
   runtimeServiceGetNumericHistogram,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import {
-  asyncWait,
-  waitUntil,
-} from "@rilldata/web-local/common/utils/waitUtils";
 import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
+import { asyncWait, waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import Mock = jest.Mock;
 
 describe("HttpRequestQueue", () => {

@@ -3,8 +3,9 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 type Query interface {
@@ -19,6 +20,7 @@ type Query interface {
 	// UnmarshalResult should populate a query with a cached result
 	UnmarshalResult(v any) error
 	// Resolve should execute the query against the instance's infra.
+	// Error can be nil along with a nil result in general, i.e. when a model contains no rows aggregation results can be nil.
 	Resolve(ctx context.Context, rt *Runtime, instanceID string, priority int) error
 }
 
