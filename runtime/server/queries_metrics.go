@@ -18,28 +18,23 @@ import (
 
 // MetricsViewToplist implements RuntimeService
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
-	// Prepare
-	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
+	q := &queries.MetricsViewToplist{
+		MetricsViewName: req.MetricsViewName,
+		DimensionName:   req.DimensionName,
+		MeasureNames:    req.MeasureNames,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		Limit:           req.Limit,
+		Offset:          req.Offset,
+		Sort:            req.Sort,
+		Filter:          req.Filter,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	// Build query
-	sql, args, err := buildMetricsTopListSql(req, mv)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
-	}
-
-	// Execute
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.MetricsViewToplistResponse{
-		Meta: meta,
-		Data: data,
-	}, nil
+	return q.Result, nil
 }
 
 // MetricsViewTimeSeries implements RuntimeService
