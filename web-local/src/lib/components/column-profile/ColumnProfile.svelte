@@ -92,14 +92,10 @@
   bind:this={container}
   class="pl-{indentLevel === 1
     ? '10'
-    : '4'} pr-5 pb-2 flex justify-between text-gray-500"
+    : '4'} pr-5 pb-2 flex justify-between text-gray-500 pt-1"
   class:flex-col={containerWidth < 325}
 >
-  <select
-    style:transform="translateX(-4px)"
-    bind:value={sortMethod}
-    class={NATIVE_SELECT}
-  >
+  <select bind:value={sortMethod} class={NATIVE_SELECT} style:font-size="11px">
     <option value={sortByOriginalOrder}>show original order</option>
     <option value={defaultSort}>sort by type</option>
     <option value={sortByNullity}>sort by null %</option>
@@ -110,6 +106,7 @@
     bind:value={mode}
     class={NATIVE_SELECT}
     class:hidden={containerWidth < 325}
+    style:font-size="11px"
   >
     <option value="summaries">show summary&nbsp;</option>
     <option value="example">show example</option>
@@ -117,7 +114,7 @@
   </select>
 </div>
 
-<div>
+<div class="pb-4">
   {#if sortedProfile && exampleValue}
     {#each sortedProfile as column (column.name)}
       {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}

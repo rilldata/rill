@@ -61,7 +61,7 @@
               {#if dimensionDescription}
                 {dimensionDescription}
               {:else}
-                the leaderboard metrics for {displayName}
+                The leaderboard metrics for {displayName}
               {/if}
             </div>
             <Shortcut />

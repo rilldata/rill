@@ -30,7 +30,7 @@
   >
     <Tooltip location="right" distance={8} suppress={optionsMenuActive}>
       <MoreIcon />
-      <TooltipContent slot="tooltip-content">leaderboard options</TooltipContent
+      <TooltipContent slot="tooltip-content">Leaderboard options</TooltipContent
       >
     </Tooltip>
   </IconButton>

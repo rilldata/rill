@@ -51,14 +51,14 @@
   bind:show={showModels}
   contextButtonID={"create-model-button"}
   on:add={handleAddModel}
-  tooltipText="create a new model"
+  tooltipText="Create a new model"
 >
-  <ModelIcon size="16px" /> Models
+  <ModelIcon size="14px" /> Models
 </NavigationHeader>
 
 {#if showModels}
   <div
-    class="pb-6 justify-self-end"
+    class="pb-3 justify-self-end"
     transition:slide={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >

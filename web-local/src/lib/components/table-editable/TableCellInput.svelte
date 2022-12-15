@@ -97,7 +97,8 @@
     <input
       autocomplete="off"
       bind:this={inputElt}
-      class="table-input w-full text-ellipsis bg-inherit font-normal"
+      class={"table-input w-full text-ellipsis bg-inherit " +
+        (columnConfig?.customClass || "")}
       id="model-title-input"
       on:blur={stopEditing}
       on:change={onchangeHandler}

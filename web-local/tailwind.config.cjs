@@ -13,5 +13,6 @@ module.exports = {
   plugins: [],
   safelist: [
     'text-blue-800', // needed for blue text in filter pills
+    'ui-copy-code', // needed for code in measure expressions
   ]
 };

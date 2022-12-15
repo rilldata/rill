@@ -94,7 +94,7 @@
     {/if}
 
     <div class="w-full flex flex-col h-full">
-      <div class="grow" style:outline="1px solid black">
+      <div class="grow">
         <header
           style:height="var(--header-height)"
           class="sticky top-0 grid align-center bg-white z-50"
@@ -107,12 +107,11 @@
               <a href="/">
                 <div
                   style:width="20px"
-                  style:font-size="10px"
-                  class="grid place-items-center rounded bg-gray-800 text-white font-light"
+                  style:font-size="9px"
+                  class="grid place-items-center rounded bg-gray-800 text-white font-normal"
                   style:height="20px"
                 >
-                  <!-- a temp fix to make MD IO nudged down-->
-                  <div style:transform="translateY(.5px)">
+                  <div>
                     {shorthandTitle(yaml?.name || "Ri")}
                   </div>
                 </div>
@@ -123,7 +122,7 @@
             <Tooltip distance={8}>
               <a
                 href="/"
-                class="font-bold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
+                class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
               >
                 {yaml?.name || "Untitled Rill Project"}
               </a>
@@ -157,11 +156,11 @@
   show={true}
 >
   {#if $navigationLayout?.visible}
-    <HideLeftSidebar size="20px" />
+    <HideLeftSidebar size="18px" />
   {:else}
     <SurfaceViewIcon size="16px" mode={"hamburger"} />
   {/if}
   <svelte:fragment slot="tooltip-content">
-    {#if $navVisibilityTween === 0} close {:else} show {/if} sidebar
+    {#if $navVisibilityTween === 0} Close {:else} Show {/if} sidebar
   </svelte:fragment>
 </SurfaceControlButton>
