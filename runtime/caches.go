@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"

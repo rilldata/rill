@@ -2,7 +2,6 @@ package druid
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -19,7 +18,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
-	panic(fmt.Errorf("not implemented"))
+	panic("not implemented")
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
