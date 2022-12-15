@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import { crossfade, fly } from "svelte/transition";
   import {
     humanizeDataType,
@@ -24,7 +24,7 @@
 </script>
 
 <div>
-  <Tooltip location="top" distance={16}>
+  <Tooltip distance={16} location="top">
     <h2>
       <slot name="name" />
     </h2>
@@ -32,7 +32,7 @@
       {description}
     </TooltipContent>
   </Tooltip>
-  <div style:font-size="1.5rem" style:font-weight="light" class="ui-copy-muted">
+  <div class="ui-copy-muted" style:font-size="1.5rem" style:font-weight="light">
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
     override this by filling the slot in the consuming component. -->
     <slot name="value">

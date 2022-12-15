@@ -199,6 +199,67 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 	require.Equal(t, 3.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
 }
 
+func TestServer_Model_Nulls(t *testing.T) {
+	sql := `SELECT null as val`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 1)
+	require.NotNil(t, server)
+	require.NotEmpty(t, instanceId)
+}
+
+func TestServer_GetNumericHistogram_2rows_all_nulls(t *testing.T) {
+	sql := `
+		SELECT null as val
+		UNION ALL
+		SELECT null as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, 0, len(res.NumericSummary.GetNumericHistogramBins().Bins))
+}
+
+func TestServer_GetNumericHistogram_2rows_single_null(t *testing.T) {
+	sql := `
+		SELECT null as val
+		UNION ALL
+		SELECT 2 as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, 0, len(res.NumericSummary.GetNumericHistogramBins().Bins))
+}
+
+func TestServer_GetNumericHistogram_2rows(t *testing.T) {
+	sql := `
+		SELECT NULL as val
+		UNION ALL
+		SELECT 2 as val
+		UNION ALL
+		SELECT 4 as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 3)
+
+	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	bins := res.NumericSummary.GetNumericHistogramBins().Bins
+	require.Equal(t, 2, len(bins))
+	require.Equal(t, int32(0), bins[0].Bucket)
+	require.Equal(t, 2.0, bins[0].Low)
+	require.Equal(t, 3.0, bins[0].High)
+	require.Equal(t, 1.0, bins[0].Count)
+
+	require.Equal(t, int32(1), bins[1].Bucket)
+	require.Equal(t, 3.0, bins[1].Low)
+	require.Equal(t, 4.0, bins[1].High)
+	require.Equal(t, 1.0, bins[1].Count)
+}
+
 func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
@@ -208,22 +269,69 @@ func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 	require.Nil(t, res.NumericSummary.GetNumericHistogramBins().Bins)
 }
 
-func TestServer_GetCategoricalHistogram(t *testing.T) {
+func TestServer_GetRugHistogram(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, 3, len(res.NumericSummary.GetNumericOutliers().Outliers))
-	require.Equal(t, 0, int(res.NumericSummary.GetNumericOutliers().Outliers[0].Bucket))
-	require.Equal(t, 1.0, res.NumericSummary.GetNumericOutliers().Outliers[0].Low)
-	require.Equal(t, 1.008, res.NumericSummary.GetNumericOutliers().Outliers[0].High)
-	require.Equal(t, true, res.NumericSummary.GetNumericOutliers().Outliers[0].Present)
-	require.True(t, res.NumericSummary.GetNumericOutliers().Outliers[0].Count > 0)
+	outliers := res.NumericSummary.GetNumericOutliers().Outliers
+	require.Equal(t, 3, len(outliers))
+	require.Equal(t, 0, int(outliers[0].Bucket))
+	require.Equal(t, 1.0, outliers[0].Low)
+	require.Equal(t, 1.008, outliers[0].High)
+	require.Equal(t, true, outliers[0].Present)
+	require.True(t, outliers[0].Count > 0)
 
 	// works only with numeric columns
 	_, err = server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.ErrorContains(t, err, "Conversion Error: Unimplemented type for cast (TIMESTAMP -> DOUBLE)")
+}
+
+func TestServer_GetRugHistogram_all_nulls(t *testing.T) {
+	sql := `
+		SELECT NULL as val
+		UNION ALL
+		SELECT NULL as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	outliers := res.NumericSummary.GetNumericOutliers().Outliers
+	require.Equal(t, 0, len(outliers))
+}
+
+func TestServer_GetRugHistogram_2rows_null(t *testing.T) {
+	sql := `
+		SELECT NULL as val
+		UNION ALL
+		SELECT 2 as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
+
+	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, 500, len(res.NumericSummary.GetNumericOutliers().Outliers))
+}
+
+func TestServer_GetRugHistogram_3rows_null(t *testing.T) {
+	sql := `
+		SELECT NULL as val
+		UNION ALL
+		SELECT 2 as val
+		UNION ALL
+		SELECT 4 as val
+	`
+	server, instanceId := getColumnTestServerWithModel(t, sql, 3)
+
+	res, err := server.GetRugHistogram(context.Background(), &runtimev1.GetRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	outliers := res.NumericSummary.GetNumericOutliers().Outliers
+	require.Equal(t, 2, len(outliers))
 }
 
 func TestServer_GetCategoricalHistogram_EmptyModel(t *testing.T) {
@@ -342,7 +450,9 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*S
 		err := res.Scan(&n)
 		require.NoError(t, err)
 	}
-	require.Equal(t, expectation, n)
+	if expectation >= 0 {
+		require.Equal(t, expectation, n)
+	}
 
 	return server, instanceID
 }

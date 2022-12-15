@@ -6,8 +6,8 @@
     useRuntimeServiceRefreshAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";

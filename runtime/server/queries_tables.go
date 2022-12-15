@@ -8,28 +8,21 @@ import (
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Table level profiling APIs
 func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
-	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query:    "select count(*) from " + quoteName(req.TableName),
-		Priority: int(req.Priority),
-	})
+	q := &queries.TableCardinality{
+		TableName: req.TableName,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var count int64
-	for rows.Next() {
-		err := rows.Scan(&count)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return &runtimev1.GetTableCardinalityResponse{
-		Cardinality: count,
+		Cardinality: q.Result,
 	}, nil
 }
 
