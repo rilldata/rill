@@ -68,7 +68,7 @@
       </Portal>
     {/if}
 
-    <div style="width: 100%;">
+    <div style="width: 100%;" class="pt-12">
       <slot />
     </div>
   </div>

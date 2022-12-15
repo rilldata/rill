@@ -332,7 +332,7 @@
 </script>
 
 <div class="h-full" use:listenToNodeResize>
-  <div bind:this={editorContainer} class="editor-container border h-full">
+  <div bind:this={editorContainer} class="editor-container  h-full">
     <div bind:this={editorContainerComponent} />
   </div>
 </div>
@@ -341,7 +341,7 @@
   .editor-container {
     padding: 0.5rem;
     background-color: white;
-    border-radius: 0.25rem;
+    /* border-radius: 0.25rem; */
     /* min-height: 400px; */
     min-height: 100%;
     display: grid;

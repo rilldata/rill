@@ -15,11 +15,6 @@
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
   import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
-  import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
@@ -32,8 +27,6 @@
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { notifications } from "../../notifications";
-  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
 
@@ -59,46 +52,6 @@
 
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
-
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  // TODO: does this need any sanitization?
-  $: titleInput = modelName;
-
-  function formatModelName(str) {
-    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
-  }
-
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      notifications.send({
-        message:
-          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      });
-      e.target.value = modelName; // resets the input
-      return;
-    }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
-      notifications.send({
-        message: `Name ${e.target.value} is already in use`,
-      });
-      e.target.value = modelName; // resets the input
-      return;
-    }
-
-    try {
-      await renameFileArtifact(
-        queryClient,
-        runtimeInstanceId,
-        modelName,
-        e.target.value,
-        EntityType.Model,
-        $renameModel
-      );
-    } catch (err) {
-      console.error(err.response.data.message);
-    }
-  };
 
   /** model body layout elements */
   // TODO: should there be a session lived ID here instead of name?
@@ -173,17 +126,13 @@
 
 <svelte:window bind:innerHeight />
 
-<WorkspaceHeader
-  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-/>
-
 <div class="editor-pane bg-gray-100">
   <div
     style:height="calc({innerHeight}px - {$outputPosition}px -
     var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full grid p-5 pt-0 overflow-auto">
+      <div class="h-full pb-5 grid overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
@@ -197,7 +146,7 @@
   </div>
   <Portal target=".body">
     <div
-      class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
+      class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center"
       style:bottom="{$outputPosition}px"
       style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
       style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
@@ -222,12 +171,9 @@
   </Portal>
 
   {#if hasModelSql}
-    <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
+    <div style:height="{$outputPosition}px" class="flex flex-col gap-6">
       <div
-        class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
-          'hidden'}"
-        class:border={!!modelError}
-        class:border-gray-300={!!modelError}
+        class="rounded overflow-auto h-full grow-1 {!showPreview && 'hidden'}"
       >
         <div
           style="{modelError ? 'filter: brightness(.9);' : ''}

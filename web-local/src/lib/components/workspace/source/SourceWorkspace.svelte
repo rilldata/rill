@@ -109,8 +109,8 @@
       {#if entryExists}
         <div
           style:overflow="auto"
-          style:height="100%"
-          class="m-6 mt-0 border border-gray-300 rounded"
+          style:height="calc(100vh - var(--header-height) - 2rem)"
+          class="m-4 border border-gray-300 rounded"
         >
           {#key sourceName}
             <ConnectedPreviewTable objectName={sourceName} />

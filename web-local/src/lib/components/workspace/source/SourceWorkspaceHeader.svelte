@@ -1,13 +1,28 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRefreshAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
+    V1ReconcileResponse,
+    V1Source,
   } from "@rilldata/web-common/runtime-client";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
@@ -16,12 +31,18 @@
     isDuplicateName,
     renameFileArtifact,
     useAllNames,
+    useCreateDashboardFromSource,
   } from "../../../svelte-query/actions";
-  import { IconButton } from "../../button";
+
+  import { Button, IconButton } from "../../button";
+  import Explore from "../../icons/Explore.svelte";
   import Import from "../../icons/Import.svelte";
+  import Model from "../../icons/Model.svelte";
   import RefreshIcon from "../../icons/RefreshIcon.svelte";
   import Source from "../../icons/Source.svelte";
+  import { createModelFromSource } from "../../navigation/models/createModel";
   import { notifications } from "../../notifications";
+  import PanelCTA from "../../panel/PanelCTA.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
@@ -41,9 +62,74 @@
     sourceName
   );
 
+  let source: V1Source;
+  $: source = $getSource?.data?.entry?.source;
+
+  $: modelNames = useModelNames(runtimeInstanceId);
+  $: dashboardNames = useDashboardNames(runtimeInstanceId);
+  const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
+
+  $: timestampColumns = selectTimestampColumnFromSchema(source?.schema);
+
   $: connector = $getSource.data?.entry?.source.connector as string;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
+
+  const handleCreateModelFromSource = async () => {
+    const modelName = await createModelFromSource(
+      queryClient,
+      runtimeInstanceId,
+      $modelNames.data,
+      sourceName,
+      $createModelMutation
+    );
+    navigationEvent.fireEvent(
+      modelName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Source,
+      MetricsEventScreenName.Model
+    );
+  };
+
+  const handleCreateDashboardFromSource = (sourceName: string) => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
+    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      $dashboardNames.data
+    );
+    $createDashboardFromSourceMutation.mutate(
+      {
+        data: {
+          instanceId: $runtimeStore.instanceId,
+          sourceName,
+          newModelName,
+          newDashboardName,
+        },
+      },
+      {
+        onSuccess: async (resp: V1ReconcileResponse) => {
+          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+          goto(`/dashboard/${newDashboardName}`);
+          navigationEvent.fireEvent(
+            newDashboardName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.RightPanel,
+            MetricsEventScreenName.Source,
+            MetricsEventScreenName.Dashboard
+          );
+          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
+        },
+        onSettled: () => {
+          overlay.set(null);
+        },
+      }
+    );
+  };
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -160,6 +246,36 @@
           {/if}
         </div>
       {/if}
+
+      <PanelCTA side="right" let:width>
+        <Tooltip location="left" distance={16}>
+          <Button type="secondary" on:click={handleCreateModelFromSource}>
+            Create Model
+            <Model size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Create a model with these source columns
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip location="bottom" alignment="right" distance={16}>
+          <Button
+            type="primary"
+            disabled={!timestampColumns?.length}
+            on:click={() => handleCreateDashboardFromSource(sourceName)}
+          >
+            Create Dashboard
+
+            <Explore size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            {#if timestampColumns?.length}
+              Auto create metrics based on your data source and go to dashboard
+            {:else}
+              This data source does not have a TIMESTAMP column
+            {/if}
+          </TooltipContent>
+        </Tooltip>
+      </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>
 </div>

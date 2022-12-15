@@ -10,17 +10,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { Button } from "@rilldata/web-local/lib/components/button";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
-  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
   import {
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
@@ -209,7 +204,7 @@
 <div class="table-profile">
   {#if source}
     <!-- CTAs -->
-    <PanelCTA side="right" let:width>
+    <!-- <PanelCTA side="right" let:width>
       <Tooltip location="left" distance={16}>
         <Button type="secondary" on:click={handleCreateModelFromSource}>
           <ResponsiveButtonText {width}>Create Model</ResponsiveButtonText>
@@ -236,7 +231,7 @@
           {/if}
         </TooltipContent>
       </Tooltip>
-    </PanelCTA>
+    </PanelCTA> -->
 
     <!-- summary info -->
     <div class=" p-4 pt-2">

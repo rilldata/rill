@@ -26,7 +26,7 @@ export function collapseInspectorCTAButton(width) {
 }
 
 /** layout constants  */
-export const SIDE_PAD = 28;
+export const SIDE_PAD = 0;
 export const SURFACE_SLIDE_DURATION = 400;
 export const LIST_SLIDE_DURATION = 200;
 export const SURFACE_SLIDE_EASING = easing;
