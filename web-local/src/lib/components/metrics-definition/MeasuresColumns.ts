@@ -34,6 +34,7 @@ export const initMeasuresColumns = (
         }),
         expressionValidationHandler
       ),
+      customClass: "ui-copy-code"
     },
     {
       name: "description",

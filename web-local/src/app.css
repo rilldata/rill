@@ -66,6 +66,12 @@
     @apply text-gray-400 dark:text-gray-400;
   }
 
+  .ui-copy-code {
+    font-family: "MD IO";
+    font-size: 11px;
+    @apply text-gray-600;
+  }
+
   .ui-divider {
     @apply border-gray-300 dark:border-gray-600;
   }
