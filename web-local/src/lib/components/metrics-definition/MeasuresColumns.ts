@@ -14,12 +14,14 @@ export const initMeasuresColumns = (
 ) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
-      name: "Label",
+      name: "label",
+      label: "Label",
       headerTooltip: "A human readable name for this measure (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
-      name: "Expression",
+      name: "expression",
+      label: "Expression",
       headerTooltip: "A valid SQL aggregation expression for this measure",
       cellRenderer: new CellConfigInput(
         inputChangeHandler,
@@ -34,7 +36,9 @@ export const initMeasuresColumns = (
       ),
     },
     {
-      name: "Description",
+      name: "description",
+      label: "Description",
+
       headerTooltip: "A human readable description of this measure (optional)",
 
       cellRenderer: new CellConfigInput(inputChangeHandler),
