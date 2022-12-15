@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/queries"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -68,31 +69,18 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 
 // MetricsViewTotals implements RuntimeService
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
-	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
+	q := &queries.MetricsViewTotals{
+		MetricsViewName: req.MetricsViewName,
+		MeasureNames:    req.MeasureNames,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		Filter:          req.Filter,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
-	sql, args, err := buildMetricsTotalsSql(req, mv)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
-	}
-
-	meta, data, err := s.metricsQuery(ctx, req.InstanceId, int(req.Priority), sql, args)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(data) == 0 {
-		return nil, status.Errorf(codes.Internal, "no rows received from totals query")
-	}
-
-	resp := &runtimev1.MetricsViewTotalsResponse{
-		Meta: meta,
-		Data: data[0],
-	}
-
-	return resp, nil
+	return q.Result, nil
 }
 
 func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*runtimev1.MetricsView, error) {

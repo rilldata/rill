@@ -31,7 +31,7 @@ var _ runtime.Query = &ColumnTimeseries{}
 func (q *ColumnTimeseries) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("ColumnTimeseries: failed to marshal: %w", err))
 	}
 	return fmt.Sprintf("ColumnTimeseries:%s", string(r))
 }
