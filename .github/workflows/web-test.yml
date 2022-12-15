@@ -21,9 +21,6 @@ jobs:
       - name: NPM Install
         run: npm install
 
-      - name: Disabling telmetry
-        run: cat <<< "$(jq -c -M '.sendTelemetryData |= false' ~/.rill/local.json)" > ~/.rill/local.json
-
       - name: Prettier checks for web
         run: |-
           npx prettier --check "web-admin/**/*"

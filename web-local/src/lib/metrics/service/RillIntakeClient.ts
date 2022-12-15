@@ -1,22 +1,25 @@
-import axios from "axios";
-import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
 import type { MetricsEvent } from "./MetricsTypes";
+
+const RillIntakeUser = "data-modeler";
+const RillIntakePassword =
+  "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==";
 
 export class RillIntakeClient {
   private readonly authHeader: string;
 
-  public constructor(private readonly config: RootConfig) {
+  public constructor() {
     // this is the format rill-intake expects.
     this.authHeader =
-      "Basic " +
-      btoa(
-        `${config.metrics.rillIntakeUser}:${config.metrics.rillIntakePassword}`
-      );
+      "Basic " + btoa(`${RillIntakeUser}:${RillIntakePassword}`);
   }
 
   public async fireEvent(event: MetricsEvent) {
     try {
-      await axios.post(`${RILL_RUNTIME_URL}/local/track`, event, {
+      await fetchWrapper({
+        url: `${RILL_RUNTIME_URL}/local/track`,
+        method: "POST",
+        data: event,
         headers: {
           Authorization: this.authHeader,
         },

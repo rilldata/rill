@@ -17,10 +17,10 @@
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { fileArtifactsStore } from "../../../application-state-stores/file-artifacts-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
@@ -244,5 +244,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  delete</MenuItem
->
+  delete
+</MenuItem>

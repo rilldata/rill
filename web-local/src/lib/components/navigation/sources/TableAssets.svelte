@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";

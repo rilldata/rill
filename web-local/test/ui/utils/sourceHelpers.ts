@@ -1,5 +1,5 @@
 import { expect as playwrightExpect } from "@playwright/test";
-import { asyncWait } from "@rilldata/web-local/common/utils/waitUtils";
+import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
 import {
