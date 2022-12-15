@@ -72,4 +72,5 @@ export interface ColumnConfig<T extends CellConfig> {
   label?: string;
   headerTooltip?: string;
   cellRenderer: T;
+  customClass?: string;
 }

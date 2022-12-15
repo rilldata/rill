@@ -63,7 +63,7 @@
           </div>
           <TooltipShortcutContainer>
             <div>
-              <StackingWord key="shift">copy</StackingWord> column value to clipboard
+              <StackingWord key="shift">Copy</StackingWord> column value to clipboard
             </div>
             <Shortcut>
               <span style="font-family: var(--system);">⇧</span> + Click
@@ -109,7 +109,7 @@
           </div>
           <TooltipShortcutContainer>
             <div>
-              <StackingWord key="shift">copy</StackingWord>
+              <StackingWord key="shift">Copy</StackingWord>
               {count} to clipboard
             </div>
             <Shortcut>

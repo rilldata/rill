@@ -134,10 +134,10 @@
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  autogenerate dashboard
+  Autogenerate dashboard
   <svelte:fragment slot="description">
     {#if !schemaHasTimestampColumn(model?.schema)}
-      requires a timestamp column
+      Requires a timestamp column
     {/if}
   </svelte:fragment>
 </MenuItem>
@@ -149,7 +149,7 @@
   }}
 >
   <EditIcon slot="icon" />
-  rename...
+  Rename...
 </MenuItem>
 <MenuItem
   icon
@@ -157,5 +157,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  delete
+  Delete
 </MenuItem>

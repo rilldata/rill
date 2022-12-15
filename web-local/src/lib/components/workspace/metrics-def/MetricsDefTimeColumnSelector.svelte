@@ -28,10 +28,10 @@
   let tooltipText = "";
   let dropdownDisabled = true;
   $: if (selectedModel?.name === undefined) {
-    tooltipText = "select a model before selecting a timestamp column";
+    tooltipText = "Select a model before selecting a timestamp column";
     dropdownDisabled = true;
   } else if (timestampColumns.length === 0) {
-    tooltipText = "the selected model has no timestamp columns";
+    tooltipText = "The selected model has no timestamp columns";
     dropdownDisabled = true;
   } else {
     tooltipText = undefined;
@@ -41,7 +41,7 @@
 
 <div class="flex items-center">
   <div class="flex items-center gap-x-2" style="width:9em">
-    <TimestampIcon size="16px" /> timestamp
+    <TimestampIcon size="16px" />Timestamp
   </div>
   <div>
     <Tooltip
@@ -58,7 +58,7 @@
         value={timeColumnSelectedValue}
       >
         <option disabled hidden selected value="__DEFAULT_VALUE__"
-          >select a timestamp...</option
+          >Select a timestamp...</option
         >
         {#each timestampColumns as column}
           <option value={column}>{column}</option>

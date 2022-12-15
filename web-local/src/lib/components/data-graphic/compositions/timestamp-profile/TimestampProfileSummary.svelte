@@ -33,7 +33,7 @@
 
     <TooltipContent slot="tooltip-content">
       <div style:max-width="315px">
-        this column has the {type} type.
+        This column has the {type} type.
       </div>
     </TooltipContent>
   </Tooltip>
