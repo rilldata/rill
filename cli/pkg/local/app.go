@@ -336,13 +336,9 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 			return
 		}
 
-		// Check if server is up
-		resp, err := client.Get(uri + "/v1/ping")
-		if err == nil {
-			defer resp.Body.Close()
-			if resp.StatusCode < http.StatusInternalServerError {
-				break
-			}
+		ok := serverHealthCheck(client, uri)
+		if !ok {
+			break
 		}
 
 		// Wait a bit and retry
@@ -357,6 +353,18 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 			a.Logger.Debugf("could not open browser: %v", err)
 		}
 	}
+}
+
+func serverHealthCheck(client http.Client, uri string) bool {
+	// Check if server is up
+	resp, err := client.Get(uri + "/v1/ping")
+	if err == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode < http.StatusInternalServerError {
+			return false
+		}
+	}
+	return true
 }
 
 type localInfo struct {

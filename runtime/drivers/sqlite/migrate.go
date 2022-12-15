@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"io/fs"
 	"path"
 	"strconv"
 	"strings"
@@ -66,32 +67,39 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 			return err
 		}
 
-		// Start a transaction
-		tx, err := c.db.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = tx.Rollback() }()
-
-		// Run migration
-		_, err = tx.ExecContext(ctx, string(sql))
-		if err != nil {
-			return fmt.Errorf("failed to run migration '%s': %w", file.Name(), err)
-		}
-
-		// Update migration version
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
-		if err != nil {
-			return err
-		}
-
-		// Commit migration
-		err = tx.Commit()
+		err = migrateSingle(ctx, c, file, sql, version)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
+}
 
+func migrateSingle(ctx context.Context, c *connection, file fs.DirEntry, sql []byte, version int) (err error) {
+	// Start a transaction
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Run migration
+	_, err = tx.ExecContext(ctx, string(sql))
+	if err != nil {
+		return fmt.Errorf("failed to run migration '%s': %w", file.Name(), err)
+	}
+
+	// Update migration version
+	_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
+	if err != nil {
+		return err
+	}
+
+	// Commit migration
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

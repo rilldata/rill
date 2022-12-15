@@ -87,7 +87,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	// Create a downloader with the session and default options
 	downloader := s3manager.NewDownloader(sess)
 
-	bucket, key, extension, err := getAwsUrlParts(conf.Path)
+	bucket, key, extension, err := getAwsURLParts(conf.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
@@ -125,7 +125,7 @@ func getAwsSessionConfig(conf *Config) (*session.Session, error) {
 	})
 }
 
-func getAwsUrlParts(path string) (string, string, string, error) {
+func getAwsURLParts(path string) (string, string, string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
 		return "", "", "", err

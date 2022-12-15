@@ -333,24 +333,20 @@ func (s *Server) createTimestampRollupReduction( // metadata: DatabaseMetadata,
 			Ts:      time.UnixMilli(minT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", argminTV),
-		})
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argminVT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", minV),
-		})
-
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argmaxVT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", maxV),
-		})
-
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(maxT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", argmaxTV),
 		})
+
 		if argminVT > argmaxVT {
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]

@@ -640,13 +640,11 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
 	fromLowerName := strings.ToLower(item.FromName)
-	if _, ok := s.NameToPath[fromLowerName]; ok {
-		delete(s.NameToPath, fromLowerName)
-	}
+	delete(s.NameToPath, fromLowerName)
+
 	s.NameToPath[item.NormalizedName] = item.Path
-	if _, ok := s.PathToName[item.FromPath]; ok {
-		delete(s.PathToName, item.FromPath)
-	}
+	delete(s.PathToName, item.FromPath)
+
 	s.PathToName[item.Path] = item.NormalizedName
 
 	// delete old item and add new item to dag
@@ -693,12 +691,8 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
-	if _, ok := s.NameToPath[item.NormalizedName]; ok {
-		delete(s.NameToPath, item.NormalizedName)
-	}
-	if _, ok := s.PathToName[item.FromPath]; ok {
-		delete(s.PathToName, item.FromPath)
-	}
+	delete(s.NameToPath, item.NormalizedName)
+	delete(s.PathToName, item.FromPath)
 
 	// delete item from dag
 	s.dag.Delete(item.NormalizedName)

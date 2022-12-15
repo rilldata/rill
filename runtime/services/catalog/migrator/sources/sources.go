@@ -2,6 +2,7 @@ package sources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -39,7 +40,7 @@ func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, rep
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
-	if strings.ToLower(from) == strings.ToLower(catalogObj.Name) {
+	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, tempName),
@@ -78,11 +79,11 @@ func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPS
 }
 
 func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
-	// TODO
+	// TODO - Details needs to be added here
 	return nil
 }
 
-func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	if cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
@@ -97,7 +98,7 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry
 
 func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
-	if err == drivers.ErrNotFound {
+	if errors.Is(err, drivers.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
 		return false, err

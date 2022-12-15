@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -84,9 +85,16 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 // otherwise use status.FromContextError to determine the Code.
 // Log level for error codes is defined in logging.DefaultServerCodeToLevel
 func ErrorToCode(err error) codes.Code {
-	if se, ok := err.(interface {
-		GRPCStatus() *status.Status
-	}); ok {
+	// Commenting this need to test it if works fine or not
+	// if se, ok := err.(interface {
+	// 	GRPCStatus() *status.Status
+	// }); ok {
+	// 	return se.GRPCStatus().Code()
+	// }
+
+	var se interface{ GRPCStatus() *status.Status }
+	ok := errors.As(err, &se)
+	if ok {
 		return se.GRPCStatus().Code()
 	}
 	contextStatus := status.FromContextError(err)

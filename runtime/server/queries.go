@@ -132,7 +132,7 @@ func valToPB(v any) (*structpb.Value, error) {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			return structpb.NewNullValue(), nil
 		}
-		return structpb.NewNumberValue(float64(v)), nil
+		return structpb.NewNumberValue(v), nil
 	case *big.Int:
 		// Evil cast to float until frontend can deal with bigs:
 		v2, _ := new(big.Float).SetInt(v).Float64()

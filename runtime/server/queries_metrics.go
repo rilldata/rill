@@ -24,7 +24,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 
 	// Build query
-	sql, args, err := buildMetricsTopListSql(req, mv)
+	sql, args, err := buildMetricsTopListSQL(req, mv)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
@@ -73,7 +73,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, err
 	}
 
-	sql, args, err := buildMetricsTotalsSql(req, mv)
+	sql, args, err := buildMetricsTotalsSQL(req, mv)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error building query: %s", err.Error())
 	}
@@ -127,7 +127,7 @@ func (s *Server) metricsQuery(ctx context.Context, instanceID string, priority i
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
 }
 
-func buildMetricsTopListSql(req *runtimev1.MetricsViewToplistRequest, mv *runtimev1.MetricsView) (string, []any, error) {
+func buildMetricsTopListSQL(req *runtimev1.MetricsViewToplistRequest, mv *runtimev1.MetricsView) (string, []any, error) {
 	dimName := quoteName(req.DimensionName)
 	selectCols := []string{dimName}
 	for _, n := range req.MeasureNames {
@@ -243,7 +243,7 @@ func buildMetricsTimeSeriesSQL(req *runtimev1.MetricsViewTimeSeriesRequest, mv *
 	return sql, args, nil
 }
 
-func buildMetricsTotalsSql(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev1.MetricsView) (string, []any, error) {
+func buildMetricsTotalsSQL(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev1.MetricsView) (string, []any, error) {
 	selectCols := []string{}
 	for _, n := range req.MeasureNames {
 		found := false
