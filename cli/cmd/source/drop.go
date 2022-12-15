@@ -5,12 +5,13 @@ import (
 	"regexp"
 
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 )
 
 // dropCmd represents the drop command, it requires min 1 args as source path
-func DropCmd(ver string) *cobra.Command {
+func DropCmd(ver version.Version) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string

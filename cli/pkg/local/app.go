@@ -13,6 +13,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -46,12 +47,12 @@ type App struct {
 	Instance    *drivers.Instance
 	Logger      *zap.SugaredLogger
 	BaseLogger  *zap.Logger
-	Version     string
+	Version     version.Version
 	Verbose     bool
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
 	// Setup a friendly-looking colored logger
 	conf := zap.NewDevelopmentEncoderConfig()
 	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -116,15 +117,11 @@ func NewApp(ctx context.Context, version string, verbose bool, olapDriver string
 		Instance:    inst,
 		Logger:      logger.Sugar(),
 		BaseLogger:  logger,
-		Version:     version,
+		Version:     ver,
 		Verbose:     verbose,
 		ProjectPath: projectPath,
 	}
 	return app, nil
-}
-
-func (a *App) IsDevelopment() bool {
-	return a.Version == ""
 }
 
 func (a *App) IsProjectInit() bool {
@@ -161,7 +158,7 @@ func (a *App) InitProject(exampleName string) error {
 		}
 
 		// Init empty project
-		err := c.InitEmpty(a.Context, defaultName, a.Version)
+		err := c.InitEmpty(a.Context, defaultName, a.Version.Number)
 		if err != nil {
 			if isPwd {
 				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
@@ -260,7 +257,10 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 		GRPCPort:         grpcPort,
 		InstallID:        localConf.InstallID,
 		ProjectPath:      a.ProjectPath,
-		IsDev:            a.IsDevelopment(),
+		Version:          a.Version.Number,
+		BuildCommit:      a.Version.Commit,
+		BuildTime:        a.Version.Timestamp,
+		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: localConf.AnalyticsEnabled,
 	}
 
@@ -360,6 +360,9 @@ type localInfo struct {
 	GRPCPort         int    `json:"grpc_port"`
 	InstallID        string `json:"install_id"`
 	ProjectPath      string `json:"project_path"`
+	Version          string `json:"version"`
+	BuildCommit      string `json:"build_commit"`
+	BuildTime        string `json:"build_time"`
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 }
