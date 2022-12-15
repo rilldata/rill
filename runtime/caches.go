@@ -3,8 +3,9 @@ package runtime
 import (
 	"context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -116,7 +117,7 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instId string) (*ca
 	}
 	repoStore, _ := repoConn.RepoStore()
 
-	service = catalog.NewService(catalogStore, repoStore, olap, instId)
+	service = catalog.NewService(catalogStore, repoStore, olap, instId, rt.logger)
 	c.cache[key] = service
 	return service, nil
 }

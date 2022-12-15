@@ -210,9 +210,6 @@ func (a *App) Reconcile() error {
 		a.Logger.Errorf("Hydration canceled")
 		return nil
 	}
-	for _, path := range res.AffectedPaths {
-		a.Logger.Infof("Reconciled: %s", path)
-	}
 	for _, merr := range res.Errors {
 		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 	}

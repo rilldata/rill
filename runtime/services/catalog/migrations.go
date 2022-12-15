@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -615,10 +616,12 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// create in olap
+	s.logger.Info(fmt.Sprintf("Reconciling: %s", item.Path))
 	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
+	s.logger.Info(fmt.Sprintf("Reconciled: %s", item.Path))
 
 	// update the catalog object and create it in store
 	catalog, err := s.updateCatalogObject(ctx, item)
@@ -673,10 +676,12 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// update in olap
+	s.logger.Info(fmt.Sprintf("Reconciling: %s", item.Path))
 	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
+	s.logger.Info(fmt.Sprintf("Reconciled: %s", item.Path))
 	// update the catalog object and update it in store
 	catalog, err := s.updateCatalogObject(ctx, item)
 	if err != nil {

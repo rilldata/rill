@@ -6,6 +6,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/dag"
+	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -23,9 +24,20 @@ type Service struct {
 	NameToPath map[string]string
 	// used to get last logged name when parsing fails
 	PathToName map[string]string
+
+	logger *zap.Logger
 }
 
-func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drivers.OLAPStore, instId string) *Service {
+func NewService(
+	catalog drivers.CatalogStore,
+	repo drivers.RepoStore,
+	olap drivers.OLAPStore,
+	instId string,
+	logger *zap.Logger,
+) *Service {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
 	return &Service{
 		Catalog: catalog,
 		Repo:    repo,
@@ -35,6 +47,8 @@ func NewService(catalog drivers.CatalogStore, repo drivers.RepoStore, olap drive
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
 		PathToName: make(map[string]string),
+
+		logger: logger,
 	}
 }
 
