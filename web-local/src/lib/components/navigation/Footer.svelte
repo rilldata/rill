@@ -87,7 +87,9 @@
         </div>
       </Tooltip>
     </span>
-    version {$appBuildMetaStore.version}{$appBuildMetaStore.commitHash
+    version {$appBuildMetaStore.version
+      ? $appBuildMetaStore.version
+      : "unknown (built from source)"}{$appBuildMetaStore.commitHash
       ? ` – ${$appBuildMetaStore.commitHash}`
       : ""}
   </div>
