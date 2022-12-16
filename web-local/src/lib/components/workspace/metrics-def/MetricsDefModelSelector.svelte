@@ -18,11 +18,11 @@
 
 <div class="flex items-center mb-3">
   <div class="flex items-center gap-x-2" style="width:9em">
-    <ModelIcon size="16px" /> model
+    <ModelIcon size="16px" />Model
   </div>
   <div>
     <select
-      class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:font-bold hover:border-gray-100"
+      class="hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300"
       on:change={(evt) => {
         updateMetricsDefinitionHandler(evt.target?.value);
       }}
@@ -30,7 +30,7 @@
       value={sourceModelDisplayValue}
     >
       <option disabled selected value="__DEFAULT_VALUE__"
-        >select a model...</option
+        >Select a model...</option
       >
       {#each $allModels.data || [] as modelName}
         <option value={modelName}>{modelName}</option>

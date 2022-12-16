@@ -235,7 +235,7 @@
             {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
-          <div class="p-1 italic ui-copy-disabled">no available values</div>
+          <div class="p-1 ui-copy-disabled">no available values</div>
         {/if}
 
         {#if values.length > slice}
@@ -245,9 +245,7 @@
               color="=ui-label"
               on:click={() => selectDimension(dimensionName)}
             >
-              <div class="italic ui-copy-muted" slot="title">
-                (Expand Table)
-              </div>
+              <div class="ui-copy-muted" slot="title">(Expand Table)</div>
             </LeaderboardListItem>
             <TooltipContent slot="tooltip-content"
               >Expand dimension to see more values</TooltipContent

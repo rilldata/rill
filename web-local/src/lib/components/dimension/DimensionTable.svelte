@@ -291,7 +291,7 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
           />
         {:else}
-          <div class="flex italic text-gray-500 justify-center mt-[30vh]">
+          <div class="flex text-gray-500 justify-center mt-[30vh]">
             No results to show
           </div>
         {/if}

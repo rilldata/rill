@@ -88,11 +88,11 @@
   }}
 >
   {#if $inspectorLayout.visible}
-    <HideRightSidebar size="20px" />
+    <HideRightSidebar size="18px" />
   {:else}
     <MoreHorizontal size="16px" />
   {/if}
   <svelte:fragment slot="tooltip-content">
-    {#if $visibilityTween === 1} close {:else} show {/if} sidebar
+    {#if $visibilityTween === 1} Close {:else} Show {/if} sidebar
   </svelte:fragment>
 </SurfaceControlButton>

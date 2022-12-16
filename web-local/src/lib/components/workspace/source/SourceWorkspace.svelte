@@ -99,7 +99,7 @@
   <WorkspaceContainer assetID={sourceName}>
     <div
       slot="body"
-      class="grid pb-6"
+      class="grid pb-3"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >

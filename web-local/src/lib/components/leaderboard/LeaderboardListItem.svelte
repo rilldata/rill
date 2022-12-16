@@ -69,11 +69,11 @@
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
-        <div class:font-italic={isActive}>
+        <div>
           <slot name="title" />
         </div>
       </div>
-      <div class="justify-self-end  overflow-hidden">
+      <div class="justify-self-end overflow-hidden ui-copy-number">
         <slot name="right" />
       </div>
     </div>

@@ -9,7 +9,7 @@
 >
   <div slot="title">
     <span class="font-bold">Importing source</span>
-    <span class="italic">{importName}</span>
+    <span>{importName}</span>
     <div>as <span class="font-bold">{tableName}</span></div>
   </div>
 </BlockingOverlayContainer>

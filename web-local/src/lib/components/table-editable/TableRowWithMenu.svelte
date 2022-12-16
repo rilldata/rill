@@ -82,7 +82,7 @@
             >
               <MenuItem icon on:select={() => dispatch("delete")}>
                 <Cancel slot="icon" />
-                delete row</MenuItem
+                Delete row</MenuItem
               >
             </Menu>
           </WithTogglableFloatingElement>
