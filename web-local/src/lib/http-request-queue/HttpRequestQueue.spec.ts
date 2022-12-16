@@ -4,6 +4,7 @@ import {
   runtimeServiceGetNumericHistogram,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+import { UrlExtractorRegex } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueue";
 import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
 import { asyncWait, waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import Mock = jest.Mock;
@@ -36,9 +37,11 @@ describe("HttpRequestQueue", () => {
     expect(fetchMock.mock.calls.length).toBe(7);
     unlockRequests(table, cols, 2);
     await Promise.all(promises);
-    expect(fetchMock.mock.calls.length).toBe(10);
+    expect(fetchMock.mock.calls.length).toBe(cols * 2);
 
-    expect(getActualUrls(fetchMock)).toEqual(getProfilingRequests(table, cols));
+    expect(correctActualUrls(fetchMock)).toEqual(
+      getProfilingRequests(table, cols)
+    );
   });
 
   it("cancelling queries", async () => {
@@ -67,8 +70,9 @@ describe("HttpRequestQueue", () => {
       // no-op
     }
 
-    expect(getActualUrls(fetchMock)).toEqual([
-      ...getProfilingRequests(table1, cols1, 0, 7),
+    expect(correctActualUrls(fetchMock)).toEqual([
+      ...getProfilingRequests(table1, cols1, 0, 5),
+      ...getProfilingRequests(table1, cols1, 6, 8),
       ...getProfilingRequests(table2, cols2),
     ]);
   });
@@ -92,10 +96,38 @@ describe("HttpRequestQueue", () => {
     unlockRequests(table2, cols2);
     await Promise.all(promises);
 
-    expect(getActualUrls(fetchMock)).toEqual([
-      ...getProfilingRequests(table1, cols1, 0, 7),
+    expect(correctActualUrls(fetchMock)).toEqual([
+      ...getProfilingRequests(table1, cols1, 0, 5),
+      ...getProfilingRequests(table1, cols1, 6, 8),
       ...getProfilingRequests(table2, cols2),
-      ...getProfilingRequests(table1, cols1, 7),
+      ...getProfilingRequests(table1, cols1, 5, 6),
+      ...getProfilingRequests(table1, cols1, 8),
+    ]);
+  });
+
+  it("change column priority", async () => {
+    const table = "t";
+    const cols = 8;
+
+    const promises = getProfilingQueries(table, cols);
+
+    await asyncWait(55);
+    // only 5 calls go through
+    expect(fetchMock.mock.calls.length).toBe(5);
+    unlockRequests(table, cols, 0, 2);
+    await asyncWait(55);
+    httpRequestQueue.prioritiseColumn(table, "c2", true);
+    unlockRequests(table, cols, 2);
+    await Promise.all(promises);
+    expect(fetchMock.mock.calls.length).toBe(cols * 2);
+
+    expect(correctActualUrls(fetchMock)).toEqual([
+      ...getProfilingRequests(table, cols, 0, 5),
+      ...getProfilingRequests(table, cols, 6, 8),
+      ...getProfilingRequests(table, cols, 10, 11),
+      ...getProfilingRequests(table, cols, 5, 6),
+      ...getProfilingRequests(table, cols, 8, 10),
+      ...getProfilingRequests(table, cols, 11),
     ]);
   });
 
@@ -156,10 +188,48 @@ async function mockedQuery(url: string, _entry: RequestQueueEntry) {
   };
 }
 
-function getActualUrls(fetchMock: Mock) {
-  return fetchMock.mock.calls.map((args) =>
-    args[0].replace("/v1/instances/i/", "").replace(/&?priority=[0-9]+$/, "")
-  );
+/**
+ * Requests within a query type is not always in order.
+ * Correct it by sorting individual types.
+ */
+function correctActualUrls(fetchMock: Mock): Array<string> {
+  const actualUrls = fetchMock.mock.calls.map((args) => args[0]);
+  const groups = new Array<Array<string>>();
+
+  let lastName: string;
+  let lastType: string;
+  let lastGroup: Array<string>;
+  actualUrls.forEach((actualUrl) => {
+    actualUrl = actualUrl.replace(/&?priority=[0-9]+$/, "");
+    const urlMatch = UrlExtractorRegex.exec(actualUrl.replace(/\?.*$/, ""));
+    let name: string;
+    let type: string;
+    switch (urlMatch?.[1]) {
+      case "metrics-views":
+        name = urlMatch[3];
+        type = urlMatch[2];
+        break;
+      case "queries":
+        name = urlMatch[4];
+        type = urlMatch[2];
+    }
+    if (lastType !== type || lastName !== name) {
+      if (lastGroup?.length) {
+        lastGroup.sort();
+        groups.push(lastGroup);
+      }
+      lastName = name;
+      lastType = type;
+      lastGroup = [];
+    }
+    lastGroup.push(actualUrl.replace("/v1/instances/i/", ""));
+  });
+  if (lastGroup?.length) {
+    lastGroup.sort();
+    groups.push(lastGroup);
+  }
+
+  return groups.flat();
 }
 
 function getProfilingQueries(table: string, cols: number) {
@@ -182,8 +252,8 @@ function getProfilingQueries(table: string, cols: number) {
 function getProfilingRequests(
   table: string,
   cols: number,
-  start = 0,
-  end = -1
+  startInclusive = 0,
+  endExclusive = -1
 ) {
   const requests = [
     ...Array(cols)
@@ -197,10 +267,10 @@ function getProfilingRequests(
         (_, i) => `queries/numeric-histogram/tables/${table}?columnName=c${i}`
       ),
   ];
-  if (end === -1) {
-    return requests.slice(start);
+  if (endExclusive === -1) {
+    return requests.slice(startInclusive);
   } else {
-    return requests.slice(start, end);
+    return requests.slice(startInclusive, endExclusive);
   }
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import TimestampSpark from "../../data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
@@ -33,47 +34,51 @@
   $: timeSeries = getTimeSeriesAndSpark(
     $runtimeStore?.instanceId,
     objectName,
-    columnName
+    columnName,
+    active
   );
+
+  function toggleColumnProfile() {
+    active = !active;
+    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
+  }
 </script>
 
 <ProfileContainer
-  on:select={() => {
-    active = !active;
-  }}
+  {active}
+  {compact}
+  emphasize={active}
+  {example}
+  {hideNullPercentage}
+  {hideRight}
+  {mode}
+  on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
-  {active}
-  emphasize={active}
-  {hideRight}
-  {compact}
-  {hideNullPercentage}
-  {mode}
-  {example}
   {type}
 >
-  <DataTypeIcon {type} slot="icon" />
+  <DataTypeIcon slot="icon" {type} />
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->
-  <div slot="summary" class={TIMESTAMP_TOKENS.textClass}>
+  <div class={TIMESTAMP_TOKENS.textClass} slot="summary">
     <WithParentClientRect let:rect>
       <TimestampSpark
         area
-        width={rect?.width || 400}
+        bottom={4}
+        color={"currentColor"}
+        data={$timeSeries?.spark}
         height={18}
         top={4}
-        bottom={4}
+        width={rect?.width || 400}
         xAccessor="ts"
         yAccessor="count"
-        data={$timeSeries?.spark}
-        color={"currentColor"}
       />
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
-    slot="nullity"
     nullCount={$nullPercentage?.nullCount}
+    slot="nullity"
     totalRows={$nullPercentage?.totalRows}
     {type}
   />

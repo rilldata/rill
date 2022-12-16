@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { DataTypeIcon } from "../../data-types";
@@ -31,40 +32,43 @@
     columnName
   );
 
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
+  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName, active);
+
+  function toggleColumnProfile() {
+    active = !active;
+    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
+  }
 </script>
 
 <ProfileContainer
-  on:select={() => {
-    active = !active;
-  }}
-  on:shift-click={() =>
-    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {active}
   emphasize={active}
-  {hideRight}
-  {hideNullPercentage}
-  {mode}
   {example}
+  {hideNullPercentage}
+  {hideRight}
+  {mode}
+  on:select={toggleColumnProfile}
+  on:shift-click={() =>
+    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <DataTypeIcon type="VARCHAR" slot="icon" />
+  <DataTypeIcon slot="icon" type="VARCHAR" />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
   <ColumnCardinalitySpark
-    slot="summary"
     cardinality={$columnCardinality?.cardinality}
-    totalRows={$columnCardinality?.totalRows}
     {compact}
+    slot="summary"
+    totalRows={$columnCardinality?.totalRows}
   />
   <NullPercentageSpark
-    slot="nullity"
     nullCount={$nulls?.nullCount}
+    slot="nullity"
     totalRows={$nulls?.totalRows}
     {type}
   />
 
-  <div slot="details" class="pl-10 pr-4 py-4">
+  <div class="pl-10 pr-4 py-4" slot="details">
     <div>
       <TopK topK={$topK} totalRows={$columnCardinality?.totalRows} />
     </div>
