@@ -68,7 +68,12 @@
     {type}
   />
 
-  <div class="pl-10 pr-4 py-4" slot="details">
+  <div
+    class="pl-10 pr-4 py-4"
+    slot="details"
+    style:min-height="{Math.min(15, $columnCardinality?.cardinality) * 18 +
+      32 || 250}px"
+  >
     <div>
       <TopK topK={$topK} totalRows={$columnCardinality?.totalRows} />
     </div>

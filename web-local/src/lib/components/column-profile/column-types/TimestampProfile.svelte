@@ -22,6 +22,8 @@
   export let compact = false;
   export let hideNullPercentage = false;
 
+  let timestampDetailHeight = 160;
+
   let active = false;
 
   /** queries used to power the different plots */
@@ -84,13 +86,13 @@
   />
 
   <div slot="details">
-    <div class="px-10 py-4">
+    <div class="pl-8 py-4" style:height="{timestampDetailHeight + 64 + 28}px">
       <WithParentClientRect let:rect>
         {#if $timeSeries?.data?.length}
           <TimestampDetail
             width={rect?.width - 56 || 400}
             mouseover={true}
-            height={160}
+            height={timestampDetailHeight}
             {type}
             data={$timeSeries?.data}
             spark={$timeSeries?.spark}
