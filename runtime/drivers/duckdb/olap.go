@@ -21,15 +21,15 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	defer c.sem.Release()
 
 	// Take connection from pool
-	db, ok := <-c.pool
+	conn, ok := <-c.pool
 	if !ok {
 		return drivers.ErrClosed
 	}
-	defer func() { c.pool <- db }()
+	defer func() { c.pool <- conn }()
 
 	// Call fn with connection embedded in context
-	wrappedCtx := contextWithConn(ctx, db)
-	ensuredCtx := contextWithConn(context.Background(), db)
+	wrappedCtx := contextWithConn(ctx, conn)
+	ensuredCtx := contextWithConn(context.Background(), conn)
 	return fn(wrappedCtx, ensuredCtx)
 }
 
@@ -44,8 +44,8 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// If the call is wrapped in WithConnection, we disregard priority and execute immediately.
 	// Otherwise, we go through the priority semaphore
-	db := connFromContext(ctx)
-	if db == nil {
+	conn := connFromContext(ctx)
+	if conn == nil {
 		// Get priority
 		err := c.sem.Acquire(ctx, stmt.Priority)
 		if err != nil {
@@ -55,23 +55,23 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 
 		// Take connection from pool
 		var ok bool
-		db, ok = <-c.pool
+		conn, ok = <-c.pool
 		if !ok {
 			return nil, drivers.ErrClosed
 		}
-		defer func() { c.pool <- db }()
+		defer func() { c.pool <- conn }()
 	}
 
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
-		prepared, err := db.PrepareContext(ctx, stmt.Query)
+		prepared, err := conn.PrepareContext(ctx, stmt.Query)
 		if err != nil {
 			return nil, err
 		}
 		return nil, prepared.Close()
 	}
 
-	rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		return nil, err
 	}

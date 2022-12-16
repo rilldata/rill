@@ -19,8 +19,11 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 }
 
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	db := <-i.c.pool
-	defer func() { i.c.pool <- db }()
+	conn, release, err := i.c.getConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 
 	q := `
 		select
@@ -38,7 +41,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		order by 1, 2, 3, 4
 	`
 
-	rows, err := db.QueryxContext(ctx, q)
+	rows, err := conn.QueryxContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +56,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
-	db := <-i.c.pool
-	defer func() { i.c.pool <- db }()
+	conn, release, err := i.c.getConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 
 	q := `
 		select
@@ -72,7 +78,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 		order by 1, 2, 3, 4
 	`
 
-	rows, err := db.QueryxContext(ctx, q, name)
+	rows, err := conn.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
 	}
