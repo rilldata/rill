@@ -1,7 +1,7 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import { crossfade, fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,

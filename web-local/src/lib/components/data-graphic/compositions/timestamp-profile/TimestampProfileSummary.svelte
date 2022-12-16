@@ -4,12 +4,12 @@
    * This component provides summary information about the
    * timestamp profile at the top of the detail plot.
    */
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
   import {
     intervalToTimestring,
     PreviewRollupIntervalFormatter,
   } from "../../../../util/formatters";
+  import Tooltip from "../../../tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
 
   import type { Interval } from "../../../../duckdb-data-types";
 
@@ -20,7 +20,7 @@
 </script>
 
 <div
-  class="text-gray-500 italic pb-3"
+  class="text-gray-500 pb-3"
   style="
         display: grid;
         grid-template-columns: auto auto;
@@ -33,7 +33,7 @@
 
     <TooltipContent slot="tooltip-content">
       <div style:max-width="315px">
-        this column has the {type} type.
+        This column has the {type} type.
       </div>
     </TooltipContent>
   </Tooltip>

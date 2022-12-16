@@ -10,7 +10,7 @@
 </script>
 
 <div class="flex flex-row items-center pl-1 gap-x-1">
-  <div class="text-gray-500 italic">
+  <div class="text-gray-500">
     {description}
   </div>
   {#if hint}

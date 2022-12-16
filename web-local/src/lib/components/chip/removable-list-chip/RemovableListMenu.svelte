@@ -110,7 +110,7 @@
       </Switch>
     </span>
     {#if numSelectedNotInSearch}
-      <div class="ui-label italic">
+      <div class="ui-label">
         {numSelectedNotInSearch} other value{numSelectedNotInSearch > 1
           ? "s"
           : ""} selected

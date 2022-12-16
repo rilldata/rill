@@ -1,11 +1,10 @@
-import { waitUntil } from "@rilldata/web-local/common/utils/waitUtils";
+import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
 import {
   getHeapByName,
   getHeapByQuery,
   RequestQueueNameEntry,
   RequestQueueQueryEntry,
 } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
-import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
 import {
   ActivePriority,
   DefaultQueryPriority,
@@ -13,6 +12,7 @@ import {
   QueryPriorities,
 } from "@rilldata/web-local/lib/http-request-queue/priorities";
 import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 
 // TODO: timeseries
 const UrlExtractorRegex =

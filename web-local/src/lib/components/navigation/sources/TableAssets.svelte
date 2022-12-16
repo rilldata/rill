@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -57,13 +57,13 @@
   bind:show={showTables}
   contextButtonID={"add-table"}
   on:add={openShowAddSourceModal}
-  tooltipText="add a new data source"
+  tooltipText="Add a new data source"
 >
-  <Source size="16px" /> Sources
+  <Source size="14px" /> Sources
 </NavigationHeader>
 
 {#if showTables}
-  <div class="pb-6" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#if $sourceNames?.data}
       <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}

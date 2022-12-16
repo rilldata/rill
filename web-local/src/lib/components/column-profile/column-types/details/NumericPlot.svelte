@@ -17,6 +17,7 @@
   export let summary;
   export let topK;
   export let totalRows;
+  export let type;
 
   let summaryMode: "summary" | "topk" = "summary";
 
@@ -41,7 +42,7 @@
     >
       <SummaryStatistics />
       <svelte:fragment slot="tooltip-content">
-        show basic summary statistics
+        Show basic summary statistics
       </svelte:fragment>
     </IconButton>
     <IconButton
@@ -54,7 +55,7 @@
     >
       <TopKIcon />
       <svelte:fragment slot="tooltip-content"
-        >show the top values</svelte:fragment
+        >Show the top values</svelte:fragment
       >
     </IconButton>
   </div>
@@ -136,6 +137,7 @@
               q25={summary?.q25}
               q50={summary?.q50}
               q75={summary?.q75}
+              {type}
             />
           </div>
         {:else if summaryMode === "topk"}

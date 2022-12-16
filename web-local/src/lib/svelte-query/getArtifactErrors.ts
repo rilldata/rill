@@ -1,10 +1,10 @@
+import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   runtimeServiceListCatalogEntries,
   runtimeServiceListFiles,
   runtimeServiceReconcile,
 } from "@rilldata/web-common/runtime-client";
-import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
-import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
 
 export async function getArtifactErrors(
   instanceId: string

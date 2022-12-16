@@ -10,13 +10,40 @@ import {
   TIMESTAMPS,
 } from "../duckdb-data-types";
 
+/** This heuristic is courtesy Dominik Moritz.
+ * Best used in cases where (1) you have no context for the number, and (2) you
+ * want have "enough resolution to distinguish numbers when they should be distinguishable."
+ */
+export function justEnoughPrecision(n: number) {
+  if (typeof n !== "number") throw Error("argument must be a number");
+  const str = n.toString();
+  // if there are no floating point digits, return the string
+  if (n === ~~n) return str;
+  const [left, right] = str.split(".");
+
+  // count the integer side
+  const leftSideDigits = left
+    .split("")
+    .filter((l) => l !== "-") // remove the negative sign
+    .join("").length;
+
+  // calculate the remaining available precision
+  const remainingPrecision = Math.max(0, 5 - leftSideDigits);
+  // take the remaining precision from the floating point side.
+  const remainingFloatingPoints = right.slice(0, remainingPrecision);
+  // format a new string
+  return `${left}${remainingFloatingPoints.length ? "." : ""}${
+    remainingFloatingPoints || ""
+  }`;
+}
+
 const zeroPad = format("02d");
 const msPad = format("03d");
 export const formatInteger = format(",");
 const formatRate = format(".1f");
 
 /**  */
-export const singleDigitPercentage = format(".1%");
+export const singleDigitPercentage = format(".0%");
 
 /**
  * changes precision depending on the

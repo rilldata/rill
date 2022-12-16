@@ -107,8 +107,12 @@
   }
 
   $: textColor = dark
-    ? `${disabled ? "italic" : "focus:bg-gray-600 dark:focus:bg-gray-600"}`
-    : `${disabled ? "italic" : "focus:bg-gray-200 dark:focus:bg-gray-600"}`;
+    ? `${
+        disabled ? "text-gray-500" : "focus:bg-gray-600 dark:focus:bg-gray-600"
+      }`
+    : `${
+        disabled ? "text-gray-500" : "focus:bg-gray-200 dark:focus:bg-gray-600"
+      }`;
 </script>
 
 <button
@@ -167,7 +171,7 @@
     </div>
     <div
       class:ui-copy-muted={!disabled}
-      class:ui-copy-disabled={disabled}
+      class:ui-copy-disabled-faint={disabled}
       style:font-size="11px"
     >
       <slot name="description" />
