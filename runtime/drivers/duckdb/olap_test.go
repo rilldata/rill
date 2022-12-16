@@ -26,9 +26,8 @@ func TestQuery(t *testing.T) {
 
 	err = conn.Close()
 	require.NoError(t, err)
-	db, err := conn.(*connection).connectionPool.dequeue()
-	defer conn.(*connection).connectionPool.enqueue(db)
-	require.Error(t, err)
+	_, ok := <-conn.(*connection).pool
+	require.False(t, ok)
 }
 
 func TestPriorityQueue(t *testing.T) {
@@ -39,9 +38,6 @@ func TestPriorityQueue(t *testing.T) {
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
-
-	// pause the priority worker to allow the queue to fill up
-	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -70,7 +66,6 @@ func TestPriorityQueue(t *testing.T) {
 
 	// give the queue plenty of time to fill up, then unpause
 	time.Sleep(1000 * time.Millisecond)
-	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
 	require.NoError(t, err)
@@ -91,7 +86,6 @@ func TestCancel(t *testing.T) {
 	defer conn.Close()
 
 	// pause the priority worker to allow the queue to fill up
-	conn.(*connection).worker.Pause()
 
 	n := 100
 	cancelIdx := 50
@@ -136,7 +130,6 @@ func TestCancel(t *testing.T) {
 
 	// give the queue plenty of time to fill up, then unpause
 	time.Sleep(1000 * time.Millisecond)
-	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
 	require.NoError(t, err)
@@ -159,7 +152,6 @@ func TestClose(t *testing.T) {
 	olap, _ := conn.OLAPStore()
 
 	// pause the priority worker to allow the queue to fill up
-	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -187,7 +179,6 @@ func TestClose(t *testing.T) {
 	}
 
 	// unpause the queue, so it con process a bit before closing
-	conn.(*connection).worker.Unpause()
 
 	g.Go(func() error {
 		err := conn.Close()

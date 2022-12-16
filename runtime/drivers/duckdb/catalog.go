@@ -28,12 +28,10 @@ func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*d
 }
 
 func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
+	db := <-c.pool
+	defer func() { c.pool <- db }()
+
 	sql := fmt.Sprintf("SELECT name, type, object, path, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
-	db, err := c.connectionPool.dequeue()
-	defer c.connectionPool.enqueue(db)
-	if err != nil {
-		panic(err)
-	}
 	rows, err := db.QueryxContext(ctx, sql, args...)
 	if err != nil {
 		panic(err)
@@ -78,16 +76,15 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 }
 
 func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+	db := <-c.pool
+	defer func() { c.pool <- db }()
+
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
 	if err != nil {
 		return err
 	}
-	db, err := c.connectionPool.dequeue()
-	defer c.connectionPool.enqueue(db)
-	if err != nil {
-		return err
-	}
+
 	now := time.Now()
 	_, err = db.ExecContext(
 		ctx,
@@ -111,17 +108,15 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+	db := <-c.pool
+	defer func() { c.pool <- db }()
+
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
 	if err != nil {
 		return err
 	}
 
-	db, err := c.connectionPool.dequeue()
-	defer c.connectionPool.enqueue(db)
-	if err != nil {
-		return err
-	}
 	_, err = db.ExecContext(
 		ctx,
 		"UPDATE rill.catalog SET type = ?, object = ?, path = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
@@ -140,11 +135,9 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
-	db, err := c.connectionPool.dequeue()
-	defer c.connectionPool.enqueue(db)
-	if err != nil {
-		return err
-	}
-	_, err = db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
+	db := <-c.pool
+	defer func() { c.pool <- db }()
+
+	_, err := db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
 	return err
 }

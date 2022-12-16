@@ -20,11 +20,8 @@ var migrationVersionTable = "rill.migration_version"
 // Migrate implements drivers.Connection.
 // Migrate for DuckDB may not be safe for concurrent use.
 func (c *connection) Migrate(ctx context.Context) (err error) {
-	db, err := c.connectionPool.dequeue()
-	defer c.connectionPool.enqueue(db)
-	if err != nil {
-		return err
-	}
+	db := <-c.pool
+	defer func() { c.pool <- db }()
 
 	// Create rill schema if it doesn't exist
 	_, err = db.ExecContext(ctx, "create schema if not exists rill")
@@ -120,11 +117,9 @@ func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte,
 
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
-	db, err := c.connectionPool.dequeue()
-	defer c.connectionPool.enqueue(db)
-	if err != nil {
-		return 0, 0, err
-	}
+	db := <-c.pool
+	defer func() { c.pool <- db }()
+
 	// Get current version
 	err = db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {

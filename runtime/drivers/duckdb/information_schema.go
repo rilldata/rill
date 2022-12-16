@@ -19,6 +19,9 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 }
 
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
+	db := <-i.c.pool
+	defer func() { i.c.pool <- db }()
+
 	q := `
 		select
 			coalesce(t.table_catalog, '') as "database",
@@ -34,11 +37,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		group by 1, 2, 3, 4
 		order by 1, 2, 3, 4
 	`
-	db, err := i.c.connectionPool.dequeue()
-	defer i.c.connectionPool.enqueue(db)
-	if err != nil {
-		return nil, err
-	}
+
 	rows, err := db.QueryxContext(ctx, q)
 	if err != nil {
 		return nil, err
@@ -54,6 +53,9 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+	db := <-i.c.pool
+	defer func() { i.c.pool <- db }()
+
 	q := `
 		select
 			coalesce(t.table_catalog, '') as "database",
@@ -70,11 +72,6 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 		order by 1, 2, 3, 4
 	`
 
-	db, err := i.c.connectionPool.dequeue()
-	defer i.c.connectionPool.enqueue(db)
-	if err != nil {
-		return nil, err
-	}
 	rows, err := db.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
