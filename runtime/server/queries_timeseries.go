@@ -22,6 +22,7 @@ func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.
 }
 
 func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.GenerateTimeSeriesResponse, error) {
+<<<<<<< HEAD
 	q := &queries.ColumnTimeseries{
 		TableName:           request.TableName,
 		TimestampColumnName: request.TimestampColumnName,
