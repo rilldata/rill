@@ -41,6 +41,8 @@ jobs:
           echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
           echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
+          echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
+          echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
 
       - name: Release Publish
         run: |-
