@@ -25,10 +25,7 @@
     $metaQuery &&
     metricViewName === $metaQuery.data?.name
   ) {
-    if (
-      !$metaQuery.data?.measures?.length ||
-      !$metaQuery.data?.dimensions?.length
-    ) {
+    if (!$metaQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     }
     displayName = $metaQuery.data.label;

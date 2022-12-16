@@ -152,15 +152,17 @@
       </div>
       <!-- top axis element -->
       <div />
-      <SimpleDataGraphic
-        height={32}
-        top={34}
-        bottom={0}
-        xMin={startValue}
-        xMax={endValue}
-      >
-        <Axis superlabel side="top" />
-      </SimpleDataGraphic>
+      {#if metricsExplorer?.selectedTimeRange}
+        <SimpleDataGraphic
+          height={32}
+          top={34}
+          bottom={0}
+          xMin={startValue}
+          xMax={endValue}
+        >
+          <Axis superlabel side="top" />
+        </SimpleDataGraphic>
+      {/if}
     </div>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
@@ -184,28 +186,30 @@
             {measure?.label || measure?.expression}
           </svelte:fragment>
         </MeasureBigNumber>
-        <div class="time-series-body" style:height="125px">
-          {#if $timeSeriesQuery.isError}
-            <div class="p-5"><CrossIcon /></div>
-          {:else if formattedData}
-            <TimeSeriesBody
-              bind:mouseoverValue
-              formatPreset={NicelyFormattedTypes[measure?.format] ||
-                NicelyFormattedTypes.HUMANIZE}
-              data={formattedData}
-              accessor={measure.name}
-              mouseover={point}
-              timeGrain={metricsExplorer.selectedTimeRange?.interval}
-              yMin={yExtents[0] < 0 ? yExtents[0] : 0}
-              start={startValue}
-              end={endValue}
-            />
-          {:else}
-            <div>
-              <Spinner status={EntityStatus.Running} />
-            </div>
-          {/if}
-        </div>
+        {#if metricsExplorer?.selectedTimeRange}
+          <div class="time-series-body" style:height="125px">
+            {#if $timeSeriesQuery?.isError}
+              <div class="p-5"><CrossIcon /></div>
+            {:else if formattedData}
+              <TimeSeriesBody
+                bind:mouseoverValue
+                formatPreset={NicelyFormattedTypes[measure?.format] ||
+                  NicelyFormattedTypes.HUMANIZE}
+                data={formattedData}
+                accessor={measure.name}
+                mouseover={point}
+                timeGrain={metricsExplorer.selectedTimeRange?.interval}
+                yMin={yExtents[0] < 0 ? yExtents[0] : 0}
+                start={startValue}
+                end={endValue}
+              />
+            {:else}
+              <div>
+                <Spinner status={EntityStatus.Running} />
+              </div>
+            {/if}
+          </div>
+        {/if}
       {/each}
     {/if}
   </TimeSeriesChartContainer>

@@ -118,6 +118,8 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
 			args = append(args, q.TimeEnd.AsTime())
 		}
+	} else {
+		return "", nil, fmt.Errorf("time dimension is missing")
 	}
 
 	if q.Filter != nil {

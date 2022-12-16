@@ -48,9 +48,6 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	if mv.Model == "" {
 		return migrator.CreateValidationError(catalog.Path, SourceNotSelected)
 	}
-	if mv.TimeDimension == "" {
-		return migrator.CreateValidationError(catalog.Path, TimestampNotSelected)
-	}
 	model, err := olap.InformationSchema().Lookup(ctx, mv.Model)
 	if err != nil {
 		if err == drivers.ErrNotFound {
@@ -59,13 +56,16 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		return migrator.CreateValidationError(catalog.Path, err.Error())
 	}
 
-	fieldsMap := make(map[string]*runtimev1.StructType_Field)
-	for _, field := range model.Schema.Fields {
-		fieldsMap[field.Name] = field
-	}
+	// if a time dimension is selected it should exist
+	if mv.TimeDimension != "" {
+		fieldsMap := make(map[string]*runtimev1.StructType_Field)
+		for _, field := range model.Schema.Fields {
+			fieldsMap[field.Name] = field
+		}
 
-	if _, ok := fieldsMap[mv.TimeDimension]; !ok {
-		return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
+		if _, ok := fieldsMap[mv.TimeDimension]; !ok {
+			return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
+		}
 	}
 
 	var validationErrors []*runtimev1.ReconcileError
@@ -81,13 +81,6 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 		}
 	}
-	if len(mv.Dimensions) == 0 {
-		validationErrors = append(validationErrors, &runtimev1.ReconcileError{
-			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-			FilePath: catalog.Path,
-			Message:  MissingDimension,
-		})
-	}
 
 	for i, measure := range mv.Measures {
 		err := validateMeasure(ctx, olap, model, measure)
@@ -100,6 +93,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 		}
 	}
+	// at least one measure has to be there in the metrics view
 	if len(mv.Measures) == 0 {
 		validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
