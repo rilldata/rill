@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
+  import type { Writable } from "svelte/store";
   import Discord from "../icons/Discord.svelte";
   import Docs from "../icons/Docs.svelte";
   import Github from "../icons/Github.svelte";
@@ -6,11 +8,11 @@
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import TooltipTitle from "../tooltip/TooltipTitle.svelte";
-  import type { ApplicationMetadata } from "../../types";
   import { getContext } from "svelte";
   import { fly } from "svelte/transition";
 
-  const metadata: ApplicationMetadata = getContext("rill:app:metadata");
+  const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
+    getContext("rill:app:metadata");
 
   const lineItems = [
     {
@@ -66,18 +68,18 @@
     style:font-size="10px"
   >
     <span class="text-gray-400">
-      <Tooltip location="top" alignment="start" distance={16}>
+      <Tooltip alignment="start" distance={16} location="top">
         <a
+          class="text-gray-400 hover:animate-pulse"
           href="https://www.rilldata.com/company/careers"
           target="_blank"
-          class="text-gray-400 hover:animate-pulse"
         >
           <InfoCircle size="16px" />
         </a>
         <div
           slot="tooltip-content"
-          transition:fly={{ duration: 100, y: 8 }}
           style:width="330px"
+          transition:fly={{ duration: 100, y: 8 }}
         >
           <TooltipContent>
             <TooltipTitle>
@@ -88,8 +90,8 @@
         </div>
       </Tooltip>
     </span>
-    version {metadata.version}{metadata.commitHash
-      ? ` – ${metadata.commitHash}`
+    version {$appBuildMetaStore.version}{$appBuildMetaStore.commitHash
+      ? ` – ${$appBuildMetaStore.commitHash}`
       : ""}
   </div>
 </div>

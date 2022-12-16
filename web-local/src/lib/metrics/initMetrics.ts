@@ -1,3 +1,4 @@
+import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { BehaviourEventFactory } from "@rilldata/web-local/lib/metrics/service/BehaviourEventFactory";
 import { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
 import { ProductHealthEventFactory } from "@rilldata/web-local/lib/metrics/service/ProductHealthEventFactory";
@@ -12,11 +13,12 @@ export let metricsService: MetricsService;
 export let actionEvent: ActiveEventHandler;
 export let navigationEvent: NavigationEventHandler;
 
-export async function initMetrics() {
-  metricsService = new MetricsService(new RillIntakeClient(config), [
-    new ProductHealthEventFactory(config),
-    new BehaviourEventFactory(config),
-  ]);
+export async function initMetrics(localConfig: V1RuntimeGetConfig) {
+  metricsService = new MetricsService(
+    localConfig,
+    new RillIntakeClient(config),
+    [new ProductHealthEventFactory(config), new BehaviourEventFactory(config)]
+  );
   await metricsService.loadCommonFields();
 
   const commonUserMetrics = await collectCommonUserFields();
