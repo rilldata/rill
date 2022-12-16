@@ -20,6 +20,8 @@
 
   let active = false;
 
+  let topKLimit = 15;
+
   $: nulls = getNullPercentage(
     $runtimeStore?.instanceId,
     objectName,
@@ -71,11 +73,16 @@
   <div
     class="pl-10 pr-4 py-4"
     slot="details"
-    style:min-height="{Math.min(15, $columnCardinality?.cardinality) * 18 +
-      32 || 250}px"
+    style:min-height="{Math.min(topKLimit, $columnCardinality?.cardinality) *
+      18 +
+      42 || 250}px"
   >
     <div>
-      <TopK topK={$topK} totalRows={$columnCardinality?.totalRows} />
+      <TopK
+        topK={$topK}
+        k={topKLimit}
+        totalRows={$columnCardinality?.totalRows}
+      />
     </div>
   </div>
 </ProfileContainer>

@@ -29,6 +29,8 @@ Otherwise, the page will jump around as the data is fetched.
 
   let summaryMode: "summary" | "topk" = "summary";
 
+  let topKLimit = 15;
+
   // the rowHeight determines how big the secondary plots should be.
   // We will use this to predetermine the height of the secondary graphics;
   // this is important because we want to avoid reflowing the page after
@@ -172,6 +174,7 @@ Otherwise, the page will jump around as the data is fetched.
               on:focus-top-k={(event) => {
                 focusPoint = event.detail;
               }}
+              k={topKLimit}
               {topK}
               {totalRows}
               colorClass="bg-red-200"
