@@ -1,7 +1,3 @@
-export interface ApplicationMetadata {
-  version: string;
-  commitHash: string;
-}
 export interface ProfileColumn {
   name: string;
   type: string;

@@ -4,6 +4,7 @@
     duplicateSourceName,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import {
     importOverlayVisible,
@@ -19,11 +20,15 @@
   import { getArtifactErrors } from "@rilldata/web-local/lib/svelte-query/getArtifactErrors";
   import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
-  import { onMount } from "svelte";
+  import { getContext, onMount } from "svelte";
+  import type { Writable } from "svelte/store";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
   import BasicLayout from "./BasicLayout.svelte";
 
   const queryClient = createQueryClient();
+
+  const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
+    getContext("rill:app:metadata");
 
   onMount(async () => {
     const localConfig = await runtimeServiceGetConfig();
@@ -32,10 +37,15 @@
       instanceId: localConfig.instance_id,
     });
 
+    appBuildMetaStore.set({
+      version: localConfig.version,
+      commitHash: localConfig.build_commit,
+    });
+
     const res = await getArtifactErrors(localConfig.instance_id);
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
-    return initMetrics();
+    return initMetrics(localConfig);
   });
 
   let dbRunState = "disconnected";
