@@ -4,7 +4,6 @@
   import { tweened } from "svelte/motion";
 
   export let active;
-  const initialState = active;
   let mounted = false;
   let duration = 0;
   let timer;
