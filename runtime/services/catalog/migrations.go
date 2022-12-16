@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -615,7 +616,9 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// create in olap
-	err := migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	err := s.wrapMigrator(item.CatalogInFile, func() error {
+		return migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	})
 	if err != nil {
 		return err
 	}
@@ -673,7 +676,9 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
 	// update in olap
-	err := migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	err := s.wrapMigrator(item.CatalogInFile, func() error {
+		return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+	})
 	if err != nil {
 		return err
 	}
@@ -727,4 +732,23 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 	}
 
 	return catalogEntry, nil
+}
+
+// wrapMigrator is a temporary solution to log source related messages.
+func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() error) error {
+	if catalogEntry.Type == drivers.ObjectTypeSource {
+		s.logger.Info(fmt.Sprintf(
+			"Ingesting source %q from %q",
+			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue(),
+		))
+	}
+	err := run()
+	if catalogEntry.Type == drivers.ObjectTypeSource {
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Ingestion failed for %q : %s", catalogEntry.Name, err.Error()))
+		} else {
+			s.logger.Info(fmt.Sprintf("Finished ingesting %q", catalogEntry.Name))
+		}
+	}
+	return err
 }
