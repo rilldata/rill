@@ -21,6 +21,16 @@ const curves = {
   curveStep,
 };
 
+export function pathIsDefined(yAccessor: string) {
+  return (d) => {
+    return !(
+      d[yAccessor] === undefined ||
+      isNaN(d[yAccessor]) ||
+      d[yAccessor] === null
+    );
+  };
+}
+
 export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
     return (
@@ -42,7 +52,7 @@ interface LineGeneratorArguments {
   xAccessor: string;
   xScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
   yScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
-  curve: string;
+  curve?: string;
   pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
 }
 
