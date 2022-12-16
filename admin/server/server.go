@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	// oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware"
+	// oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware".
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/prometheus"

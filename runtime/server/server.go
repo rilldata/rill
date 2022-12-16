@@ -48,7 +48,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}, nil
 }
 
-// ServeGRPC Starts the gRPC server
+// ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
@@ -69,7 +69,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
-// Starts the HTTP server
+// Starts the HTTP server.
 func (s *Server) ServeHTTP(ctx context.Context) error {
 	handler, err := s.HTTPHandler(ctx)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 
 // ErrorToCode returns the Code of the error if it is a Status error
 // otherwise use status.FromContextError to determine the Code.
-// Log level for error codes is defined in logging.DefaultServerCodeToLevel
+// Log level for error codes is defined in logging.DefaultServerCodeToLevel.
 func ErrorToCode(err error) codes.Code {
 	// Commenting this need to test it if works fine or not
 	// if se, ok := err.(interface {
@@ -117,7 +117,7 @@ func GRPCCodeToLevel(code codes.Code) logging.Level {
 	}
 }
 
-// HTTPHandler HTTP handler serving REST gateway
+// HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	mux := gateway.NewServeMux()
@@ -146,7 +146,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
-// Ping implements RuntimeService
+// Ping implements RuntimeService.
 func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
 	resp := &runtimev1.PingResponse{
 		Version: "", // TODO: Return version

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ListInstances implements RuntimeService
+// ListInstances implements RuntimeService.
 func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
 	instances, err := s.runtime.FindInstances(ctx)
 	if err != nil {
@@ -25,7 +25,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 	return &runtimev1.ListInstancesResponse{Instances: pbs}, nil
 }
 
-// GetInstance implements RuntimeService
+// GetInstance implements RuntimeService.
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	inst, err := s.runtime.FindInstance(ctx, req.InstanceId)
 	if err != nil {
@@ -40,7 +40,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	}, nil
 }
 
-// CreateInstance implements RuntimeService
+// CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
 	inst := &drivers.Instance{
 		ID:           req.InstanceId,
@@ -61,7 +61,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}, nil
 }
 
-// DeleteInstance implements RuntimeService
+// DeleteInstance implements RuntimeService.
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {

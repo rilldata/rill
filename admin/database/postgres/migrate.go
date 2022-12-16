@@ -15,10 +15,10 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Fixed advisory lock number to prevent concurrent migrations
+// Fixed advisory lock number to prevent concurrent migrations.
 var migrationLockNumber = int64(5103805673824918) // random number
 
-// Name of the table that tracks migrations
+// Name of the table that tracks migrations.
 var migrationVersionTable = "admin_migration_version"
 
 // Migrate runs migrations. It's safe for concurrent invocations.

@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// VersionCmd represents the version command
+// VersionCmd represents the version command.
 func VersionCmd(ver, commit, buildDate string) *cobra.Command {
-	var versionCmd = &cobra.Command{
+	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show rill version",
 		Long:  `A longer description`,

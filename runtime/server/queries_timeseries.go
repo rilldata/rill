@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// normaliseMeasures is called before this method so measure.SqlName will be non empty
+// normaliseMeasures is called before this method so measure.SqlName will be non empty.
 func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
@@ -27,7 +27,7 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRe
 	return result
 }
 
-// normaliseMeasures is called before this method so measure.SqlName will be non empty
+// normaliseMeasures is called before this method so measure.SqlName will be non empty.
 func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
@@ -69,7 +69,7 @@ func getFilterFromDimensionValuesFilter(
 		}
 		conditions = conditions[:0]
 		if notNulls {
-			var inClause = escapedName + " " + prefix + " IN ("
+			inClause := escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
 				if _, ok := iv.Kind.(*structpb.Value_NullValue); !ok {
 					inClause += "'" + EscapeSingleQuotes(iv.GetStringValue()) + "'"
@@ -82,7 +82,7 @@ func getFilterFromDimensionValuesFilter(
 			conditions = append(conditions, inClause)
 		}
 		if nulls {
-			var nullClause = escapedName + " IS " + prefix + " NULL"
+			nullClause := escapedName + " IS " + prefix + " NULL"
 			conditions = append(conditions, nullClause)
 		}
 		if len(dv.Like) > 0 {
@@ -148,7 +148,7 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 	return measures
 }
 
-// Metrics/Timeseries APIs
+// Metrics/Timeseries APIs.
 func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.EstimateRollupIntervalRequest) (*runtimev1.EstimateRollupIntervalResponse, error) {
 	q := &queries.RollupInterval{
 		TableName:  request.TableName,
@@ -387,14 +387,14 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 			Rollup: &runtimev1.TimeSeriesResponse{},
 		}, nil
 	}
-	var measures = normaliseMeasures(request.Measures)
-	var timestampColumn = request.TimestampColumnName
-	var tableName = request.TableName
+	measures := normaliseMeasures(request.Measures)
+	timestampColumn := request.TimestampColumnName
+	tableName := request.TableName
 	var filter string
 	if request.Filters != nil {
 		filter = getFilterFromMetricsViewFilters(request.Filters)
 	}
-	var timeGranularity = convertToDateTruncSpecifier(timeRange.Interval)
+	timeGranularity := convertToDateTruncSpecifier(timeRange.Interval)
 	var tsAlias string
 	if timestampColumn == "ts" {
 		tsAlias = "_ts"

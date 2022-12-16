@@ -56,7 +56,6 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		Query:    requestSQL,
 		Priority: priority,
 	})
-
 	if err != nil {
 		return err
 	}

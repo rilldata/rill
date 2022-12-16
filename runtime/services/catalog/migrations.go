@@ -13,12 +13,12 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 
-	// Register some standard stuff
+	// Register some standard stuff.
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 
-	// Register some standard stuff
+	// Register some standard stuff.
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
@@ -380,7 +380,7 @@ func (s *Service) getMigrationItem(
 	return item
 }
 
-// isInvalidDuplicate checks if one of the existing or a new item is invalid duplicate
+// isInvalidDuplicate checks if one of the existing or a new item is invalid duplicate.
 func (s *Service) isInvalidDuplicate(
 	migrationMap map[string]*MigrationItem,
 	changedPathsHint bool,
@@ -426,7 +426,7 @@ func (s *Service) isInvalidDuplicate(
 }
 
 // collectMigrationItems collects all valid MigrationItem
-// It will order the items based on DAG with parents coming before children
+// It will order the items based on DAG with parents coming before children.
 func (s *Service) collectMigrationItems(
 	migrationMap map[string]*MigrationItem,
 ) []*MigrationItem {
@@ -516,7 +516,7 @@ func (s *Service) collectMigrationItems(
 	return cleanedMigrationItems
 }
 
-// runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type
+// runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type.
 func (s *Service) runMigrationItems(
 	ctx context.Context,
 	conf ReconcileConfig,

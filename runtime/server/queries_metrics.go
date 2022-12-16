@@ -15,7 +15,7 @@ import (
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
 // once the metrics view artifact representation is ready.
 
-// MetricsViewToplist implements RuntimeService
+// MetricsViewToplist implements RuntimeService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	// Prepare
 	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
@@ -41,7 +41,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}, nil
 }
 
-// MetricsViewTimeSeries implements RuntimeService
+// MetricsViewTimeSeries implements RuntimeService.
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
 	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	return resp, nil
 }
 
-// MetricsViewTotals implements RuntimeService
+// MetricsViewTotals implements RuntimeService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
 	mv, err := s.lookupMetricsView(ctx, req.InstanceId, req.MetricsViewName)
 	if err != nil {
@@ -291,7 +291,7 @@ func buildMetricsTotalsSQL(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev
 	return sql, args, nil
 }
 
-// Builds clause and args for runtimev1.MetricsViewFilter
+// Builds clause and args for runtimev1.MetricsViewFilter.
 func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) (string, []any, error) {
 	whereClause := ""
 	var args []any

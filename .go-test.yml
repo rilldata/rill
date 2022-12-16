@@ -37,13 +37,17 @@ linters:
     - bidichk
     - depguard
     - dupl
+    - dupword
     - errcheck
     - errchkjson
     - errname
     - errorlint
-    - gofmt
-    - goimports
     - gocritic
+    - godot
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
     - goprintffuncname
     - gosec
     - gosimple
@@ -53,6 +57,7 @@ linters:
     - nakedret
     - revive
     - stylecheck
+    - staticcheck
     - tparallel
     - testpackage
     - tenv
@@ -76,7 +81,6 @@ linters-settings:
       - performance
       - style
     disabled-checks:
-      - importShadow
       - unnamedResult
       - dupImport
       - sprintfQuotedString
@@ -116,6 +120,7 @@ linters-settings:
       - lostcancel
       - nilfunc
       - nilness
+      - nlreturn
       - printf
       - reflectvaluecompare
       - shift

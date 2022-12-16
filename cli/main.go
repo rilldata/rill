@@ -8,10 +8,12 @@ import (
 	"github.com/rilldata/rill/cli/cmd"
 )
 
-// Version info is set using -Idflags
-var Version string
-var Commit string
-var BuildDate string
+// Version info is set using -Idflags.
+var (
+	Version   string
+	Commit    string
+	BuildDate string
+)
 
 func main() {
 	if Version == "" {

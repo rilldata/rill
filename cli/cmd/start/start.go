@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StartCmd represents the start command
+// StartCmd represents the start command.
 func StartCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
@@ -18,7 +18,7 @@ func StartCmd(ver string) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 
-	var startCmd = &cobra.Command{
+	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {

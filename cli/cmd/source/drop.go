@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// dropCmd represents the drop command, it requires min 1 args as source path
+// dropCmd represents the drop command, it requires min 1 args as source path.
 func DropCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string
 	var verbose bool
 
-	var dropCmd = &cobra.Command{
+	dropCmd := &cobra.Command{
 		Use:   "drop <source>",
 		Short: "Drop a source",
 		Args:  cobra.ExactArgs(1),

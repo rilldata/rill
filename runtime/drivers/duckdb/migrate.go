@@ -15,7 +15,7 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Name of the table that tracks migrations
+// Name of the table that tracks migrations.
 var migrationVersionTable = "rill.migration_version"
 
 // Migrate implements drivers.Connection.
@@ -113,7 +113,7 @@ func migrateSingle(ctx context.Context, c *connection, file fs.DirEntry, sql []b
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection
+// MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	// Get current version
 	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)

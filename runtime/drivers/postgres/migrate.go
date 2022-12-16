@@ -15,10 +15,10 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Fixed advisory lock number to prevent concurrent migrations
+// Fixed advisory lock number to prevent concurrent migrations.
 var migrationLockNumber = int64(8294273491672920) // random number
 
-// Name of the table that tracks migrations
+// Name of the table that tracks migrations.
 var migrationVersionTable = "runtime_migration_version"
 
 // Migrate implements drivers.Connection.
@@ -128,7 +128,7 @@ func migrateSingle(ctx context.Context, c *connection, file fs.DirEntry, sql []b
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection
+// MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	// Get current version
 	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)

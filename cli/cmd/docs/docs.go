@@ -9,9 +9,9 @@ import (
 
 var docsURL = "https://docs.rilldata.com"
 
-// docsCmd represents the docs command
+// docsCmd represents the docs command.
 func DocsCmd() *cobra.Command {
-	var docsCmd = &cobra.Command{
+	docsCmd := &cobra.Command{
 		Use:   "docs",
 		Short: "Open docs.rilldata.com",
 		Run: func(cmd *cobra.Command, args []string) {

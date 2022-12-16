@@ -17,7 +17,7 @@ func init() {
 	cobra.EnableCommandSorting = false
 }
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "rill <command>",
 	Short: "Rill CLI",

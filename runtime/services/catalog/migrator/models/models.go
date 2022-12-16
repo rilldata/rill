@@ -104,9 +104,11 @@ func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore
 	return true, nil
 }
 
-var QueryCommentRegex = regexp.MustCompile(`(?m)--.*$`)
-var MultipleSpacesRegex = regexp.MustCompile(`\s\s+`)
-var SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
+var (
+	QueryCommentRegex     = regexp.MustCompile(`(?m)--.*$`)
+	MultipleSpacesRegex   = regexp.MustCompile(`\s\s+`)
+	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
+)
 
 // TODO: use this while extracting source names to get case insensitive DAG
 // TODO: should this be used to store the sql in catalog?

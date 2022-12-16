@@ -18,7 +18,7 @@ import (
 const authSessionName = "auth"
 
 // Authenticator is used to authenticate our users.
-// Refereance link - https://auth0.com/docs/quickstart/webapp/golang/01-login for sample auth setup
+// Refereance link - https://auth0.com/docs/quickstart/webapp/golang/01-login for sample auth setup.
 type Authenticator struct {
 	*oidc.Provider
 	oauth2.Config

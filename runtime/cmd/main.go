@@ -78,7 +78,7 @@ func main() {
 		HTTPPort: conf.HTTPPort,
 		GRPCPort: conf.GRPCPort,
 	}
-	server, err := server.NewServer(srvOpts, rt, logger)
+	s, err := server.NewServer(srvOpts, rt, logger)
 	if err != nil {
 		logger.Fatal("error: could not create server", zap.Error(err))
 	}
@@ -86,8 +86,8 @@ func main() {
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 	group, cctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return server.ServeGRPC(cctx) })
-	group.Go(func() error { return server.ServeHTTP(cctx) })
+	group.Go(func() error { return s.ServeGRPC(cctx) })
+	group.Go(func() error { return s.ServeHTTP(cctx) })
 	err = group.Wait()
 	if err != nil {
 		logger.Fatal("server crashed", zap.Error(err))

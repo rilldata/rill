@@ -83,7 +83,7 @@ func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drive
 	return migrator.GetDependencies(ctx, olap, catalog)
 }
 
-// Validate also returns list of dependents
+// Validate also returns list of dependents.
 func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
@@ -93,7 +93,7 @@ func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cata
 	return migrator.Validate(ctx, olap, catalog)
 }
 
-// IsEqual checks everything but the name
+// IsEqual checks everything but the name.
 func IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	if cat1.Type != cat2.Type {
 		return false

@@ -95,14 +95,14 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
 	switch i := interval.(type) {
 	case duckdb.Interval:
-		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result := new(runtimev1.TimeRangeSummary_Interval)
 		result.Days = i.Days
 		result.Months = i.Months
 		result.Micros = i.Micros
 		return result, nil
 	case int64:
 		// for date type column interval is difference in num days for two dates
-		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result := new(runtimev1.TimeRangeSummary_Interval)
 		result.Days = int32(i)
 		return result, nil
 	}

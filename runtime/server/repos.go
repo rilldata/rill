@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ListFiles implements RuntimeService
+// ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
 	glob := req.Glob
 	if glob == "" {
@@ -28,7 +28,7 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 	return &runtimev1.ListFilesResponse{Paths: paths}, nil
 }
 
-// GetFile implements RuntimeService
+// GetFile implements RuntimeService.
 func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
 	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
@@ -38,7 +38,7 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 	return &runtimev1.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(lastUpdated)}, nil
 }
 
-// PutFile implements RuntimeService
+// PutFile implements RuntimeService.
 func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
 	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
@@ -48,7 +48,7 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 	return &runtimev1.PutFileResponse{}, nil
 }
 
-// DeleteFile implements RuntimeService
+// DeleteFile implements RuntimeService.
 func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
 	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 	return &runtimev1.DeleteFileResponse{}, nil
 }
 
-// RenameFile implements RuntimeService
+// RenameFile implements RuntimeService.
 func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
 	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
 	if err != nil {

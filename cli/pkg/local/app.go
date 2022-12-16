@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	// blank import group
+	// blank import group.
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -35,10 +35,12 @@ import (
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 )
 
-// Default instance config on local
-const DefaultInstanceID = "default"
-const DefaultOLAPDriver = "duckdb"
-const DefaultOLAPDSN = "stage.db"
+// Default instance config on local.
+const (
+	DefaultInstanceID = "default"
+	DefaultOLAPDriver = "duckdb"
+	DefaultOLAPDSN    = "stage.db"
+)
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
 // Here, a local environment means a non-authenticated, single-instance and single-project setup on localhost.
@@ -374,7 +376,7 @@ type localInfo struct {
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 }
 
-// infoHandler servers the local info struct
+// infoHandler servers the local info struct.
 func (a *App) infoHandler(info *localInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := json.Marshal(info)
@@ -391,7 +393,7 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 	})
 }
 
-// trackingHandler proxies events to intake.rilldata.io
+// trackingHandler proxies events to intake.rilldata.io.
 func (a *App) trackingHandler(info *localInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !info.AnalyticsEnabled {

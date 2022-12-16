@@ -17,12 +17,12 @@ import (
 
 var limit = 500
 
-// Driver implements drivers.RepoStore
+// Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
 	return "file"
 }
 
-// DSN implements drivers.RepoStore
+// DSN implements drivers.RepoStore.
 func (c *connection) DSN() string {
 	return c.root
 }
@@ -62,7 +62,7 @@ func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]
 	return paths, nil
 }
 
-// Get implements drivers.RepoStore
+// Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, instID, filePath string) (string, error) {
 	filePath = filepath.Join(c.root, filePath)
 
@@ -74,7 +74,7 @@ func (c *connection) Get(ctx context.Context, instID, filePath string) (string, 
 	return string(b), nil
 }
 
-// Stat implements drivers.RepoStore
+// Stat implements drivers.RepoStore.
 func (c *connection) Stat(ctx context.Context, instID, filePath string) (*drivers.RepoObjectStat, error) {
 	filePath = filepath.Join(c.root, filePath)
 
@@ -88,7 +88,7 @@ func (c *connection) Stat(ctx context.Context, instID, filePath string) (*driver
 	}, nil
 }
 
-// Put implements drivers.RepoStore
+// Put implements drivers.RepoStore.
 func (c *connection) Put(ctx context.Context, instID, filePath string, reader io.Reader) error {
 	filePath = filepath.Join(c.root, filePath)
 
@@ -111,7 +111,7 @@ func (c *connection) Put(ctx context.Context, instID, filePath string, reader io
 	return nil
 }
 
-// Rename implements drivers.RepoStore
+// Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
 	toPath = path.Join(c.root, toPath)
 
@@ -126,7 +126,7 @@ func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string
 	return os.Chtimes(toPath, time.Now(), time.Now())
 }
 
-// Delete implements drivers.RepoStore
+// Delete implements drivers.RepoStore.
 func (c *connection) Delete(ctx context.Context, instID, filePath string) error {
 	filePath = filepath.Join(c.root, filePath)
 	return os.Remove(filePath)

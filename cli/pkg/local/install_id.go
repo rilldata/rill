@@ -67,7 +67,7 @@ func config() (*localConfig, error) {
 		if err != nil {
 			return conf, err
 		}
-		err = os.WriteFile(confFile, confJSON, 0644)
+		err = os.WriteFile(confFile, confJSON, 0o644)
 		if err != nil {
 			return conf, err
 		}

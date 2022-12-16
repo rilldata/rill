@@ -10,14 +10,14 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 
-	// Register some standard stuff
+	// Register some standard stuff.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
 )
 
-// TestingT satisfies both *testing.T and *testing.B
+// TestingT satisfies both *testing.T and *testing.B.
 type TestingT interface {
 	Name() string
 	TempDir() string
@@ -25,7 +25,7 @@ type TestingT interface {
 	Errorf(format string, args ...interface{})
 }
 
-// New returns a runtime configured for use in tests
+// New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
 	opts := &runtime.Options{
 		ConnectionCacheSize: 100,

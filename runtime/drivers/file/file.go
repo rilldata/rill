@@ -26,42 +26,42 @@ type connection struct {
 	root string
 }
 
-// Close implements drivers.Connection
+// Close implements drivers.Connection.
 func (c *connection) Close() error {
 	return nil
 }
 
-// Registry implements drivers.Connection
+// Registry implements drivers.Connection.
 func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection
+// Catalog implements drivers.Connection.
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection
+// Repo implements drivers.Connection.
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return c, true
 }
 
-// OLAP implements drivers.Connection
+// OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
-// Migrate implements drivers.Connection
+// Migrate implements drivers.Connection.
 func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection
+// MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-// checkPath checks that the connection's root is a valid directory
+// checkPath checks that the connection's root is a valid directory.
 func (c *connection) checkRoot() error {
 	info, err := os.Stat(c.root)
 	if err != nil {

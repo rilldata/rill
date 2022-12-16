@@ -15,12 +15,14 @@ func init() {
 	migrator.Register(drivers.ObjectTypeMetricsView, &metricsViewMigrator{})
 }
 
-const SourceNotSelected = "metrics view source not selected"
-const SourceNotFound = "metrics view source not found"
-const TimestampNotSelected = "metrics view timestamp not selected"
-const TimestampNotFound = "metrics view selected timestamp not found"
-const MissingDimension = "at least one dimension should be present"
-const MissingMeasure = "at least one measure should be present"
+const (
+	SourceNotSelected    = "metrics view source not selected"
+	SourceNotFound       = "metrics view source not found"
+	TimestampNotSelected = "metrics view timestamp not selected"
+	TimestampNotFound    = "metrics view selected timestamp not found"
+	MissingDimension     = "at least one dimension should be present"
+	MissingMeasure       = "at least one measure should be present"
+)
 
 type metricsViewMigrator struct{}
 

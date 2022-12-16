@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	// Register some standard stuff
+	// Register some standard stuff.
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 
@@ -26,27 +26,27 @@ type connection struct {
 	db *sqlx.DB
 }
 
-// Close implements drivers.Connection
+// Close implements drivers.Connection.
 func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-// Registry implements drivers.Connection
+// Registry implements drivers.Connection.
 func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection
+// Catalog implements drivers.Connection.
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection
+// Repo implements drivers.Connection.
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection
+// OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }

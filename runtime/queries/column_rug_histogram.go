@@ -117,7 +117,6 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		Query:    rugSQL,
 		Priority: priority,
 	})
-
 	if err != nil {
 		return err
 	}

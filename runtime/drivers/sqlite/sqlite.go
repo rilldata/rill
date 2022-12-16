@@ -2,7 +2,7 @@ package sqlite
 
 import (
 	"github.com/jmoiron/sqlx"
-	// Register some standard stuff
+	// Register some standard stuff.
 	_ "modernc.org/sqlite"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -26,27 +26,27 @@ type connection struct {
 	db *sqlx.DB
 }
 
-// Close implements drivers.Connection
+// Close implements drivers.Connection.
 func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-// Registry implements drivers.Connection
+// Registry implements drivers.Connection.
 func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return c, true
 }
 
-// Catalog implements drivers.Connection
+// Catalog implements drivers.Connection.
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return c, true
 }
 
-// Repo implements drivers.Connection
+// Repo implements drivers.Connection.
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection
+// OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }

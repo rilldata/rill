@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// addCmd represents the add command, it requires min 1 args as source name
+// addCmd represents the add command, it requires min 1 args as source name.
 func AddCmd(ver string) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
@@ -24,7 +24,7 @@ func AddCmd(ver string) *cobra.Command {
 	var force bool
 	var verbose bool
 
-	var addCmd = &cobra.Command{
+	addCmd := &cobra.Command{
 		Use:   "add <file>",
 		Short: "Add a local file source",
 		Long:  "Add a local file source. Supported file types include .parquet, .csv, .tsv.",

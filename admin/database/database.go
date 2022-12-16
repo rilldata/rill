@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// Drivers is a registry of drivers
+// Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 
-// Register registers a new driver
+// Register registers a new driver.
 func Register(name string, driver Driver) {
 	if Drivers[name] != nil {
 		panic(fmt.Errorf("already registered database driver with name '%s'", name))
@@ -18,7 +18,7 @@ func Register(name string, driver Driver) {
 	Drivers[name] = driver
 }
 
-// Open opens a new database connection
+// Open opens a new database connection.
 func Open(driver, dsn string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
@@ -33,12 +33,12 @@ func Open(driver, dsn string) (DB, error) {
 	return db, nil
 }
 
-// Driver is the interface for DB drivers
+// Driver is the interface for DB drivers.
 type Driver interface {
 	Open(dsn string) (DB, error)
 }
 
-// DB is the interface for a database connection
+// DB is the interface for a database connection.
 type DB interface {
 	Close() error
 	Migrate(ctx context.Context) error

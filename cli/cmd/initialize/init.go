@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// InitCmd represents the init command
+// InitCmd represents the init command.
 func InitCmd(ver string) *cobra.Command {
 	var projectPath string
 	var olapDriver string
@@ -17,7 +17,7 @@ func InitCmd(ver string) *cobra.Command {
 	var listExamples bool
 	var verbose bool
 
-	var initCmd = &cobra.Command{
+	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",
 		RunE: func(cmd *cobra.Command, args []string) error {

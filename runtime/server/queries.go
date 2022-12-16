@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Query implements RuntimeService
+// Query implements RuntimeService.
 func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
 	args := make([]any, len(req.Args))
 	for i, arg := range req.Args {

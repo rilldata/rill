@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 )
 
-// ListConnectors implements RuntimeService
+// ListConnectors implements RuntimeService.
 func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnectorsRequest) (*runtimev1.ListConnectorsResponse, error) {
 	var pbs []*runtimev1.Connector
 	for name, connector := range connectors.Connectors {

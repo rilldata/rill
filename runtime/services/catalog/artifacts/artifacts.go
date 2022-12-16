@@ -14,8 +14,10 @@ import (
 
 var Artifacts = make(map[string]Artifact)
 
-var ErrFileRead = errors.New("failed to read artifact")
-var ErrInvalidFileName = errors.New("invalid file name")
+var (
+	ErrFileRead        = errors.New("failed to read artifact")
+	ErrInvalidFileName = errors.New("invalid file name")
+)
 
 func Register(name string, artifact Artifact) {
 	if Artifacts[name] != nil {

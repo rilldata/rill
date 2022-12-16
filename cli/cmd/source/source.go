@@ -4,9 +4,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// sourceCmd represents the source command
+// sourceCmd represents the source command.
 func SourceCmd(ver string) *cobra.Command {
-	var sourceCmd = &cobra.Command{
+	sourceCmd := &cobra.Command{
 		Use:   "source",
 		Short: "Create or drop a source",
 		// RunE: func(cmd *cobra.Command, args []string) error {
