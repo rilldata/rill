@@ -737,15 +737,17 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 // wrapMigrator is a temporary solution to log source related messages.
 func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() error) error {
 	if catalogEntry.Type == drivers.ObjectTypeSource {
-		s.logger.Info(fmt.Sprintf("Ingesting source %s from %s",
-			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue()))
+		s.logger.Info(fmt.Sprintf(
+			"Ingesting source %q from %q",
+			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue(),
+		))
 	}
 	err := run()
 	if catalogEntry.Type == drivers.ObjectTypeSource {
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("Ingestion failed for %s : %s", catalogEntry.Name, err.Error()))
+			s.logger.Error(fmt.Sprintf("Ingestion failed for %q : %s", catalogEntry.Name, err.Error()))
 		} else {
-			s.logger.Info(fmt.Sprintf("Finished ingesting %s", catalogEntry.Name))
+			s.logger.Info(fmt.Sprintf("Finished ingesting %q", catalogEntry.Name))
 		}
 	}
 	return err
