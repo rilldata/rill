@@ -110,6 +110,9 @@ func TestSemaphoreCancel(t *testing.T) {
 		})
 	}
 
+	// Wait a bit to ensure queue fills up
+	time.Sleep(time.Second)
+
 	// Release to unblock for processing
 	for i := 0; i < size; i++ {
 		s.Release()
