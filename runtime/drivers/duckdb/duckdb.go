@@ -24,11 +24,6 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		return nil, err
 	}
 
-	c := &connection{
-		pool: make(chan *sqlx.Conn, cfg.PoolSize),
-		sem:  priorityqueue.NewSemaphore(cfg.PoolSize),
-	}
-
 	// database/sql has a built-in connection pool, but DuckDB loads extensions on a per-connection basis,
 	// which means we need to manually initialize each connection before it's used.
 	// database/sql doesn't give us that flexibility, so we implement our own (very simple) pool.
@@ -38,6 +33,12 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(cfg.PoolSize)
+
+	c := &connection{
+		db:  db,
+		pool: make(chan *sqlx.Conn, cfg.PoolSize),
+		sem:  priorityqueue.NewSemaphore(cfg.PoolSize),
+	}
 
 	bootQueries := []string{
 		"INSTALL 'json'",
