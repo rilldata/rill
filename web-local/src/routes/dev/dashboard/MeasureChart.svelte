@@ -1,13 +1,15 @@
 <script>
+  import Body from "@rilldata/web-local/lib/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-local/lib/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import WithTween from "@rilldata/web-local/lib/components/data-graphic/functional-components/WithTween.svelte";
+  import Axis from "@rilldata/web-local/lib/components/data-graphic/guides/Axis.svelte";
+  import Grid from "@rilldata/web-local/lib/components/data-graphic/guides/Grid.svelte";
   import { extent } from "d3-array";
-  import { interpolatePath, pathCommandsFromString } from "d3-interpolate-path";
   import { cubicOut } from "svelte/easing";
-  import ChunkedLine from "./ChunkedLine.svelte";
   import WithLineChartPath from "./WithLineChartPath.svelte";
   export let xMin;
   export let xMax;
+  export let yMin;
+  export let yMax;
   export let data;
   export let xAccessor = "ts";
   export let yAccessor = "value";
@@ -16,46 +18,31 @@
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
+  $: inflate = (yExtentMax - yExtentMin) / yExtentMax;
 </script>
 
-{yExtentMin} - {yExtentMax}
 <SimpleDataGraphic
   xMin={internalXMin}
   xMax={internalXMax}
-  yMin={yExtentMin > 0 || groundOnZero ? 0 : yExtentMin}
-  yMax={yExtentMax}
+  yMin={yMin || yExtentMin * inflate}
+  yMax={yMax || yExtentMax / inflate}
   xType="date"
   yType="number"
   width={500}
-  height={500}
+  height={200}
+  right={64}
+  yMinTweenProps={{ duration: 1000, easing: cubicOut }}
+  yMaxTweenProps={{ duration: 1000, easing: cubicOut }}
+  xMaxTweenProps={{ duration: 1000, easing: cubicOut }}
+  xMinTweenProps={{ duration: 1000, easing: cubicOut }}
 >
-  <ChunkedLine {data} {xAccessor} {yAccessor} />
-  <WithLineChartPath {data} {xAccessor} {yAccessor} />
-  {#if false}
-    <WithLineChartPath {data} {xAccessor} {yAccessor} let:d>
-      <WithTween
-        value={d}
-        tweenProps={{
-          duration: 1000,
-          interpolate: (a, b) =>
-            interpolatePath(a, b, (ai, bi) => {
-              return !(ai.type !== "M" && bi.type === "M");
-            }),
-          easing: cubicOut,
-        }}
-        let:output={dt}
-      >
-        {@const commands = pathCommandsFromString(dt)}
-        {#each commands as command}
-          <text
-            x={command.x}
-            y={command.y - 3}
-            style:font-weight={command.type === "M" ? "bold" : "normal"}
-            r={5}>{command.type}</text
-          >
-        {/each}
-        <path d={dt} stroke="black" fill="none" />
-      </WithTween>
-    </WithLineChartPath>
-  {/if}
+  <!-- <ChunkedLine {data} {xAccessor} {yAccessor} /> -->
+
+  <Body>
+    <WithLineChartPath {data} {xAccessor} {yAccessor} />
+  </Body>
+
+  <Axis side="bottom" />
+  <Axis side="right" />
+  <Grid />
 </SimpleDataGraphic>

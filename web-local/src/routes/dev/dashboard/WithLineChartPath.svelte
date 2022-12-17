@@ -1,48 +1,51 @@
 <script lang="ts">
   import { contexts } from "@rilldata/web-local/lib/components/data-graphic/constants";
   import { WithTween } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
+  import type { ScaleStore } from "@rilldata/web-local/lib/components/data-graphic/state/types";
   import {
+    areaFactory,
     lineFactory,
     pathIsDefined,
   } from "@rilldata/web-local/lib/components/data-graphic/utils";
   import { interpolatePath } from "d3-interpolate-path";
-  import { scaleLinear } from "d3-scale";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
+  export let delay = 0;
+  export let duration = 1000;
+
   // get the scale functions from the data graphic
-  const xScale = getContext(contexts.scale("x"));
-  const yScale = getContext(contexts.scale("y"));
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const yScale = getContext(contexts.scale("y")) as ScaleStore;
+
   let lineFunction;
-  $: if ($xScale && $yScale)
+  let areaFunction;
+  $: if ($xScale && $yScale) {
     lineFunction = lineFactory({
       xScale: $xScale,
       yScale: $yScale,
       xAccessor,
       pathDefined: pathIsDefined(yAccessor),
     });
+    areaFunction = areaFactory({
+      xScale: $xScale,
+      yScale: $yScale,
+      xAccessor,
+      pathDefined: pathIsDefined(yAccessor),
+    });
+  }
 
-  // get segments
   /**
    * Helper function to compute the contiguous segments of the data
-   *
-   * Derived from https://github.com/pbeshai/d3-line-chunked/blob/master/src/lineChunked.js
-   *
-   * @param {Array} lineData the line data
-   * @param {Function} defined function that takes a data point and returns true if
-   *    it is defined, false otherwise
-   * @param {Function} isNext function that takes the previous data point and the
-   *    current one and returns true if the current point is the expected one to
-   *    follow the previous, false otherwise.
-   * @return {Array} An array of segments (subarrays) of the line data
+   * based on https://github.com/pbeshai/d3-line-chunked/blob/master/src/lineChunked.js
    */
   function computeSegments(lineData, defined, isNext = (prev, curr) => true) {
-    var startNewSegment = true;
+    let startNewSegment = true;
 
     // split into segments of continuous data
-    var segments = lineData.reduce(function (segments, d) {
+    const segments = lineData.reduce(function (segments, d) {
       // skip if this point has no data
       if (!defined(d)) {
         startNewSegment = true;
@@ -74,76 +77,94 @@
     return segments;
   }
 
-  function stopsFromSegments(segments, xDomain) {
-    var gradientScale = scaleLinear()
-      .domain(xDomain)
-      .range([0, 100])
-      .clamp(true);
-
-    var stops = segments.reduce(function (stops, segment) {
-      // get first and last points from the segments
-      var first = segment[0];
-      var last = segment[segment.length - 1];
-      // add gap-segment segment-gap stops (4)
-      stops.push({
-        type: "gap",
-        offset: gradientScale(first[xAccessor]) + "%",
-      });
-      stops.push({
-        type: "segment",
-        offset: gradientScale(first[xAccessor]) + "%",
-      });
-      stops.push({
-        type: "segment",
-        offset: gradientScale(last[xAccessor]) + "%",
-      });
-      stops.push({
-        type: "gap",
-        offset: gradientScale(last[xAccessor]) + "%",
-      });
-
-      return stops;
-    }, []);
-
-    return stops;
-  }
-  let stops;
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
-
-  $: if ($xScale) stops = stopsFromSegments(segments, $xScale?.domain());
   $: filteredData = data.filter(pathIsDefined(yAccessor));
+
+  export function zoomOut(
+    node,
+    { delay = 0, duration = 400, easing = cubicOut, x = 0, y = 0, opacity = 0 }
+  ) {
+    const style = getComputedStyle(node);
+    const target_opacity = +style.opacity;
+    const transform = style.transform === "none" ? "" : style.transform;
+
+    const od = target_opacity * (1 - opacity);
+
+    return {
+      delay,
+      duration,
+      easing,
+      css: (t, u) => `
+			transform: ${transform} translate(${(1 - t) * x}px, ${
+        (1 - t) * y
+      }px) scale({t});
+			opacity: ${target_opacity - od * u}`,
+    };
+  }
 </script>
 
+<text x="30" y="60">{$yScale.domain()}</text>
 <g>
+  <!-- gap line -->
   <WithTween
     value={lineFunction(yAccessor)(filteredData)}
     tweenProps={{
-      duration: 1000,
+      duration,
       interpolate: interpolatePath,
       easing: cubicOut,
-    }}
-    let:output={dt}
-  >
-    <path stroke="pink" fill="none" stroke-width="1px" d={dt} id="gap-line" />
-  </WithTween>
-  <WithTween
-    value={lineFunction(yAccessor)(filteredData)}
-    tweenProps={{
-      duration: 1000,
-      interpolate: interpolatePath,
-      easing: cubicOut,
+      delay,
     }}
     let:output={dt}
   >
     <path
-      stroke-width="4px"
-      stroke="blue"
+      stroke="hsl(217,50%,60%)"
+      fill="none"
+      opacity="1"
+      stroke-width="1px"
+      d={dt}
+      id="gap-line"
+      stroke-dasharray="1,2"
+    />
+  </WithTween>
+  <!-- segments with actual ata -->
+  <WithTween
+    value={lineFunction(yAccessor)(filteredData)}
+    tweenProps={{
+      duration,
+      interpolate: interpolatePath,
+      easing: cubicOut,
+      delay,
+    }}
+    let:output={dt}
+  >
+    <path
+      stroke-width="1px"
+      stroke="hsla(217,60%, 55%, 1)"
       d={dt}
       id="segments-line"
       fill="none"
       style="clip-path: url(#path-segments)"
     />
   </WithTween>
+
+  <WithTween
+    value={areaFunction(yAccessor)(filteredData)}
+    tweenProps={{
+      duration,
+      interpolate: interpolatePath,
+      easing: cubicOut,
+      delay,
+    }}
+    let:output={at}
+  >
+    <path
+      d={at}
+      fill="hsla(217,100%, 50%, 0.1)"
+      style="clip-path: url(#path-segments)"
+    />
+  </WithTween>
+
+  <!-- 
   {#each segments as segment}
     <WithTween
       value={{
@@ -152,32 +173,40 @@
           $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor]),
       }}
       tweenProps={{
-        duration: 1000,
+        duration: 500,
         easing: cubicOut,
       }}
       let:output
     >
       <rect
-        fill="hsla(1, 50%, 50%, .1)"
         x={output.x}
         y={0}
+        fill="hsla(1,100%, 50%, 0.1)"
         height={$yScale.range()[0]}
         width={output.width}
       />
     </WithTween>
-  {/each}
+  {/each} -->
+
+  <!-- clip rects for segments -->
   <defs>
     <clipPath id="path-segments">
-      {#each segments as segment}
+      {#each segments as segment (segment[0][xAccessor])}
+        {@const x = $xScale(segment[0][xAccessor])}
+        {@const width =
+          $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
         <WithTween
+          initialValue={{
+            x: x - width / 2,
+            width: width * 2,
+          }}
           value={{
-            x: $xScale(segment[0][xAccessor]),
-            width:
-              $xScale(segment.at(-1)[xAccessor]) -
-              $xScale(segment[0][xAccessor]),
+            x,
+            width,
           }}
           tweenProps={{
-            duration: 1000,
+            duration,
+            delay,
             easing: cubicOut,
           }}
           let:output
@@ -191,17 +220,5 @@
         </WithTween>
       {/each}
     </clipPath>
-    <!-- <linearGradient id="path-segments">
-      {#each stops as stop}
-        <stop
-          offset={stop.offset}
-          stop-color={stop.type === "gap" ? gapColor : segmentColor}
-        />
-      {/each}
-    </linearGradient> -->
   </defs>
 </g>
-
-{#if false && lineFunction}
-  <slot d={lineFunction(yAccessor)(data)} />
-{/if}
