@@ -35,7 +35,7 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 	db.SetMaxOpenConns(cfg.PoolSize)
 
 	c := &connection{
-		db:  db,
+		db:   db,
 		pool: make(chan *sqlx.Conn, cfg.PoolSize),
 		sem:  priorityqueue.NewSemaphore(cfg.PoolSize),
 	}
