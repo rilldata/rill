@@ -9,11 +9,12 @@ import (
 	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
+
+const IsoFormat string = "2006-01-02T15:04:05.000Z"
 
 type ColumnTimeseries struct {
 	TableName           string                                              `json:"table_name"`
@@ -76,11 +77,11 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	var measures = normaliseMeasures(q.Measures, true)
 	filter := getFilterFromMetricsViewFilters(q.Filters)
 	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
-	tsAlias := "_ts_" + replaceHyphen(uuid.New().String())
+	tsAlias := tempName("_ts_")
 	if filter != "" {
 		filter = "WHERE " + filter
 	}
-	temporaryTableName := "_timeseries_" + uuid.New().String()
+	temporaryTableName := tempName("_timeseries_")
 	sql := `CREATE TEMPORARY TABLE ` + safeName(temporaryTableName) + ` AS (
         -- generate a time series column that has the intended range
         WITH template as (
@@ -452,15 +453,6 @@ func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter
 	}
 }
 
-func getFallbackMeasureName(index int, sqlName string) string {
-	if sqlName == "" {
-		s := fmt.Sprintf("measure_%d", index)
-		return s
-	} else {
-		return sqlName
-	}
-}
-
 func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
 	if len(measures) == 0 {
 		return []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
@@ -471,13 +463,18 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 			},
 		}
 	}
+
 	var countExists bool
 	for i, measure := range measures {
-		measure.SqlName = getFallbackMeasureName(i, measure.SqlName)
+		if measure.SqlName == "" {
+			measure.SqlName = fmt.Sprintf("measure_%d", i)
+		}
+
 		if measure.SqlName == "count" {
 			countExists = true
 		}
 	}
+
 	if !countExists && generateCount {
 		measures = append(measures, &runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			Expression: "count(*)",
@@ -485,10 +482,9 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 			Id:         "",
 		})
 	}
+
 	return measures
 }
-
-const IsoFormat string = "2006-01-02T15:04:05.000Z"
 
 func sMap(k string, v float64) map[string]float64 {
 	m := make(map[string]float64, 1)
@@ -496,32 +492,9 @@ func sMap(k string, v float64) map[string]float64 {
 	return m
 }
 
-func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
-	switch specifier {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return "MILLISECOND"
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return "SECOND"
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return "MINUTE"
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return "HOUR"
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return "DAY"
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return "WEEK"
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return "MONTH"
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return "YEAR"
-	}
-	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
-}
-
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias string) ([]*runtimev1.TimeSeriesValue, error) {
 	results := make([]*runtimev1.TimeSeriesValue, 0)
 	defer rows.Close()
-	var converr error
 	for rows.Next() {
 		value := runtimev1.TimeSeriesValue{}
 		results = append(results, &value)

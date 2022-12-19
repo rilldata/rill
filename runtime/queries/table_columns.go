@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -48,7 +47,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	temporaryTableName := "profile_columns_" + replaceHyphen(uuid.New().String())
+	temporaryTableName := tempName("profile_columns_")
 	// views return duplicate column names, so we need to create a temporary table
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
