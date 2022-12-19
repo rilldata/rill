@@ -9,6 +9,7 @@ import {
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
 } from "@rilldata/web-common/runtime-client";
+import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
 import { derived, writable } from "svelte/store";
 import { convertTimestampPreview } from "../../util/convertTimestampPreview";
 
@@ -90,18 +91,24 @@ export function getCountDistinct(instanceId, objectName, columnName) {
   );
 }
 
-export function getTopK(instanceId, objectName, columnName) {
+export function getTopK(instanceId, objectName, columnName, active = false) {
   const topKQuery = useRuntimeServiceGetTopK(instanceId, objectName, {
     columnName: columnName,
     agg: "count(*)",
     k: 75,
+    priority: getPriorityForColumn("topk", active),
   });
   return derived(topKQuery, ($topKQuery) => {
     return $topKQuery?.data?.categoricalSummary?.topK?.entries;
   });
 }
 
-export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
+export function getTimeSeriesAndSpark(
+  instanceId,
+  objectName,
+  columnName,
+  active = false
+) {
   const query = useRuntimeServiceGenerateTimeSeries(
     instanceId,
     objectName,
@@ -109,18 +116,22 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
     {
       timestampColumnName: columnName,
       pixels: 92,
+      priority: getPriorityForColumn("timeseries", active),
     }
   );
   const estimatedInterval = useRuntimeServiceEstimateRollupInterval(
     instanceId,
     objectName,
-    { columnName }
+    { columnName, priority: getPriorityForColumn("rollup-interval", active) }
   );
 
   const smallestTimeGrain = useRuntimeServiceEstimateSmallestTimeGrain(
     instanceId,
     objectName,
-    { columnName }
+    {
+      columnName,
+      priority: getPriorityForColumn("smallest-time-grain", active),
+    }
   );
 
   return derived(
@@ -148,22 +159,32 @@ export function getTimeSeriesAndSpark(instanceId, objectName, columnName) {
   );
 }
 
-export function getNumericHistogram(instanceId, objectName, columnName) {
+export function getNumericHistogram(
+  instanceId,
+  objectName,
+  columnName,
+  active = false
+) {
   const histogramQuery = useRuntimeServiceGetNumericHistogram(
     instanceId,
     objectName,
-    { columnName }
+    { columnName, priority: getPriorityForColumn("numeric-histogram", active) }
   );
   return derived(histogramQuery, ($query) => {
     return $query?.data?.numericSummary?.numericHistogramBins?.bins;
   });
 }
 
-export function getRugPlotData(instanceId, objectName, columnName) {
+export function getRugPlotData(
+  instanceId,
+  objectName,
+  columnName,
+  active = false
+) {
   const outliersQuery = useRuntimeServiceGetRugHistogram(
     instanceId,
     objectName,
-    { columnName }
+    { columnName, priority: getPriorityForColumn("rug-histogram", active) }
   );
   return derived(outliersQuery, ($query) => {
     return $query?.data?.numericSummary?.numericOutliers?.outliers;

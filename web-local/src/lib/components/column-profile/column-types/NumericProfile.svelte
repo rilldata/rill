@@ -1,6 +1,8 @@
 <script lang="ts">
   import { useRuntimeServiceGetDescriptiveStatistics } from "@rilldata/web-common/runtime-client";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { derived } from "svelte/store";
   import { DataTypeIcon } from "../../data-types";
@@ -35,9 +37,15 @@
   $: numericHistogram = getNumericHistogram(
     $runtimeStore?.instanceId,
     objectName,
-    columnName
+    columnName,
+    true
   );
-  $: rug = getRugPlotData($runtimeStore?.instanceId, objectName, columnName);
+  $: rug = getRugPlotData(
+    $runtimeStore?.instanceId,
+    objectName,
+    columnName,
+    active
+  );
 
   $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
@@ -45,46 +53,52 @@
     useRuntimeServiceGetDescriptiveStatistics(
       $runtimeStore?.instanceId,
       objectName,
-      { columnName: columnName }
+      {
+        columnName: columnName,
+        priority: getPriorityForColumn("descriptive-statistics", active),
+      }
     ),
     ($query) => {
       return $query?.data?.numericSummary?.numericStatistics;
     }
   );
+
+  function toggleColumnProfile() {
+    active = !active;
+    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
+  }
 </script>
 
 <ProfileContainer
-  on:select={() => {
-    active = !active;
-  }}
+  {active}
+  {compact}
+  emphasize={active}
+  {example}
+  {hideNullPercentage}
+  {hideRight}
+  {mode}
+  on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
-  {active}
-  emphasize={active}
-  {hideRight}
-  {hideNullPercentage}
-  {compact}
-  {mode}
-  {example}
   {type}
 >
-  <DataTypeIcon {type} slot="icon" />
+  <DataTypeIcon slot="icon" {type} />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark slot="summary" data={$numericHistogram} {compact} />
+  <NumericSpark {compact} data={$numericHistogram} slot="summary" />
   <NullPercentageSpark
-    slot="nullity"
     nullCount={$nulls?.nullCount}
+    slot="nullity"
     totalRows={$nulls?.totalRows}
     {type}
   />
-  <div slot="details" class="pl-10 pr-4 py-4">
+  <div class="pl-10 pr-4 py-4" slot="details">
     <NumericPlot
-      {type}
       data={$numericHistogram}
       rug={$rug}
       summary={$summary}
       topK={$topK}
       totalRows={$nulls?.totalRows}
+      {type}
     />
   </div>
 </ProfileContainer>

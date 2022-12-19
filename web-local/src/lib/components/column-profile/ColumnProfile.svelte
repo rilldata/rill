@@ -29,26 +29,6 @@
     return () => observer.unobserve(container);
   });
 
-  // function invalidateForModel(queryHash, modelName) {
-  //   const r = new RegExp(
-  //     `\/v1\/instances\/[a-zA-Z0-9-]+\/queries/[a-zA-Z0-9-]+\/tables\/${modelName}`
-  //   );
-  //   return r.test(queryHash);
-  // }
-
-  // invalidate any existing queries when this key changes.
-  // $: if (key) {
-  //   queryClient?.resetQueries({
-  //     predicate: (query) => {
-  //       console.log(
-  //         query.queryHash,
-  //         invalidateForModel(query.queryHash, objectName)
-  //       );
-  //       return false;
-  //     },
-  //   });
-  // }
-
   // get all column profiles.
   let profileColumns;
   $: profileColumns = useRuntimeServiceProfileColumns(

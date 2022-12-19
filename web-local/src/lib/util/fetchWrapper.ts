@@ -1,4 +1,11 @@
-import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
+export type FetchWrapperOptions = {
+  url: string;
+  method: string;
+  headers?: HeadersInit;
+  params?: Record<string, unknown>;
+  data?: any;
+  signal?: AbortSignal;
+};
 
 export async function fetchWrapper({
   url,
@@ -7,7 +14,7 @@ export async function fetchWrapper({
   data,
   params,
   signal,
-}: RequestQueueEntry) {
+}: FetchWrapperOptions) {
   if (signal && signal.aborted) return Promise.reject(new Error("Aborted"));
 
   headers ??= { "Content-Type": "application/json" };
