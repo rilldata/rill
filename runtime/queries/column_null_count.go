@@ -48,8 +48,8 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	nullCountSql := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
-		q.TableName,
-		quoteName(q.ColumnName),
+		safeName(q.TableName),
+		safeName(q.ColumnName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{

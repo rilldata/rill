@@ -38,7 +38,7 @@ func (q *TableCardinality) UnmarshalResult(v any) error {
 
 func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	countSql := fmt.Sprintf("SELECT count(*) AS count FROM %s",
-		quoteName(q.TableName),
+		safeName(q.TableName),
 	)
 
 	olap, err := rt.OLAP(ctx, instanceID)

@@ -89,7 +89,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) buildMetricsTopListSql(mv *runtimev1.MetricsView) (string, []any, error) {
-	dimName := quoteName(q.DimensionName)
+	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	for _, n := range q.MeasureNames {
 		found := false

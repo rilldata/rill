@@ -92,8 +92,8 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
         ) as estimatedSmallestTimeGrain
       FROM time_grains
       `,
-		quoteName(q.ColumnName),
-		quoteName(q.TableName),
+		safeName(q.ColumnName),
+		safeName(q.TableName),
 		useSample,
 	)
 
