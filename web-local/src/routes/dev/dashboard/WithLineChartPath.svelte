@@ -7,14 +7,19 @@
     lineFactory,
     pathIsDefined,
   } from "@rilldata/web-local/lib/components/data-graphic/utils";
+  import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
+  import { computeSegments, gapsFromSegments } from "./measure-chart/utils";
+  import WithDelayedValue from "./WithDelayedValue.svelte";
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
   export let delay = 0;
-  export let duration = 1000;
+  export let duration = 400;
+
+  const id = guidGenerator();
 
   // get the scale functions from the data graphic
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
@@ -37,47 +42,9 @@
     });
   }
 
-  /**
-   * Helper function to compute the contiguous segments of the data
-   * based on https://github.com/pbeshai/d3-line-chunked/blob/master/src/lineChunked.js
-   */
-  function computeSegments(lineData, defined, isNext = (prev, curr) => true) {
-    let startNewSegment = true;
-
-    // split into segments of continuous data
-    const segments = lineData.reduce(function (segments, d) {
-      // skip if this point has no data
-      if (!defined(d)) {
-        startNewSegment = true;
-        return segments;
-      }
-
-      // if we are starting a new segment, start it with this point
-      if (startNewSegment) {
-        segments.push([d]);
-        startNewSegment = false;
-
-        // otherwise see if we are adding to the last segment
-      } else {
-        var lastSegment = segments[segments.length - 1];
-        var lastDatum = lastSegment[lastSegment.length - 1];
-        // if we expect this point to come next, add it to the segment
-        if (isNext(lastDatum, d)) {
-          lastSegment.push(d);
-
-          // otherwise create a new segment
-        } else {
-          segments.push([d]);
-        }
-      }
-
-      return segments;
-    }, []);
-
-    return segments;
-  }
-
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
+  $: gaps = gapsFromSegments(segments);
+
   $: filteredData = data.filter(pathIsDefined(yAccessor));
 
   export function zoomOut(
@@ -103,122 +70,120 @@
   }
 </script>
 
-<text x="30" y="60">{$yScale.domain()}</text>
-<g>
-  <!-- gap line -->
-  <WithTween
-    value={lineFunction(yAccessor)(filteredData)}
-    tweenProps={{
-      duration,
-      interpolate: interpolatePath,
-      easing: cubicOut,
-      delay,
-    }}
-    let:output={dt}
-  >
-    <path
-      stroke="hsl(217,50%,60%)"
-      fill="none"
-      opacity="1"
-      stroke-width="1px"
-      d={dt}
-      id="gap-line"
-      stroke-dasharray="1,2"
-    />
-  </WithTween>
-  <!-- segments with actual ata -->
-  <WithTween
-    value={lineFunction(yAccessor)(filteredData)}
-    tweenProps={{
-      duration,
-      interpolate: interpolatePath,
-      easing: cubicOut,
-      delay,
-    }}
-    let:output={dt}
-  >
-    <path
-      stroke-width="1px"
-      stroke="hsla(217,60%, 55%, 1)"
-      d={dt}
-      id="segments-line"
-      fill="none"
-      style="clip-path: url(#path-segments)"
-    />
-  </WithTween>
-
-  <WithTween
-    value={areaFunction(yAccessor)(filteredData)}
-    tweenProps={{
-      duration,
-      interpolate: interpolatePath,
-      easing: cubicOut,
-      delay,
-    }}
-    let:output={at}
-  >
-    <path
-      d={at}
-      fill="hsla(217,100%, 50%, 0.1)"
-      style="clip-path: url(#path-segments)"
-    />
-  </WithTween>
-
-  <!-- 
-  {#each segments as segment}
+<WithDelayedValue
+  {delay}
+  value={[filteredData, segments]}
+  let:output={delayedValues}
+>
+  {@const delayedFilteredData = delayedValues[0]}
+  <!-- {@const delayedGaps = delayedValues[1]} -->
+  {@const delayedSegments = delayedValues[1]}
+  <g>
+    <!-- gap line -->
+    <!-- {#each delayedGaps as [start, end] (start[xAccessor] + end[xAccessor])}
+      <WithTween
+        value={{ start, end }}
+        tweenProps={{ duration, easing: cubicOut }}
+        let:output
+      >
+        <line
+          x1={$xScale(output.start[xAccessor])}
+          x2={$xScale(output.end[xAccessor])}
+          y1={$yScale(output.start[yAccessor])}
+          y2={$yScale(output.end[yAccessor])}
+          stroke="red"
+          stroke-width="4"
+        />
+      </WithTween>
+    {/each} -->
+    {#if false}
+      <WithTween
+        value={lineFunction(yAccessor)(delayedFilteredData)}
+        tweenProps={{
+          duration,
+          interpolate: interpolatePath,
+          easing: cubicOut,
+        }}
+        let:output={dt}
+      >
+        <path
+          stroke="hsl(217,50%,60%)"
+          fill="none"
+          opacity="1"
+          stroke-width=".2px"
+          d={dt}
+          id="gap-line-{id}"
+          stroke-dasharray="1,2"
+        />
+      </WithTween>
+    {/if}
+    <!-- segments with actual ata -->
     <WithTween
-      value={{
-        x: $xScale(segment[0][xAccessor]),
-        width:
-          $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor]),
-      }}
+      value={lineFunction(yAccessor)(delayedFilteredData)}
       tweenProps={{
-        duration: 500,
+        duration,
+        interpolate: interpolatePath,
         easing: cubicOut,
       }}
-      let:output
+      let:output={dt}
     >
-      <rect
-        x={output.x}
-        y={0}
-        fill="hsla(1,100%, 50%, 0.1)"
-        height={$yScale.range()[0]}
-        width={output.width}
+      <path
+        stroke-width="1px"
+        stroke="hsla(217,60%, 55%, 1)"
+        d={dt}
+        id="segments-line"
+        fill="none"
+        style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-  {/each} -->
 
-  <!-- clip rects for segments -->
-  <defs>
-    <clipPath id="path-segments">
-      {#each segments as segment (segment[0][xAccessor])}
-        {@const x = $xScale(segment[0][xAccessor])}
-        {@const width =
-          $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
-        <WithTween
-          initialValue={{
-            x: x - width / 2,
-            width: width * 2,
-          }}
-          value={{
-            x,
-            width,
-          }}
-          tweenProps={{
-            duration,
-            delay,
-            easing: cubicOut,
-          }}
-          let:output
-        >
-          <rect
-            x={output.x}
-            y={0}
-            height={$yScale.range()[0]}
-            width={output.width}
-          />
-        </WithTween>
-      {/each}
-    </clipPath>
-  </defs>
-</g>
+    <WithTween
+      value={areaFunction(yAccessor)(delayedFilteredData)}
+      tweenProps={{
+        duration,
+        interpolate: interpolatePath,
+        easing: cubicOut,
+      }}
+      let:output={at}
+    >
+      <path
+        d={at}
+        fill="hsla(217,100%, 50%, 0.1)"
+        style="clip-path: url(#path-segments-{id})"
+      />
+    </WithTween>
+
+    <!-- clip rects for segments -->
+    <defs>
+      <clipPath id="path-segments-{id}">
+        {#each delayedSegments as segment (segment[0][xAccessor])}
+          {@const x = $xScale(segment[0][xAccessor])}
+          {@const width =
+            $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
+          <WithTween
+            initialValue={{
+              x: x - width / 2,
+              width: width * 2,
+            }}
+            value={{
+              x,
+              width,
+            }}
+            tweenProps={{
+              duration,
+              easing: cubicOut,
+            }}
+            let:output
+          >
+            <rect
+              x={output.x}
+              y={0}
+              height={$yScale.range()[0]}
+              width={output.width}
+            />
+          </WithTween>
+        {/each}
+      </clipPath>
+    </defs>
+  </g>
+</WithDelayedValue>

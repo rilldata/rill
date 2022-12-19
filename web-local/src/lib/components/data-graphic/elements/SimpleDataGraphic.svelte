@@ -69,6 +69,9 @@ A simple composable container for SVG-based data graphics.
       let:yScale
       let:config
       let:hovered
+      on:scrub-start
+      on:scrub-move
+      on:scrub-end
     >
       <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
     </SimpleSVGContainer>

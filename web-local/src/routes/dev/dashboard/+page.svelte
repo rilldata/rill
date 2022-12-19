@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MeasureChart from "./MeasureChart.svelte";
+  import { MeasureChart } from "./measure-chart";
 
   const makeData = (n: number, addBreak = false) => {
     let numBreaks = ~~(Math.random() * 5);
@@ -13,7 +13,7 @@
     for (let i = 0; i < n; i++) {
       if (fiveRandomPoints.includes(i)) {
         breakPoint = i;
-        howMany = 50 + ~~((Math.random() * n) / 25);
+        howMany = ~~(n / 20) + ~~((Math.random() * n) / 45);
       } else if (i > breakPoint + howMany) {
         breakPoint = undefined;
         howMany = undefined;
@@ -27,21 +27,27 @@
     }
     return data;
   };
-  let data = makeData(1000, true);
-  $: start = data[0].ts;
-  $: end = data.at(-1).ts;
+
+  let SIZE = 500;
+  let GRAPH_COUNT = 10;
+  let dataSet = Array.from({ length: 10 }).map(() => makeData(SIZE, true));
+  let mouseoverValue;
 </script>
 
-<button on:click={() => (data = makeData(800 + ~~(Math.random() * 200), true))}
-  >randomize</button
+<button
+  on:click={() => {
+    dataSet = Array.from({ length: 10 }).map(() => makeData(SIZE, true));
+  }}>randomize</button
 >
-
-<MeasureChart
-  groundOnZero={false}
-  {data}
-  xMin={start}
-  xMax={end}
-  yMin={0}
-  xAccessor="ts"
-  yAccessor="value"
-/>
+{#each dataSet as data}
+  <MeasureChart
+    bind:mouseoverValue
+    {data}
+    xMin={data[0].ts}
+    xMax={data.at(-1).ts}
+    yMin={0}
+    xAccessor="ts"
+    yAccessor="value"
+    height={140}
+  />
+{/each}
