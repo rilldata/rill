@@ -23,7 +23,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
-  import { fade, slide } from "svelte/transition";
+  import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
 
   export let modelName: string;
@@ -136,7 +136,7 @@
       $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full pb-5 grid overflow-auto">
+      <div class="h-full  p-5  grid overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
@@ -151,13 +151,12 @@
   <Portal target=".body">
     {#if $outputLayout.visible}
       <div
-        transition:fade
         class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center"
         style:bottom="{$outputPosition * $outputVisibilityTween}px"
-        style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
+        style:left="{(1 - $navVisibilityTween) * $navigationWidth + 20}px"
         style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
         style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
-        style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
+        style:right="{$inspectorVisibilityTween * $inspectorWidth + 20}px"
         use:drag={{
           minSize: 200,
           maxSize: innerHeight - 200,
@@ -178,9 +177,10 @@
   </Portal>
 
   {#if hasModelSql}
-    <div style:height="{$outputPosition}px" class="flex flex-col gap-6">
+    <div style:height="{$outputPosition}px" class="p-5 flex flex-col gap-6">
       <div
-        class="rounded overflow-auto h-full grow-1 {!showPreview && 'hidden'}"
+        class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
+          'hidden'}"
       >
         <div
           style="{modelError ? 'filter: brightness(.9);' : ''}

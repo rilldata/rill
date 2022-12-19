@@ -341,7 +341,7 @@
   .editor-container {
     padding: 0.5rem;
     background-color: white;
-    /* border-radius: 0.25rem; */
+    border-radius: 0.25rem;
     /* min-height: 400px; */
     min-height: 100%;
     display: grid;

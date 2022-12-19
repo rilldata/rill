@@ -12,9 +12,9 @@ export const COLUMN_PROFILE_CONFIG = {
    */
   nullPercentageWidth: 44,
   mediumCutoff: 300,
-  compactBreakpoint: 350,
-  hideRight: 325,
-  hideNullPercentage: 399,
+  compactBreakpoint: 300,
+  hideRight: 0,
+  hideNullPercentage: 0,
   summaryVizWidth: { medium: 68, small: 64 },
   exampleWidth: { medium: 204, small: 132 },
   fontSize: 12,

@@ -87,7 +87,7 @@
         });
       }}
     >
-      <HideRightSidebar size="20px" />
+      <HideRightSidebar size="18px" />
       <svelte:fragment slot="tooltip-content">
         {#if $inspectorLayout.visible} close {:else} show {/if} sidebar
       </svelte:fragment>
