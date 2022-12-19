@@ -1,4 +1,4 @@
-import { notifications } from "@rilldata/web-local/lib/components/notifications";
+import { notifications } from "@rilldata/web-common/components/notifications";
 import { setContext } from "svelte";
 import { get, writable } from "svelte/store";
 interface CreateShiftClick {

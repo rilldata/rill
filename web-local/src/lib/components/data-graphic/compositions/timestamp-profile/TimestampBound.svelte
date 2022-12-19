@@ -5,19 +5,19 @@
    * This component will render the label bound on the TimestampDetail.svelte graph.
    * It also enables a shift + click to copy the bound as a query-ready timestamp.
    */
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import {
     datePortion,
     removeTimezoneOffset,
     timePortion,
-  } from "../../../../util/formatters";
+  } from "@rilldata/web-common/lib/formatters";
   import { createShiftClickAction } from "../../../../util/shift-click-action";
-  import { notifications } from "../../../notifications";
-  import Shortcut from "../../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../../tooltip/StackingWord.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
 
   const { shiftClickAction } = createShiftClickAction();
 

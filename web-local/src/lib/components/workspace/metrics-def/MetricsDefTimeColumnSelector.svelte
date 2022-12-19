@@ -1,9 +1,9 @@
 <script lang="ts">
+  import TimestampIcon from "@rilldata/web-common/components/icons/TimestampType.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import TimestampIcon from "../../icons/TimestampType.svelte";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;

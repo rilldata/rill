@@ -1,8 +1,8 @@
+import { guidGenerator } from "@rilldata/web-common/lib/guid";
 import type {
   V1Model,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";

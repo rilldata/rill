@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { fly } from "svelte/transition";
-  import { guidGenerator } from "../../../util/guid";
   import { DATA_TYPE_COLORS } from "../../../duckdb-data-types";
   import HistogramBase from "./HistogramBase.svelte";
 

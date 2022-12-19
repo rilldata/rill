@@ -8,6 +8,7 @@
   import TopK from "./details/TopK.svelte";
   import ColumnCardinalitySpark from "./sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
+
   export let columnName: string;
   export let objectName: string;
   export let example;

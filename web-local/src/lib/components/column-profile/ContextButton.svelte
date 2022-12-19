@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { createHoverStateActionFactory } from "../actions/hover-state-action-factory";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createHoverStateActionFactory } from "@rilldata/web-common/lib/actions/hover-state-action-factory";
+
   export let rotated = false;
   export let suppressTooltip = false;
   export let tooltipText: string;

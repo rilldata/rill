@@ -1,20 +1,20 @@
 <script lang="ts">
+  import BooleanType from "@rilldata/web-common/components/icons/BooleanType.svelte";
+  import FloatType from "@rilldata/web-common/components/icons/FloatType.svelte";
+  import IntegerType from "@rilldata/web-common/components/icons/IntegerType.svelte";
+  import StringlikeType from "@rilldata/web-common/components/icons/StringlikeType.svelte";
+  import TimestampType from "@rilldata/web-common/components/icons/TimestampType.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
-    STRING_LIKES,
-    TIMESTAMPS,
+    BOOLEANS,
+    FLOATS,
     INTEGERS,
     INTERVALS,
-    FLOATS,
-    BOOLEANS,
+    STRING_LIKES,
+    TIMESTAMPS,
   } from "../../duckdb-data-types";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
-  import StringlikeType from "../icons/StringlikeType.svelte";
-  import TimestampType from "../icons/TimestampType.svelte";
-  import BooleanType from "../icons/BooleanType.svelte";
-  import IntegerType from "../icons/IntegerType.svelte";
-  import FloatType from "../icons/FloatType.svelte";
   export let color = "text-gray-400";
   export let type;
   export let suppressTooltip = false;

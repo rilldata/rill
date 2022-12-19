@@ -17,6 +17,13 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
 
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    MetricsViewDimension,
+    MetricsViewMeasure,
+    useRuntimeServiceMetricsViewToplist,
+  } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import {
     humanizeGroupValues,
@@ -26,14 +33,7 @@
   import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
-  import {
-    MetricsViewDimension,
-    MetricsViewMeasure,
-    useRuntimeServiceMetricsViewToplist,
-  } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName: string;
   export let dimensionName: string;

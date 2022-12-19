@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { fly } from "svelte/transition";
-  import { guidGenerator } from "../../../util/guid";
-  import HistogramBase from "./HistogramBase.svelte";
   import { NUMERIC_TOKENS } from "../../../duckdb-data-types";
+  import HistogramBase from "./HistogramBase.svelte";
   export let data;
   export let width;
   export let height = 100;

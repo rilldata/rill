@@ -1,19 +1,22 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getContext, onMount } from "svelte";
-  import { drag } from "../../drag";
-  import Spacer from "../icons/Spacer.svelte";
-  import Portal from "../Portal.svelte";
-  import Footer from "./Footer.svelte";
-
+  import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
-  import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
+  import { getContext, onMount } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
+  import { parseDocument } from "yaml";
+  import { drag } from "../../drag";
   import MetricsDefinitionAssets from "./dashboards/MetricsDefinitionAssets.svelte";
+  import Footer from "./Footer.svelte";
   import ModelAssets from "./models/ModelAssets.svelte";
+  import { shorthandTitle } from "./shorthand-title";
   import TableAssets from "./sources/TableAssets.svelte";
 
   let mounted = false;
@@ -41,11 +44,6 @@
     `rill.yaml`
     //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
-
-  import { parseDocument } from "yaml";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import { shorthandTitle } from "./shorthand-title";
 
   $: yaml = parseDocument($thing?.data?.blob || "{}")?.toJS();
 </script>

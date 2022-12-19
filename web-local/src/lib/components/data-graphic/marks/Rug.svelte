@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { contexts } from "$lib/components/data-graphic/constants";
-  import WithSimpleLinearScale from "$lib/components/data-graphic/functional-components/WithSimpleLinearScale.svelte";
-  import type { ScaleStore } from "$lib/components/data-graphic/state/types";
   import { interpolateReds } from "d3-scale-chromatic";
   import { getContext } from "svelte";
+  import { contexts } from "../../../components/data-graphic/constants";
+  import WithSimpleLinearScale from "../../../components/data-graphic/functional-components/WithSimpleLinearScale.svelte";
+  import type { ScaleStore } from "../../../components/data-graphic/state/types";
   import type { SimpleConfigurationStore } from "../state/types";
 
   export let data;

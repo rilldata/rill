@@ -1,9 +1,8 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fly } from "svelte/transition";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
-
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
 
   /** grays out the value if this is true */
   export let loading = false;

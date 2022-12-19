@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../application-state-stores/explorer-stores";
-  import { SelectMenu } from "../menu";
+  import { useMetaQuery } from "../../svelte-query/dashboards";
+  import { EntityStatus } from "../../temp/entity";
   import Spinner from "../Spinner.svelte";
-  import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
 
   export let metricViewName;
 

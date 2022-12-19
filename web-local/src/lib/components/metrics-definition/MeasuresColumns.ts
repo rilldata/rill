@@ -1,7 +1,6 @@
-import type { MeasureEntity } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-import { ValidationState } from "@rilldata/web-local/lib/temp/metrics";
+import type { MeasureEntity } from "../../application-state-stores/metrics-internal-store";
+import { ValidationState } from "../../temp/metrics";
 import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
-
 import {
   CellConfigInput,
   CellConfigSelector,

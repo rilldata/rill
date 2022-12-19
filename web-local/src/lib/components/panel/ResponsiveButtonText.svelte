@@ -4,8 +4,9 @@ the threshold specified in collapseInspectorCTAButton, causing a cute
 horizontal slide animation
 -->
 <script lang="ts">
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { collapseInspectorCTAButton } from "../../application-config";
-  import { slideRight } from "../../transitions";
+
   export let width: number;
 </script>
 

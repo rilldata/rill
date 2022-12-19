@@ -7,16 +7,16 @@ The goal is to make sure that even if the data isn't fetched, the component does
 Otherwise, the page will jump around as the data is fetched.
 -->
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
+  import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
+  import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
-  import { IconButton } from "../../../button";
   import { GraphicContext } from "../../../data-graphic/elements";
   import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithParentClientRect } from "../../../data-graphic/functional-components";
   import WithTween from "../../../data-graphic/functional-components/WithTween.svelte";
   import { HistogramPrimitive, Rug } from "../../../data-graphic/marks";
-  import SummaryStatistics from "../../../icons/SummaryStatistics.svelte";
-  import TopKIcon from "../../../icons/TopK.svelte";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
 

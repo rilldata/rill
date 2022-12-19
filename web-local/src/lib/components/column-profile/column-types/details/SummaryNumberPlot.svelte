@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
+  import { INTEGERS } from "@rilldata/web-local/lib/duckdb-data-types";
+  import { format } from "d3-format";
   import {
     GraphicContext,
     SimpleDataGraphic,
-  } from "$lib/components/data-graphic/elements";
-  import { INTEGERS } from "@rilldata/web-local/lib/duckdb-data-types";
-  import { justEnoughPrecision } from "@rilldata/web-local/lib/util/formatters";
-  import { format } from "d3-format";
+  } from "../../../data-graphic/elements";
   import { DynamicallyPlacedLabel } from "../../../data-graphic/guides";
+
   export let min;
   export let max;
   export let q25;

@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { Dialog } from "@rilldata/web-common/components/modal/index";
   import { createEventDispatcher } from "svelte";
   import {
     DuplicateActions,
     duplicateSourceAction,
     duplicateSourceName,
   } from "../../../application-state-stores/application-store";
-  import { Dialog } from "../../modal/index";
 
   const dispatch = createEventDispatcher();
   function onCancel() {

@@ -4,12 +4,12 @@
    * This component provides summary information about the
    * timestamp profile at the top of the detail plot.
    */
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     intervalToTimestring,
     PreviewRollupIntervalFormatter,
-  } from "../../../../util/formatters";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
+  } from "@rilldata/web-common/lib/formatters";
 
   import type { Interval } from "../../../../duckdb-data-types";
 

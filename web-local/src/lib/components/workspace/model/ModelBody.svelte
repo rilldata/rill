@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -10,7 +12,6 @@
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
-  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
@@ -32,7 +33,6 @@
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { notifications } from "../../notifications";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;

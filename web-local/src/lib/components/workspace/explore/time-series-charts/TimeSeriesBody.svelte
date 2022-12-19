@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { interpolateArray } from "d3-interpolate";
   import { cubicOut, linear } from "svelte/easing";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
-  import { guidGenerator } from "../../../../util/guid";
   import {
     humanizeDataType,
     NicelyFormattedTypes,

@@ -4,15 +4,15 @@
    * The goal is to provide user a quick & easy onboarding for the basic TimestampDetail
    * actions of zooming and panning. This component is a bit extra.
    */
-  import Shortcut from "../../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../../tooltip/StackingWord.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
 
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
-  } from "../../../../util/formatters";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
+  } from "@rilldata/web-common/lib/formatters";
   import TimestampSpark from "./TimestampSpark.svelte";
 
   export let xAccessor: string;

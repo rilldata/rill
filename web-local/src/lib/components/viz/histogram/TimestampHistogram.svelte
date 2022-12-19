@@ -1,14 +1,15 @@
 <script lang="ts">
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import HistogramBase from "./HistogramBase.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     datePortion,
-    timePortion,
     intervalToTimestring,
     removeTimezoneOffset,
-  } from "../../../util/formatters";
+    timePortion,
+  } from "@rilldata/web-common/lib/formatters";
   import { TIMESTAMP_TOKENS } from "../../../duckdb-data-types";
+  import HistogramBase from "./HistogramBase.svelte";
+
   export let data;
   export let type;
   export let interval;

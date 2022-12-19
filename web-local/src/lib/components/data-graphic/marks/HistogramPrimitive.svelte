@@ -4,7 +4,7 @@ It's not meant to be a general-purpose bar mark / geom, nor should you expect
 it to do any automatic binning of data, which is done server-side.
 -->
 <script lang="ts">
-  import { guidGenerator } from "$lib/util/guid";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { extent, max, min } from "d3-array";
   import { getContext, onDestroy } from "svelte";
   import { cubicOut } from "svelte/easing";

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import { crossfade, fly } from "svelte/transition";
   import {
@@ -6,10 +9,7 @@
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
   import { WithTween } from "../../../data-graphic/functional-components";
-  import CrossIcon from "../../../icons/CrossIcon.svelte";
   import Spinner from "../../../Spinner.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
 
   export let value: number;
   export let status: EntityStatus;

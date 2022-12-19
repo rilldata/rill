@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { outline } from "$lib/components/data-graphic/actions/outline";
-  import { contexts } from "$lib/components/data-graphic/constants";
+  import { getContext, onDestroy, onMount } from "svelte";
+  import { tweened } from "svelte/motion";
+  import { outline } from "../../../components/data-graphic/actions/outline";
+  import { contexts } from "../../../components/data-graphic/constants";
   import type {
     ScaleStore,
     SimpleConfigurationStore,
-  } from "$lib/components/data-graphic/state/types";
-  import { getContext, onDestroy, onMount } from "svelte";
-  import { tweened } from "svelte/motion";
+  } from "../../../components/data-graphic/state/types";
 
   const config = getContext(contexts.config) as SimpleConfigurationStore;
   const xScale = getContext(contexts.scale("x")) as ScaleStore;

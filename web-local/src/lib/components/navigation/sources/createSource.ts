@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { notifications } from "@rilldata/web-common/components/notifications";
 import type {
   V1PutFileAndReconcileResponse,
   V1ReconcileError,
@@ -8,7 +9,6 @@ import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/i
 import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
-import { notifications } from "../../notifications";
 
 export async function createSource(
   queryClient: QueryClient,

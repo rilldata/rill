@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Area, Line } from "$lib/components/data-graphic/marks";
   import { extent } from "d3-array";
   import { density1d } from "fast-kde";
   import { tweened } from "svelte/motion";
+  import { Area, Line } from "../../../components/data-graphic/marks";
 
   export let data;
   export let xMin: number = undefined;
