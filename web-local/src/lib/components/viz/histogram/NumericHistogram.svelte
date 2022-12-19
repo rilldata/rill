@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { NUMERIC_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { fly } from "svelte/transition";
-  import { NUMERIC_TOKENS } from "../../../duckdb-data-types";
   import HistogramBase from "./HistogramBase.svelte";
   export let data;
   export let width;

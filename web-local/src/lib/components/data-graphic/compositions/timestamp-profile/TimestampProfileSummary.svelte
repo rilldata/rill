@@ -6,12 +6,11 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     intervalToTimestring,
     PreviewRollupIntervalFormatter,
   } from "@rilldata/web-common/lib/formatters";
-
-  import type { Interval } from "../../../../duckdb-data-types";
 
   export let type: string;
   export let estimatedSmallestTimeGrain: string;

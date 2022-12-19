@@ -1,6 +1,6 @@
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
-import type { Interval } from "../duckdb-data-types";
+import type { Interval } from "./duckdb-data-types";
 import {
   CATEGORICALS,
   FLOATS,
@@ -8,7 +8,7 @@ import {
   INTERVALS,
   PreviewRollupInterval,
   TIMESTAMPS,
-} from "../duckdb-data-types";
+} from "./duckdb-data-types";
 
 /** This heuristic is courtesy Dominik Moritz.
  * Best used in cases where (1) you have no context for the number, and (2) you

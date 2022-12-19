@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
-  import { INTEGERS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { format } from "d3-format";
   import {
     GraphicContext,

@@ -1,8 +1,11 @@
 <script lang="ts">
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import {
+    INTERVALS,
+    TIMESTAMPS,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataType } from "@rilldata/web-common/lib/formatters";
   import { fade } from "svelte/transition";
-  import { INTERVALS, TIMESTAMPS } from "../../duckdb-data-types";
   import { createShiftClickAction } from "../../util/shift-click-action";
   import FormattedDataType from "../data-types/FormattedDataType.svelte";
   import type { ColumnConfig } from "./ColumnConfig";

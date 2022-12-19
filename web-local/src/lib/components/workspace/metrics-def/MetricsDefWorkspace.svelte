@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Callout } from "@rilldata/web-common/components/callout";
+  import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
@@ -14,7 +15,6 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
-  import { CATEGORICALS } from "../../../duckdb-data-types";
   import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";

@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { TIMESTAMP_TOKENS } from "@rilldata/web-local/lib/duckdb-data-types";
   import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import TimestampDetail from "../../data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "../../data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";

@@ -6,14 +6,14 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { formatDataType } from "@rilldata/web-common/lib/formatters";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
-  import { createEventDispatcher, getContext } from "svelte";
   import {
     INTERVALS,
     STRING_LIKES,
     TIMESTAMPS,
-  } from "../../../duckdb-data-types";
+  } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { formatDataType } from "@rilldata/web-common/lib/formatters";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
+  import { createEventDispatcher, getContext } from "svelte";
   import { createShiftClickAction } from "../../../util/shift-click-action";
   import { FormattedDataType } from "../../data-types";
   import BarAndLabel from "../../viz/BarAndLabel.svelte";

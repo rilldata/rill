@@ -13,7 +13,7 @@
     INTERVALS,
     STRING_LIKES,
     TIMESTAMPS,
-  } from "../../duckdb-data-types";
+  } from "@rilldata/web-common/lib/duckdb-data-types";
 
   export let color = "text-gray-400";
   export let type;

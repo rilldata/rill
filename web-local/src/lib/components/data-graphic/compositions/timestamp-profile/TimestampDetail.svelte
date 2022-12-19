@@ -15,6 +15,8 @@
    */
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
   import { scaleLinear } from "d3-scale";
@@ -24,8 +26,6 @@
   import type { Writable } from "svelte/store";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
-  import { guidGenerator } from "../../../../../../../web-common/src/lib/guid";
-  import type { Interval } from "../../../../duckdb-data-types";
   import { createShiftClickAction } from "../../../../util/shift-click-action";
   import { outline } from "../../actions/outline";
   import { createScrubAction } from "../../actions/scrub-action-factory";

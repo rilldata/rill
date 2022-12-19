@@ -1,3 +1,4 @@
+import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
 import { guidGenerator } from "@rilldata/web-common/lib/guid";
 import type {
   V1Model,
@@ -6,7 +7,6 @@ import type {
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
-import { CATEGORICALS } from "../duckdb-data-types";
 import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
 
 export interface MetricsConfig {
