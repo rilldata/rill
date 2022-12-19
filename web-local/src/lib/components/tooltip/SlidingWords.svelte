@@ -17,7 +17,6 @@
       thingWidth.set(bbox.width);
     });
     obs.observe(element);
-    console.log(obs, element);
     thingWidth.set(element.getBoundingClientRect().width, { duration: 0 });
     mounted = true;
   });
