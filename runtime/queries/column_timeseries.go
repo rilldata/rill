@@ -229,7 +229,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 	tc := &TableCardinality{
 		TableName: tableName,
 	}
-	err := tc.Resolve(ctx, rt, instanceID, int(priority))
+	err := tc.Resolve(ctx, rt, instanceID, priority)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 	if tc.Result < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
-			Priority: int(priority),
+			Priority: priority,
 		})
 		if err != nil {
 			return nil, err
@@ -293,7 +293,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
-		Priority: int(priority),
+		Priority: priority,
 	})
 	if err != nil {
 		return nil, err
@@ -312,20 +312,15 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 			Ts:      time.UnixMilli(minT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", argminTV),
-		})
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argminVT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", minV),
-		})
-
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argmaxVT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", maxV),
-		})
-
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(maxT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", argmaxTV),
@@ -445,9 +440,8 @@ func getFallbackMeasureName(index int, sqlName string) string {
 	if sqlName == "" {
 		s := fmt.Sprintf("measure_%d", index)
 		return s
-	} else {
-		return sqlName
 	}
+	return sqlName
 }
 
 func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {

@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -99,7 +100,7 @@ type SamplePolicy struct {
 func (s *Source) Validate() error {
 	connector, ok := Connectors[s.Connector]
 	if !ok {
-		return fmt.Errorf("connector: not found " + s.Connector)
+		return errors.New("connector: not found " + s.Connector)
 	}
 
 	for _, propSchema := range connector.Spec().Properties {

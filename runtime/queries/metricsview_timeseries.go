@@ -72,7 +72,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	// Build query
 	sql, args, err := q.buildMetricsTimeSeriesSQL(mv)
 	if err != nil {
-		return fmt.Errorf("error building query: %s", err.Error())
+		return fmt.Errorf("error building query: %w", err)
 	}
 
 	// Execute

@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/version"
 )
 
-// These are set using -ldflags
+// Version details are set using -ldflags
 var Version string
 var Commit string
 var BuildDate string

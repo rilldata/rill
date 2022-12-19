@@ -58,7 +58,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string) (*App, error) {
 	// Setup a friendly-looking colored logger
 	conf := zap.NewDevelopmentEncoderConfig()
 	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder

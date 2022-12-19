@@ -5,8 +5,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
@@ -67,15 +65,17 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
-func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
-	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+// Commenting as its unused
 
-	if obj.GetMetricsView() == nil {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-	}
+// func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
+// 	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
+// 	if err != nil {
+// 		return nil, status.Error(codes.InvalidArgument, err.Error())
+// 	}
 
-	return obj.GetMetricsView(), nil
-}
+// 	if obj.GetMetricsView() == nil {
+// 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
+// 	}
+
+// 	return obj.GetMetricsView(), nil
+// }
