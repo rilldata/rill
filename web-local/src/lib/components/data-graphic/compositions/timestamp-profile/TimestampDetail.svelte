@@ -16,6 +16,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";

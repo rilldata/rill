@@ -8,6 +8,7 @@ divider
 see more button
 -->
 <script lang="ts">
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
