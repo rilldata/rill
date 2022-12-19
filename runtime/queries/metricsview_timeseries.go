@@ -32,7 +32,7 @@ var _ runtime.Query = &MetricsViewTimeSeries{}
 func (q *MetricsViewTimeSeries) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewTimeSeries: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewTimeSeries:%s", string(r))
 }

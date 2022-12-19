@@ -12,15 +12,15 @@ func quoteName(name string) string {
 	return fmt.Sprintf("\"%s\"", name)
 }
 
-func EscapeSingleQuotes(value string) string {
+func escapeSingleQuotes(value string) string {
 	return strings.ReplaceAll(value, "'", "''")
 }
 
-func EscapeDoubleQuotes(column string) string {
+func escapeDoubleQuotes(column string) string {
 	return strings.ReplaceAll(column, "\"", "\"\"")
 }
 
-func DropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
+func dropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
 	rs, er := olap.Execute(context.Background(), &drivers.Statement{
 		Query:    `DROP TABLE "` + tableName + `"`,
 		Priority: priority,
@@ -30,6 +30,6 @@ func DropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
 	}
 }
 
-func ReplaceHyphen(column string) string {
+func replaceHyphen(column string) string {
 	return strings.ReplaceAll(column, "-", "_")
 }

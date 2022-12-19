@@ -48,7 +48,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	temporaryTableName := "profile_columns_" + ReplaceHyphen(uuid.New().String())
+	temporaryTableName := "profile_columns_" + replaceHyphen(uuid.New().String())
 	// views return duplicate column names, so we need to create a temporary table
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
@@ -58,7 +58,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		return err
 	}
 	rows.Close()
-	defer DropTempTable(olap, priority, temporaryTableName)
+	defer dropTempTable(olap, priority, temporaryTableName)
 
 	rows, err = olap.Execute(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 

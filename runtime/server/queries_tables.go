@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -29,10 +28,6 @@ type ColumnInfo struct {
 	Name    string
 	Type    string
 	Unknown int
-}
-
-func EscapeDoubleQuotes(column string) string {
-	return strings.ReplaceAll(column, "\"", "\"\"")
 }
 
 func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
