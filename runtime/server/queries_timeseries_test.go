@@ -443,7 +443,6 @@ func TestServer_Timeseries_no_measures(t *testing.T) {
 	results := response.GetRollup().Results
 	require.Equal(t, 2, len(results))
 	require.Equal(t, 1.0, results[0].Records["count"])
-
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
@@ -547,6 +546,28 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		Pixels:              pxls,
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 9, len(results))
+	require.Equal(t, 12, len(response.Rollup.Spark))
+}
+
+func TestServer_Timeseries_Spark_no_count(t *testing.T) {
+	server, instanceID := getSparkTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(clicks)",
+				SqlName:    "clicks_sum",
+			},
+		},
+		TimestampColumnName: "time",
+		Pixels:              2,
 	})
 
 	require.NoError(t, err)

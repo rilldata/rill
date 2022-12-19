@@ -71,7 +71,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		q.Result = &runtimev1.TimeSeriesResponse{}
 		return nil
 	}
-	var measures = normaliseMeasures(q.Measures)
+	var measures = normaliseMeasures(q.Measures, true)
 	var timestampColumn = q.TimestampColumnName
 	var tableName = q.TableName
 	var filter string
@@ -79,16 +79,11 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		filter = getFilterFromMetricsViewFilters(q.Filters)
 	}
 	var timeGranularity = convertToDateTruncSpecifier(timeRange.Interval)
-	var tsAlias string
-	if timestampColumn == "ts" {
-		tsAlias = "_ts"
-	} else {
-		tsAlias = "ts"
-	}
+	tsAlias := "_ts_" + ReplaceHyphen(uuid.New().String())
 	if filter != "" {
 		filter = "WHERE " + filter
 	}
-	temporaryTableName := "_ts_" + uuid.New().String()
+	temporaryTableName := "_timeseries_" + uuid.New().String()
 	sql := `CREATE TEMPORARY TABLE "` + temporaryTableName + `" AS (
         -- generate a time series column that has the intended range
         WITH template as (
@@ -112,7 +107,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
         -- does not have that value.
         SELECT 
           ` + getCoalesceStatementsMeasures(measures) + `,
-          template.` + tsAlias + ` as ts from template
+          template.` + tsAlias + ` from template
         LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
         ORDER BY template.` + tsAlias + `
       )`
@@ -133,13 +128,13 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	if err != nil {
 		return err
 	}
-	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1)
+	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
 	if err != nil {
 		return err
 	}
 	var sparkValues []*runtimev1.TimeSeriesValue
 	if q.Pixels != 0 {
-		sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, "ts", "count")
+		sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
 		if err != nil {
 			return err
 		}
@@ -455,20 +450,29 @@ func getFallbackMeasureName(index int, sqlName string) string {
 	}
 }
 
-var countName = "count"
-
-func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
+func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
 	if len(measures) == 0 {
 		return []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "count(*)",
-				SqlName:    countName,
+				SqlName:    "count",
 				Id:         "",
 			},
 		}
 	}
+	var countExists bool
 	for i, measure := range measures {
 		measure.SqlName = getFallbackMeasureName(i, measure.SqlName)
+		if measure.SqlName == "count" {
+			countExists = true
+		}
+	}
+	if !countExists && generateCount {
+		measures = append(measures, &runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			Expression: "count(*)",
+			SqlName:    "count",
+			Id:         "",
+		})
 	}
 	return measures
 }
@@ -503,7 +507,7 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
 }
 
-func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runtimev1.TimeSeriesValue, error) {
+func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias string) ([]*runtimev1.TimeSeriesValue, error) {
 	results := make([]*runtimev1.TimeSeriesValue, 0)
 	defer rows.Close()
 	var converr error
@@ -515,10 +519,12 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int) ([]*runt
 		if err != nil {
 			return results, err
 		}
-		value.Ts = row["ts"].(time.Time).Format(IsoFormat)
-		delete(row, "ts")
+		value.Ts = row[tsAlias].(time.Time).Format(IsoFormat)
 		value.Records = make(map[string]float64, len(row))
 		for k, v := range row {
+			if k == tsAlias {
+				continue
+			}
 			switch x := v.(type) {
 			case int32:
 				value.Records[k] = float64(x)
