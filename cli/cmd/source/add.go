@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -14,8 +15,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// addCmd represents the add command, it requires min 1 args as source name.
-func AddCmd(ver string) *cobra.Command {
+// addCmd represents the add command, it requires min 1 args as source name
+func AddCmd(ver version.Version) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string

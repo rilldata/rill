@@ -5,11 +5,12 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
-// InitCmd represents the init command.
-func InitCmd(ver string) *cobra.Command {
+// InitCmd represents the init command
+func InitCmd(ver version.Version) *cobra.Command {
 	var projectPath string
 	var olapDriver string
 	var olapDSN string

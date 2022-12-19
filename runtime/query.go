@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 type Query interface {
@@ -40,8 +38,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	for i, dep := range deps {
 		entry, err := r.GetCatalogEntry(ctx, instanceID, dep)
 		if err != nil {
-			r.logger.Error(fmt.Sprintf("error getting catalog entry for %s, ignoring it", dep), zap.Error(err))
-			continue
+			return fmt.Errorf("query dependency %q not found", dep)
 		}
 		depKeys[i] = entry.Name + ":" + entry.UpdatedOn.String()
 	}

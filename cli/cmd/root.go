@@ -9,7 +9,8 @@ import (
 	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
-	"github.com/rilldata/rill/cli/cmd/version"
+	versioncmd "github.com/rilldata/rill/cli/cmd/version"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -25,16 +26,15 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, ver, commit, buildDate string) {
-	err := runCmd(ctx, ver, commit, buildDate)
+func Execute(ctx context.Context, ver version.Version) {
+	err := runCmd(ctx, ver)
 	if err != nil {
 		os.Exit(1)
 	}
 }
 
-func runCmd(ctx context.Context, ver, commit, buildDate string) error {
-	v := version.Format(ver, commit, buildDate)
-	rootCmd.Version = v
+func runCmd(ctx context.Context, ver version.Version) error {
+	rootCmd.Version = ver.String()
 
 	rootCmd.AddCommand(initialize.InitCmd(ver))
 	rootCmd.AddCommand(start.StartCmd(ver))
@@ -42,7 +42,7 @@ func runCmd(ctx context.Context, ver, commit, buildDate string) error {
 	rootCmd.AddCommand(source.SourceCmd(ver))
 	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(completionCmd)
-	rootCmd.AddCommand(version.VersionCmd(ver, commit, buildDate))
+	rootCmd.AddCommand(versioncmd.VersionCmd())
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

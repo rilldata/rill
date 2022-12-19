@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
-// StartCmd represents the start command.
-func StartCmd(ver string) *cobra.Command {
+// StartCmd represents the start command
+func StartCmd(ver version.Version) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string

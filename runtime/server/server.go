@@ -81,24 +81,15 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// ErrorToCode returns the Code of the error if it is a Status error
-// otherwise use status.FromContextError to determine the Code.
-// Log level for error codes is defined in logging.DefaultServerCodeToLevel.
+// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
 func ErrorToCode(err error) codes.Code {
-	// Commenting this need to test it if works fine or not
-	// if se, ok := err.(interface {
-	// 	GRPCStatus() *status.Status
-	// }); ok {
-	// 	return se.GRPCStatus().Code()
-	// }
-
-	var se interface{ GRPCStatus() *status.Status }
-	ok := errors.As(err, &se)
-	if ok {
-		return se.GRPCStatus().Code()
+	if errors.Is(err, context.DeadlineExceeded) {
+		return codes.DeadlineExceeded
 	}
-	contextStatus := status.FromContextError(err)
-	return contextStatus.Code()
+	if errors.Is(err, context.Canceled) {
+		return codes.Canceled
+	}
+	return logging.DefaultErrorToCode(err)
 }
 
 // GRPCCodeToLevel overrides the log level of various gRPC codes.
@@ -120,7 +111,7 @@ func GRPCCodeToLevel(code codes.Code) logging.Level {
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux()
+	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
@@ -146,7 +137,17 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
-// Ping implements RuntimeService.
+// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// code) to HTTP status code 400 instead of 500.
+func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+	s := status.Convert(err)
+	if s.Code() == codes.Unknown {
+		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
+	}
+	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+}
+
+// Ping implements RuntimeService
 func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
 	resp := &runtimev1.PingResponse{
 		Version: "", // TODO: Return version
