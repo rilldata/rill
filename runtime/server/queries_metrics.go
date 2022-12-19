@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
@@ -134,7 +135,7 @@ func buildMetricsTopListSQL(req *runtimev1.MetricsViewToplistRequest, mv *runtim
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as %q`, m.Expression, m.Name)
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
 				found = true
 				break
@@ -200,7 +201,7 @@ func buildMetricsTimeSeriesSQL(req *runtimev1.MetricsViewTimeSeriesRequest, mv *
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as %q`, m.Expression, m.Name)
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
 				found = true
 				break
@@ -249,7 +250,7 @@ func buildMetricsTotalsSQL(req *runtimev1.MetricsViewTotalsRequest, mv *runtimev
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as %q`, m.Expression, m.Name)
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
 				found = true
 				break

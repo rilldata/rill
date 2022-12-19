@@ -169,11 +169,8 @@ func (s *Server) user(c echo.Context) error {
 	}
 
 	var profiles map[string]interface{}
-	profile, _ := sess.Values["profile"].([]byte)
-	err = json.Unmarshal(profile, &profiles)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
-	}
+	profile := sess.Values["profile"].([]byte)
+	json.Unmarshal(profile, &profiles)
 
 	return c.JSON(http.StatusOK, profiles)
 }

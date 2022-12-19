@@ -10,7 +10,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 )
 
-// (GET /v1/organizations).
+// (GET /v1/organizations)
 func (s *Server) FindOrganizations(ctx echo.Context) error {
 	orgs, err := s.db.FindOrganizations(ctx.Request().Context())
 	if err != nil {
@@ -25,7 +25,7 @@ func (s *Server) FindOrganizations(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, dtos)
 }
 
-// (POST /organizations).
+// (POST /organizations)
 func (s *Server) CreateOrganization(ctx echo.Context) error {
 	var dto api.CreateOrganizationJSONBody
 	err := ctx.Bind(&dto)
@@ -40,7 +40,7 @@ func (s *Server) CreateOrganization(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, orgToDTO(org))
 }
 
-// (DELETE /organizations/{name}).
+// (DELETE /organizations/{name})
 func (s *Server) DeleteOrganization(ctx echo.Context, name string) error {
 	err := s.db.DeleteOrganization(ctx.Request().Context(), name)
 	if err != nil {
@@ -49,7 +49,7 @@ func (s *Server) DeleteOrganization(ctx echo.Context, name string) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// (GET /organizations/{name}).
+// (GET /organizations/{name})
 func (s *Server) FindOrganization(ctx echo.Context, name string) error {
 	org, err := s.db.FindOrganizationByName(ctx.Request().Context(), name)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *Server) FindOrganization(ctx echo.Context, name string) error {
 	return ctx.JSON(http.StatusOK, orgToDTO(org))
 }
 
-// (PUT /organizations/{name}).
+// (PUT /organizations/{name})
 func (s *Server) UpdateOrganization(ctx echo.Context, name string) error {
 	var dto api.UpdateOrganizationJSONBody
 	err := ctx.Bind(&dto)

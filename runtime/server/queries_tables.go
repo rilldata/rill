@@ -44,7 +44,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 	temporaryTableName := "profile_columns_" + EscapeHyphen(uuid.New().String())
 	// views return duplicate column names, so we need to create a temporary table
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE %q AS (SELECT * FROM %q LIMIT 1)`, temporaryTableName, req.TableName),
+		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, req.TableName),
 		Priority: int(req.Priority),
 	})
 	if err != nil {

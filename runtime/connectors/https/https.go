@@ -55,7 +55,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	extension, err := getURLExtension(conf.Path)
+	extension, err := urlExtension(conf.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
@@ -74,7 +74,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	return fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 }
 
-func getURLExtension(path string) (string, error) {
+func urlExtension(path string) (string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
 		return "", err

@@ -9,12 +9,12 @@ import (
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/stretchr/testify/require"
 
-	// Register some standard stuff.
+	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	"github.com/stretchr/testify/require"
 )
 
 // TestingT satisfies both *testing.T and *testing.B.

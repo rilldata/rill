@@ -52,18 +52,18 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 	r := ctr.Result.Interval
 
 	const (
-		MicrosSecond = 1000 * 1000
-		MicrosMinute = 1000 * 1000 * 60
-		MicrosHour   = 1000 * 1000 * 60 * 60
-		MicrosDay    = 1000 * 1000 * 60 * 60 * 24
+		microsSecond = 1000 * 1000
+		microsMinute = 1000 * 1000 * 60
+		microsHour   = 1000 * 1000 * 60 * 60
+		microsDay    = 1000 * 1000 * 60 * 60 * 24
 	)
 
 	var rollupInterval runtimev1.TimeGrain
-	if r.Days == 0 && r.Micros <= MicrosMinute {
+	if r.Days == 0 && r.Micros <= microsMinute {
 		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
-	} else if r.Days == 0 && r.Micros > MicrosMinute && r.Micros <= MicrosHour {
+	} else if r.Days == 0 && r.Micros > microsMinute && r.Micros <= microsHour {
 		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_SECOND
-	} else if r.Days == 0 && r.Micros <= MicrosDay {
+	} else if r.Days == 0 && r.Micros <= microsDay {
 		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_MINUTE
 	} else if r.Days <= 7 {
 		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_HOUR

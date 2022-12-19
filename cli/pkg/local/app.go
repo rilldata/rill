@@ -23,7 +23,9 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	// blank import group.
+	runtimeserver "github.com/rilldata/rill/runtime/server"
+
+	// Load infra drivers and connectors for local
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -32,7 +34,6 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	runtimeserver "github.com/rilldata/rill/runtime/server"
 )
 
 // Default instance config on local.
@@ -336,9 +337,13 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 			return
 		}
 
-		ok := serverHealthCheck(client, uri)
-		if !ok {
-			break
+		// Check if server is up
+		resp, err := client.Get(uri + "/v1/ping")
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode < http.StatusInternalServerError {
+				break
+			}
 		}
 
 		// Wait a bit and retry
@@ -353,18 +358,6 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 			a.Logger.Debugf("could not open browser: %v", err)
 		}
 	}
-}
-
-func serverHealthCheck(client http.Client, uri string) bool {
-	// Check if server is up
-	resp, err := client.Get(uri + "/v1/ping")
-	if err == nil {
-		defer resp.Body.Close()
-		if resp.StatusCode < http.StatusInternalServerError {
-			return false
-		}
-	}
-	return true
 }
 
 type localInfo struct {

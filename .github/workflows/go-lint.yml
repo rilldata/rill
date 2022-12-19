@@ -12,9 +12,6 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      # - uses: actions/setup-go@v3
-      #   with:
-      #     go-version: 1.19.2
       - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -33,7 +30,7 @@ jobs:
 
           # Optional: golangci-lint command line arguments.
           # args: --issues-exit-code=
-          args: --timeout=10m --config=.go-test.yml --verbose
+          args: --timeout=10m --config=.golangci.yml --verbose
 
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true

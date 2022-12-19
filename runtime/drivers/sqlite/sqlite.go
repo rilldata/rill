@@ -2,10 +2,10 @@ package sqlite
 
 import (
 	"github.com/jmoiron/sqlx"
-	// Register some standard stuff.
-	_ "modernc.org/sqlite"
-
 	"github.com/rilldata/rill/runtime/drivers"
+
+	// Load sqlite driver
+	_ "modernc.org/sqlite"
 )
 
 func init() {

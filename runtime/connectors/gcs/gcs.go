@@ -71,7 +71,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	}
 	defer client.Close()
 
-	bucket, object, extension, err := getGcsURLParts(conf.Path)
+	bucket, object, extension, err := gcsURLParts(conf.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
@@ -85,7 +85,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	return fileutil.CopyToTempFile(rc, source.Name, extension)
 }
 
-func getGcsURLParts(path string) (string, string, string, error) {
+func gcsURLParts(path string) (string, string, string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
 		return "", "", "", err

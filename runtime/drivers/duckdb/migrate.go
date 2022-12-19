@@ -4,7 +4,6 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"io/fs"
 	"path"
 	"strconv"
 	"strings"
@@ -70,7 +69,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 			return err
 		}
 
-		err = migrateSingle(ctx, c, file, sql, version)
+		err = c.migrateSingle(ctx, file.Name(), sql, version)
 		if err != nil {
 			return err
 		}
@@ -79,7 +78,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-func migrateSingle(ctx context.Context, c *connection, file fs.DirEntry, sql []byte, version int) (err error) {
+func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
 	// Start a transaction
 	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -90,7 +89,7 @@ func migrateSingle(ctx context.Context, c *connection, file fs.DirEntry, sql []b
 	// Run migration
 	_, err = tx.ExecContext(ctx, string(sql))
 	if err != nil {
-		return fmt.Errorf("failed to run migration '%s': %w", file.Name(), err)
+		return fmt.Errorf("failed to run migration '%s': %w", name, err)
 	}
 
 	// Update migration version

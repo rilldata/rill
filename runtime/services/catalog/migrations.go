@@ -13,13 +13,11 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
-
-	// Register some standard stuff.
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 
-	// Register some standard stuff.
+	// Load migrators
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"

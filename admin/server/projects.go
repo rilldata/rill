@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 )
 
-// (GET /v1/organizations/{organization}/projects).
+// (GET /v1/organizations/{organization}/projects)
 func (s *Server) FindProjects(ctx echo.Context, organization string) error {
 	projs, err := s.db.FindProjects(ctx.Request().Context(), organization)
 	if err != nil {
@@ -24,7 +24,7 @@ func (s *Server) FindProjects(ctx echo.Context, organization string) error {
 	return ctx.JSON(http.StatusOK, dtos)
 }
 
-// (GET /v1/organizations/{organization}/project/{name}).
+// (GET /v1/organizations/{organization}/project/{name})
 func (s *Server) FindProject(ctx echo.Context, organization, name string) error {
 	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
 	if err != nil {
@@ -33,7 +33,7 @@ func (s *Server) FindProject(ctx echo.Context, organization, name string) error 
 	return ctx.JSON(http.StatusOK, projToDTO(proj))
 }
 
-// (POST /v1/organizations/{organization}/projects).
+// (POST /v1/organizations/{organization}/projects)
 func (s *Server) CreateProject(ctx echo.Context, organization string) error {
 	org, err := s.db.FindOrganizationByName(ctx.Request().Context(), organization)
 	if err != nil {
@@ -53,7 +53,7 @@ func (s *Server) CreateProject(ctx echo.Context, organization string) error {
 	return ctx.JSON(http.StatusCreated, projToDTO(proj))
 }
 
-// (DELETE /v1/organizations/{organization}/project/{name}).
+// (DELETE /v1/organizations/{organization}/project/{name})
 func (s *Server) DeleteProject(ctx echo.Context, organization, name string) error {
 	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
 	if err != nil {
@@ -67,7 +67,7 @@ func (s *Server) DeleteProject(ctx echo.Context, organization, name string) erro
 	return ctx.NoContent(http.StatusOK)
 }
 
-// (PUT /v1/organizations/{organization}/project/{name}).
+// (PUT /v1/organizations/{organization}/project/{name})
 func (s *Server) UpdateProject(ctx echo.Context, organization, name string) error {
 	var dto api.UpdateProjectJSONBody
 	err := ctx.Bind(&dto)

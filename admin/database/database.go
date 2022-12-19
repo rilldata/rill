@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Drivers is a registry of drivers.
+// Drivers is a registry of drivers
 var Drivers = make(map[string]Driver)
 
 // Register registers a new driver.

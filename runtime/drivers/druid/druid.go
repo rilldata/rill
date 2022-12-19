@@ -3,10 +3,11 @@ package druid
 import (
 	"context"
 
-	// Register some standard stuff.
-	_ "github.com/apache/calcite-avatica-go/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+
+	// Load calcite avatica driver for druid
+	_ "github.com/apache/calcite-avatica-go/v5"
 )
 
 func init() {

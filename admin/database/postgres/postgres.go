@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	// Register some standard stuff.
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
+
+	// Load postgres driver
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func init() {

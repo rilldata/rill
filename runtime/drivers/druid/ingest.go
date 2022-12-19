@@ -102,7 +102,7 @@ func getDatasourceDetails(coordinatorURL, datasourceName string) (*datasourceDet
 }
 
 func sendRequest(coordinatorURL, method, path, jsonBody string, out any) error {
-	requestURL, err := url.JoinPath(coordinatorURL, path)
+	reqURL, err := url.JoinPath(coordinatorURL, path)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func sendRequest(coordinatorURL, method, path, jsonBody string, out any) error {
 		reqBody = strings.NewReader(jsonBody)
 	}
 
-	req, err := http.NewRequest(method, requestURL, reqBody)
+	req, err := http.NewRequest(method, reqURL, reqBody)
 	if err != nil {
 		return err
 	}
