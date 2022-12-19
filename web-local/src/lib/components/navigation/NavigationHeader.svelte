@@ -9,6 +9,7 @@
 
   export let show = true;
   export let tooltipText: string;
+  export let toggleText = "models";
   /** The CSS ID used for tests for the context button */
   export let contextButtonID: string = undefined;
 </script>
@@ -18,7 +19,7 @@
   style="grid-template-columns: auto max-content;"
   out:slide|local={{ duration: LIST_SLIDE_DURATION }}
 >
-  <CollapsibleSectionTitle tooltipText={"models"} bind:active={show}>
+  <CollapsibleSectionTitle tooltipText={toggleText} bind:active={show}>
     <div class="flex flex-row items-center gap-x-2">
       <slot />
     </div>

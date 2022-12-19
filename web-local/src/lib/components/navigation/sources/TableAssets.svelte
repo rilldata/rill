@@ -58,6 +58,7 @@
   contextButtonID={"add-table"}
   on:add={openShowAddSourceModal}
   tooltipText="Add a new data source"
+  toggleText="sources"
 >
   <Source size="14px" /> Sources
 </NavigationHeader>
