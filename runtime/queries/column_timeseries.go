@@ -81,7 +81,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		filter = "WHERE " + filter
 	}
 	temporaryTableName := "_timeseries_" + uuid.New().String()
-	sql := `CREATE TEMPORARY TABLE "` + temporaryTableName + `" AS (
+	sql := `CREATE TEMPORARY TABLE ` + safeName(temporaryTableName) + ` AS (
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
@@ -95,8 +95,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
         -- transform the original data, and optionally sample it.
         series AS (
           SELECT 
-            date_trunc('` + dateTruncSpecifier + `', "` + escapeDoubleQuotes(q.TimestampColumnName) + `") as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-          FROM "` + escapeDoubleQuotes(q.TableName) + `" ` + filter + `
+            date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+          FROM ` + safeName(q.TableName) + ` ` + filter + `
           GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
         )
         -- join the transformed data with the generated time series column,
@@ -233,7 +233,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	timestampColumnName string,
 	valueColumn string,
 ) ([]*runtimev1.TimeSeriesValue, error) {
-	escapedTimestampColumn := escapeDoubleQuotes(timestampColumnName)
+	safeTimestampColumnName := safeName(timestampColumnName)
 	tc := &TableCardinality{
 		TableName: tableName,
 	}
@@ -244,7 +244,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	if tc.Result < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Query:    `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 			Priority: int(priority),
 		})
 		if err != nil {
@@ -269,7 +269,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	sql := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (

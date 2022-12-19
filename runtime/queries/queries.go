@@ -20,6 +20,10 @@ func escapeDoubleQuotes(column string) string {
 	return strings.ReplaceAll(column, "\"", "\"\"")
 }
 
+func safeName(name string) string {
+	return quoteName(escapeDoubleQuotes(name))
+}
+
 func dropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
 	rs, er := olap.Execute(context.Background(), &drivers.Statement{
 		Query:    `DROP TABLE "` + tableName + `"`,
