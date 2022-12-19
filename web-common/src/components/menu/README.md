@@ -2,7 +2,7 @@
 
 This directory contains our menu components. There are three types of components here:
 
-- `core` – Basic container and logical components for usage. These items do _not_ float on their own; we are mostly using them with `WithTogglableFloatingElement.svelte` component, defined in `src/lib/components/floating-element`.
+- `core` – Basic container and logical components for usage. These items do _not_ float on their own; we are mostly using them with `WithTogglableFloatingElement.svelte` component, defined in `src/components/floating-element`.
   - `Menu.svelte` – the parent element. This basic component handles keyboard interactions.
   - `MenuItem.svelte` – the main child element. Handles selection and rendering of slots.
 - `wrappers` – The `With<thing>.svelte` collection. Lke a tooltip, these components wrap a DOM element and provide a floating menu component in some way.
