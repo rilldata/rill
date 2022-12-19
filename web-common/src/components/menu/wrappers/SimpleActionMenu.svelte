@@ -5,10 +5,9 @@ and the menu closes.
 -->
 <script lang="ts">
   import { setContext } from "svelte";
-
+  import { Menu, MenuItem } from "..";
   import { WithTogglableFloatingElement } from "../../floating-element";
   import type { Alignment, Location } from "../../floating-element/types";
-  import { Menu, MenuItem } from "./";
 
   export let options = [];
   export let dark: boolean = undefined;

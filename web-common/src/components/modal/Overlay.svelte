@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
+
   export let bgColor = "bg-gray-900/30";
   export let element;
 </script>

@@ -4,7 +4,7 @@
 -->
 <script>
   import { createEventDispatcher } from "svelte";
-  import { slideRight } from "../../../transitions/index";
+  import { slideRight } from "../../../lib/transitions";
   import { defaultChipColors } from "../chip-types";
   import RemoveChipButton from "./RemoveChipButton.svelte";
 

@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { Search } from "@rilldata/web-local/lib/components/search";
-  import { Switch } from "@rilldata/web-local/lib/components/button";
-
-  import Cancel from "@rilldata/web-local/lib/components/icons/Cancel.svelte";
-  import Check from "@rilldata/web-local/lib/components/icons/Check.svelte";
-  import Spacer from "@rilldata/web-local/lib/components/icons/Spacer.svelte";
-
-  import { Menu } from "@rilldata/web-local/lib/components/menu";
-  import MenuItem from "@rilldata/web-local/lib/components/menu/core/MenuItem.svelte";
   import { createEventDispatcher } from "svelte";
+  import { Switch } from "../../button";
+  import Cancel from "../../icons/Cancel.svelte";
+  import Check from "../../icons/Check.svelte";
+  import Spacer from "../../icons/Spacer.svelte";
+  import { Menu, MenuItem } from "../../menu";
+  import { Search } from "../../search";
   import Footer from "./Footer.svelte";
 
   export let selectedValues: string[];

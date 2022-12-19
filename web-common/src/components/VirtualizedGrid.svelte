@@ -3,6 +3,7 @@
    * https://github.com/sveltejs/svelte-virtual-list/blob/master/VirtualList.svelte
    */
   import { onMount, tick } from "svelte";
+
   // props
   export let items;
   export let height = "100%";

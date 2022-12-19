@@ -3,7 +3,9 @@
   import { fly } from "svelte/transition";
   import Portal from "../Portal.svelte";
   import Overlay from "./Overlay.svelte";
+
   const dispatch = createEventDispatcher();
+
   let modal;
   let container;
 

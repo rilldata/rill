@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import transientBooleanStore from "../../util/transient-boolean-store";
+  import transientBooleanStore from "../../lib/transient-boolean-store";
+
   export let isStacked = false;
   export let key: "command" | "shift";
 

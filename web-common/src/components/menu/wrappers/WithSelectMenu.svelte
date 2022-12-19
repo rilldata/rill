@@ -5,11 +5,10 @@ and the menu closes.
 -->
 <script lang="ts">
   import { createEventDispatcher, setContext } from "svelte";
-  import Check from "../../icons/Check.svelte";
-  import Spacer from "../../icons/Spacer.svelte";
-
   import { WithTogglableFloatingElement } from "../../floating-element";
   import type { Alignment, Location } from "../../floating-element/types";
+  import Check from "../../icons/Check.svelte";
+  import Spacer from "../../icons/Spacer.svelte";
   import { Menu, MenuItem } from "../index";
 
   export let options;

@@ -12,8 +12,8 @@
   } from "svelte";
   import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
-  import { guidGenerator } from "../../../util/guid";
-  import { clickOutside } from "../../actions/click-outside";
+  import { clickOutside } from "../../../lib/actions/click-outside";
+  import { guidGenerator } from "../../../lib/guid";
 
   export let dark: boolean = undefined;
   export let maxWidth: string = undefined;

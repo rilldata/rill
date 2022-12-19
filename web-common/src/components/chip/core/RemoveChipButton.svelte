@@ -5,7 +5,7 @@
   import type { Writable } from "svelte/store";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import type { defaultChipColors } from "../chip-types";
+  import { defaultChipColors } from "../chip-types";
 
   export let tooltipLocation = "bottom";
   export let tooltipAlignment = "start";
