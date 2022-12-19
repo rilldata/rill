@@ -215,7 +215,7 @@ func (q *ColumnTimeseries) normaliseTimeRange(ctx context.Context, rt *runtime.R
  * Importantly, this function runs very fast. For more information about the original M4 method,
  * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
  */
-func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: DatabaseMetadata,
+func (q *ColumnTimeseries) createTimestampRollupReduction(
 	ctx context.Context,
 	rt *runtime.Runtime,
 	olap drivers.OLAPStore,
