@@ -32,6 +32,7 @@
   let GRAPH_COUNT = 10;
   let dataSet = Array.from({ length: 10 }).map(() => makeData(SIZE, true));
   let mouseoverValue;
+  let hovered = false;
 </script>
 
 <button
@@ -49,5 +50,6 @@
     xAccessor="ts"
     yAccessor="value"
     height={140}
+    bind:hovered
   />
 {/each}

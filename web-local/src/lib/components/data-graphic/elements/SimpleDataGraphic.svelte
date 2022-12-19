@@ -31,6 +31,7 @@ A simple composable container for SVG-based data graphics.
   export let shareYScale = true;
 
   export let mouseoverValue = undefined;
+  export let hovered = undefined;
 
   /** this makes a wide variety of normal events, such as on:click, available
    * to the consumer
@@ -65,10 +66,10 @@ A simple composable container for SVG-based data graphics.
   >
     <SimpleSVGContainer
       bind:mouseoverValue
+      bind:hovered
       let:xScale
       let:yScale
       let:config
-      let:hovered
       on:scrub-start
       on:scrub-move
       on:scrub-end

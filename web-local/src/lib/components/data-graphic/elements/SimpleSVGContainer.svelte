@@ -39,8 +39,11 @@ to the props.
   });
 
   export let mouseoverValue = undefined;
+  export let hovered = undefined;
 
   $: mouseoverValue = $coordinates;
+
+  $: hovered = $coordinates.x !== undefined;
 </script>
 
 <svg
@@ -57,6 +60,6 @@ to the props.
     xScale={$xScale}
     yScale={$yScale}
     {mouseoverValue}
-    hovered={$coordinates.x !== undefined}
+    {hovered}
   />
 </svg>
