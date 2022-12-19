@@ -2,6 +2,12 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
+  import {
+    Chip,
+    ChipContainer,
+    RemovableListChip,
+  } from "@rilldata/web-common/components/chip";
+  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import type {
@@ -19,8 +25,6 @@ The main feature-set component for dashboard filters
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { Chip, ChipContainer, RemovableListChip } from "../../../chip";
-  import { defaultChipColors } from "../../../chip/chip-types";
   import { getDisplayName } from "../utils";
 
   export let metricViewName;
