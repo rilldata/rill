@@ -6,9 +6,8 @@ honor any new props passed into it, thereby reconciling the props between it and
 for any of its children.
 -->
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { getContext, hasContext } from "svelte";
-  import { guidGenerator } from "../../../util/guid";
-
   import { contexts } from "../constants";
   import {
     cascadingContextStore,

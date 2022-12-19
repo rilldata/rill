@@ -13,6 +13,8 @@
    * The graph will contain an unsmoothed series (showing noise * abnormalities) by default, and
    * a smoothed series (showing the trend) if the time series merits it.
    */
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
   import { scaleLinear } from "d3-scale";
@@ -22,17 +24,13 @@
   import type { Writable } from "svelte/store";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
+  import { guidGenerator } from "../../../../../../../web-common/src/lib/guid";
   import type { Interval } from "../../../../duckdb-data-types";
-  import { removeTimezoneOffset } from "../../../../util/formatters";
-  import { guidGenerator } from "../../../../util/guid";
   import { createShiftClickAction } from "../../../../util/shift-click-action";
-  import { notifications } from "../../../notifications";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
   import { outline } from "../../actions/outline";
   import { createScrubAction } from "../../actions/scrub-action-factory";
   import { DEFAULT_COORDINATES } from "../../constants";
   import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
-  import type { PlotConfig } from "../../utils";
   import TimestampBound from "./TimestampBound.svelte";
   import TimestampMouseoverAnnotation from "./TimestampMouseoverAnnotation.svelte";
   import TimestampPaths from "./TimestampPaths.svelte";

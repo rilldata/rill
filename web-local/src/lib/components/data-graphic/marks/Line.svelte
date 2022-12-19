@@ -3,10 +3,9 @@
     in the order they appear in the data.
 -->
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { extent } from "d3-array";
   import { getContext, onDestroy, onMount } from "svelte";
-
-  import { guidGenerator } from "../../../util/guid";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { lineFactory, pathDoesNotDropToZero } from "../utils";

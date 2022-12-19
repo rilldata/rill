@@ -3,10 +3,9 @@
     in the order the points appear in the data.
 -->
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { extent } from "d3-array";
   import { getContext, onDestroy } from "svelte";
-
-  import { guidGenerator } from "../../../util/guid";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { areaFactory } from "../utils";

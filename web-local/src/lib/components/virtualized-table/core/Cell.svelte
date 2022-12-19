@@ -1,4 +1,12 @@
 <script lang="ts">
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { formatDataType } from "@rilldata/web-common/lib/formatters";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher, getContext } from "svelte";
   import {
@@ -6,16 +14,8 @@
     STRING_LIKES,
     TIMESTAMPS,
   } from "../../../duckdb-data-types";
-  import { formatDataType } from "../../../util/formatters";
   import { createShiftClickAction } from "../../../util/shift-click-action";
   import { FormattedDataType } from "../../data-types";
-  import { notifications } from "../../notifications";
-  import Shortcut from "../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../tooltip/StackingWord.svelte";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
   import BarAndLabel from "../../viz/BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 

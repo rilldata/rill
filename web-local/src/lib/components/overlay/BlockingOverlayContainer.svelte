@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { fly } from "svelte/transition";
-  import Overlay from "./Overlay.svelte";
-  import Spinner from "../Spinner.svelte";
+  import Spinner from "../../../lib/components/Spinner.svelte";
+  import { EntityStatus } from "../../../lib/temp/entity";
+
   export let bg = "rgba(0,0,0,.6)";
+
   let status = EntityStatus.Running;
+
   setTimeout(
     () =>
       setInterval(() => {
