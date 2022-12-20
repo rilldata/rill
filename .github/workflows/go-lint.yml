@@ -1,11 +1,11 @@
 name: golangci-lint
 on:
-  push:
-    tags:
-      - "**"
-    branches:
-      - main
-    pull_request:
+  pull_request:
+    paths:
+      - ".github/workflows/go-lint.yml"
+      - ".golangci.yml"
+      - "go.mod"
+      - "**.go"
 jobs:
   golangci:
     name: lint
