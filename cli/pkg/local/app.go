@@ -20,10 +20,10 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-	runtimeserver "github.com/rilldata/rill/runtime/server"
 
 	// Load infra drivers and connectors for local
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
