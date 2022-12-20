@@ -5,6 +5,7 @@ on:
       - "**"
     branches:
       - main
+      - golangci-lint-setup
     pull_request:
 jobs:
   golangci:
