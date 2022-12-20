@@ -22,13 +22,6 @@
   <WorkspaceContainer assetID={modelName}>
     <div slot="header">
       <ModelWorkspaceHeader {modelName} />
-      <!-- <WorkspaceHeader
-        {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-      >
-        <svelte:fragment slot="right">
-          <IconButton on:click={()}>B</IconButton>
-        </svelte:fragment>
-      </WorkspaceHeader> -->
     </div>
     <div slot="body">
       <ModelBody {modelName} />

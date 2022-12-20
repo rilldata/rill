@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { Switch } from "@rilldata/web-local/lib/components/button";
   import MoreIcon from "../icons/MoreHorizontal.svelte";
   import { Menu } from "../menu";
-  import { Switch } from "@rilldata/web-local/lib/components/button";
 
   import IconButton from "../button/IconButton.svelte";
 
-  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
   import { createEventDispatcher } from "svelte";
+  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -23,6 +23,7 @@
   let:toggleFloatingElement
 >
   <IconButton
+    marginClasses="ml-3"
     on:click={(e) => {
       e.stopPropagation();
       toggleFloatingElement();

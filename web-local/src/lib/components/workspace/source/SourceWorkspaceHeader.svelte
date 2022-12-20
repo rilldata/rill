@@ -212,10 +212,11 @@
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
       {:else}
-        <div class="flex items-center">
+        <div class="flex items-center pr-2 gap-x-2">
           {#if $getSource.isSuccess && $getSource.data?.entry?.refreshedOn}
             <div
               class="ui-copy-muted"
+              style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
               Imported on {formatRefreshedOn(
@@ -227,7 +228,7 @@
             <Tooltip location="bottom" distance={8}>
               <div style="transformY(-1px)">
                 <IconButton on:click={() => onRefreshClick(sourceName)}>
-                  <Import size="16px" />
+                  <Import size="15px" />
                 </IconButton>
               </div>
               <TooltipContent slot="tooltip-content">
@@ -237,7 +238,7 @@
           {:else}
             <Tooltip location="bottom" distance={8}>
               <IconButton on:click={() => onRefreshClick(sourceName)}>
-                <RefreshIcon size="16px" />
+                <RefreshIcon size="15px" />
               </IconButton>
               <TooltipContent slot="tooltip-content">
                 Refresh the source data

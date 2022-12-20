@@ -99,6 +99,9 @@
         });
       }}
       ><HideBottomPane size="18px" />
+      <svelte:fragment slot="tooltip-content">
+        {#if $outputLayout?.visible}Show{:else}Hide{/if} output preview
+      </svelte:fragment>
     </IconButton>
   </svelte:fragment>
   <svelte:fragment slot="cta">

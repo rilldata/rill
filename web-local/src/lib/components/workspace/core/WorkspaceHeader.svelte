@@ -7,6 +7,7 @@
   import type { Writable } from "svelte/store";
   import { IconButton } from "../../button";
   import HideRightSidebar from "../../icons/HideRightSidebar.svelte";
+  import SlidingWords from "../../tooltip/SlidingWords.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
@@ -90,7 +91,8 @@
     >
       <HideRightSidebar size="18px" />
       <svelte:fragment slot="tooltip-content">
-        {#if $inspectorLayout.visible} close {:else} show {/if} sidebar
+        <SlidingWords active={$inspectorLayout?.visible}>inspector</SlidingWords
+        >
       </svelte:fragment>
     </IconButton>
     <slot name="cta" />

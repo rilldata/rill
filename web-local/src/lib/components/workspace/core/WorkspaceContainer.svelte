@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     DEFAULT_INSPECTOR_WIDTH,
+    DEFAULT_PREVIEW_TABLE_HEIGHT,
     SIDE_PAD,
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
@@ -46,12 +47,17 @@
   setContext("rill:app:inspector-visibility-tween", visibilityTween);
 
   const outputLayout = localStorageStore<LayoutElement>(`${assetID}-output`, {
-    value: inspector ? 400 : 0,
+    value: inspector ? DEFAULT_PREVIEW_TABLE_HEIGHT : 0,
     visible: true,
   });
-  const outputHeight = tweened(inspector ? $inspectorLayout?.value || 400 : 0, {
-    duration: 50,
-  });
+
+  const outputHeight = tweened(
+    inspector ? $outputLayout?.value || DEFAULT_PREVIEW_TABLE_HEIGHT : 0,
+    {
+      duration: 50,
+    }
+  );
+
   outputLayout.subscribe((state) => {
     outputHeight.set(state.value);
   });
@@ -64,6 +70,7 @@
     }
   );
 
+  let ranFirstOutputLayout = false;
   outputLayout.subscribe((state) => {
     outputVisibilityTween.set(state.visible ? 1 : 0);
   });

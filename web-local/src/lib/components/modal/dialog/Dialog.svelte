@@ -59,6 +59,7 @@
           {#if showCancel}
             <!-- FIXME: this should be replaced with the IconButton in an open PR -->
             <IconButton
+              marginClasses="ml-3"
               on:click={() => {
                 dispatch("cancel");
               }}
