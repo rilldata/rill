@@ -24,7 +24,7 @@
 
   export let topK;
   export let totalRows: number;
-  let sliceAmount = 15;
+  export let k = 15;
 
   const dispatch = createEventDispatcher();
 
@@ -58,7 +58,7 @@
 
 {#if topK && totalRows}
   <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#each topK.slice(0, sliceAmount) as item (item.value)}
+    {#each topK.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"
@@ -98,7 +98,7 @@
               </TooltipTitle>
               <TooltipShortcutContainer>
                 <div>
-                  <StackingWord key="shift">copy</StackingWord> column value to clipboard
+                  <StackingWord key="shift">Copy</StackingWord> column value to clipboard
                 </div>
                 <Shortcut>
                   <span style="font-family: var(--system);">⇧</span> + Click
@@ -133,7 +133,7 @@
               </TooltipTitle>
               <TooltipShortcutContainer>
                 <div>
-                  <StackingWord key="shift">copy</StackingWord> count to clipboard
+                  <StackingWord key="shift">Copy</StackingWord> count to clipboard
                 </div>
                 <Shortcut>
                   <span style="font-family: var(--system);">⇧</span> + Click

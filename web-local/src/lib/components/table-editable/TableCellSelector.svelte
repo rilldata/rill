@@ -1,8 +1,8 @@
 <script lang="ts">
+  import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
   import { onMount } from "svelte";
 
   import type { ColumnConfig, CellConfigSelector } from "./ColumnConfig";
-  import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -30,7 +30,7 @@
   } else if (placeholderLabel) {
     // if there no actual value, use the placeholder label
     value = "__PLACEHOLDER_VALUE__";
-    selectStyle = greyedOut + " font-style: italic;";
+    selectStyle = greyedOut;
   } else {
     // if there is no placeholder label and no actual value, use the first option in the options list
     value = columnConfig.cellRenderer.options[0].value;

@@ -7,7 +7,6 @@
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
@@ -24,6 +23,7 @@
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
@@ -239,7 +239,7 @@
         </div>
         <!--TODO {:else}-->
         <!--  <div-->
-        <!--    class="grid items-center justify-center italic pt-3 text-gray-600"-->
+        <!--    class="grid items-center justify-center pt-3 text-gray-600"-->
         <!--  >-->
         <!--    no columns selected-->
         <!--  </div>-->

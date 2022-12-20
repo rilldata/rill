@@ -53,8 +53,8 @@
     useRuntimeServiceListCatalogEntries,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { Debounce } from "@rilldata/web-local/common/utils/Debounce";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import { createEventDispatcher, onMount } from "svelte";
   import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
@@ -165,7 +165,7 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
   });
 
   function makeAutocompleteConfig(schema: { [table: string]: string[] }) {

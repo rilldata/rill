@@ -32,7 +32,7 @@
       autocomplete="off"
       class="outline-none bg-gray-100 surface-impression border border-gray-200 dark:border-gray-400
         rounded-sm focus:border-gray-300 
-        block w-full pl-8 p-1 placeholder:italic"
+        block w-full pl-8 p-1"
       placeholder="Search"
       bind:value
       on:input

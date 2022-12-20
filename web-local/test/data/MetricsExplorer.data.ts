@@ -1,4 +1,4 @@
-import type { TimeSeriesTimeRange } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+import type { TimeSeriesTimeRange } from "@rilldata/web-local/lib/temp/time-control-types";
 import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import { PreviewRollupInterval } from "@rilldata/web-local/lib/duckdb-data-types";
 import { getTimeRange } from "../utils/time-series-helpers";

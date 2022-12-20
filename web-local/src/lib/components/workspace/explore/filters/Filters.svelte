@@ -13,7 +13,7 @@ The main feature-set component for dashboard filters
     MetricsViewDimensionValues,
     MetricsViewRequestFilter,
   } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-  import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
@@ -190,7 +190,7 @@ The main feature-set component for dashboard filters
             {searchedValues}
           >
             <svelte:fragment slot="body-tooltip-content">
-              click to edit the the filters in this dimension
+              Click to edit the the filters in this dimension
             </svelte:fragment>
           </RemovableListChip>
         </div>
@@ -210,7 +210,7 @@ The main feature-set component for dashboard filters
             <span slot="icon" class="ui-copy-disabled-faint">
               <FilterRemove size="16px" />
             </span>
-            <svelte:fragment slot="body">clear filters</svelte:fragment>
+            <svelte:fragment slot="body">Clear filters</svelte:fragment>
           </Chip>
         </div>
       {/if}
@@ -218,10 +218,10 @@ The main feature-set component for dashboard filters
   {:else if currentDimensionFilters?.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
-      class="italic ui-copy-disabled grid items-center"
+      class="ui-copy-disabled grid items-center"
       style:min-height="26px"
     >
-      no filters selected
+      No filters selected
     </div>
   {:else}
     &nbsp;

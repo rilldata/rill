@@ -9,19 +9,20 @@
 
   export let show = true;
   export let tooltipText: string;
+  export let toggleText = "models";
   /** The CSS ID used for tests for the context button */
   export let contextButtonID: string = undefined;
 </script>
 
 <div
-  class="pl-4 pb-3 pr-3 grid justify-between"
+  class="pl-4 pb-1 pr-3 grid justify-between"
   style="grid-template-columns: auto max-content;"
   out:slide|local={{ duration: LIST_SLIDE_DURATION }}
 >
-  <CollapsibleSectionTitle tooltipText={"models"} bind:active={show}>
-    <h4 class="flex flex-row items-center gap-x-2">
+  <CollapsibleSectionTitle tooltipText={toggleText} bind:active={show}>
+    <div class="flex flex-row items-center gap-x-2">
       <slot />
-    </h4>
+    </div>
   </CollapsibleSectionTitle>
   <ContextButton
     id={contextButtonID}

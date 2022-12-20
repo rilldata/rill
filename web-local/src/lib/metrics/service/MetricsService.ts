@@ -1,10 +1,10 @@
-import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import type {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
   PickActionFunctions,
-} from "@rilldata/web-local/common/ServiceBase";
-import { getActionMethods } from "@rilldata/web-local/common/ServiceBase";
+} from "@rilldata/web-local/lib/metrics/service/ServiceBase";
+import { getActionMethods } from "@rilldata/web-local/lib/metrics/service/ServiceBase";
 import type { MetricsEventFactory } from "./MetricsEventFactory";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";
@@ -34,6 +34,7 @@ export class MetricsService
   private commonFields: Record<string, unknown>;
 
   public constructor(
+    private readonly localConfig: V1RuntimeGetConfig,
     private readonly rillIntakeClient: RillIntakeClient,
     private readonly metricsEventFactories: Array<MetricsEventFactory>
   ) {
@@ -45,25 +46,16 @@ export class MetricsService
   }
 
   public async loadCommonFields() {
-    const localConfig = await runtimeServiceGetConfig();
-    try {
-      const projectPathParts = localConfig.project_path.split("/");
-      this.commonFields = {
-        app_name: "rill-developer",
-        install_id: localConfig.install_id,
-        // @ts-ignore
-        build_id: RILL_COMMIT,
-        // @ts-ignore
-        version: RILL_VERSION,
-        is_dev: localConfig.is_dev,
-        project_id: MD5(
-          projectPathParts[projectPathParts.length - 1]
-        ).toString(),
-        analytics_enabled: localConfig.analytics_enabled,
-      };
-    } catch (err) {
-      console.error(err);
-    }
+    const projectPathParts = this.localConfig.project_path.split("/");
+    this.commonFields = {
+      app_name: "rill-developer",
+      install_id: this.localConfig.install_id,
+      build_id: this.localConfig.build_commit,
+      version: this.localConfig.version,
+      is_dev: this.localConfig.is_dev,
+      project_id: MD5(projectPathParts[projectPathParts.length - 1]).toString(),
+      analytics_enabled: this.localConfig.analytics_enabled,
+    };
   }
 
   public async dispatch<Action extends keyof MetricsActionDefinition>(

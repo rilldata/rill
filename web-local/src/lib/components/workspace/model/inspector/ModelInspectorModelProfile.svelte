@@ -89,7 +89,7 @@
     <div class="pt-4 pb-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="sources"
+          tooltipText="Sources"
           bind:active={showSourceTables}
         >
           Sources
@@ -112,13 +112,12 @@
                   on:mouseleave={blur}
                   on:blur={blur}
                   class:text-gray-500={modelHasError}
-                  class:italic={modelHasError}
                 >
                   <div class="text-ellipsis overflow-hidden whitespace-nowrap">
                     {table.name}
                   </div>
 
-                  <div class="text-gray-500 italic">
+                  <div class="text-gray-500">
                     {#if table.totalRows}
                       {`${formatInteger(table.totalRows)} rows` || ""}
                     {/if}
@@ -148,7 +147,7 @@
           tooltipText="selected columns"
           bind:active={showColumns}
         >
-          selected columns
+          Selected columns
         </CollapsibleSectionTitle>
       </div>
 

@@ -9,7 +9,7 @@
 >
   <div slot="title">
     <span class="font-bold">Creating a metrics dashboard for source</span>
-    <span class="italic">{sourceName}</span>
+    <span>{sourceName}</span>
     <div>
       using <span class="font-bold">{timeDimension}</span> as time dimension column.
     </div>

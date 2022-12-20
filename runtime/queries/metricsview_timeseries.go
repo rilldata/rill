@@ -120,6 +120,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 		}
 	} else {
 		return "", nil, fmt.Errorf("time dimension is missing")
+
 	}
 
 	if q.Filter != nil {

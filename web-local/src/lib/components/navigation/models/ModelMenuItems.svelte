@@ -7,15 +7,17 @@
     V1Model,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { getName } from "../../../../common/utils/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import {
     addQuickMetricsToDashboardYAML,
@@ -29,9 +31,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
-  import { deleteFileArtifact } from "../../../svelte-query/actions";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
-  import { useModelNames } from "../../../svelte-query/models";
   import Cancel from "../../icons/Cancel.svelte";
   import EditIcon from "../../icons/EditIcon.svelte";
   import Explore from "../../icons/Explore.svelte";
@@ -134,10 +134,10 @@
   propogateSelect={false}
 >
   <Explore slot="icon" />
-  autogenerate dashboard
+  Autogenerate dashboard
   <svelte:fragment slot="description">
     {#if !schemaHasTimestampColumn(model?.schema)}
-      requires a timestamp column
+      Requires a timestamp column
     {/if}
   </svelte:fragment>
 </MenuItem>
@@ -149,7 +149,7 @@
   }}
 >
   <EditIcon slot="icon" />
-  rename...
+  Rename...
 </MenuItem>
 <MenuItem
   icon
@@ -157,5 +157,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  delete
+  Delete
 </MenuItem>

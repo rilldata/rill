@@ -16,7 +16,7 @@
 </TooltipTitle>
 <TooltipShortcutContainer>
   <div>
-    <StackingWord key="command">query</StackingWord> in workspace
+    <StackingWord key="command">Query</StackingWord> in workspace
   </div>
   <Shortcut>
     {#if isMac()}<span
@@ -27,7 +27,7 @@
       >{:else}ctrl{/if} + Click</Shortcut
   >
   <div>
-    <StackingWord key="shift">copy</StackingWord> name to clipboard
+    <StackingWord key="shift">Copy</StackingWord> name to clipboard
   </div>
   <Shortcut>
     <span

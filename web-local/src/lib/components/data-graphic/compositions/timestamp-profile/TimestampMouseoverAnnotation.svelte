@@ -1,17 +1,17 @@
 <script lang="ts">
+  import { getContext } from "svelte";
   import { fly } from "svelte/transition";
-  import { outline } from "../../actions/outline";
   import {
     datePortion,
     formatInteger,
     removeTimezoneOffset,
     timePortion,
   } from "../../../../util/formatters";
-  import { getContext } from "svelte";
+  import { outline } from "../../actions/outline";
 
+  import type { ScaleLinear } from "d3-scale";
   import type { Writable } from "svelte/store";
   import type { PlotConfig } from "../../utils";
-  import type { ScaleLinear } from "d3-scale";
 
   const X: Writable<ScaleLinear<number, number>> = getContext(
     "rill:data-graphic:X"

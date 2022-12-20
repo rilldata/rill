@@ -57,7 +57,7 @@
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
-        <StackingWord key="shift">copy</StackingWord> to clipboard
+        <StackingWord key="shift">Copy</StackingWord> to clipboard
       </div>
       <Shortcut>
         <span

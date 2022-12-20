@@ -1,3 +1,11 @@
+<!-- @component 
+The NumericPlot component has three elements:
+- toggles between the summary statistics and the top K values for the secondary plot
+- a primary plot in the form of a histogram & rug plot
+- a secondary plot in the form of a summary statistics or a top K plot
+The goal is to make sure that even if the data isn't fetched, the component doesn't reflow once it does.
+Otherwise, the page will jump around as the data is fetched.
+-->
 <script lang="ts">
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
@@ -17,8 +25,17 @@
   export let summary;
   export let topK;
   export let totalRows;
+  export let type;
 
   let summaryMode: "summary" | "topk" = "summary";
+
+  let topKLimit = 15;
+
+  // the rowHeight determines how big the secondary plots should be.
+  // We will use this to predetermine the height of the secondary graphics;
+  // this is important because we want to avoid reflowing the page after
+  // the data has been fetched.
+  let rowHeight = 24;
 
   let focusPoint = undefined;
   // reset focus point once the mode changes.
@@ -41,7 +58,7 @@
     >
       <SummaryStatistics />
       <svelte:fragment slot="tooltip-content">
-        show basic summary statistics
+        Show basic summary statistics
       </svelte:fragment>
     </IconButton>
     <IconButton
@@ -54,28 +71,28 @@
     >
       <TopKIcon />
       <svelte:fragment slot="tooltip-content"
-        >show the top values</svelte:fragment
+        >Show the top values</svelte:fragment
       >
     </IconButton>
   </div>
   <WithParentClientRect let:rect let:styles let:toNumber>
-    {#if data && summary}
-      <GraphicContext
-        yMin={0}
-        width={(rect?.width || 400) -
-          toNumber(styles?.paddingLeft) -
-          toNumber(styles?.paddingRight)}
-        height={64}
-        left={4}
-        right={4}
-        top={1}
-        bottom={0}
-        bodyBuffer={0}
-        marginBuffer={0}
-        xType="number"
-        yType="number"
-      >
-        <SimpleDataGraphic let:config let:xScale let:yScale>
+    <GraphicContext
+      yMin={0}
+      width={(rect?.width || 400) -
+        toNumber(styles?.paddingLeft) -
+        toNumber(styles?.paddingRight)}
+      height={64}
+      left={4}
+      right={4}
+      top={1}
+      bottom={0}
+      bodyBuffer={0}
+      marginBuffer={0}
+      xType="number"
+      yType="number"
+    >
+      <SimpleDataGraphic let:config let:xScale let:yScale>
+        {#if data}
           <g class="text-red-400">
             <line
               x1={config.plotLeft}
@@ -95,7 +112,7 @@
           />
 
           <!-- support topK mouseover effect on graphs -->
-          {#if focusPoint && summaryMode === "topk"}
+          {#if focusPoint && topK && summaryMode === "topk"}
             <g transition:fade|local={{ duration: 200 }}>
               <WithTween
                 value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
@@ -123,34 +140,48 @@
               </WithTween>
             </g>
           {/if}
-        </SimpleDataGraphic>
-        <SimpleDataGraphic top={0} bottom={0} height={16}>
+        {/if}
+      </SimpleDataGraphic>
+      <SimpleDataGraphic top={0} bottom={0} height={16}>
+        {#if rug}
           <Rug xAccessor="low" densityAccessor="count" data={rug} />
-        </SimpleDataGraphic>
-        {#if summaryMode === "summary"}
+        {/if}
+      </SimpleDataGraphic>
+      <!-- we'll prefill the height of the summary such that if the data hasn't been fetched yet,
+        we'll preserve the space to keep the window from jumping.
+      -->
+      <div
+        class="pt-1"
+        style:height={summaryMode === "summary" ? `${6 * rowHeight}px` : "auto"}
+      >
+        {#if summaryMode === "summary" && summary}
+          {@const rowHeight = 24}
           <div class="pt-1">
             <SummaryNumberPlot
+              {rowHeight}
               min={summary?.min}
               max={summary?.max}
               mean={summary?.mean}
               q25={summary?.q25}
               q50={summary?.q50}
               q75={summary?.q75}
+              {type}
             />
           </div>
-        {:else if summaryMode === "topk"}
+        {:else if topK && summaryMode === "topk"}
           <div class="pt-1 px-1">
             <TopK
               on:focus-top-k={(event) => {
                 focusPoint = event.detail;
               }}
+              k={topKLimit}
               {topK}
               {totalRows}
               colorClass="bg-red-200"
             />
           </div>
         {/if}
-      </GraphicContext>
-    {/if}
+      </div>
+    </GraphicContext>
   </WithParentClientRect>
 </div>

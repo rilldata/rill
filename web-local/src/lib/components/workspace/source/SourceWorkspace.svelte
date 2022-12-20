@@ -10,11 +10,10 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
-
-  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
   import Button from "../../button/Button.svelte";
   import Callout from "../../callout/Callout.svelte";
   import {
@@ -100,7 +99,7 @@
   <WorkspaceContainer assetID={sourceName}>
     <div
       slot="body"
-      class="grid pb-6"
+      class="grid pb-3"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
@@ -150,8 +149,9 @@
               on:click={async () => {
                 uploadErrors = undefined;
                 await onRefreshClick(sourceName);
-              }}>Import a CSV or Parquet file</Button
-            >
+              }}
+              >Import a CSV or Parquet file
+            </Button>
           {:else if !Object.keys(source || {})?.length}
             <!-- source is empty -->
             <div>
@@ -202,8 +202,9 @@
               on:click={async () => {
                 uploadErrors = undefined;
                 await onRefreshClick(sourceName);
-              }}>Import data</Button
-            >
+              }}
+              >Import data
+            </Button>
           {/if}
           <!-- show any remaining errors -->
           {#if uploadErrors}

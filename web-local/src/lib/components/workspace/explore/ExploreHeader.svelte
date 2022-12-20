@@ -49,10 +49,17 @@
   <!-- top row
     title and call to action
   -->
-  <div class="flex justify-between w-full pt-3 pl-1 pr-4">
+  <div
+    style:height="var(--header-height)"
+    class="flex items-center justify-between w-full pl-1 pr-4"
+  >
     <!-- title element -->
     <h1 style:line-height="1.1">
-      <div class="pl-4 pt-1" style:font-size="24px">
+      <div
+        class="pl-4 "
+        style:font-family="InterDisplay"
+        style:font-size="20px"
+      >
         {displayName || metricViewName}
       </div>
     </h1>

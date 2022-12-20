@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
   import {
     formatCompactInteger,
@@ -12,19 +13,25 @@
   export let totalRows: number;
   export let compact = false;
 
-  $: cardinalityFormatter = !compact ? formatInteger : formatCompactInteger;
+  $: cardinalityFormatter = !compact
+    ? formatCompactInteger
+    : formatCompactInteger;
 </script>
 
 {#if cardinality && totalRows}
   <Tooltip location="right" alignment="center" distance={8}>
     <BarAndLabel
+      compact
       color={DATA_TYPE_COLORS["VARCHAR"].bgClass}
       value={totalRows > 0 && totalRows !== undefined
         ? cardinality / totalRows
         : 0}
     >
-      <span>
-        |{cardinalityFormatter(cardinality)}|
+      <span
+        style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
+        class="ui-copy-number"
+      >
+        {cardinalityFormatter(cardinality)}
       </span>
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">

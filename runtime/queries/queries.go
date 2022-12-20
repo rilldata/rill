@@ -30,6 +30,6 @@ func DropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
 	}
 }
 
-func EscapeHyphen(column string) string {
+func ReplaceHyphen(column string) string {
 	return strings.ReplaceAll(column, "-", "_")
 }

@@ -45,7 +45,7 @@
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 </script>
 
-{#if xScale}
+{#if xScale && data}
   <g
     transform="translate(0 {side === 'bottom'
       ? $config.bodyBottom - size
