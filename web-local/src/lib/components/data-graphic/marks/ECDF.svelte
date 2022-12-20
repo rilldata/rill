@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eCDF } from "../utils";
   import Area from "./Area.svelte";
   import Line from "./Line.svelte";
 

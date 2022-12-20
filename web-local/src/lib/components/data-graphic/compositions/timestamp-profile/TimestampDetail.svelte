@@ -32,6 +32,7 @@
   import { createScrubAction } from "../../actions/scrub-action-factory";
   import { DEFAULT_COORDINATES } from "../../constants";
   import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
+  import type { PlotConfig } from "../../utils";
   import TimestampBound from "./TimestampBound.svelte";
   import TimestampMouseoverAnnotation from "./TimestampMouseoverAnnotation.svelte";
   import TimestampPaths from "./TimestampPaths.svelte";
