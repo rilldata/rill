@@ -12,12 +12,9 @@ This is a full list of development dependencies:
 - [GraalVM](https://www.graalvm.org) and [Maven](https://maven.apache.org) for Java (we recommend installing both through [sdkman](https://sdkman.io))
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 
-## Setting up golint in VS Code and Goland
+### Editor setup
 
-Follow the links below to setting up enforcement of golint in VS Code and Goland
-
-- [VS Code](https://golangci-lint.run/usage/integrations/#go-for-visual-studio-code)
-- [Goland](https://golangci-lint.run/usage/integrations/#goland)
+- Integrate `golangci-lint` ([instructions](https://golangci-lint.run/usage/integrations))
 
 ## Build the application
 
