@@ -13,6 +13,7 @@
   export let onChangeCallback;
   export let titleInput;
   export let showStatus = true;
+  export let showInspectorToggle = true;
 
   let titleInputElement;
   let editingTitle = false;
@@ -79,26 +80,30 @@
       </h1>
     {/if}
   </div>
-  <div class="flex items-center">
+  <div class="flex items-center mr-4">
     <slot name="workspace-controls" />
-    <IconButton
-      on:click={() => {
-        inspectorLayout.update((state) => {
-          state.visible = !state.visible;
-          return state;
-        });
-      }}
-    >
-      <HideRightSidebar size="18px" />
-      <svelte:fragment slot="tooltip-content">
-        <SlidingWords
-          active={$inspectorLayout?.visible}
-          direction="horizontal"
-          reverse>inspector</SlidingWords
-        >
-      </svelte:fragment>
-    </IconButton>
-    <slot name="cta" />
+    {#if showInspectorToggle}
+      <IconButton
+        on:click={() => {
+          inspectorLayout.update((state) => {
+            state.visible = !state.visible;
+            return state;
+          });
+        }}
+      >
+        <HideRightSidebar size="18px" />
+        <svelte:fragment slot="tooltip-content">
+          <SlidingWords
+            active={$inspectorLayout?.visible}
+            direction="horizontal"
+            reverse>inspector</SlidingWords
+          >
+        </svelte:fragment>
+      </IconButton>
+    {/if}
+    <div class="pl-4">
+      <slot name="cta" />
+    </div>
     {#if showStatus}
       <WorkspaceHeaderStatusSpinner />
     {/if}

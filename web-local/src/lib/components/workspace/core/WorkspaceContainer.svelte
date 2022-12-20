@@ -17,6 +17,7 @@
   export let assetID;
   export let inspector = true;
   export let bgClass = "bg-gray-100";
+  export let top = "var(--header-height)";
 
   const inspectorLayout = localStorageStore<LayoutElement>(assetID, {
     value: inspector ? DEFAULT_INSPECTOR_WIDTH : 0,
@@ -99,7 +100,7 @@
 </div>
 <div
   class="box-border fixed {bgClass}"
-  style:top="var(--header-height)"
+  style:top
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
   style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
   style:padding-right="{(1 - $visibilityTween) *
