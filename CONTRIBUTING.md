@@ -14,7 +14,7 @@ This is a full list of development dependencies:
 
 ## Setting up golint in VS Code and Goland
 
-Follow the links below links to setting up enforcement of golint in VS Code and Goland
+Follow the links below to setting up enforcement of golint in VS Code and Goland
 
 - [VS Code](https://golangci-lint.run/usage/integrations/#go-for-visual-studio-code)
 - [Goland](https://golangci-lint.run/usage/integrations/#goland)
