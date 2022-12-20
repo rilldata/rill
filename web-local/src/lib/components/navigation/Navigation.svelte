@@ -56,7 +56,6 @@
   <div
     class="
   border-r 
-  border-transparent 
   fixed 
   overflow-auto 
   border-gray-200 
