@@ -13,6 +13,7 @@ This is a full list of development dependencies:
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 
 ## Setting up golint in VS Code and Goland
+
 Follow the links below links to setting up enforcement of golint in VS Code and Goland
 
 - [VS Code](https://golangci-lint.run/usage/integrations/#go-for-visual-studio-code)
