@@ -15,13 +15,17 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import {
-    getScaleForLeaderboard,
+    determineScaleForValues,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "../../../../util/humanize-numbers";
   import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
   import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
   import Leaderboard from "./Leaderboard.svelte";
+  import {
+    getAllLeaderboardValues,
+    getLeaderboardStore,
+  } from "./leaderboardStore";
 
   export let metricViewName: string;
 
@@ -42,9 +46,29 @@
       (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
     );
 
+  $: leaderboardStore = getLeaderboardStore(
+    $runtimeStore.instanceId,
+    metricViewName,
+    activeMeasure?.name,
+    dimensions
+  );
+
+  $: allLeaderboardValues = getAllLeaderboardValues(leaderboardStore);
+
   $: formatPreset =
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
+
+  /** create a scale for the valid leaderboards */
+  let leaderboardFormatScale: ShortHandSymbols = "none";
+
+  $: if (
+    $allLeaderboardValues &&
+    (formatPreset === NicelyFormattedTypes.HUMANIZE ||
+      formatPreset === NicelyFormattedTypes.CURRENCY)
+  ) {
+    leaderboardFormatScale = determineScaleForValues($allLeaderboardValues);
+  }
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
@@ -80,9 +104,6 @@
       .forEach((dimensionName) => leaderboards.delete(dimensionName));
   }
 
-  /** create a scale for the valid leaderboards */
-  let leaderboardFormatScale: ShortHandSymbols = "none";
-
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
@@ -95,12 +116,6 @@
 
   function onLeaderboardValues(event) {
     leaderboards.set(event.detail.dimensionName, event.detail.values);
-    if (
-      formatPreset === NicelyFormattedTypes.HUMANIZE ||
-      formatPreset === NicelyFormattedTypes.CURRENCY
-    ) {
-      leaderboardFormatScale = getScaleForLeaderboard(leaderboards);
-    }
   }
 
   /** Functionality for resizing the virtual leaderboard */

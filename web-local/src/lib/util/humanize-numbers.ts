@@ -155,7 +155,7 @@ export function humanizeDataType(
   }
 }
 
-function determineScaleForValues(values: number[]): ShortHandSymbols {
+export function determineScaleForValues(values: number[]): ShortHandSymbols {
   let numberValues = values;
   const nullIndex = values.indexOf(null);
   if (nullIndex !== -1) {
