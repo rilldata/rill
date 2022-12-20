@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Constants representing the kinds of catalog objects
+// Constants representing the kinds of catalog objects.
 type ObjectType int
 
 const (
@@ -20,7 +20,7 @@ const (
 	ObjectTypeMetricsView ObjectType = 4
 )
 
-// CatalogStore is implemented by drivers capable of storing catalog info for a specific instance
+// CatalogStore is implemented by drivers capable of storing catalog info for a specific instance.
 type CatalogStore interface {
 	FindEntries(ctx context.Context, instanceID string, t ObjectType) []*CatalogEntry
 	FindEntry(ctx context.Context, instanceID string, name string) (*CatalogEntry, bool)
@@ -29,7 +29,7 @@ type CatalogStore interface {
 	DeleteEntry(ctx context.Context, instanceID string, name string) error
 }
 
-// CatalogEntry represents one object in the catalog, such as a source
+// CatalogEntry represents one object in the catalog, such as a source.
 type CatalogEntry struct {
 	Name        string
 	Type        ObjectType

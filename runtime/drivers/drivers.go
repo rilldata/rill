@@ -6,16 +6,16 @@ import (
 	"fmt"
 )
 
-// ErrClosed indicates the connection is closed
+// ErrClosed indicates the connection is closed.
 var ErrClosed = errors.New("driver: connection is closed")
 
-// ErrNotFound indicates the resource wasn't found
+// ErrNotFound indicates the resource wasn't found.
 var ErrNotFound = errors.New("driver: not found")
 
-// Drivers is a registry of drivers
+// Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 
-// Register registers a new driver
+// Register registers a new driver.
 func Register(name string, driver Driver) {
 	if Drivers[name] != nil {
 		panic(fmt.Errorf("already registered infra driver with name '%s'", name))
@@ -23,8 +23,8 @@ func Register(name string, driver Driver) {
 	Drivers[name] = driver
 }
 
-// Open opens a new connection
-func Open(driver string, dsn string) (Connection, error) {
+// Open opens a new connection.
+func Open(driver, dsn string) (Connection, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
@@ -38,7 +38,7 @@ func Open(driver string, dsn string) (Connection, error) {
 	return conn, nil
 }
 
-// Driver represents an underlying DB
+// Driver represents an underlying DB.
 type Driver interface {
 	Open(dsn string) (Connection, error)
 }

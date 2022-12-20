@@ -42,7 +42,7 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := quoteName(q.ColumnName)
-	querySql := fmt.Sprintf(
+	querySQL := fmt.Sprintf(
 		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
 		sanitizedColumnName,
 		sanitizedColumnName,
@@ -53,7 +53,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    querySql,
+		Query:    querySQL,
 		Priority: priority,
 	})
 	if err != nil {
@@ -106,7 +106,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	histogramSql := fmt.Sprintf(
+	histogramSQL := fmt.Sprintf(
 		`
           WITH data_table AS (
             SELECT %[1]s as %[2]s 
@@ -166,7 +166,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    histogramSql,
+		Query:    histogramSQL,
 		Priority: priority,
 	})
 	if err != nil {

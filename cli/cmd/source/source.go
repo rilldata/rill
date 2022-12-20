@@ -7,7 +7,7 @@ import (
 
 // sourceCmd represents the source command
 func SourceCmd(ver version.Version) *cobra.Command {
-	var sourceCmd = &cobra.Command{
+	sourceCmd := &cobra.Command{
 		Use:   "source",
 		Short: "Create or drop a source",
 		// RunE: func(cmd *cobra.Command, args []string) error {

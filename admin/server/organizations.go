@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/deepmap/oapi-codegen/pkg/types"
@@ -52,7 +53,7 @@ func (s *Server) DeleteOrganization(ctx echo.Context, name string) error {
 func (s *Server) FindOrganization(ctx echo.Context, name string) error {
 	org, err := s.db.FindOrganizationByName(ctx.Request().Context(), name)
 	if err != nil {
-		if err == database.ErrNotFound {
+		if errors.Is(err, database.ErrNotFound) {
 			return sendError(ctx, http.StatusNotFound, "not found")
 		}
 		return sendError(ctx, http.StatusBadRequest, err.Error())

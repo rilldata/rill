@@ -87,7 +87,9 @@ package sharedlibrary
 		return ((uint64_t(*)(void*,void*,void*,void*,void*,void*,void*,void*,void*,void*,void*,void*))addr)(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
 	}
 */
-import "C"
+import (
+	"C"
+)
 
 import (
 	"fmt"
@@ -276,5 +278,8 @@ func (f *posixFunc) Call(args ...uintptr) (uintptr, uintptr, error) {
 	default:
 		panic(fmt.Errorf("sharedlibrary: cannot call function with more than 12 args"))
 	}
-	return uintptr(res), uintptr(res >> 32), nil
+
+	res1 := uintptr(res)
+	res2 := uintptr(res >> 32)
+	return res1, res2, nil
 }

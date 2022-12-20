@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -37,7 +38,7 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 }
 
 func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
-	if strings.ToLower(from) == strings.ToLower(catalogObj.Name) {
+	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, tempName),
@@ -87,7 +88,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 	return nil
 }
 
-func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+func (m *modelMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	return cat1.GetModel().Dialect == cat2.GetModel().Dialect &&
 		// TODO: handle same queries but different text
 		sanitizeQuery(cat1.GetModel().Sql, true) == sanitizeQuery(cat2.GetModel().Sql, true)
@@ -95,7 +96,7 @@ func (m *modelMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry,
 
 func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
-	if err == drivers.ErrNotFound {
+	if errors.Is(err, drivers.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
 		return false, err
@@ -103,9 +104,11 @@ func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore
 	return true, nil
 }
 
-var QueryCommentRegex = regexp.MustCompile(`(?m)--.*$`)
-var MultipleSpacesRegex = regexp.MustCompile(`\s\s+`)
-var SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
+var (
+	QueryCommentRegex     = regexp.MustCompile(`(?m)--.*$`)
+	MultipleSpacesRegex   = regexp.MustCompile(`\s\s+`)
+	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
+)
 
 // TODO: use this while extracting source names to get case insensitive DAG
 // TODO: should this be used to store the sql in catalog?

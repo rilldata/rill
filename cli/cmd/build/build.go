@@ -14,7 +14,7 @@ func BuildCmd(ver version.Version) *cobra.Command {
 	var olapDSN string
 	var verbose bool
 
-	var buildCmd = &cobra.Command{
+	buildCmd := &cobra.Command{
 		Use:   "build",
 		Short: "Build project without starting web app",
 		RunE: func(cmd *cobra.Command, args []string) error {

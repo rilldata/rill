@@ -3,9 +3,11 @@ package druid
 import (
 	"context"
 
-	_ "github.com/apache/calcite-avatica-go/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+
+	// Load calcite avatica driver for druid
+	_ "github.com/apache/calcite-avatica-go/v5"
 )
 
 func init() {
@@ -30,37 +32,37 @@ type connection struct {
 	db *sqlx.DB
 }
 
-// Close implements drivers.Connection
+// Close implements drivers.Connection.
 func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-// Registry implements drivers.Connection
+// Registry implements drivers.Connection.
 func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection
+// Catalog implements drivers.Connection.
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection
+// Repo implements drivers.Connection.
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection
+// OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// Migrate implements drivers.Connection
+// Migrate implements drivers.Connection.
 func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+// MigrationStatus implements drivers.Connection.
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
