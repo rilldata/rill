@@ -107,13 +107,14 @@ func (q *MetricsViewTotals) buildMetricsTotalsSql(mv *runtimev1.MetricsView) (st
 
 	whereClause := "1=1"
 	args := []any{}
+	timestampColumnName := safeName(mv.TimeDimension)
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
+			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
+			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}

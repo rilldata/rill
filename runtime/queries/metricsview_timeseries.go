@@ -90,7 +90,8 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsView) (string, []any, error) {
-	timeCol := fmt.Sprintf("DATE_TRUNC('%s', %s) AS %s", q.TimeGranularity, mv.TimeDimension, mv.TimeDimension)
+	timestampColumnName := safeName(mv.TimeDimension)
+	timeCol := fmt.Sprintf("DATE_TRUNC('%s', %s) AS %s", q.TimeGranularity, timestampColumnName, timestampColumnName)
 	selectCols := []string{timeCol}
 	for _, n := range q.MeasureNames {
 		found := false
@@ -111,11 +112,11 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 	args := []any{}
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
+			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
+			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}
@@ -134,7 +135,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
-		mv.TimeDimension,
+		timestampColumnName,
 	)
 	return sql, args, nil
 }
