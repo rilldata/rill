@@ -13,13 +13,13 @@ import (
 
 type artifact struct{}
 
-var NotSupported = errors.New("yaml only supported for sources and dashboards")
+var ErrNotSupported = errors.New("yaml only supported for sources and dashboards")
 
 func init() {
 	artifacts.Register(".yaml", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string) (*drivers.CatalogEntry, error) {
 	dir := filepath.Base(filepath.Dir(filePath))
 	switch dir {
 	case "sources":
@@ -38,7 +38,7 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string
 		return fromMetricsViewArtifact(metrics, filePath)
 	}
 
-	return nil, NotSupported
+	return nil, ErrNotSupported
 }
 
 func (r *artifact) Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error) {
@@ -65,5 +65,5 @@ func (r *artifact) Serialise(ctx context.Context, catalogObject *drivers.Catalog
 		return string(out), nil
 	}
 
-	return "", NotSupported
+	return "", ErrNotSupported
 }

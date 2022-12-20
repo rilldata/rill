@@ -172,7 +172,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "TIME":
 		t.Code = runtimev1.Type_CODE_TIME
 	case "INTERVAL":
-		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - Consider adding interval type
 	case "HUGEINT":
 		t.Code = runtimev1.Type_CODE_INT128
 	case "VARCHAR":
@@ -186,7 +186,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "TIMESTAMP_NS":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "ENUM":
-		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - Consider how to handle enums
 	case "UUID":
 		t.Code = runtimev1.Type_CODE_UUID
 	case "JSON":
@@ -228,10 +228,10 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	}
 
 	switch base {
-	// Example: DECIMAL(10,20)
+	// Example: "DECIMAL(10,20)"
 	case "DECIMAL":
 		t.Code = runtimev1.Type_CODE_DECIMAL
-	// Example: STRUCT(a INT, b INT)
+	// Example: "STRUCT(a INT, b INT)"
 	case "STRUCT":
 		t.Code = runtimev1.Type_CODE_STRUCT
 		t.StructType = &runtimev1.StructType{}
@@ -256,7 +256,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 				Type: fieldType,
 			})
 		}
-	// Example: MAP(VARCHAR, INT)
+	// Example: "MAP(VARCHAR, INT)"
 	case "MAP":
 		fieldStrs := splitCommasUnlessNestedInParens(args)
 		if len(fieldStrs) != 2 {
@@ -340,7 +340,7 @@ func splitCommasUnlessNestedInParens(s string) []string {
 		}
 		// If not nested, and there's a space at the start of the split, skip it
 		if fromIdx == idx && char == ' ' {
-			fromIdx += 1
+			fromIdx++
 			continue
 		}
 	}

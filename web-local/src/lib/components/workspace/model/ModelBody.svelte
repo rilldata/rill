@@ -153,10 +153,6 @@
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     if (!resp.errors.length && hasChanged) {
       sanitizedQuery = sanitizeQuery(content);
-    } else {
-      resp.affectedPaths = resp.affectedPaths.filter(
-        (affectedPath) => affectedPath !== modelPath
-      );
     }
     return invalidateAfterReconcile(
       queryClient,

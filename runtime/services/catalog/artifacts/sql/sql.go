@@ -16,13 +16,13 @@ import (
 
 type artifact struct{}
 
-var NotSupported = errors.New("only model supported for sql")
+var ErrNotSupported = errors.New("only model supported for sql")
 
 func init() {
 	artifacts.Register(".sql", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string) (*drivers.CatalogEntry, error) {
 	name := fileutil.Stem(filePath)
 	return &drivers.CatalogEntry{
 		Type: drivers.ObjectTypeModel,
@@ -38,7 +38,7 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath string, blob string
 
 func (r *artifact) Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error) {
 	if catalogObject.Type != drivers.ObjectTypeModel {
-		return "", NotSupported
+		return "", ErrNotSupported
 	}
 	return catalogObject.GetModel().Sql, nil
 }

@@ -18,7 +18,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 	var listExamples bool
 	var verbose bool
 
-	var initCmd = &cobra.Command{
+	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,9 +48,8 @@ func InitCmd(ver version.Version) *cobra.Command {
 			if app.IsProjectInit() {
 				if projectPath == "." {
 					return fmt.Errorf("a Rill project already exists in the current directory")
-				} else {
-					return fmt.Errorf("a Rill project already exists in directory '%s'", projectPath)
 				}
+				return fmt.Errorf("a Rill project already exists in directory '%s'", projectPath)
 			}
 
 			// Only use example=default if --example was explicitly set.

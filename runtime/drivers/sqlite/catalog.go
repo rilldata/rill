@@ -13,12 +13,11 @@ import (
 func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) []*drivers.CatalogEntry {
 	if typ == drivers.ObjectTypeUnspecified {
 		return c.findEntries(ctx, "WHERE instance_id = ?", instanceID)
-	} else {
-		return c.findEntries(ctx, "WHERE instance_id = ? AND type = ?", instanceID, typ)
 	}
+	return c.findEntries(ctx, "WHERE instance_id = ? AND type = ?", instanceID, typ)
 }
 
-func (c *connection) FindEntry(ctx context.Context, instanceID string, name string) (*drivers.CatalogEntry, bool) {
+func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, bool) {
 	// Names are stored with case everywhere, but the checks should be case-insensitive. Hence, the translation to lower case here.
 	es := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
 	if len(es) == 0 {
@@ -130,7 +129,7 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	return nil
 }
 
-func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
+func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) error {
 	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
 	return err
 }
