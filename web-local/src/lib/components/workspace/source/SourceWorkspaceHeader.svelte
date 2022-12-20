@@ -249,7 +249,7 @@
       {/if}
     </svelte:fragment>
     <svelte:fragment slot="cta">
-      <PanelCTA side="right" let:width>
+      <PanelCTA side="right">
         <Tooltip location="left" distance={16}>
           <Button type="secondary" on:click={handleCreateModelFromSource}>
             Create Model

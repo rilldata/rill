@@ -3,7 +3,6 @@
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
@@ -34,7 +33,6 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const updateModel = useRuntimeServicePutFileAndReconcile();
-  const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;

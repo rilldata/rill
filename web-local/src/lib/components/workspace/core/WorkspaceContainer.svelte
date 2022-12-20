@@ -71,7 +71,6 @@
     }
   );
 
-  let ranFirstOutputLayout = false;
   outputLayout.subscribe((state) => {
     outputVisibilityTween.set(state.visible ? 1 : 0);
   });
