@@ -2,17 +2,17 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
-  import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
+  import {
+    MetricsViewFilterCond,
+    useRuntimeServiceMetricsViewToplist,
+    V1MetricsViewFilter,
+  } from "@rilldata/web-common/runtime-client";
   import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
 
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { flip } from "svelte/animate";
 
-  import type {
-    MetricsViewDimensionValues,
-    MetricsViewRequestFilter,
-  } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { fly } from "svelte/transition";
   import {
@@ -30,9 +30,9 @@ The main feature-set component for dashboard filters
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let includeValues: MetricsViewDimensionValues;
+  let includeValues: Array<MetricsViewFilterCond>;
   $: includeValues = metricsExplorer?.filters.include;
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
@@ -47,7 +47,7 @@ The main feature-set component for dashboard filters
     );
   }
 
-  function isFiltered(filters: MetricsViewRequestFilter): boolean {
+  function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
