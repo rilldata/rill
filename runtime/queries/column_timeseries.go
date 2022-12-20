@@ -98,7 +98,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
         -- transform the original data, and optionally sample it.
         series AS (
           SELECT 
-            date_trunc('` + timeGranularity + `', "` + EscapeDoubleQuotes(timestampColumn) + `") as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+            date_trunc('` + timeGranularity + `', ` + timestampColumn + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
           FROM "` + EscapeDoubleQuotes(tableName) + `" ` + filter + `
           GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
         )

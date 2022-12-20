@@ -17,6 +17,9 @@ func escapeDoubleQuotes(column string) string {
 }
 
 func safeName(name string) string {
+	if name == "" {
+		return name
+	}
 	return quoteName(escapeDoubleQuotes(name))
 }
 
