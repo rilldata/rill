@@ -23,10 +23,9 @@
     humanizeGroupByColumns,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-
-  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import {
     MetricsViewDimension,
+    MetricsViewFilterCond,
     useRuntimeServiceMetricsViewToplist,
     useRuntimeServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
@@ -59,7 +58,7 @@
     leaderboardMeasureName
   );
 
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: excludeMode =
