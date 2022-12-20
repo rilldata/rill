@@ -72,7 +72,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return nil
 	}
 	var measures = normaliseMeasures(q.Measures, true)
-	var timestampColumn = q.TimestampColumnName
+	var timestampColumn = safeName(q.TimestampColumnName)
 	var tableName = q.TableName
 	var filter string
 	if q.Filters != nil {

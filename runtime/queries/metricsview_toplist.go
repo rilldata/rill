@@ -89,7 +89,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) buildMetricsTopListSql(mv *runtimev1.MetricsView) (string, []any, error) {
-	dimName := quoteName(q.DimensionName)
+	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	for _, n := range q.MeasureNames {
 		found := false
@@ -108,13 +108,14 @@ func (q *MetricsViewToplist) buildMetricsTopListSql(mv *runtimev1.MetricsView) (
 
 	args := []any{}
 	whereClause := "1=1"
+	timestampColumnName := safeName(mv.TimeDimension)
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", mv.TimeDimension)
+			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", mv.TimeDimension)
+			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}
@@ -131,7 +132,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSql(mv *runtimev1.MetricsView) (
 	orderClause := "true"
 	for _, s := range q.Sort {
 		orderClause += ", "
-		orderClause += s.Name
+		orderClause += safeName(s.Name)
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
