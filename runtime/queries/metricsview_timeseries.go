@@ -110,7 +110,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 
 	whereClause := "1=1"
 	args := []any{}
-	if timestampColumnName != "" {
+	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
 			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
 			args = append(args, q.TimeStart.AsTime())
