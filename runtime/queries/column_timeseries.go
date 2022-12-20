@@ -71,14 +71,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		q.Result = &runtimev1.TimeSeriesResponse{}
 		return nil
 	}
-	var measures = normaliseMeasures(q.Measures, true)
-	var timestampColumn = q.TimestampColumnName
-	var tableName = q.TableName
+	measures := normaliseMeasures(q.Measures, true)
+	timestampColumn := q.TimestampColumnName
+	tableName := q.TableName
 	var filter string
 	if q.Filters != nil {
 		filter = getFilterFromMetricsViewFilters(q.Filters)
 	}
-	var timeGranularity = convertToDateTruncSpecifier(timeRange.Interval)
+	timeGranularity := convertToDateTruncSpecifier(timeRange.Interval)
 	tsAlias := "_ts_" + ReplaceHyphen(uuid.New().String())
 	if filter != "" {
 		filter = "WHERE " + filter
@@ -383,7 +383,7 @@ func getFilterFromDimensionValuesFilter(
 		}
 		conditions = conditions[:0]
 		if notNulls {
-			var inClause = escapedName + " " + prefix + " IN ("
+			inClause := escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
 				if _, ok := iv.Kind.(*structpb.Value_NullValue); !ok {
 					inClause += "'" + EscapeSingleQuotes(iv.GetStringValue()) + "'"
@@ -396,7 +396,7 @@ func getFilterFromDimensionValuesFilter(
 			conditions = append(conditions, inClause)
 		}
 		if nulls {
-			var nullClause = escapedName + " IS " + prefix + " NULL"
+			nullClause := escapedName + " IS " + prefix + " NULL"
 			conditions = append(conditions, nullClause)
 		}
 		if len(dv.Like) > 0 {

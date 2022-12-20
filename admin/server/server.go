@@ -93,7 +93,7 @@ func (s *Server) Serve(ctx context.Context, port int) error {
 						err = fmt.Errorf("%v", r)
 					}
 
-					if errors.Is(r.(error), http.ErrAbortHandler) {
+					if errors.Is(err, http.ErrAbortHandler) {
 						panic(r)
 					}
 					s.logger.Error("request panic", zap.Error(err), zap.Stack("stacktrace"))

@@ -10,9 +10,11 @@ import (
 )
 
 // Version details are set using -ldflags
-var Version string
-var Commit string
-var BuildDate string
+var (
+	Version   string
+	Commit    string
+	BuildDate string
+)
 
 func main() {
 	ver := version.Version{

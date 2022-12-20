@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 
 	// Load infra drivers and connectors for local

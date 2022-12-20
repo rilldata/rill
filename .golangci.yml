@@ -39,10 +39,12 @@ linters:
     - dupl
     - dupword
     - errchkjson
+    - errcheck
     - errname
     - errorlint
     - gocritic
     - gofmt
+    - gofumpt
     - goheader
     - goimports
     - goprintffuncname
@@ -65,8 +67,6 @@ linters:
     - whitespace
 
 linters-settings:
-  errcheck:
-    check-type-assertions: true
   goconst:
     min-len: 2
     min-occurrences: 3
