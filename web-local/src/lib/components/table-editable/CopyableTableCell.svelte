@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import {
     INTERVALS,
@@ -7,7 +8,6 @@
   import { formatDataType } from "@rilldata/web-common/lib/formatters";
   import { fade } from "svelte/transition";
   import { createShiftClickAction } from "../../util/shift-click-action";
-  import FormattedDataType from "../data-types/FormattedDataType.svelte";
   import type { ColumnConfig } from "./ColumnConfig";
 
   const { shiftClickAction } = createShiftClickAction();

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -11,7 +12,6 @@
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
   import { createShiftClickAction } from "../../../util/shift-click-action";
-  import { DataTypeIcon } from "../../data-types";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 

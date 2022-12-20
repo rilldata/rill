@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
@@ -15,7 +16,6 @@
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher, getContext } from "svelte";
   import { createShiftClickAction } from "../../../util/shift-click-action";
-  import { FormattedDataType } from "../../data-types";
   import BarAndLabel from "../../viz/BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
