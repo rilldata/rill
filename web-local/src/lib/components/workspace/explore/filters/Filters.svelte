@@ -136,6 +136,8 @@ The main feature-set component for dashboard filters
       ...currentDimensionIncludeFilters,
       ...currentDimensionExcludeFilters,
     ];
+    // sort based on name to make sure toggling include/exclude is not jarring
+    currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
   function toggleDimensionValue(event, item) {
