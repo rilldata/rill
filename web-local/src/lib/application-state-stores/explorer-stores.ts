@@ -1,6 +1,8 @@
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import type {
+  V1MetricsView,
+  V1MetricsViewFilter,
+} from "@rilldata/web-common/runtime-client";
 import type { TimeSeriesTimeRange } from "@rilldata/web-local/lib/temp/time-control-types";
-import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { Readable, writable } from "svelte/store";
 
@@ -22,7 +24,7 @@ export interface MetricsExplorerEntity {
   selectedMeasureNames: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureName: string;
-  filters: MetricsViewRequestFilter;
+  filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;
