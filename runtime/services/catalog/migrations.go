@@ -326,14 +326,17 @@ func (s *Service) getMigrationItem(
 			item.NormalizedDependencies[i] = strings.ToLower(dep)
 		}
 		repoStat, _ := s.Repo.Stat(ctx, s.InstId, repoPath)
-		if repoStat.LastUpdated.After(s.LastMigration) {
+		catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstId, s.Repo, catalog)
+		if repoStat.LastUpdated.After(catalogLastUpdated) {
+			item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
+		} else {
+			item.CatalogInFile.UpdatedOn = catalogLastUpdated
+			// if catalog has changed in anyway then always re-create/update
+			forceChange = true
+		}
+		if item.CatalogInFile.UpdatedOn.After(s.LastMigration) {
 			// assume creation until we see a catalog object
 			item.Type = MigrationCreate
-		}
-		catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstId, s.Repo, catalog)
-		// if catalog was updated then we force change since we do not compare source content
-		if catalogLastUpdated.After(s.LastMigration) {
-			forceChange = true
 		}
 	}
 	item.NormalizedName = strings.ToLower(item.Name)
@@ -372,7 +375,7 @@ func (s *Service) getMigrationItem(
 
 	case MigrationNoChange:
 		// if item doesn't exist in olap, mark as create
-		// TODO: is this path ever hit?
+		// happens when the catalog table is modified directly
 		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
 		if !ok {
 			item.Type = MigrationCreate
