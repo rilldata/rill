@@ -82,7 +82,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		filter = "WHERE " + filter
 	}
 	temporaryTableName := tempName("_timeseries_")
-	sql := `CREATE TEMPORARY TABLE ` + safeName(temporaryTableName) + ` AS (
+	sql := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
@@ -351,7 +351,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += measure.Expression + " as " + measure.SqlName
+		result += measure.Expression + " as " + safeName(measure.SqlName)
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -363,7 +363,7 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRe
 func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, measure.SqlName, measure.SqlName)
+		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -385,7 +385,7 @@ func getFilterFromDimensionValuesFilter(
 		result += " ( "
 	}
 	for i, dv := range dimensionValues {
-		escapedName := escapeSingleQuotes(dv.Name)
+		escapedName := safeName(dv.Name)
 		var nulls bool
 		var notNulls bool
 		for _, iv := range dv.In {
@@ -523,5 +523,5 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 			}
 		}
 	}
-	return results, converr
+	return results, nil
 }

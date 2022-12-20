@@ -99,7 +99,7 @@ type SamplePolicy struct {
 func (s *Source) Validate() error {
 	connector, ok := Connectors[s.Connector]
 	if !ok {
-		return fmt.Errorf("connector: not found %q" + s.Connector)
+		return fmt.Errorf("connector: not found %q", s.Connector)
 	}
 
 	for _, propSchema := range connector.Spec().Properties {
