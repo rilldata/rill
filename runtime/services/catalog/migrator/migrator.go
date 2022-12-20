@@ -152,7 +152,7 @@ func LastUpdated(ctx context.Context, instID string, repo drivers.RepoStore, cat
 	return stat.LastUpdated, nil
 }
 
-func CreateValidationError(filePath string, message string) []*runtimev1.ReconcileError {
+func CreateValidationError(filePath, message string) []*runtimev1.ReconcileError {
 	return []*runtimev1.ReconcileError{
 		{
 			Code:     runtimev1.ReconcileError_CODE_VALIDATION,

@@ -199,7 +199,7 @@ func TestRefreshSource(t *testing.T) {
 			AdBidsDataPath := "data/AdBids.csv"
 
 			// update with same content
-			err := artifacts.Write(context.Background(), s.Repo, s.InstId, &drivers.CatalogEntry{
+			err := artifacts.Write(context.Background(), s.Repo, s.InstID, &drivers.CatalogEntry{
 				Name: "AdBids",
 				Type: drivers.ObjectTypeSource,
 				Path: AdBidsRepoPath,
