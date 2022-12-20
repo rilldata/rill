@@ -12,10 +12,10 @@ The main feature-set component for dashboard filters
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import type {
     MetricsViewDimension,
-    V1MetricsViewRequestFilter,
+    MetricsViewFilterCond,
+    V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
@@ -32,9 +32,9 @@ The main feature-set component for dashboard filters
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let includeValues: MetricsViewDimensionValues;
+  let includeValues: Array<MetricsViewFilterCond>;
   $: includeValues = metricsExplorer?.filters.include;
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
@@ -49,7 +49,7 @@ The main feature-set component for dashboard filters
     );
   }
 
-  function isFiltered(filters: V1MetricsViewRequestFilter): boolean {
+  function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
@@ -138,6 +138,8 @@ The main feature-set component for dashboard filters
       ...currentDimensionIncludeFilters,
       ...currentDimensionExcludeFilters,
     ];
+    // sort based on name to make sure toggling include/exclude is not jarring
+    currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
   function toggleDimensionValue(event, item) {

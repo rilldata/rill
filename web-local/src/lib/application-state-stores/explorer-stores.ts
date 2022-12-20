@@ -1,6 +1,6 @@
 import type {
   V1MetricsView,
-  V1MetricsViewRequestFilter,
+  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeSeriesTimeRange } from "@rilldata/web-local/lib/temp/time-control-types";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
@@ -24,7 +24,7 @@ export interface MetricsExplorerEntity {
   selectedMeasureNames: Array<string>;
   // this is used to show leaderboard values
   leaderboardMeasureName: string;
-  filters: V1MetricsViewRequestFilter;
+  filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;

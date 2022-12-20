@@ -7,10 +7,10 @@
    */
   import {
     MetricsViewDimension,
+    MetricsViewFilterCond,
     useRuntimeServiceMetricsViewToplist,
     useRuntimeServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     getFilterForDimension,
@@ -58,7 +58,7 @@
     leaderboardMeasureName
   );
 
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: excludeMode =
