@@ -3,7 +3,6 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
-    useRuntimeServicePutFileAndReconcile,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -20,16 +19,10 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-local/lib/util/formatters";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
-  import { useDashboardNames } from "../../../svelte-query/dashboards";
-  import { useModelNames } from "../../../svelte-query/models";
   import { getSummaries } from "../../column-profile/queries";
 
   export let sourceName: string;
-
-  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
 
@@ -39,11 +32,6 @@
   );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
-
-  $: modelNames = useModelNames(runtimeInstanceId);
-  $: dashboardNames = useDashboardNames(runtimeInstanceId);
-  const createModelMutation = useRuntimeServicePutFileAndReconcile();
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let showColumns = true;
 
