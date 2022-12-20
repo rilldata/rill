@@ -4,6 +4,7 @@
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { IconButton } from "../../button";
   import HideRightSidebar from "../../icons/HideRightSidebar.svelte";
@@ -22,6 +23,11 @@
   const inspectorLayout = getContext(
     "rill:app:inspector-layout"
   ) as Writable<LayoutElement>;
+
+  const navigationVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Tweened<number>;
+
   function onKeydown(event) {
     if (editingTitle && event.key === "Enter") {
       titleInputElement.blur();
@@ -33,13 +39,12 @@
 </script>
 
 <svelte:window on:keydown={onKeydown} />
-
 <header
   style:height="var(--header-height)"
-  class="grid items-center content-stretch justify-between pl-6  border-b border-gray-300"
+  class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
 >
-  <div>
+  <div style:padding-left="{$navigationVisibilityTween * 24}px">
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"

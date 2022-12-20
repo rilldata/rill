@@ -7,6 +7,8 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import { Button } from "../../button";
@@ -15,6 +17,10 @@
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricViewName: string;
+
+  const navigationVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Tweened<number>;
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
@@ -48,7 +54,11 @@
   };
 </script>
 
-<section class="w-full flex flex-col" id="header">
+<section
+  class="w-full flex flex-col"
+  id="header"
+  style:padding-left="{$navigationVisibilityTween * 24}px"
+>
   <!-- top row
     title and call to action
   -->
@@ -57,12 +67,8 @@
     class="flex items-center justify-between w-full pl-1 pr-4"
   >
     <!-- title element -->
-    <h1 style:line-height="1.1">
-      <div
-        class="pl-4 "
-        style:font-family="InterDisplay"
-        style:font-size="20px"
-      >
+    <h1 style:line-height="1.1" style:margin-top="-1px">
+      <div class="pl-4" style:font-family="InterDisplay" style:font-size="20px">
         {displayName || metricViewName}
       </div>
     </h1>
