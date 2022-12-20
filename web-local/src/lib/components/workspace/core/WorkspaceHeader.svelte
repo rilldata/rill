@@ -91,7 +91,10 @@
     >
       <HideRightSidebar size="18px" />
       <svelte:fragment slot="tooltip-content">
-        <SlidingWords active={$inspectorLayout?.visible}>inspector</SlidingWords
+        <SlidingWords
+          active={$inspectorLayout?.visible}
+          direction="horizontal"
+          reverse>inspector</SlidingWords
         >
       </svelte:fragment>
     </IconButton>

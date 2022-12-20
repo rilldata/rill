@@ -23,6 +23,7 @@
   import { IconButton } from "../../button";
   import HideBottomPane from "../../icons/HideBottomPane.svelte";
   import { notifications } from "../../notifications";
+  import SlidingWords from "../../tooltip/SlidingWords.svelte";
   import CreateDashboardButton from "./inspector/header/CreateDashboardButton.svelte";
 
   export let modelName: string;
@@ -100,7 +101,9 @@
       }}
       ><HideBottomPane size="18px" />
       <svelte:fragment slot="tooltip-content">
-        {#if $outputLayout?.visible}Show{:else}Hide{/if} output preview
+        <SlidingWords active={$outputLayout?.visible} reverse
+          >results preview</SlidingWords
+        >
       </svelte:fragment>
     </IconButton>
   </svelte:fragment>

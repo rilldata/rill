@@ -4,6 +4,8 @@
   import { tweened } from "svelte/motion";
 
   export let active;
+  export let direction: "vertical" | "horizontal" = "vertical";
+  export let reverse = false;
   let mounted = false;
   let duration = 0;
   let timer;
@@ -71,7 +73,10 @@
       class="absolute"
       style:left="0"
       style:top="0px"
-      transition:hackedLocalKeyFly={{ y: 7.5 * (!active ? 1 : -1) }}
+      transition:hackedLocalKeyFly={{
+        [direction === "horizontal" ? "x" : "y"]:
+          7.5 * (!active ? 1 : -1) * (reverse ? -1 : 1),
+      }}
     >
       {active ? "Hide" : "Show"}
     </div>
