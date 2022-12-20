@@ -18,8 +18,6 @@
   const visibilityTween = getContext(
     "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
-
-  let hasNoError = 1;
 </script>
 
 <div

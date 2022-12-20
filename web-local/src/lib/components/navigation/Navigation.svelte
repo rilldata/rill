@@ -86,7 +86,7 @@
           style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
           use:drag={{
             minSize: DEFAULT_NAV_WIDTH,
-            maxSize: 500,
+            maxSize: 440,
             side: "assetsWidth",
             store: navigationLayout,
           }}

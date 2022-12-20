@@ -1,7 +1,7 @@
 export function drag(node, params) {
   const underlyingStore = params.store;
   const minSize_ = params?.minSize || 300;
-  const maxSize_ = params?.maxSize || 800;
+  const maxSize_ = params?.maxSize || 440;
   const reverse_ = params?.reverse || false;
   const orientation_ = params?.orientation || "horizontal";
 
