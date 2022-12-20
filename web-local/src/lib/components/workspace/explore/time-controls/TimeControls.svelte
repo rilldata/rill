@@ -6,17 +6,23 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
+  import {
+    useRuntimeServiceGetTimeRangeSummary,
+    V1GetTimeRangeSummaryResponse,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type {
     TimeGrain,
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-local/lib/temp/time-control-types";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { hasDefinedTimeSeries } from "../utils";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -26,16 +32,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
-  import {
-    useRuntimeServiceGetTimeRangeSummary,
-    V1GetTimeRangeSummaryResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 
   export let metricViewName: string;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
 
   let selectedTimeRangeName;
   let selectedTimeGrain;

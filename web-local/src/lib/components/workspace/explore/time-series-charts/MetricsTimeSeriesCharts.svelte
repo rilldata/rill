@@ -24,6 +24,7 @@
   import CrossIcon from "../../../icons/CrossIcon.svelte";
   import Spinner from "../../../Spinner.svelte";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
+  import { hasDefinedTimeSeries } from "../utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -32,6 +33,7 @@
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -70,6 +72,7 @@
   $: if (
     metricsExplorer &&
     metaQuery &&
+    hasTimeSeries &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching &&
     metricsExplorer.selectedTimeRange

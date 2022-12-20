@@ -32,7 +32,7 @@
   bgClass="bg-white"
   inspector={false}
 >
-  <ExploreContainer slot="body">
+  <ExploreContainer {metricViewName} slot="body">
     <ExploreHeader {metricViewName} slot="header" />
     <MetricsTimeSeriesCharts {metricViewName} slot="metrics" />
     <svelte:fragment slot="leaderboards">

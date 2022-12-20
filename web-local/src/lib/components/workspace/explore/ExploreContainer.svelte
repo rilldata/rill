@@ -1,4 +1,22 @@
-<section class="grid items-stretch leaderboard-layout surface">
+<script lang="ts">
+  import type { MetricsExplorerEntity } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
+
+  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
+  import { hasDefinedTimeSeries } from "./utils";
+
+  export let metricViewName: string;
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: console.log(metricsExplorer, hasDefinedTimeSeries(metricsExplorer));
+  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
+</script>
+
+{hasTimeSeries}
+<section
+  class="grid items-stretch leaderboard-layout surface"
+  style:grid-template-columns="{hasTimeSeries ? "560px" : "240px"} minmax(355px,
+  auto)"
+>
   <div class="explore-header">
     <slot name="header" />
   </div>
@@ -14,7 +32,6 @@
 <style>
   section {
     grid-template-rows: auto 1fr;
-    grid-template-columns: 560px minmax(355px, auto);
     height: 100vh;
     overflow-x: auto;
     overflow-y: hidden;
