@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,7 +31,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name string, file string, pa
 		Object: &runtimev1.Source{
 			Name:      name,
 			Connector: "local_file",
-			Properties: toProtoStruct(map[string]any{
+			Properties: ToProtoStruct(map[string]any{
 				"path": absFile,
 			}),
 		},
@@ -75,7 +76,7 @@ func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.
 	return blob
 }
 
-func toProtoStruct(obj map[string]any) *structpb.Struct {
+func ToProtoStruct(obj map[string]any) *structpb.Struct {
 	s, err := structpb.NewStruct(obj)
 	if err != nil {
 		panic(err)
@@ -152,5 +153,24 @@ func RenameFile(t *testing.T, dir string, from string, to string) {
 	err := os.Rename(path.Join(dir, from), path.Join(dir, to))
 	require.NoError(t, err)
 	err = os.Chtimes(path.Join(dir, to), time.Now(), time.Now())
+	require.NoError(t, err)
+}
+
+func CopyFileToData(t *testing.T, dir string, source string) {
+	baseName := path.Base(source)
+	dest := path.Join(dir, "data", baseName)
+
+	err := os.MkdirAll(path.Join(dir, "data"), 0777)
+	require.NoError(t, err)
+
+	sourceFile, err := os.Open(source)
+	require.NoError(t, err)
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dest)
+	require.NoError(t, err)
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
 	require.NoError(t, err)
 }
