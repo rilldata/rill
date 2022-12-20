@@ -17,7 +17,7 @@ func DropCmd(ver version.Version) *cobra.Command {
 	var projectPath string
 	var verbose bool
 
-	var dropCmd = &cobra.Command{
+	dropCmd := &cobra.Command{
 		Use:   "drop <source>",
 		Short: "Drop a source",
 		Args:  cobra.ExactArgs(1),

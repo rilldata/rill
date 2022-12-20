@@ -66,9 +66,9 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	ql, args, err := q.buildMetricsTotalsSql(mv)
+	ql, args, err := q.buildMetricsTotalsSQL(mv)
 	if err != nil {
-		return fmt.Errorf("error building query: %s", err.Error())
+		return fmt.Errorf("error building query: %w", err)
 	}
 
 	meta, data, err := metricsQuery(ctx, olap, priority, ql, args)
@@ -88,7 +88,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	return nil
 }
 
-func (q *MetricsViewTotals) buildMetricsTotalsSql(mv *runtimev1.MetricsView) (string, []any, error) {
+func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (string, []any, error) {
 	selectCols := []string{}
 	for _, n := range q.MeasureNames {
 		found := false

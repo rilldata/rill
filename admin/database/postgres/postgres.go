@@ -3,11 +3,14 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
+
+	// Load postgres driver
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func init() {
@@ -55,7 +58,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	res := &database.Organization{}
 	err := c.db.QueryRowxContext(ctx, "SELECT * FROM organizations WHERE name = $1", name).StructScan(res)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, database.ErrNotFound
 		}
 		return nil, err
@@ -63,7 +66,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
-func (c *connection) CreateOrganization(ctx context.Context, name string, description string) (*database.Organization, error) {
+func (c *connection) CreateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.db.QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", name, description).StructScan(res)
 	if err != nil {
@@ -72,7 +75,7 @@ func (c *connection) CreateOrganization(ctx context.Context, name string, descri
 	return res, nil
 }
 
-func (c *connection) UpdateOrganization(ctx context.Context, name string, description string) (*database.Organization, error) {
+func (c *connection) UpdateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.db.QueryRowxContext(ctx, "UPDATE organizations SET description=$1 WHERE name=$2 RETURNING *", description, name).StructScan(res)
 	if err != nil {
@@ -95,11 +98,11 @@ func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*datab
 	return res, nil
 }
 
-func (c *connection) FindProjectByName(ctx context.Context, orgName string, name string) (*database.Project, error) {
+func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, database.ErrNotFound
 		}
 		return nil, err
@@ -107,7 +110,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName string, name
 	return res, nil
 }
 
-func (c *connection) CreateProject(ctx context.Context, orgID string, name string, description string) (*database.Project, error) {
+func (c *connection) CreateProject(ctx context.Context, orgID, name, description string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, "INSERT INTO projects(organization_id, name, description) VALUES ($1, $2, $3) RETURNING *", orgID, name, description).StructScan(res)
 	if err != nil {
@@ -116,7 +119,7 @@ func (c *connection) CreateProject(ctx context.Context, orgID string, name strin
 	return res, nil
 }
 
-func (c *connection) UpdateProject(ctx context.Context, id string, description string) (*database.Project, error) {
+func (c *connection) UpdateProject(ctx context.Context, id, description string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1 WHERE id=$2 RETURNING *", description, id).StructScan(res)
 	if err != nil {

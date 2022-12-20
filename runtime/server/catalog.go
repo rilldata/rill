@@ -12,7 +12,7 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ListCatalogEntries implements RuntimeService
+// ListCatalogEntries implements RuntimeService.
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
 	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
 	if err != nil {
@@ -31,7 +31,7 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 	return &runtimev1.ListCatalogEntriesResponse{Entries: pbs}, nil
 }
 
-// GetCatalogEntry implements RuntimeService
+// GetCatalogEntry implements RuntimeService.
 func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
 	entry, err := s.runtime.GetCatalogEntry(ctx, req.InstanceId, req.Name)
 	if err != nil {
@@ -46,7 +46,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
 }
 
-// Reconcile implements RuntimeService
+// Reconcile implements RuntimeService.
 func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
 	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.ForcedPaths, req.Dry, req.Strict)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 	}, nil
 }
 
-// PutFileAndReconcile implements RuntimeService
+// PutFileAndReconcile implements RuntimeService.
 func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
 	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 	}, nil
 }
 
-// RenameFileAndReconcile implements RuntimeService
+// RenameFileAndReconcile implements RuntimeService.
 func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
 	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
 	if err != nil {
@@ -97,7 +97,7 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 	}, nil
 }
 
-// DeleteFileAndReconcile implements RuntimeService
+// DeleteFileAndReconcile implements RuntimeService.
 func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
 	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 	}, nil
 }
 
-// RefreshAndReconcile implements RuntimeService
+// RefreshAndReconcile implements RuntimeService.
 func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
 	changedPaths := []string{req.Path}
 	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, changedPaths, req.Dry, req.Strict)
@@ -130,7 +130,7 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 	}, nil
 }
 
-// TriggerRefresh implements RuntimeService
+// TriggerRefresh implements RuntimeService.
 func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
 	err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
 	if err != nil {
@@ -140,7 +140,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 	return &runtimev1.TriggerRefreshResponse{}, nil
 }
 
-// TriggerSync implements RuntimeService
+// TriggerSync implements RuntimeService.
 func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
 	err := s.runtime.SyncExistingTables(ctx, req.InstanceId)
 	if err != nil {

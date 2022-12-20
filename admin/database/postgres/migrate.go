@@ -14,16 +14,15 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Fixed advisory lock number to prevent concurrent migrations
+// Fixed advisory lock number to prevent concurrent migrations.
 var migrationLockNumber = int64(5103805673824918) // random number
 
-// Name of the table that tracks migrations
+// Name of the table that tracks migrations.
 var migrationVersionTable = "admin_migration_version"
 
 // Migrate runs migrations. It's safe for concurrent invocations.
 // Adapted from: https://github.com/jackc/tern
 func (c *connection) Migrate(ctx context.Context) (err error) {
-
 	// Acquire advisory lock
 	_, err = c.db.ExecContext(ctx, "select pg_advisory_lock($1)", migrationLockNumber)
 	if err != nil {
@@ -89,31 +88,39 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 			return err
 		}
 
-		// Start a transaction
-		tx, err := c.db.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-
-		// Run migration
-		_, err = tx.ExecContext(ctx, string(sql))
-		if err != nil {
-			return fmt.Errorf("failed to run migration '%s': %s", file.Name(), err.Error())
-		}
-
-		// Update migration version
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
-		if err != nil {
-			return err
-		}
-
-		// Commit migration
-		err = tx.Commit()
+		err = c.migrateSingle(ctx, file.Name(), sql, version)
 		if err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
+	// Start a transaction
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Run migration
+	_, err = tx.ExecContext(ctx, string(sql))
+	if err != nil {
+		return fmt.Errorf("failed to run migration '%s': %w", name, err)
+	}
+
+	// Update migration version
+	_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
+	if err != nil {
+		return err
+	}
+
+	// Commit migration
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	return nil
 }

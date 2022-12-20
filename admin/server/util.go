@@ -6,7 +6,7 @@ import (
 )
 
 // Sends an error as JSON
-// TODO: Replace with a custom error handler on echo
+// TODO: Replace with a custom error handler on echo.
 func sendError(ctx echo.Context, code int, message string) error {
 	apiErr := api.Error{
 		Code:    int32(code),
@@ -16,7 +16,7 @@ func sendError(ctx echo.Context, code int, message string) error {
 	return err
 }
 
-// stringFromPtr dereferences ptr and returns it, defaulting to an empty string if ptr is nil
+// stringFromPtr dereferences ptr and returns it, defaulting to an empty string if ptr is nil.
 func stringFromPtr(ptr *string) string {
 	if ptr == nil {
 		return ""
@@ -24,7 +24,7 @@ func stringFromPtr(ptr *string) string {
 	return *ptr
 }
 
-// stringToPtr returns nil if s is empty, otherwise returns &s
+// stringToPtr returns nil if s is empty, otherwise returns &s.
 func stringToPtr(s string) *string {
 	if s == "" {
 		return nil

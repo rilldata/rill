@@ -7,7 +7,7 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"

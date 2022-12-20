@@ -1,7 +1,8 @@
-package metrics_views
+package metricsviews
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -14,12 +15,14 @@ func init() {
 	migrator.Register(drivers.ObjectTypeMetricsView, &metricsViewMigrator{})
 }
 
-const SourceNotSelected = "metrics view source not selected"
-const SourceNotFound = "metrics view source not found"
-const TimestampNotSelected = "metrics view timestamp not selected"
-const TimestampNotFound = "metrics view selected timestamp not found"
-const MissingDimension = "at least one dimension should be present"
-const MissingMeasure = "at least one measure should be present"
+const (
+	SourceNotSelected    = "metrics view source not selected"
+	SourceNotFound       = "metrics view source not found"
+	TimestampNotSelected = "metrics view timestamp not selected"
+	TimestampNotFound    = "metrics view selected timestamp not found"
+	MissingDimension     = "at least one dimension should be present"
+	MissingMeasure       = "at least one measure should be present"
+)
 
 type metricsViewMigrator struct{}
 
@@ -50,7 +53,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	}
 	model, err := olap.InformationSchema().Lookup(ctx, mv.Model)
 	if err != nil {
-		if err == drivers.ErrNotFound {
+		if errors.Is(err, drivers.ErrNotFound) {
 			return migrator.CreateValidationError(catalog.Path, SourceNotFound)
 		}
 		return migrator.CreateValidationError(catalog.Path, err.Error())
@@ -105,7 +108,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	return validationErrors
 }
 
-func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	// TODO: do we need a deep check here?
 	return false
 }

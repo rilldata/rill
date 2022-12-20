@@ -2,9 +2,12 @@ package duckdb
 
 import (
 	"github.com/jmoiron/sqlx"
-	_ "github.com/marcboeker/go-duckdb"
+
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
+
+	// Load duckdb driver
+	_ "github.com/marcboeker/go-duckdb"
 )
 
 func init() {
@@ -52,28 +55,28 @@ type connection struct {
 	worker *priorityworker.PriorityWorker[*job]
 }
 
-// Close implements drivers.Connection
+// Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.worker.Stop()
 	return c.db.Close()
 }
 
-// Registry implements drivers.Connection
+// Registry implements drivers.Connection.
 func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection
+// Catalog implements drivers.Connection.
 func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
 	return c, true
 }
 
-// Repo implements drivers.Connection
+// Repo implements drivers.Connection.
 func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection
+// OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
 }

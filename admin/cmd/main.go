@@ -29,7 +29,7 @@ type Config struct {
 
 func main() {
 	// Load .env (note: fails silently if .env has errors)
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	// Init config
 	var conf Config
@@ -73,7 +73,7 @@ func main() {
 	}
 
 	// Init server
-	server, err := server.New(logger, db, srvConf)
+	s, err := server.New(logger, db, srvConf)
 	if err != nil {
 		logger.Fatal("error creating server", zap.Error(err))
 	}
@@ -82,7 +82,7 @@ func main() {
 	logger.Info("serving http", zap.Int("port", conf.Port))
 
 	ctx := graceful.WithCancelOnTerminate(context.Background())
-	err = server.Serve(ctx, conf.Port)
+	err = s.Serve(ctx, conf.Port)
 	if err != nil {
 		logger.Error("server crashed", zap.Error(err))
 	}

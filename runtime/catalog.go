@@ -20,7 +20,7 @@ func (r *Runtime) ListCatalogEntries(ctx context.Context, instanceID string, t d
 	return cat.FindEntries(ctx, t), nil
 }
 
-func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID string, name string) (*drivers.CatalogEntry, error) {
+func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
 	cat, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID string, name s
 	return e, nil
 }
 
-func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths []string, forcedPaths []string, dry bool, strict bool) (*catalog.ReconcileResult, error) {
+func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths, forcedPaths []string, dry, strict bool) (*catalog.ReconcileResult, error) {
 	cat, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 	return resp, nil
 }
 
-func (r *Runtime) RefreshSource(ctx context.Context, instanceID string, name string) error {
+func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) error {
 	cat, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return err
