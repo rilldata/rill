@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    DEFAULT_INSPECTOR_WIDTH,
     SIDE_PAD,
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
@@ -17,11 +18,11 @@
   export let bgClass = "bg-gray-100";
 
   const inspectorLayout = localStorageStore<LayoutElement>(assetID, {
-    value: inspector ? 400 : 0,
+    value: inspector ? DEFAULT_INSPECTOR_WIDTH : 0,
     visible: true,
   });
   const inspectorWidth = tweened(
-    inspector ? $inspectorLayout?.value || 400 : 0,
+    inspector ? $inspectorLayout?.value || DEFAULT_INSPECTOR_WIDTH : 0,
     {
       duration: 50,
     }

@@ -26,11 +26,11 @@
     (getContext("rill:app:navigation-layout") as Writable<{
       value: number;
       visible: boolean;
-    }>) || writable({ value: 300, visible: true });
+    }>) || writable({ value: DEFAULT_NAV_WIDTH, visible: true });
 
   const navigationWidth =
     (getContext("rill:app:navigation-width-tween") as Readable<number>) ||
-    writable(300);
+    writable(DEFAULT_NAV_WIDTH);
 
   const navVisibilityTween =
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
@@ -43,6 +43,7 @@
   );
 
   import { parseDocument } from "yaml";
+  import { DEFAULT_NAV_WIDTH } from "../../application-config";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import { shorthandTitle } from "./shorthand-title";
@@ -77,14 +78,14 @@
         <div
           on:dblclick={() => {
             navigationLayout.update((state) => {
-              state.value = 300;
+              state.value = DEFAULT_NAV_WIDTH;
               return state;
             });
           }}
           class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
           style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
           use:drag={{
-            minSize: 300,
+            minSize: DEFAULT_NAV_WIDTH,
             maxSize: 500,
             side: "assetsWidth",
             store: navigationLayout,

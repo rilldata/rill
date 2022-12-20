@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DEFAULT_INSPECTOR_WIDTH } from "@rilldata/web-local/lib/application-config";
   import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
@@ -52,7 +53,7 @@
           use:drag={{ minSize: 300, store: inspectorLayout, reverse: true }}
           on:dblclick={() => {
             inspectorLayout.update((state) => {
-              state.value = 400;
+              state.value = DEFAULT_INSPECTOR_WIDTH;
               return state;
             });
           }}

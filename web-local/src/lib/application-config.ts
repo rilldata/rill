@@ -5,6 +5,9 @@
 
 import { cubicOut as easing } from "svelte/easing";
 
+export const DEFAULT_INSPECTOR_WIDTH = 360;
+export const DEFAULT_NAV_WIDTH = 240;
+
 /** parameters used in the column profile view & elsewhere */
 export const COLUMN_PROFILE_CONFIG = {
   /** The null percentage should be _just_ big enough to show x 100.0%

@@ -34,7 +34,7 @@
 
 <header
   style:height="var(--header-height)"
-  class="grid items-center content-stretch justify-between pl-6 pr-6 border-b border-gray-300"
+  class="grid items-center content-stretch justify-between pl-6  border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
 >
   <div>
@@ -78,7 +78,8 @@
       </h1>
     {/if}
   </div>
-  <div class="flex items-center gap-x-2">
+  <div class="flex items-center">
+    <slot name="workspace-controls" />
     <IconButton
       on:click={() => {
         inspectorLayout.update((state) => {
@@ -92,7 +93,7 @@
         {#if $inspectorLayout.visible} close {:else} show {/if} sidebar
       </svelte:fragment>
     </IconButton>
-    <slot name="right" />
+    <slot name="cta" />
     {#if showStatus}
       <WorkspaceHeaderStatusSpinner />
     {/if}

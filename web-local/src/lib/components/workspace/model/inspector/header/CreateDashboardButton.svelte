@@ -13,7 +13,6 @@
   } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { Button } from "@rilldata/web-local/lib/components/button";
   import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
@@ -108,7 +107,7 @@
     on:click={handleCreateDashboard}
     type="primary"
   >
-    <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
+    Create Dashboard
     <Explore size="14px" /></Button
   >
   <TooltipContent slot="tooltip-content">

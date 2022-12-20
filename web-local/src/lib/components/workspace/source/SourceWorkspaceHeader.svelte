@@ -200,7 +200,7 @@
   }
 </script>
 
-<div class="grid  items-center" style:grid-template-columns="auto max-content">
+<div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
     showStatus={false}
@@ -208,7 +208,7 @@
     <svelte:fragment slot="icon">
       <Source />
     </svelte:fragment>
-    <svelte:fragment slot="right">
+    <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
       {:else}
@@ -246,7 +246,8 @@
           {/if}
         </div>
       {/if}
-
+    </svelte:fragment>
+    <svelte:fragment slot="cta">
       <PanelCTA side="right" let:width>
         <Tooltip location="left" distance={16}>
           <Button type="secondary" on:click={handleCreateModelFromSource}>
