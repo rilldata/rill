@@ -1,4 +1,7 @@
 <script lang="ts">
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
@@ -19,9 +22,6 @@
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithBisector } from "../../../data-graphic/functional-components";
-  import { Axis } from "../../../data-graphic/guides";
   import Spinner from "../../../Spinner.svelte";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";

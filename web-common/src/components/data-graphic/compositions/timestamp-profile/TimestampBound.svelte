@@ -12,12 +12,12 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     datePortion,
     removeTimezoneOffset,
     timePortion,
   } from "@rilldata/web-common/lib/formatters";
-  import { createShiftClickAction } from "../../../../util/shift-click-action";
 
   const { shiftClickAction } = createShiftClickAction();
 

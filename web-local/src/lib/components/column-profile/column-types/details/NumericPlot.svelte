@@ -8,15 +8,18 @@ Otherwise, the page will jump around as the data is fetched.
 -->
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
+  import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithParentClientRect } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
+  import {
+    HistogramPrimitive,
+    Rug,
+  } from "@rilldata/web-common/components/data-graphic/marks";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
-  import { GraphicContext } from "../../../data-graphic/elements";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithParentClientRect } from "../../../data-graphic/functional-components";
-  import WithTween from "../../../data-graphic/functional-components/WithTween.svelte";
-  import { HistogramPrimitive, Rug } from "../../../data-graphic/marks";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
 

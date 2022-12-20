@@ -1,4 +1,16 @@
 <script lang="ts">
+  import { Body } from "@rilldata/web-common/components/data-graphic/elements";
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import {
+    Axis,
+    Grid,
+    PointLabel,
+  } from "@rilldata/web-common/components/data-graphic/guides";
+  import {
+    Area,
+    Line,
+  } from "@rilldata/web-common/components/data-graphic/marks";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
@@ -10,11 +22,6 @@
     humanizeDataType,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-  import { Body } from "../../../data-graphic/elements";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithTween } from "../../../data-graphic/functional-components";
-  import { Axis, Grid, PointLabel } from "../../../data-graphic/guides";
-  import { Area, Line } from "../../../data-graphic/marks";
 
   export let start;
   export let end;

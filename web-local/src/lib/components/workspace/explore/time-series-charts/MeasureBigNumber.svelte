@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -8,7 +9,6 @@
     humanizeDataType,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-  import { WithTween } from "../../../data-graphic/functional-components";
   import Spinner from "../../../Spinner.svelte";
 
   export let value: number;

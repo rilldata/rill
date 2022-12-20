@@ -27,7 +27,6 @@
   import type { Writable } from "svelte/store";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
-  import { createShiftClickAction } from "../../../../util/shift-click-action";
   import { outline } from "../../actions/outline";
   import { createScrubAction } from "../../actions/scrub-action-factory";
   import { DEFAULT_COORDINATES } from "../../constants";

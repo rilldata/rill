@@ -1,10 +1,10 @@
 <script lang="ts">
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { useRuntimeServiceGetDescriptiveStatistics } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
-  import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { derived } from "svelte/store";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -16,6 +16,7 @@
   import NumericPlot from "./details/NumericPlot.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
+
   export let columnName: string;
   export let objectName: string;
   export let type: string;

@@ -7,8 +7,8 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createCommandClickAction } from "../../util/command-click-action";
-  import { createShiftClickAction } from "../../util/shift-click-action";
   import ContextButton from "../column-profile/ContextButton.svelte";
   import ExpanderButton from "../column-profile/ExpanderButton.svelte";
 

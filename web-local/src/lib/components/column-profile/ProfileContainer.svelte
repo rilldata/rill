@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import {

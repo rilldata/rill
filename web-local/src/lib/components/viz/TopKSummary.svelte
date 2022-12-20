@@ -4,9 +4,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { format } from "d3-format";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
-  import { createShiftClickAction } from "../../util/shift-click-action";
   import BarAndLabel from "./BarAndLabel.svelte";
   import notificationStore from "./TopKSummary.svelte";
 

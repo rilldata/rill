@@ -7,6 +7,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     INTERVALS,
     STRING_LIKES,
@@ -15,7 +16,6 @@
   import { formatDataType } from "@rilldata/web-common/lib/formatters";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher, getContext } from "svelte";
-  import { createShiftClickAction } from "../../../util/shift-click-action";
   import BarAndLabel from "../../viz/BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 

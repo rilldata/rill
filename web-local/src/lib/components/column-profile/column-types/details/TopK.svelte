@@ -6,14 +6,14 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import {
+    copyToClipboard,
+    createShiftClickAction,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import {
-    copyToClipboard,
-    createShiftClickAction,
-  } from "@rilldata/web-local/lib/util/shift-click-action";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";

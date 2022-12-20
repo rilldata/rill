@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
-  import { format } from "d3-format";
   import {
     GraphicContext,
     SimpleDataGraphic,
-  } from "../../../data-graphic/elements";
-  import { DynamicallyPlacedLabel } from "../../../data-graphic/guides";
+  } from "@rilldata/web-common/components/data-graphic/elements";
+  import { DynamicallyPlacedLabel } from "@rilldata/web-common/components/data-graphic/guides";
+  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
+  import { format } from "d3-format";
 
   export let min;
   export let max;
