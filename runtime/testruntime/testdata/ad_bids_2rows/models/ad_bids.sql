@@ -7,5 +7,6 @@ SELECT
     volume,
     impressions,
     "ad words",
-    clicks
+    clicks,
+    1 as numeric_dim
 FROM ad_bids_source

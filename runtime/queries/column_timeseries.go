@@ -75,7 +75,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	var measures = normaliseMeasures(q.Measures, true)
-	filter := getFilterFromMetricsViewFilters(q.Filters)
+	filter, args := getFilterFromMetricsViewFilters(q.Filters)
 	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 	tsAlias := tempName("_ts_")
 	if filter != "" {
@@ -112,6 +112,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
+		Args:     args,
 		Priority: priority,
 	})
 	defer dropTempTable(olap, priority, temporaryTableName)
@@ -375,9 +376,10 @@ func getFilterFromDimensionValuesFilter(
 	dimensionValues []*runtimev1.MetricsViewDimensionValue,
 	prefix string,
 	dimensionJoiner string,
-) string {
+) (string, []interface{}) {
+	var args []interface{}
 	if len(dimensionValues) == 0 {
-		return ""
+		return "", []interface{}{}
 	}
 	var result string
 	conditions := make([]string, 3)
@@ -399,11 +401,21 @@ func getFilterFromDimensionValuesFilter(
 		if notNulls {
 			var inClause = escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
-				if _, ok := iv.Kind.(*structpb.Value_NullValue); !ok {
+				switch iv.Kind.(type) {
+				case *structpb.Value_StringValue:
+
 					inClause += "'" + escapeSingleQuotes(iv.GetStringValue()) + "'"
-					if j < len(dv.In)-1 {
-						inClause += ", "
-					}
+				case *structpb.Value_NumberValue:
+					inClause += "?"
+					args = append(args, iv.GetNumberValue())
+				case *structpb.Value_NullValue:
+					continue
+				case *structpb.Value_BoolValue:
+					inClause += "?"
+					args = append(args, iv.GetBoolValue())
+				}
+				if j < len(dv.In)-1 {
+					inClause += ", "
 				}
 			}
 			inClause += ")"
@@ -433,23 +445,24 @@ func getFilterFromDimensionValuesFilter(
 	}
 	result += " ) "
 
-	return result
+	return result, args
 }
 
-func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) string {
+func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) (string, []interface{}) {
 	if filters == nil {
-		return ""
+		return "", nil
 	}
-	includeFilters := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
-	excludeFilters := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
+	includeFilters, args := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
+	excludeFilters, excludeArgs := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
+	args = append(args, excludeArgs...)
 	if includeFilters != "" && excludeFilters != "" {
-		return " ( " + includeFilters + ") AND (" + excludeFilters + ")"
+		return " ( " + includeFilters + ") AND (" + excludeFilters + ")", args
 	} else if includeFilters != "" {
-		return includeFilters
+		return includeFilters, args
 	} else if excludeFilters != "" {
-		return excludeFilters
+		return excludeFilters, args
 	} else {
-		return ""
+		return "", nil
 	}
 }
 
