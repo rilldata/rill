@@ -1,11 +1,12 @@
 package source
 
 import (
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 // sourceCmd represents the source command
-func SourceCmd(ver string) *cobra.Command {
+func SourceCmd(ver version.Version) *cobra.Command {
 	var sourceCmd = &cobra.Command{
 		Use:   "source",
 		Short: "Create or drop a source",

@@ -144,7 +144,7 @@
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="Selected columns"
+          tooltipText="selected columns"
           bind:active={showColumns}
         >
           Selected columns
