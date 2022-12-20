@@ -1,37 +1,30 @@
 import { Heap } from "@rilldata/web-local/lib/http-request-queue/Heap";
+import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrapper";
 
 export interface RequestQueueEntry {
-  url: string;
-  method: string;
-  headers?: HeadersInit;
-  params?: Record<string, unknown>;
-  data?: any;
-  signal?: AbortSignal;
+  requestOptions: FetchWrapperOptions;
+  weight: number;
+
+  key?: string;
+  columnName?: string;
 
   resolve?: (data: any) => void;
   reject?: (err: any) => void;
 }
 
-export interface RequestQueueQueryEntry {
-  type: string;
-  priority: number;
-  entries: Array<RequestQueueEntry>;
-}
-
 export interface RequestQueueNameEntry {
   name: string;
-  priority: number;
-  queryHeap: Heap<RequestQueueQueryEntry>;
+  weight: number;
+  columnMap: Map<string, Array<RequestQueueEntry>>;
+  queryHeap: Heap<RequestQueueEntry>;
 }
 
-export type RequestQueueHeapItem =
-  | RequestQueueNameEntry
-  | RequestQueueQueryEntry;
+export type RequestQueueHeapItem = RequestQueueNameEntry | RequestQueueEntry;
 
 const queueCompareFunction = (
   a: RequestQueueHeapItem,
   b: RequestQueueHeapItem
-) => a.priority - b.priority;
+) => a.weight - b.weight;
 
 export function getHeapByName(): Heap<RequestQueueNameEntry> {
   return new Heap<RequestQueueNameEntry>(
@@ -40,9 +33,9 @@ export function getHeapByName(): Heap<RequestQueueNameEntry> {
   );
 }
 
-export function getHeapByQuery(): Heap<RequestQueueQueryEntry> {
-  return new Heap<RequestQueueQueryEntry>(
+export function getHeapByQuery(): Heap<RequestQueueEntry> {
+  return new Heap<RequestQueueEntry>(
     queueCompareFunction,
-    (a: RequestQueueQueryEntry) => a.type
+    (a: RequestQueueEntry) => a.key
   );
 }

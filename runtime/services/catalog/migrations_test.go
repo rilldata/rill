@@ -15,6 +15,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
@@ -192,13 +193,38 @@ func TestRefreshSource(t *testing.T) {
 
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
-			s, _ := initBasicService(t)
+			s, dir := initBasicService(t)
+
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath)
+			AdBidsDataPath := "data/AdBids.csv"
 
 			// update with same content
-			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			err := artifacts.Write(context.Background(), s.Repo, s.InstId, &drivers.CatalogEntry{
+				Name: "AdBids",
+				Type: drivers.ObjectTypeSource,
+				Path: AdBidsRepoPath,
+				Object: &runtimev1.Source{
+					Name:      "AdBids",
+					Connector: "local_file",
+					Properties: testutils.ToProtoStruct(map[string]any{
+						"path": AdBidsDataPath,
+					}),
+				},
+			})
+			require.NoError(t, err)
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			// ForcedPaths updates all dependant items
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
+
+			// update the uploaded file directly
+			time.Sleep(10 * time.Millisecond)
+			err = os.Chtimes(path.Join(dir, AdBidsDataPath), time.Now(), time.Now())
+			require.NoError(t, err)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+				ChangedPaths: tt.config.ChangedPaths,
+			})
+			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
 		})
 	}

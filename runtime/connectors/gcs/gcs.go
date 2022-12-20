@@ -10,6 +10,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"google.golang.org/api/option"
 )
 
 func init() {
@@ -65,7 +66,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	client, err := storage.NewClient(ctx)
+	client, err := getGcsClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("storage.NewClient: %w", err)
 	}
@@ -91,4 +92,16 @@ func gcsURLParts(path string) (string, string, string, error) {
 		return "", "", "", err
 	}
 	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
+}
+
+func getGcsClient(ctx context.Context) (*storage.Client, error) {
+	client, err := storage.NewClient(ctx)
+	if err == nil || !strings.Contains(err.Error(), "google: could not find default credentials") {
+		return client, err
+	}
+	client, err = storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
