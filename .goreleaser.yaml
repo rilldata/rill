@@ -4,6 +4,15 @@ release:
   prerelease: auto
   draft: true
 
+before:
+  hooks:
+    - echo '{{ .Env.DOCKERHUB_PASS }}' | docker login -u '{{ .Env.DOCKERHUB_USER }}' --password-stdin
+    - docker info
+    - docker pull rilldata/rill
+    - docker tag rilldata/rill rilldata/rill:abc2
+    - docker push rilldata/rill:abc2
+
+
 builds:
   - id: darwin_amd64
     main: ./cli/main.go
