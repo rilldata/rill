@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { VirtualizedTableColumns } from "../../../types";
+  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import Cell from "../core/Cell.svelte";
   import Row from "../core/Row.svelte";
 

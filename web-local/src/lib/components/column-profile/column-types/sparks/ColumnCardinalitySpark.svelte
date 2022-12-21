@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
-  import { DATA_TYPE_COLORS } from "@rilldata/web-local/lib/duckdb-data-types";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { DATA_TYPE_COLORS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     formatCompactInteger,
     formatInteger,
-  } from "@rilldata/web-local/lib/util/formatters";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
+  } from "@rilldata/web-common/lib/formatters";
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import BarAndLabel from "../../../viz/BarAndLabel.svelte";
 
   export let cardinality: number;

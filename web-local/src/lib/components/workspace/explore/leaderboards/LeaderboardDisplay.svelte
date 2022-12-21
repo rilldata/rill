@@ -1,4 +1,5 @@
 <script lang="ts">
+  import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import {
     MetricsViewDimension,
     useRuntimeServiceMetricsViewTotals,
@@ -20,7 +21,6 @@
     ShortHandSymbols,
   } from "../../../../util/humanize-numbers";
   import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
-  import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
   import Leaderboard from "./Leaderboard.svelte";
 
   export let metricViewName: string;

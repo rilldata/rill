@@ -2,11 +2,12 @@
   import {
     GraphicContext,
     SimpleDataGraphic,
-  } from "$lib/components/data-graphic/elements";
-  import { INTEGERS } from "@rilldata/web-local/lib/duckdb-data-types";
-  import { justEnoughPrecision } from "@rilldata/web-local/lib/util/formatters";
+  } from "@rilldata/web-common/components/data-graphic/elements";
+  import { DynamicallyPlacedLabel } from "@rilldata/web-common/components/data-graphic/guides";
+  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
   import { format } from "d3-format";
-  import { DynamicallyPlacedLabel } from "../../../data-graphic/guides";
+
   export let min;
   export let max;
   export let q25;

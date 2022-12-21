@@ -1,9 +1,9 @@
+import { guidGenerator } from "@rilldata/web-common/lib/guid";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import {
   ApplicationConfigFolder,
   LocalConfigFile,
 } from "../config/ConfigFolders";
-import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { LocalConfig } from "../config/LocalConfig";
 
 /**

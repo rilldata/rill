@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MetricsIcon from "../../icons/Metrics.svelte";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 

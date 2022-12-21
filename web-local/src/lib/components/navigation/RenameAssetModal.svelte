@@ -1,9 +1,11 @@
 <script lang="ts">
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import { Dialog } from "@rilldata/web-common/components/modal/index";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import {
     isDuplicateName,
     renameFileArtifact,
@@ -14,9 +16,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtimeStore } from "../../application-state-stores/application-store";
-  import Input from "../forms/Input.svelte";
-  import SubmissionError from "../forms/SubmissionError.svelte";
-  import { Dialog } from "../modal/index";
+  import type { EntityType } from "../../temp/entity";
 
   export let closeModal: () => void;
   export let entityType: EntityType;

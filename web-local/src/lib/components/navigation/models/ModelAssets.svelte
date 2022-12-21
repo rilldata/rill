@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ModelIcon from "@rilldata/web-common/components/icons/Model.svelte";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
@@ -7,10 +8,9 @@
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { getName } from "../../../util/incrementName";
   import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { getName } from "../../../util/incrementName";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
-  import ModelIcon from "../../icons/Model.svelte";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";

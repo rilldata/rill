@@ -1,9 +1,9 @@
 <script lang="ts">
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { HistogramPrimitive } from "@rilldata/web-common/components/data-graphic/marks";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { HistogramPrimitive } from "../../../data-graphic/marks";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
 
   export let compact = false;
   export let data;

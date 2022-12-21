@@ -7,9 +7,12 @@
    * It optionally enables the user to determine a "window", which
    * is just a box emcompassing the zoomWindowXMin and zoomWindowXMax values.
    */
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithParentClientRect } from "../../../data-graphic/functional-components";
-  import { Area, Line } from "../../../data-graphic/marks";
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithParentClientRect } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import {
+    Area,
+    Line,
+  } from "@rilldata/web-common/components/data-graphic/marks";
 
   //export let data;
 

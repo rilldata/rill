@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { notifications } from "@rilldata/web-common/components/notifications";
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
@@ -6,7 +7,6 @@ import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import { getName } from "@rilldata/web-local/lib/util/incrementName";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
-import { notifications } from "../../notifications";
 
 export async function createModel(
   queryClient: QueryClient,

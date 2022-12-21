@@ -1,7 +1,7 @@
 <script lang="ts">
-  import HideRightSidebar from "@rilldata/web-local/lib/components/icons/HideRightSidebar.svelte";
-  import MoreHorizontal from "@rilldata/web-local/lib/components/icons/MoreHorizontal.svelte";
-  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
+  import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
+  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";

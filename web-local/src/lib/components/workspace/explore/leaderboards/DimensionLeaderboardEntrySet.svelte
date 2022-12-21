@@ -8,17 +8,15 @@ divider
 see more button
 -->
 <script lang="ts">
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher } from "svelte";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
-
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../../tooltip/TooltipTitle.svelte";
-
-  import { createShiftClickAction } from "../../../../util/shift-click-action";
-  import { notifications } from "../../../notifications";
-  import Shortcut from "../../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../../tooltip/StackingWord.svelte";
 
   export let values;
   export let activeValues: Array<unknown>;

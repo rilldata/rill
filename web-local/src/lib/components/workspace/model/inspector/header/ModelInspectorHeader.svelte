@@ -1,4 +1,14 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
+  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
@@ -10,20 +20,10 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import { Button } from "@rilldata/web-local/lib/components/button";
-  import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-local/lib/components/menu";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import {
-    formatBigNumberPercentage,
-    formatInteger,
-  } from "@rilldata/web-local/lib/util/formatters";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";

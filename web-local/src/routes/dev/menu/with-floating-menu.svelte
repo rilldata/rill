@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Menu, MenuItem } from "@rilldata/web-local/lib/components/menu";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
 
-  import { WithTogglableFloatingElement } from "@rilldata/web-local/lib/components/floating-element";
   let item;
 </script>
 
