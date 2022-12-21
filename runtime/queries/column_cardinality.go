@@ -55,10 +55,10 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		Query:    requestSQL,
 		Priority: priority,
 	})
-
 	if err != nil {
 		return err
 	}
+
 	defer rows.Close()
 	var count float64
 	if rows.Next() {
@@ -69,5 +69,6 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		q.Result = count
 		return nil
 	}
+
 	return status.Error(codes.Internal, "no rows returned")
 }
