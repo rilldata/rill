@@ -186,7 +186,7 @@ export function determineScaleForValues(values: number[]): ShortHandSymbols {
   return scaleForMax;
 }
 
-function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
+export function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
   if (scale == shortHandSymbols[shortHandSymbols.length - 1]) {
     const formatter = getNumberFormatter(NicelyFormattedTypes.DECIMAL);
     return values.map((v) => {
