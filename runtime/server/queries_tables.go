@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Table level profiling APIs
+// Table level profiling APIs.
 func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
 	q := &queries.TableCardinality{
 		TableName: req.TableName,

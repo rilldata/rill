@@ -1,20 +1,16 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
+  import type { ColumnConfig } from "./ColumnConfig";
+  import EditableTableHeader from "./EditableTableHeader.svelte";
+  import TableCellRenderer from "./TableCellRenderer.svelte";
+  import TableHeader from "./TableHeader.svelte";
   import TableRow from "./TableRow.svelte";
   import TableRowWithMenu from "./TableRowWithMenu.svelte";
 
-  import { createEventDispatcher } from "svelte";
-  import EditableTableHeader from "./EditableTableHeader.svelte";
-
-  import type { ColumnConfig } from "./ColumnConfig";
-
-  import TableCellRenderer from "./TableCellRenderer.svelte";
-  import TableHeader from "./TableHeader.svelte";
-
-  const dispatch = createEventDispatcher();
-
   export let columnNames: ColumnConfig<any>[];
   export let rows: any[];
+
+  const dispatch = createEventDispatcher();
 
   let tableElement;
 

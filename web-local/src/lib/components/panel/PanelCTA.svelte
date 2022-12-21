@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createResizeListenerActionFactory } from "../actions/create-resize-listener-factory";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let side: "left" | "right";
 

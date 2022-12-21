@@ -1,7 +1,7 @@
 <script>
-  import { SimpleDataGraphic } from "@rilldata/web-local/lib/components/data-graphic/elements";
-  import { WithBisector } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
-  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
+  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
 
   import { NicelyFormattedTypes } from "@rilldata/web-local/lib/util/humanize-numbers";
 

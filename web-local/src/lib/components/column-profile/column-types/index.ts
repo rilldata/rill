@@ -2,7 +2,7 @@ import {
   CATEGORICALS,
   NUMERICS,
   TIMESTAMPS,
-} from "@rilldata/web-local/lib/duckdb-data-types";
+} from "@rilldata/web-common/lib/duckdb-data-types";
 import NumericProfile from "./NumericProfile.svelte";
 import TimestampProfile from "./TimestampProfile.svelte";
 import VarcharProfile from "./VarcharProfile.svelte";

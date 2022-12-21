@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
-  import Shortcut from "@rilldata/web-local/lib/components/tooltip/Shortcut.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-local/lib/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-local/lib/components/tooltip/TooltipTitle.svelte";
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { EntityStatus } from "../../temp/entity";
+  import Spinner from "../Spinner.svelte";
   import LeaderboardOptionsMenu from "./LeaderboardOptionsMenu.svelte";
 
   export let displayName: string;

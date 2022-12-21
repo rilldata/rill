@@ -18,7 +18,7 @@ import (
 const authSessionName = "auth"
 
 // Authenticator is used to authenticate our users.
-// Refereance link - https://auth0.com/docs/quickstart/webapp/golang/01-login for sample auth setup
+// Refereance link - https://auth0.com/docs/quickstart/webapp/golang/01-login for sample auth setup.
 type Authenticator struct {
 	*oidc.Provider
 	oauth2.Config
@@ -123,7 +123,7 @@ func (s *Server) callback(c echo.Context) error {
 }
 
 func (s *Server) logout(c echo.Context) error {
-	logoutUrl, err := url.Parse("https://" + s.conf.AuthDomain + "/v2/logout")
+	logoutURL, err := url.Parse("https://" + s.conf.AuthDomain + "/v2/logout")
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -141,9 +141,9 @@ func (s *Server) logout(c echo.Context) error {
 	parameters := url.Values{}
 	parameters.Add("returnTo", returnTo.String())
 	parameters.Add("client_id", s.conf.AuthClientID)
-	logoutUrl.RawQuery = parameters.Encode()
+	logoutURL.RawQuery = parameters.Encode()
 
-	return c.Redirect(http.StatusTemporaryRedirect, logoutUrl.String())
+	return c.Redirect(http.StatusTemporaryRedirect, logoutURL.String())
 }
 
 func (s *Server) logoutCallback(c echo.Context) error {
@@ -170,7 +170,10 @@ func (s *Server) user(c echo.Context) error {
 
 	var profiles map[string]interface{}
 	profile := sess.Values["profile"].([]byte)
-	json.Unmarshal(profile, &profiles)
+	err = json.Unmarshal(profile, &profiles)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
 
 	return c.JSON(http.StatusOK, profiles)
 }

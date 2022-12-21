@@ -1,17 +1,17 @@
 <script lang="ts">
+  import Discord from "@rilldata/web-common/components/icons/Discord.svelte";
+  import Docs from "@rilldata/web-common/components/icons/Docs.svelte";
+  import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import Discord from "../icons/Discord.svelte";
-  import Docs from "../icons/Docs.svelte";
-  import Github from "../icons/Github.svelte";
-  import InfoCircle from "../icons/InfoCircle.svelte";
-  import Shortcut from "../tooltip/Shortcut.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");

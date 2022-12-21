@@ -1,12 +1,10 @@
 <script lang="ts">
+  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
   import { onMount } from "svelte";
-
-  import type { ColumnConfig, CellConfigSelector } from "./ColumnConfig";
-
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import AlertCircle from "../icons/AlertCircle.svelte";
+  import type { CellConfigSelector, ColumnConfig } from "./ColumnConfig";
 
   export let columnConfig: ColumnConfig<CellConfigSelector>;
   export let index: number;

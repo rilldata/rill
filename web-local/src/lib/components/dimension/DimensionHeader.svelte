@@ -1,24 +1,20 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import { Switch } from "@rilldata/web-common/components/button";
+  import Back from "@rilldata/web-common/components/icons/Back.svelte";
+  import Close from "@rilldata/web-common/components/icons/Close.svelte";
+  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
+  import { Search } from "@rilldata/web-common/components/search";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
-  import { slideRight } from "../../transitions";
-
-  import { Switch } from "@rilldata/web-local/lib/components/button";
-
-  import Shortcut from "../tooltip/Shortcut.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../tooltip/TooltipTitle.svelte";
-
-  import Back from "../icons/Back.svelte";
-  import Search from "../icons/Search.svelte";
-
+  import Spinner from "../../../lib/components/Spinner.svelte";
+  import { EntityStatus } from "../../../lib/temp/entity";
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
-  import Close from "../icons/Close.svelte";
-  import SearchBar from "../search/Search.svelte";
-  import Spinner from "../Spinner.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -103,7 +99,7 @@
         style:grid-column-gap=".2rem"
         on:click={() => (searchToggle = !searchToggle)}
       >
-        <Search size="16px" />
+        <SearchIcon size="16px" />
         <span> Search </span>
       </div>
     {:else}
@@ -111,7 +107,7 @@
         transition:slideRight|local={{ leftOffset: 8 }}
         class="flex items-center"
       >
-        <SearchBar bind:value={searchText} on:input={onSearch} />
+        <Search bind:value={searchText} on:input={onSearch} />
         <span
           class="ui-copy-icon"
           style:cursor="pointer"

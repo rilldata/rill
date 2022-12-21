@@ -43,7 +43,7 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	rangeSql := fmt.Sprintf(
+	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
 		safeName(q.ColumnName),
 		safeName(q.TableName),
@@ -59,7 +59,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rangeSql,
+		Query:    rangeSQL,
 		Priority: priority,
 	})
 	if err != nil {
@@ -95,14 +95,14 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
 	switch i := interval.(type) {
 	case duckdb.Interval:
-		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result := new(runtimev1.TimeRangeSummary_Interval)
 		result.Days = i.Days
 		result.Months = i.Months
 		result.Micros = i.Micros
 		return result, nil
 	case int64:
 		// for date type column interval is difference in num days for two dates
-		var result = new(runtimev1.TimeRangeSummary_Interval)
+		result := new(runtimev1.TimeRangeSummary_Interval)
 		result.Days = int32(i)
 		return result, nil
 	}

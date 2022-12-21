@@ -2,12 +2,11 @@ package server
 
 import (
 	"context"
-
-	// "encoding/gob"
+	"errors"
 	"fmt"
 	"net/http"
 
-	// oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware"
+	// oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware".
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -89,14 +88,14 @@ func (s *Server) Serve(ctx context.Context, port int) error {
 		return func(c echo.Context) error {
 			defer func() {
 				if r := recover(); r != nil {
-					if r == http.ErrAbortHandler {
-						panic(r)
-					}
 					err, ok := r.(error)
 					if !ok {
 						err = fmt.Errorf("%v", r)
 					}
 
+					if errors.Is(err, http.ErrAbortHandler) {
+						panic(r)
+					}
 					s.logger.Error("request panic", zap.Error(err), zap.Stack("stacktrace"))
 
 					c.Error(err)

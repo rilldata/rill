@@ -74,7 +74,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return nil
 	}
 
-	var measures = normaliseMeasures(q.Measures, true)
+	measures := normaliseMeasures(q.Measures, true)
 	filter, args := getFilterFromMetricsViewFilters(q.Filters)
 	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 	tsAlias := tempName("_ts_")
@@ -239,7 +239,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	tc := &TableCardinality{
 		TableName: tableName,
 	}
-	err := tc.Resolve(ctx, rt, instanceID, int(priority))
+	err := tc.Resolve(ctx, rt, instanceID, priority)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	if tc.Result < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:    `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
-			Priority: int(priority),
+			Priority: priority,
 		})
 		if err != nil {
 			return nil, err
@@ -303,7 +303,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
-		Priority: int(priority),
+		Priority: priority,
 	})
 	if err != nil {
 		return nil, err
@@ -322,20 +322,15 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 			Ts:      time.UnixMilli(minT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", argminTV),
-		})
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argminVT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", minV),
-		})
-
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(argmaxVT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", maxV),
-		})
-
-		results = append(results, &runtimev1.TimeSeriesValue{
+		}, &runtimev1.TimeSeriesValue{
 			Ts:      time.UnixMilli(maxT).Format(IsoFormat),
 			Bin:     &bin,
 			Records: sMap("count", argmaxTV),
@@ -399,7 +394,7 @@ func getFilterFromDimensionValuesFilter(
 		}
 		conditions = conditions[:0]
 		if notNulls {
-			var inClause = escapedName + " " + prefix + " IN ("
+			inClause := escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
 				switch iv.Kind.(type) {
 				case *structpb.Value_StringValue:
@@ -422,7 +417,7 @@ func getFilterFromDimensionValuesFilter(
 			conditions = append(conditions, inClause)
 		}
 		if nulls {
-			var nullClause = escapedName + " IS " + prefix + " NULL"
+			nullClause := escapedName + " IS " + prefix + " NULL"
 			conditions = append(conditions, nullClause)
 		}
 		if len(dv.Like) > 0 {

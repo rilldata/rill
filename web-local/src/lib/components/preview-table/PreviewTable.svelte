@@ -6,13 +6,14 @@ TableCells – the cell contents.
 PinnedColumns – any reference columns pinned on the right side of the overall table.
 -->
 <script lang="ts">
+  import {
+    DATES,
+    TIMESTAMPS,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
-
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { DATES, TIMESTAMPS } from "../../duckdb-data-types";
   import type { VirtualizedTableColumns } from "../../types";
-
   import ColumnHeaders from "../virtualized-table/sections/ColumnHeaders.svelte";
   import PinnedColumns from "../virtualized-table/sections/PinnedColumns.svelte";
   import RowHeaders from "../virtualized-table/sections/RowHeaders.svelte";

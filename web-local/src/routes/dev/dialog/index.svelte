@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-local/lib/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import { Dialog } from "@rilldata/web-local/lib/components/modal";
   let replaceSource = false;
   let changeThing = false;

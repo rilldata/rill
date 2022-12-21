@@ -1,5 +1,7 @@
 <script context="module">
-  const icons = import.meta.globEager("/src/lib/components/icons/*.svelte");
+  const icons = import.meta.globEager(
+    "@rilldata/web-common/components/icons/*.svelte"
+  );
   const typeIcons = Object.keys(icons).filter((i) => i.includes("Type"));
   const formIcons = Object.keys(icons).filter(
     (i) =>

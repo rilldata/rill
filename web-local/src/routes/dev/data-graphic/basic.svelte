@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
-    SimpleDataGraphic,
     Body,
-  } from "@rilldata/web-local/lib/components/data-graphic/elements";
-  import { Line } from "@rilldata/web-local/lib/components/data-graphic/marks";
-  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
+    SimpleDataGraphic,
+  } from "@rilldata/web-common/components/data-graphic/elements";
+  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
+  import { Line } from "@rilldata/web-common/components/data-graphic/marks";
 
   function makeData(intervalSize = 1000) {
     let v = 50;

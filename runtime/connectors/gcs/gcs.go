@@ -36,7 +36,7 @@ var spec = connectors.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/import-data#setting-google-gcs-credentials",
+			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-google-gcs-credentials",
 		},
 	},
 }
@@ -63,30 +63,30 @@ func (c connector) Spec() connectors.Spec {
 func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	client, err := getGcsClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("storage.NewClient: %v", err)
+		return "", fmt.Errorf("storage.NewClient: %w", err)
 	}
 	defer client.Close()
 
-	bucket, object, extension, err := getGcsUrlParts(conf.Path)
+	bucket, object, extension, err := gcsURLParts(conf.Path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
 
 	rc, err := client.Bucket(bucket).Object(object).NewReader(ctx)
 	if err != nil {
-		return "", fmt.Errorf("Object(%q).NewReader: %v", object, err)
+		return "", fmt.Errorf("Object(%q).NewReader: %w", object, err)
 	}
 	defer rc.Close()
 
 	return fileutil.CopyToTempFile(rc, source.Name, extension)
 }
 
-func getGcsUrlParts(path string) (string, string, string, error) {
+func gcsURLParts(path string) (string, string, string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
 		return "", "", "", err

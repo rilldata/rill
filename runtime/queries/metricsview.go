@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID string, name string) (*runtimev1.MetricsView, error) {
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
 	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -116,7 +116,7 @@ func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, e
 	for _, cond := range conds {
 		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude)
 		if err != nil {
-			return "", nil, fmt.Errorf("filter error: %s", err.Error())
+			return "", nil, fmt.Errorf("filter error: %w", err)
 		}
 		if condClause == "" {
 			continue
@@ -152,7 +152,7 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 			}
 			arg, err := pbutil.FromValue(val)
 			if err != nil {
-				return "", nil, fmt.Errorf("filter error: %s", err.Error())
+				return "", nil, fmt.Errorf("filter error: %w", err)
 			}
 			args = append(args, arg)
 		}
@@ -172,7 +172,7 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 		for _, val := range cond.Like {
 			arg, err := pbutil.FromValue(val)
 			if err != nil {
-				return "", nil, fmt.Errorf("filter error: %s", err.Error())
+				return "", nil, fmt.Errorf("filter error: %w", err)
 			}
 			args = append(args, arg)
 			// <dimension> (NOT) ILIKE ?

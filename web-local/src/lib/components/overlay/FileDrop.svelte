@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
@@ -7,7 +8,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { uploadTableFiles } from "../../util/file-upload";
   import { createSource } from "../navigation/sources/createSource";
-  import Overlay from "./Overlay.svelte";
 
   export let showDropOverlay: boolean;
 

@@ -39,7 +39,7 @@ func (d *DAG) Add(name string, dependants []string) *Node {
 		}
 	}
 
-	for newParent, _ := range dependantMap {
+	for newParent := range dependantMap {
 		n.Parents[newParent] = d.addChild(newParent, n)
 	}
 

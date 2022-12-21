@@ -69,9 +69,9 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsTopListSql(mv)
+	sql, args, err := q.buildMetricsTopListSQL(mv)
 	if err != nil {
-		return fmt.Errorf("error building query: %s", err.Error())
+		return fmt.Errorf("error building query: %w", err)
 	}
 
 	// Execute
@@ -88,7 +88,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSql(mv *runtimev1.MetricsView) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (string, []any, error) {
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	for _, n := range q.MeasureNames {

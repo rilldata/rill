@@ -50,7 +50,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	}
 
 	sanitizedColumnName := safeName(q.ColumnName)
-	descriptiveStatisticsSql := fmt.Sprintf("SELECT "+
+	descriptiveStatisticsSQL := fmt.Sprintf("SELECT "+
 		"min(%s) as min, "+
 		"approx_quantile(%s, 0.25) as q25, "+
 		"approx_quantile(%s, 0.5)  as q50, "+
@@ -69,7 +69,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		safeName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    descriptiveStatisticsSql,
+		Query:    descriptiveStatisticsSQL,
 		Priority: priority,
 	})
 	if err != nil {
