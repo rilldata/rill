@@ -1,6 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import { default as Explore } from "@rilldata/web-common/components/icons/Explore.svelte";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import { MenuItem } from "@rilldata/web-common/components/menu";
+  import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
@@ -14,8 +21,6 @@
     fileArtifactsStore,
   } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
-  import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -33,11 +38,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import Cancel from "../../icons/Cancel.svelte";
-  import EditIcon from "../../icons/EditIcon.svelte";
-  import { default as Explore } from "../../icons/Explore.svelte";
-  import MetricsIcon from "../../icons/Metrics.svelte";
-  import { MenuItem } from "../../menu";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";

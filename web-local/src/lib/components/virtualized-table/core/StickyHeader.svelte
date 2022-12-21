@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { dragTableCell } from "../drag-table-cell";
-
   import { createEventDispatcher, getContext } from "svelte";
-
+  import { dragTableCell } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
 
   const config: VirtualizedTableConfig = getContext("config");

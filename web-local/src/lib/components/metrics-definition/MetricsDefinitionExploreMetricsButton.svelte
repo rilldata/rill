@@ -1,15 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { Button } from "@rilldata/web-common/components/button";
+  import ExploreIcon from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { navigationEvent } from "../../metrics/initMetrics";
+  import { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import { Button } from "../button";
-  import ExploreIcon from "../icons/Explore.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
+  } from "../../metrics/service/MetricsTypes";
 
   export let metricsInternalRep;
   export let metricsDefName;

@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { tweened } from "svelte/motion";
-  import { cubicOut as easing } from "svelte/easing";
-  import { derived } from "svelte/store";
   import { format } from "d3-format";
+  import { cubicOut as easing } from "svelte/easing";
+  import { tweened } from "svelte/motion";
+  import { derived } from "svelte/store";
 
   import {
-    GraphicContext,
     Body,
+    GraphicContext,
     SimpleDataGraphic,
-  } from "@rilldata/web-local/lib/components/data-graphic/elements";
-  import {
-    Line,
-    Area,
-  } from "@rilldata/web-local/lib/components/data-graphic/marks";
+  } from "@rilldata/web-common/components/data-graphic/elements";
+  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import {
     Axis,
     Grid,
     PointLabel,
-  } from "@rilldata/web-local/lib/components/data-graphic/guides";
-  import { WithBisector } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
-  import type { PointLabelVariant } from "@rilldata/web-local/lib/components/data-graphic/guides/types";
+  } from "@rilldata/web-common/components/data-graphic/guides";
+  import type { PointLabelVariant } from "@rilldata/web-common/components/data-graphic/guides/types";
+  import {
+    Area,
+    Line,
+  } from "@rilldata/web-common/components/data-graphic/marks";
 
   function makeData(intervalSize = 1000000) {
     let v1 = 36;

@@ -7,10 +7,9 @@
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
-  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
-
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
+  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
   export let containerWidth = 0;
   // const queryClient = useQueryClient();

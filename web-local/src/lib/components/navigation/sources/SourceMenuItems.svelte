@@ -1,5 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Import from "@rilldata/web-common/components/icons/Import.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
@@ -37,13 +44,6 @@
   import { useDashboardNames } from "../../../svelte-query/dashboards";
   import { useModelNames } from "../../../svelte-query/models";
   import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
-  import Cancel from "../../icons/Cancel.svelte";
-  import EditIcon from "../../icons/EditIcon.svelte";
-  import Explore from "../../icons/Explore.svelte";
-  import Import from "../../icons/Import.svelte";
-  import Model from "../../icons/Model.svelte";
-  import RefreshIcon from "../../icons/RefreshIcon.svelte";
-  import { Divider, MenuItem } from "../../menu";
   import { createModelFromSource } from "../models/createModel";
   import { refreshSource } from "./refreshSource";
 

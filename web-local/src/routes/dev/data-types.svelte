@@ -1,6 +1,6 @@
 <script>
-  import DataTypeIcon from "@rilldata/web-local/lib/components/data-types/DataTypeIcon.svelte";
-  import FormattedDataType from "@rilldata/web-local/lib/components/data-types/FormattedDataType.svelte";
+  import DataTypeIcon from "@rilldata/web-common/components/data-types/DataTypeIcon.svelte";
+  import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
 
   const examples = [
     { value: 10.534234, type: "FLOAT", label: "float", comment: "" },

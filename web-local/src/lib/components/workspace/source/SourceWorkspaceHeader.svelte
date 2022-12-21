@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
+  import Import from "@rilldata/web-common/components/icons/Import.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import Source from "@rilldata/web-common/components/icons/Source.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -17,13 +24,6 @@
     renameFileArtifact,
     useAllNames,
   } from "../../../svelte-query/actions";
-  import { IconButton } from "../../button";
-  import Import from "../../icons/Import.svelte";
-  import RefreshIcon from "../../icons/RefreshIcon.svelte";
-  import Source from "../../icons/Source.svelte";
-  import { notifications } from "../../notifications";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let sourceName: string;

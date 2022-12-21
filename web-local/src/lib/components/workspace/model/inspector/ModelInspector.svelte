@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createResizeListenerActionFactory } from "@rilldata/web-local/lib/components/actions/create-resize-listener-factory";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
   import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";

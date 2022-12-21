@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
+  import { Callout } from "@rilldata/web-common/components/callout";
   import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
@@ -7,7 +9,6 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { Button } from "@rilldata/web-local/lib/components/button";
   import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
@@ -20,7 +21,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { Callout } from "../../callout";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
 

@@ -2,8 +2,8 @@ import {
   useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceListFiles,
   V1MetricsView,
+  V1MetricsViewRequestFilter,
 } from "@rilldata/web-common/runtime-client";
-import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
@@ -66,7 +66,7 @@ export const useMetaDimension = (
  * Returns a copy of the filter without the passed in dimension filters.
  */
 export const getFilterForDimension = (
-  filters: MetricsViewRequestFilter,
+  filters: V1MetricsViewRequestFilter,
   dimensionName?: string
 ) => {
   if (!filters) return undefined;

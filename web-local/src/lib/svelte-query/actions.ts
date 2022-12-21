@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { notifications } from "@rilldata/web-common/components/notifications";
 import {
   RpcStatus,
   runtimeServiceGetCatalogEntry,
@@ -11,7 +12,6 @@ import {
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-stores/app-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import {

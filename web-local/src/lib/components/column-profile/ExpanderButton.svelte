@@ -1,8 +1,9 @@
 <script>
-  import SlidingWords from "@rilldata/web-local/lib/components/tooltip/SlidingWords.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
-  import { createHoverStateActionFactory } from "../actions/hover-state-action-factory.ts";
+  import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createHoverStateActionFactory } from "@rilldata/web-common/lib/actions/hover-state-action-factory";
+
   export let rotated = false;
   export let suppressTooltip = false;
   export let isHovered = false;

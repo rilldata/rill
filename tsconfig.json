@@ -27,9 +27,6 @@
     "checkJs": true,
     "paths": {
       "@rilldata/web-local/lib/*": ["web-local/src/lib/*"],
-      "@rilldata/web-local/common/*": ["web-local/src/common/*"],
-      "@rilldata/web-local/cli/*": ["web-local/src/cli/*"],
-      "@rilldata/web-local/server/*": ["web-local/src/server/*"],
       "@rilldata/web-common/*": ["web-common/src/*"]
     },
     "outDir": "dist"

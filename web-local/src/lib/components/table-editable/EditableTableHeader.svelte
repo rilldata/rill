@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TableHeader from "./TableHeader.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   import type { ColumnConfig } from "./ColumnConfig";
 

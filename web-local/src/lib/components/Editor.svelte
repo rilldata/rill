@@ -48,6 +48,7 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceListCatalogEntries,
@@ -56,7 +57,6 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import { createEventDispatcher, onMount } from "svelte";
-  import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
   const dispatch = createEventDispatcher();
   export let modelName: string;
