@@ -1,11 +1,11 @@
 <script>
-  import Input from "@rilldata/web-local/lib/components/forms/Input.svelte";
   import {
     applyScaleOnValues,
     determineScaleForValues,
   } from "@rilldata/web-local/lib/util/humanize-numbers";
 
   let maxValue = 1000000000;
+  let numSamples = 250;
 
   function randomBoxMuller() {
     let u = 0,
@@ -20,7 +20,7 @@
 
   function getNormalColumn(totalCount) {
     let columnTwo = [];
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < numSamples; i++) {
       columnTwo.push(randomBoxMuller());
     }
     const columnTwoSum = columnTwo.reduce((a, b) => a + b, 0);
@@ -35,7 +35,7 @@
   $: {
     let value = maxValue ? maxValue : 1000000000;
     columnOne = [];
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < numSamples; i++) {
       columnOne.push(value < 1 ? 1 : value);
       value = Math.floor(value / 2);
     }
@@ -50,17 +50,32 @@
   $: colTwoFormatted = applyScaleOnValues(columnTwo, commonScale);
 </script>
 
-<div class="w-40">
-  <div class="p-3">
-    <span class="m-1">Max value</span>
-    <input
-      type="number"
-      class="p-1 border-2"
-      label="Max value"
-      bind:value={maxValue}
-    />
+<div class="flex">
+  <div class="w-40 mr-14">
+    <div class="p-3">
+      <span class="m-1">Max value</span>
+      <input
+        type="number"
+        class="p-1 border-2"
+        label="Max value"
+        bind:value={maxValue}
+      />
+    </div>
+  </div>
+
+  <div class="w-40">
+    <div class="p-3">
+      <span class="m-1">Number of Samples</span>
+      <input
+        type="number"
+        class="p-1 border-2"
+        label="Max value"
+        bind:value={numSamples}
+      />
+    </div>
   </div>
 </div>
+
 <div class="grid grid-cols-2 w-max gap-x-10">
   <div class="text-lg text-left pt-5 px-2 mx-5">
     <div class="text-slate-700 w-60 m-auto text-center text-sm p-3">
