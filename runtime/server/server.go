@@ -48,7 +48,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}, nil
 }
 
-// ServeGRPC Starts the gRPC server
+// ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
@@ -69,7 +69,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
-// Starts the HTTP server
+// Starts the HTTP server.
 func (s *Server) ServeHTTP(ctx context.Context) error {
 	handler, err := s.HTTPHandler(ctx)
 	if err != nil {
@@ -108,7 +108,7 @@ func GRPCCodeToLevel(code codes.Code) logging.Level {
 	}
 }
 
-// HTTPHandler HTTP handler serving REST gateway
+// HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
@@ -120,10 +120,16 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// One-off REST-only path for multipart file upload
-	mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	if err != nil {
+		panic(err)
+	}
 
 	// One-off REST-only path for file export
-	mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	if err != nil {
+		panic(err)
+	}
 
 	// Register CORS
 	handler := cors(mux)

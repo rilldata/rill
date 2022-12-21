@@ -1,5 +1,9 @@
 <script lang="ts">
   import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "@rilldata/web-common/lib/formatters";
+  import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
@@ -11,10 +15,6 @@
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import {
-    formatBigNumberPercentage,
-    formatInteger,
-  } from "@rilldata/web-local/lib/util/formatters";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";

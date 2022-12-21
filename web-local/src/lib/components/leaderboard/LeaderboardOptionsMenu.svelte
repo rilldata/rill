@@ -1,15 +1,12 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-local/lib/components/button";
-  import MoreIcon from "../icons/MoreHorizontal.svelte";
-  import { Menu } from "../menu";
-
-  import IconButton from "../button/IconButton.svelte";
-
+  import { Switch } from "@rilldata/web-common/components/button";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import MoreIcon from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import { Menu } from "@rilldata/web-common/components/menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createEventDispatcher } from "svelte";
-  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let filterExcludeMode: boolean;
   export let optionsMenuActive = false;

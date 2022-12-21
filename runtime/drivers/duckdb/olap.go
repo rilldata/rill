@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -25,7 +26,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 
 	err := c.worker.Process(ctx, stmt.Priority, j)
 	if err != nil {
-		if err == priorityworker.ErrStopped {
+		if errors.Is(err, priorityworker.ErrStopped) {
 			return nil, drivers.ErrClosed
 		}
 		return nil, err

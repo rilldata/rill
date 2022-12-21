@@ -1,5 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import Import from "@rilldata/web-common/components/icons/Import.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import Source from "@rilldata/web-common/components/icons/Source.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -34,17 +41,10 @@
     useCreateDashboardFromSource,
   } from "../../../svelte-query/actions";
 
-  import { Button, IconButton } from "../../button";
-  import Explore from "../../icons/Explore.svelte";
-  import Import from "../../icons/Import.svelte";
-  import Model from "../../icons/Model.svelte";
-  import RefreshIcon from "../../icons/RefreshIcon.svelte";
-  import Source from "../../icons/Source.svelte";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { createModelFromSource } from "../../navigation/models/createModel";
-  import { notifications } from "../../notifications";
   import PanelCTA from "../../panel/PanelCTA.svelte";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let sourceName: string;

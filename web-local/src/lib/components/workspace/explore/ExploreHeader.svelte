@@ -1,5 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { Button } from "@rilldata/web-common/components/button";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -11,8 +13,6 @@
   import type { Tweened } from "svelte/motion";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { Button } from "../../button";
-  import MetricsIcon from "../../icons/Metrics.svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 

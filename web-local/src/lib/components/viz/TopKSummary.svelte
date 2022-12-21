@@ -1,15 +1,14 @@
 <script lang="ts">
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { format } from "d3-format";
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
-  import Shortcut from "../tooltip/Shortcut.svelte";
-  import StackingWord from "../tooltip/StackingWord.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
   import BarAndLabel from "./BarAndLabel.svelte";
   import notificationStore from "./TopKSummary.svelte";
-
-  import { createShiftClickAction } from "../../util/shift-click-action";
 
   export let displaySize = "md";
   export let totalRows: number;

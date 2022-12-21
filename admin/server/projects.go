@@ -25,7 +25,7 @@ func (s *Server) FindProjects(ctx echo.Context, organization string) error {
 }
 
 // (GET /v1/organizations/{organization}/project/{name})
-func (s *Server) FindProject(ctx echo.Context, organization string, name string) error {
+func (s *Server) FindProject(ctx echo.Context, organization, name string) error {
 	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
@@ -54,7 +54,7 @@ func (s *Server) CreateProject(ctx echo.Context, organization string) error {
 }
 
 // (DELETE /v1/organizations/{organization}/project/{name})
-func (s *Server) DeleteProject(ctx echo.Context, organization string, name string) error {
+func (s *Server) DeleteProject(ctx echo.Context, organization, name string) error {
 	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
 	if err != nil {
 		return sendError(ctx, http.StatusBadRequest, err.Error())
@@ -68,7 +68,7 @@ func (s *Server) DeleteProject(ctx echo.Context, organization string, name strin
 }
 
 // (PUT /v1/organizations/{organization}/project/{name})
-func (s *Server) UpdateProject(ctx echo.Context, organization string, name string) error {
+func (s *Server) UpdateProject(ctx echo.Context, organization, name string) error {
 	var dto api.UpdateProjectJSONBody
 	err := ctx.Bind(&dto)
 	if err != nil {

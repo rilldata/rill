@@ -9,12 +9,12 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// FindInstances implements drivers.RegistryStore
+// FindInstances implements drivers.RegistryStore.
 func (c *connection) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
 	return c.findInstances(ctx, "")
 }
 
-// FindInstance implements drivers.RegistryStore
+// FindInstance implements drivers.RegistryStore.
 func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, error) {
 	is, err := c.findInstances(ctx, "WHERE id = $1", id)
 	if err != nil {
@@ -51,7 +51,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	return res, nil
 }
 
-// CreateInstance implements drivers.RegistryStore
+// CreateInstance implements drivers.RegistryStore.
 func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
@@ -83,7 +83,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	return nil
 }
 
-// DeleteInstance implements drivers.RegistryStore
+// DeleteInstance implements drivers.RegistryStore.
 func (c *connection) DeleteInstance(_ context.Context, id string) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()

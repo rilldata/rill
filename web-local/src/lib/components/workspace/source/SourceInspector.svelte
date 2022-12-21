@@ -1,4 +1,10 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
@@ -13,15 +19,8 @@
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
   import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
-  import {
-    formatBigNumberPercentage,
-    formatInteger,
-  } from "@rilldata/web-local/lib/util/formatters";
   import { slide } from "svelte/transition";
   import { getSummaries } from "../../column-profile/queries";
-
   export let sourceName: string;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;

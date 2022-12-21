@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Shortcut from "../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../tooltip/StackingWord.svelte";
-  import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
 
   export let modelName;
 </script>

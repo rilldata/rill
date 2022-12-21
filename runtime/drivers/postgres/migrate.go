@@ -14,10 +14,10 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Fixed advisory lock number to prevent concurrent migrations
+// Fixed advisory lock number to prevent concurrent migrations.
 var migrationLockNumber = int64(8294273491672920) // random number
 
-// Name of the table that tracks migrations
+// Name of the table that tracks migrations.
 var migrationVersionTable = "runtime_migration_version"
 
 // Migrate implements drivers.Connection.
@@ -90,27 +90,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 			return err
 		}
 
-		// Start a transaction
-		tx, err := c.db.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-
-		// Run migration
-		_, err = tx.ExecContext(ctx, string(sql))
-		if err != nil {
-			return fmt.Errorf("failed to run migration '%s': %s", file.Name(), err.Error())
-		}
-
-		// Update migration version
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
-		if err != nil {
-			return err
-		}
-
-		// Commit migration
-		err = tx.Commit()
+		err = c.migrateSingle(ctx, file.Name(), sql, version)
 		if err != nil {
 			return err
 		}
@@ -119,8 +99,36 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
+	// Start a transaction
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Run migration
+	_, err = tx.ExecContext(ctx, string(sql))
+	if err != nil {
+		return fmt.Errorf("failed to run migration '%s': %w", name, err)
+	}
+
+	// Update migration version
+	_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=$1", migrationVersionTable), version)
+	if err != nil {
+		return err
+	}
+
+	// Commit migration
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// MigrationStatus implements drivers.Connection.
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	// Get current version
 	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {

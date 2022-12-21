@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
@@ -19,11 +24,6 @@
   import type * as yup from "yup";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
-  import { Button } from "../../button";
-  import InformationalField from "../../forms/InformationalField.svelte";
-  import Input from "../../forms/Input.svelte";
-  import SubmissionError from "../../forms/SubmissionError.svelte";
-  import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import { humanReadableErrorMessage } from "./errors";
   import { compileCreateSourceYAML, inferSourceName } from "./sourceUtils";
   import {
@@ -146,8 +146,9 @@
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
-      <a href="https://docs.rilldata.com/import-data" target="_blank">docs</a> for
-      more information.
+      <a href="https://docs.rilldata.com/using-rill/import-data" target="_blank"
+        >docs</a
+      > for more information.
     </div>
     {#if $createSourceMutation.isError || error}
       <SubmissionError

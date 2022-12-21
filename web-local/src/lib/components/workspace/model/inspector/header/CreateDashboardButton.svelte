@@ -1,5 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { Button } from "@rilldata/web-common/components/button";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
@@ -11,10 +15,6 @@
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
   } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-  import { Button } from "@rilldata/web-local/lib/components/button";
-  import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -9,7 +10,6 @@
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
-  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import {
@@ -108,10 +108,6 @@
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     if (!resp.errors.length && hasChanged) {
       sanitizedQuery = sanitizeQuery(content);
-    } else {
-      resp.affectedPaths = resp.affectedPaths.filter(
-        (affectedPath) => affectedPath !== modelPath
-      );
     }
     return invalidateAfterReconcile(
       queryClient,

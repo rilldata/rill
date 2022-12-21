@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import {
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
   } from "../../application-config";
-  import { FormattedDataType } from "../data-types";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();

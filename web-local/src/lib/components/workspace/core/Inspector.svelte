@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { DEFAULT_INSPECTOR_WIDTH } from "@rilldata/web-local/lib/application-config";
-  import Portal from "@rilldata/web-local/lib/components/Portal.svelte";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";

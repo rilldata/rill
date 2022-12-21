@@ -14,13 +14,13 @@ import (
 //go:embed all:embed
 var distFS embed.FS
 
-// Handler serves an web-local UI
+// Handler serves an web-local UI.
 func StaticHandler() http.Handler {
 	uiAssetFS := newUIAssetFS()
 	return gziphandler.GzipHandler(http.FileServer(uiAssetFS))
 }
 
-// Check if web-local dist static UI is exists, If not server the default index.html page
+// Check if web-local dist static UI is exists, If not server the default index.html page.
 func newUIAssetFS() http.FileSystem {
 	_, err := distFS.ReadFile("embed/dist/index.html")
 	if os.IsNotExist(err) {
@@ -45,13 +45,12 @@ type SPARoutingFS struct {
 
 func (spaFS *SPARoutingFS) Open(name string) (http.File, error) {
 	file, err := spaFS.FileSystem.Open(name)
-
 	if err == nil {
 		return file, nil
 	}
 
 	if errors.Is(err, fs.ErrNotExist) {
-		file, err := spaFS.FileSystem.Open("index.html")
+		file, err = spaFS.FileSystem.Open("index.html")
 		return file, err
 	}
 

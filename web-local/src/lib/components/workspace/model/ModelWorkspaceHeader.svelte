@@ -1,15 +1,18 @@
 <script lang="ts">
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import Export from "@rilldata/web-common/components/icons/Export.svelte";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import { Button } from "@rilldata/web-local/lib/components/button";
-  import WithTogglableFloatingElement from "@rilldata/web-local/lib/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "@rilldata/web-local/lib/components/icons/Export.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-local/lib/components/menu";
+  import HideBottomPane from "@rilldata/web-local/lib/components/icons/HideBottomPane.svelte";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import {
     isDuplicateName,
     renameFileArtifact,
@@ -20,10 +23,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { WorkspaceHeader } from "..";
-  import { IconButton } from "../../button";
-  import HideBottomPane from "../../icons/HideBottomPane.svelte";
-  import { notifications } from "../../notifications";
-  import SlidingWords from "../../tooltip/SlidingWords.svelte";
   import CreateDashboardButton from "./inspector/header/CreateDashboardButton.svelte";
 
   export let modelName: string;

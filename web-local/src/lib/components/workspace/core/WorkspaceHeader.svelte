@@ -1,14 +1,14 @@
 <script lang="ts">
-  import EditIcon from "@rilldata/web-local/lib/components/icons/EditIcon.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
-  import { IconButton } from "../../button";
-  import HideRightSidebar from "../../icons/HideRightSidebar.svelte";
-  import SlidingWords from "../../tooltip/SlidingWords.svelte";
+
+  import { IconButton } from "@rilldata/web-common/components/button";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;

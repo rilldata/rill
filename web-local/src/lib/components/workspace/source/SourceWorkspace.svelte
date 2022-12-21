@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
+  import { Callout } from "@rilldata/web-common/components/callout";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -14,8 +16,6 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
-  import Button from "../../button/Button.svelte";
-  import Callout from "../../callout/Callout.svelte";
   import {
     hasDuckDBUnicodeError,
     niceDuckdbUnicodeError,

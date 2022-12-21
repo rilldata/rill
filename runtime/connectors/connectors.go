@@ -2,13 +2,14 @@ package connectors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
-// Connectors tracks all registered connector drivers
+// Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)
 
-// Register tracks a connector driver
+// Register tracks a connector driver.
 func Register(name string, connector Connector) {
 	if Connectors[name] != nil {
 		panic(fmt.Errorf("already registered connector with name '%s'", name))
@@ -16,7 +17,7 @@ func Register(name string, connector Connector) {
 	Connectors[name] = connector
 }
 
-// Connector is a driver for ingesting data from an external system
+// Connector is a driver for ingesting data from an external system.
 type Connector interface {
 	Spec() Spec
 
@@ -58,7 +59,7 @@ const (
 	InformationalPropertyType
 )
 
-// ValidateType checks that val has the correct type
+// ValidateType checks that val has the correct type.
 func (ps PropertySchema) ValidateType(val any) bool {
 	switch val.(type) {
 	case string:
@@ -79,7 +80,7 @@ type Env struct {
 	RepoDSN    string
 }
 
-// Source represents a dataset to ingest using a specific connector (like a connector instance)
+// Source represents a dataset to ingest using a specific connector (like a connector instance).
 type Source struct {
 	Name         string
 	Connector    string
@@ -95,11 +96,11 @@ type SamplePolicy struct {
 	Limit    int
 }
 
-// Validate checks the source's properties against its connector's spec
+// Validate checks the source's properties against its connector's spec.
 func (s *Source) Validate() error {
 	connector, ok := Connectors[s.Connector]
 	if !ok {
-		return fmt.Errorf("connector: not found " + s.Connector)
+		return errors.New("connector: not found " + s.Connector)
 	}
 
 	for _, propSchema := range connector.Spec().Properties {

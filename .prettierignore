@@ -17,10 +17,13 @@ temp/
 .env
 *.sql
 *.csv
+*.csv.gz
 *.tsv
+*.txt
 *.db
 *.wal
 *.parquet
+*.parquet.gz
 .travis.yml
 .DS_Store
 buf.lock

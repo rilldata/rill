@@ -63,11 +63,11 @@ func config() (*localConfig, error) {
 	if conf.InstallID == "" {
 		// create install id if not exists
 		conf.InstallID = uuid.New().String()
-		confJson, err := json.Marshal(&conf)
+		confJSON, err := json.Marshal(&conf)
 		if err != nil {
 			return conf, err
 		}
-		err = os.WriteFile(confFile, confJson, 0644)
+		err = os.WriteFile(confFile, confJSON, 0o644)
 		if err != nil {
 			return conf, err
 		}
