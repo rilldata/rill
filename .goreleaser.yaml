@@ -2,7 +2,7 @@ project_name: rill
 
 release:
   prerelease: auto
-  draft: false
+  draft: true
 
 before:
   hooks:
@@ -94,10 +94,10 @@ brews:
       name: rilldata
       email: support@rilldata.com
 
-# dockers:
-#   - image_templates:
-#       - rilldata/rill:latest
-#       - rilldata/rill:{{ .Tag }}
+dockers:
+  - image_templates:
+    - rilldata/rill:latest
+    - rilldata/rill:{{ .Tag }}
 
 archives:
   - files:
