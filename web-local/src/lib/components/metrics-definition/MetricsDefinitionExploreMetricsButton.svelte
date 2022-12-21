@@ -68,7 +68,7 @@
       {:else if buttonStatus === "MISSING_MEASURES_OR_DIMENSIONS"}
         Add measures and dimensions before exploring metrics
       {:else}
-        Explore your metrics dashboard
+        Explore the metrics dashboard
       {/if}
     </div>
   </TooltipContent>

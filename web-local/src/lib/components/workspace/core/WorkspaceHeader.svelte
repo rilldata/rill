@@ -96,7 +96,9 @@
           });
         }}
       >
-        <HideRightSidebar size="18px" />
+        <span class="text-gray-500">
+          <HideRightSidebar size="18px" />
+        </span>
         <svelte:fragment slot="tooltip-content">
           <SlidingWords
             active={$inspectorLayout?.visible}

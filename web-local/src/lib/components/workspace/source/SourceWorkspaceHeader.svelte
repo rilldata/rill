@@ -256,7 +256,7 @@
             <Model size="16px" />
           </Button>
           <TooltipContent slot="tooltip-content">
-            Create a model with these source columns
+            Model this source with SQL
           </TooltipContent>
         </Tooltip>
         <Tooltip location="bottom" alignment="right" distance={16}>
@@ -271,7 +271,7 @@
           </Button>
           <TooltipContent slot="tooltip-content">
             {#if timestampColumns?.length}
-              Auto create metrics based on your data source and go to dashboard
+              Create a dashboard for this source
             {:else}
               This data source does not have a TIMESTAMP column
             {/if}

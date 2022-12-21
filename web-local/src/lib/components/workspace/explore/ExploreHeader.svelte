@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -74,9 +76,14 @@
     </h1>
     <!-- top right CTAs -->
     <div style="flex-shrink: 0;">
-      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
-        Edit Metrics <MetricsIcon size="16px" />
-      </Button>
+      <Tooltip distance={8}>
+        <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+          Edit Metrics <MetricsIcon size="16px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          Edit this dashboard's metrics & settings
+        </TooltipContent>
+      </Tooltip>
     </div>
   </div>
   <!-- bottom row -->

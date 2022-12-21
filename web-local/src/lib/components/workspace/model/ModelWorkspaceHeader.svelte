@@ -98,7 +98,7 @@
           return state;
         });
       }}
-      ><HideBottomPane size="18px" />
+      ><span class="text-gray-500"><HideBottomPane size="18px" /></span>
       <svelte:fragment slot="tooltip-content">
         <SlidingWords active={$outputLayout?.visible} reverse
           >results preview</SlidingWords
@@ -157,7 +157,7 @@
         <TooltipContent slot="tooltip-content">
           {#if modelHasError}Fix the errors in your model to export
           {:else}
-            Export this model as a dataset
+            Export the modeled data as a file
           {/if}
         </TooltipContent>
       </Tooltip>
