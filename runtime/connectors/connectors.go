@@ -2,7 +2,6 @@ package connectors
 
 import (
 	"context"
-	"errors"
 	"fmt"
 )
 
