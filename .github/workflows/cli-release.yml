@@ -43,7 +43,6 @@ jobs:
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
           echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
           echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
-          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
 
       - name: Release Publish
         run: |-
@@ -64,8 +63,6 @@ jobs:
               goreleaser/goreleaser-cross:v1.19.2 \
               release ${NIGHTLY}
 
-          docker images | grep rilldata/rill
-
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         with:
@@ -76,6 +73,14 @@ jobs:
         with:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
+
+      - name: Publish nightly docker image
+        if: github.event_name == 'schedule'
+        run: |-
+          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
+          docker tag rilldata/rill:latest rilldata/rill:nightly
+          docker push rilldata/rill:nightly
+          rm -rf dist/goreleaserdocker*
 
       - name: Upload nightly to CDN
         if: github.event_name == 'schedule'
