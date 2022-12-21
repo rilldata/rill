@@ -8,7 +8,6 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -86,9 +85,6 @@
   };
 
   $: titleInput = modelName;
-
-  const { listenToNodeResize, observedNode } =
-    createResizeListenerActionFactory();
 </script>
 
 <WorkspaceHeader
@@ -113,7 +109,7 @@
     </IconButton>
   </svelte:fragment>
   <svelte:fragment slot="cta">
-    <PanelCTA let:width side="right">
+    <PanelCTA side="right">
       <Tooltip
         alignment="middle"
         distance={16}
