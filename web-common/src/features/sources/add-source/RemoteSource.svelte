@@ -4,6 +4,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
@@ -16,7 +17,6 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";

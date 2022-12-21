@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -9,7 +10,6 @@
   import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
   import RenameAssetModal from "@rilldata/web-local/lib/components/navigation/RenameAssetModal.svelte";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";

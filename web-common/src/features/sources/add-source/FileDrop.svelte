@@ -1,9 +1,9 @@
 <script lang="ts">
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";

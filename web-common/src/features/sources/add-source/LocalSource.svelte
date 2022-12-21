@@ -5,6 +5,7 @@
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
@@ -15,7 +16,6 @@
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";

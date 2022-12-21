@@ -8,6 +8,10 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import {
+    useSourceFromYaml,
+    useSourceNames,
+  } from "@rilldata/web-common/features/sources/selectors";
+  import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
@@ -35,10 +39,6 @@
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import {
-    useSourceFromYaml,
-    useSourceNames,
-  } from "@rilldata/web-local/lib/svelte-query/sources";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
