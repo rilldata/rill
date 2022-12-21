@@ -130,6 +130,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
+	rows.Close()
 	if err != nil {
 		return err
 	}
@@ -502,7 +503,6 @@ func sMap(k string, v float64) map[string]float64 {
 
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias string) ([]*runtimev1.TimeSeriesValue, error) {
 	results := make([]*runtimev1.TimeSeriesValue, 0)
-	defer rows.Close()
 	for rows.Next() {
 		value := runtimev1.TimeSeriesValue{}
 		results = append(results, &value)

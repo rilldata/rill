@@ -68,8 +68,10 @@ func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogEntry) (*a
 }
 
 // See getIsolate
-var isolate *Isolate
-var isolateOnce sync.Once
+var (
+	isolate     *Isolate
+	isolateOnce sync.Once
+)
 
 // getIsolate returns a lazily-loaded Isolate, which will never be closed.
 // If the performance of using a single thread-bound isolate suffers, we should
