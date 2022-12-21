@@ -8,6 +8,7 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -18,7 +19,6 @@
     renameFileArtifact,
     useAllNames,
   } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
