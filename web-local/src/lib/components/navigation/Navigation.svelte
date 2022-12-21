@@ -19,6 +19,9 @@
   import { shorthandTitle } from "./shorthand-title";
   import TableAssets from "./sources/TableAssets.svelte";
 
+  const MIN_NAVIGATION_WIDTH_PX = 250;
+  const MAX_NAVIGATION_WIDTH_PX = 425;
+
   let mounted = false;
   onMount(() => {
     mounted = true;
@@ -81,8 +84,8 @@
           class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
           style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
           use:drag={{
-            minSize: 300,
-            maxSize: 500,
+            minSize: MIN_NAVIGATION_WIDTH_PX,
+            maxSize: MAX_NAVIGATION_WIDTH_PX,
             side: "assetsWidth",
             store: navigationLayout,
           }}
