@@ -20,7 +20,17 @@ export const UrlExtractorRegex =
   /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
 
 // intentionally 1 less than max to allow for non profiling query calls
-const QueryQueueSize = 5;
+let QueryQueueSize = 20;
+try {
+  if (
+    window.location.protocol === "https:" &&
+    window.location.host !== "localhost"
+  ) {
+    QueryQueueSize = 200;
+  }
+} catch (err) {
+  // no-op
+}
 
 /**
  * Given a URL and params this manages where the url should sit.
@@ -60,7 +70,6 @@ export class HttpRequestQueue {
           (requestOptions.params.priority as number);
         columnName =
           requestOptions.params.columnName ?? requestOptions.data?.columnName;
-
         break;
       default:
         // make the call directly if the url is not recognised
@@ -86,6 +95,7 @@ export class HttpRequestQueue {
       entry.key = type;
     }
     nameEntry.queryHeap.push(entry);
+    // intentional to not await here
     this.popEntries();
 
     return new Promise((resolve, reject) => {
