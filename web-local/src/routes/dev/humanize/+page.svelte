@@ -45,9 +45,19 @@
 
   $: columnTwo = getNormalColumn(totalCount);
 
-  $: commonScale = determineScaleForValues(columnOne.concat(columnTwo));
+  $: columnThree = columnTwo.map((_, i) => {
+    if (i == 0) return totalCount - numSamples + 1;
+    else return 1;
+  });
+
+  $: commonScale = determineScaleForValues([
+    ...columnOne,
+    ...columnTwo,
+    ...columnThree,
+  ]);
   $: colOneFormatted = applyScaleOnValues(columnOne, commonScale);
   $: colTwoFormatted = applyScaleOnValues(columnTwo, commonScale);
+  $: colThreeFormatted = applyScaleOnValues(columnThree, commonScale);
 </script>
 
 <div class="flex">
@@ -76,7 +86,7 @@
   </div>
 </div>
 
-<div class="grid grid-cols-2 w-max gap-x-10">
+<div class="grid grid-cols-3 w-max gap-x-10">
   <div class="text-lg text-left pt-5 px-2 mx-5">
     <div class="text-slate-700 w-60 m-auto text-center text-sm p-3">
       Start with max value and half until value becomes 1
@@ -95,6 +105,17 @@
     {#each columnTwo as val, i}
       <div>
         <span class="w-20 px-2">{colTwoFormatted[i]}</span>
+        <span class="w-40 float-right text-right">{val}</span>
+      </div>
+    {/each}
+  </div>
+  <div class="text-lg text-left pt-5 px-2 mx-5">
+    <div class="text-slate-700 w-60 m-auto text-center text-sm p-3">
+      First value is big rest all are small
+    </div>
+    {#each columnThree as val, i}
+      <div>
+        <span class="w-20 px-2">{colThreeFormatted[i]}</span>
         <span class="w-40 float-right text-right">{val}</span>
       </div>
     {/each}
