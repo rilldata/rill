@@ -35,7 +35,6 @@
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
   const outputLayout = getContext("rill:app:output-layout");
-  // const outputVisibilityTween = getContext("rill:app:output-visibility-tween");
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelHasError = !!modelError;

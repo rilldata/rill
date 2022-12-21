@@ -21,11 +21,9 @@
   showInspectorToggle={false}
 >
   <MetricsIcon slot="icon" />
-  <!-- {#if !metricsSourceSelectionError} -->
   <MetricsDefinitionExploreMetricsButton
     slot="cta"
     {metricsDefName}
     {metricsInternalRep}
   />
-  <!-- {/if} -->
 </WorkspaceHeader>

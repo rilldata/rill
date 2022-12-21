@@ -49,17 +49,6 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  /** model body layout elements */
-  // TODO: should there be a session lived ID here instead of name?
-  // const outputLayout = localStorageStore(`${modelName}-output`, {
-  //   value: 500,
-  //   visible: true,
-  // });
-  // const outputPosition = tweened($outputLayout.value, { duration: 50 });
-  // outputLayout.subscribe((state) => {
-  //   outputPosition.set(state.value);
-  // });
-
   const outputLayout = getContext("rill:app:output-layout");
   const outputPosition = getContext("rill:app:output-height-tween");
   const outputVisibilityTween = getContext(

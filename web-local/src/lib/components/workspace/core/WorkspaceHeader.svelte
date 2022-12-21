@@ -60,10 +60,6 @@
         style:font-size="16px"
         class="grid grid-flow-col justify-start items-center gap-x-1"
       >
-        <!-- <slot name="icon">
-          <ModelIcon />
-        </slot> -->
-
         <Tooltip
           distance={8}
           bind:active={tooltipActive}
