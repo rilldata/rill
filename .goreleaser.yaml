@@ -6,7 +6,7 @@ release:
 
 before:
   hooks:
-    - echo ${{ .Env.DOCKERHUB_PASS }} | docker login -u ${{ .Env.DOCKERHUB_USER }} --password-stdin
+    - echo {{ .Env.DOCKERHUB_PASS }} | docker login -u {{ .Env.DOCKERHUB_USER }} --password-stdin
 
 builds:
   - id: darwin_amd64
