@@ -1,12 +1,12 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
-} from "@rilldata/web-local/lib/util/duplicateNameUtils";
-import { importOverlayVisible } from "../../../../../web-local/src/lib/application-state-stores/overlay-store";
-import { FILE_EXTENSION_TO_TABLE_TYPE } from "../../../../../web-local/src/lib/types";
+} from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
+import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
+import { importOverlayVisible } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+import { FILE_EXTENSION_TO_TABLE_TYPE } from "@rilldata/web-local/lib/types";
 import {
   extractFileExtension,
   getTableNameFromFile,
