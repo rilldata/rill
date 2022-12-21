@@ -26,7 +26,7 @@
 
   export let hoveredDate;
 
-  const fmt = timeFormat("%b %d, %Y");
+  const fmt = timeFormat("%Y-%m-%d");
   const axisFmt = timeFormat("%b %d");
   const secondaryFmt = timeFormat("%Y");
 
