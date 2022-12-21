@@ -74,6 +74,14 @@ jobs:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
 
+      - name: Publish nightly docker image
+        if: github.event_name == 'schedule'
+        run: |-
+          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
+          docker tag rilldata/rill:latest rilldata/rill:nightly
+          docker push rilldata/rill:nightly
+          rm -rf dist/goreleaserdocker*
+
       - name: Upload nightly to CDN
         if: github.event_name == 'schedule'
         uses: google-github-actions/upload-cloud-storage@v1

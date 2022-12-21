@@ -6,7 +6,7 @@ release:
 
 before:
   hooks:
-    - echo ${{ .Env.DOCKERHUB_PASS }} | docker login -u ${{ .Env.DOCKERHUB_USER }} --password-stdin
+    - docker login -u {{ .Env.DOCKERHUB_USER }} -p {{ .Env.DOCKERHUB_PASS }}
 
 builds:
   - id: darwin_amd64
@@ -94,10 +94,10 @@ brews:
       name: rilldata
       email: support@rilldata.com
 
-# dockers:
-#   - image_templates:
-#       - rilldata/rill:latest
-#       - rilldata/rill:{{ .Tag }}
+dockers:
+  - image_templates:
+      - rilldata/rill:latest
+      - rilldata/rill:{{ .Tag }}
 
 archives:
   - files:
