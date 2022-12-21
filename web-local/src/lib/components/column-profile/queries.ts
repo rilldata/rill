@@ -5,13 +5,16 @@ import {
   useRuntimeServiceGetCardinalityOfColumn,
   useRuntimeServiceGetNullCount,
   useRuntimeServiceGetNumericHistogram,
-  useRuntimeServiceGetRugHistogram,
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
 import { derived, writable } from "svelte/store";
 import { convertTimestampPreview } from "../../util/convertTimestampPreview";
+
+export function isFetching(...queries) {
+  return queries.some((query) => query?.isFetching);
+}
 
 /** for each entry in a profile column results, return the null count and the column cardinality */
 export function getSummaries(objectName, instanceId, profileColumnResults) {
@@ -41,6 +44,7 @@ export function getSummaries(objectName, instanceId, profileColumnResults) {
             ...col,
             nullCount: +nullValues?.data?.count,
             cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
+            isFetching: nullValues?.isFetching || cardinality?.isFetching,
           };
         }
       );
@@ -64,6 +68,7 @@ export function getNullPercentage(instanceId, objectName, columnName) {
     return {
       nullCount: nulls?.data?.count,
       totalRows: +totalRows?.data?.cardinality,
+      isFetching: nulls?.isFetching || totalRows?.isFetching,
     };
   });
 }
@@ -86,6 +91,7 @@ export function getCountDistinct(instanceId, objectName, columnName) {
       return {
         cardinality: cardinality?.data?.categoricalSummary?.cardinality,
         totalRows: +totalRows?.data?.cardinality,
+        isFetching: cardinality?.isFetching || totalRows?.isFetching,
       };
     }
   );
@@ -138,6 +144,7 @@ export function getTimeSeriesAndSpark(
     [query, estimatedInterval, smallestTimeGrain],
     ([$query, $estimatedInterval, $smallestTimeGrain]) => {
       return {
+        isFetching: $query?.isFetching,
         estimatedRollupInterval: $estimatedInterval?.data,
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
@@ -165,28 +172,19 @@ export function getNumericHistogram(
   columnName,
   active = false
 ) {
-  const histogramQuery = useRuntimeServiceGetNumericHistogram(
+  return useRuntimeServiceGetNumericHistogram(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("numeric-histogram", active) }
+    { columnName, priority: getPriorityForColumn("numeric-histogram", active) },
+    {
+      query: {
+        select(query) {
+          return query?.numericSummary?.numericHistogramBins?.bins;
+        },
+      },
+    }
   );
-  return derived(histogramQuery, ($query) => {
-    return $query?.data?.numericSummary?.numericHistogramBins?.bins;
-  });
-}
-
-export function getRugPlotData(
-  instanceId,
-  objectName,
-  columnName,
-  active = false
-) {
-  const outliersQuery = useRuntimeServiceGetRugHistogram(
-    instanceId,
-    objectName,
-    { columnName, priority: getPriorityForColumn("rug-histogram", active) }
-  );
-  return derived(outliersQuery, ($query) => {
-    return $query?.data?.numericSummary?.numericOutliers?.outliers;
-  });
+  // return derived(histogramQuery, ($query) => {
+  //   return $query?.data?.numericSummary?.numericHistogramBins?.bins;
+  // });
 }
