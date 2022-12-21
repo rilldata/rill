@@ -15,7 +15,6 @@ import {
   fetchWrapper,
   FetchWrapperOptions,
 } from "@rilldata/web-local/lib/util/fetchWrapper";
-import { waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 
 export const UrlExtractorRegex =
   /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
@@ -29,7 +28,6 @@ const QueryQueueSize = 5;
  */
 export class HttpRequestQueue {
   private readonly nameHeap = getHeapByName();
-  private running = false;
   private activeCount = 0;
 
   public constructor(private readonly urlBase: string) {}
@@ -62,6 +60,7 @@ export class HttpRequestQueue {
           (requestOptions.params.priority as number);
         columnName =
           requestOptions.params.columnName ?? requestOptions.data?.columnName;
+
         break;
       default:
         // make the call directly if the url is not recognised
@@ -70,11 +69,11 @@ export class HttpRequestQueue {
     if (!priority) {
       priority = getPriority(type);
     }
-    entry.weight = priority;
     requestOptions.params.priority = priority;
+    entry.weight = priority;
 
     // Adding more levels can be added here by adding more name entries under the top level one
-    // Make sure to update run if so
+    // Make sure to update popEntries if so
     const nameEntry = this.getNameEntry(name);
     if (columnName) {
       entry.columnName = columnName;
@@ -87,7 +86,7 @@ export class HttpRequestQueue {
       entry.key = type;
     }
     nameEntry.queryHeap.push(entry);
-    this.run();
+    this.popEntries();
 
     return new Promise((resolve, reject) => {
       entry.resolve = resolve;
@@ -121,20 +120,14 @@ export class HttpRequestQueue {
     });
   }
 
-  private async run() {
-    if (this.running) return;
-    this.running = true;
-
-    while (!this.nameHeap.empty()) {
-      await waitUntil(() => this.activeCount < QueryQueueSize, 30000, 50);
-      if (this.activeCount >= QueryQueueSize) continue;
-      if (this.nameHeap.empty()) break;
-
+  private async popEntries() {
+    while (!this.nameHeap.empty() && this.activeCount < QueryQueueSize) {
       const topNameEntry = this.nameHeap.peek();
       const entry = topNameEntry.queryHeap.pop();
 
       // intentional to not await here
       this.fireForEntry(entry);
+      this.activeCount++;
       if (entry.columnName && topNameEntry.columnMap.has(entry.columnName)) {
         this.clearEntryForColumn(topNameEntry, entry);
       }
@@ -144,8 +137,6 @@ export class HttpRequestQueue {
         this.nameHeap.pop();
       }
     }
-
-    this.running = false;
   }
 
   private getNameEntry(name: string): RequestQueueNameEntry {
@@ -163,7 +154,6 @@ export class HttpRequestQueue {
   }
 
   private async fireForEntry(entry: RequestQueueEntry) {
-    this.activeCount++;
     try {
       const resp = await fetchWrapper(entry.requestOptions);
       entry.resolve(resp);
@@ -171,6 +161,7 @@ export class HttpRequestQueue {
       entry.reject(err);
     }
     this.activeCount--;
+    return this.popEntries();
   }
 
   private clearEntryForColumn(
