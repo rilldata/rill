@@ -11,7 +11,6 @@
   export let tooltipDistance = 8;
   export let tooltipLocation = "bottom";
   export let tooltipAlignment = "center";
-  // FIXME: invert this so that margin classes have to be explicitly applied
   export let marginClasses = "";
 </script>
 

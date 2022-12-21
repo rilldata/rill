@@ -59,7 +59,7 @@
       </Portal>
     {/if}
 
-    <div style="width: 100%;" class="pt-2">
+    <div class="w-full pt-2">
       <slot />
     </div>
   </div>

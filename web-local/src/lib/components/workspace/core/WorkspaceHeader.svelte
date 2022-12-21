@@ -7,6 +7,7 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
+  import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
