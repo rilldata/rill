@@ -184,7 +184,4 @@ export function getNumericHistogram(
       },
     }
   );
-  // return derived(histogramQuery, ($query) => {
-  //   return $query?.data?.numericSummary?.numericHistogramBins?.bins;
-  // });
 }
