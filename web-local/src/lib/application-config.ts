@@ -10,11 +10,10 @@ export const COLUMN_PROFILE_CONFIG = {
   /** The null percentage should be _just_ big enough to show x 100.0%
    * For MD IO 0.4, this is 74px.
    */
-  nullPercentageWidth: 44,
-  mediumCutoff: 300,
+  nullPercentageWidth: 42,
   compactBreakpoint: 350,
-  hideRight: 325,
-  hideNullPercentage: 399,
+  hideRight: 310,
+  hideNullPercentage: 350,
   summaryVizWidth: { medium: 68, small: 64 },
   exampleWidth: { medium: 204, small: 132 },
   fontSize: 12,

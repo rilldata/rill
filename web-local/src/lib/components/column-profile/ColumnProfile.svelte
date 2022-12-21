@@ -66,13 +66,12 @@
   }
 </script>
 
-<!-- pl-16 -->
 <div
   bind:this={container}
   class="pl-{indentLevel === 1
     ? '10'
     : '4'} pr-5 pb-2 flex justify-between text-gray-500 pt-1"
-  class:flex-col={containerWidth < 325}
+  class:flex-col={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
 >
   <select bind:value={sortMethod} class={NATIVE_SELECT} style:font-size="11px">
     <option value={sortByOriginalOrder}>show original order</option>
@@ -84,7 +83,7 @@
     style:transform="translateX(4px)"
     bind:value={mode}
     class={NATIVE_SELECT}
-    class:hidden={containerWidth < 325}
+    class:hidden={containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
     style:font-size="11px"
   >
     <option value="summaries">show summary&nbsp;</option>
