@@ -67,7 +67,7 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release ${NIGHTLY} --snapshot
+              release ${NIGHTLY} --snapshot --debug
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
