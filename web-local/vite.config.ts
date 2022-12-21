@@ -44,8 +44,6 @@ const config = defineConfig({
     },
   },
   define: {
-    RILL_VERSION: `"${pkg.version}"`,
-    RILL_COMMIT: `"${commitHash}"`,
     RILL_RUNTIME_URL: `"${runtimeUrl}"`,
   },
   plugins: [sveltekit()],
