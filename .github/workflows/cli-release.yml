@@ -44,6 +44,9 @@ jobs:
           echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
           echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
 
+          echo ${{ secrets.DOCKERHUB_PASS }} | docker login -u ${{ secrets.DOCKERHUB_USER }} --password-stdin
+          docker info
+
       - name: Release Publish
         run: |-
           if [[ ${{ github.event_name }} == "schedule" ]]; then

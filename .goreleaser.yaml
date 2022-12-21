@@ -4,10 +4,6 @@ release:
   prerelease: auto
   draft: true
 
-before:
-  hooks:
-    - echo {{ .Env.DOCKERHUB_PASS }} | docker login -u {{ .Env.DOCKERHUB_USER }} --password-stdin
-
 builds:
   - id: darwin_amd64
     main: ./cli/main.go
