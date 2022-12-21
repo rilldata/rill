@@ -6,6 +6,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -13,18 +14,17 @@
     useRuntimeServiceRefreshAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { fade } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/overlay-store";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import WorkspaceHeader from "@rilldata/web-local/lib/components/workspace/core/WorkspaceHeader.svelte";
   import {
     isDuplicateName,
     renameFileArtifact,
     useAllNames,
-  } from "../../../svelte-query/actions";
-  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
+  } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { fade } from "svelte/transition";
+  import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
 

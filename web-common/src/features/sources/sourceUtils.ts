@@ -1,5 +1,5 @@
 import type { V1Connector } from "@rilldata/web-common/runtime-client";
-import { sanitizeEntityName } from "../../../util/extract-table-name";
+import { sanitizeEntityName } from "./extract-table-name";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,

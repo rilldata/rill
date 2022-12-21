@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
 
   export let size = "1em";
   export let status: EntityStatus = EntityStatus.Idle;

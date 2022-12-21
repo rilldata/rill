@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Callout } from "@rilldata/web-common/components/callout";
   import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
@@ -11,7 +12,6 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";

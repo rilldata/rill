@@ -1,5 +1,7 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
   import { runtimeStore } from "../../application-state-stores/application-store";
@@ -8,8 +10,6 @@
     metricsExplorerStore,
   } from "../../application-state-stores/explorer-stores";
   import { useMetaQuery } from "../../svelte-query/dashboards";
-  import { EntityStatus } from "../../temp/entity";
-  import Spinner from "../Spinner.svelte";
 
   export let metricViewName;
 

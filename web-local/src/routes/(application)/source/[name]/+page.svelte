@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SourceWorkspace } from "@rilldata/web-local/lib/components/workspace";
+  import { SourceWorkspace } from "@rilldata/web-common/features/sources";
 
   export let data;
 </script>

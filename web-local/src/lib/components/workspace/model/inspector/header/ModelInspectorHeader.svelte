@@ -5,6 +5,7 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -22,7 +23,6 @@
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";

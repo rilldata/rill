@@ -1,11 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ModelIcon from "@rilldata/web-common/components/icons/Model.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";

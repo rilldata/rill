@@ -19,8 +19,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
+  import { getSummaries } from "@rilldata/web-local/lib/components/column-profile/queries";
   import {
     GridCell,
     LeftRightGrid,
@@ -34,17 +36,15 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { useCreateDashboardFromSource } from "@rilldata/web-local/lib/svelte-query/actions";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { overlay } from "../../../application-state-stores/overlay-store";
-  import { useCreateDashboardFromSource } from "../../../svelte-query/actions";
-  import { useDashboardNames } from "../../../svelte-query/dashboards";
-  import { useModelNames } from "../../../svelte-query/models";
-  import { getSummaries } from "../../column-profile/queries";
-  import { createModelFromSource } from "../../navigation/models/createModel";
+  import { createModelFromSource } from "../createModel";
 
   export let sourceName: string;
 

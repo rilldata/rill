@@ -5,17 +5,17 @@ import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-local/lib/util/duplicateNameUtils";
+import { importOverlayVisible } from "../../../../../web-local/src/lib/application-state-stores/overlay-store";
+import { FILE_EXTENSION_TO_TABLE_TYPE } from "../../../../../web-local/src/lib/types";
+import {
+  extractFileExtension,
+  getTableNameFromFile,
+} from "../extract-table-name";
 import {
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
-} from "../application-state-stores/application-store";
-import { importOverlayVisible } from "../application-state-stores/overlay-store";
-import { FILE_EXTENSION_TO_TABLE_TYPE } from "../types";
-import {
-  extractFileExtension,
-  getTableNameFromFile,
-} from "./extract-table-name";
+} from "../sources-store";
 
 /**
  * Uploads all valid files.

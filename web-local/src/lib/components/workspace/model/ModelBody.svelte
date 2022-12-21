@@ -2,6 +2,7 @@
   import type { SelectionRange } from "@codemirror/state";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -24,7 +25,6 @@
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";

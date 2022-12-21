@@ -1,5 +1,6 @@
 <script lang="ts">
-  import BlockingOverlayContainer from "./BlockingOverlayContainer.svelte";
+  import BlockingOverlayContainer from "@rilldata/web-common/features/temp/BlockingOverlayContainer.svelte";
+
   export let tableName;
 </script>
 
