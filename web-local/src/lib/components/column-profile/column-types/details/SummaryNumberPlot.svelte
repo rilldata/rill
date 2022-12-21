@@ -20,7 +20,6 @@
   $: formatter = INTEGERS.has(type) ? format(".0r") : justEnoughPrecision;
   $: values = [
     { label: "min", value: min, format: formatter },
-    { label: "max", value: max, format: formatter },
     { label: "q25", value: q25, format: formatter },
     { label: "q50", value: q50, format: formatter },
     {
@@ -28,6 +27,8 @@
       value: q75,
       format: formatter,
     },
+
+    { label: "max", value: max, format: formatter },
     {
       label: "mean",
       value: mean,
@@ -47,11 +48,16 @@
     {#each values as { label, value, format = undefined }, i}
       <g transform="translate(0 {(values.length - i - 1) * rowHeight})">
         <GraphicContext height={rowHeight}>
-          <circle cx={xScale(value)} cy={rowHeight / 2} r="4" fill="red" />
+          <circle
+            cx={xScale(value)}
+            cy={rowHeight / 2}
+            r="2.5"
+            fill="#ff8282"
+          />
           <line
             x1={xScale(value)}
             x2={xScale(value)}
-            y1={rowHeight / 2 - 8}
+            y1={rowHeight / 2 - 1}
             y2={-(rowHeight * (values.length - i - 1))}
             stroke="red"
             opacity={0.5}
@@ -60,7 +66,7 @@
             dy=".35em"
             x={value}
             ry={rowHeight / 2}
-            buffer={8}
+            buffer={6}
             colorClass="ui-copy-muted"
           >
             <tspan>
