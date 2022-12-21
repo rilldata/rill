@@ -96,8 +96,8 @@ brews:
 
 dockers:
   - image_templates:
-    - rilldata/rill:latest
-    - rilldata/rill:{{ .Tag }}
+      - rilldata/rill:latest
+      - rilldata/rill:{{ .Tag }}
 
 archives:
   - files:
