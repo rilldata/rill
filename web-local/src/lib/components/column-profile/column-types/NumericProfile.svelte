@@ -96,7 +96,6 @@
 >
   <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
 
-  <!-- <DataTypeIcon slot="icon" {type} /> -->
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
   <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
   <NullPercentageSpark
