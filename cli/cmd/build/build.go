@@ -28,9 +28,9 @@ func BuildCmd(ver version.Version) *cobra.Command {
 			}
 
 			err = app.Reconcile()
-			// if err != nil {
-			// 	return fmt.Errorf("reconcile project: %w", err)
-			// }
+			if err != nil {
+				return fmt.Errorf("reconcile project: %w", err)
+			}
 
 			return nil
 		},
