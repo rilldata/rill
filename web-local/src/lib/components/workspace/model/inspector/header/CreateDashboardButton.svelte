@@ -33,7 +33,8 @@
 
   export let modelName: string;
   export let hasError = false;
-  export let width = undefined;
+
+  export let collapse = false;
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
@@ -108,7 +109,7 @@
     on:click={handleCreateDashboard}
     type="primary"
   >
-    <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
+    <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
     <Explore size="14px" /></Button
   >
   <TooltipContent slot="tooltip-content">

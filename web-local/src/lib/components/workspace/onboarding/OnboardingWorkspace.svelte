@@ -33,7 +33,7 @@
   ];
 </script>
 
-<WorkspaceContainer assetID="onboarding" inspector={false}>
+<WorkspaceContainer top="0px" assetID="onboarding" inspector={false}>
   <div class="mt-10 p-2 place-content-center h-screen" slot="body">
     <div class="text-center">
       <div class="font-bold">Getting started</div>

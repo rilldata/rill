@@ -1,11 +1,9 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRenameFileAndReconcile,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
@@ -14,12 +12,6 @@
   import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
-  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
-  import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
@@ -29,11 +21,9 @@
   import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
-  import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtimeStore } from "../../../application-state-stores/application-store";
-  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let modelName: string;
 
@@ -43,7 +33,6 @@
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const updateModel = useRuntimeServicePutFileAndReconcile();
-  const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight;
@@ -60,56 +49,11 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  // TODO: does this need any sanitization?
-  $: titleInput = modelName;
-
-  function formatModelName(str) {
-    return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
-  }
-
-  const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      notifications.send({
-        message:
-          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      });
-      e.target.value = modelName; // resets the input
-      return;
-    }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
-      notifications.send({
-        message: `Name ${e.target.value} is already in use`,
-      });
-      e.target.value = modelName; // resets the input
-      return;
-    }
-
-    try {
-      await renameFileArtifact(
-        queryClient,
-        runtimeInstanceId,
-        modelName,
-        e.target.value,
-        EntityType.Model,
-        $renameModel
-      );
-    } catch (err) {
-      console.error(err.response.data.message);
-    }
-  };
-
-  /** model body layout elements */
-  // TODO: should there be a session lived ID here instead of name?
-  const outputLayout = localStorageStore(`${modelName}-output`, {
-    value: 500,
-    visible: true,
-  });
-  const outputPosition = tweened($outputLayout.value, { duration: 50 });
-  outputLayout.subscribe((state) => {
-    outputPosition.set(state.value);
-  });
+  const outputLayout = getContext("rill:app:output-layout");
+  const outputPosition = getContext("rill:app:output-height-tween");
+  const outputVisibilityTween = getContext(
+    "rill:app:output-visibility-tween"
+  ) as Writable<number>;
 
   const inspectorWidth = getContext(
     "rill:app:inspector-width-tween"
@@ -169,17 +113,13 @@
 
 <svelte:window bind:innerHeight />
 
-<WorkspaceHeader
-  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-/>
-
 <div class="editor-pane bg-gray-100">
   <div
-    style:height="calc({innerHeight}px - {$outputPosition}px -
-    var(--header-height))"
+    style:height="calc({innerHeight}px - {$outputPosition *
+      $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full grid p-5 pt-0 overflow-auto">
+      <div class="h-full  p-5  grid overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
@@ -192,38 +132,38 @@
     {/if}
   </div>
   <Portal target=".body">
-    <div
-      class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center ml-2 mr-2"
-      style:bottom="{$outputPosition}px"
-      style:left="{(1 - $navVisibilityTween) * $navigationWidth + 16}px"
-      style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
-      style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
-      style:right="{$inspectorVisibilityTween * $inspectorWidth + 16}px"
-      use:drag={{
-        minSize: 200,
-        maxSize: innerHeight - 200,
-        side: "modelPreviewHeight",
-        store: outputLayout,
-        orientation: "vertical",
-        reverse: true,
-      }}
-    >
-      <div class="border-t border-gray-300" />
-      <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
-        <div
-          class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
-        />
+    {#if $outputLayout.visible}
+      <div
+        class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center"
+        style:bottom="{$outputPosition * $outputVisibilityTween}px"
+        style:left="{(1 - $navVisibilityTween) * $navigationWidth + 20}px"
+        style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
+        style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
+        style:right="{$inspectorVisibilityTween * $inspectorWidth + 20}px"
+        use:drag={{
+          minSize: 200,
+          maxSize: innerHeight - 200,
+          side: "modelPreviewHeight",
+          store: outputLayout,
+          orientation: "vertical",
+          reverse: true,
+        }}
+      >
+        <div class="border-t border-gray-300" />
+        <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
+          <div
+            class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
+          />
+        </div>
       </div>
-    </div>
+    {/if}
   </Portal>
 
   {#if hasModelSql}
-    <div style:height="{$outputPosition}px" class="p-6 flex flex-col gap-6">
+    <div style:height="{$outputPosition}px" class="p-5 flex flex-col gap-6">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
-        class:border={!!modelError}
-        class:border-gray-300={!!modelError}
       >
         <div
           style="{modelError ? 'filter: brightness(.9);' : ''}

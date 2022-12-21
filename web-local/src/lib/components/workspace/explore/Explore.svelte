@@ -28,6 +28,7 @@
 </script>
 
 <WorkspaceContainer
+  top="0px"
   assetID={metricViewName}
   bgClass="bg-white"
   inspector={false}

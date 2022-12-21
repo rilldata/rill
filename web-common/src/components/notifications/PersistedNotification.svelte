@@ -15,7 +15,11 @@
   <div class="flex flex-row items-center justify-between pl-6 pr-4">
     <h1><slot name="title" /></h1>
     <div>
-      <IconButton on:click={() => dispatch("clear")} bgDark>
+      <IconButton
+        marginClasses="ml-3"
+        on:click={() => dispatch("clear")}
+        bgDark
+      >
         <Close size="16px" color="#fff" />
       </IconButton>
     </div>

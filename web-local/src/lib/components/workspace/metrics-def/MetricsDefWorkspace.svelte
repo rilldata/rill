@@ -147,11 +147,15 @@
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
-  <div slot="body">
-    <MetricsDefWorkspaceHeader {metricsDefName} {metricsInternalRep} />
+  <MetricsDefWorkspaceHeader
+    slot="header"
+    {metricsDefName}
+    {metricsInternalRep}
+  />
 
+  <div slot="body">
     <div
-      class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
+      class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
       <div class="flex-none flex flex-row">
