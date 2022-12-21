@@ -33,8 +33,8 @@ jobs:
         with:
           node-version: 18
 
-#      - name: Build and embed static UI
-#        run: make cli.prepare
+      - name: Build and embed static UI
+        run: make cli.prepare
 
       - name: Set up release environment
         run: |-
@@ -43,12 +43,7 @@ jobs:
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
           echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
           echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
-
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
-          docker info
-          docker pull rilldata/rill
-          docker tag rilldata/rill rilldata/rill:abc1
-          docker push rilldata/rill:abc1
 
       - name: Release Publish
         run: |-
@@ -67,7 +62,9 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release ${NIGHTLY} --snapshot --debug
+              release ${NIGHTLY}
+
+          docker images | grep rilldata/rill
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
