@@ -60,7 +60,9 @@ export function getLeaderboardStore(
 
 // All leaderboard values flattened into a single list
 export function getAllLeaderboardValues(leaderboardStore) {
-  return derived(leaderboardStore, (store) => {
-    return store?.map((dimension) => dimension.values).flat();
+  return derived(leaderboardStore, (store, set) => {
+    const allValues = store?.map((dimension) => dimension.values).flat();
+    const timeoutId = setTimeout(() => set(allValues), 1000);
+    return () => clearTimeout(timeoutId);
   });
 }
