@@ -413,7 +413,7 @@ func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "numeric_dim",
-		MeasureNames:    []string{"measure_1"},
+		MeasureNames:    []string{"measure_0"},
 	})
 
 	require.NoError(t, err)
@@ -421,7 +421,7 @@ func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
 	require.Equal(t, 2, len(tr.Data[0].Fields))
 
 	require.Equal(t, float64(1), tr.Data[0].Fields["numeric_dim"].GetNumberValue())
-	require.Equal(t, 2.0, tr.Data[0].Fields["measure_1"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
 }
 
 func Ignore_TestServer_MetricsViewToplist_HugeInt(t *testing.T) {
