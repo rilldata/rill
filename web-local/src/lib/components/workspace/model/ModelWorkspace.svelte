@@ -4,6 +4,7 @@
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ModelInspector from "./inspector/ModelInspector.svelte";
   import ModelBody from "./ModelBody.svelte";
+  import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
 
   export let modelName: string;
 
@@ -18,6 +19,9 @@
 
 {#key modelName}
   <WorkspaceContainer assetID={modelName}>
+    <div slot="header">
+      <ModelWorkspaceHeader {modelName} />
+    </div>
     <div slot="body">
       <ModelBody {modelName} />
     </div>

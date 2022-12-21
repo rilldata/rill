@@ -20,6 +20,7 @@
   let:toggleFloatingElement
 >
   <IconButton
+    marginClasses="ml-3"
     on:click={(e) => {
       e.stopPropagation();
       toggleFloatingElement();
