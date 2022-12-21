@@ -68,6 +68,10 @@ linters:
     - whitespace
 
 linters-settings:
+  dupl:
+    # Tokens count to trigger issue.
+    # Default: 150
+    threshold: 200
   goconst:
     min-len: 2
     min-occurrences: 3
