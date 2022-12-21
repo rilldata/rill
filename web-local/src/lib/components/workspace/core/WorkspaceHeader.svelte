@@ -9,17 +9,23 @@
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
   export let titleInput;
   export let showStatus = true;
   export let showInspectorToggle = true;
+  export let width: number = undefined;
 
   let titleInputElement;
   let editingTitle = false;
   let titleInputValue;
   let tooltipActive;
+
+  const { listenToNodeResize, observedNode } =
+    createResizeListenerActionFactory();
+
   const inspectorLayout = getContext(
     "rill:app:inspector-layout"
   ) as Writable<LayoutElement>;
@@ -36,10 +42,13 @@
 
   $: inputSize =
     Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
+
+  $: width = $observedNode?.getBoundingClientRect()?.width;
 </script>
 
 <svelte:window on:keydown={onKeydown} />
 <header
+  use:listenToNodeResize
   style:height="var(--header-height)"
   class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
@@ -86,7 +95,7 @@
     {/if}
   </div>
   <div class="flex items-center mr-4">
-    <slot name="workspace-controls" />
+    <slot name="workspace-controls" {width} />
     {#if showInspectorToggle}
       <IconButton
         on:click={() => {
@@ -109,7 +118,7 @@
       </IconButton>
     {/if}
     <div class="pl-4">
-      <slot name="cta" />
+      <slot name="cta" {width} />
     </div>
     {#if showStatus}
       <WorkspaceHeaderStatusSpinner />

@@ -8,6 +8,7 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
@@ -23,6 +24,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { WorkspaceHeader } from "..";
+  import ResponsiveButtonText from "../../panel/ResponsiveButtonText.svelte";
   import CreateDashboardButton from "./inspector/header/CreateDashboardButton.svelte";
 
   export let modelName: string;
@@ -84,9 +86,13 @@
   };
 
   $: titleInput = modelName;
+
+  const { listenToNodeResize, observedNode } =
+    createResizeListenerActionFactory();
 </script>
 
 <WorkspaceHeader
+  let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   showStatus={false}
 >
@@ -127,7 +133,9 @@
             on:click={toggleFloatingElement}
             type="secondary"
           >
-            Export Results
+            <ResponsiveButtonText collapse={width < 800}>
+              Export Results
+            </ResponsiveButtonText>
             <Export size="14px" />
           </Button>
           <Menu
@@ -161,7 +169,11 @@
           {/if}
         </TooltipContent>
       </Tooltip>
-      <CreateDashboardButton hasError={modelHasError} {modelName} {width} />
+      <CreateDashboardButton
+        collapse={width < 800}
+        hasError={modelHasError}
+        {modelName}
+      />
     </PanelCTA>
   </svelte:fragment>
 </WorkspaceHeader>

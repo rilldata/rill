@@ -45,6 +45,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { createModelFromSource } from "../../navigation/models/createModel";
   import PanelCTA from "../../panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "../../panel/ResponsiveButtonText.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
   export let sourceName: string;
@@ -204,6 +205,7 @@
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
     showStatus={false}
+    let:width
   >
     <svelte:fragment slot="icon">
       <Source />
@@ -252,7 +254,9 @@
       <PanelCTA side="right">
         <Tooltip location="left" distance={16}>
           <Button type="secondary" on:click={handleCreateModelFromSource}>
-            Create Model
+            <ResponsiveButtonText collapse={width < 800}>
+              Create Model
+            </ResponsiveButtonText>
             <Model size="16px" />
           </Button>
           <TooltipContent slot="tooltip-content">
@@ -265,7 +269,9 @@
             disabled={!timestampColumns?.length}
             on:click={() => handleCreateDashboardFromSource(sourceName)}
           >
-            Create Dashboard
+            <ResponsiveButtonText collapse={width < 800}>
+              Create Dashboard
+            </ResponsiveButtonText>
 
             <Explore size="16px" />
           </Button>

@@ -15,6 +15,7 @@
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
   } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -32,7 +33,8 @@
 
   export let modelName: string;
   export let hasError = false;
-  export let width = undefined;
+
+  export let collapse = false;
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
@@ -107,7 +109,7 @@
     on:click={handleCreateDashboard}
     type="primary"
   >
-    Create Dashboard
+    <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
     <Explore size="14px" /></Button
   >
   <TooltipContent slot="tooltip-content">
