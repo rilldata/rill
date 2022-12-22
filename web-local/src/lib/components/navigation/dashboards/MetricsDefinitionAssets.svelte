@@ -3,7 +3,6 @@
   import { page } from "$app/stores";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
-  import { default as Explore } from "@rilldata/web-common/components/icons/Explore.svelte";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
@@ -187,7 +186,7 @@
   tooltipText="Create a new dashboard"
   toggleText="dashboards"
 >
-  <Explore size="14px" /> Dashboards
+  Dashboards
 </NavigationHeader>
 
 {#if showMetricsDefs && $dashboardNames.data}
