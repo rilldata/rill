@@ -2,12 +2,11 @@ package queries
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type ColumnCardinality struct {
@@ -70,5 +69,5 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return nil
 	}
 
-	return status.Error(codes.Internal, "no rows returned")
+	return errors.New("no rows returned")
 }

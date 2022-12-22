@@ -404,8 +404,6 @@ func getFilterFromDimensionValuesFilter(
 				case *structpb.Value_NumberValue:
 					inClause += "?"
 					args = append(args, iv.GetNumberValue())
-				case *structpb.Value_NullValue:
-					continue
 				case *structpb.Value_BoolValue:
 					inClause += "?"
 					args = append(args, iv.GetBoolValue())
