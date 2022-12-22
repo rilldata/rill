@@ -60,7 +60,7 @@
   tooltipText="Add a new data source"
   toggleText="sources"
 >
-  <Source size="14px" /> Sources
+  <Source size="15px" /> Sources
 </NavigationHeader>
 
 {#if showTables}

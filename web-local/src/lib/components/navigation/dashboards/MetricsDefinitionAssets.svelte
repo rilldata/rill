@@ -187,7 +187,7 @@
   tooltipText="Create a new dashboard"
   toggleText="dashboards"
 >
-  <Explore size="14px" /> Dashboards
+  <Explore size="15px" /> Dashboards
 </NavigationHeader>
 
 {#if showMetricsDefs && $dashboardNames.data}
