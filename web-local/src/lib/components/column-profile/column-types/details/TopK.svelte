@@ -1,30 +1,31 @@
 <script lang="ts">
-  import LeaderboardListItem from "$lib/components/leaderboard/LeaderboardListItem.svelte";
-  import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import TooltipTitle from "$lib/components/tooltip/TooltipTitle.svelte";
-  import {
-    formatBigNumberPercentage,
-    formatInteger,
-  } from "$lib/util/formatters";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import {
     copyToClipboard,
     createShiftClickAction,
-  } from "@rilldata/web-local/lib/util/shift-click-action";
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    formatBigNumberPercentage,
+    formatInteger,
+  } from "@rilldata/web-common/lib/formatters";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import Shortcut from "../../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../../tooltip/StackingWord.svelte";
-  import TooltipShortcutContainer from "../../../tooltip/TooltipShortcutContainer.svelte";
+  import LeaderboardListItem from "../../../../components/leaderboard/LeaderboardListItem.svelte";
+
   export let colorClass = "bg-blue-200";
 
   const { shiftClickAction } = createShiftClickAction();
 
   export let topK;
   export let totalRows: number;
-  let sliceAmount = 15;
+  export let k = 15;
 
   const dispatch = createEventDispatcher();
 
@@ -58,7 +59,7 @@
 
 {#if topK && totalRows}
   <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#each topK.slice(0, sliceAmount) as item (item.value)}
+    {#each topK.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"

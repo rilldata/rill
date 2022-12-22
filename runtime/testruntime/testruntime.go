@@ -9,13 +9,15 @@ import (
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/stretchr/testify/require"
+
+	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	"github.com/stretchr/testify/require"
 )
 
-// TestingT satisfies both *testing.T and *testing.B
+// TestingT satisfies both *testing.T and *testing.B.
 type TestingT interface {
 	Name() string
 	TempDir() string
@@ -23,7 +25,7 @@ type TestingT interface {
 	Errorf(format string, args ...interface{})
 }
 
-// New returns a runtime configured for use in tests
+// New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
 	opts := &runtime.Options{
 		ConnectionCacheSize: 100,
@@ -61,7 +63,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 
 // NewInstanceWithModel creates a runtime and an instance for use in tests.
 // The passed model name and SQL SELECT statement will be loaded into the instance.
-func NewInstanceWithModel(t TestingT, name string, sql string) (*runtime.Runtime, string) {
+func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, string) {
 	rt, instanceID := NewInstance(t)
 
 	path := filepath.Join("models", name+".sql")

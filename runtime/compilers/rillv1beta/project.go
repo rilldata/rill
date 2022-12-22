@@ -29,7 +29,7 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 	return err == nil
 }
 
-func (c *Codec) InitEmpty(ctx context.Context, name string, rillVersion string) error {
+func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\nname: %s\n", Version, rillVersion, name)))
 	if err != nil {
 		return err

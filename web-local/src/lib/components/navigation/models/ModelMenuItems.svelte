@@ -1,5 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
@@ -32,10 +36,6 @@
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { useDashboardNames } from "../../../svelte-query/dashboards";
-  import Cancel from "../../icons/Cancel.svelte";
-  import EditIcon from "../../icons/EditIcon.svelte";
-  import Explore from "../../icons/Explore.svelte";
-  import { Divider, MenuItem } from "../../menu";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding

@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 // StartCmd represents the start command
-func StartCmd(ver string) *cobra.Command {
+func StartCmd(ver version.Version) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string
@@ -18,7 +19,7 @@ func StartCmd(ver string) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 
-	var startCmd = &cobra.Command{
+	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +30,7 @@ func StartCmd(ver string) *cobra.Command {
 
 			// If not initialized, init repo with an empty project
 			if !app.IsProjectInit() {
-				err := app.InitProject("")
+				err = app.InitProject("")
 				if err != nil {
 					return fmt.Errorf("init project: %w", err)
 				}

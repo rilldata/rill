@@ -1,8 +1,8 @@
 <script lang="ts">
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { getContext } from "svelte";
-  import Cancel from "../icons/Cancel.svelte";
-  import Check from "../icons/Check.svelte";
-  import Spacer from "../icons/Spacer.svelte";
   import StickyHeader from "../virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableConfig } from "../virtualized-table/types";
 

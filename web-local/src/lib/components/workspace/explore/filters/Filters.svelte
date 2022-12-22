@@ -2,27 +2,29 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
+  import {
+    Chip,
+    ChipContainer,
+    RemovableListChip,
+  } from "@rilldata/web-common/components/chip";
+  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
+  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
+  import type {
+    MetricsViewDimension,
+    MetricsViewFilterCond,
+    V1MetricsViewFilter,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
-
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { flip } from "svelte/animate";
-
-  import type {
-    MetricsViewDimensionValues,
-    MetricsViewRequestFilter,
-  } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { Chip, ChipContainer, RemovableListChip } from "../../../chip";
-  import { defaultChipColors } from "../../../chip/chip-types";
-  import Filter from "../../../icons/Filter.svelte";
-  import FilterRemove from "../../../icons/FilterRemove.svelte";
   import { getDisplayName } from "../utils";
 
   export let metricViewName;
@@ -30,9 +32,9 @@ The main feature-set component for dashboard filters
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let includeValues: MetricsViewDimensionValues;
+  let includeValues: Array<MetricsViewFilterCond>;
   $: includeValues = metricsExplorer?.filters.include;
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
@@ -47,7 +49,7 @@ The main feature-set component for dashboard filters
     );
   }
 
-  function isFiltered(filters: MetricsViewRequestFilter): boolean {
+  function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
@@ -136,6 +138,8 @@ The main feature-set component for dashboard filters
       ...currentDimensionIncludeFilters,
       ...currentDimensionExcludeFilters,
     ];
+    // sort based on name to make sure toggling include/exclude is not jarring
+    currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
   function toggleDimensionValue(event, item) {

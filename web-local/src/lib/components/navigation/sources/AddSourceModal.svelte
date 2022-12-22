@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { Dialog } from "@rilldata/web-common/components/modal";
+  import Tab from "@rilldata/web-common/components/tab/Tab.svelte";
+  import TabGroup from "@rilldata/web-common/components/tab/TabGroup.svelte";
   import {
     useRuntimeServiceListConnectors,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
-  import Tab from "@rilldata/web-local/lib/components/tab/Tab.svelte";
-  import TabGroup from "@rilldata/web-local/lib/components/tab/TabGroup.svelte";
   import { createEventDispatcher } from "svelte";
-  import { Dialog } from "../../modal";
   import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
 

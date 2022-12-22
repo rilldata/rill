@@ -1,12 +1,19 @@
 <script lang="ts">
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
-  import { DataTypeIcon } from "../../data-types";
+  import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
-  import { getCountDistinct, getNullPercentage, getTopK } from "../queries";
+  import {
+    getCountDistinct,
+    getNullPercentage,
+    getTopK,
+    isFetching,
+  } from "../queries";
   import TopK from "./details/TopK.svelte";
   import ColumnCardinalitySpark from "./sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
+
   export let columnName: string;
   export let objectName: string;
   export let example;
@@ -18,6 +25,8 @@
   export let mode: "example" | "summaries" = "summaries";
 
   let active = false;
+
+  let topKLimit = 15;
 
   $: nulls = getNullPercentage(
     $runtimeStore?.instanceId,
@@ -31,42 +40,58 @@
     columnName
   );
 
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
+  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName, active);
+
+  function toggleColumnProfile() {
+    active = !active;
+    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
+  }
+
+  $: fetchingSummaries = isFetching($nulls, $columnCardinality);
 </script>
 
 <ProfileContainer
-  on:select={() => {
-    active = !active;
-  }}
-  on:shift-click={() =>
-    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
+  isFetching={fetchingSummaries}
   {active}
   emphasize={active}
-  {hideRight}
-  {hideNullPercentage}
-  {mode}
   {example}
+  {hideNullPercentage}
+  {hideRight}
+  {mode}
+  on:select={toggleColumnProfile}
+  on:shift-click={() =>
+    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <DataTypeIcon type="VARCHAR" slot="icon" />
+  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
   <ColumnCardinalitySpark
-    slot="summary"
     cardinality={$columnCardinality?.cardinality}
-    totalRows={$columnCardinality?.totalRows}
     {compact}
+    slot="summary"
+    totalRows={$columnCardinality?.totalRows}
   />
   <NullPercentageSpark
-    slot="nullity"
     nullCount={$nulls?.nullCount}
+    slot="nullity"
     totalRows={$nulls?.totalRows}
     {type}
   />
 
-  <div slot="details" class="pl-10 pr-4 py-4">
+  <div
+    class="pl-10 pr-4 py-4"
+    slot="details"
+    style:min-height="{Math.min(topKLimit, $columnCardinality?.cardinality) *
+      18 +
+      42 || 250}px"
+  >
     <div>
-      <TopK topK={$topK} totalRows={$columnCardinality?.totalRows} />
+      <TopK
+        topK={$topK}
+        k={topKLimit}
+        totalRows={$columnCardinality?.totalRows}
+      />
     </div>
   </div>
 </ProfileContainer>

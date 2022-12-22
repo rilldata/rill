@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -47,7 +48,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}, nil
 }
 
-// ServeGRPC Starts the gRPC server
+// ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
@@ -68,7 +69,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
-// Starts the HTTP server
+// Starts the HTTP server.
 func (s *Server) ServeHTTP(ctx context.Context) error {
 	handler, err := s.HTTPHandler(ctx)
 	if err != nil {
@@ -80,17 +81,15 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// ErrorToCode returns the Code of the error if it is a Status error
-// otherwise use status.FromContextError to determine the Code.
-// Log level for error codes is defined in logging.DefaultServerCodeToLevel
+// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
 func ErrorToCode(err error) codes.Code {
-	if se, ok := err.(interface {
-		GRPCStatus() *status.Status
-	}); ok {
-		return se.GRPCStatus().Code()
+	if errors.Is(err, context.DeadlineExceeded) {
+		return codes.DeadlineExceeded
 	}
-	contextStatus := status.FromContextError(err)
-	return contextStatus.Code()
+	if errors.Is(err, context.Canceled) {
+		return codes.Canceled
+	}
+	return logging.DefaultErrorToCode(err)
 }
 
 // GRPCCodeToLevel overrides the log level of various gRPC codes.
@@ -109,10 +108,10 @@ func GRPCCodeToLevel(code codes.Code) logging.Level {
 	}
 }
 
-// HTTPHandler HTTP handler serving REST gateway
+// HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux()
+	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
@@ -121,15 +120,31 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// One-off REST-only path for multipart file upload
-	mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	if err != nil {
+		panic(err)
+	}
 
 	// One-off REST-only path for file export
-	mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	if err != nil {
+		panic(err)
+	}
 
 	// Register CORS
 	handler := cors(mux)
 
 	return handler, nil
+}
+
+// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// code) to HTTP status code 400 instead of 500.
+func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+	s := status.Convert(err)
+	if s.Code() == codes.Unknown {
+		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
+	}
+	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
 // Ping implements RuntimeService

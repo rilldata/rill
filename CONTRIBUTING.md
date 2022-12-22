@@ -12,6 +12,10 @@ This is a full list of development dependencies:
 - [GraalVM](https://www.graalvm.org) and [Maven](https://maven.apache.org) for Java (we recommend installing both through [sdkman](https://sdkman.io))
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 
+### Editor setup
+
+- Integrate `golangci-lint` ([instructions](https://golangci-lint.run/usage/integrations))
+
 ## Build the application
 
 Running `make cli` will build a production-ready binary and output it to `./rill` (see `cli/README.md` for details).

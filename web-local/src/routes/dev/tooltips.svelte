@@ -1,6 +1,6 @@
 <script>
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import SummaryAndHistogram from "@rilldata/web-local/lib/components/viz/histogram/NumericHistogram.svelte";
   import { data01 } from "./_hist-data.ts";
   let x = 50;

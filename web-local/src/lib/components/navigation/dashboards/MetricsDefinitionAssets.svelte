@@ -1,15 +1,26 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import { default as Explore } from "@rilldata/web-common/components/icons/Explore.svelte";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import { MenuItem } from "@rilldata/web-common/components/menu";
+  import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    FileArtifactsData,
+    fileArtifactsStore,
+  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
-  import { Divider } from "@rilldata/web-local/lib/components/menu/index.js";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -22,22 +33,11 @@
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { SourceModelValidationStatus } from "@rilldata/web-local/lib/temp/metrics.js";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    FileArtifactsData,
-    fileArtifactsStore,
-  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import Cancel from "../../icons/Cancel.svelte";
-  import EditIcon from "../../icons/EditIcon.svelte";
-  import { default as Explore } from "../../icons/Explore.svelte";
-  import MetricsIcon from "../../icons/Metrics.svelte";
-  import { MenuItem } from "../../menu";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
@@ -185,6 +185,7 @@
   bind:show={showMetricsDefs}
   on:add={dispatchAddEmptyMetricsDef}
   tooltipText="Create a new dashboard"
+  toggleText="dashboards"
 >
   <Explore size="14px" /> Dashboards
 </NavigationHeader>

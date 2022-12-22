@@ -5,6 +5,12 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import {
+    MetricsViewDimension,
+    MetricsViewFilterCond,
+    useRuntimeServiceMetricsViewToplist,
+    useRuntimeServiceMetricsViewTotals,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     getFilterForDimension,
@@ -16,20 +22,13 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
-  import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
-  import DimensionTable from "../../../dimension/DimensionTable.svelte";
   import {
     humanizeGroupByColumns,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-
-  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-  import {
-    MetricsViewDimension,
-    useRuntimeServiceMetricsViewToplist,
-    useRuntimeServiceMetricsViewTotals,
-  } from "@rilldata/web-common/runtime-client";
+  import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
+  import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
+  import DimensionTable from "../../../dimension/DimensionTable.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -59,7 +58,7 @@
     leaderboardMeasureName
   );
 
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: excludeMode =

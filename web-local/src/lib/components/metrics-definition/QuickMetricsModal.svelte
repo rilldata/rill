@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { Dialog } from "@rilldata/web-common/components/modal";
   import { createEventDispatcher } from "svelte";
-  import { Dialog } from "../modal";
 
   const dispatch = createEventDispatcher();
 </script>

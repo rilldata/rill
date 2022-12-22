@@ -1,11 +1,10 @@
 <script lang="ts">
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
+  import { format } from "d3-format";
+  import { scaleLinear } from "d3-scale";
+  import { cubicOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import { fly } from "svelte/transition";
-  import { cubicOut as easing } from "svelte/easing";
-  import { scaleLinear } from "d3-scale";
-  import { format } from "d3-format";
-  // FIXME: move util to $lib or add a $util
-  import { guidGenerator } from "../../util/guid";
 
   interface HistogramBin {
     bucket: number;

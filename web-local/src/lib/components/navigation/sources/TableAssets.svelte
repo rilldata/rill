@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
@@ -10,7 +11,6 @@
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { useModelNames } from "../../../svelte-query/models";
   import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
-  import Source from "../../icons/Source.svelte";
   import { createModelFromSource } from "../models/createModel";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
@@ -58,6 +58,7 @@
   contextButtonID={"add-table"}
   on:add={openShowAddSourceModal}
   tooltipText="Add a new data source"
+  toggleText="sources"
 >
   <Source size="14px" /> Sources
 </NavigationHeader>

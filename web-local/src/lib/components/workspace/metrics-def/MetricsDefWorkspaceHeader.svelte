@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MetricsIcon from "../../icons/Metrics.svelte";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
@@ -15,18 +15,15 @@
   $: metricsSourceSelectionError = false;
 </script>
 
-<div
-  class="grid gap-x-3 items-center pr-4"
-  style:grid-template-columns="auto max-content"
+<WorkspaceHeader
+  {...{ titleInput, onChangeCallback }}
+  showStatus={false}
+  showInspectorToggle={false}
 >
-  <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
-    <MetricsIcon slot="icon" />
-  </WorkspaceHeader>
-
-  {#if !metricsSourceSelectionError}
-    <MetricsDefinitionExploreMetricsButton
-      {metricsDefName}
-      {metricsInternalRep}
-    />
-  {/if}
-</div>
+  <MetricsIcon slot="icon" />
+  <MetricsDefinitionExploreMetricsButton
+    slot="cta"
+    {metricsDefName}
+    {metricsInternalRep}
+  />
+</WorkspaceHeader>

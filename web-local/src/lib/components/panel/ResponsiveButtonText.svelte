@@ -4,12 +4,12 @@ the threshold specified in collapseInspectorCTAButton, causing a cute
 horizontal slide animation
 -->
 <script lang="ts">
-  import { collapseInspectorCTAButton } from "../../application-config";
-  import { slideRight } from "../../transitions";
-  export let width: number;
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
+
+  export let collapse = false;
 </script>
 
-{#if collapseInspectorCTAButton(width)}<div
+{#if !collapse}<div
     transition:slideRight|local={{
       duration: 400,
       rightOffset: 8,

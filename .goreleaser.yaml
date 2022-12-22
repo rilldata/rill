@@ -4,6 +4,10 @@ release:
   prerelease: auto
   draft: false
 
+before:
+  hooks:
+    - docker login -u {{ .Env.DOCKERHUB_USER }} -p {{ .Env.DOCKERHUB_PASS }}
+
 builds:
   - id: darwin_amd64
     main: ./cli/main.go
@@ -89,6 +93,11 @@ brews:
     commit_author:
       name: rilldata
       email: support@rilldata.com
+
+dockers:
+  - image_templates:
+      - rilldata/rill:latest
+      - rilldata/rill:{{ .Tag }}
 
 archives:
   - files:

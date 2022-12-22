@@ -20,8 +20,12 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	}
 
 	// Driver-specific overrides
-	switch source.Connector {
-	case "local_file":
+	// switch source.Connector {
+	// case "local_file":
+	// 	return c.ingestFile(ctx, env, source)
+	// }
+
+	if source.Connector == "local_file" {
 		return c.ingestFile(ctx, env, source)
 	}
 
@@ -68,11 +72,8 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 	if err != nil {
 		return err
 	}
-	if err = rows.Close(); err != nil {
-		return err
-	}
-
-	return nil
+	err = rows.Close()
+	return err
 }
 
 func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string) error {
@@ -87,11 +88,8 @@ func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.S
 	if err != nil {
 		return err
 	}
-	if err = rows.Close(); err != nil {
-		return err
-	}
-
-	return nil
+	err = rows.Close()
+	return err
 }
 
 func getSourceReader(path string) (string, error) {

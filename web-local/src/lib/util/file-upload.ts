@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { notifications } from "@rilldata/web-common/components/notifications";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
   duplicateNameChecker,
@@ -10,7 +11,6 @@ import {
   duplicateSourceName,
 } from "../application-state-stores/application-store";
 import { importOverlayVisible } from "../application-state-stores/overlay-store";
-import { notifications } from "../components/notifications";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "../types";
 import {
   extractFileExtension,

@@ -15,9 +15,10 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/metrics_views"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
@@ -59,7 +60,7 @@ func TestReconcile(t *testing.T) {
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsAffectedPaths)
-			require.Equal(t, metrics_views.SourceNotFound, result.Errors[1].Message)
+			require.Equal(t, metricsviews.SourceNotFound, result.Errors[1].Message)
 			testutils.AssertTable(t, s, "AdBids", AdBidsRepoPath)
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
@@ -192,13 +193,38 @@ func TestRefreshSource(t *testing.T) {
 
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
-			s, _ := initBasicService(t)
+			s, dir := initBasicService(t)
+
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath)
+			AdBidsDataPath := "data/AdBids.csv"
 
 			// update with same content
-			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			err := artifacts.Write(context.Background(), s.Repo, s.InstID, &drivers.CatalogEntry{
+				Name: "AdBids",
+				Type: drivers.ObjectTypeSource,
+				Path: AdBidsRepoPath,
+				Object: &runtimev1.Source{
+					Name:      "AdBids",
+					Connector: "local_file",
+					Properties: testutils.ToProtoStruct(map[string]any{
+						"path": AdBidsDataPath,
+					}),
+				},
+			})
+			require.NoError(t, err)
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			// ForcedPaths updates all dependant items
+			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
+
+			// update the uploaded file directly
+			time.Sleep(10 * time.Millisecond)
+			err = os.Chtimes(path.Join(dir, AdBidsDataPath), time.Now(), time.Now())
+			require.NoError(t, err)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+				ChangedPaths: tt.config.ChangedPaths,
+			})
+			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
 		})
 	}
@@ -237,7 +263,7 @@ func TestInterdependentModel(t *testing.T) {
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
-			require.Equal(t, metrics_views.SourceNotFound, result.Errors[2].Message)
+			require.Equal(t, metricsviews.SourceNotFound, result.Errors[2].Message)
 			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 			testutils.AssertTableAbsence(t, s, "AdBids_model")
 
@@ -404,7 +430,7 @@ func TestReconcileMetricsView(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 1, 0, 1, 0, AdBidsDashboardAffectedPaths)
 	// dropping the timestamp column gives a different error
-	require.Equal(t, metrics_views.TimestampNotFound, result.Errors[0].Message)
+	require.Equal(t, metricsviews.TimestampNotFound, result.Errors[0].Message)
 
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
@@ -417,7 +443,7 @@ func TestReconcileMetricsView(t *testing.T) {
 
 	// ignore invalid measure and dimension
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -446,7 +472,7 @@ measures:
 	require.Equal(t, "publisher", mv.Dimensions[0].Name)
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -468,10 +494,10 @@ measures:
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
-	require.Equal(t, metrics_views.MissingMeasure, result.Errors[0].Message)
+	require.Equal(t, metricsviews.MissingMeasure, result.Errors[0].Message)
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstId, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -493,14 +519,14 @@ measures:
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
-	require.Equal(t, metrics_views.MissingDimension, result.Errors[0].Message)
+	require.Equal(t, metricsviews.MissingDimension, result.Errors[0].Message)
 }
 
 func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.Put(ctx, s.InstId, AdBidsRepoPath, strings.NewReader(`type: local_file
+	err := s.Repo.Put(ctx, s.InstID, AdBidsRepoPath, strings.NewReader(`type: local_file
 path:
  - data/source.csv`))
 	require.NoError(t, err)
@@ -625,5 +651,5 @@ func getService(t *testing.T) (*catalog.Service, string) {
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
 
-	return catalog.NewService(catalogObject, repo, olap, "test"), dir
+	return catalog.NewService(catalogObject, repo, olap, "test", nil), dir
 }

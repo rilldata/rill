@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Callout } from "@rilldata/web-common/components/callout";
+  import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
@@ -13,9 +15,7 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
-  import { CATEGORICALS } from "../../../duckdb-data-types";
   import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
-  import { Callout } from "../../callout";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
@@ -147,11 +147,15 @@
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
-  <div slot="body">
-    <MetricsDefWorkspaceHeader {metricsDefName} {metricsInternalRep} />
+  <MetricsDefWorkspaceHeader
+    slot="header"
+    {metricsDefName}
+    {metricsInternalRep}
+  />
 
+  <div slot="body">
     <div
-      class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
+      class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
       <div class="flex-none flex flex-row">

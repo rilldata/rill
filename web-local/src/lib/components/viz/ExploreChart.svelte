@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { scaleLinear, scaleTime } from "d3-scale";
   import { extent } from "d3-array";
-  import { line as lineGen, area as areaGen } from "d3-shape";
-  import { tweened } from "svelte/motion";
-  import { cubicInOut as easing } from "svelte/easing";
+  import { scaleLinear, scaleTime } from "d3-scale";
+  import { area as areaGen, line as lineGen } from "d3-shape";
   import { timeFormat } from "d3-time-format";
+  import { cubicInOut as easing } from "svelte/easing";
+  import { tweened } from "svelte/motion";
+
   export let width = 400;
   export let height = 120;
   export let data: any;
@@ -25,7 +26,7 @@
 
   export let hoveredDate;
 
-  const fmt = timeFormat("%b %d, %Y");
+  const fmt = timeFormat("%Y-%m-%d");
   const axisFmt = timeFormat("%b %d");
   const secondaryFmt = timeFormat("%Y");
 

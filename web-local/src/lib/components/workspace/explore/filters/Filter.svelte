@@ -1,5 +1,5 @@
 <script>
-  import Close from "@rilldata/web-local/lib/components/icons/Close.svelte";
+  import Close from "@rilldata/web-common/components/icons/Close.svelte";
 </script>
 
 <div

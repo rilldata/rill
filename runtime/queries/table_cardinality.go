@@ -37,7 +37,7 @@ func (q *TableCardinality) UnmarshalResult(v any) error {
 }
 
 func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	countSql := fmt.Sprintf("SELECT count(*) AS count FROM %s",
+	countSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s",
 		quoteName(q.TableName),
 	)
 
@@ -51,7 +51,7 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    countSql,
+		Query:    countSQL,
 		Priority: priority,
 	})
 	if err != nil {

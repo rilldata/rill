@@ -1,13 +1,11 @@
-/*global  RILL_VERSION, RILL_COMMIT, RILL_RUNTIME_URL */
+/*global  RILL_RUNTIME_URL */
 import { browser } from "$app/environment";
+import { createApplicationBuildMetadataStore } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
 import { createQueryHighlightStore } from "@rilldata/web-local/lib/application-state-stores/query-highlight-store";
-import type { ApplicationMetadata } from "@rilldata/web-local/lib/types";
 import { setContext } from "svelte";
 
 /** determined by Vite's define option. */
 declare global {
-  const RILL_VERSION: string;
-  const RILL_COMMIT: string;
   const RILL_RUNTIME_URL: string;
 }
 
@@ -22,11 +20,8 @@ export function initializeNodeStoreContexts() {
   const queryHighlight = createQueryHighlightStore();
 
   /** set build-specific metadata as a context.  */
-  const applicationMetadata: ApplicationMetadata = {
-    version: RILL_VERSION, // constant defined in svelte.config.js
-    commitHash: RILL_COMMIT, // constant defined in svelte.config.js
-  };
-  setContext("rill:app:metadata", applicationMetadata);
+  const buildMetadataStore = createApplicationBuildMetadataStore();
+  setContext("rill:app:metadata", buildMetadataStore);
 
   /** Set the existing node stores, which are consumed through getContext within routes. */
   if (browser) {

@@ -4,7 +4,7 @@ import {
   FLOATS,
   INTEGERS,
   TIMESTAMPS,
-} from "../../duckdb-data-types";
+} from "@rilldata/web-common/lib/duckdb-data-types";
 
 export function sortByCardinality(a, b) {
   if (a.cardinality && b.cardinality) {

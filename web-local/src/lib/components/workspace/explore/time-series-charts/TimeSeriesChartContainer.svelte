@@ -2,7 +2,7 @@
 A container GraphicContext for the time series in a metrics dashboard.
 -->
 <script lang="ts">
-  import { GraphicContext } from "../../../data-graphic/elements";
+  import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
   export let start: Date;
   export let end: Date;
 </script>

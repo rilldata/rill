@@ -1,9 +1,8 @@
 <script lang="ts">
+  import AddIcon from "@rilldata/web-common/components/icons/Add.svelte";
   import { onMount } from "svelte";
-
-  import EditableTable from "../../table-editable/EditableTable.svelte";
-  import AddIcon from "../../icons/Add.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
+  import EditableTable from "../../table-editable/EditableTable.svelte";
 
   export let addEntityHandler;
   export let updateEntityHandler;

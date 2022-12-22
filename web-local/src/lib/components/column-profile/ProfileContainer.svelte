@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { createShiftClickAction } from "@rilldata/web-local/lib/util/shift-click-action";
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import {
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
   } from "../../application-config";
-  import { FormattedDataType } from "../data-types";
 
   const dispatch = createEventDispatcher();
   const { shiftClickAction } = createShiftClickAction();
@@ -15,6 +15,7 @@
   export let emphasize = false;
   export let type;
   export let example;
+  export let isFetching;
 
   export let hideRight = false;
   export let compact = false;
@@ -39,11 +40,13 @@
         flex 
         space-between 
         gap-2
+        transition-colors
         hover:bg-gray-100 
         focus:bg-gray-100
         focus:ring-gray-500
         focus:outline-gray-300 flex-1
         justify-between w-full"
+    class:ui-copy-disabled-faint={isFetching}
     class:bg-gray-50={active}
     use:shiftClickAction
     on:shift-click

@@ -2,6 +2,7 @@
   import { cubicOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
   import type { BarAndLabelTweenParameterOptions } from "./types";
+
   export let value = 0;
   export let color;
   export let showBackground = true;

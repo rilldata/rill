@@ -4,16 +4,17 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
-func BuildCmd(ver string) *cobra.Command {
+func BuildCmd(ver version.Version) *cobra.Command {
 	var projectPath string
 	var olapDriver string
 	var olapDSN string
 	var verbose bool
 
-	var buildCmd = &cobra.Command{
+	buildCmd := &cobra.Command{
 		Use:   "build",
 		Short: "Build project without starting web app",
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
@@ -9,10 +13,6 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { onClickOutside } from "../../../../util/on-click-outside";
-  import { FloatingElement } from "../../../floating-element";
-  import Calendar from "../../../icons/Calendar.svelte";
-  import CaretDownIcon from "../../../icons/CaretDownIcon.svelte";
-  import { Menu, MenuItem } from "../../../menu";
   import {
     getSelectableTimeRangeNames,
     makeTimeRanges,

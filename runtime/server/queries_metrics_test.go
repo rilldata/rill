@@ -19,15 +19,6 @@ func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
 	return server, instanceID
 }
 
-func TestServer_LookupMetricsView(t *testing.T) {
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
-
-	mv, err := server.lookupMetricsView(context.Background(), instanceId, "ad_bids_metrics")
-	require.NoError(t, err)
-	require.Equal(t, 4, len(mv.Measures))
-	require.Equal(t, 3, len(mv.Dimensions))
-}
-
 func TestServer_MetricsViewTotals(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
@@ -39,6 +30,20 @@ func TestServer_MetricsViewTotals(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data.Fields))
 	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_timestamp_name_with_spaces(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics_garbled",
+		MeasureNames:    []string{"measure_0"},
+		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
 func TestServer_MetricsViewTotals_EmptyModel(t *testing.T) {

@@ -7,10 +7,9 @@
   import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
-  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
-
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
+  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
 
   export let containerWidth = 0;
   // const queryClient = useQueryClient();
@@ -28,26 +27,6 @@
     observer.observe(container);
     return () => observer.unobserve(container);
   });
-
-  // function invalidateForModel(queryHash, modelName) {
-  //   const r = new RegExp(
-  //     `\/v1\/instances\/[a-zA-Z0-9-]+\/queries/[a-zA-Z0-9-]+\/tables\/${modelName}`
-  //   );
-  //   return r.test(queryHash);
-  // }
-
-  // invalidate any existing queries when this key changes.
-  // $: if (key) {
-  //   queryClient?.resetQueries({
-  //     predicate: (query) => {
-  //       console.log(
-  //         query.queryHash,
-  //         invalidateForModel(query.queryHash, objectName)
-  //       );
-  //       return false;
-  //     },
-  //   });
-  // }
 
   // get all column profiles.
   let profileColumns;

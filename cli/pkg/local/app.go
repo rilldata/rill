@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,29 +14,34 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/https"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/druid"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/postgres"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
+
+	// Load infra drivers and connectors for local
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/https"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/druid"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
-// Default instance config on local
-const DefaultInstanceID = "default"
-const DefaultOLAPDriver = "duckdb"
-const DefaultOLAPDSN = "stage.db"
+// Default instance config on local.
+const (
+	DefaultInstanceID = "default"
+	DefaultOLAPDriver = "duckdb"
+	DefaultOLAPDSN    = "stage.db"
+)
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
 // Here, a local environment means a non-authenticated, single-instance and single-project setup on localhost.
@@ -46,12 +52,12 @@ type App struct {
 	Instance    *drivers.Instance
 	Logger      *zap.SugaredLogger
 	BaseLogger  *zap.Logger
-	Version     string
+	Version     version.Version
 	Verbose     bool
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, version string, verbose bool, olapDriver string, olapDSN string, projectPath string) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string) (*App, error) {
 	// Setup a friendly-looking colored logger
 	conf := zap.NewDevelopmentEncoderConfig()
 	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -116,15 +122,11 @@ func NewApp(ctx context.Context, version string, verbose bool, olapDriver string
 		Instance:    inst,
 		Logger:      logger.Sugar(),
 		BaseLogger:  logger,
-		Version:     version,
+		Version:     ver,
 		Verbose:     verbose,
 		ProjectPath: projectPath,
 	}
 	return app, nil
-}
-
-func (a *App) IsDevelopment() bool {
-	return a.Version == ""
 }
 
 func (a *App) IsProjectInit() bool {
@@ -161,13 +163,12 @@ func (a *App) InitProject(exampleName string) error {
 		}
 
 		// Init empty project
-		err := c.InitEmpty(a.Context, defaultName, a.Version)
+		err := c.InitEmpty(a.Context, defaultName, a.Version.Number)
 		if err != nil {
 			if isPwd {
-				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %s)", err.Error())
-			} else {
-				return fmt.Errorf("failed to initialize project in '%s' (detailed error: %s)", a.ProjectPath, err.Error())
+				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %w)", err)
 			}
+			return fmt.Errorf("failed to initialize project in '%s' (detailed error: %w)", a.ProjectPath, err)
 		}
 
 		// Log success
@@ -185,10 +186,10 @@ func (a *App) InitProject(exampleName string) error {
 
 	err = examples.Init(exampleName, a.ProjectPath)
 	if err != nil {
-		if err == examples.ErrExampleNotFound {
+		if errors.Is(err, examples.ErrExampleNotFound) {
 			return fmt.Errorf("example project '%s' not found", exampleName)
 		}
-		return fmt.Errorf("failed to initialize project (detailed error: %s)", err.Error())
+		return fmt.Errorf("failed to initialize project (detailed error: %w)", err)
 	}
 
 	if isPwd {
@@ -224,9 +225,9 @@ func (a *App) Reconcile() error {
 	return nil
 }
 
-func (a *App) ReconcileSource(path string) error {
+func (a *App) ReconcileSource(sourcePath string) error {
 	a.Logger.Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
-	paths := []string{path}
+	paths := []string{sourcePath}
 	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
 	if err != nil {
 		return err
@@ -249,7 +250,7 @@ func (a *App) ReconcileSource(path string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser bool) error {
 	// Build local info for frontend
 	localConf, err := config()
 	if err != nil {
@@ -260,7 +261,10 @@ func (a *App) Serve(httpPort int, grpcPort int, enableUI bool, openBrowser bool)
 		GRPCPort:         grpcPort,
 		InstallID:        localConf.InstallID,
 		ProjectPath:      a.ProjectPath,
-		IsDev:            a.IsDevelopment(),
+		Version:          a.Version.Number,
+		BuildCommit:      a.Version.Commit,
+		BuildTime:        a.Version.Timestamp,
+		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: localConf.AnalyticsEnabled,
 	}
 
@@ -335,7 +339,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 		// Check if server is up
 		resp, err := client.Get(uri + "/v1/ping")
 		if err == nil {
-			defer resp.Body.Close()
+			resp.Body.Close()
 			if resp.StatusCode < http.StatusInternalServerError {
 				break
 			}
@@ -360,28 +364,35 @@ type localInfo struct {
 	GRPCPort         int    `json:"grpc_port"`
 	InstallID        string `json:"install_id"`
 	ProjectPath      string `json:"project_path"`
+	Version          string `json:"version"`
+	BuildCommit      string `json:"build_commit"`
+	BuildTime        string `json:"build_time"`
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 }
 
-// infoHandler servers the local info struct
+// infoHandler servers the local info struct.
 func (a *App) infoHandler(info *localInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := json.Marshal(info)
 		if err != nil {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		w.Header().Add("Content-Type", "application/json")
-		w.Write(data)
+		_, err = w.Write(data)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+			return
+		}
 	})
 }
 
-// trackingHandler proxies events to intake.rilldata.io
+// trackingHandler proxies events to intake.rilldata.io.
 func (a *App) trackingHandler(info *localInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !info.AnalyticsEnabled {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -406,7 +417,7 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		defer resp.Body.Close()
 
 		// Done
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	})
 }
 

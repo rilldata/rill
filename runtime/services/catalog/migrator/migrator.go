@@ -3,6 +3,7 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -83,7 +84,7 @@ func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drive
 	return migrator.GetDependencies(ctx, olap, catalog)
 }
 
-// Validate also returns list of dependents
+// Validate also returns list of dependents.
 func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
@@ -93,8 +94,8 @@ func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cata
 	return migrator.Validate(ctx, olap, catalog)
 }
 
-// IsEqual checks everything but the name
-func IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool {
+// IsEqual checks everything but the name.
+func IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	if cat1.Type != cat2.Type {
 		return false
 	}
@@ -138,7 +139,20 @@ func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cat
 	return nil
 }
 
-func CreateValidationError(filePath string, message string) []*runtimev1.ReconcileError {
+func LastUpdated(ctx context.Context, instID string, repo drivers.RepoStore, catalog *drivers.CatalogEntry) (time.Time, error) {
+	// TODO: do we need to push this to individual implementations to handle just local_file source?
+	if catalog.Type != drivers.ObjectTypeSource || catalog.GetSource().Connector != "local_file" {
+		// return a very old time
+		return time.Time{}, nil
+	}
+	stat, err := repo.Stat(ctx, instID, catalog.GetSource().Properties.Fields["path"].GetStringValue())
+	if err != nil {
+		return time.Time{}, err
+	}
+	return stat.LastUpdated, nil
+}
+
+func CreateValidationError(filePath, message string) []*runtimev1.ReconcileError {
 	return []*runtimev1.ReconcileError{
 		{
 			Code:     runtimev1.ReconcileError_CODE_VALIDATION,

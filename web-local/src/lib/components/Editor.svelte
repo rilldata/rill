@@ -48,6 +48,7 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceListCatalogEntries,
@@ -56,7 +57,6 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import { createEventDispatcher, onMount } from "svelte";
-  import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
 
   const dispatch = createEventDispatcher();
   export let modelName: string;
@@ -165,7 +165,7 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
   });
 
   function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
@@ -332,7 +332,7 @@
 </script>
 
 <div class="h-full" use:listenToNodeResize>
-  <div bind:this={editorContainer} class="editor-container border h-full">
+  <div bind:this={editorContainer} class="editor-container  h-full">
     <div bind:this={editorContainerComponent} />
   </div>
 </div>

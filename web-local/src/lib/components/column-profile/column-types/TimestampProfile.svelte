@@ -1,16 +1,21 @@
 <script lang="ts">
+  import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
+  import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
+  import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
+  import Interval from "@rilldata/web-common/components/data-types/Interval.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import TimestampSpark from "../../data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
+  import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
+  import {
+    getNullPercentage,
+    getTimeSeriesAndSpark,
+    isFetching,
+  } from "../queries";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
-  import { TIMESTAMP_TOKENS } from "@rilldata/web-local/lib/duckdb-data-types";
-  import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
-  import TimestampDetail from "../../data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
-  import WithParentClientRect from "../../data-graphic/functional-components/WithParentClientRect.svelte";
-  import { DataTypeIcon } from "../../data-types";
-  import Interval from "../../data-types/Interval.svelte";
-  import { getNullPercentage, getTimeSeriesAndSpark } from "../queries";
   export let columnName: string;
   export let objectName: string;
   export let type: string;
@@ -20,6 +25,8 @@
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
+
+  let timestampDetailHeight = 160;
 
   let active = false;
 
@@ -33,59 +40,66 @@
   $: timeSeries = getTimeSeriesAndSpark(
     $runtimeStore?.instanceId,
     objectName,
-    columnName
+    columnName,
+    active
   );
+
+  function toggleColumnProfile() {
+    active = !active;
+    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
+  }
+
+  $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
 </script>
 
 <ProfileContainer
-  on:select={() => {
-    active = !active;
-  }}
+  isFetching={fetchingSummaries}
+  {active}
+  {compact}
+  emphasize={active}
+  {example}
+  {hideNullPercentage}
+  {hideRight}
+  {mode}
+  on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
-  {active}
-  emphasize={active}
-  {hideRight}
-  {compact}
-  {hideNullPercentage}
-  {mode}
-  {example}
   {type}
 >
-  <DataTypeIcon {type} slot="icon" />
+  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->
-  <div slot="summary" class={TIMESTAMP_TOKENS.textClass}>
+  <div class={TIMESTAMP_TOKENS.textClass} slot="summary">
     <WithParentClientRect let:rect>
       <TimestampSpark
         area
-        width={rect?.width || 400}
+        bottom={4}
+        color={"currentColor"}
+        data={$timeSeries?.spark}
         height={18}
         top={4}
-        bottom={4}
+        width={rect?.width || 400}
         xAccessor="ts"
         yAccessor="count"
-        data={$timeSeries?.spark}
-        color={"currentColor"}
       />
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
-    slot="nullity"
     nullCount={$nullPercentage?.nullCount}
+    slot="nullity"
     totalRows={$nullPercentage?.totalRows}
     {type}
   />
 
   <div slot="details">
-    <div class="px-10 py-4">
+    <div class="pl-8 py-4" style:height="{timestampDetailHeight + 64 + 28}px">
       <WithParentClientRect let:rect>
         {#if $timeSeries?.data?.length}
           <TimestampDetail
             width={rect?.width - 56 || 400}
             mouseover={true}
-            height={160}
+            height={timestampDetailHeight}
             {type}
             data={$timeSeries?.data}
             spark={$timeSeries?.spark}
