@@ -66,6 +66,10 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
+	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	}
+
 	ql, args, err := q.buildMetricsTotalsSQL(mv)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
