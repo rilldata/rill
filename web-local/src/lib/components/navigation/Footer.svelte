@@ -2,7 +2,6 @@
   import Discord from "@rilldata/web-common/components/icons/Discord.svelte";
   import Docs from "@rilldata/web-common/components/icons/Docs.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -16,77 +15,68 @@
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
 
-  const lineItems = [
+  const actionItems = [
     {
       icon: Docs,
-      label: "Documentation",
+      tooltipTitle: "Documentation",
+      tooltipCTA: "Read the docs",
       href: "https://docs.rilldata.com",
       className: "fill-gray-600",
-      shrinkIcon: false,
     },
     {
       icon: Discord,
-      label: "Ask a question",
+      tooltipTitle: "Discord",
+      tooltipCTA: "Ask a question",
       href: "http://bit.ly/3jg4IsF",
       className: "fill-gray-500",
-      shrinkIcon: true,
     },
     {
       icon: Github,
-      label: "Report an issue",
+      tooltipTitle: "GitHub",
+      tooltipCTA: "Report an issue",
       href: "https://github.com/rilldata/rill-developer/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-gray-500",
-      shrinkIcon: true,
     },
   ];
 </script>
 
 <div
-  class="flex flex-col  pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
+  class="flex flex-row flex-wrap px-3 py-3 gap-y-1 gap-x-1 bg-gray-50 border-t border-gray-200 sticky bottom-0 items-center justify-between"
 >
-  {#each lineItems as lineItem}
-    <a href={lineItem.href} target="_blank"
-      ><div
-        class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-normal hover:bg-gray-200"
-      >
-        <!-- workaround to resize the github and discord icons to match -->
-        <div
-          class="grid place-content-center"
-          style:width="16px"
-          style:height="16px"
-        >
-          <svelte:component
-            this={lineItem.icon}
-            className={lineItem.className}
-            size="14px"
-          />
-        </div>
-        {lineItem.label}
-      </div></a
-    >
-  {/each}
-  <div
-    class="px-4 py-1 text-gray-600 flex flex-row  gap-x-2"
-    style:font-size="10px"
-  >
-    <span class="text-gray-400">
+  <div class="flex flex-row gap-x-2 text-gray-600" style:font-size="10px">
+    {#each actionItems as actionItem}
       <Tooltip alignment="start" distance={16} location="top">
-        <a href="https://docs.rilldata.com" target="_blank">
-          <InfoCircle size="16px" />
+        <a href={actionItem.href} target="_blank">
+          <!-- workaround to resize the github and discord icons to match -->
+          <div
+            class="grid place-content-center text-gray-700 font-normal hover:bg-gray-200"
+            style:width="22px"
+            style:height="22px"
+          >
+            <svelte:component
+              this={actionItem.icon}
+              className={actionItem.className}
+              size="16px"
+            />
+          </div>
         </a>
         <div slot="tooltip-content" transition:fly={{ duration: 100, y: 8 }}>
           <TooltipContent>
             <TooltipTitle>
-              <svelte:fragment slot="name">Rill Developer</svelte:fragment>
+              <svelte:fragment slot="name">
+                {actionItem.tooltipTitle}
+              </svelte:fragment>
             </TooltipTitle>
             <TooltipShortcutContainer>
-              <div>View documentation</div>
+              <div>{actionItem.tooltipCTA}</div>
               <Shortcut>Click</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </div>
       </Tooltip>
-    </span>
+    {/each}
+  </div>
+  <div class="italic">
     version {$appBuildMetaStore.version
       ? $appBuildMetaStore.version
       : "unknown (built from source)"}{$appBuildMetaStore.commitHash
