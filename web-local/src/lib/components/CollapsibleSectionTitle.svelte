@@ -39,7 +39,8 @@
       }}
     >
       <div
-        class="text-ellipsis overflow-hidden whitespace-nowrap ui-copy font-medium"
+        class="text-ellipsis overflow-hidden whitespace-nowrap ui-copy font-semibold"
+        style="font-size: 11px;"
       >
         <slot />
       </div>

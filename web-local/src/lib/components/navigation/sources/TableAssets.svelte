@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
@@ -60,7 +59,7 @@
   tooltipText="Add a new data source"
   toggleText="sources"
 >
-  <Source size="15px" /> Sources
+  Sources
 </NavigationHeader>
 
 {#if showTables}
