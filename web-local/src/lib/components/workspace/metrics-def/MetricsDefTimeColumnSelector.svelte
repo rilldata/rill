@@ -40,7 +40,7 @@
 </script>
 
 <div class="flex items-center">
-  <div class="flex items-center gap-x-2" style="width:9em">
+  <div class="flex items-center gap-x-2" style="width:10em">
     <TimestampIcon size="16px" />Timestamp
   </div>
   <div>

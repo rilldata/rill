@@ -17,7 +17,7 @@
 </script>
 
 <div class="flex items-center mb-3">
-  <div class="flex items-center gap-x-2" style="width:9em">
+  <div class="flex items-center gap-x-2" style="width:10em">
     <ModelIcon size="16px" />Model
   </div>
   <div>
