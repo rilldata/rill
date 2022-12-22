@@ -33,6 +33,9 @@
   let dataSet = Array.from({ length: 10 }).map(() => makeData(SIZE, true));
   let mouseoverValue;
   let hovered = false;
+  let scrubbing;
+  let scrubStart;
+  let scrubEnd;
 </script>
 
 <button
@@ -51,5 +54,8 @@
     yAccessor="value"
     height={140}
     bind:hovered
+    bind:scrubbing
+    bind:scrubStart
+    bind:scrubEnd
   />
 {/each}

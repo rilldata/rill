@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { contexts } from "@rilldata/web-local/lib/components/data-graphic/constants";
-  import { WithTween } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
-  import type { ScaleStore } from "@rilldata/web-local/lib/components/data-graphic/state/types";
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     areaFactory,
     lineFactory,
     pathIsDefined,
-  } from "@rilldata/web-local/lib/components/data-graphic/utils";
-  import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
+  } from "@rilldata/web-common/components/data-graphic/utils";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
