@@ -43,6 +43,7 @@
     dataSet = Array.from({ length: 10 }).map(() => makeData(SIZE, true));
   }}>randomize</button
 >
+
 {#each dataSet as data}
   <MeasureChart
     bind:mouseoverValue
