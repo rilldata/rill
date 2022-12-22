@@ -426,11 +426,8 @@ func getFilterFromDimensionValuesFilter(
 		if len(dv.Like) > 0 {
 			var likeClause string
 			for j, lv := range dv.Like {
-				if lv.GetKind() == nil {
-					continue
-				}
 				likeClause += escapedName + " " + prefix + " ILIKE ?"
-				args = append(args, lv.GetStringValue())
+				args = append(args, lv)
 				if j < len(dv.Like)-1 {
 					likeClause += " OR "
 				}

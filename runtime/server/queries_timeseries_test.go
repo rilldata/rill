@@ -432,8 +432,8 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 						structpb.NewNullValue(),
 						structpb.NewStringValue("Google"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("Goo%"),
+					Like: []string{
+						"Goo%",
 					},
 				},
 			},
@@ -466,9 +466,9 @@ func TestServer_Timeseries_1dim_2like(t *testing.T) {
 			Include: []*runtimev1.MetricsViewDimensionValue{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("g%"),
-						structpb.NewStringValue("msn%"),
+					Like: []string{
+						"g%",
+						"msn%",
 					},
 				},
 			},
