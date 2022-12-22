@@ -9,11 +9,12 @@ import (
 	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
+
+const IsoFormat string = "2006-01-02T15:04:05.000Z"
 
 type ColumnTimeseries struct {
 	TableName           string                                              `json:"table_name"`
@@ -31,7 +32,7 @@ var _ runtime.Query = &ColumnTimeseries{}
 func (q *ColumnTimeseries) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("ColumnTimeseries: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("ColumnTimeseries:%s", string(r))
 }
@@ -63,43 +64,40 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	timeRange, err := q.normaliseTimeRange(ctx, rt, instanceID, priority)
+	timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
 	if err != nil {
 		return err
 	}
+
 	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		q.Result = &runtimev1.TimeSeriesResponse{}
 		return nil
 	}
+
 	measures := normaliseMeasures(q.Measures, true)
-	timestampColumn := safeName(q.TimestampColumnName)
-	tableName := q.TableName
-	var filter string
-	if q.Filters != nil {
-		filter = getFilterFromMetricsViewFilters(q.Filters)
-	}
-	timeGranularity := convertToDateTruncSpecifier(timeRange.Interval)
-	tsAlias := "_ts_" + ReplaceHyphen(uuid.New().String())
+	filter, args := getFilterFromMetricsViewFilters(q.Filters)
+	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+	tsAlias := tempName("_ts_")
 	if filter != "" {
 		filter = "WHERE " + filter
 	}
-	temporaryTableName := "_timeseries_" + uuid.New().String()
-	sql := `CREATE TEMPORARY TABLE "` + temporaryTableName + `" AS (
+	temporaryTableName := tempName("_timeseries_")
+	sql := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
         -- generate a time series column that has the intended range
         WITH template as (
           SELECT 
             generate_series as ` + tsAlias + `
           FROM 
             generate_series(
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
-              date_trunc('` + timeGranularity + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
-              interval '1 ` + timeGranularity + `')
+              date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
+              date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
+              interval '1 ` + dateTruncSpecifier + `')
         ),
         -- transform the original data, and optionally sample it.
         series AS (
           SELECT 
-            date_trunc('` + timeGranularity + `', ` + timestampColumn + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-          FROM "` + EscapeDoubleQuotes(tableName) + `" ` + filter + `
+            date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+          FROM ` + safeName(q.TableName) + ` ` + filter + `
           GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
         )
         -- join the transformed data with the generated time series column,
@@ -114,13 +112,15 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
+		Args:     args,
 		Priority: priority,
 	})
-	defer DropTempTable(olap, priority, temporaryTableName)
+	defer dropTempTable(olap, priority, temporaryTableName)
 	if err != nil {
 		return err
 	}
 	rows.Close()
+
 	rows, err = olap.Execute(ctx, &drivers.Statement{
 		Query:    `SELECT * from "` + temporaryTableName + `"`,
 		Priority: priority,
@@ -128,10 +128,13 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	if err != nil {
 		return err
 	}
+
 	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
+	rows.Close()
 	if err != nil {
 		return err
 	}
+
 	var sparkValues []*runtimev1.TimeSeriesValue
 	if q.Pixels != 0 {
 		sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
@@ -148,11 +151,12 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	return nil
 }
 
-func (q *ColumnTimeseries) normaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
+func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
 	rtr := q.TimeRange
 	if rtr == nil {
 		rtr = &runtimev1.TimeSeriesTimeRange{}
 	}
+
 	var result runtimev1.TimeSeriesTimeRange
 	if rtr.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		q := &RollupInterval{
@@ -163,10 +167,12 @@ func (q *ColumnTimeseries) normaliseTimeRange(ctx context.Context, rt *runtime.R
 		if err != nil {
 			return nil, err
 		}
+
 		r := q.Result
 		if r == nil || r.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			return &result, nil
 		}
+
 		result = runtimev1.TimeSeriesTimeRange{
 			Interval: r.Interval,
 			Start:    r.Start,
@@ -181,6 +187,7 @@ func (q *ColumnTimeseries) normaliseTimeRange(ctx context.Context, rt *runtime.R
 		if err != nil {
 			return nil, err
 		}
+
 		tr := q.Result
 		result = runtimev1.TimeSeriesTimeRange{
 			Interval: rtr.Interval,
@@ -188,15 +195,19 @@ func (q *ColumnTimeseries) normaliseTimeRange(ctx context.Context, rt *runtime.R
 			End:      tr.Max,
 		}
 	}
+
 	if rtr.Start != nil {
 		result.Start = rtr.Start
 	}
+
 	if rtr.End != nil {
 		result.End = rtr.End
 	}
+
 	if rtr.Interval != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		result.Interval = rtr.Interval
 	}
+
 	return &result, nil
 }
 
@@ -215,7 +226,7 @@ func (q *ColumnTimeseries) normaliseTimeRange(ctx context.Context, rt *runtime.R
  * Importantly, this function runs very fast. For more information about the original M4 method,
  * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
  */
-func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: DatabaseMetadata,
+func (q *ColumnTimeseries) createTimestampRollupReduction(
 	ctx context.Context,
 	rt *runtime.Runtime,
 	olap drivers.OLAPStore,
@@ -225,7 +236,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 	timestampColumnName string,
 	valueColumn string,
 ) ([]*runtimev1.TimeSeriesValue, error) {
-	escapedTimestampColumn := EscapeDoubleQuotes(timestampColumnName)
+	safeTimestampColumnName := safeName(timestampColumnName)
 	tc := &TableCardinality{
 		TableName: tableName,
 	}
@@ -236,7 +247,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 
 	if tc.Result < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:    `SELECT ` + escapedTimestampColumn + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Query:    `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 			Priority: priority,
 		})
 		if err != nil {
@@ -261,7 +272,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 
 	sql := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + escapedTimestampColumn + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
@@ -337,7 +348,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction( // metadata: Database
 func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += measure.Expression + " as " + measure.SqlName
+		result += measure.Expression + " as " + safeName(measure.SqlName)
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -349,7 +360,7 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRe
 func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, measure.SqlName, measure.SqlName)
+		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -361,9 +372,10 @@ func getFilterFromDimensionValuesFilter(
 	dimensionValues []*runtimev1.MetricsViewDimensionValue,
 	prefix string,
 	dimensionJoiner string,
-) string {
+) (string, []interface{}) {
+	var args []interface{}
 	if len(dimensionValues) == 0 {
-		return ""
+		return "", []interface{}{}
 	}
 	var result string
 	conditions := make([]string, 3)
@@ -371,7 +383,7 @@ func getFilterFromDimensionValuesFilter(
 		result += " ( "
 	}
 	for i, dv := range dimensionValues {
-		escapedName := EscapeSingleQuotes(dv.Name)
+		escapedName := safeName(dv.Name)
 		var nulls bool
 		var notNulls bool
 		for _, iv := range dv.In {
@@ -385,11 +397,23 @@ func getFilterFromDimensionValuesFilter(
 		if notNulls {
 			inClause := escapedName + " " + prefix + " IN ("
 			for j, iv := range dv.In {
-				if _, ok := iv.Kind.(*structpb.Value_NullValue); !ok {
-					inClause += "'" + EscapeSingleQuotes(iv.GetStringValue()) + "'"
-					if j < len(dv.In)-1 {
-						inClause += ", "
-					}
+				switch iv.Kind.(type) {
+				case *structpb.Value_StringValue:
+					inClause += "?"
+					args = append(args, iv.GetStringValue())
+				case *structpb.Value_NumberValue:
+					inClause += "?"
+					args = append(args, iv.GetNumberValue())
+				case *structpb.Value_BoolValue:
+					inClause += "?"
+					args = append(args, iv.GetBoolValue())
+				case *structpb.Value_NullValue:
+					continue
+				default:
+					panic("unknown value type")
+				}
+				if j < len(dv.In)-1 {
+					inClause += ", "
 				}
 			}
 			inClause += ")"
@@ -402,10 +426,8 @@ func getFilterFromDimensionValuesFilter(
 		if len(dv.Like) > 0 {
 			var likeClause string
 			for j, lv := range dv.Like {
-				if lv.GetKind() == nil {
-					continue
-				}
-				likeClause += escapedName + " " + prefix + " ILIKE '" + EscapeSingleQuotes(lv.GetStringValue()) + "'"
+				likeClause += escapedName + " " + prefix + " ILIKE ?"
+				args = append(args, lv)
 				if j < len(dv.Like)-1 {
 					likeClause += " OR "
 				}
@@ -419,29 +441,25 @@ func getFilterFromDimensionValuesFilter(
 	}
 	result += " ) "
 
-	return result
+	return result, args
 }
 
-func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) string {
-	includeFilters := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
-	excludeFilters := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
+func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) (string, []interface{}) {
+	if filters == nil {
+		return "", nil
+	}
+	includeFilters, args := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
+	excludeFilters, excludeArgs := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
+	args = append(args, excludeArgs...)
 	if includeFilters != "" && excludeFilters != "" {
-		return " ( " + includeFilters + ") AND (" + excludeFilters + ")"
+		return " ( " + includeFilters + ") AND (" + excludeFilters + ")", args
 	} else if includeFilters != "" {
-		return includeFilters
+		return includeFilters, args
 	} else if excludeFilters != "" {
-		return excludeFilters
+		return excludeFilters, args
 	} else {
-		return ""
+		return "", nil
 	}
-}
-
-func getFallbackMeasureName(index int, sqlName string) string {
-	if sqlName == "" {
-		s := fmt.Sprintf("measure_%d", index)
-		return s
-	}
-	return sqlName
 }
 
 func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
@@ -454,13 +472,18 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 			},
 		}
 	}
+
 	var countExists bool
 	for i, measure := range measures {
-		measure.SqlName = getFallbackMeasureName(i, measure.SqlName)
+		if measure.SqlName == "" {
+			measure.SqlName = fmt.Sprintf("measure_%d", i)
+		}
+
 		if measure.SqlName == "count" {
 			countExists = true
 		}
 	}
+
 	if !countExists && generateCount {
 		measures = append(measures, &runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			Expression: "count(*)",
@@ -468,10 +491,9 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 			Id:         "",
 		})
 	}
+
 	return measures
 }
-
-const IsoFormat string = "2006-01-02T15:04:05.000Z"
 
 func sMap(k string, v float64) map[string]float64 {
 	m := make(map[string]float64, 1)
@@ -479,32 +501,8 @@ func sMap(k string, v float64) map[string]float64 {
 	return m
 }
 
-func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
-	switch specifier {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return "MILLISECOND"
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return "SECOND"
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return "MINUTE"
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return "HOUR"
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return "DAY"
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return "WEEK"
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return "MONTH"
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return "YEAR"
-	}
-	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
-}
-
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias string) ([]*runtimev1.TimeSeriesValue, error) {
 	results := make([]*runtimev1.TimeSeriesValue, 0)
-	defer rows.Close()
-	var converr error
 	for rows.Next() {
 		value := runtimev1.TimeSeriesValue{}
 		results = append(results, &value)
@@ -533,5 +531,5 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 			}
 		}
 	}
-	return results, converr
+	return results, nil
 }

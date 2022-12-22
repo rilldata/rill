@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -9,12 +11,18 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
   export let metricViewName: string;
+
+  const navigationVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Tweened<number>;
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
@@ -45,7 +53,11 @@
   };
 </script>
 
-<section class="w-full flex flex-col" id="header">
+<section
+  class="w-full flex flex-col"
+  id="header"
+  style:padding-left="{$navigationVisibilityTween * 24}px"
+>
   <!-- top row
     title and call to action
   -->
@@ -54,20 +66,21 @@
     class="flex items-center justify-between w-full pl-1 pr-4"
   >
     <!-- title element -->
-    <h1 style:line-height="1.1">
-      <div
-        class="pl-4 "
-        style:font-family="InterDisplay"
-        style:font-size="20px"
-      >
+    <h1 style:line-height="1.1" style:margin-top="-1px">
+      <div class="pl-4" style:font-family="InterDisplay" style:font-size="20px">
         {displayName || metricViewName}
       </div>
     </h1>
     <!-- top right CTAs -->
     <div style="flex-shrink: 0;">
-      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
-        Edit Metrics <MetricsIcon size="16px" />
-      </Button>
+      <Tooltip distance={8}>
+        <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+          Edit Metrics <MetricsIcon size="16px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          Edit this dashboard's metrics & settings
+        </TooltipContent>
+      </Tooltip>
     </div>
   </div>
   <!-- bottom row -->

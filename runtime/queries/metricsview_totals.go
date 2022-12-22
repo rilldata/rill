@@ -29,7 +29,7 @@ var _ runtime.Query = &MetricsViewTotals{}
 func (q *MetricsViewTotals) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewTotals: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewTotals:%s", string(r))
 }
@@ -64,6 +64,10 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
 	ql, args, err := q.buildMetricsTotalsSQL(mv)
