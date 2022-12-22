@@ -80,11 +80,17 @@ jobs:
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
           docker tag rilldata/rill:latest rilldata/rill:nightly
           docker push rilldata/rill:nightly
-          rm -rf dist/goreleaserdocker*
+
+      - name: Prepare for nightly GCS upload
+        if: github.event_name == 'schedule'
+        run: |-
+          mkdir nightly
+          mv dist/*.zip nightly/
+          mv dist/checksums.txt nightly/
 
       - name: Upload nightly to CDN
         if: github.event_name == 'schedule'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
-          path: dist/
-          destination: prod-cdn.rilldata.com/rill/nightly/
+          path: nightly/
+          destination: prod-cdn.rilldata.com/rill/
