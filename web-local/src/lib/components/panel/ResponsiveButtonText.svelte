@@ -5,12 +5,11 @@ horizontal slide animation
 -->
 <script lang="ts">
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { collapseInspectorCTAButton } from "../../application-config";
 
-  export let width: number;
+  export let collapse = false;
 </script>
 
-{#if collapseInspectorCTAButton(width)}<div
+{#if !collapse}<div
     transition:slideRight|local={{
       duration: 400,
       rightOffset: 8,

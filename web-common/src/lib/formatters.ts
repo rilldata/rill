@@ -66,19 +66,19 @@ export function removeTimezoneOffset(dt: Date) {
 }
 
 export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
-  let fmt = timeFormat("%b %d, %Y %I:%M:%S");
+  let fmt = timeFormat("%Y-%m-%d %I:%M:%S");
   if (type === "DATE") {
-    fmt = timeFormat("%b %d, %Y");
+    fmt = timeFormat("%Y-%m-%d");
   }
   return fmt(removeTimezoneOffset(new Date(v)));
 };
 
 export const fullTimestampFormat = (v) => {
-  const fmt = timeFormat("%b %d, %Y %I:%M:%S.%L");
+  const fmt = timeFormat("%Y-%m-%d %I:%M:%S.%L");
   return fmt(removeTimezoneOffset(new Date(v)));
 };
 
-export const datePortion = timeFormat("%b %d, %Y");
+export const datePortion = timeFormat("%Y-%m-%d");
 export const timePortion = timeFormat("%I:%M:%S");
 
 export function microsToTimestring(microseconds: number) {

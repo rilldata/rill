@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
-  import { getCountDistinct, getNullPercentage, getTopK } from "../queries";
+  import {
+    getCountDistinct,
+    getNullPercentage,
+    getTopK,
+    isFetching,
+  } from "../queries";
   import TopK from "./details/TopK.svelte";
   import ColumnCardinalitySpark from "./sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
@@ -41,9 +46,12 @@
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
+
+  $: fetchingSummaries = isFetching($nulls, $columnCardinality);
 </script>
 
 <ProfileContainer
+  isFetching={fetchingSummaries}
   {active}
   emphasize={active}
   {example}
@@ -55,7 +63,7 @@
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <DataTypeIcon slot="icon" type="VARCHAR" />
+  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
   <ColumnCardinalitySpark

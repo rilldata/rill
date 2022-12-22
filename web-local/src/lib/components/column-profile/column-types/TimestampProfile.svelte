@@ -2,14 +2,18 @@
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
-  import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import Interval from "@rilldata/web-common/components/data-types/Interval.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
-  import { getNullPercentage, getTimeSeriesAndSpark } from "../queries";
+  import {
+    getNullPercentage,
+    getTimeSeriesAndSpark,
+    isFetching,
+  } from "../queries";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
   export let columnName: string;
@@ -44,9 +48,12 @@
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
+
+  $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
 </script>
 
 <ProfileContainer
+  isFetching={fetchingSummaries}
   {active}
   {compact}
   emphasize={active}
@@ -59,7 +66,7 @@
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <DataTypeIcon slot="icon" {type} />
+  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->

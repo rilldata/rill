@@ -12,6 +12,7 @@
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import { parseDocument } from "yaml";
+  import { DEFAULT_NAV_WIDTH } from "../../application-config";
   import { drag } from "../../drag";
   import MetricsDefinitionAssets from "./dashboards/MetricsDefinitionAssets.svelte";
   import Footer from "./Footer.svelte";
@@ -29,11 +30,11 @@
     (getContext("rill:app:navigation-layout") as Writable<{
       value: number;
       visible: boolean;
-    }>) || writable({ value: 300, visible: true });
+    }>) || writable({ value: DEFAULT_NAV_WIDTH, visible: true });
 
   const navigationWidth =
     (getContext("rill:app:navigation-width-tween") as Readable<number>) ||
-    writable(300);
+    writable(DEFAULT_NAV_WIDTH);
 
   const navVisibilityTween =
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
@@ -74,15 +75,15 @@
         <div
           on:dblclick={() => {
             navigationLayout.update((state) => {
-              state.value = 300;
+              state.value = DEFAULT_NAV_WIDTH;
               return state;
             });
           }}
           class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
           style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
           use:drag={{
-            minSize: 300,
-            maxSize: 500,
+            minSize: DEFAULT_NAV_WIDTH,
+            maxSize: 440,
             side: "assetsWidth",
             store: navigationLayout,
           }}

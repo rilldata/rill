@@ -77,9 +77,9 @@
         >
           <svelte:fragment slot="icon">
             {#if selectedValues.includes(value) && !excludeMode}
-              <Check size="20px" />
+              <Check size="20px" color="#15141A" />
             {:else if selectedValues.includes(value) && excludeMode}
-              <Cancel size="20px" />
+              <Cancel size="20px" color="#15141A" />
             {:else}
               <Spacer size="20px" />
             {/if}

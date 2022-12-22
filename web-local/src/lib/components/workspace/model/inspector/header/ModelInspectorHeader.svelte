@@ -1,10 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
-  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -19,16 +13,12 @@
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
   import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
-  import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let modelName: string;
   export let containerWidth = 0;
@@ -43,15 +33,6 @@
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
-
-  let contextMenuOpen = false;
-
-  const onExport = async (exportExtension: "csv" | "parquet") => {
-    // TODO: how do we handle errors ?
-    window.open(
-      `${RuntimeUrl}/v1/instances/${$runtimeStore.instanceId}/table/${modelName}/export/${exportExtension}`
-    );
-  };
 
   let rollup;
   let sourceTableReferences;
@@ -126,63 +107,6 @@
 
   $: modelHasError = !!modelError;
 </script>
-
-<PanelCTA let:width side="right">
-  <Tooltip
-    alignment="middle"
-    distance={16}
-    location="left"
-    suppress={contextMenuOpen}
-  >
-    <!-- attach floating element right here-->
-    <WithTogglableFloatingElement
-      alignment="start"
-      bind:active={contextMenuOpen}
-      distance={16}
-      let:toggleFloatingElement
-      location="left"
-    >
-      <Button
-        disabled={modelHasError}
-        on:click={toggleFloatingElement}
-        type="secondary"
-      >
-        <ResponsiveButtonText {width}>Export Results</ResponsiveButtonText>
-        <Export size="14px" />
-      </Button>
-      <Menu
-        dark
-        on:click-outside={toggleFloatingElement}
-        on:escape={toggleFloatingElement}
-        slot="floating-element"
-      >
-        <MenuItem
-          on:select={() => {
-            toggleFloatingElement();
-            onExport("parquet");
-          }}
-        >
-          Export as Parquet
-        </MenuItem>
-        <MenuItem
-          on:select={() => {
-            toggleFloatingElement();
-            onExport("csv");
-          }}
-        >
-          Export as CSV
-        </MenuItem>
-      </Menu>
-    </WithTogglableFloatingElement>
-    <TooltipContent slot="tooltip-content">
-      {#if modelHasError}Fix the errors in your model to export
-      {:else}
-        Export this model as a dataset
-      {/if}
-    </TooltipContent>
-  </Tooltip>
-  <CreateDashboardButton hasError={modelHasError} {modelName} {width} />
-</PanelCTA>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
   <!-- top row: row analysis -->

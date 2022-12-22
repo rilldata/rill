@@ -332,7 +332,7 @@
 </script>
 
 <div class="h-full" use:listenToNodeResize>
-  <div bind:this={editorContainer} class="editor-container border h-full">
+  <div bind:this={editorContainer} class="editor-container  h-full">
     <div bind:this={editorContainerComponent} />
   </div>
 </div>
