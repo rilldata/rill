@@ -18,10 +18,6 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
-  import {
-    hasDuckDBUnicodeError,
-    niceDuckdbUnicodeError,
-  } from "../../navigation/sources/errors";
   import { refreshSource } from "../../navigation/sources/refreshSource";
   import { ConnectedPreviewTable } from "../../preview-table";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
@@ -94,7 +90,6 @@
     }
     overlay.set(null);
   };
-  $: console.log(uploadErrors);
 </script>
 
 {#key sourceName}
