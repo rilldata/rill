@@ -407,6 +407,8 @@ func getFilterFromDimensionValuesFilter(
 				case *structpb.Value_BoolValue:
 					inClause += "?"
 					args = append(args, iv.GetBoolValue())
+				default:
+					panic("unknown value type")
 				}
 				if j < len(dv.In)-1 {
 					inClause += ", "

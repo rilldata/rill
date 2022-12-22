@@ -14,10 +14,6 @@ func quoteName(name string) string {
 	return fmt.Sprintf("\"%s\"", name)
 }
 
-func escapeSingleQuotes(value string) string {
-	return strings.ReplaceAll(value, "'", "''")
-}
-
 func escapeDoubleQuotes(column string) string {
 	return strings.ReplaceAll(column, "\"", "\"\"")
 }
