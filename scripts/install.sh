@@ -74,7 +74,7 @@ testInstalledBinary() {
 
 # Parse input flag
 case $1 in
-    --nightly) VERSION=nightly/dist;;
+    --nightly) VERSION=nightly;;
     *) VERSION=latest;;
 esac
 
