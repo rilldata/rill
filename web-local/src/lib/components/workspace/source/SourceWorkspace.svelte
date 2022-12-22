@@ -11,7 +11,9 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { humanReadableErrorMessage } from "@rilldata/web-local/lib/components/navigation/sources/errors.js";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
@@ -41,9 +43,11 @@
     sourceName
   );
 
+  let sourcePath: string;
+  $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
   $: getSource = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    sourcePath
   );
 
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
@@ -69,9 +73,10 @@
   const queryClient = useQueryClient();
 
   let uploadErrors = undefined;
+  $: uploadErrors = $fileArtifactsStore.entities[sourcePath]?.errors;
   const onRefreshClick = async (tableName: string) => {
     try {
-      const resp = await refreshSource(
+      await refreshSource(
         currentConnector?.name,
         tableName,
         $runtimeStore?.instanceId,
@@ -79,10 +84,6 @@
         $createSource,
         queryClient
       );
-      // if there are errors, set them to be displayed
-      if (resp?.errors) {
-        uploadErrors = resp.errors;
-      }
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         $runtimeStore?.instanceId,
         tableName
@@ -93,6 +94,7 @@
     }
     overlay.set(null);
   };
+  $: console.log(uploadErrors);
 </script>
 
 {#key sourceName}
@@ -208,12 +210,14 @@
             </Button>
           {/if}
           <!-- show any remaining errors -->
-          {#if uploadErrors}
+          {#if uploadErrors?.length}
             <Callout level="error">
               {#each uploadErrors as error}
-                {hasDuckDBUnicodeError(error.message)
-                  ? niceDuckdbUnicodeError(error.message)
-                  : error.message}
+                {humanReadableErrorMessage(
+                  currentConnector?.name,
+                  3,
+                  error.message
+                )}
               {/each}
             </Callout>
           {/if}

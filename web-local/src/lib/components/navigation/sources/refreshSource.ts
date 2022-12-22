@@ -1,3 +1,4 @@
+import { notifications } from "@rilldata/web-common/components/notifications";
 import type {
   V1PutFileAndReconcileResponse,
   V1ReconcileResponse,
@@ -7,7 +8,6 @@ import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-st
 import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { humanReadableErrorMessage } from "@rilldata/web-local/lib/components/navigation/sources/errors";
 import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
-import { notifications } from "@rilldata/web-local/lib/components/notifications";
 import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import {
   openFileUploadDialog,
@@ -37,7 +37,6 @@ export async function refreshSource(
     });
     invalidateAfterReconcile(queryClient, instanceId, resp);
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    showNotificationForSourceRefresh(resp, connector, sourceName, artifactPath);
     return resp;
   }
 
@@ -69,33 +68,5 @@ export async function refreshSource(
   });
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  showNotificationForSourceRefresh(
-    resp,
-    "local_file",
-    sourceName,
-    artifactPath
-  );
   return resp;
-}
-
-function showNotificationForSourceRefresh(
-  resp: V1ReconcileResponse,
-  connector: string,
-  name: string,
-  artifactPath: string
-) {
-  const error = resp.errors.find((err) => err.filePath === artifactPath);
-  if (error) {
-    notifications.send({
-      message: `Failed to refresh source ${name}`,
-      detail: humanReadableErrorMessage(connector, 3, error.message),
-      options: {
-        persisted: true,
-      },
-    });
-  } else {
-    notifications.send({
-      message: `Refreshed source ${name}.`,
-    });
-  }
 }
