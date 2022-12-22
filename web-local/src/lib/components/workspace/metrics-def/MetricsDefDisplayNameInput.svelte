@@ -1,5 +1,4 @@
 <script lang="ts">
-  import StringlikeType from "@rilldata/web-common/components/icons/StringlikeType.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { createForm } from "svelte-forms-lib";
   import type { Readable } from "svelte/store";
@@ -34,8 +33,8 @@
 </script>
 
 <div class="flex items-center mb-3">
-  <div class="flex items-center gap-x-2" style="width:10em">
-    <StringlikeType size="16px" />Display name
+  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+    Display name
   </div>
   <div>
     <form id="display-name-form" autocomplete="off">

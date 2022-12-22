@@ -1,5 +1,4 @@
 <script lang="ts">
-  import TimestampIcon from "@rilldata/web-common/components/icons/TimestampType.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
@@ -40,8 +39,8 @@
 </script>
 
 <div class="flex items-center">
-  <div class="flex items-center gap-x-2" style="width:10em">
-    <TimestampIcon size="16px" />Timestamp
+  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+    Timestamp
   </div>
   <div>
     <Tooltip
