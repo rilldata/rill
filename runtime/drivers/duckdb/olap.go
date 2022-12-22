@@ -21,11 +21,11 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	defer c.sem.Release()
 
 	// Take connection from pool
-	conn, ok := <-c.pool
-	if !ok {
-		return drivers.ErrClosed
+	conn, release, err := c.getConn(ctx)
+	if err != nil {
+		return err
 	}
-	defer func() { c.pool <- conn }()
+	defer release()
 
 	// Call fn with connection embedded in context
 	wrappedCtx := contextWithConn(ctx, conn)
@@ -54,17 +54,17 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		defer c.sem.Release()
 
 		// Take connection from pool
-		var ok bool
-		conn, ok = <-c.pool
-		if !ok {
-			return nil, drivers.ErrClosed
+		connx, release, err := c.getConn(ctx)
+		if err != nil {
+			return nil, err
 		}
-		defer func() { c.pool <- conn }()
+		defer release()
+		conn = connx
 	}
 
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
-		prepared, err := conn.PrepareContext(ctx, stmt.Query)
+		prepared, err := c.metaConn.PrepareContext(ctx, stmt.Query)
 		if err != nil {
 			return nil, err
 		}

@@ -64,7 +64,7 @@ func TestAll(t *testing.T) {
 }
 
 func withDuckDB(t *testing.T, fn func(driver string, dsn string)) error {
-	fn("duckdb", "?access_mode=read_write")
+	fn("duckdb", "?access_mode=read_write&rill_pool_size=4")
 	return nil
 }
 

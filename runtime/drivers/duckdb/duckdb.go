@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-
 	"github.com/jmoiron/sqlx"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -10,6 +9,7 @@ import (
 	// Load duckdb driver
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"sync"
 )
 
 func init() {
@@ -32,12 +32,20 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(cfg.PoolSize)
+	// 1 extra for meta connection to be used for metadata queries like catalog and dry run queries
+	db.SetMaxOpenConns(cfg.PoolSize + 1)
+
+	metaConn, err := db.Connx(context.Background())
+	if err != nil {
+		return nil, err
+	}
 
 	c := &connection{
-		db:   db,
-		pool: make(chan *sqlx.Conn, cfg.PoolSize),
-		sem:  priorityqueue.NewSemaphore(cfg.PoolSize),
+		db:       db,
+		metaConn: metaConn,
+		pool:     make(chan *sqlx.Conn, cfg.PoolSize),
+		sem:      priorityqueue.NewSemaphore(cfg.PoolSize),
+		closed:   false,
 	}
 
 	bootQueries := []string{
@@ -70,14 +78,20 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 }
 
 type connection struct {
-	db   *sqlx.DB
-	pool chan *sqlx.Conn
-	sem  *priorityqueue.Semaphore
+	db         *sqlx.DB
+	metaConn   *sqlx.Conn
+	pool       chan *sqlx.Conn
+	sem        *priorityqueue.Semaphore
+	closed     bool
+	closeMutex sync.Mutex
 }
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.closeMutex.Lock()
+	c.closed = true
 	close(c.pool)
+	c.closeMutex.Unlock()
 	var firstErr error
 	for conn := range c.pool {
 		err := conn.Close()
@@ -124,6 +138,12 @@ func (c *connection) getConn(ctx context.Context) (conn *sqlx.Conn, release func
 	if !ok {
 		return nil, nil, drivers.ErrClosed
 	}
-	fn := func() { c.pool <- conn }
+	fn := func() {
+		c.closeMutex.Lock()
+		if !c.closed {
+			c.pool <- conn
+		}
+		c.closeMutex.Unlock()
+	}
 	return conn, fn, nil
 }

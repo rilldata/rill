@@ -28,11 +28,7 @@ func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*d
 }
 
 func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
-	conn, release, err := c.getConn(ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer release()
+	conn := c.metaConn
 
 	sql := fmt.Sprintf("SELECT name, type, object, path, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 	rows, err := conn.QueryxContext(ctx, sql, args...)
@@ -79,11 +75,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 }
 
 func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
-	conn, release, err := c.getConn(ctx)
-	if err != nil {
-		return err
-	}
-	defer release()
+	conn := c.metaConn
 
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
@@ -114,11 +106,7 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
-	conn, release, err := c.getConn(ctx)
-	if err != nil {
-		return err
-	}
-	defer release()
+	conn := c.metaConn
 
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
@@ -144,12 +132,8 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
-	conn, release, err := c.getConn(ctx)
-	if err != nil {
-		return err
-	}
-	defer release()
+	conn := c.metaConn
 
-	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
+	_, err := conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
 	return err
 }
