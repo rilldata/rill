@@ -5,8 +5,8 @@
     MenuItem,
   } from "@rilldata/web-local/lib/components/menu";
 
-  import CheckCircle from "@rilldata/web-local/lib/components/icons/CheckCircle.svelte";
-  import CircleEmpty from "@rilldata/web-local/lib/components/icons/EmptyCircle.svelte";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import CircleEmpty from "@rilldata/web-common/components/icons/EmptyCircle.svelte";
 
   let commands = [];
   function add(cmd) {

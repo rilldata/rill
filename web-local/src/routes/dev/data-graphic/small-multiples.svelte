@@ -2,23 +2,23 @@
   import { format } from "d3-format";
   import { fade } from "svelte/transition";
 
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import {
-    GraphicContext,
     Body,
+    GraphicContext,
     SimpleDataGraphic,
-  } from "@rilldata/web-local/lib/components/data-graphic/elements";
+  } from "@rilldata/web-common/components/data-graphic/elements";
+  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import {
     Axis,
     PointLabel,
-  } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  } from "@rilldata/web-common/components/data-graphic/guides";
   import {
-    Line,
     Area,
-  } from "@rilldata/web-local/lib/components/data-graphic/marks";
-  import { WithBisector } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
+    Line,
+  } from "@rilldata/web-common/components/data-graphic/marks";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import type { DomainCoordinates } from "@rilldata/web-local/lib/components/data-graphic/constants/types";
 
   /** bind the mouseoverValue of a graph to this variable to share
    * with other graphs

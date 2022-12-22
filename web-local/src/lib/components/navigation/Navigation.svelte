@@ -1,19 +1,23 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getContext, onMount } from "svelte";
-  import { drag } from "../../drag";
-  import Spacer from "../icons/Spacer.svelte";
-  import Portal from "../Portal.svelte";
-  import Footer from "./Footer.svelte";
-
+  import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import HideLeftSidebar from "@rilldata/web-local/lib/components/icons/HideLeftSidebar.svelte";
-  import SurfaceViewIcon from "@rilldata/web-local/lib/components/icons/SurfaceView.svelte";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
+  import { getContext, onMount } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
+  import { parseDocument } from "yaml";
+  import { DEFAULT_NAV_WIDTH } from "../../application-config";
+  import { drag } from "../../drag";
   import MetricsDefinitionAssets from "./dashboards/MetricsDefinitionAssets.svelte";
+  import Footer from "./Footer.svelte";
   import ModelAssets from "./models/ModelAssets.svelte";
+  import { shorthandTitle } from "./shorthand-title";
   import TableAssets from "./sources/TableAssets.svelte";
 
   let mounted = false;
@@ -26,11 +30,11 @@
     (getContext("rill:app:navigation-layout") as Writable<{
       value: number;
       visible: boolean;
-    }>) || writable({ value: 300, visible: true });
+    }>) || writable({ value: DEFAULT_NAV_WIDTH, visible: true });
 
   const navigationWidth =
     (getContext("rill:app:navigation-width-tween") as Readable<number>) ||
-    writable(300);
+    writable(DEFAULT_NAV_WIDTH);
 
   const navVisibilityTween =
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
@@ -41,11 +45,6 @@
     `rill.yaml`
     //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
-
-  import { parseDocument } from "yaml";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import { shorthandTitle } from "./shorthand-title";
 
   $: yaml = parseDocument($thing?.data?.blob || "{}")?.toJS();
 </script>
@@ -58,7 +57,6 @@
   <div
     class="
   border-r 
-  border-transparent 
   fixed 
   overflow-auto 
   border-gray-200 
@@ -77,15 +75,15 @@
         <div
           on:dblclick={() => {
             navigationLayout.update((state) => {
-              state.value = 300;
+              state.value = DEFAULT_NAV_WIDTH;
               return state;
             });
           }}
           class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
           style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
           use:drag={{
-            minSize: 300,
-            maxSize: 500,
+            minSize: DEFAULT_NAV_WIDTH,
+            maxSize: 440,
             side: "assetsWidth",
             store: navigationLayout,
           }}

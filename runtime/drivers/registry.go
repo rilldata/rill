@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// RegistryStore is implemented by drivers capable of storing and looking up instances and repos
+// RegistryStore is implemented by drivers capable of storing and looking up instances and repos.
 type RegistryStore interface {
 	FindInstances(ctx context.Context) ([]*Instance, error)
 	FindInstance(ctx context.Context, id string) (*Instance, error)

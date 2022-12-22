@@ -5,7 +5,8 @@ module.exports = {
     "./**/*.html",
     "./**/*.svelte",
     "./src/lib/duckdb-data-types.ts",
-    "./src/lib/components/chip/chip-types.ts"
+    "./src/lib/components/chip/chip-types.ts",
+    "../web-common/**/*.svelte"
   ],
   theme: {
     extend: {},

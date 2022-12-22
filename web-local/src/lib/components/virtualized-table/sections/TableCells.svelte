@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { VirtualizedTableColumns } from "../../../types";
+  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import Cell from "../core/Cell.svelte";
   import Row from "../core/Row.svelte";
 
@@ -21,7 +21,6 @@
       formattedValue:
         rows[row.index]["__formatted_" + columns[column.index]?.name],
       type: columns[column.index]?.type,
-      suppressTooltip: scrolling,
       barValue: columns[column.index]?.total
         ? value / columns[column.index]?.total
         : 0,
@@ -40,6 +39,7 @@
         {atLeastOneSelected}
         {excludeMode}
         {rowActive}
+        suppressTooltip={scrolling}
         {...getCellProps(row, column)}
         on:inspect
         on:select-item

@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
 
   let applicationStatus = 0;

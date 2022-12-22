@@ -50,13 +50,12 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	sanitizedColumnName := quoteName(q.ColumnName)
-	requestSql := fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, quoteName(q.TableName))
+	requestSQL := fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, quoteName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    requestSql,
+		Query:    requestSQL,
 		Priority: priority,
 	})
-
 	if err != nil {
 		return err
 	}

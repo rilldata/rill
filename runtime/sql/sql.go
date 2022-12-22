@@ -90,11 +90,6 @@ func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogEntry) string {
 		switch obj.Type {
 		case drivers.ObjectTypeMetricsView:
 			panic(fmt.Errorf("not implemented"))
-			// artifacts = append(artifacts, map[string]any{
-			// 	"name":    obj.Name,
-			// 	"type":    "METRICS_VIEW",
-			// 	"payload": obj.SQL,
-			// })
 		case drivers.ObjectTypeTable, drivers.ObjectTypeSource:
 			var schema *runtimev1.StructType
 			if obj.Type == drivers.ObjectTypeTable {

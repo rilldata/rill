@@ -55,7 +55,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
 	}
 
-	estimateSql := fmt.Sprintf(`
+	estimateSQL := fmt.Sprintf(`
       WITH cleaned_column AS (
           SELECT %s as cd
           from %s
@@ -107,7 +107,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    estimateSql,
+		Query:    estimateSQL,
 		Priority: priority,
 	})
 	if err != nil {

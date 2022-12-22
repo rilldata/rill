@@ -1,5 +1,5 @@
 import type { DataProviderData } from "@adityahegde/typescript-test-utils";
-import { PreviewRollupInterval } from "@rilldata/web-local/lib/duckdb-data-types";
+import { PreviewRollupInterval } from "@rilldata/web-common/lib/duckdb-data-types";
 
 export interface EstimatedRollupIntervalTestCase {
   start: string;

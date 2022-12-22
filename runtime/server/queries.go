@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Query implements RuntimeService
+// Query implements RuntimeService.
 func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
 	args := make([]any, len(req.Args))
 	for i, arg := range req.Args {
@@ -36,7 +36,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 
 	if req.DryRun {
 		// TODO: Return a meta object for dry-run queries
-		// NOTE: Currently, instance.Query return nil rows for succesful dry-run queries
+		// NOTE: Currently, instance.Query return nil rows for successful dry-run queries
 		return &runtimev1.QueryResponse{}, nil
 	}
 
@@ -132,7 +132,7 @@ func valToPB(v any) (*structpb.Value, error) {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			return structpb.NewNullValue(), nil
 		}
-		return structpb.NewNumberValue(float64(v)), nil
+		return structpb.NewNumberValue(v), nil
 	case *big.Int:
 		// Evil cast to float until frontend can deal with bigs:
 		v2, _ := new(big.Float).SetInt(v).Float64()

@@ -52,7 +52,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
-	rugSql := fmt.Sprintf(`WITH data_table AS (
+	rugSQL := fmt.Sprintf(`WITH data_table AS (
 		SELECT %[1]s as %[2]s
 		FROM %[3]s
 		WHERE %[2]s IS NOT NULL
@@ -114,10 +114,9 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	  WHERE present=true`, selectColumn, sanitizedColumnName, quoteName(q.TableName), outlierPseudoBucketSize)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rugSql,
+		Query:    rugSQL,
 		Priority: priority,
 	})
-
 	if err != nil {
 		return err
 	}

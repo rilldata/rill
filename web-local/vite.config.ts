@@ -32,8 +32,6 @@ const config = defineConfig({
   resolve: {
     alias: {
       src: "/src", // trick to get absolute imports to work
-      $common: "/src/common",
-      $server: "/src/server",
       "@rilldata/web-local": "/src",
       "@rilldata/web-common": "/../web-common/src",
     },

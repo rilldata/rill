@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import {
@@ -6,8 +8,6 @@
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
   import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   export let selectedModel: V1Model;

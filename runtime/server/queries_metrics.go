@@ -5,14 +5,12 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
 // once the metrics view artifact representation is ready.
 
-// MetricsViewToplist implements RuntimeService
+// MetricsViewToplist implements RuntimeService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
@@ -33,7 +31,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	return q.Result, nil
 }
 
-// MetricsViewTimeSeries implements RuntimeService
+// MetricsViewTimeSeries implements RuntimeService.
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
@@ -51,7 +49,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	return q.Result, nil
 }
 
-// MetricsViewTotals implements RuntimeService
+// MetricsViewTotals implements RuntimeService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
 	q := &queries.MetricsViewTotals{
 		MetricsViewName: req.MetricsViewName,
@@ -67,15 +65,17 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
-func (s *Server) lookupMetricsView(ctx context.Context, instanceID string, name string) (*runtimev1.MetricsView, error) {
-	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+// Commenting as its unused
 
-	if obj.GetMetricsView() == nil {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-	}
+// func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
+// 	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
+// 	if err != nil {
+// 		return nil, status.Error(codes.InvalidArgument, err.Error())
+// 	}
 
-	return obj.GetMetricsView(), nil
-}
+// 	if obj.GetMetricsView() == nil {
+// 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
+// 	}
+
+// 	return obj.GetMetricsView(), nil
+// }

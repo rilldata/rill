@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Explore from "@rilldata/web-local/lib/components/icons/Explore.svelte";
-  import Metrics from "@rilldata/web-local/lib/components/icons/Metrics.svelte";
-  import Model from "@rilldata/web-local/lib/components/icons/Model.svelte";
-  import Source from "@rilldata/web-local/lib/components/icons/Source.svelte";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Metrics from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
 
   const steps = [
@@ -33,7 +33,7 @@
   ];
 </script>
 
-<WorkspaceContainer assetID="onboarding" inspector={false}>
+<WorkspaceContainer top="0px" assetID="onboarding" inspector={false}>
   <div class="mt-10 p-2 place-content-center h-screen" slot="body">
     <div class="text-center">
       <div class="font-bold">Getting started</div>

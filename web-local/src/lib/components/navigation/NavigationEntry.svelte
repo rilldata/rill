@@ -1,16 +1,16 @@
 <script lang="ts">
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { Menu } from "@rilldata/web-common/components/menu";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createCommandClickAction } from "../../util/command-click-action";
-  import { createShiftClickAction } from "../../util/shift-click-action";
   import ContextButton from "../column-profile/ContextButton.svelte";
   import ExpanderButton from "../column-profile/ExpanderButton.svelte";
-  import { WithTogglableFloatingElement } from "../floating-element";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
-  import MoreHorizontal from "../icons/MoreHorizontal.svelte";
-  import Spacer from "../icons/Spacer.svelte";
-  import { Menu } from "../menu";
-  import { notifications } from "../notifications";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let name: string;
   export let href: string;

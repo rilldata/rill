@@ -1,16 +1,15 @@
 <script lang="ts">
+  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
+  import AlertTriangle from "@rilldata/web-common/components/icons/AlertTriangle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
   import { ValidationState } from "@rilldata/web-local/lib/temp/metrics";
-  import AlertCircle from "../icons/AlertCircle.svelte";
-  import AlertTriangle from "../icons/AlertTriangle.svelte";
-
   import type {
-    ColumnConfig,
     CellConfigInput,
+    ColumnConfig,
     InputValidation,
   } from "./ColumnConfig";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let columnConfig: ColumnConfig<CellConfigInput>;
   export let index = undefined;

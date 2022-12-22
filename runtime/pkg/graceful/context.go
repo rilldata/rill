@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-// WithCancelOnTerminate derives a context that is cancelled on SIGINT and SIGTERM signals
+// WithCancelOnTerminate derives a context that is cancelled on SIGINT and SIGTERM signals.
 func WithCancelOnTerminate(ctx context.Context) context.Context {
 	ctx, cancel := context.WithCancel(ctx)
 

@@ -28,6 +28,7 @@ func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParam
 
 	if pathParams["instance_id"] == "" || pathParams["table_name"] == "" {
 		http.Error(w, "missing params", http.StatusBadRequest)
+		return
 	}
 
 	fileName := fmt.Sprintf("%s.%s", pathParams["table_name"], pathParams["format"])
@@ -38,6 +39,7 @@ func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParam
 	olap, err := s.runtime.OLAP(req.Context(), pathParams["instance_id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	_, err = olap.Execute(req.Context(), &drivers.Statement{
 		Query:    fmt.Sprintf("COPY (SELECT * FROM %s) TO '%s' (%s)", pathParams["table_name"], filePath, exportString),
@@ -46,6 +48,7 @@ func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParam
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	// set the header to trigger download
@@ -56,9 +59,11 @@ func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParam
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	_, err = io.Copy(w, file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 }

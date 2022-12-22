@@ -1,4 +1,5 @@
-import { removeTimezoneOffset as remove } from "./formatters";
+import { removeTimezoneOffset as remove } from "@rilldata/web-common/lib/formatters";
+
 /** used to convert a timestamp preview from the server for a sparkline. */
 export function convertTimestampPreview(
   d,

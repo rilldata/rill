@@ -1,21 +1,25 @@
 <script lang="ts">
-  import { useRuntimeServiceGetDescriptiveStatistics } from "@rilldata/web-common/runtime-client";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    useRuntimeServiceGetDescriptiveStatistics,
+    useRuntimeServiceGetRugHistogram,
+  } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
-  import { copyToClipboard } from "@rilldata/web-local/lib/util/shift-click-action";
   import { derived } from "svelte/store";
-  import { DataTypeIcon } from "../../data-types";
+  import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
     getNullPercentage,
     getNumericHistogram,
-    getRugPlotData,
     getTopK,
+    isFetching,
   } from "../queries";
   import NumericPlot from "./details/NumericPlot.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
+
   export let columnName: string;
   export let objectName: string;
   export let type: string;
@@ -40,13 +44,18 @@
     columnName,
     true
   );
-  $: rug = getRugPlotData(
+  $: rug = useRuntimeServiceGetRugHistogram(
     $runtimeStore?.instanceId,
     objectName,
-    columnName,
-    active
+    { columnName, priority: getPriorityForColumn("rug-histogram", active) },
+    {
+      query: {
+        select($query) {
+          return $query?.numericSummary?.numericOutliers?.outliers;
+        },
+      },
+    }
   );
-
   $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
   $: summary = derived(
@@ -67,9 +76,12 @@
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
+
+  $: fetchingSummaries = isFetching($nulls, $numericHistogram);
 </script>
 
 <ProfileContainer
+  isFetching={fetchingSummaries}
   {active}
   {compact}
   emphasize={active}
@@ -82,9 +94,10 @@
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <DataTypeIcon slot="icon" {type} />
+  <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
+
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {compact} data={$numericHistogram} slot="summary" />
+  <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
   <NullPercentageSpark
     nullCount={$nulls?.nullCount}
     slot="nullity"
@@ -93,8 +106,8 @@
   />
   <div class="pl-10 pr-4 py-4" slot="details">
     <NumericPlot
-      data={$numericHistogram}
-      rug={$rug}
+      data={$numericHistogram.data}
+      rug={$rug?.data}
       summary={$summary}
       topK={$topK}
       totalRows={$nulls?.totalRows}

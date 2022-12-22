@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
+  import { Callout } from "@rilldata/web-common/components/callout";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -14,8 +16,6 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
-  import Button from "../../button/Button.svelte";
-  import Callout from "../../callout/Callout.svelte";
   import {
     hasDuckDBUnicodeError,
     niceDuckdbUnicodeError,
@@ -97,19 +97,20 @@
 
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
+    <div slot="header">
+      <SourceWorkspaceHeader {sourceName} />
+    </div>
     <div
       slot="body"
       class="grid pb-3"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader {sourceName} />
-
       {#if entryExists}
         <div
           style:overflow="auto"
-          style:height="100%"
-          class="m-6 mt-0 border border-gray-300 rounded"
+          style:height="calc(100vh - var(--header-height) - 2rem)"
+          class="m-4 border border-gray-300 rounded"
         >
           {#key sourceName}
             <ConnectedPreviewTable objectName={sourceName} />

@@ -1,5 +1,5 @@
 <script>
-  import Switch from "@rilldata/web-local/lib/components/button/Switch.svelte";
+  import Switch from "@rilldata/web-common/components/button/Switch.svelte";
 
   export let leftPane = false;
 </script>

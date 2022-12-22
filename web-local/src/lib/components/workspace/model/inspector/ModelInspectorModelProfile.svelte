@@ -1,6 +1,7 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
+  import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
@@ -10,7 +11,6 @@
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";

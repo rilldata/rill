@@ -25,7 +25,7 @@ func AddCmd(ver version.Version) *cobra.Command {
 	var force bool
 	var verbose bool
 
-	var addCmd = &cobra.Command{
+	addCmd := &cobra.Command{
 		Use:   "add <file>",
 		Short: "Add a local file source",
 		Long:  "Add a local file source. Supported file types include .parquet, .csv, .tsv.",
