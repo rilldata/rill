@@ -40,7 +40,6 @@
     >
       <div
         class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-500 font-medium"
-        style="font-size: 11px;"
       >
         <slot />
       </div>
