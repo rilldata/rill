@@ -39,7 +39,7 @@
     $runtimeStore?.instanceId,
     objectName,
     columnName,
-    true
+    active
   );
   $: rug = getRugPlotData(
     $runtimeStore?.instanceId,

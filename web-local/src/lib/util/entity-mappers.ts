@@ -6,11 +6,11 @@ export function getFilePathFromNameAndType(
 ): string {
   switch (type) {
     case EntityType.Table:
-      return `sources/${name}.yaml`;
+      return `/sources/${name}.yaml`;
     case EntityType.Model:
-      return `models/${name}.sql`;
+      return `/models/${name}.sql`;
     case EntityType.MetricsDefinition:
-      return `dashboards/${name}.yaml`;
+      return `/dashboards/${name}.yaml`;
     default:
       throw new Error(
         "type must be either 'Table', 'Model', or 'MetricsDefinition'"
