@@ -59,13 +59,13 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		return migrator.CreateValidationError(catalog.Path, err.Error())
 	}
 
+	fieldsMap := make(map[string]*runtimev1.StructType_Field)
+	for _, field := range model.Schema.Fields {
+		fieldsMap[field.Name] = field
+	}
+
 	// if a time dimension is selected it should exist
 	if mv.TimeDimension != "" {
-		fieldsMap := make(map[string]*runtimev1.StructType_Field)
-		for _, field := range model.Schema.Fields {
-			fieldsMap[field.Name] = field
-		}
-
 		if _, ok := fieldsMap[mv.TimeDimension]; !ok {
 			return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
 		}
@@ -74,12 +74,11 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	var validationErrors []*runtimev1.ReconcileError
 
 	for i, dimension := range mv.Dimensions {
-		err := validateDimension(ctx, model, dimension)
-		if err != nil {
+		if _, ok := fieldsMap[dimension.Name]; !ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
-				Message:      err.Error(),
+				Message:      fmt.Sprintf("dimension not found: %s", dimension.Name),
 				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 		}
@@ -115,17 +114,6 @@ func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.C
 
 func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	return true, nil
-}
-
-func validateDimension(ctx context.Context, model *drivers.Table, dimension *runtimev1.MetricsView_Dimension) error {
-	for _, field := range model.Schema.Fields {
-		// TODO: check type
-		if field.Name == dimension.Name {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("dimension not found: %s", dimension.Name)
 }
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *runtimev1.MetricsView_Measure) error {
