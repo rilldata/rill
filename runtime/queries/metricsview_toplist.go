@@ -112,14 +112,13 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (
 
 	args := []any{}
 	whereClause := "1=1"
-	timestampColumnName := safeName(mv.TimeDimension)
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
+			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
+			whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}
