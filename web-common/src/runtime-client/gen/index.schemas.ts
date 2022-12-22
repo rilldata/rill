@@ -482,7 +482,7 @@ export interface V1MetricsViewFilter {
 
 export interface V1MetricsViewDimensionValue {
   in?: unknown[];
-  like?: unknown[];
+  like?: string[];
   name?: string;
 }
 

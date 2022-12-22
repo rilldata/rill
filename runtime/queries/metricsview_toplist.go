@@ -31,7 +31,7 @@ var _ runtime.Query = &MetricsViewToplist{}
 func (q *MetricsViewToplist) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewToplist: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewToplist:%s", string(r))
 }

@@ -2,12 +2,11 @@ package queries
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type ColumnCardinality struct {
@@ -49,8 +48,7 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	sanitizedColumnName := quoteName(q.ColumnName)
-	requestSQL := fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", sanitizedColumnName, quoteName(q.TableName))
+	requestSQL := fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", safeName(q.ColumnName), safeName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    requestSQL,
@@ -59,6 +57,7 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	if err != nil {
 		return err
 	}
+
 	defer rows.Close()
 	var count float64
 	if rows.Next() {
@@ -69,5 +68,6 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		q.Result = count
 		return nil
 	}
-	return status.Error(codes.Internal, "no rows returned")
+
+	return errors.New("no rows returned")
 }

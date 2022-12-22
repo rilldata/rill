@@ -48,7 +48,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	sanitizedColumnName := quoteName(q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
@@ -111,7 +111,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		CASE WHEN count>0 THEN true ELSE false END AS present,
 		count
 	  FROM histrogram_with_edge
-	  WHERE present=true`, selectColumn, sanitizedColumnName, quoteName(q.TableName), outlierPseudoBucketSize)
+	  WHERE present=true`, selectColumn, sanitizedColumnName, safeName(q.TableName), outlierPseudoBucketSize)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    rugSQL,

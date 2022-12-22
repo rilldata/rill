@@ -1721,7 +1721,8 @@ definitions:
         items: {}
       like:
         type: array
-        items: {}
+        items:
+          type: string
       name:
         type: string
   v1MetricsViewFilter:

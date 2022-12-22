@@ -1021,7 +1021,7 @@ enum TimeRangeName {
 message MetricsViewDimensionValue {
   string name = 1;
   repeated google.protobuf.Value in = 2;
-  repeated google.protobuf.Value like = 3;
+  repeated string like = 3;
 }
 
 message MetricsViewRequestFilter {

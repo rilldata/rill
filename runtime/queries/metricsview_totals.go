@@ -29,7 +29,7 @@ var _ runtime.Query = &MetricsViewTotals{}
 func (q *MetricsViewTotals) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewTotals: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewTotals:%s", string(r))
 }

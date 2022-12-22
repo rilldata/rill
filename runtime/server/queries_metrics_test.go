@@ -139,6 +139,29 @@ func TestServer_MetricsViewTotals_1dim(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
+func TestServer_MetricsViewTotals_1dim_special_symbol_values(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "domain",
+					In: []*structpb.Value{
+						structpb.NewStringValue("msn.'com"), structpb.NewStringValue("msn.\"com"), structpb.NewStringValue("msn. com"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 0.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
 func TestServer_MetricsViewTotals_1dim_2In(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
@@ -403,6 +426,24 @@ func TestServer_MetricsViewToplist_quotes(t *testing.T) {
 	require.Equal(t, 2, len(tr.Data[0].Fields))
 
 	require.Equal(t, "cars", tr.Data[0].Fields["ad words"].GetStringValue())
+	require.Equal(t, 2.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "numeric_dim",
+		MeasureNames:    []string{"measure_0"},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+
+	require.Equal(t, float64(1), tr.Data[0].Fields["numeric_dim"].GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
 }
 
