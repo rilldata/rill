@@ -39,7 +39,7 @@
       }}
     >
       <div
-        class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-500 font-medium"
+        class="text-ellipsis overflow-hidden whitespace-nowrap ui-copy font-medium"
       >
         <slot />
       </div>
