@@ -399,8 +399,8 @@ func getFilterFromDimensionValuesFilter(
 			for j, iv := range dv.In {
 				switch iv.Kind.(type) {
 				case *structpb.Value_StringValue:
-
-					inClause += "'" + escapeSingleQuotes(iv.GetStringValue()) + "'"
+					inClause += "?"
+					args = append(args, iv.GetStringValue())
 				case *structpb.Value_NumberValue:
 					inClause += "?"
 					args = append(args, iv.GetNumberValue())
@@ -425,7 +425,8 @@ func getFilterFromDimensionValuesFilter(
 				if lv.GetKind() == nil {
 					continue
 				}
-				likeClause += escapedName + " " + prefix + " ILIKE '" + escapeSingleQuotes(lv.GetStringValue()) + "'"
+				likeClause += escapedName + " " + prefix + " ILIKE ?"
+				args = append(args, lv.GetStringValue())
 				if j < len(dv.Like)-1 {
 					likeClause += " OR "
 				}
