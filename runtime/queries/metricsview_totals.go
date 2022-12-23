@@ -13,8 +13,6 @@ import (
 )
 
 type MetricsViewTotals struct {
-	// TableName  string
-	// ColumnName string
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
@@ -111,14 +109,13 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 
 	whereClause := "1=1"
 	args := []any{}
-	timestampColumnName := safeName(mv.TimeDimension)
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
+			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
+			whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}

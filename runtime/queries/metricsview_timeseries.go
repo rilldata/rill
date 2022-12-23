@@ -14,7 +14,6 @@ import (
 
 type MetricsViewTimeSeries struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	DimensionName   string                       `json:"dimension_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
