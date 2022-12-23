@@ -85,8 +85,14 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 }
 
 func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
+	conn, release, err := c.getConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	// Start a transaction
-	tx, err := c.db.BeginTx(ctx, nil)
+	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
