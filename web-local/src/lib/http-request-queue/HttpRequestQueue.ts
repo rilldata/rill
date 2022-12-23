@@ -20,7 +20,7 @@ export const UrlExtractorRegex =
   /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
 
 // intentionally 1 less than max to allow for non profiling query calls
-let QueryQueueSize = 20;
+let QueryQueueSize = 5;
 try {
   if (
     window.location.protocol === "https:" &&
