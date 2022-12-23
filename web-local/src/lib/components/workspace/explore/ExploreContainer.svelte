@@ -7,11 +7,9 @@
   export let metricViewName: string;
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-  $: console.log(metricsExplorer, hasDefinedTimeSeries(metricsExplorer));
   $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
 </script>
 
-{hasTimeSeries}
 <section
   class="grid items-stretch leaderboard-layout surface"
   style:grid-template-columns="{hasTimeSeries ? "560px" : "240px"} minmax(355px,

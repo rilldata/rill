@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -61,12 +62,12 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	fieldsMap := make(map[string]*runtimev1.StructType_Field)
 	for _, field := range model.Schema.Fields {
-		fieldsMap[field.Name] = field
+		fieldsMap[strings.ToLower(field.Name)] = field
 	}
 
 	// if a time dimension is selected it should exist
 	if mv.TimeDimension != "" {
-		if _, ok := fieldsMap[mv.TimeDimension]; !ok {
+		if _, ok := fieldsMap[strings.ToLower(mv.TimeDimension)]; !ok {
 			return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
 		}
 	}
@@ -74,7 +75,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	var validationErrors []*runtimev1.ReconcileError
 
 	for i, dimension := range mv.Dimensions {
-		if _, ok := fieldsMap[dimension.Name]; !ok {
+		if _, ok := fieldsMap[strings.ToLower(dimension.Name)]; !ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
