@@ -32,12 +32,11 @@ func (i *MigrationItem) renameFrom(from *MigrationItem) {
 }
 
 const (
-	MigrationNoChange    int = 0
-	MigrationCreate      int = 1
-	MigrationRename      int = 2
-	MigrationUpdate      int = 3
-	MigrationDelete      int = 4
-	MigrationNewArtifact int = 5
+	MigrationNoChange int = 0
+	MigrationCreate   int = 1
+	MigrationRename   int = 2
+	MigrationUpdate   int = 3
+	MigrationDelete   int = 4
 )
 
 func (s *Service) getMigrationItem(
@@ -63,13 +62,8 @@ func (s *Service) getMigrationItem(
 				FilePath: repoPath,
 			}
 		}
-		name, ok := s.PathToName[repoPath]
-		if ok {
-			item.Name = name
-		} else {
-			item.Name = fileutil.Stem(repoPath)
-		}
 
+		item.Name = fileutil.Stem(repoPath)
 		item.Type = MigrationDelete
 	} else {
 		item.Name = catalog.Name
@@ -158,6 +152,6 @@ func (s *Service) newEmbeddedMigrationItem(newEntry *drivers.CatalogEntry) *Migr
 		NormalizedName: strings.ToLower(newEntry.Name),
 		Path:           newEntry.Path,
 		CatalogInFile:  newEntry,
-		Type:           MigrationNewArtifact,
+		Type:           MigrationCreate,
 	}
 }

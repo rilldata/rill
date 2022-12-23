@@ -10,7 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 
 	// Load migrators
@@ -230,6 +229,10 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 		if _, ok := changedPathsMap[storeObject.Path]; changedPathsHint && !ok {
 			continue
 		}
+		// ignore embedded sources
+		if storeObject.Type == drivers.ObjectTypeSource && storeObject.GetSource().Embedded {
+			continue
+		}
 		found := false
 		// find any additions that match and mark it as a MigrationRename
 		for _, addition := range additions {
@@ -329,7 +332,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					item.Type = MigrationUpdate
 				}
-			} else if _, ok := s.PathToName[item.Path]; ok {
+			} else if _, ok := s.NameToPath[item.NormalizedName]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -426,9 +429,8 @@ func (s *Service) runMigrationItems(
 			// only run the actual migration if in dry run
 			switch item.Type {
 			case MigrationNoChange:
-				if _, ok := s.PathToName[item.NormalizedName]; !ok {
+				if _, ok := s.NameToPath[item.NormalizedName]; !ok {
 					// this is perhaps an init. so populate cache data
-					s.PathToName[item.Path] = item.NormalizedName
 					s.NameToPath[item.NormalizedName] = item.Path
 					s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 				}
@@ -444,9 +446,6 @@ func (s *Service) runMigrationItems(
 			case MigrationDelete:
 				err = s.deleteInStore(ctx, item)
 				result.DroppedObjects = append(result.DroppedObjects, item.CatalogInStore)
-			case MigrationNewArtifact:
-				err = s.createArtifact(ctx, item)
-				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)
 			}
 		}
 
@@ -495,7 +494,6 @@ func (s *Service) runMigrationItems(
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
-	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
@@ -523,11 +521,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
 	fromLowerName := strings.ToLower(item.FromName)
 	delete(s.NameToPath, fromLowerName)
-
 	s.NameToPath[item.NormalizedName] = item.Path
-	delete(s.PathToName, item.FromPath)
-
-	s.PathToName[item.Path] = item.NormalizedName
 
 	// delete old item and add new item to dag
 	s.dag.Delete(fromLowerName)
@@ -555,7 +549,6 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
-	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG with new dependencies
 	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 
@@ -576,7 +569,6 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
 	delete(s.NameToPath, item.NormalizedName)
-	delete(s.PathToName, item.FromPath)
 
 	// delete item from dag
 	s.dag.Delete(item.NormalizedName)
@@ -590,23 +582,10 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 	return s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
 }
 
-func (s *Service) createArtifact(ctx context.Context, item *MigrationItem) error {
-	// create a new artifact file
-	err := artifacts.Write(ctx, s.Repo, s.InstID, item.CatalogInFile)
-	if err != nil {
-		return err
-	}
-
-	// run as if a new artifact
-	return s.createInStore(ctx, item)
-}
-
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
-	repoStat, err := s.Repo.Stat(ctx, s.InstID, item.Path)
-	if err != nil {
-		return nil, err
-	}
+	// stat will not succeed for embedded entries
+	repoStat, _ := s.Repo.Stat(ctx, s.InstID, item.Path)
 
 	// convert protobuf to database object
 	catalogEntry := item.CatalogInFile
@@ -614,10 +593,12 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 
 	// set the UpdatedOn as LastUpdated from the artifact file
 	// this will allow to not reprocess unchanged files
-	catalogEntry.UpdatedOn = repoStat.LastUpdated
+	if repoStat != nil {
+		catalogEntry.UpdatedOn = repoStat.LastUpdated
+	}
 	catalogEntry.RefreshedOn = time.Now()
 
-	err = migrator.SetSchema(ctx, s.Olap, catalogEntry)
+	err := migrator.SetSchema(ctx, s.Olap, catalogEntry)
 	if err != nil {
 		return nil, err
 	}

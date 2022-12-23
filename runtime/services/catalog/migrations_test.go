@@ -539,7 +539,15 @@ path:
 	testutils.CreateSource(t, s, "Ad-Bids", "AdBids.csv", "/sources/Ad-Bids.yaml")
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{"/sources/Ad-Bids.yaml"})
+	testutils.AssertMigration(
+		t,
+		result,
+		4,
+		0,
+		0,
+		0,
+		append([]string{"/sources/Ad-Bids.yaml"}, AdBidsAffectedPaths...),
+	)
 	require.Equal(t, "/sources/Ad-Bids.yaml", result.Errors[0].FilePath)
 	require.Equal(t, "invalid file name", result.Errors[0].Message)
 }
@@ -595,6 +603,9 @@ func TestEmbeddedSources(t *testing.T) {
 
 	s, _ := initBasicService(t)
 
+	embeddedSourceName := "gcs_gs___scratch_rilldata_com_rill_developer_AdBids_csv_gz"
+	embeddedSourcePath := "/sources/gcs_gs___scratch_rilldata_com_rill_developer_AdBids_csv_gz.yaml"
+
 	testutils.CreateModel(
 		t,
 		s,
@@ -604,7 +615,32 @@ func TestEmbeddedSources(t *testing.T) {
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, "/sources/gcs_gs___scratch_rilldata_com_rill_developer_AdBids_csv_gz.yaml"})
+	testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, embeddedSourcePath})
+	testutils.AssertTable(t, s, embeddedSourceName, embeddedSourcePath)
+	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+	adBidsNewModeName := "AdBids_new_model"
+	adBidsNewModelPath := "/models/AdBids_new_model.sql"
+
+	testutils.CreateModel(
+		t,
+		s,
+		adBidsNewModeName,
+		`select id, timestamp, publisher from "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"`,
+		adBidsNewModelPath,
+	)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{adBidsNewModelPath})
+	testutils.AssertTable(t, s, embeddedSourceName, embeddedSourcePath)
+	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+	testutils.AssertTable(t, s, "AdBids_new_model", adBidsNewModelPath)
+	// TODO: assert schema to make sure data is there in old model as well
+
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	// no errors when reconcile is run later
+	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
+	require.NoError(t, err)
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {

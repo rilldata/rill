@@ -22,8 +22,6 @@ type Service struct {
 	// used to get path when we only have name. happens when we get name from DAG
 	// TODO: should we add path to the DAG instead
 	NameToPath map[string]string
-	// used to get last logged name when parsing fails
-	PathToName map[string]string
 
 	logger *zap.Logger
 }
@@ -46,7 +44,6 @@ func NewService(
 
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
-		PathToName: make(map[string]string),
 
 		logger: logger,
 	}
