@@ -35,19 +35,6 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 	// 1 extra for meta connection to be used for metadata queries like catalog and dry run queries
 	db.SetMaxOpenConns(cfg.PoolSize + 1)
 
-	metaConn, err := db.Connx(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	c := &connection{
-		db:       db,
-		metaConn: metaConn,
-		pool:     make(chan *sqlx.Conn, cfg.PoolSize),
-		sem:      priorityqueue.NewSemaphore(cfg.PoolSize),
-		closed:   false,
-	}
-
 	bootQueries := []string{
 		"INSTALL 'json'",
 		"LOAD 'json'",
@@ -56,6 +43,25 @@ func (d driver) Open(dsn string) (drivers.Connection, error) {
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
 		"SET max_expression_depth TO 250",
+	}
+
+	metaConn, err := db.Connx(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	for _, qry := range bootQueries {
+		_, err = metaConn.ExecContext(context.Background(), qry)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	c := &connection{
+		db:       db,
+		metaConn: metaConn,
+		pool:     make(chan *sqlx.Conn, cfg.PoolSize),
+		sem:      priorityqueue.NewSemaphore(cfg.PoolSize),
+		closed:   false,
 	}
 
 	for i := 0; i < cfg.PoolSize; i++ {

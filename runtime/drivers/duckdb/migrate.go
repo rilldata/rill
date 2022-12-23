@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"path"
 	"strconv"
 	"strings"
@@ -75,7 +76,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 			return err
 		}
 
-		err = c.migrateSingle(ctx, file.Name(), sql, version)
+		err = c.migrateSingle(conn, ctx, file.Name(), sql, version)
 		if err != nil {
 			return err
 		}
@@ -84,13 +85,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
-	conn, release, err := c.getConn(ctx)
-	if err != nil {
-		return err
-	}
-	defer release()
-
+func (c *connection) migrateSingle(conn *sqlx.Conn, ctx context.Context, name string, sql []byte, version int) (err error) {
 	// Start a transaction
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
@@ -117,7 +112,7 @@ func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte,
 	}
 
 	// Force DuckDB to merge WAL into .db file
-	_, err = c.db.ExecContext(ctx, "CHECKPOINT;")
+	_, err = conn.ExecContext(ctx, "CHECKPOINT;")
 	if err != nil {
 		return err
 	}
