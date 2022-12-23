@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -23,7 +25,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 		Query: fmt.Sprintf(
 			"CREATE OR REPLACE VIEW %s AS (%s)",
 			catalogObj.Name,
-			sanitizeQuery(catalogObj.GetModel().Sql, false),
+			catalogObj.GetModel().SanitizedSql,
 		),
 		Priority: 100,
 	})
@@ -72,13 +74,50 @@ func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cata
 	return rows.Close()
 }
 
-func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
-	return ExtractTableNames(catalog.GetModel().Sql)
+func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
+	model := catalog.GetModel()
+	model.SanitizedSql = sanitizeQuery(model.Sql, false)
+	dependencies := ExtractTableNames(model.Sql)
+
+	embeddedSourcesMap := make(map[string]*drivers.CatalogEntry)
+	for i, dependency := range dependencies {
+		source := connectors.GetSourceFromPath(dependency)
+		if source == nil {
+			continue
+		}
+		if _, ok := embeddedSourcesMap[source.Name]; ok {
+			continue
+		}
+
+		props, _ := structpb.NewStruct(source.Properties)
+		embeddedSourcesMap[source.Name] = &drivers.CatalogEntry{
+			Name: source.Name,
+			Type: drivers.ObjectTypeSource,
+			Object: &runtimev1.Source{
+				Name:       source.Name,
+				Connector:  source.Connector,
+				Properties: props,
+				Embedded:   true,
+				Links:      1,
+			},
+			Path: fmt.Sprintf("/sources/%s.yaml", source.Name),
+		}
+
+		// replace the dependency
+		dependencies[i] = source.Name
+		model.SanitizedSql = strings.ReplaceAll(model.SanitizedSql, dependency, source.Name)
+	}
+
+	embeddedSources := make([]*drivers.CatalogEntry, 0)
+	for _, embeddedSource := range embeddedSourcesMap {
+		embeddedSources = append(embeddedSources, embeddedSource)
+	}
+	return dependencies, embeddedSources
 }
 
 func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	_, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    catalog.GetModel().Sql,
+		Query:    catalog.GetModel().SanitizedSql,
 		Priority: 100,
 		DryRun:   true,
 	})

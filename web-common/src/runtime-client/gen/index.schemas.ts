@@ -265,6 +265,8 @@ export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
   connector?: string;
+  embedded?: boolean;
+  links?: number;
   name?: string;
   properties?: V1SourceProperties;
   schema?: V1StructType;
@@ -449,6 +451,7 @@ export interface V1NumericSummary {
 export interface V1Model {
   dialect?: ModelDialect;
   name?: string;
+  sanitizedSql?: string;
   schema?: V1StructType;
   sql?: string;
 }

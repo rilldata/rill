@@ -38,3 +38,22 @@ func TestPropertiesEquals(t *testing.T) {
 	require.False(t, s2.PropertiesEquals(s3) || s3.PropertiesEquals(s2))
 	require.False(t, s2.PropertiesEquals(s4) || s4.PropertiesEquals(s2))
 }
+
+func TestGetSourceFromPath(t *testing.T) {
+	s := GetSourceFromPath("AdBids")
+	require.Nil(t, s)
+
+	s = GetSourceFromPath("/path/to/AdBids")
+	// TODO
+	require.Nil(t, s)
+
+	s = GetSourceFromPath("http://server/path/to/AdBids.csv.tgz")
+	require.NotNil(t, s)
+	require.Equal(t, "https", s.Connector)
+	require.Equal(t, "https_http___server_path_to_AdBids_csv_tgz", s.Name)
+
+	s = GetSourceFromPath("gs://server-name/path/to/AdBids.csv.tgz")
+	require.NotNil(t, s)
+	require.Equal(t, "gcs", s.Connector)
+	require.Equal(t, "gcs_gs___server_name_path_to_AdBids_csv_tgz", s.Name)
+}

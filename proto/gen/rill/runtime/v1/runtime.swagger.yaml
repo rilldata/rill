@@ -1803,6 +1803,8 @@ definitions:
       name:
         type: string
         title: Name of the model
+      sanitizedSql:
+        type: string
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the model
@@ -2119,6 +2121,11 @@ definitions:
       connector:
         type: string
         title: Connector used by the source
+      embedded:
+        type: boolean
+      links:
+        type: integer
+        format: int32
       name:
         type: string
         title: Name of the source

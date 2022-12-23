@@ -3,6 +3,8 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -148,4 +150,37 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 	}
 
 	return true
+}
+
+var (
+	protocolExtraction = regexp.MustCompile(`^(.*?)://(.*)$`)
+	sanitiser          = regexp.MustCompile(`(?im)[:/?\-.]`)
+)
+
+func GetSourceFromPath(path string) *Source {
+	path = strings.TrimSpace(strings.Trim(path, `"'`))
+	matches := protocolExtraction.FindStringSubmatch(path)
+	// TODO: support file
+	if len(matches) < 3 {
+		return nil
+	}
+	var connector string
+	switch matches[1] {
+	case "http", "https":
+		connector = "https"
+	case "gs":
+		connector = "gcs"
+	case "s3":
+		connector = "s3"
+	default:
+		return nil
+	}
+	name := fmt.Sprintf("%s_%s", connector, sanitiser.ReplaceAllString(path, "_"))
+	return &Source{
+		Name:      name,
+		Connector: connector,
+		Properties: map[string]any{
+			"path": path,
+		},
+	}
 }

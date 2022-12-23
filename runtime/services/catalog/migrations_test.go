@@ -10,6 +10,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -585,6 +586,25 @@ func TestReconcileDryRun(t *testing.T) {
 	require.Equal(t, AdBidsDashboardRepoPath, result.Errors[0].FilePath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	testutils.AssertMigration(t, result, 0, 2, 0, 0, AdBidsModelDashboardPath)
+}
+
+func TestEmbeddedSources(t *testing.T) {
+	if testing.Short() {
+		t.Skip("reconcile: skipping test that need auth")
+	}
+
+	s, _ := initBasicService(t)
+
+	testutils.CreateModel(
+		t,
+		s,
+		"AdBids_model",
+		`select id, timestamp, publisher, domain, bid_price from "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"`,
+		AdBidsModelRepoPath,
+	)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, "/sources/gcs_gs___scratch_rilldata_com_rill_developer_AdBids_csv_gz.yaml"})
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {

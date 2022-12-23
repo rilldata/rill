@@ -36,6 +36,8 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
+  bool embedded = 6;
+  int32 links = 7;
 }
 
 // Model is the internal representation of a model definition
@@ -49,10 +51,11 @@ message Model {
   string name = 1;
   // SQL is a SELECT statement representing the model
   string sql = 2;
+  string sanitized_sql = 3;
   // Dialect of the SQL statement
-  Dialect dialect = 3;
+  Dialect dialect = 4;
   // Detected schema of the model
-  StructType schema = 4;
+  StructType schema = 5;
 }
 
 // Metrics view is the internal representation of a metrics view definition
