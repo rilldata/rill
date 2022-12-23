@@ -37,6 +37,6 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 	}
 
 	return &runtimev1.GenerateTimeSeriesResponse{
-		Rollup: q.Result,
+		Rollup: q.Result.Data,
 	}, nil
 }

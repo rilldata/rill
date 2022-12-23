@@ -16,6 +16,11 @@ import (
 
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
 
+type ColumnTimeseriesResult struct {
+	Meta []*runtimev1.MetricsViewColumn
+	Data *runtimev1.TimeSeriesResponse
+}
+
 type ColumnTimeseries struct {
 	TableName           string                                              `json:"table_name"`
 	Measures            []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure `json:"measures"`
@@ -24,7 +29,7 @@ type ColumnTimeseries struct {
 	Filters             *runtimev1.MetricsViewRequestFilter                 `json:"filters"`
 	Pixels              int32                                               `json:"pixels"`
 	SampleSize          int32                                               `json:"sample_size"`
-	Result              *runtimev1.TimeSeriesResponse                       `json:"-"`
+	Result              *ColumnTimeseriesResult                             `json:"-"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -46,7 +51,7 @@ func (q *ColumnTimeseries) MarshalResult() any {
 }
 
 func (q *ColumnTimeseries) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.TimeSeriesResponse)
+	res, ok := v.(*ColumnTimeseriesResult)
 	if !ok {
 		return fmt.Errorf("ColumnTimeseries: mismatched unmarshal input")
 	}
@@ -70,11 +75,11 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		q.Result = &runtimev1.TimeSeriesResponse{}
+		q.Result = &ColumnTimeseriesResult{}
 		return nil
 	}
 
-	measures := normaliseMeasures(q.Measures, true)
+	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 	filter, args := getFilterFromMetricsViewFilters(q.Filters)
 	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 	tsAlias := tempName("_ts_")
@@ -130,6 +135,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
+	meta := structTypeToMetricsViewColumn(rows.Schema)
 	rows.Close()
 	if err != nil {
 		return err
@@ -143,10 +149,13 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 	}
 
-	q.Result = &runtimev1.TimeSeriesResponse{
-		Results:   results,
-		TimeRange: timeRange,
-		Spark:     sparkValues,
+	q.Result = &ColumnTimeseriesResult{
+		Meta: meta,
+		Data: &runtimev1.TimeSeriesResponse{
+			Results:   results,
+			TimeRange: timeRange,
+			Spark:     sparkValues,
+		},
 	}
 	return nil
 }
