@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ModelIcon from "@rilldata/web-common/components/icons/Model.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
@@ -53,7 +52,7 @@
   on:add={handleAddModel}
   tooltipText="Create a new model"
 >
-  <ModelIcon size="14px" /> Models
+  Models
 </NavigationHeader>
 
 {#if showModels}
