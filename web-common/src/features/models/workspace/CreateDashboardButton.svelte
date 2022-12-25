@@ -27,6 +27,7 @@
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
@@ -40,7 +41,6 @@
     modelName
   );
   $: model = $getModel.data?.entry?.model;
-  $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   const queryClient = useQueryClient();
@@ -103,21 +103,13 @@
 </script>
 
 <Tooltip alignment="right" distance={16} location="bottom">
-  <Button
-    disabled={!timestampColumns?.length}
-    on:click={handleCreateDashboard}
-    type="primary"
-  >
+  <Button on:click={handleCreateDashboard} type="primary">
     <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
     <Explore size="14px" /></Button
   >
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
-    {:else if timestampColumns?.length}
-      Generate a dashboard based on your model
-    {:else}
-      Add a timestamp column to your model in order to generate a dashboard
     {/if}
   </TooltipContent>
 </Tooltip>

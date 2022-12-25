@@ -196,18 +196,12 @@
 </MenuItem>
 
 <MenuItem
-  disabled={!schemaHasTimestampColumn(source?.schema)}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
-  <svelte:fragment slot="description">
-    {#if !schemaHasTimestampColumn(source?.schema)}
-      Requires a timestamp column
-    {/if}
-  </svelte:fragment>
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "local_file"}
