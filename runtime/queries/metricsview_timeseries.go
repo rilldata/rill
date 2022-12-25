@@ -74,6 +74,10 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	measures, err := toMeasures(mv.Measures, q.MeasureNames)
+	if err != nil {
+		return err
+	}
+
 	tsq := &ColumnTimeseries{
 		TableName:           mv.Model,
 		TimestampColumnName: mv.TimeDimension,
@@ -90,11 +94,11 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	a := tsq.Result
+	r := tsq.Result
 
 	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
-		Meta: a.Meta,
-		Data: toData(a.Data.Results, mv),
+		Meta: r.Meta,
+		Data: toData(r.Data.Results, mv),
 	}
 
 	return nil
@@ -117,24 +121,24 @@ func toData(data []*runtimev1.TimeSeriesValue, mv *runtimev1.MetricsView) []*str
 }
 
 func toFilter(filter *runtimev1.MetricsViewFilter) *runtimev1.MetricsViewRequestFilter {
-	res := &runtimev1.MetricsViewRequestFilter{}
-	for _, f := range filter.Include {
-		var likes []string
-		for _, l := range f.Like {
-			likes = append(likes, l.GetStringValue())
-		}
-		res.Include = append(res.Include, &runtimev1.MetricsViewDimensionValue{
-			Name: f.Name,
-			In:   f.In,
-			Like: likes,
-		})
+	if filter == nil {
+		return nil
 	}
-	for _, f := range filter.Exclude {
+
+	res := &runtimev1.MetricsViewRequestFilter{}
+	res.Include = toConditions(filter.Include)
+	res.Exclude = toConditions(filter.Exclude)
+	return res
+}
+
+func toConditions(conditions []*runtimev1.MetricsViewFilter_Cond) []*runtimev1.MetricsViewDimensionValue {
+	var res []*runtimev1.MetricsViewDimensionValue
+	for _, f := range conditions {
 		var likes []string
 		for _, l := range f.Like {
 			likes = append(likes, l.GetStringValue())
 		}
-		res.Exclude = append(res.Exclude, &runtimev1.MetricsViewDimensionValue{
+		res = append(res, &runtimev1.MetricsViewDimensionValue{
 			Name: f.Name,
 			In:   f.In,
 			Like: likes,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -535,6 +536,9 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 				value.Records[k] = float64(x)
 			case float64:
 				value.Records[k] = x
+			case *big.Int:
+				f, _ := new(big.Float).SetInt(x).Float64()
+				value.Records[k] = f
 			default:
 				return nil, fmt.Errorf("unknown type %T ", v)
 			}

@@ -654,11 +654,11 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	require.Equal(t, 2, len(tr.Data))
 	require.Equal(t, 3, len(tr.Data[0].Fields))
 
-	require.Equal(t, "2022-01-01T00:00:00Z", tr.Data[0].Fields["timestamp"].GetStringValue())
+	require.Equal(t, "2022-01-01T00:00:00.000Z", tr.Data[0].Fields["timestamp"].GetStringValue())
 	require.Equal(t, 1.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
 
-	require.Equal(t, "2022-01-02T00:00:00Z", tr.Data[1].Fields["timestamp"].GetStringValue())
+	require.Equal(t, "2022-01-02T00:00:00.000Z", tr.Data[1].Fields["timestamp"].GetStringValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
 }
