@@ -43,8 +43,8 @@
         bind:value={$form["newDisplayName"]}
         on:keydown={handleKeydown}
         on:blur={handleSubmit}
-        class="hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300 px-1"
-        style="background-color: #FFF; width:18em"
+        class="bg-white hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300 px-1"
+        style="width:18em"
       />
     </form>
   </div>
