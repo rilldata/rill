@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -142,7 +143,8 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 		conditionJoiner = " OR "
 	}
 
-	var nullClauses []string
+	uniqueNotNullValue := uuid.NewString()
+
 	if len(cond.In) > 0 {
 		// null values should be added with IS NULL / IS NOT NULL
 		nullCount := 0
@@ -161,15 +163,16 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 		questionMarks := strings.Join(repeatString("?", len(cond.In)-nullCount), ",")
 		// <dimension> (NOT) IN (?,?,...)
 		if questionMarks != "" {
-			clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+			if exclude {
+				clauses = append(clauses, fmt.Sprintf("COALESCE(%s, '%s') %s IN (%s)", cond.Name, uniqueNotNullValue, operatorPrefix, questionMarks))
+			} else {
+				clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+			}
 		}
 
 		if nullCount > 0 {
 			// <dimension> IS (NOT) NULL
 			clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", cond.Name, operatorPrefix))
-		} else if exclude {
-			// because "select * from t where c not in ('a')" won't return nulls
-			nullClauses = append(nullClauses, fmt.Sprintf("%s IS %s NULL", cond.Name, operatorPrefix))
 		}
 	}
 
@@ -181,16 +184,17 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 			}
 			args = append(args, arg)
 			// <dimension> (NOT) ILIKE ?
-			clauses = append(clauses, fmt.Sprintf("%s %s ILIKE ?", cond.Name, operatorPrefix))
+			if exclude {
+				clauses = append(clauses, fmt.Sprintf("COALESCE(%s, '%s') %s ILIKE ?", cond.Name, uniqueNotNullValue, operatorPrefix))
+			} else {
+				clauses = append(clauses, fmt.Sprintf("%s %s ILIKE ?", cond.Name, operatorPrefix))
+			}
 		}
 	}
 
 	clause := ""
 	if len(clauses) > 0 {
 		clause = fmt.Sprintf(" AND (%s)", strings.Join(clauses, conditionJoiner))
-	}
-	if len(nullClauses) > 0 {
-		clause += fmt.Sprintf(" OR %s", strings.Join(nullClauses, " OR "))
 	}
 	return clause, args, nil
 }
