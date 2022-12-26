@@ -3,7 +3,7 @@
   import Metrics from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import WorkspaceContainer from "@rilldata/web-local/lib/components/workspace/core/WorkspaceContainer.svelte";
 
   const steps = [
     {

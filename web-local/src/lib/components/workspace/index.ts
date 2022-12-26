@@ -7,5 +7,4 @@ export { default as WorkspaceHeaderStatusSpinner } from "./core/WorkspaceHeaderS
 export { default as DashboardWorkspace } from "./explore/Explore.svelte";
 export { default as MetricsDefinitionWorkspace } from "./metrics-def/MetricsDefWorkspace.svelte";
 export { default as ModelWorkspace } from "./model/ModelWorkspace.svelte";
-export { default as OnboardingWorkspace } from "./onboarding/OnboardingWorkspace.svelte";
 export { default as SourceWorkspace } from "./source/SourceWorkspace.svelte";
