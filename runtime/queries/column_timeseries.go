@@ -455,5 +455,6 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 	if err != nil {
 		return results, err
 	}
+
 	return results, nil
 }
