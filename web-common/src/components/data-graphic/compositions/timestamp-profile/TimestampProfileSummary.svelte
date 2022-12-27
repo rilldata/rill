@@ -16,6 +16,17 @@
   export let estimatedSmallestTimeGrain: string;
   export let interval: Interval;
   export let rollupGrain: string;
+
+  enum NicerTimeGrain {
+    TIME_GRAIN_MILLISECOND = "millisecond",
+    TIME_GRAIN_SECOND = "second",
+    TIME_GRAIN_MINUTE = "minute",
+    TIME_GRAIN_HOUR = "hourly",
+    TIME_GRAIN_DAY = "daily",
+    TIME_GRAIN_WEEK = "weekly",
+    TIME_GRAIN_MONTH = "monthly",
+    TIME_GRAIN_YEAR = "yearly",
+  }
 </script>
 
 <div
@@ -76,7 +87,7 @@
       <div style:max-width="315px">
         This timestamp column is aggregated so each point on the time series
         represents a rollup count at the <b style:font-weight="600"
-          >{rollupGrain} level</b
+          >{NicerTimeGrain?.[rollupGrain] || "unknown"} level</b
         >.
       </div>
     </TooltipContent>
