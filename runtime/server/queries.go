@@ -66,7 +66,6 @@ func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Sta
 
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
-
 	for rows.Next() {
 		rowMap := make(map[string]any)
 		err := rows.MapScan(rowMap)
