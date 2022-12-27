@@ -23,7 +23,7 @@ export const UrlExtractorRegex =
 let QueryQueueSize = 5;
 try {
   if (
-    window.location.protocol === "https:" &&
+    window.location.protocol === "https:" ||
     window.location.host !== "localhost"
   ) {
     QueryQueueSize = 200;
