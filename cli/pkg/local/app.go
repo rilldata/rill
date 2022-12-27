@@ -129,10 +129,6 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 	return app, nil
 }
 
-func (a *App) Close() error {
-	return a.Runtime.Close()
-}
-
 func (a *App) IsProjectInit() bool {
 	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {

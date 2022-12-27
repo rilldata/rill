@@ -48,6 +48,7 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
+
 	for rows.Next() {
 		rowMap := make(map[string]any)
 		err := rows.MapScan(rowMap)

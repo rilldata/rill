@@ -419,6 +419,7 @@ func sMap(k string, v float64) map[string]float64 {
 
 func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias string) ([]*runtimev1.TimeSeriesValue, error) {
 	results := make([]*runtimev1.TimeSeriesValue, 0)
+
 	for rows.Next() {
 		value := runtimev1.TimeSeriesValue{}
 		results = append(results, &value)
@@ -450,5 +451,11 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 			}
 		}
 	}
+
+	err := rows.Err()
+	if err != nil {
+		return results, err
+	}
+
 	return results, nil
 }

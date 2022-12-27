@@ -49,6 +49,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &drivers.Result{Rows: rows, Schema: schema}, nil
 }
 
