@@ -2,112 +2,69 @@ package duckdb
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
 	"github.com/jmoiron/sqlx"
+	"github.com/marcboeker/go-duckdb"
 
 	"github.com/rilldata/rill/runtime/drivers"
 
-	// Load duckdb driver
-	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
-	"sync"
 )
 
 func init() {
-	drivers.Register("duckdb", driver{})
+	drivers.Register("duckdb", Driver{})
 }
 
-type driver struct{}
+type Driver struct{}
 
-func (d driver) Open(dsn string) (drivers.Connection, error) {
+func (d Driver) Open(dsn string) (drivers.Connection, error) {
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
-
-	// database/sql has a built-in connection pool, but DuckDB loads extensions on a per-connection basis,
-	// which means we need to manually initialize each connection before it's used.
-	// database/sql doesn't give us that flexibility, so we implement our own (very simple) pool.
-
-	db, err := sqlx.Open("duckdb", cfg.DSN)
-	if err != nil {
-		return nil, err
-	}
-	// 1 extra for meta connection to be used for metadata queries like catalog and dry run queries
-	db.SetMaxOpenConns(cfg.PoolSize + 1)
-
-	bootQueries := []string{
-		"INSTALL 'json'",
-		"LOAD 'json'",
-		"INSTALL 'parquet'",
-		"LOAD 'parquet'",
-		"INSTALL 'httpfs'",
-		"LOAD 'httpfs'",
-		"SET max_expression_depth TO 250",
-	}
-
-	metaConn, err := db.Connx(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	for _, qry := range bootQueries {
-		_, err = metaConn.ExecContext(context.Background(), qry)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	c := &connection{
-		db:       db,
-		metaConn: metaConn,
-		pool:     make(chan *sqlx.Conn, cfg.PoolSize),
-		sem:      priorityqueue.NewSemaphore(cfg.PoolSize),
-		closed:   false,
-	}
-
-	for i := 0; i < cfg.PoolSize; i++ {
-		conn, err := db.Connx(context.Background())
-		if err != nil {
-			return nil, err
+	connector, err := duckdb.NewConnector(cfg.DSN, func(execer driver.Execer) error {
+		bootQueries := []string{
+			"INSTALL 'json'",
+			"LOAD 'json'",
+			"INSTALL 'parquet'",
+			"LOAD 'parquet'",
+			"INSTALL 'httpfs'",
+			"LOAD 'httpfs'",
+			"SET max_expression_depth TO 250",
 		}
 
 		for _, qry := range bootQueries {
-			_, err = conn.ExecContext(context.Background(), qry)
+			_, err = execer.Exec(qry, nil)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 
-		c.pool <- conn
+	sqlDB := sql.OpenDB(connector)
+	db := sqlx.NewDb(sqlDB, "duckdb")
+	db.SetMaxOpenConns(cfg.PoolSize)
+
+	c := &connection{
+		db:  db,
+		sem: priorityqueue.NewSemaphore(cfg.PoolSize),
 	}
 
 	return c, nil
 }
 
 type connection struct {
-	db         *sqlx.DB
-	metaConn   *sqlx.Conn
-	pool       chan *sqlx.Conn
-	sem        *priorityqueue.Semaphore
-	closed     bool
-	closeMutex sync.Mutex
+	db  *sqlx.DB
+	sem *priorityqueue.Semaphore
 }
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	c.closeMutex.Lock()
-	c.closed = true
-	close(c.pool)
-	c.closeMutex.Unlock()
-	var firstErr error
-	for conn := range c.pool {
-		err := conn.Close()
-		if err != nil && firstErr == nil {
-			firstErr = err
-		}
-	}
-	if firstErr != nil {
-		return firstErr
-	}
 	return c.db.Close()
 }
 
@@ -140,16 +97,12 @@ func (c *connection) getConn(ctx context.Context) (conn *sqlx.Conn, release func
 		return conn, func() {}, nil
 	}
 
-	conn, ok := <-c.pool
-	if !ok {
-		return nil, nil, drivers.ErrClosed
+	conn, err = c.db.Connx(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
 	fn := func() {
-		c.closeMutex.Lock()
-		if !c.closed {
-			c.pool <- conn
-		}
-		c.closeMutex.Unlock()
+		conn.Close()
 	}
 	return conn, fn, nil
 }

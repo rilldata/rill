@@ -26,8 +26,6 @@ func TestQuery(t *testing.T) {
 
 	err = conn.Close()
 	require.NoError(t, err)
-	_, ok := <-conn.(*connection).pool
-	require.False(t, ok)
 }
 
 func TestPriorityQueue(t *testing.T) {
@@ -194,7 +192,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Connection {
-	conn, err := driver{}.Open("?access_mode=read_write&rill_pool_size=4")
+	conn, err := Driver{}.Open("?access_mode=read_write&rill_pool_size=4")
 	require.NoError(t, err)
 
 	olap, ok := conn.OLAPStore()

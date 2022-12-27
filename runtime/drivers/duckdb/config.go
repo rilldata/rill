@@ -8,7 +8,7 @@ import (
 
 const poolSizeKey = "rill_pool_size"
 
-// config represents the driver config, extracted from the DSN
+// config represents the Driver config, extracted from the DSN
 type config struct {
 	// DSN for DuckDB
 	DSN string
@@ -33,7 +33,7 @@ func newConfig(dsn string) (*config, error) {
 		// Parse as integer
 		poolSize, err = strconv.Atoi(qry.Get(poolSizeKey))
 		if err != nil {
-			return nil, fmt.Errorf("duckdb driver: %s is not an integer", poolSizeKey)
+			return nil, fmt.Errorf("duckdb Driver: %s is not an integer", poolSizeKey)
 		}
 		// Remove from query string (so not passed into DuckDB config)
 		qry.Del(poolSizeKey)

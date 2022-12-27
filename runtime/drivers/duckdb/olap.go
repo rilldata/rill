@@ -64,7 +64,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
-		prepared, err := c.metaConn.PrepareContext(ctx, stmt.Query)
+		prepared, err := conn.PrepareContext(ctx, stmt.Query)
 		if err != nil {
 			return nil, err
 		}
