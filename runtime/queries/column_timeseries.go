@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -377,26 +379,37 @@ func getFilterFromDimensionValuesFilter(
 	if len(dimensionValues) == 0 {
 		return "", []interface{}{}
 	}
+
 	var result string
 	conditions := make([]string, 3)
 	if len(dimensionValues) > 0 {
 		result += " ( "
 	}
+
+	uniqueNotNullValue := uuid.NewString()
 	for i, dv := range dimensionValues {
 		escapedName := safeName(dv.Name)
-		var nulls bool
 		var notNulls bool
+		var nullCount int
 		for _, iv := range dv.In {
 			if _, ok := iv.Kind.(*structpb.Value_NullValue); ok {
-				nulls = true
+				nullCount++
 			} else {
 				notNulls = true
 			}
 		}
+
 		conditions = conditions[:0]
 		if notNulls {
-			inClause := escapedName + " " + prefix + " IN ("
-			for j, iv := range dv.In {
+			var inClause string
+			if prefix == "NOT" {
+				inClause = fmt.Sprintf("COALESCE(%s, '%s') %s IN (", escapedName, uniqueNotNullValue, prefix)
+			} else {
+				inClause = escapedName + " " + prefix + " IN ("
+			}
+
+			var j int
+			for _, iv := range dv.In {
 				switch iv.Kind.(type) {
 				case *structpb.Value_StringValue:
 					inClause += "?"
@@ -412,21 +425,30 @@ func getFilterFromDimensionValuesFilter(
 				default:
 					panic("unknown value type")
 				}
-				if j < len(dv.In)-1 {
+
+				if j < len(dv.In)-1-nullCount {
+					j++
 					inClause += ", "
 				}
 			}
 			inClause += ")"
 			conditions = append(conditions, inClause)
 		}
-		if nulls {
+
+		if nullCount > 0 {
 			nullClause := escapedName + " IS " + prefix + " NULL"
 			conditions = append(conditions, nullClause)
 		}
+
 		if len(dv.Like) > 0 {
 			var likeClause string
 			for j, lv := range dv.Like {
-				likeClause += escapedName + " " + prefix + " ILIKE ?"
+				if prefix == "NOT" {
+					likeClause += fmt.Sprintf("COALESCE(%s, '%s') %s ILIKE ?", escapedName, uniqueNotNullValue, prefix)
+				} else {
+					likeClause += escapedName + " " + prefix + " ILIKE ?"
+				}
+
 				args = append(args, lv)
 				if j < len(dv.Like)-1 {
 					likeClause += " OR "
@@ -526,6 +548,9 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 				value.Records[k] = float64(x)
 			case float64:
 				value.Records[k] = x
+			case *big.Int:
+				f, _ := new(big.Float).SetInt(x).Float64()
+				value.Records[k] = f
 			default:
 				return nil, fmt.Errorf("unknown type %T ", v)
 			}

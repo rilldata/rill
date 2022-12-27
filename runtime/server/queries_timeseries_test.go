@@ -67,6 +67,199 @@ func TestServer_Timeseries(t *testing.T) {
 	require.Equal(t, 1.0, results[0].Records["max"])
 }
 
+func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    "count",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Exclude: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "latitude",
+					In:   []*structpb.Value{structpb.NewNumberValue(25)},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records["count"])
+}
+
+func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    "count",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Exclude: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "latitude",
+					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNullValue()},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 0.0, results[0].Records["count"])
+}
+
+func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    "count",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Exclude: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "country",
+					In:   []*structpb.Value{structpb.NewStringValue("Canada")},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records["count"])
+}
+
+func TestServer_Timeseries_exclude_all_string(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(imps)",
+				SqlName:    "Total impressions",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Exclude: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "country",
+					In:   []*structpb.Value{structpb.NewStringValue("Canada"), structpb.NewNullValue()},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 0.0, results[0].Records["Total impressions"])
+}
+
+func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "count(*)",
+				SqlName:    "count",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Exclude: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "device",
+					Like: []string{"iphone"},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records["count"])
+}
+
+func TestServer_Timeseries_exclude_like_all(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "sum(imps)",
+				SqlName:    "Total impressions",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		Filters: &runtimev1.MetricsViewRequestFilter{
+			Exclude: []*runtimev1.MetricsViewDimensionValue{
+				{
+					Name: "country",
+					In:   []*structpb.Value{structpb.NewNullValue()},
+					Like: []string{"Canada"},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 0.0, results[0].Records["Total impressions"])
+}
+
 func TestServer_Timeseries_numeric_dim(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
@@ -674,9 +867,9 @@ func TestServer_Timeseries_Spark_no_count(t *testing.T) {
 
 func getTimeseriesTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain, 25 as latitude
+		SELECT 1.0 AS clicks, 3 as imps, TIMESTAMP '2019-01-01 00:00:00' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain, 25 as latitude, 'Canada' as country
 		UNION ALL
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-02 00:00:00' AS time, DATE '2019-01-02' as day, 'iphone' AS device, null AS publisher, 'msn.com' AS domain, NULL as latitude
+		SELECT 1.0 AS clicks, 5 as imps, TIMESTAMP '2019-01-02 00:00:00' AS time, DATE '2019-01-02' as day, 'iphone' AS device, null AS publisher, 'msn.com' AS domain, NULL as latitude, NULL as country
 	`)
 
 	server, err := NewServer(&Options{}, rt, nil)
