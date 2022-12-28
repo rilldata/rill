@@ -13,8 +13,6 @@ import (
 )
 
 type MetricsViewTotals struct {
-	// TableName  string
-	// ColumnName string
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
@@ -29,7 +27,7 @@ var _ runtime.Query = &MetricsViewTotals{}
 func (q *MetricsViewTotals) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewTotals: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewTotals:%s", string(r))
 }
@@ -64,6 +62,10 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
 	ql, args, err := q.buildMetricsTotalsSQL(mv)
@@ -107,14 +109,13 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 
 	whereClause := "1=1"
 	args := []any{}
-	timestampColumnName := safeName(mv.TimeDimension)
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
+			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
+			whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}

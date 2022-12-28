@@ -8,6 +8,7 @@ package sql
 // #include <librillsql.h>
 // void*(*malloc_wrap)(size_t) = malloc;
 import "C"
+
 import (
 	"encoding/base64"
 	"errors"
@@ -185,8 +186,10 @@ func (i *Isolate) eventLoop() {
 }
 
 // See getLibSQL
-var libsql sharedlibrary.Library
-var libsqlOnce sync.Once
+var (
+	libsql     sharedlibrary.Library
+	libsqlOnce sync.Once
+)
 
 // Returns a lazily-loaded reference to the SQL dynamic library
 func getLibSQL() sharedlibrary.Library {

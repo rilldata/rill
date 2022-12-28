@@ -14,7 +14,6 @@ import (
 
 type MetricsViewTimeSeries struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	DimensionName   string                       `json:"dimension_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
@@ -32,7 +31,7 @@ var _ runtime.Query = &MetricsViewTimeSeries{}
 func (q *MetricsViewTimeSeries) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(fmt.Errorf("MetricsViewTimeSeries: failed to marshal: %w", err))
+		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewTimeSeries:%s", string(r))
 }
@@ -67,6 +66,10 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	if mv.TimeDimension == "" {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
 	// Build query

@@ -74,9 +74,6 @@ export async function renameFileArtifact(
   });
 
   invalidateAfterReconcile(queryClient, instanceId, resp);
-  goto(getRouteFromName(toName, type), {
-    replaceState: true,
-  });
 }
 
 export async function deleteFileArtifact(
