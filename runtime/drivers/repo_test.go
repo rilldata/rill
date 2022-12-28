@@ -23,6 +23,23 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	err = repo.Put(ctx, instID, "/nested/bar.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
 
+	err = repo.Append(ctx, instID, "bar.sql", strings.NewReader("bar"))
+	require.NoError(t, err)
+
+	blob, err := repo.Get(ctx, instID, "bar.sql")
+	require.NoError(t, err)
+	require.Equal(t, "bar", blob)
+
+	err = repo.Append(ctx, instID, "bar.sql", strings.NewReader("bar"))
+	require.NoError(t, err)
+
+	blob, err = repo.Get(ctx, instID, "bar.sql")
+	require.NoError(t, err)
+	require.Equal(t, "barbar", blob)
+
+	err = repo.Delete(ctx, instID, "bar.sql")
+	require.NoError(t, err)
+
 	paths, err = repo.ListRecursive(ctx, instID, "/**")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/nested/bar.sql"}, paths)
@@ -45,7 +62,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 	_, err = repo.Get(ctx, instID, "nested/bar.sql")
 	require.Error(t, err)
 
-	blob, err := repo.Get(ctx, instID, "foo.sql")
+	blob, err = repo.Get(ctx, instID, "foo.sql")
 	require.NoError(t, err)
 	require.Equal(t, "hello world", blob)
 
@@ -54,7 +71,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 
 	blob, err = repo.Get(ctx, instID, "foo.sql")
 	require.NoError(t, err)
-	require.Equal(t, "hello worldbar bar bar", blob)
+	require.Equal(t, "bar bar bar", blob)
 
 	paths, err = repo.ListRecursive(ctx, instID, "**")
 	require.NoError(t, err)

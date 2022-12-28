@@ -35,7 +35,7 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 		return err
 	}
 
-	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader("*.db\n*.db.wal\ndata/\n"))
+	err = c.Repo.Append(ctx, c.InstanceID, ".gitignore", strings.NewReader("*.db\n*.db.wal\ndata/\n"))
 	if err != nil {
 		return err
 	}
