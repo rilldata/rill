@@ -3,6 +3,7 @@ package druid
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net/url"
 	"strings"
 	"testing"
@@ -108,7 +109,7 @@ func TestDruid(t *testing.T) {
 	avaticaURL, err := url.JoinPath(brokerURL, "/druid/v2/sql/avatica-protobuf/")
 	require.NoError(t, err)
 
-	conn, err := driver{}.Open(avaticaURL)
+	conn, err := driver{}.Open(avaticaURL, zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.OLAPStore()

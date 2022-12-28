@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"testing"
 
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ func TestConnectionCache(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.NewString()
 
-	c := newConnectionCache(10)
+	c := newConnectionCache(10, zap.NewNop())
 	conn1, err := c.get(ctx, id, "sqlite", ":memory:")
 	require.NoError(t, err)
 	require.NotNil(t, conn1)

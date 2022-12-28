@@ -3,6 +3,7 @@ package drivers_test
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestAll(t *testing.T) {
 	for _, withDriver := range matrix {
 		err := withDriver(t, func(driver string, dsn string) {
 			// Open
-			conn, err := drivers.Open(driver, dsn)
+			conn, err := drivers.Open(driver, dsn, zap.NewNop())
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 

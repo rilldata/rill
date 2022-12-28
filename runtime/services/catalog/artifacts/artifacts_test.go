@@ -3,6 +3,7 @@ package artifacts_test
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"path"
 	"testing"
@@ -151,7 +152,7 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir)
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -188,7 +189,7 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir)
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()

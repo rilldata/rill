@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"path/filepath"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := Driver{}.Open("?access_mode=read_write")
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 
@@ -84,7 +85,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 
 func TestCSVDelimiter(t *testing.T) {
 	ctx := context.Background()
-	conn, err := Driver{}.Open("?access_mode=read_write")
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 

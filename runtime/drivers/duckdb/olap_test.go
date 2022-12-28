@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 
@@ -192,7 +193,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Connection {
-	conn, err := Driver{}.Open("?access_mode=read_write&rill_pool_size=4")
+	conn, err := Driver{}.Open("?access_mode=read_write&rill_pool_size=4", zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.OLAPStore()
