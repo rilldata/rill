@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-
 	"go.uber.org/zap"
 
 	lru "github.com/hashicorp/golang-lru"
