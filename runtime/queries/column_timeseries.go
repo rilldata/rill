@@ -444,7 +444,7 @@ func getFilterFromDimensionValuesFilter(
 					likeClause += " OR "
 				}
 			}
-			if exclude {
+			if !nulls && exclude {
 				// In case of exclusion, we need to explicitly include NULL value
 				likeClause = fmt.Sprintf("%s OR %s IS NULL", likeClause, escapedName)
 			}
