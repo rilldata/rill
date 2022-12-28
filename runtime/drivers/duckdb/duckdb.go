@@ -90,19 +90,16 @@ func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 
 // getConn gets a connection from the pool.
 // It returns a function that puts the connection back in the pool if applicable.
-func (c *connection) getConn(ctx context.Context) (conn *sqlx.Conn, release func(), err error) {
+func (c *connection) getConn(ctx context.Context) (conn *sqlx.Conn, release func() error, err error) {
 	// Try to get conn from context
 	conn = connFromContext(ctx)
 	if conn != nil {
-		return conn, func() {}, nil
+		return conn, func() error { return nil }, nil
 	}
 
 	conn, err = c.db.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	fn := func() {
-		conn.Close()
-	}
-	return conn, fn, nil
+	return conn, conn.Close, nil
 }

@@ -58,7 +58,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		if err != nil {
 			return nil, err
 		}
-		defer release()
+		defer func() {
+			// call release in a goroutine as it will block until rows.close() is called
+			// TODO log error
+			go release()
+		}()
 		conn = connx
 	}
 

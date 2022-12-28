@@ -4,10 +4,11 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Embed migrations directory in the binary
@@ -76,7 +77,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 			return err
 		}
 
-		err = c.migrateSingle(conn, ctx, file.Name(), sql, version)
+		err = c.migrateSingle(ctx, conn, file.Name(), sql, version)
 		if err != nil {
 			return err
 		}
@@ -85,7 +86,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *connection) migrateSingle(conn *sqlx.Conn, ctx context.Context, name string, sql []byte, version int) (err error) {
+func (c *connection) migrateSingle(ctx context.Context, conn *sqlx.Conn, name string, sql []byte, version int) (err error) {
 	// Start a transaction
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
