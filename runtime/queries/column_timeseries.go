@@ -10,7 +10,6 @@ import (
 	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -372,9 +371,13 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesReque
 
 func getFilterFromDimensionValuesFilter(
 	dimensionValues []*runtimev1.MetricsViewDimensionValue,
-	prefix string,
+	exclude bool,
 	dimensionJoiner string,
 ) (string, []interface{}) {
+	prefix := ""
+	if exclude {
+		prefix = "NOT"
+	}
 	var args []interface{}
 	if len(dimensionValues) == 0 {
 		return "", []interface{}{}
@@ -386,30 +389,21 @@ func getFilterFromDimensionValuesFilter(
 		result += " ( "
 	}
 
-	uniqueNotNullValue := uuid.NewString()
 	for i, dv := range dimensionValues {
 		escapedName := safeName(dv.Name)
+		var nulls bool
 		var notNulls bool
-		var nullCount int
 		for _, iv := range dv.In {
 			if _, ok := iv.Kind.(*structpb.Value_NullValue); ok {
-				nullCount++
+				nulls = true
 			} else {
 				notNulls = true
 			}
 		}
-
 		conditions = conditions[:0]
 		if notNulls {
-			var inClause string
-			if prefix == "NOT" {
-				inClause = fmt.Sprintf("COALESCE(%s, '%s') %s IN (", escapedName, uniqueNotNullValue, prefix)
-			} else {
-				inClause = escapedName + " " + prefix + " IN ("
-			}
-
-			var j int
-			for _, iv := range dv.In {
+			inClause := escapedName + " " + prefix + " IN ("
+			for j, iv := range dv.In {
 				switch iv.Kind.(type) {
 				case *structpb.Value_StringValue:
 					inClause += "?"
@@ -425,17 +419,18 @@ func getFilterFromDimensionValuesFilter(
 				default:
 					panic("unknown value type")
 				}
-
-				if j < len(dv.In)-1-nullCount {
-					j++
+				if j < len(dv.In)-1 {
 					inClause += ", "
 				}
 			}
 			inClause += ")"
+			if !nulls && exclude {
+				// In case of exclusion, we need to explicitly include NULL value
+				inClause = fmt.Sprintf("%s OR (%s IS NULL)", inClause, escapedName)
+			}
 			conditions = append(conditions, inClause)
 		}
-
-		if nullCount > 0 {
+		if nulls {
 			nullClause := escapedName + " IS " + prefix + " NULL"
 			conditions = append(conditions, nullClause)
 		}
@@ -443,16 +438,15 @@ func getFilterFromDimensionValuesFilter(
 		if len(dv.Like) > 0 {
 			var likeClause string
 			for j, lv := range dv.Like {
-				if prefix == "NOT" {
-					likeClause += fmt.Sprintf("COALESCE(%s, '%s') %s ILIKE ?", escapedName, uniqueNotNullValue, prefix)
-				} else {
-					likeClause += escapedName + " " + prefix + " ILIKE ?"
-				}
-
+				likeClause += escapedName + " " + prefix + " ILIKE ?"
 				args = append(args, lv)
 				if j < len(dv.Like)-1 {
 					likeClause += " OR "
 				}
+			}
+			if exclude {
+				// In case of exclusion, we need to explicitly include NULL value
+				likeClause = fmt.Sprintf("%s OR %s IS NULL", likeClause, escapedName)
 			}
 			conditions = append(conditions, likeClause)
 		}
@@ -470,8 +464,8 @@ func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter
 	if filters == nil {
 		return "", nil
 	}
-	includeFilters, args := getFilterFromDimensionValuesFilter(filters.Include, "", "OR")
-	excludeFilters, excludeArgs := getFilterFromDimensionValuesFilter(filters.Exclude, "NOT", "AND")
+	includeFilters, args := getFilterFromDimensionValuesFilter(filters.Include, false, "OR")
+	excludeFilters, excludeArgs := getFilterFromDimensionValuesFilter(filters.Exclude, true, "AND")
 	args = append(args, excludeArgs...)
 	if includeFilters != "" && excludeFilters != "" {
 		return " ( " + includeFilters + ") AND (" + excludeFilters + ")", args

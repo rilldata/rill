@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -143,8 +142,6 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 		conditionJoiner = " OR "
 	}
 
-	uniqueNotNullValue := uuid.NewString()
-
 	if len(cond.In) > 0 {
 		// null values should be added with IS NULL / IS NOT NULL
 		nullCount := 0
@@ -163,13 +160,13 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 		questionMarks := strings.Join(repeatString("?", len(cond.In)-nullCount), ",")
 		// <dimension> (NOT) IN (?,?,...)
 		if questionMarks != "" {
-			if exclude {
-				clauses = append(clauses, fmt.Sprintf("COALESCE(%s, '%s') %s IN (%s)", cond.Name, uniqueNotNullValue, operatorPrefix, questionMarks))
-			} else {
-				clauses = append(clauses, fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks))
+			clause := fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks)
+			if nullCount == 0 && exclude {
+				// In case of exclusion, we need to explicitly include NULL value
+				clause = fmt.Sprintf("%s OR (%s IS NULL)", clause, cond.Name)
 			}
+			clauses = append(clauses, clause)
 		}
-
 		if nullCount > 0 {
 			// <dimension> IS (NOT) NULL
 			clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", cond.Name, operatorPrefix))
@@ -184,11 +181,12 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 			}
 			args = append(args, arg)
 			// <dimension> (NOT) ILIKE ?
+			clause := fmt.Sprintf("%s %s ILIKE ?", cond.Name, operatorPrefix)
 			if exclude {
-				clauses = append(clauses, fmt.Sprintf("COALESCE(%s, '%s') %s ILIKE ?", cond.Name, uniqueNotNullValue, operatorPrefix))
-			} else {
-				clauses = append(clauses, fmt.Sprintf("%s %s ILIKE ?", cond.Name, operatorPrefix))
+				// In case of exclusion, we need to explicitly include NULL value
+				clause = fmt.Sprintf("%s OR (%s IS NULL)", clause, cond.Name)
 			}
+			clauses = append(clauses, clause)
 		}
 	}
 
