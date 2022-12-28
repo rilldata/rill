@@ -18,7 +18,7 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
 	// Check OLAP connection
-	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN)
+	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
 	if err != nil {
 		return err
 	}
@@ -28,7 +28,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	}
 
 	// Check repo connection
-	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN)
+	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, r.logger)
 	if err != nil {
 		return err
 	}

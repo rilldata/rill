@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"go.uber.org/zap"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -14,7 +15,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string) (drivers.Connection, error) {
+func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	c := &connection{root: dsn}
 	if err := c.checkRoot(); err != nil {
 		return nil, err

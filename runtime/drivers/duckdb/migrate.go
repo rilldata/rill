@@ -121,7 +121,7 @@ func (c *connection) migrateSingle(ctx context.Context, conn *sqlx.Conn, name st
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	conn, release, err := c.getConn(ctx)
 	if err != nil {
 		return 0, 0, err

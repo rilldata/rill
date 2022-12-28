@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+
+	"go.uber.org/zap"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -12,16 +15,17 @@ import (
 )
 
 type connectionCache struct {
-	cache *simplelru.LRU
-	lock  sync.Mutex
+	cache  *simplelru.LRU
+	lock   sync.Mutex
+	logger *zap.Logger
 }
 
-func newConnectionCache(size int) *connectionCache {
+func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
 	cache, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		panic(err)
 	}
-	return &connectionCache{cache: cache}
+	return &connectionCache{cache: cache, logger: logger}
 }
 
 func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string) (drivers.Connection, error) {
@@ -34,7 +38,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
 	if !ok {
-		conn, err := drivers.Open(driver, dsn)
+		conn, err := drivers.Open(driver, dsn, c.logger)
 		if err != nil {
 			return nil, err
 		}

@@ -3,6 +3,8 @@ package druid
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 
@@ -18,7 +20,7 @@ type driver struct{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(dsn string) (drivers.Connection, error) {
+func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	db, err := sqlx.Open("avatica", dsn)
 	if err != nil {
 		return nil, err

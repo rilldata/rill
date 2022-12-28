@@ -30,7 +30,7 @@ func NewSemaphore(size int) *Semaphore {
 func (s *Semaphore) Acquire(ctx context.Context, priority int) error {
 	s.mu.Lock()
 	if s.size-s.cur >= 1 && s.pq.Len() == 0 {
-		s.cur += 1
+		s.cur++
 		s.mu.Unlock()
 		return nil
 	}
@@ -61,7 +61,7 @@ func (s *Semaphore) TryAcquire() bool {
 	s.mu.Lock()
 	ok := s.size-s.cur >= 1 && s.pq.Len() == 0
 	if ok {
-		s.cur += 1
+		s.cur++
 	}
 	s.mu.Unlock()
 	return ok
@@ -70,7 +70,7 @@ func (s *Semaphore) TryAcquire() bool {
 // Release releases a semaphore previously acquired with Acquire or TryAcquire.
 func (s *Semaphore) Release() {
 	s.mu.Lock()
-	s.cur -= 1
+	s.cur--
 	if s.cur < 0 {
 		s.mu.Unlock()
 		panic("semaphore released more times than acquired")

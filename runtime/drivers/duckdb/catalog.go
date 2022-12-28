@@ -144,7 +144,7 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	return nil
 }
 
-func (c *connection) DeleteEntry(ctx context.Context, instanceID string, name string) error {
+func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) error {
 	conn, release, err := c.getConn(ctx)
 	defer release()
 	if err != nil {
