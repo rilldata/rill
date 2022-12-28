@@ -54,7 +54,7 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 
 	blob, err = repo.Get(ctx, instID, "foo.sql")
 	require.NoError(t, err)
-	require.Equal(t, "bar bar bar", blob)
+	require.Equal(t, "hello worldbar bar bar", blob)
 
 	paths, err = repo.ListRecursive(ctx, instID, "**")
 	require.NoError(t, err)
