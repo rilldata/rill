@@ -46,8 +46,6 @@
   $: MetricsContainer = hasTimeSeries
     ? MetricsTimeSeriesCharts
     : MeasuresContainer;
-
-  $: console.log("time", hasTimeSeries);
 </script>
 
 <WorkspaceContainer

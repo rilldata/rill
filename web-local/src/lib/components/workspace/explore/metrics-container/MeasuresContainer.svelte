@@ -45,11 +45,7 @@
       metricViewName,
       totalsQueryParams
     );
-
-    console.log("totals called");
   }
-
-  $: console.log($totalsQuery?.data.data);
 </script>
 
 <div class="flex flex-col">
