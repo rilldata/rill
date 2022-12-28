@@ -261,7 +261,11 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
   doc.set("model", model.name);
 
   const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
-  doc.set("timeseries", timestampColumns[0]);
+  if (timestampColumns?.length) {
+    doc.set("timeseries", timestampColumns[0]);
+  } else {
+    doc.set("timeseries", "");
+  }
 
   const measureNode = doc.createNode({
     label: "Total records",

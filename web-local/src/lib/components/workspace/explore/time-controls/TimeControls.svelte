@@ -6,6 +6,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
     useRuntimeServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
@@ -37,16 +39,26 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
 
   let selectedTimeRangeName;
   let selectedTimeGrain;
 
   // query the `/meta` endpoint to get the all time range of the dataset
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+
+  let hasTimeSeries;
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
+  }
+
   let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
 
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+  $: if (
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching &&
+    hasTimeSeries
+  ) {
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
       $metaQuery.data.model,
@@ -56,6 +68,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   let allTimeRange;
   $: if (
+    hasTimeSeries &&
     timeRangeQuery &&
     $timeRangeQuery.isSuccess &&
     !$timeRangeQuery.isRefetching
@@ -148,15 +161,25 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 </script>
 
 <div class="flex flex-row">
-  <TimeRangeNameSelector
-    {allTimeRange}
-    {metricViewName}
-    on:select-time-range-name={setSelectedTimeRangeName}
-    {selectedTimeRangeName}
-  />
-  <TimeGrainSelector
-    on:select-time-grain={setSelectedTimeGrain}
-    {selectableTimeGrains}
-    {selectedTimeGrain}
-  />
+  {#if !hasTimeSeries}
+    <div
+      on:click={() => goto(`/dashboard/${metricViewName}/edit`)}
+      class="px-3 py-2 flex flex-row items-center gap-x-3 cursor-pointer"
+    >
+      <span class="ui-copy-icon"><Calendar size="16px" /></span>
+      <span class="italic ui-copy-disabled">No time dimension specified</span>
+    </div>
+  {:else}
+    <TimeRangeNameSelector
+      {allTimeRange}
+      {metricViewName}
+      on:select-time-range-name={setSelectedTimeRangeName}
+      {selectedTimeRangeName}
+    />
+    <TimeGrainSelector
+      on:select-time-grain={setSelectedTimeGrain}
+      {selectableTimeGrains}
+      {selectedTimeGrain}
+    />
+  {/if}
 </div>

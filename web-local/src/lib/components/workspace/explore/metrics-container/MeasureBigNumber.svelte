@@ -14,6 +14,7 @@
   export let value: number;
   export let status: EntityStatus;
   export let description: string = undefined;
+  export let compact: boolean = true;
   export let formatPreset: string; // workaround, since unable to cast `string` to `NicelyFormattedTypes` within MetricsTimeSeriesCharts.svelte's `#each` block
 
   $: formatPresetEnum =
@@ -23,16 +24,20 @@
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
-<div>
+<div class="w-max">
   <Tooltip distance={16} location="top">
-    <h2>
+    <h2 style:font-size={compact ? "" : "0.8rem"}>
       <slot name="name" />
     </h2>
     <TooltipContent slot="tooltip-content">
       {description}
     </TooltipContent>
   </Tooltip>
-  <div class="ui-copy-muted" style:font-size="1.5rem" style:font-weight="light">
+  <div
+    class="ui-copy-muted"
+    style:font-size={compact ? "1.5rem" : "2rem"}
+    style:font-weight="light"
+  >
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
     override this by filling the slot in the consuming component. -->
     <slot name="value">

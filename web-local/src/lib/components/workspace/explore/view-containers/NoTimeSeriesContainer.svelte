@@ -1,19 +1,6 @@
-<script lang="ts">
-  import type { MetricsExplorerEntity } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
-
-  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
-  import { hasDefinedTimeSeries } from "./utils";
-
-  export let metricViewName: string;
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
-</script>
-
 <section
   class="grid items-stretch leaderboard-layout surface"
-  style:grid-template-columns="{hasTimeSeries ? "560px" : "240px"} minmax(355px,
-  auto)"
+  style:grid-template-columns="240px minmax(355px, auto)"
 >
   <div class="explore-header">
     <slot name="header" />

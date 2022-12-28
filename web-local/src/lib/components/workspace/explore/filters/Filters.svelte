@@ -25,7 +25,7 @@ The main feature-set component for dashboard filters
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { getDisplayName } from "../utils";
+  import { getDisplayName, hasDefinedTimeSeries } from "../utils";
 
   export let metricViewName;
 
@@ -58,6 +58,11 @@ The main feature-set component for dashboard filters
   let searchText = "";
   let searchedValues = [];
   let activeDimensionName;
+  let hasTimeSeries;
+
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
+  }
 
   $: addNull = "null".includes(searchText);
 
@@ -65,29 +70,39 @@ The main feature-set component for dashboard filters
     if (searchText == "") {
       searchedValues = [];
     } else {
+      let topListParams = {
+        dimensionName: activeDimensionName,
+        limit: "15",
+        offset: "0",
+        sort: [],
+        filter: {
+          include: [
+            {
+              name: activeDimensionName,
+              in: addNull ? [null] : [],
+              like: [`%${searchText}%`],
+            },
+          ],
+          exclude: [],
+        },
+      };
+
+      if (hasTimeSeries) {
+        topListParams = {
+          ...topListParams,
+          ...{
+            timeStart: metricsExplorer?.selectedTimeRange?.start,
+            timeEnd: metricsExplorer?.selectedTimeRange?.end,
+          },
+        };
+      }
+
       // Use topList API to fetch the dimension names
       // We prune the measure values and use the dimension labels for the filter
       topListQuery = useRuntimeServiceMetricsViewToplist(
         $runtimeStore.instanceId,
         metricViewName,
-        {
-          dimensionName: activeDimensionName,
-          limit: "15",
-          offset: "0",
-          sort: [],
-          timeStart: metricsExplorer?.selectedTimeRange?.start,
-          timeEnd: metricsExplorer?.selectedTimeRange?.end,
-          filter: {
-            include: [
-              {
-                name: activeDimensionName,
-                in: addNull ? [null] : [],
-                like: [`%${searchText}%`],
-              },
-            ],
-            exclude: [],
-          },
-        }
+        topListParams
       );
     }
   }

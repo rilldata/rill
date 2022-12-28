@@ -29,6 +29,7 @@
   import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
   import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
   import DimensionTable from "../../../dimension/DimensionTable.svelte";
+  import { hasDefinedTimeSeries } from "../utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -86,6 +87,11 @@
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
 
+  let hasTimeSeries;
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
+  }
+
   $: if (
     sortByColumn &&
     sortDirection &&
@@ -121,24 +127,34 @@
       });
     }
 
+    let topListParams = {
+      dimensionName: dimensionName,
+      measureNames: selectedMeasureNames,
+      limit: "250",
+      offset: "0",
+      sort: [
+        {
+          name: sortByColumn,
+          ascending: sortDirection === "asc" ? true : false,
+        },
+      ],
+      filter: filterData,
+    };
+
+    if (hasTimeSeries) {
+      topListParams = {
+        ...topListParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
+
     topListQuery = useRuntimeServiceMetricsViewToplist(
       instanceId,
       metricViewName,
-      {
-        dimensionName: dimensionName,
-        measureNames: selectedMeasureNames,
-        limit: "250",
-        offset: "0",
-        sort: [
-          {
-            name: sortByColumn,
-            ascending: sortDirection === "asc" ? true : false,
-          },
-        ],
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-        filter: filterData,
-      }
+      topListParams
     );
   }
 
@@ -149,14 +165,20 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    if (hasTimeSeries) {
+      totalsQueryParams = {
+        ...totalsQueryParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 
