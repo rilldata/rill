@@ -14,7 +14,7 @@
   export let value: number;
   export let status: EntityStatus;
   export let description: string = undefined;
-  export let compact: boolean = true;
+  export let compact = true;
   export let formatPreset: string; // workaround, since unable to cast `string` to `NicelyFormattedTypes` within MetricsTimeSeriesCharts.svelte's `#each` block
 
   $: formatPresetEnum =
