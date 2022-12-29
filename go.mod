@@ -20,7 +20,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
-	github.com/marcboeker/go-duckdb v1.0.6
+	github.com/marcboeker/go-duckdb v1.0.8-0.20221228213732-dfbf45d4dc67 // this is master, waiting for the next release
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.6.1
@@ -150,7 +150,4 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
-replace (
-	github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
-	github.com/marcboeker/go-duckdb v1.0.6 => github.com/pjain1/go-duckdb v0.0.0-20221227063812-fba647fde99c
-)
+replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
