@@ -18,7 +18,7 @@ type MigrationItem struct {
 	Path                   string
 	CatalogInFile          *drivers.CatalogEntry
 	CatalogInStore         *drivers.CatalogEntry
-	Type                   int
+	Type                   MigrationType
 	FromName               string
 	FromPath               string
 	NormalizedDependencies []string
@@ -31,12 +31,15 @@ func (i *MigrationItem) renameFrom(from *MigrationItem) {
 	i.FromPath = from.Path
 }
 
+type MigrationType int
+
 const (
-	MigrationNoChange int = 0
-	MigrationCreate   int = 1
-	MigrationRename   int = 2
-	MigrationUpdate   int = 3
-	MigrationDelete   int = 4
+	MigrationNoChange      MigrationType = 0
+	MigrationCreate        MigrationType = 1
+	MigrationRename        MigrationType = 2
+	MigrationUpdate        MigrationType = 3
+	MigrationUpdateCatalog MigrationType = 4
+	MigrationDelete        MigrationType = 5
 )
 
 func (s *Service) getMigrationItem(
@@ -52,6 +55,7 @@ func (s *Service) getMigrationItem(
 
 	forceChange := forcedPathMap[repoPath]
 	items := []*MigrationItem{item}
+	var embeddedEntries []*drivers.CatalogEntry
 
 	catalog, err := artifacts.Read(ctx, s.Repo, s.InstID, repoPath)
 	if err != nil {
@@ -64,27 +68,22 @@ func (s *Service) getMigrationItem(
 		}
 
 		item.Name = fileutil.Stem(repoPath)
+		item.NormalizedName = normalizeName(item.Name)
 		item.Type = MigrationDelete
 	} else {
 		item.Name = catalog.Name
+		item.NormalizedName = normalizeName(item.Name)
 		item.CatalogInFile = catalog
 
-		normalizedDependencies, newEntries := migrator.GetDependencies(ctx, s.Olap, catalog)
-		for _, newEntry := range newEntries {
-			if _, ok := s.Catalog.FindEntry(ctx, s.InstID, newEntry.Name); ok {
-				// already exists
-				// TODO: update links
-				continue
-			}
-			// TODO: mark as embedded in artifact
-			items = append(items, s.newEmbeddedMigrationItem(newEntry))
-		}
-
+		var normalizedDependencies []string
+		normalizedDependencies, embeddedEntries = migrator.GetDependencies(ctx, s.Olap, item.CatalogInFile)
 		// convert dependencies to lower case
 		for i, dep := range normalizedDependencies {
-			normalizedDependencies[i] = strings.ToLower(dep)
+			normalizedDependencies[i] = normalizeName(dep)
 		}
 		item.NormalizedDependencies = normalizedDependencies
+
+		items = append(items, s.resolveDependencies(ctx, item, embeddedEntries)...)
 
 		repoStat, _ := s.Repo.Stat(ctx, s.InstID, repoPath)
 		catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstID, s.Repo, catalog)
@@ -92,7 +91,7 @@ func (s *Service) getMigrationItem(
 			item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
 		} else {
 			item.CatalogInFile.UpdatedOn = catalogLastUpdated
-			// if catalog has changed in anyway then always re-create/update
+			// if catalog has changed in any way then always re-create/update
 			forceChange = true
 		}
 		if item.CatalogInFile.UpdatedOn.After(s.LastMigration) {
@@ -100,7 +99,6 @@ func (s *Service) getMigrationItem(
 			item.Type = MigrationCreate
 		}
 	}
-	item.NormalizedName = strings.ToLower(item.Name)
 
 	if item.Type == MigrationNoChange && forcedPathMap[repoPath] {
 		item.Type = MigrationUpdate
@@ -146,12 +144,67 @@ func (s *Service) getMigrationItem(
 	return items
 }
 
-func (s *Service) newEmbeddedMigrationItem(newEntry *drivers.CatalogEntry) *MigrationItem {
+func (s *Service) resolveDependencies(
+	ctx context.Context,
+	item *MigrationItem,
+	embeddedEntries []*drivers.CatalogEntry,
+) []*MigrationItem {
+	items := make([]*MigrationItem, 0)
+
+	prevEmbeddedEntries := make(map[string]bool)
+	prevDependencies := s.dag.GetParents(item.NormalizedName)
+	for _, prevDependency := range prevDependencies {
+		prevEmbeddedEntries[prevDependency] = true
+	}
+	// TODO: handle 1st time run
+
+	item.CatalogInFile.Embeds = make([]string, 0)
+
+	for _, embeddedEntry := range embeddedEntries {
+		normalizedEmbeddedName := normalizeName(embeddedEntry.Name)
+		item.CatalogInFile.Embeds = append(item.CatalogInFile.Embeds, normalizedEmbeddedName)
+		if prevEmbeddedEntries[normalizedEmbeddedName] {
+			// delete from map for unchanged embedded entry.
+			// this map will later be used to remove link from previously embedded entry
+			delete(prevEmbeddedEntries, normalizedEmbeddedName)
+			continue
+		}
+		embeddedItem := s.newEmbeddedMigrationItem(embeddedEntry, MigrationCreate)
+		if existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, embeddedEntry.Name); ok {
+			existingEntry.Links++
+			embeddedItem.CatalogInFile = existingEntry
+			embeddedItem.Type = MigrationUpdateCatalog
+		}
+		items = append(items, embeddedItem)
+	}
+
+	for prevEmbeddedEntry := range prevEmbeddedEntries {
+		existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, prevEmbeddedEntry)
+		if !ok || !existingEntry.Embedded {
+			continue
+		}
+		existingEntry.Links--
+		embeddedItem := s.newEmbeddedMigrationItem(existingEntry, MigrationUpdate)
+		if existingEntry.Links == 0 {
+			embeddedItem.Type = MigrationDelete
+		}
+		items = append(items, embeddedItem)
+	}
+
+	return items
+}
+
+func (s *Service) newEmbeddedMigrationItem(newEntry *drivers.CatalogEntry, migrationType MigrationType) *MigrationItem {
 	return &MigrationItem{
 		Name:           newEntry.Name,
 		NormalizedName: strings.ToLower(newEntry.Name),
 		Path:           newEntry.Path,
 		CatalogInFile:  newEntry,
-		Type:           MigrationCreate,
+		CatalogInStore: newEntry,
+		Type:           migrationType,
 	}
+}
+
+func normalizeName(name string) string {
+	return strings.ToLower(name)
 }

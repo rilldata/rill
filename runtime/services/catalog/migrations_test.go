@@ -597,20 +597,18 @@ func TestReconcileDryRun(t *testing.T) {
 }
 
 func TestEmbeddedSources(t *testing.T) {
-	if testing.Short() {
-		t.Skip("reconcile: skipping test that need auth")
-	}
+	s, dir := initBasicService(t)
 
-	s, _ := initBasicService(t)
+	testutils.CopyFileToData(t, dir, AdBidsCsvPath)
 
-	embeddedSourceName := "gcs_gs___scratch_rilldata_com_rill_developer_AdBids_csv_gz"
-	embeddedSourcePath := "/sources/gcs_gs___scratch_rilldata_com_rill_developer_AdBids_csv_gz.yaml"
+	embeddedSourceName := "local_file_data_AdBids_csv"
+	embeddedSourcePath := "/sources/local_file_data_AdBids_csv.yaml"
 
 	testutils.CreateModel(
 		t,
 		s,
 		"AdBids_model",
-		`select id, timestamp, publisher, domain, bid_price from "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"`,
+		`select id, timestamp, publisher, domain, bid_price from "file://data/AdBids.csv"`,
 		AdBidsModelRepoPath,
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
@@ -626,12 +624,12 @@ func TestEmbeddedSources(t *testing.T) {
 		t,
 		s,
 		adBidsNewModeName,
-		`select id, timestamp, publisher from "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"`,
+		`select id, timestamp, publisher from "file://data/AdBids.csv"`,
 		adBidsNewModelPath,
 	)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{adBidsNewModelPath})
+	testutils.AssertMigration(t, result, 0, 1, 1, 0, []string{adBidsNewModelPath, embeddedSourcePath})
 	testutils.AssertTable(t, s, embeddedSourceName, embeddedSourcePath)
 	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 	testutils.AssertTable(t, s, "AdBids_new_model", adBidsNewModelPath)
@@ -641,6 +639,65 @@ func TestEmbeddedSources(t *testing.T) {
 	// no errors when reconcile is run later
 	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 	require.NoError(t, err)
+
+	// delete on of the models
+	err = os.Remove(path.Join(dir, adBidsNewModelPath))
+	time.Sleep(10 * time.Millisecond)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 0, 1, 1, []string{adBidsNewModelPath, embeddedSourcePath})
+	testutils.AssertTable(t, s, embeddedSourceName, embeddedSourcePath)
+
+	// delete the other model
+	err = os.Remove(path.Join(dir, AdBidsModelRepoPath))
+	time.Sleep(10 * time.Millisecond)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(
+		t,
+		result,
+		1,
+		0,
+		0,
+		2,
+		[]string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, embeddedSourcePath},
+	)
+	testutils.AssertTableAbsence(t, s, embeddedSourceName)
+}
+
+func TestEmbeddedSourcesQueryChanging(t *testing.T) {
+	s, dir := initBasicService(t)
+
+	testutils.CopyFileToData(t, dir, AdBidsCsvPath)
+
+	embeddedSourceName := "local_file_data_AdBids_csv"
+	embeddedSourcePath := "/sources/local_file_data_AdBids_csv.yaml"
+
+	testutils.CreateModel(
+		t,
+		s,
+		"AdBids_model",
+		`select id, timestamp, publisher, domain, bid_price from "file://data/AdBids.csv"`,
+		AdBidsModelRepoPath,
+	)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, embeddedSourcePath})
+	testutils.AssertTable(t, s, embeddedSourceName, embeddedSourcePath)
+	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+
+	testutils.CreateModel(
+		t,
+		s,
+		"AdBids_model",
+		`select id, timestamp, publisher, domain, bid_price from AdBids`,
+		AdBidsModelRepoPath,
+	)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 0, 2, 1, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, embeddedSourcePath})
+	testutils.AssertTableAbsence(t, s, embeddedSourceName)
+	testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {

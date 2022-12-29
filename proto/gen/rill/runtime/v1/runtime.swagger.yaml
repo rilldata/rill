@@ -1386,6 +1386,11 @@ definitions:
       createdOn:
         type: string
         format: date-time
+      embedded:
+        type: boolean
+      links:
+        type: integer
+        format: int32
       metricsView:
         $ref: '#/definitions/v1MetricsView'
       model:
@@ -2121,11 +2126,6 @@ definitions:
       connector:
         type: string
         title: Connector used by the source
-      embedded:
-        type: boolean
-      links:
-        type: integer
-        format: int32
       name:
         type: string
         title: Name of the source

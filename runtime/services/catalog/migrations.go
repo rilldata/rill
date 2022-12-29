@@ -230,7 +230,7 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			continue
 		}
 		// ignore embedded sources
-		if storeObject.Type == drivers.ObjectTypeSource && storeObject.GetSource().Embedded {
+		if storeObject.Embedded {
 			continue
 		}
 		found := false
@@ -253,6 +253,31 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 				Type:           MigrationDelete,
 				Path:           storeObject.Path,
 				CatalogInStore: storeObject,
+			}
+		}
+	}
+
+	// update embedded items
+	for _, item := range migrationMap {
+		// only need to updated for deleted items
+		if item.Type != MigrationDelete || item.CatalogInStore == nil {
+			continue
+		}
+		for _, embedded := range item.CatalogInStore.Embeds {
+			if migrating, ok := migrationMap[embedded]; ok {
+				// if already updated from other source
+				migrating.CatalogInStore.Links--
+				if migrating.CatalogInStore.Links == 0 {
+					migrating.Type = MigrationDelete
+				}
+			} else if existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, embedded); ok {
+				// else lookup in catalog
+				existingEntry.Links--
+				embeddedItem := s.newEmbeddedMigrationItem(existingEntry, MigrationUpdateCatalog)
+				if existingEntry.Links == 0 {
+					embeddedItem.Type = MigrationDelete
+				}
+				migrationMap[embeddedItem.NormalizedName] = embeddedItem
 			}
 		}
 	}
@@ -342,6 +367,11 @@ func (s *Service) collectMigrationItems(
 		visited[name] = len(migrationItems)
 		migrationItems = append(migrationItems, item)
 
+		if item.Type == MigrationUpdateCatalog {
+			// do not update children of embedded items.
+			continue
+		}
+
 		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
 			tempDag.GetChildren(name),
@@ -396,6 +426,8 @@ func (s *Service) collectMigrationItems(
 	return cleanedMigrationItems
 }
 
+// TODO: test changing source make an invalid model valid. should propagate validity to metrics
+
 // runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type.
 func (s *Service) runMigrationItems(
 	ctx context.Context,
@@ -440,7 +472,7 @@ func (s *Service) runMigrationItems(
 			case MigrationRename:
 				err = s.renameInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
-			case MigrationUpdate:
+			case MigrationUpdate, MigrationUpdateCatalog:
 				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationDelete:

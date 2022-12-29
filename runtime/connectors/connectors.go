@@ -172,6 +172,9 @@ func GetSourceFromPath(path string) *Source {
 		connector = "gcs"
 	case "s3":
 		connector = "s3"
+	case "file":
+		connector = "local_file"
+		path = strings.Replace(path, "file://", "", 1)
 	default:
 		return nil
 	}

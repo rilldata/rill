@@ -56,4 +56,9 @@ func TestGetSourceFromPath(t *testing.T) {
 	require.NotNil(t, s)
 	require.Equal(t, "gcs", s.Connector)
 	require.Equal(t, "gcs_gs___server_name_path_to_AdBids_csv_tgz", s.Name)
+
+	s = GetSourceFromPath("file://data/AdBids.csv")
+	require.NotNil(t, s)
+	require.Equal(t, "local_file", s.Connector)
+	require.Equal(t, "local_file_data_AdBids_csv", s.Name)
 }

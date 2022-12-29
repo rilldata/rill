@@ -36,8 +36,6 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
-  bool embedded = 6;
-  int32 links = 7;
 }
 
 // Model is the internal representation of a model definition

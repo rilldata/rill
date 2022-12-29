@@ -35,6 +35,9 @@ type CatalogEntry struct {
 	Type        ObjectType
 	Object      proto.Message
 	Path        string
+	Embeds      []string
+	Links       int
+	Embedded    bool
 	CreatedOn   time.Time
 	UpdatedOn   time.Time
 	RefreshedOn time.Time

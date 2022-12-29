@@ -265,8 +265,6 @@ export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
   connector?: string;
-  embedded?: boolean;
-  links?: number;
   name?: string;
   properties?: V1SourceProperties;
   schema?: V1StructType;
@@ -690,6 +688,8 @@ export interface V1CategoricalSummary {
 
 export interface V1CatalogEntry {
   createdOn?: string;
+  embedded?: boolean;
+  links?: number;
   metricsView?: V1MetricsView;
   model?: V1Model;
   name?: string;

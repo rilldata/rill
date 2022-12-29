@@ -81,6 +81,17 @@ func (d *DAG) GetChildren(name string) []string {
 	return children
 }
 
+func (d *DAG) GetParents(name string) []string {
+	n := d.getNode(name)
+	parents := make([]string, 0)
+	for _, parent := range n.Parents {
+		if parent.Present {
+			parents = append(parents, parent.Name)
+		}
+	}
+	return parents
+}
+
 func (d *DAG) Has(name string) bool {
 	_, ok := d.NameMap[name]
 	return ok
