@@ -1,11 +1,5 @@
 <script lang="ts">
-  import { OnboardingWorkspace } from "@rilldata/web-local/lib/components/workspace";
-  // clear any existing active asset
-  // TODO: is this still needed?
-  // $: dataModelerService.dispatch("setActiveAsset", [
-  //   EntityType.Table,
-  //   undefined,
-  // ]);
+  import { OnboardingWorkspace } from "@rilldata/web-common/features/onboarding";
 </script>
 
 <svelte:head>

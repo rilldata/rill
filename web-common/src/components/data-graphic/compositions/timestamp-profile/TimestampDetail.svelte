@@ -15,6 +15,7 @@
    */
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";

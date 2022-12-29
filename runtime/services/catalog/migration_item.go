@@ -100,11 +100,16 @@ func (s *Service) getMigrationItem(
 		}
 	}
 
+	catalogInStore, ok := storeObjectsMap[item.NormalizedName]
+
 	if item.Type == MigrationNoChange && forcedPathMap[repoPath] {
-		item.Type = MigrationUpdate
+		if ok {
+			item.Type = MigrationUpdate
+		} else {
+			item.Type = MigrationCreate
+		}
 	}
 
-	catalogInStore, ok := storeObjectsMap[item.NormalizedName]
 	if !ok {
 		if item.CatalogInFile == nil {
 			item.Type = MigrationNoChange
