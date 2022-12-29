@@ -50,3 +50,15 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		queryCache:   newQueryCache(opts.QueryCacheSize),
 	}, nil
 }
+
+func (rt *Runtime) Close() error {
+	c := rt.connCache
+	for _, key := range c.cache.Keys() {
+		val, _ := c.cache.Get(key)
+		err := val.(drivers.Connection).Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

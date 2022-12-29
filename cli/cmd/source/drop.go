@@ -33,6 +33,8 @@ func DropCmd(ver version.Version) *cobra.Command {
 				return err
 			}
 
+			defer app.Close()
+
 			if !app.IsProjectInit() {
 				return fmt.Errorf("not a valid Rill project")
 			}

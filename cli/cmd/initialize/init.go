@@ -45,6 +45,8 @@ func InitCmd(ver version.Version) *cobra.Command {
 				return err
 			}
 
+			defer app.Close()
+
 			if app.IsProjectInit() {
 				if projectPath == "." {
 					return fmt.Errorf("a Rill project already exists in the current directory")
