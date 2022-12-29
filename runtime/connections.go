@@ -65,3 +65,15 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (*catalog.Serv
 
 	return c, err
 }
+
+func (r *Runtime) Close() error {
+	c := r.connCache
+	for _, key := range c.cache.Keys() {
+		val, _ := c.cache.Get(key)
+		err := val.(drivers.Connection).Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
