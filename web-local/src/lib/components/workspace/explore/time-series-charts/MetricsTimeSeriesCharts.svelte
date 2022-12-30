@@ -29,7 +29,6 @@
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
-  import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   export let metricViewName;
 
@@ -179,7 +178,6 @@
               data={formattedData}
               xAccessor="ts"
               yAccessor={measure.name}
-              timeGrain={metricsExplorer.selectedTimeRange?.interval}
               xMin={startValue}
               xMax={endValue}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
@@ -192,20 +190,6 @@
                       excludeDecimalZeros: true,
                     })}
             />
-            {#if false}
-              <TimeSeriesBody
-                bind:mouseoverValue
-                formatPreset={NicelyFormattedTypes[measure?.format] ||
-                  NicelyFormattedTypes.HUMANIZE}
-                data={formattedData}
-                accessor={measure.name}
-                mouseover={point}
-                timeGrain={metricsExplorer.selectedTimeRange?.interval}
-                yMin={yExtents[0] < 0 ? yExtents[0] : 0}
-                start={startValue}
-                end={endValue}
-              />
-            {/if}
           {:else}
             <div>
               <Spinner status={EntityStatus.Running} />

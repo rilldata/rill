@@ -2,7 +2,7 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { fly } from "svelte/transition";
-  import PointLabel from "./NewPointLabel.svelte";
+  import PointLabel from "./PointLabel.svelte";
   export let xAccessor: string;
   export let yAccessor: string;
   export let format: (d: number | Date) => string;
