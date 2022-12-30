@@ -3,9 +3,9 @@ Row.svelte enables functionality around moving the row among other rows.
 
 -->
 <script lang="ts">
+  import { Callout } from "@rilldata/web-common/components/callout";
+  import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { Callout } from "@rilldata/web-local/lib/components/callout";
-  import { Divider, MenuItem } from "@rilldata/web-local/lib/components/menu";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import WithDragHandle from "./WithDragHandle.svelte";

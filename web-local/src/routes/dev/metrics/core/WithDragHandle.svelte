@@ -1,9 +1,9 @@
 <script>
-  import { WithTogglableFloatingElement } from "@rilldata/web-local/lib/components/floating-element";
-  import DragHandle from "@rilldata/web-local/lib/components/icons/DragHandle.svelte";
-  import { Menu } from "@rilldata/web-local/lib/components/menu";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
+  import { Menu } from "@rilldata/web-common/components/menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let suppressTooltips = false;
   export let active;

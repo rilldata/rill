@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import ContainerTitle from "../core/ContainerTitle.svelte";
   import RowContainer from "../core/RowContainer.svelte";
   import Measure from "./Measure.svelte";

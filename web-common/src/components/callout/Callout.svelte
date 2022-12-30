@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { level as levelTokens } from "../../application-config";
+  import { level as levelTokens } from "@rilldata/web-local/lib/application-config";
   import AlertCircle from "../icons/AlertCircle.svelte";
   import AlertTriangle from "../icons/AlertTriangle.svelte";
   import InfoCircle from "../icons/InfoCircle.svelte";

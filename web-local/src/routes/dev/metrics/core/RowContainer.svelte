@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { clickOutside } from "@rilldata/web-local/lib/components/actions/click-outside";
-  import Add from "@rilldata/web-local/lib/components/icons/Add.svelte";
-  import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { createEventDispatcher, onMount, tick } from "svelte";
   import { slide } from "svelte/transition";
   import { flip } from "../row-flip";

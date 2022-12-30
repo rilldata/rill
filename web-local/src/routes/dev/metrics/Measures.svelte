@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { clickOutside } from "@rilldata/web-local/lib/components/actions/click-outside";
-  import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
+  import { clickOutside } from "@rilldata/web-common/components/actions/click-outside";
+  import { guidGenerator } from "@rilldata/web-common/lib/util/guid";
   import { onMount, tick } from "svelte";
   import { slide } from "svelte/transition";
   import AddMeasure from "./AddMeasure.svelte";

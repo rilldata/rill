@@ -1,5 +1,5 @@
 <script>
-  import Add from "@rilldata/web-local/lib/components/icons/Add.svelte";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
 </script>
 
 <button

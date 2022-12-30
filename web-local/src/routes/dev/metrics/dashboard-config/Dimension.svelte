@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Hide from "@rilldata/web-local/lib/components/icons/Hide.svelte";
-  import Show from "@rilldata/web-local/lib/components/icons/Show.svelte";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import Hide from "@rilldata/web-common/components/icons/Hide.svelte";
+  import Show from "@rilldata/web-common/components/icons/Show.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createEventDispatcher } from "svelte";
   import Cell from "../Cell.svelte";
   import Row from "../core/Row.svelte";
