@@ -1,8 +1,7 @@
 <script lang="ts">
-  import Tooltip from "./tooltip/Tooltip.svelte";
-  import TooltipContent from "./tooltip/TooltipContent.svelte";
-
-  import SlidingWords from "./tooltip/SlidingWords.svelte";
+  import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let active = true;
   export let tooltipText = "";
@@ -40,7 +39,8 @@
       }}
     >
       <div
-        class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase"
+        class="text-ellipsis overflow-hidden whitespace-nowrap ui-copy font-semibold"
+        style="font-size: 11px;"
       >
         <slot />
       </div>

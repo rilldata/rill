@@ -1,11 +1,4 @@
 <script lang="ts">
-  import type { DerivedTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
-  import type { PersistentTableEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
-  import { Debounce } from "@rilldata/web-local/common/utils/Debounce";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "../application-state-stores/table-stores";
   import {
     acceptCompletion,
     autocompletion,
@@ -34,6 +27,7 @@
   } from "@codemirror/language";
   import { lintKeymap } from "@codemirror/lint";
   import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+  import type { SelectionRange } from "@codemirror/state";
   import {
     Compartment,
     EditorState,
@@ -54,16 +48,31 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { createEventDispatcher, getContext, onMount } from "svelte";
-  import { createResizeListenerActionFactory } from "./actions/create-resize-listener-factory";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceListCatalogEntries,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
+  import { createEventDispatcher, onMount } from "svelte";
 
   const dispatch = createEventDispatcher();
+  export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
-  export let selections: any[] = [];
+  export let selections: SelectionRange[] = [];
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
+
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    modelName
+  );
+  let model: V1Model;
+  $: model = $getModel?.data?.entry?.model;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -138,36 +147,25 @@
 
   let autocompleteCompartment = new Compartment();
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
+    $runtimeStore.instanceId,
+    {
+      type: "OBJECT_TYPE_SOURCE",
+    }
+  );
 
   let schema: { [table: string]: string[] };
-  $: {
-    schema = $persistentTableStore.entities.reduce(
-      (acc, persistentTable: PersistentTableEntity) => {
-        const derivedTable: DerivedTableEntity =
-          $derivedTableStore.entities.find(
-            (derivedTable) => persistentTable.id === derivedTable.id
-          );
-        // defensive check since persistentTableStore updates incrementally and can
-        // have transition states where tables are defined but none of their attributes are
-        if (derivedTable?.profile) {
-          const columnNames = derivedTable?.profile.map((col) => col.name);
-          acc[persistentTable.tableName] = columnNames;
-        }
-        return acc;
-      },
-      {}
-    );
+  $: if ($sourceCatalogsQuery?.data?.entries) {
+    schema = {};
+    for (const sourceTable of $sourceCatalogsQuery.data.entries) {
+      schema[sourceTable.name] =
+        sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
+    }
   }
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
   });
 
   function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
@@ -182,7 +180,10 @@
 
   // UNDERLINES
 
-  const addUnderline = StateEffect.define<{ from: number; to: number }>();
+  const addUnderline = StateEffect.define<{
+    from: number;
+    to: number;
+  }>();
   const underlineMark = Decoration.mark({ class: "cm-underline" });
   const underlineField = StateField.define<DecorationSet>({
     create() {
@@ -310,11 +311,12 @@
     }
   }
 
+  // FIXME: resolve type issues incurred when we type selections as SelectionRange[]
   function underlineSelection(selections: any) {
     if (editor) {
-      const effects = selections
-        .map(({ start, end }) => ({ from: start, to: end }))
-        .map(({ from, to }) => addUnderline.of({ from, to }));
+      const effects = selections.map(({ from, to }) =>
+        addUnderline.of({ from, to })
+      );
 
       if (!editor.state.field(underlineField, false))
         effects.push(StateEffect.appendConfig.of([underlineField]));
@@ -329,8 +331,8 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div use:listenToNodeResize class="h-full">
-  <div class="editor-container border h-full" bind:this={editorContainer}>
+<div class="h-full" use:listenToNodeResize>
+  <div bind:this={editorContainer} class="editor-container  h-full">
     <div bind:this={editorContainerComponent} />
   </div>
 </div>

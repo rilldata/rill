@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Button from "../../button/Button.svelte";
-  import { Dialog } from "../../modal/index";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { Dialog } from "@rilldata/web-common/components/modal/index";
 
   export let exportErrorMessage = "";
 </script>

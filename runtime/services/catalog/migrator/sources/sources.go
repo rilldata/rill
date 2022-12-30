@@ -2,37 +2,29 @@ package sources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
-	sql "github.com/rilldata/rill/runtime/sql/pure"
 )
 
 func init() {
-	migrator.Register(string(drivers.CatalogObjectTypeSource), &sourceMigrator{})
+	migrator.Register(drivers.ObjectTypeSource, &sourceMigrator{})
 }
 
 type sourceMigrator struct{}
 
-func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *api.CatalogObject) error {
-	apiSource := catalogObj.Source
-	var source *connectors.Source
-	var err error
-	if apiSource.Sql != "" {
-		source, err = SqlToSource(apiSource.Sql)
-		if err != nil {
-			return err
-		}
-	} else {
-		source = &connectors.Source{
-			Name:       apiSource.Name,
-			Connector:  apiSource.Connector,
-			Properties: apiSource.Properties.AsMap(),
-		}
+func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
+	apiSource := catalogObj.GetSource()
+
+	source := &connectors.Source{
+		Name:       apiSource.Name,
+		Connector:  apiSource.Connector,
+		Properties: apiSource.Properties.AsMap(),
 	}
 
 	env := &connectors.Env{
@@ -43,11 +35,24 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
 	return m.Create(ctx, olap, repo, catalogObj)
 }
 
-func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
+	if strings.EqualFold(from, catalogObj.Name) {
+		tempName := fmt.Sprintf("__rill_temp_%s", from)
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, tempName),
+			Priority: 100,
+		})
+		if err != nil {
+			return err
+		}
+		rows.Close()
+		from = tempName
+	}
+
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,
@@ -58,7 +63,7 @@ func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, fro
 	return rows.Close()
 }
 
-func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *api.CatalogObject) error {
+func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", catalogObj.Name),
 		Priority: 100,
@@ -69,80 +74,34 @@ func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cat
 	return rows.Close()
 }
 
-func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
 	return []string{}
 }
 
-func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
-	// TODO
+func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
+	// TODO - Details needs to be added here
 	return nil
 }
 
-func (m *sourceMigrator) IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
-	if cat1.Source.Connector != cat2.Source.Connector {
+func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
+	if cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
 	s1 := &connectors.Source{
-		Properties: cat1.Source.Properties.AsMap(),
+		Properties: cat1.GetSource().Properties.AsMap(),
 	}
 	s2 := &connectors.Source{
-		Properties: cat2.Source.Properties.AsMap(),
+		Properties: cat2.GetSource().Properties.AsMap(),
 	}
 	return s1.PropertiesEquals(s2)
 }
 
-func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	_, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
-	if err == drivers.ErrNotFound {
+	if errors.Is(err, drivers.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
 		return false, err
 	}
 	return true, nil
-}
-
-func SqlToSource(sqlStr string) (*connectors.Source, error) {
-	astStmt, err := sql.Parse(sqlStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse error: %s", err.Error())
-	}
-
-	if astStmt.CreateSource == nil {
-		return nil, fmt.Errorf("refresh error: object cannot be refreshed")
-	}
-
-	ast := astStmt.CreateSource
-
-	s := &connectors.Source{
-		Name:       ast.Name,
-		Properties: make(map[string]any),
-	}
-
-	for _, prop := range ast.With.Properties {
-		if strings.ToLower(prop.Key) == "connector" {
-			s.Connector = safePtrToStr(prop.Value.String)
-			continue
-		}
-		if prop.Value.Number != nil {
-			s.Properties[prop.Key] = *prop.Value.Number
-		} else if prop.Value.String != nil {
-			s.Properties[prop.Key] = *prop.Value.String
-		} else if prop.Value.Boolean != nil {
-			s.Properties[prop.Key] = *prop.Value.Boolean
-		}
-	}
-
-	err = s.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
-}
-
-func safePtrToStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

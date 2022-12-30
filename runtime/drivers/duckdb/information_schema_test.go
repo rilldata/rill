@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
@@ -29,9 +29,9 @@ func TestInformationSchemaAll(t *testing.T) {
 
 	require.Equal(t, 2, len(tables[1].Schema.Fields))
 	require.Equal(t, "bar", tables[1].Schema.Fields[0].Name)
-	require.Equal(t, api.Type_CODE_STRING, tables[1].Schema.Fields[0].Type.Code)
+	require.Equal(t, runtimev1.Type_CODE_STRING, tables[1].Schema.Fields[0].Type.Code)
 	require.Equal(t, "baz", tables[1].Schema.Fields[1].Name)
-	require.Equal(t, api.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
+	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
 }
 
 func TestInformationSchemaLookup(t *testing.T) {
@@ -60,24 +60,24 @@ func TestInformationSchemaLookup(t *testing.T) {
 func TestDatabaseTypeToPB(t *testing.T) {
 	tests := []struct {
 		input  string
-		output *api.Type
+		output *runtimev1.Type
 	}{
 		{
 			input:  "DECIMAL(10,20)",
-			output: &api.Type{Code: api.Type_CODE_DECIMAL, Nullable: true},
+			output: &runtimev1.Type{Code: runtimev1.Type_CODE_DECIMAL, Nullable: true},
 		},
 		{
 			input: "STRUCT(foo HUGEINT, bar STRUCT(a INTEGER, b MAP(INTEGER, BOOLEAN)), baz VARCHAR[])",
-			output: &api.Type{Code: api.Type_CODE_STRUCT, Nullable: true, StructType: &api.StructType{Fields: []*api.StructType_Field{
-				{Name: "foo", Type: &api.Type{Code: api.Type_CODE_INT128, Nullable: true}},
-				{Name: "bar", Type: &api.Type{Code: api.Type_CODE_STRUCT, Nullable: true, StructType: &api.StructType{Fields: []*api.StructType_Field{
-					{Name: "a", Type: &api.Type{Code: api.Type_CODE_INT32, Nullable: true}},
-					{Name: "b", Type: &api.Type{Code: api.Type_CODE_MAP, Nullable: true, MapType: &api.MapType{
-						KeyType:   &api.Type{Code: api.Type_CODE_INT32, Nullable: true},
-						ValueType: &api.Type{Code: api.Type_CODE_BOOL, Nullable: true},
+			output: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+				{Name: "foo", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT128, Nullable: true}},
+				{Name: "bar", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+					{Name: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true}},
+					{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_MAP, Nullable: true, MapType: &runtimev1.MapType{
+						KeyType:   &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true},
+						ValueType: &runtimev1.Type{Code: runtimev1.Type_CODE_BOOL, Nullable: true},
 					}}},
 				}}}},
-				{Name: "baz", Type: &api.Type{Code: api.Type_CODE_ARRAY, Nullable: true, ArrayElementType: &api.Type{Code: api.Type_CODE_STRING, Nullable: true}}},
+				{Name: "baz", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY, Nullable: true, ArrayElementType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}}},
 			}}},
 		},
 	}

@@ -6,18 +6,17 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type {
     TimeGrain,
     TimeRangeName,
     TimeSeriesTimeRange,
-  } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  } from "@rilldata/web-local/lib/temp/time-control-types";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { getContext } from "svelte";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -27,28 +26,51 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
+  import {
+    useRuntimeServiceGetTimeRangeSummary,
+    V1GetTimeRangeSummaryResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 
-  export let metricsDefId: string;
-
-  const config = getContext<RootConfig>("config");
+  export let metricViewName: string;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   let selectedTimeRangeName;
   let selectedTimeGrain;
 
   // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
+
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+      $runtimeStore.instanceId,
+      $metaQuery.data.model,
+      { columnName: $metaQuery.data.timeDimension }
+    );
+  }
+
+  let allTimeRange;
+  $: if (
+    timeRangeQuery &&
+    $timeRangeQuery.isSuccess &&
+    !$timeRangeQuery.isRefetching
+  ) {
+    allTimeRange = {
+      start: $timeRangeQuery.data.timeRangeSummary.min,
+      end: $timeRangeQuery.data.timeRangeSummary.max,
+    };
+  }
 
   const initializeState = (metricsExplorer: MetricsExplorerEntity) => {
     if (
       metricsExplorer?.selectedTimeRange?.name &&
       metricsExplorer?.selectedTimeRange?.interval
     ) {
-      selectedTimeRangeName = metricsExplorer.selectedTimeRange.name;
-      selectedTimeGrain = metricsExplorer.selectedTimeRange.interval;
+      selectedTimeRangeName = metricsExplorer.selectedTimeRange?.name;
+      selectedTimeGrain = metricsExplorer.selectedTimeRange?.interval;
     } else {
       selectedTimeRangeName = getDefaultTimeRangeName();
       selectedTimeGrain = getDefaultTimeGrain(
@@ -112,7 +134,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     )
       return;
 
-    metricsExplorerStore.setSelectedTimeRange(metricsDefId, newTimeRange);
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   };
 
   // reactive statement that makes a new valid time range whenever the selected options change
@@ -125,13 +147,14 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
 <div class="flex flex-row">
   <TimeRangeNameSelector
-    {metricsDefId}
-    {selectedTimeRangeName}
+    {allTimeRange}
+    {metricViewName}
     on:select-time-range-name={setSelectedTimeRangeName}
+    {selectedTimeRangeName}
   />
   <TimeGrainSelector
-    {selectedTimeGrain}
-    {selectableTimeGrains}
     on:select-time-grain={setSelectedTimeGrain}
+    {selectableTimeGrains}
+    {selectedTimeGrain}
   />
 </div>

@@ -9,7 +9,7 @@ dist/
 node_modules/
 runtime/
 scripts/
-server-cloud/
+admin/
 state/
 static/
 temp/
@@ -17,10 +17,13 @@ temp/
 .env
 *.sql
 *.csv
+*.csv.gz
 *.tsv
+*.txt
 *.db
 *.wal
 *.parquet
+*.parquet.gz
 .travis.yml
 .DS_Store
 buf.lock

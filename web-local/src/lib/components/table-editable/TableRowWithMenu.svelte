@@ -1,16 +1,13 @@
 <script lang="ts">
+  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import MoreIcon from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { createEventDispatcher } from "svelte";
   import { tick } from "svelte/internal";
-
   import ContextButton from "../column-profile/ContextButton.svelte";
-
-  import MoreIcon from "../icons/MoreHorizontal.svelte";
-  import { Menu, MenuItem } from "../menu";
   import TableHeader from "./TableHeader.svelte";
-
-  import { guidGenerator } from "../../util/guid";
-  import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-  import Cancel from "../icons/Cancel.svelte";
 
   export let index: number;
   const dispatch = createEventDispatcher();
@@ -82,7 +79,7 @@
             >
               <MenuItem icon on:select={() => dispatch("delete")}>
                 <Cancel slot="icon" />
-                delete row</MenuItem
+                Delete row</MenuItem
               >
             </Menu>
           </WithTogglableFloatingElement>

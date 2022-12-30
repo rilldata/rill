@@ -1,20 +1,30 @@
 <script lang="ts">
+  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
-  import Cancel from "../icons/Cancel.svelte";
-  import Check from "../icons/Check.svelte";
-  import Spacer from "../icons/Spacer.svelte";
   import BarAndLabel from "../viz/BarAndLabel.svelte";
+
   export let value: number; // should be between 0 and 1.
   export let color = "bg-blue-200 dark:bg-blue-600";
   export let isActive = false;
   export let excluded = false;
+  export let showIcon = true;
+
+  /** compact mode is used in e.g. profiles */
+  export let compact = false;
+
+  const dispatch = createEventDispatcher();
 
   let hovered = false;
   const onHover = () => {
     hovered = true;
+    dispatch("focus");
   };
   const onLeave = () => {
     hovered = false;
+    dispatch("blur");
   };
   /** used for overly-large bar values */
   let zigZag =
@@ -24,6 +34,8 @@
         return `${15 - 4 * (i % 2)} ${1.7 * (i * 2)}`;
       })
       .join(" L");
+
+  $: height = compact ? "18px" : "22px";
 </script>
 
 <button
@@ -35,15 +47,17 @@
   on:click
   class="block flex flex-row w-full text-left transition-color"
 >
-  <div style:width="22px" style:height="22px" class="grid place-items-center">
-    {#if isActive && !excluded}
-      <Check size="20px" />
-    {:else if isActive && excluded}
-      <Cancel size="20px" />
-    {:else}
-      <Spacer />
-    {/if}
-  </div>
+  {#if showIcon}
+    <div style:width="22px" style:height class="grid place-items-center">
+      {#if isActive && !excluded}
+        <Check size="20px" />
+      {:else if isActive && excluded}
+        <Cancel size="20px" />
+      {:else}
+        <Spacer />
+      {/if}
+    </div>
+  {/if}
   <BarAndLabel
     {color}
     {value}
@@ -52,18 +66,15 @@
     tweenParameters={{ duration: 200 }}
     justify={false}
   >
-    <div
-      class="grid leaderboard-entry items-center gap-x-3"
-      style:height="22px"
-    >
+    <div class="grid leaderboard-entry items-center gap-x-3" style:height>
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
-        <div class:font-italic={isActive}>
+        <div>
           <slot name="title" />
         </div>
       </div>
-      <div class="justify-self-end  overflow-hidden">
+      <div class="justify-self-end overflow-hidden ui-copy-number">
         <slot name="right" />
       </div>
     </div>
@@ -76,7 +87,7 @@
       style="
       position:absolute;
       right: 0px;
-      transform: translateY(-22px);
+      transform: translateY(-{height});
     "
       width="15"
       height="22"

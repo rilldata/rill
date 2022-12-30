@@ -1,24 +1,24 @@
 <script lang="ts">
-  import notificationStore from "@rilldata/web-local/lib/components/notifications";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { Menu } from "@rilldata/web-common/components/menu";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createCommandClickAction } from "../../util/command-click-action";
-  import { createShiftClickAction } from "../../util/shift-click-action";
   import ContextButton from "../column-profile/ContextButton.svelte";
   import ExpanderButton from "../column-profile/ExpanderButton.svelte";
-  import { WithTogglableFloatingElement } from "../floating-element";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
-  import MoreHorizontal from "../icons/MoreHorizontal.svelte";
-  import Spacer from "../icons/Spacer.svelte";
-  import { Menu } from "../menu";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  const { commandClickAction } = createCommandClickAction();
-  const { shiftClickAction } = createShiftClickAction();
 
   export let name: string;
   export let href: string;
-
   export let open = false;
   export let notExpandable = false;
+
+  const { commandClickAction } = createCommandClickAction();
+  const { shiftClickAction } = createShiftClickAction();
 
   let showDetails = false;
   let contextMenuOpen = false;
@@ -29,7 +29,7 @@
 
   const shiftClickHandler = async () => {
     await navigator.clipboard.writeText(name);
-    notificationStore.send({ message: `copied "${name}" to clipboard` });
+    notifications.send({ message: `copied "${name}" to clipboard` });
   };
 
   let containerFocused;
@@ -83,7 +83,7 @@
     </div>
 
     <a
-      class="ui-copy"
+      class="ui-copy  text-ellipsis overflow-hidden whitespace-nowrap"
       {href}
       on:click={() => {
         if (open) onShowDetails();
@@ -108,7 +108,8 @@
           !contextMenuHovered}
       >
         <ContextButton
-          tooltipText="more actions"
+          id="more-actions-{name}"
+          tooltipText="More actions"
           suppressTooltip={contextMenuOpen}
           on:click={toggleFloatingElement}
           bind:isHovered={contextMenuHovered}

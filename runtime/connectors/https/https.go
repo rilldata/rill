@@ -52,23 +52,29 @@ func (c connector) Spec() connectors.Spec {
 func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %v", err)
+		return "", fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	extension, err := getUrlExtension(conf.Path)
+	extension, err := urlExtension(conf.Path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %v", conf.Path, err)
+		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
 
-	resp, err := http.Get(conf.Path)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, conf.Path, http.NoBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch url %s:  %v", conf.Path, err)
+		return "", fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
 	defer resp.Body.Close()
+
 	return fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 }
 
-func getUrlExtension(path string) (string, error) {
+func urlExtension(path string) (string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
 		return "", err

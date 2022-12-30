@@ -1,11 +1,11 @@
-import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-
+import type { MeasureEntity } from "../../application-state-stores/metrics-internal-store";
+import { ValidationState } from "../../temp/metrics";
+import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
 import {
-  ColumnConfig,
   CellConfigInput,
   CellConfigSelector,
+  ColumnConfig,
 } from "../table-editable/ColumnConfig";
-import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
 
 export const initMeasuresColumns = (
   inputChangeHandler,
@@ -14,32 +14,40 @@ export const initMeasuresColumns = (
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
       name: "label",
-      headerTooltip: "a human readable name for this measure (optional)",
+      label: "Label",
+      headerTooltip: "A human readable name for this measure (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
       name: "expression",
-      headerTooltip: "a valid SQL aggregation expression for this measure",
+      label: "Expression",
+      headerTooltip: "A valid SQL aggregation expression for this measure",
       cellRenderer: new CellConfigInput(
         inputChangeHandler,
-        (row: MeasureDefinitionEntity) => ({
-          state: row.expressionIsValid,
-          message: row.expressionValidationError,
+        (row) => ({
+          // TODO: remove the entity record type in validation
+          state: !(row as MeasureEntity).__ERROR__
+            ? ValidationState.OK
+            : ValidationState.ERROR,
+          message: (row as MeasureEntity).__ERROR__,
         }),
         expressionValidationHandler
       ),
+      customClass: "ui-copy-code",
     },
     {
       name: "description",
-      headerTooltip: "a human readable description of this measure (optional)",
+      label: "Description",
+
+      headerTooltip: "A human readable description of this measure (optional)",
 
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
-      name: "formatPreset",
-      label: "number formatting",
+      name: "format_preset",
+      label: "Number formatting",
       headerTooltip:
-        "the number formatting used for this measure in the Metrics Explorer",
+        "The number formatting used for this measure in the Metrics Explorer",
       cellRenderer: new CellConfigSelector(
         inputChangeHandler,
         nicelyFormattedTypesSelectorOptions

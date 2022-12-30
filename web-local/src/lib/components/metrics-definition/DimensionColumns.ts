@@ -7,29 +7,29 @@ import {
 export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[
     {
-      name: "labelSingle",
+      name: "label",
       // FIXME: should this be "label (single)" when we add the plural back in?
-      label: "label",
-      headerTooltip: "a human readable name for this dimension (optional)",
+      label: "Label",
+      headerTooltip: "A human readable name for this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
 
     {
-      name: "dimensionColumn",
-      label: "dimension column",
+      name: "property",
+      label: "Dimension column",
       headerTooltip:
-        "a categorical column from the data model that this metrics set is based on",
+        "A categorical column from the data model that this metrics set is based on",
       cellRenderer: new CellConfigSelector(
         inputChangeHandler,
         dimensionOptions,
-        "select a column...",
+        "Select a column...",
         "The selected dimension is not present in this model. Please choose a valid dimension."
       ),
     },
     {
-      name: "description",
+      name: "Description",
       headerTooltip:
-        "a human readable description of this dimension (optional)",
+        "A human readable description of this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     // FIXME: we'll want to  add this back later

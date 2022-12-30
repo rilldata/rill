@@ -1,7 +1,3 @@
-export interface ApplicationMetadata {
-  version: string;
-  commitHash: string;
-}
 export interface ProfileColumn {
   name: string;
   type: string;
@@ -67,6 +63,7 @@ export const FILE_EXTENSION_TO_TABLE_TYPE = {
   parquet: TableSourceType.ParquetFile,
   csv: TableSourceType.CSVFile,
   tsv: TableSourceType.CSVFile,
+  txt: TableSourceType.CSVFile,
 };
 
 export interface Table extends ColumnarItem {

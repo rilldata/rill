@@ -1,8 +1,6 @@
-import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-import type { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-
 import type { SvelteComponent } from "svelte";
-
+import type { EntityRecord } from "../../temp/entity";
+import type { ValidationState } from "../../temp/metrics";
 import TableCellInput from "./TableCellInput.svelte";
 import TableCellSelector from "./TableCellSelector.svelte";
 
@@ -72,4 +70,5 @@ export interface ColumnConfig<T extends CellConfig> {
   label?: string;
   headerTooltip?: string;
   cellRenderer: T;
+  customClass?: string;
 }

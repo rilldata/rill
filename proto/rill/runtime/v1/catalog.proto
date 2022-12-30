@@ -1,0 +1,91 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+import "google/protobuf/struct.proto";
+import "rill/runtime/v1/schema.proto";
+
+// ObjectType represents the different kinds of catalog objects
+enum ObjectType {
+  OBJECT_TYPE_UNSPECIFIED = 0;
+  OBJECT_TYPE_TABLE = 1;
+  OBJECT_TYPE_SOURCE = 2;
+  OBJECT_TYPE_MODEL = 3;
+  OBJECT_TYPE_METRICS_VIEW = 4;
+}
+
+// Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
+// scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
+// have managed = false.
+message Table {
+  // Table name
+  string name = 1;
+  // Table schema
+  StructType schema = 2;
+  // Managed is true if the table was created through a runtime migration, false if it was discovered in by
+  // scanning the database's information schema.
+  bool managed = 3;
+}
+
+// Source is the internal representation of a source definition
+message Source {
+  // Name of the source
+  string name = 1;
+  // Connector used by the source
+  string connector = 2;
+  // Connector properties assigned in the source
+  google.protobuf.Struct properties = 3;
+  // Detected schema of the source
+  StructType schema = 5;
+}
+
+// Model is the internal representation of a model definition
+message Model {
+  // Dialects supported for models
+  enum Dialect {
+    DIALECT_UNSPECIFIED = 0;
+    DIALECT_DUCKDB = 1;
+  }
+  // Name of the model
+  string name = 1;
+  // SQL is a SELECT statement representing the model
+  string sql = 2;
+  // Dialect of the SQL statement
+  Dialect dialect = 3;
+  // Detected schema of the model
+  StructType schema = 4;
+}
+
+// Metrics view is the internal representation of a metrics view definition
+message MetricsView {
+  // Dimensions are columns to filter and group by
+  message Dimension {
+    string name = 1;
+    string label = 2;
+    string description = 3;
+  }
+  // Measures are aggregated computed values
+  message Measure {
+    string name = 1;
+    string label = 2;
+    string expression = 3;
+    string description = 4;
+    string format = 5;
+  }
+  // Name of the metrics view
+  string name = 1;
+  // Name of the source or model that the metrics view is based on
+  string model = 2;
+  // Name of the primary time dimension, used for rendering time series
+  string time_dimension = 3;
+  // Recommended granularities for rolling up the time dimension.
+  // Should be a valid SQL INTERVAL value.
+  repeated string time_grains = 4;
+  // Dimensions in the metrics view
+  repeated Dimension dimensions = 5;
+  // Measures in the metrics view
+  repeated Measure measures = 6;
+  // User friendly label for the dashboard
+  string label = 7;
+  // Brief description of the dashboard
+  string description = 8;
+}

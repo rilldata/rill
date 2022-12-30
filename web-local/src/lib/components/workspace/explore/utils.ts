@@ -1,22 +1,5 @@
-import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { ActiveValues } from "../../../application-state-stores/explorer-stores";
+import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
 
-// prepare the activeFilters to be sent to the server
-export function prune(
-  actives: ActiveValues,
-  dimensions: Record<string, DimensionDefinitionEntity>
-) {
-  const filters: ActiveValues = {};
-  for (const activeColumnId in actives) {
-    if (!actives[activeColumnId].length) continue;
-    filters[dimensions[activeColumnId].dimensionColumn] =
-      actives[activeColumnId];
-  }
-  return filters;
-}
-
-export function getDisplayName(dimension) {
-  return dimension?.labelSingle?.length
-    ? dimension?.labelSingle
-    : dimension?.dimensionColumn;
+export function getDisplayName(dimension: MetricsViewDimension) {
+  return dimension?.label?.length ? dimension?.label : dimension?.name;
 }

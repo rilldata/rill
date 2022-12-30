@@ -1,0 +1,36 @@
+model: ad_bids
+display_name: Ad bids
+description:
+
+timeseries: timestamp
+default_timegrain: ""
+timegrains:
+  - 1 day
+  - 1 month
+
+dimensions:
+  - label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""
+  - label: Id
+    property: id
+  - label: Numeric Dim
+    property: numeric_dim
+
+
+measures:
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Total volume"
+    expression: sum(volume)
+    description: ""
+    format_preset: ""
+  - label: "Total impressions"
+    expression: sum(impressions)
+  - label: "Total clicks"
+    expression: sum(clicks)

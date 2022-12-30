@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { TimeGrain } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
+  import type { TimeGrain } from "@rilldata/web-local/lib/temp/time-control-types";
   import { createEventDispatcher } from "svelte";
-  import CaretDownIcon from "../../../icons/CaretDownIcon.svelte";
-  import WithSelectMenu from "../../../menu/wrappers/WithSelectMenu.svelte";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
   export let selectedTimeGrain: TimeGrain;

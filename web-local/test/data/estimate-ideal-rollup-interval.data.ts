@@ -1,5 +1,5 @@
 import type { DataProviderData } from "@adityahegde/typescript-test-utils";
-import { PreviewRollupInterval } from "@rilldata/web-local/lib/duckdb-data-types";
+import { PreviewRollupInterval } from "@rilldata/web-common/lib/duckdb-data-types";
 
 export interface EstimatedRollupIntervalTestCase {
   start: string;
@@ -119,7 +119,7 @@ export const timeGrainSeriesData: DataProviderData<
             {
               start: "2021-01-01 00:00:00",
               end: "2520-01-01 00:00:00",
-              interval: "1 day",
+              interval: "day",
               expectedRollupInterval: PreviewRollupInterval.month,
             },
           ],

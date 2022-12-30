@@ -1,84 +1,83 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import { getMapFromArray } from "@rilldata/web-local/common/utils/arrayUtils";
+  import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
+  import {
+    MetricsViewDimension,
+    useRuntimeServiceMetricsViewTotals,
+    V1MetricsViewTotalsResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { onDestroy, onMount } from "svelte";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
-  import VirtualizedGrid from "../../../VirtualizedGrid.svelte";
-  import {
-    useMetaMeasureNames,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { useTotalsQuery } from "../../../../svelte-query/queries/metrics-views/totals";
   import {
     getScaleForLeaderboard,
     NicelyFormattedTypes,
     ShortHandSymbols,
   } from "../../../../util/humanize-numbers";
-  import { getContext, onDestroy, onMount } from "svelte";
+  import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
   import Leaderboard from "./Leaderboard.svelte";
 
-  export let metricsDefId: string;
-
-  const config = getContext<RootConfig>("config");
+  export let metricViewName: string;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  $: metaQuery = useMetaQuery(config, metricsDefId);
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  $: selectedMeasureNames = useMetaMeasureNames(
-    config,
-    metricsDefId,
-    metricsExplorer?.selectedMeasureIds
-  );
+  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
   $: activeMeasure =
     measures &&
     measures.find(
-      (measure) => measure.id === metricsExplorer?.leaderboardMeasureId
+      (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
     );
 
   $: formatPreset =
-    activeMeasure?.formatPreset ?? NicelyFormattedTypes.HUMANIZE;
+    (activeMeasure?.format as NicelyFormattedTypes) ??
+    NicelyFormattedTypes.HUMANIZE;
 
-  let totalsQuery;
+  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(config, metricsDefId, {
-      measures: $selectedMeasureNames.data,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useRuntimeServiceMetricsViewTotals(
+      $runtimeStore.instanceId,
+      metricViewName,
+      {
+        measureNames: selectedMeasureNames,
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+      }
+    );
   }
 
   let referenceValue: number;
-  $: if (activeMeasure?.sqlName && $totalsQuery?.data?.data) {
-    referenceValue = $totalsQuery.data.data?.[activeMeasure.sqlName];
+  $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
+    referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
 
   const leaderboards = new Map<string, Array<LeaderboardValue>>();
   $: if (dimensions) {
-    const dimensionIdMap = getMapFromArray(
+    const dimensionNameMap = getMapFromArray(
       dimensions,
-      (dimension) => dimension.id
+      (dimension) => dimension.name
     );
     [...leaderboards.keys()]
-      .filter((dimensionId) => !dimensionIdMap.has(dimensionId))
-      .forEach((dimensionId) => leaderboards.delete(dimensionId));
+      .filter((dimensionName) => !dimensionNameMap.has(dimensionName))
+      .forEach((dimensionName) => leaderboards.delete(dimensionName));
   }
 
   /** create a scale for the valid leaderboards */
@@ -86,17 +85,16 @@
 
   let leaderboardExpanded;
 
-  function onSelectItem(event, item: DimensionDefinitionEntity) {
+  function onSelectItem(event, item: MetricsViewDimension) {
     metricsExplorerStore.toggleFilter(
-      metricsDefId,
-      item.id,
-      event.detail.label,
-      event.detail.include
+      metricViewName,
+      item.name,
+      event.detail.label
     );
   }
 
   function onLeaderboardValues(event) {
-    leaderboards.set(event.detail.dimensionId, event.detail.values);
+    leaderboards.set(event.detail.dimensionName, event.detail.values);
     if (
       formatPreset === NicelyFormattedTypes.HUMANIZE ||
       formatPreset === NicelyFormattedTypes.CURRENCY
@@ -133,14 +131,14 @@
 <svelte:window on:resize={onResize} />
 <!-- container for the metrics leaderboard components and controls -->
 <div
+  bind:this={leaderboardContainer}
   style:height="calc(100vh - var(--header, 130px) - 4rem)"
   style:min-width="365px"
-  bind:this={leaderboardContainer}
 >
   <div
     class="grid grid-auto-cols justify-start grid-flow-col items-end p-1 pb-3"
   >
-    <LeaderboardMeasureSelector {metricsDefId} />
+    <LeaderboardMeasureSelector {metricViewName} />
   </div>
   {#if metricsExplorer}
     <VirtualizedGrid {columns} height="100%" items={dimensions ?? []} let:item>
@@ -152,13 +150,13 @@
           .toLowerCase()
           ?.includes("count(") ||
           activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
-        {metricsDefId}
-        dimensionId={item.id}
+        {metricViewName}
+        dimensionName={item.name}
         on:expand={() => {
-          if (leaderboardExpanded === item.id) {
+          if (leaderboardExpanded === item.name) {
             leaderboardExpanded = undefined;
           } else {
-            leaderboardExpanded = item.id;
+            leaderboardExpanded = item.name;
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}

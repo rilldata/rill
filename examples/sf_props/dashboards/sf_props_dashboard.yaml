@@ -1,17 +1,14 @@
-version: 0.0.1
-
+model: sf_props
 display_name: Ad bids
 description:
 
-from: sf_props
-
-time_dimension: date
+timeseries: date
 default_timegrain: ""
 timegrains:
-  - 1 day
-  - 1 week
-  - 1 month
-  - 1 year
+  - day
+  - week
+  - month
+  - year
 
 dimensions:
   - property: kind

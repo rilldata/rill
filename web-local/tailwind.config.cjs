@@ -6,7 +6,8 @@ module.exports = {
     "./**/*.svelte",
     "./src/lib/duckdb-data-types.ts",
     "./src/lib/components/chip/chip-types.ts",
-    "./src/lib/application-config.ts"
+    "./src/lib/application-config.ts",
+    "../web-common/**/*.svelte"
   ],
   theme: {
     extend: {},
@@ -14,5 +15,6 @@ module.exports = {
   plugins: [],
   safelist: [
     'text-blue-800', // needed for blue text in filter pills
+    'ui-copy-code', // needed for code in measure expressions
   ]
 };

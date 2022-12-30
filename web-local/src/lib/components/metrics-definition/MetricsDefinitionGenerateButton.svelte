@@ -1,71 +1,51 @@
 <script lang="ts">
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
-  import type { DerivedModelStore } from "../../application-state-stores/model-stores";
-  import { getDimensionsByMetricsId } from "../../redux-store/dimension-definition/dimension-definition-readables";
-  import { getMeasuresByMetricsId } from "../../redux-store/measure-definition/measure-definition-readables";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
   import {
-    generateMeasuresAndDimensionsApi,
-    updateMetricsDefsWrapperApi,
-  } from "../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../redux-store/metrics-definition/metrics-definition-readables";
-  import { selectTimestampColumnFromProfileEntity } from "../../redux-store/source/source-selectors";
-  import { store } from "../../redux-store/store-root";
-  import { invalidateMetricsView } from "../../svelte-query/queries/metrics-views/invalidation";
-  import type { ProfileColumn } from "../../types";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
+    addQuickMetricsToDashboardYAML,
+    MetricsInternalRepresentation,
+  } from "../../application-state-stores/metrics-internal-store";
+  import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-  $: selectedDimensions = getDimensionsByMetricsId(metricsDefId);
-  $: selectedMeasures = getMeasuresByMetricsId(metricsDefId);
+  export let selectedModel: V1Model;
+  export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
+  export let handlePutAndMigrate;
 
-  export let metricsDefId: string;
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
 
-  const queryClient = useQueryClient();
+  async function handleGenerateClick(yaml: string) {
+    // if the timeseries field is empty or does not exist,
+    // add in the first timestamp column available.
+    // if no timestamp column available, we currently do nothing in this case.
+    // later, we'll remove the requiremen t for a timeseries field.
+    const newYAMLString = addQuickMetricsToDashboardYAML(yaml, selectedModel);
+    handlePutAndMigrate(newYAMLString);
 
-  async function handleGenerateClick() {
-    await store.dispatch(generateMeasuresAndDimensionsApi(metricsDefId));
-    if (!$selectedMetricsDef?.timeDimension && timestampColumns.length > 0) {
-      // select the first available timestamp column if one has not been
-      // selected and there are some available
-      store.dispatch(
-        updateMetricsDefsWrapperApi({
-          id: metricsDefId,
-          changes: { timeDimension: timestampColumns[0].name },
-        })
-      );
-    }
-    invalidateMetricsView(queryClient, metricsDefId);
-    // In `svelte-query/totals.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
-    // We should make that change, but it has a wide surface area, so we need to take the time to QA it properly. In the meantime, we need to remove old
-    // queryKeys from the queryCache, so they don't get refetched and generate 500 errors.
-    queryClient.removeQueries([`v1/metrics-view/toplist`, metricsDefId], {
-      exact: false,
-    });
+    // invalidateMetricsView(queryClient, metricsDefId);
+    // // In `svelte-query/totals.ts`, in the `invalidateMetricsViewData()` function, we use `refetchQueries` where we should probably use `invalidateQueries`.
+    // // We should make that change, but it has a wide surface area, so we need to take the time to QA it properly. In the meantime, we need to remove old
+    // // queryKeys from the queryCache, so they don't get refetched and generate 500 errors.
+    // queryClient.removeQueries([`v1/metrics-view/toplist`, metricsDefId], {
+    //   exact: false,
+    // });
+
     closeModal();
   }
 
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  let timestampColumns: Array<ProfileColumn>;
-
-  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    timestampColumns = selectTimestampColumnFromProfileEntity(
-      $derivedModelStore?.entities.find(
-        (model) => model.id === $selectedMetricsDef.sourceModelId
-      )
-    );
+  let timestampColumns: Array<string>;
+  $: if (selectedModel) {
+    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
   } else {
     timestampColumns = [];
   }
 
   let tooltipText = "";
   let buttonDisabled = true;
-  $: if ($selectedMetricsDef?.sourceModelId === undefined) {
+  $: if ($metricsInternalRep.getMetricKey("model") === "") {
     tooltipText = "Select a model before populating these metrics";
     buttonDisabled = true;
   } else if (timestampColumns.length === 0) {
@@ -79,10 +59,10 @@
   let modalIsOpen = false;
 
   const openModelIfNeeded = () => {
-    if ($selectedDimensions.length > 0 || $selectedMeasures.length > 0) {
+    if (measures?.length > 0 || dimensions?.length > 0) {
       openModal();
     } else {
-      handleGenerateClick();
+      handleGenerateClick($metricsInternalRep.internalYAML);
     }
   };
 
@@ -95,10 +75,8 @@
   };
 </script>
 
-<Tooltip location="right" alignment="middle" distance={5}>
+<Tooltip alignment="middle" distance={5} location="right">
   <button
-    disabled={buttonDisabled}
-    on:click={openModelIfNeeded}
     class={`bg-white
           border-gray-400
           hover:border-gray-900
@@ -113,7 +91,9 @@
           pt-2 pb-2
           ${buttonDisabled ? "cursor-not-allowed" : "cursor-pointer"}
           ${buttonDisabled ? "text-gray-500" : "text-gray-900"}
-        `}>quick metrics</button
+        `}
+    disabled={buttonDisabled}
+    on:click={openModelIfNeeded}>Quick Metrics</button
   >
   <TooltipContent slot="tooltip-content">
     <div>
@@ -135,6 +115,7 @@
   <QuickMetricsModal
     on:cancel={closeModal}
     on:click-outside={closeModal}
-    on:replace-metrics={handleGenerateClick}
+    on:replace-metrics={() =>
+      handleGenerateClick($metricsInternalRep.internalYAML)}
   />
 {/if}

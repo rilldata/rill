@@ -1,41 +1,73 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
-  import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../../redux-store/store-root";
-  import MetricsIcon from "../../icons/Metrics.svelte";
+  import { goto } from "$app/navigation";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import {
+    isDuplicateName,
+    renameFileArtifact,
+    useAllNames,
+  } from "../../../svelte-query/actions";
+  import { EntityType } from "../../../temp/entity";
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
-  export let metricsDefId;
+  export let metricsDefName;
+  export let metricsInternalRep;
 
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-
-  $: titleInput = $selectedMetricsDef?.metricDefLabel;
+  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  const queryClient = useQueryClient();
+  const renameMetricsDef = useRuntimeServiceRenameFileAndReconcile();
 
   const onChangeCallback = async (e) => {
-    store.dispatch(
-      updateMetricsDefsWrapperApi({
-        id: metricsDefId,
-        changes: { metricDefLabel: e.target.value },
-      })
-    );
+    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      notifications.send({
+        message:
+          "Dashboard name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      });
+      e.target.value = metricsDefName; // resets the input
+      return;
+    }
+    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+      notifications.send({
+        message: `Name ${e.target.value} is already in use`,
+      });
+      e.target.value = metricsDefName; // resets the input
+      return;
+    }
+
+    try {
+      const toName = e.target.value;
+      const type = EntityType.MetricsDefinition;
+      await renameFileArtifact(
+        queryClient,
+        runtimeInstanceId,
+        metricsDefName,
+        toName,
+        type,
+        $renameMetricsDef
+      );
+      goto(`/dashboard/${toName}/edit`, { replaceState: true });
+    } catch (err) {
+      console.error(err.response.data.message);
+    }
   };
 
-  $: metricsSourceSelectionError = $selectedMetricsDef
-    ? MetricsSourceSelectionError($selectedMetricsDef)
-    : "";
+  $: titleInput = metricsDefName;
 </script>
 
-<div
-  class="grid gap-x-3 items-center pr-4"
-  style:grid-template-columns="auto max-content"
+<WorkspaceHeader
+  {...{ titleInput, onChangeCallback }}
+  showStatus={false}
+  showInspectorToggle={false}
 >
-  <WorkspaceHeader {...{ titleInput, onChangeCallback }} showStatus={false}>
-    <MetricsIcon slot="icon" />
-  </WorkspaceHeader>
-
-  {#if !metricsSourceSelectionError}
-    <MetricsDefinitionExploreMetricsButton {metricsDefId} />
-  {/if}
-</div>
+  <MetricsIcon slot="icon" />
+  <MetricsDefinitionExploreMetricsButton
+    slot="cta"
+    {metricsDefName}
+    {metricsInternalRep}
+  />
+</WorkspaceHeader>

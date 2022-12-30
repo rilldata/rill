@@ -2,9 +2,10 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityworker"
 )
@@ -14,6 +15,10 @@ type job struct {
 	result *sqlx.Rows
 }
 
+func (c *connection) Dialect() drivers.Dialect {
+	return drivers.DialectDuckDB
+}
+
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	j := &job{
 		stmt: stmt,
@@ -21,7 +26,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 
 	err := c.worker.Process(ctx, stmt.Priority, j)
 	if err != nil {
-		if err == priorityworker.ErrStopped {
+		if errors.Is(err, priorityworker.ErrStopped) {
 			return nil, drivers.ErrClosed
 		}
 		return nil, err
@@ -51,7 +56,7 @@ func (c *connection) executeQuery(ctx context.Context, j *job) error {
 	return err
 }
 
-func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
+func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
 	}
@@ -61,7 +66,7 @@ func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
 		return nil, err
 	}
 
-	fields := make([]*api.StructType_Field, len(cts))
+	fields := make([]*runtimev1.StructType_Field, len(cts))
 	for i, ct := range cts {
 		nullable, ok := ct.Nullable()
 		if !ok {
@@ -73,11 +78,11 @@ func rowsToSchema(r *sqlx.Rows) (*api.StructType, error) {
 			return nil, err
 		}
 
-		fields[i] = &api.StructType_Field{
+		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
 			Type: t,
 		}
 	}
 
-	return &api.StructType{Fields: fields}, nil
+	return &runtimev1.StructType{Fields: fields}, nil
 }

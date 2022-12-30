@@ -1,14 +1,12 @@
-version: 0.0.1
-
-from: ad_bids
+model: ad_bids
 display_name: Ad bids
 description:
 
-time_dimension: timestamp
+timeseries: timestamp
 default_timegrain: ""
 timegrains:
-  - 1 day
-  - 1 month
+  - day
+  - month
 
 dimensions:
   - label: Publisher

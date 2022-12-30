@@ -1,9 +1,8 @@
 <script lang="ts">
+  import AddIcon from "@rilldata/web-common/components/icons/Add.svelte";
   import { onMount } from "svelte";
-
-  import EditableTable from "../../table-editable/EditableTable.svelte";
-  import AddIcon from "../../icons/Add.svelte";
   import ContextButton from "../../column-profile/ContextButton.svelte";
+  import EditableTable from "../../table-editable/EditableTable.svelte";
 
   export let addEntityHandler;
   export let updateEntityHandler;
@@ -25,7 +24,8 @@
 <div class="metrics-def-section w-fit">
   <div class="flex flex-row pt-6 pb-3" bind:this={sectionHeaderContainer}>
     <h4
-      class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-400 font-bold uppercase align-middle flex-none"
+      class="text-ellipsis overflow-hidden whitespace-nowrap text-gray-500 font-medium align-middle flex-none"
+      style="font-size: 11px;"
     >
       {label}
     </h4>

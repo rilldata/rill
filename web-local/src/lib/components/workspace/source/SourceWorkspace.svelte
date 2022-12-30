@@ -1,87 +1,233 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { EntityType } from "../../../../common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "../../../application-state-stores/application-store";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "../../../application-state-stores/table-stores";
-  import PreviewTable from "../../preview-table/PreviewTable.svelte";
-  import SourceInspector from "./SourceInspector.svelte";
-
+  import { Button } from "@rilldata/web-common/components/button";
+  import { Callout } from "@rilldata/web-common/components/callout";
+  import {
+    getRuntimeServiceGetCatalogEntryQueryKey,
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetFile,
+    useRuntimeServiceListConnectors,
+    useRuntimeServicePutFileAndReconcile,
+    useRuntimeServiceRefreshAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { parseDocument } from "yaml";
+  import {
+    hasDuckDBUnicodeError,
+    niceDuckdbUnicodeError,
+  } from "../../navigation/sources/errors";
+  import { refreshSource } from "../../navigation/sources/refreshSource";
+  import { ConnectedPreviewTable } from "../../preview-table";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import SourceInspector from "./SourceInspector.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
-  export let sourceID: string;
+  export let sourceName: string;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
+  const switchToSource = async (name: string) => {
+    if (!name) return;
 
-  $: currentSource = $persistentTableStore?.entities
-    ? $persistentTableStore.entities.find((q) => q.id === sourceID)
-    : undefined;
-  $: currentDerivedSource = $derivedTableStore?.entities
-    ? $derivedTableStore.entities.find((q) => q.id === sourceID)
-    : undefined;
-
-  const switchToSource = async (sourceID: string) => {
-    if (!sourceID) return;
-
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Table,
-      sourceID,
-    ]);
+    appStore.setActiveEntity(name, EntityType.Table);
   };
 
-  $: switchToSource(sourceID);
+  $: switchToSource(sourceName);
 
-  /** check to see if we need to perform a migration.
-   * We will deprecate this in a few versions from 0.8.
-   */
+  $: checkForSourceInCatalog = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore?.instanceId,
+    sourceName
+  );
 
-  let profiling = false;
-  $: if (currentDerivedSource && !profiling) {
-    const previewRowCount = currentDerivedSource?.preview?.length;
-    /** migration point from 0.7 ~ upgrade active source to have more rows in preview */
-    if (previewRowCount === 1 || currentDerivedSource?.cardinality !== 1) {
-      profiling = true;
-      dataModelerService.dispatch("refreshPreview", [
-        currentSource.id,
-        currentSource.tableName,
-      ]);
+  $: getSource = useRuntimeServiceGetFile(
+    $runtimeStore?.instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
+  );
+
+  $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
+  $: entryExists =
+    $checkForSourceInCatalog?.error?.response?.data?.message !==
+    "entry not found";
+
+  $: connectors = useRuntimeServiceListConnectors();
+
+  // get the connector for this source type, if valid
+  $: currentConnector = $connectors?.data?.connectors?.find(
+    (connector) => connector?.name === source?.type
+  );
+  $: allConnectors = $connectors?.data?.connectors?.map(
+    (connector) => connector.name
+  );
+  $: remoteConnectorNames = allConnectors
+    ?.map((connector) => connector.name)
+    ?.filter((name) => name !== "local_file");
+
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createSource = useRuntimeServicePutFileAndReconcile();
+  const queryClient = useQueryClient();
+
+  let uploadErrors = undefined;
+  const onRefreshClick = async (tableName: string) => {
+    try {
+      const resp = await refreshSource(
+        currentConnector?.name,
+        tableName,
+        $runtimeStore?.instanceId,
+        $refreshSourceMutation,
+        $createSource,
+        queryClient
+      );
+      // if there are errors, set them to be displayed
+      if (resp?.errors) {
+        uploadErrors = resp.errors;
+      }
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
+        $runtimeStore?.instanceId,
+        tableName
+      );
+      await queryClient.refetchQueries(queryKey);
+    } catch (err) {
+      // no-op
     }
-  }
+    overlay.set(null);
+  };
 </script>
 
-<!-- for now, we will key the entire element on the sourceId. -->
-{#key sourceID}
-  <WorkspaceContainer assetID={sourceID}>
+{#key sourceName}
+  <WorkspaceContainer assetID={sourceName}>
+    <div slot="header">
+      <SourceWorkspaceHeader {sourceName} />
+    </div>
     <div
       slot="body"
-      class="grid pb-6"
+      class="grid pb-3"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
     >
-      <SourceWorkspaceHeader id={sourceID} />
-      <div
-        style:overflow="auto"
-        style:height="100%"
-        class="m-6 mt-0 border border-gray-300 rounded"
-      >
-        {#if currentDerivedSource}
-          {#key currentDerivedSource.id}
-            <PreviewTable
-              rows={currentDerivedSource?.preview}
-              columnNames={currentDerivedSource?.profile}
-            />
+      {#if entryExists}
+        <div
+          style:overflow="auto"
+          style:height="calc(100vh - var(--header-height) - 2rem)"
+          class="m-4 border border-gray-300 rounded"
+        >
+          {#key sourceName}
+            <ConnectedPreviewTable objectName={sourceName} />
           {/key}
-        {/if}
-      </div>
+        </div>
+      {:else}
+        <!-- error states -->
+        <div
+          class="errors flex flex-col items-center pt-8 gap-y-4 m-auto mt-0 text-gray-500"
+          style:width="500px"
+        >
+          {#if !allConnectors.includes(source?.type)}
+            <div>
+              {#if source?.type}
+                Rill does not support a connector for <span class="font-bold"
+                  >{source?.type}</span
+                >.
+              {:else}
+                Connector not defined.
+              {/if}
+              Edit <b>{`sources/${sourceName}.yaml`}</b> to add a valid "type:
+              {"<filetype>"}" to get started.
+            </div>
+            <div>
+              For more information,
+              <a href="https://docs.rilldata.com/using-rill/import-data"
+                >view the documentation</a
+              >.
+            </div>
+          {:else if source?.type === "local_file"}
+            <div class="text-center">
+              The data file for <span class="font-bold">{sourceName}</span> has not
+              been imported as a source.
+            </div>
+            <Button
+              type="primary"
+              on:click={async () => {
+                uploadErrors = undefined;
+                await onRefreshClick(sourceName);
+              }}
+              >Import a CSV or Parquet file
+            </Button>
+          {:else if !Object.keys(source || {})?.length}
+            <!-- source is empty -->
+            <div>
+              The source <span class="font-bold">{sourceName}</span>
+              is empty. Edit <b>{`sources/${sourceName}.yaml`}</b> to add a source
+              definition.
+            </div>
+            <div>
+              For more information,
+              <a href="https://docs.rilldata.com/using-rill/import-data"
+                >view the documentation</a
+              >.
+            </div>
+          {:else if !source?.type}
+            <div>
+              The source <span class="font-bold">{sourceName}</span> does not
+              have a defined type. Edit <b>{`sources/${sourceName}.yaml`}</b> to
+              add "type:
+              {"<filetype>"}"
+            </div>
+            <div>
+              For more information,
+              <a href="https://docs.rilldata.com/using-rill/import-data"
+                >view the documentation</a
+              >.
+            </div>
+          {:else if remoteConnectorNames.includes(currentConnector?.name) && !source?.uri}
+            <div>
+              The source URI has not been defined. Edit <b
+                >{`sources/${sourceName}.yaml`}</b
+              >
+              to add "uri:
+              {"<uri>"}"
+            </div>
+            <div>
+              For more information,
+              <a href="https://docs.rilldata.com/using-rill/import-data"
+                >view the documentation</a
+              >.
+            </div>
+          {:else}
+            <div class="text-center">
+              The source <span class="font-bold">{sourceName}</span> has not been
+              imported.
+            </div>
+            <Button
+              type="primary"
+              on:click={async () => {
+                uploadErrors = undefined;
+                await onRefreshClick(sourceName);
+              }}
+              >Import data
+            </Button>
+          {/if}
+          <!-- show any remaining errors -->
+          {#if uploadErrors}
+            <Callout level="error">
+              {#each uploadErrors as error}
+                {hasDuckDBUnicodeError(error.message)
+                  ? niceDuckdbUnicodeError(error.message)
+                  : error.message}
+              {/each}
+            </Callout>
+          {/if}
+        </div>
+      {/if}
     </div>
-    <SourceInspector {sourceID} slot="inspector" />
+
+    <SourceInspector {sourceName} slot="inspector" />
   </WorkspaceContainer>
 {/key}
+
+<style>
+  .errors > div:not(.text-center) {
+    text-align: left;
+    width: 500px;
+  }
+</style>

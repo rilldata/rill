@@ -2,7 +2,7 @@ import { defineConfig } from "orval";
 
 export default defineConfig({
   api: {
-    input: "../runtime/api/runtime.swagger.json",
+    input: "../proto/gen/rill/runtime/v1/runtime.swagger.yaml",
     output: {
       workspace: "./src/runtime-client/",
       target: "gen/index.ts",
@@ -19,6 +19,41 @@ export default defineConfig({
         operations: {
           // Turn MetricsViewMeta into a query even though it's a POST request
           RuntimeService_MetricsViewMeta: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_EstimateRollupInterval: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_GetTopK: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_GenerateTimeSeries: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_ProfileColumns: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_MetricsViewTotals: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_MetricsViewTimeSeries: {
+            query: {
+              useQuery: true,
+            },
+          },
+          RuntimeService_MetricsViewToplist: {
             query: {
               useQuery: true,
             },

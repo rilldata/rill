@@ -1,7 +1,12 @@
 CREATE TABLE rill.catalog (
-	name TEXT PRIMARY KEY,
-	type TEXT NOT NULL,
-	sql TEXT NOT NULL,
+	name TEXT NOT NULL,
+	type INTEGER NOT NULL,
+	object BLOB NOT NULL,
+	path TEXT NOT NULL,
 	created_on TIMESTAMPTZ NOT NULL,
-	updated_on TIMESTAMPTZ NOT NULL
+	updated_on TIMESTAMPTZ NOT NULL,
+	refreshed_on TIMESTAMPTZ NOT NULL,
+	PRIMARY KEY (name)
 );
+
+CREATE UNIQUE INDEX lower_name_unique_idx ON rill.catalog (lower(name));

@@ -2,6 +2,7 @@ package drivers_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,60 +12,81 @@ import (
 
 func testRepo(t *testing.T, repo drivers.RepoStore) {
 	ctx := context.Background()
-	repoID := uuid.NewString()
+	instID := uuid.NewString()
 
-	paths, err := repo.ListRecursive(ctx, repoID, "**")
+	paths, err := repo.ListRecursive(ctx, instID, "**")
 	require.NoError(t, err)
 	require.Len(t, paths, 0)
 
-	err = repo.PutBlob(ctx, repoID, "foo.sql", "hello world")
+	err = repo.Put(ctx, instID, "foo.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
-	err = repo.PutBlob(ctx, repoID, "/nested/bar.sql", "hello world")
+	err = repo.Put(ctx, instID, "/nested/bar.sql", strings.NewReader("hello world"))
 	require.NoError(t, err)
 
-	paths, err = repo.ListRecursive(ctx, repoID, "/**")
+	paths, err = repo.ListRecursive(ctx, instID, "/**")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/nested/bar.sql"}, paths)
 
-	paths, err = repo.ListRecursive(ctx, repoID, "./**")
+	paths, err = repo.ListRecursive(ctx, instID, "./**")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/nested/bar.sql"}, paths)
 
-	paths, err = repo.ListRecursive(ctx, repoID, "/nested/**")
+	paths, err = repo.ListRecursive(ctx, instID, "/nested/**")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/nested/bar.sql"}, paths)
 
-	err = repo.Delete(ctx, repoID, "nested/bar.sql")
+	err = repo.Delete(ctx, instID, "nested/bar.sql")
 	require.NoError(t, err)
 
-	paths, err = repo.ListRecursive(ctx, repoID, "**")
+	paths, err = repo.ListRecursive(ctx, instID, "**")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql"}, paths)
 
-	_, err = repo.Get(ctx, repoID, "nested/bar.sql")
+	_, err = repo.Get(ctx, instID, "nested/bar.sql")
 	require.Error(t, err)
 
-	blob, err := repo.Get(ctx, repoID, "foo.sql")
+	blob, err := repo.Get(ctx, instID, "foo.sql")
 	require.NoError(t, err)
 	require.Equal(t, "hello world", blob)
 
-	err = repo.PutBlob(ctx, repoID, "foo.sql", "bar bar bar")
+	err = repo.Put(ctx, instID, "foo.sql", strings.NewReader("bar bar bar"))
 	require.NoError(t, err)
 
-	blob, err = repo.Get(ctx, repoID, "foo.sql")
+	blob, err = repo.Get(ctx, instID, "foo.sql")
 	require.NoError(t, err)
 	require.Equal(t, "bar bar bar", blob)
 
-	paths, err = repo.ListRecursive(ctx, repoID, "**")
+	paths, err = repo.ListRecursive(ctx, instID, "**")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql"}, paths)
 
-	err = repo.PutBlob(ctx, repoID, "foo.yml", "foo foo")
+	err = repo.Put(ctx, instID, "foo.yml", strings.NewReader("foo foo"))
 	require.NoError(t, err)
-	err = repo.PutBlob(ctx, repoID, "foo.csv", "foo foo")
+	err = repo.Put(ctx, instID, "foo.csv", strings.NewReader("foo foo"))
 	require.NoError(t, err)
 
-	paths, err = repo.ListRecursive(ctx, repoID, "**/*.{sql,yaml,yml}")
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
 	require.NoError(t, err)
 	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
+
+	// renaming to existing throws error
+	err = repo.Rename(ctx, instID, "foo.yml", "foo.sql")
+	require.ErrorIs(t, err, drivers.ErrFileAlreadyExists)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/foo.sql", "/foo.yml"}, paths)
+
+	// rename to existing with different case
+	err = repo.Rename(ctx, instID, "foo.sql", "FOO.sql")
+	require.NoError(t, err)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/FOO.sql", "/foo.yml"}, paths)
+
+	// valid rename
+	err = repo.Rename(ctx, instID, "foo.yml", "foo_new.yml")
+	require.NoError(t, err)
+	paths, err = repo.ListRecursive(ctx, instID, "**/*.{sql,yaml,yml}")
+	require.NoError(t, err)
+	require.Equal(t, []string{"/FOO.sql", "/foo_new.yml"}, paths)
 }

@@ -1,40 +1,37 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
-  import { getContext } from "svelte";
+  import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../application-state-stores/explorer-stores";
-  import { useMetaQuery } from "../../svelte-query/queries/metrics-views/metadata";
-  import { SelectMenu } from "../menu";
+  import { useMetaQuery } from "../../svelte-query/dashboards";
+  import { EntityStatus } from "../../temp/entity";
   import Spinner from "../Spinner.svelte";
 
-  export let metricsDefId;
+  export let metricViewName;
 
-  const config = getContext<RootConfig>("config");
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
-  // query the `/meta` endpoint to get the valid measures
-  $: metaQuery = useMetaQuery(config, metricsDefId);
   $: measures = $metaQuery.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    metricsExplorerStore.setLeaderboardMeasureId(
-      metricsDefId,
+    metricsExplorerStore.setLeaderboardMeasureName(
+      metricViewName,
       event.detail.key
     );
   }
 
-  function formatForSelector(measure: MeasureDefinitionEntity) {
+  function formatForSelector(measure: MetricsViewMeasure) {
     if (!measure) return undefined;
     return {
       ...measure,
-      key: measure.id,
+      key: measure.name,
       main: measure.label?.length ? measure.label : measure.expression,
     };
   }
@@ -46,10 +43,10 @@
   let activeLeaderboardMeasure;
   $: activeLeaderboardMeasure =
     measures?.length &&
-    metricsExplorer?.leaderboardMeasureId &&
+    metricsExplorer?.leaderboardMeasureName &&
     formatForSelector(
       measures.find(
-        (measure) => measure.id === metricsExplorer?.leaderboardMeasureId
+        (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
       ) ?? undefined
     );
 
@@ -60,7 +57,7 @@
       let main = measure.label?.length ? measure.label : measure.expression;
       return {
         ...measure,
-        key: measure.id,
+        key: measure.name,
         main,
       };
     }) || [];

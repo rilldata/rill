@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/sql/ast"
 	"github.com/rilldata/rill/runtime/sql/rpc"
 )
 
 // Transpile transpiles a Rill SQL statement to a target dialect
-func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (string, error) {
+func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogEntry) (string, error) {
 	res, err := getIsolate().Request(&rpc.Request{
 		Request: &rpc.Request_TranspileRequest{
 			TranspileRequest: &rpc.TranspileRequest{
@@ -41,7 +41,7 @@ func Transpile(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject
 }
 
 // Parse parses and validates a Rill SQL statement
-func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (*ast.SqlNodeProto, error) {
+func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogEntry) (*ast.SqlNodeProto, error) {
 	res, err := getIsolate().Request(&rpc.Request{
 		Request: &rpc.Request_ParseRequest{
 			ParseRequest: &rpc.ParseRequest{
@@ -68,8 +68,10 @@ func Parse(sql string, dialect rpc.Dialect, catalog []*drivers.CatalogObject) (*
 }
 
 // See getIsolate
-var isolate *Isolate
-var isolateOnce sync.Once
+var (
+	isolate     *Isolate
+	isolateOnce sync.Once
+)
 
 // getIsolate returns a lazily-loaded Isolate, which will never be closed.
 // If the performance of using a single thread-bound isolate suffers, we should
@@ -83,20 +85,24 @@ func getIsolate() *Isolate {
 
 // marshalCatalog serializes runtime catalog objects to the catalog format expected by the SQL library.
 // See sql/src/test/resources for schema example.
-func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
+func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogEntry) string {
 	var artifacts []map[string]any
 	var tables []map[string]any
 	for _, obj := range objs {
 		switch obj.Type {
-		case drivers.CatalogObjectTypeMetricsView:
-			artifacts = append(artifacts, map[string]any{
-				"name":    obj.Name,
-				"type":    "METRICS_VIEW",
-				"payload": obj.SQL,
-			})
-		case drivers.CatalogObjectTypeTable, drivers.CatalogObjectTypeSource:
-			columns := make([]map[string]any, len(obj.Schema.Fields))
-			for i, f := range obj.Schema.Fields {
+		case drivers.ObjectTypeMetricsView:
+			panic(fmt.Errorf("not implemented"))
+		case drivers.ObjectTypeTable, drivers.ObjectTypeSource:
+			var schema *runtimev1.StructType
+			if obj.Type == drivers.ObjectTypeTable {
+				schema = obj.GetTable().Schema
+			} else if obj.Type == drivers.ObjectTypeSource {
+				schema = obj.GetSource().Schema
+			} else {
+				panic(fmt.Errorf("not reachable"))
+			}
+			columns := make([]map[string]any, len(schema.Fields))
+			for i, f := range schema.Fields {
 				columns[i] = map[string]any{
 					"name": f.Name,
 					"type": typeCodeToSQLType(f.Type.Code),
@@ -107,7 +113,7 @@ func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
 				"columns": columns,
 			})
 		default:
-			panic(fmt.Errorf("unhandled catalog type '%s'", obj.Type))
+			panic(fmt.Errorf("unhandled catalog type '%v'", obj.Type))
 		}
 	}
 
@@ -139,55 +145,55 @@ func marshalCatalog(dialect rpc.Dialect, objs []*drivers.CatalogObject) string {
 	return string(data)
 }
 
-func typeCodeToSQLType(t api.Type_Code) string {
+func typeCodeToSQLType(t runtimev1.Type_Code) string {
 	switch t {
-	case api.Type_CODE_BOOL:
+	case runtimev1.Type_CODE_BOOL:
 		return "BOOLEAN"
-	case api.Type_CODE_INT8:
+	case runtimev1.Type_CODE_INT8:
 		return "TINYINT"
-	case api.Type_CODE_INT16:
+	case runtimev1.Type_CODE_INT16:
 		return "SMALLINT"
-	case api.Type_CODE_INT32:
+	case runtimev1.Type_CODE_INT32:
 		return "INTEGER"
-	case api.Type_CODE_INT64:
+	case runtimev1.Type_CODE_INT64:
 		return "BIGINT"
-	case api.Type_CODE_INT128:
+	case runtimev1.Type_CODE_INT128:
 		return "HUGEINT"
-	case api.Type_CODE_UINT8:
+	case runtimev1.Type_CODE_UINT8:
 		return "UTINYINT"
-	case api.Type_CODE_UINT16:
+	case runtimev1.Type_CODE_UINT16:
 		return "USMALLINT"
-	case api.Type_CODE_UINT32:
+	case runtimev1.Type_CODE_UINT32:
 		return "UINTEGER"
-	case api.Type_CODE_UINT64:
+	case runtimev1.Type_CODE_UINT64:
 		return "UBIGINT"
-	case api.Type_CODE_UINT128:
+	case runtimev1.Type_CODE_UINT128:
 		return "HUGEINT"
-	case api.Type_CODE_FLOAT32:
+	case runtimev1.Type_CODE_FLOAT32:
 		return "FLOAT"
-	case api.Type_CODE_FLOAT64:
+	case runtimev1.Type_CODE_FLOAT64:
 		return "DOUBLE"
-	case api.Type_CODE_TIMESTAMP:
+	case runtimev1.Type_CODE_TIMESTAMP:
 		return "TIMESTAMP"
-	case api.Type_CODE_DATE:
+	case runtimev1.Type_CODE_DATE:
 		return "DATE"
-	case api.Type_CODE_TIME:
+	case runtimev1.Type_CODE_TIME:
 		return "TIME"
-	case api.Type_CODE_STRING:
+	case runtimev1.Type_CODE_STRING:
 		return "VARCHAR"
-	case api.Type_CODE_BYTES:
+	case runtimev1.Type_CODE_BYTES:
 		return "BLOB"
-	case api.Type_CODE_ARRAY:
+	case runtimev1.Type_CODE_ARRAY:
 		return "LIST"
-	case api.Type_CODE_STRUCT:
+	case runtimev1.Type_CODE_STRUCT:
 		return "STRUCT"
-	case api.Type_CODE_MAP:
+	case runtimev1.Type_CODE_MAP:
 		return "MAP"
-	case api.Type_CODE_DECIMAL:
+	case runtimev1.Type_CODE_DECIMAL:
 		return "DECIMAL"
-	case api.Type_CODE_JSON:
+	case runtimev1.Type_CODE_JSON:
 		return "VARCHAR"
-	case api.Type_CODE_UUID:
+	case runtimev1.Type_CODE_UUID:
 		return "VARCHAR"
 	default:
 		return "ANY" // TODO: verify

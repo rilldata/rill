@@ -1,9 +1,9 @@
 <script>
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { isMac } from "@rilldata/web-local/lib/util/os-detection";
-  import Shortcut from "../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../tooltip/StackingWord.svelte";
-  import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
 
   export let sourceName;
 </script>
@@ -16,7 +16,7 @@
 </TooltipTitle>
 <TooltipShortcutContainer>
   <div>
-    <StackingWord key="command">query</StackingWord> in workspace
+    <StackingWord key="command">Query</StackingWord> in workspace
   </div>
   <Shortcut>
     {#if isMac()}<span
@@ -27,7 +27,7 @@
       >{:else}ctrl{/if} + Click</Shortcut
   >
   <div>
-    <StackingWord key="shift">copy</StackingWord> name to clipboard
+    <StackingWord key="shift">Copy</StackingWord> name to clipboard
   </div>
   <Shortcut>
     <span

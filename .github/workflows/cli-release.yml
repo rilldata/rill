@@ -1,0 +1,96 @@
+name: Release Rill CLI
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "**"
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  release:
+    name: Release rill-developer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Fetch tags required by goreleaser
+        run: git fetch --prune --unshallow
+
+      - name: Checkout sysroot for cross compilation
+        uses: actions/checkout@v3
+        with:
+          repository: goreleaser/goreleaser-cross-example-sysroot
+          path: sysroot
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Build and embed static UI
+        run: make cli.prepare
+
+      - name: Set up release environment
+        run: |-
+          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
+          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
+          echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
+          echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
+
+      - name: Release Publish
+        run: |-
+          if [[ ${{ github.event_name }} == "schedule" ]]; then
+            export NIGHTLY="--snapshot"
+          fi
+
+          docker run \
+              --rm \
+              --privileged \
+              -e CGO_ENABLED=1 \
+              --env-file .release-env \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v `pwd`:/go/src/rilldata/rill-developer \
+              -v `pwd`/sysroot:/sysroot \
+              -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
+              -w /go/src/rilldata/rill-developer \
+              goreleaser/goreleaser-cross:v1.19.2 \
+              release ${NIGHTLY}
+
+      - name: Authenticate GCS
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Upload install script to CDN
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/
+
+      - name: Publish nightly docker image
+        if: github.event_name == 'schedule'
+        run: |-
+          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
+          docker tag rilldata/rill:latest rilldata/rill:nightly
+          docker push rilldata/rill:nightly
+
+      - name: Prepare for nightly GCS upload
+        if: github.event_name == 'schedule'
+        run: |-
+          mkdir nightly
+          cp dist/*.zip nightly/
+          cp dist/checksums.txt nightly/
+
+      - name: Upload nightly to CDN
+        if: github.event_name == 'schedule'
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: nightly/
+          destination: prod-cdn.rilldata.com/rill/

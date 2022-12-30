@@ -7,10 +7,10 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
-	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -24,17 +24,19 @@ import (
 )
 
 type Config struct {
-	Env            string        `default:"development"`
-	HTTPPort       int           `default:"8080" split_words:"true"`
-	GRPCPort       int           `default:"9090" split_words:"true"`
-	LogLevel       zapcore.Level `default:"info" split_words:"true"`
-	DatabaseDriver string        `default:"sqlite"`
-	DatabaseURL    string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	Env                 string        `default:"development"`
+	HTTPPort            int           `default:"8080" split_words:"true"`
+	GRPCPort            int           `default:"9090" split_words:"true"`
+	LogLevel            zapcore.Level `default:"info" split_words:"true"`
+	DatabaseDriver      string        `default:"sqlite"`
+	DatabaseURL         string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	ConnectionCacheSize int           `default:"100" split_words:"true"`
+	QueryCacheSize      int           `default:"10000" split_words:"true"`
 }
 
 func main() {
 	// Load .env (note: fails silently if .env has errors)
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	// Init config
 	var conf Config
@@ -56,23 +58,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Open metadata db connection
-	metastore, err := drivers.Open(conf.DatabaseDriver, conf.DatabaseURL)
-	if err != nil {
-		logger.Fatal("error: could not connect to metadata db", zap.Error(err))
+	// Init runtime
+	opts := &runtime.Options{
+		ConnectionCacheSize: conf.ConnectionCacheSize,
+		MetastoreDriver:     conf.DatabaseDriver,
+		MetastoreDSN:        conf.DatabaseURL,
+		QueryCacheSize:      conf.QueryCacheSize,
 	}
-	err = metastore.Migrate(context.Background())
+	rt, err := runtime.New(opts, logger)
 	if err != nil {
-		logger.Fatal("error: metadata db migration", zap.Error(err))
+		logger.Fatal("error: could not create runtime", zap.Error(err))
 	}
 
 	// Init server
-	opts := &server.ServerOptions{
-		HTTPPort:            conf.HTTPPort,
-		GRPCPort:            conf.GRPCPort,
-		ConnectionCacheSize: 100,
+	srvOpts := &server.Options{
+		HTTPPort: conf.HTTPPort,
+		GRPCPort: conf.GRPCPort,
 	}
-	server, err := server.NewServer(opts, metastore, logger)
+	s, err := server.NewServer(srvOpts, rt, logger)
 	if err != nil {
 		logger.Fatal("error: could not create server", zap.Error(err))
 	}
@@ -80,8 +83,8 @@ func main() {
 	// Run server
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 	group, cctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return server.ServeGRPC(cctx) })
-	group.Go(func() error { return server.ServeHTTP(cctx) })
+	group.Go(func() error { return s.ServeGRPC(cctx) })
+	group.Go(func() error { return s.ServeHTTP(cctx) })
 	err = group.Wait()
 	if err != nil {
 		logger.Fatal("server crashed", zap.Error(err))

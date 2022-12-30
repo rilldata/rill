@@ -9,15 +9,15 @@ import (
 	"unicode/utf8"
 
 	"github.com/marcboeker/go-duckdb"
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Query implements RuntimeService
-func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryResponse, error) {
+// Query implements RuntimeService.
+func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
 	args := make([]any, len(req.Args))
 	for i, arg := range req.Args {
 		args[i] = arg.AsInterface()
@@ -36,8 +36,8 @@ func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryRe
 
 	if req.DryRun {
 		// TODO: Return a meta object for dry-run queries
-		// NOTE: Currently, instance.Query return nil rows for succesful dry-run queries
-		return &api.QueryResponse{}, nil
+		// NOTE: Currently, instance.Query return nil rows for successful dry-run queries
+		return &runtimev1.QueryResponse{}, nil
 	}
 
 	defer res.Close()
@@ -47,7 +47,7 @@ func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	resp := &api.QueryResponse{
+	resp := &runtimev1.QueryResponse{
 		Meta: res.Schema,
 		Data: data,
 	}
@@ -55,38 +55,11 @@ func (s *Server) Query(ctx context.Context, req *api.QueryRequest) (*api.QueryRe
 	return resp, nil
 }
 
-// QueryDirect implements RuntimeService
-func (s *Server) QueryDirect(ctx context.Context, req *api.QueryDirectRequest) (*api.QueryDirectResponse, error) {
-	// NOTE: Deprecated – just proxy to Query
-	res, err := s.Query(ctx, &api.QueryRequest{
-		InstanceId: req.InstanceId,
-		Sql:        req.Sql,
-		Args:       req.Args,
-		Priority:   req.Priority,
-		DryRun:     req.DryRun,
-	})
+func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
+	olap, err := s.runtime.OLAP(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
-
-	return &api.QueryDirectResponse{
-		Meta: res.Meta,
-		Data: res.Data,
-	}, nil
-}
-
-func (s *Server) query(ctx context.Context, instanceID string, stmt *drivers.Statement) (*drivers.Result, error) {
-	registry, _ := s.metastore.RegistryStore()
-	inst, found := registry.FindInstance(ctx, instanceID)
-	if !found {
-		return nil, status.Error(codes.NotFound, "instance not found")
-	}
-
-	conn, err := s.connCache.openAndMigrate(ctx, inst.ID, inst.Driver, inst.DSN)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-	olap, _ := conn.OLAPStore()
 
 	return olap.Execute(ctx, stmt)
 }
@@ -159,7 +132,7 @@ func valToPB(v any) (*structpb.Value, error) {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			return structpb.NewNullValue(), nil
 		}
-		return structpb.NewNumberValue(float64(v)), nil
+		return structpb.NewNumberValue(v), nil
 	case *big.Int:
 		// Evil cast to float until frontend can deal with bigs:
 		v2, _ := new(big.Float).SetInt(v).Float64()

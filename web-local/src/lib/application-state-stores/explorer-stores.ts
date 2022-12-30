@@ -1,9 +1,9 @@
-import type { TimeSeriesTimeRange } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
 import type {
-  MetricsViewMetaResponse,
-  MetricsViewRequestFilter,
-} from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-import { removeIfExists } from "@rilldata/web-local/common/utils/arrayUtils";
+  V1MetricsView,
+  V1MetricsViewFilter,
+} from "@rilldata/web-common/runtime-client";
+import type { TimeSeriesTimeRange } from "@rilldata/web-local/lib/temp/time-control-types";
+import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { Readable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
@@ -13,26 +13,25 @@ export interface LeaderboardValue {
 
 export interface LeaderboardValues {
   values: Array<LeaderboardValue>;
-  dimensionId: string;
-  dimensionName?: string;
+  dimensionName: string;
 }
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
 export interface MetricsExplorerEntity {
-  id: string;
-  // selected measure IDs to be shown
-  selectedMeasureIds: Array<string>;
+  name: string;
+  // selected measure names to be shown
+  selectedMeasureNames: Array<string>;
   // this is used to show leaderboard values
-  leaderboardMeasureId: string;
-  filters: MetricsViewRequestFilter;
+  leaderboardMeasureName: string;
+  filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
-  selectedDimensionId?: string;
+  selectedDimensionName?: string;
 }
 
 export interface MetricsExplorerStoreType {
@@ -42,49 +41,50 @@ const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
 
-const updateMetricsExplorerById = (
-  id: string,
+const updateMetricsExplorerByName = (
+  name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
   absenceCallback?: () => MetricsExplorerEntity
 ) => {
   update((state) => {
-    if (!state.entities[id]) {
+    if (!state.entities[name]) {
       if (absenceCallback) {
-        state.entities[id] = absenceCallback();
+        state.entities[name] = absenceCallback();
       }
       return state;
     }
-    callback(state.entities[id]);
+    callback(state.entities[name]);
     return state;
   });
 };
 
 const metricViewReducers = {
-  sync(id: string, meta: MetricsViewMetaResponse) {
-    if (!id || !meta || !meta.measures) return;
-    updateMetricsExplorerById(
-      id,
+  sync(name: string, meta: V1MetricsView) {
+    if (!name || !meta || !meta.measures) return;
+    updateMetricsExplorerByName(
+      name,
       (metricsExplorer) => {
         // sync measures with selected leaderboard measure.
         if (
           meta.measures.length &&
-          (!metricsExplorer.leaderboardMeasureId ||
+          (!metricsExplorer.leaderboardMeasureName ||
             !meta.measures.find(
-              (measure) => measure.id === metricsExplorer.leaderboardMeasureId
+              (measure) =>
+                measure.name === metricsExplorer.leaderboardMeasureName
             ))
         ) {
-          metricsExplorer.leaderboardMeasureId = meta.measures[0].id;
+          metricsExplorer.leaderboardMeasureName = meta.measures[0].name;
         } else if (!meta.measures.length) {
-          metricsExplorer.leaderboardMeasureId = undefined;
+          metricsExplorer.leaderboardMeasureName = undefined;
         }
-        metricsExplorer.selectedMeasureIds = meta.measures.map(
-          (measure) => measure.id
+        metricsExplorer.selectedMeasureNames = meta.measures.map(
+          (measure) => measure.name
         );
       },
       () => ({
-        id,
-        selectedMeasureIds: meta.measures.map((measure) => measure.id),
-        leaderboardMeasureId: meta.measures[0]?.id,
+        name,
+        selectedMeasureNames: meta.measures.map((measure) => measure.name),
+        leaderboardMeasureName: meta.measures[0]?.name,
         filters: {
           include: [],
           exclude: [],
@@ -94,41 +94,41 @@ const metricViewReducers = {
     );
   },
 
-  setLeaderboardMeasureId(id: string, measureId: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureId = measureId;
+  setLeaderboardMeasureName(name: string, measureName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardMeasureName = measureName;
     });
   },
 
-  clearLeaderboardMeasureId(id: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureId = undefined;
+  clearLeaderboardMeasureName(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardMeasureName = undefined;
     });
   },
 
-  setSelectedTimeRange(id: string, timeRange: TimeSeriesTimeRange) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
+  setSelectedTimeRange(name: string, timeRange: TimeSeriesTimeRange) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
     });
   },
 
-  setMetricDimensionId(id: string, dimensionId: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
-      metricsExplorer.selectedDimensionId = dimensionId;
+  setMetricDimensionName(name: string, dimensionName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.selectedDimensionName = dimensionName;
     });
   },
 
-  toggleFilter(id: string, dimensionId: string, dimensionValue: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
+  toggleFilter(name: string, dimensionName: string, dimensionValue: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionId
+        dimensionName
       )
         ? "exclude"
         : "include";
 
       const dimensionEntryIndex = metricsExplorer.filters[
         relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionId);
+      ].findIndex((filter) => filter.name === dimensionName);
 
       if (dimensionEntryIndex >= 0) {
         if (
@@ -154,32 +154,36 @@ const metricViewReducers = {
         );
       } else {
         metricsExplorer.filters[relevantFilterKey].push({
-          name: dimensionId,
+          name: dimensionName,
           in: [dimensionValue],
         });
       }
     });
   },
 
-  clearFilters(id: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
+  clearFilters(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.filters.include = [];
       metricsExplorer.filters.exclude = [];
       metricsExplorer.dimensionFilterExcludeMode.clear();
     });
   },
 
-  clearFilterForDimension(id: string, dimensionId: string, include: boolean) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
+  clearFilterForDimension(
+    name: string,
+    dimensionName: string,
+    include: boolean
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (include) {
         removeIfExists(
           metricsExplorer.filters.include,
-          (dimensionValues) => dimensionValues.name === dimensionId
+          (dimensionValues) => dimensionValues.name === dimensionName
         );
       } else {
         removeIfExists(
           metricsExplorer.filters.exclude,
-          (dimensionValues) => dimensionValues.name === dimensionId
+          (dimensionValues) => dimensionValues.name === dimensionName
         );
       }
     });
@@ -188,18 +192,18 @@ const metricViewReducers = {
   /**
    * Toggle a dimension filter between include/exclude modes
    */
-  toggleFilterMode(id: string, dimensionId: string) {
-    updateMetricsExplorerById(id, (metricsExplorer) => {
+  toggleFilterMode(name: string, dimensionName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
       const exclude =
-        metricsExplorer.dimensionFilterExcludeMode.get(dimensionId);
-      metricsExplorer.dimensionFilterExcludeMode.set(dimensionId, !exclude);
+        metricsExplorer.dimensionFilterExcludeMode.get(dimensionName);
+      metricsExplorer.dimensionFilterExcludeMode.set(dimensionName, !exclude);
 
       const relevantFilterKey = exclude ? "exclude" : "include";
       const otherFilterKey = exclude ? "include" : "exclude";
 
       const otherFilterEntryIndex = metricsExplorer.filters[
         relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionId);
+      ].findIndex((filter) => filter.name === dimensionName);
       // if relevant filter is not present then return
       if (otherFilterEntryIndex === -1) return;
 

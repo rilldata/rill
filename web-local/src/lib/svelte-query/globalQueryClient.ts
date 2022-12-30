@@ -3,9 +3,8 @@
  */
 import { QueryClient } from "@sveltestack/svelte-query";
 
-export let queryClient: QueryClient;
 export function createQueryClient() {
-  queryClient = new QueryClient({
+  return new QueryClient({
     defaultOptions: {
       queries: {
         refetchOnMount: false,

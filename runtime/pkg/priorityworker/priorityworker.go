@@ -7,10 +7,10 @@ import (
 	"sync"
 )
 
-// ErrStopped is returned for outstanding items when the queue is stopped
+// ErrStopped is returned for outstanding items when the queue is stopped.
 var ErrStopped = errors.New("priorityqueue: stopped")
 
-// Handler is a callback called by PriorityWorker to process an item
+// Handler is a callback called by PriorityWorker to process an item.
 type Handler[V any] func(context.Context, V) error
 
 // PriorityWorker implements a concurrency-safe worker that prioritizes work
@@ -82,12 +82,12 @@ func (pw *PriorityWorker[V]) Pause() {
 	pw.pausedToggleCh <- true
 }
 
-// Unpause reverses Pause
+// Unpause reverses Pause.
 func (pw *PriorityWorker[V]) Unpause() {
 	pw.pausedToggleCh <- false
 }
 
-// Stop cancels all jobs that haven't started, and returns once the current job has finished
+// Stop cancels all jobs that haven't started, and returns once the current job has finished.
 func (pw *PriorityWorker[V]) Stop() {
 	pw.stoppedMu.Lock()
 	pw.stopped = true
@@ -153,7 +153,6 @@ func (pw *PriorityWorker[V]) work() {
 				currentDoneCh = job.doneCh
 				go pw.handle(job)
 			}
-
 		}
 	}
 }
@@ -162,6 +161,7 @@ func (pw *PriorityWorker[V]) handle(job *item[V]) {
 	// Bail if the job's ctx is cancelled
 	// (Unlikely to happen given other safeguards)
 	if job.ctx.Err() != nil {
+		job.err = job.ctx.Err()
 		close(job.doneCh)
 		return
 	}
@@ -172,7 +172,7 @@ func (pw *PriorityWorker[V]) handle(job *item[V]) {
 	close(job.doneCh)
 }
 
-// item represents a job enqueued in priorityQueue
+// item represents a job enqueued in priorityQueue.
 type item[V any] struct {
 	// Worker related fields
 	ctx    context.Context // ctx from caller

@@ -1,17 +1,10 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { OnboardingWorkspace } from "@rilldata/web-local/lib/components/workspace";
-  // clear any existing active asset
-  $: dataModelerService.dispatch("setActiveAsset", [
-    EntityType.Table,
-    undefined,
-  ]);
+  import { OnboardingWorkspace } from "@rilldata/web-common/features/onboarding";
 </script>
 
 <svelte:head>
   <title>Rill Developer</title>
-  <meta name="Description" content="DESCRIPTION" />
+  <meta content="DESCRIPTION" name="Description" />
 </svelte:head>
 
 <OnboardingWorkspace />

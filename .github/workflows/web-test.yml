@@ -1,0 +1,40 @@
+name: Build and Test web code
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/web-test.yml"
+      - "web-admin/**"
+      - "web-common/**"
+      - "web-local/**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: NPM Install
+        run: npm install
+
+      - name: Prettier checks for web
+        run: |-
+          npx prettier --check "web-admin/**/*"
+          npx prettier --check "web-common/**/*"
+          npx prettier --check "web-local/**/*"
+
+      - name: Install browser for UI tests
+        run: npx playwright install
+
+      - name: Build the application
+        run: npm run build
+
+      - name: Verify lint of the repo
+        run: npm run lint -w web-local -- --quiet
+
+      - name: Run all tests
+        run: npm run test

@@ -8,6 +8,12 @@ divider
 see more button
 -->
 <script lang="ts">
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher } from "svelte";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
@@ -20,6 +26,8 @@ see more button
   export let referenceValue;
   export let atLeastOneActive;
   export let loading = false;
+
+  const { shiftClickAction } = createShiftClickAction();
 
   const dispatch = createEventDispatcher();
   let renderValues = [];
@@ -40,7 +48,20 @@ see more button
 </script>
 
 {#each renderValues as { label, value, __formatted_value, active, excluded } (label)}
-  <div>
+  <div
+    use:shiftClickAction
+    on:click={() => {
+      dispatch("select-item", {
+        label,
+      });
+    }}
+    on:shift-click={async () => {
+      await navigator.clipboard.writeText(value);
+      notifications.send({
+        message: `copied column name "${value}" to clipboard`,
+      });
+    }}
+  >
     <DimensionLeaderboardEntry
       measureValue={value}
       {loading}
@@ -49,11 +70,6 @@ see more button
       {atLeastOneActive}
       {active}
       {excluded}
-      on:click={() => {
-        dispatch("select-item", {
-          label,
-        });
-      }}
     >
       <svelte:fragment slot="label">
         {label}
@@ -62,22 +78,40 @@ see more button
         {__formatted_value || value || "∅"}
       </svelte:fragment>
       <svelte:fragment slot="tooltip">
-        {#if atLeastOneActive}
+        <TooltipTitle>
+          <svelte:fragment slot="name">
+            {label}
+          </svelte:fragment>
+        </TooltipTitle>
+
+        <TooltipShortcutContainer>
+          {#if atLeastOneActive}
+            <div>
+              {excluded ? "Include" : "Exclude"}
+              <span class="italic">{label}</span>
+              {excluded ? "in" : "from"} output
+            </div>
+          {:else}
+            <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+              Filter {filterExcludeMode ? "out" : "on"}
+              <span class="italic"
+                >{label?.length > TOOLTIP_STRING_LIMIT
+                  ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."
+                  : label}</span
+              >
+            </div>
+          {/if}
+          <Shortcut>Click</Shortcut>
+        </TooltipShortcutContainer>
+        <TooltipShortcutContainer>
           <div>
-            {excluded ? "include" : "exclude"}
-            <span class="italic">{label}</span>
-            {excluded ? "in" : "from"} output
+            <StackingWord key="shift">Copy</StackingWord>
+            {value} to clipboard
           </div>
-        {:else}
-          <div>
-            filter {filterExcludeMode ? "out" : "on"}
-            <span class="italic"
-              >{label?.length > TOOLTIP_STRING_LIMIT
-                ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."
-                : label}</span
-            >
-          </div>
-        {/if}
+          <Shortcut>
+            <span style="font-family: var(--system);">⇧</span> + Click
+          </Shortcut>
+        </TooltipShortcutContainer>
       </svelte:fragment>
     </DimensionLeaderboardEntry>
   </div>

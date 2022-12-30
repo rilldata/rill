@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { SelectMenu } from "@rilldata/web-local/lib/components/menu";
-  import Tooltip from "@rilldata/web-local/lib/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-local/lib/components/tooltip/TooltipContent.svelte";
+  import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const singleSelectorOptions = [
     { key: 0, main: "option 1", right: "opt1" },
@@ -126,9 +126,8 @@
               <div class="flex justify-between w-full gap-x-4">
                 {singleSelection?.main}
                 <span
-                  class="{level === 'error'
-                    ? 'text-red-600'
-                    : 'text-gray-500'} italic">{singleSelection?.right}</span
+                  class={level === "error" ? "text-red-600" : "text-gray-500"}
+                  >{singleSelection?.right}</span
                 >
               </div>
             </SelectMenu>

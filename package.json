@@ -3,18 +3,18 @@
   "version": "0.10.0",
   "type": "module",
   "workspaces": [
-    "runtime",
-    "web-cloud",
+    "docs",
+    "docs-enterprise",
+    "web-admin",
     "web-common",
     "web-local"
   ],
   "scripts": {
     "build": "npm run build -w web-local",
-    "to-commonjs": "node build-tools/replace_package_type.cjs module commonjs",
-    "build-vercel-pkg": "node web-local/dist/web-local/src/cli/build-vercel-pkg.js",
-    "to-esm": "node build-tools/replace_package_type.cjs commonjs module",
-    "dev": "npm run dev -w web-local",
-    "cli": "ts-node-dev --quiet --project web-local/tsconfig.node.json -- web-local/src/cli/data-modeler-cli.ts",
+    "dev": "sh -c 'npm run dev-runtime & npm run dev-web & wait'",
+    "dev-web": "npm run dev -w web-local",
+    "dev-runtime": "go run cli/main.go start --no-ui --project dev-project",
+    "clean": "rm -rf dev-project",
     "test": "npm run test -w web-local"
   },
   "pkg": {

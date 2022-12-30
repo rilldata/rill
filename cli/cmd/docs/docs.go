@@ -1,38 +1,25 @@
 package docs
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
-var docsUrl = "https://docs.rilldata.com"
+var docsURL = "https://docs.rilldata.com"
 
-// docsCmd represents the docs command
+// docsCmd represents the docs command.
 func DocsCmd() *cobra.Command {
-	var docsCmd = &cobra.Command{
+	docsCmd := &cobra.Command{
 		Use:   "docs",
-		Short: "Show rill docs",
-		Long:  `A longer description`,
+		Short: "Open docs.rilldata.com",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := browser.Open(docsUrl)
+			err := browser.Open(docsURL)
 			if err != nil {
-				log.Fatalf("Couldn't open browser: %v", err)
+				fmt.Printf("Could not open browser. Copy this URL into your browser: %s\n", docsURL)
 			}
 		},
 	}
 	return docsCmd
-}
-
-func init() {
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// docsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// docsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

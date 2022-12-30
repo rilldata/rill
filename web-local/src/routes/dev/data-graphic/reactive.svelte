@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { tweened } from "svelte/motion";
   import {
+    Body,
     GraphicContext,
     SimpleDataGraphic,
-    Body,
-  } from "@rilldata/web-local/lib/components/data-graphic/elements";
-  import { Axis } from "@rilldata/web-local/lib/components/data-graphic/guides";
+  } from "@rilldata/web-common/components/data-graphic/elements";
   import {
-    Line,
-    Area,
-  } from "@rilldata/web-local/lib/components/data-graphic/marks";
-  import { makeTimeSeries } from "./_utils";
-  import { cubicOut, elasticOut } from "svelte/easing";
-  import {
-    WithTween,
     WithSimpleLinearScale,
-  } from "@rilldata/web-local/lib/components/data-graphic/functional-components";
+    WithTween,
+  } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
+  import {
+    Area,
+    Line,
+  } from "@rilldata/web-common/components/data-graphic/marks";
+  import { cubicOut, elasticOut } from "svelte/easing";
+  import { tweened } from "svelte/motion";
+  import { makeTimeSeries } from "./_utils";
 
   const data1 = makeTimeSeries();
   const data2 = makeTimeSeries();

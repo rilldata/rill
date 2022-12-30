@@ -4,34 +4,34 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 )
 
-// ListConnectors implements RuntimeService
-func (s *Server) ListConnectors(ctx context.Context, req *api.ListConnectorsRequest) (*api.ListConnectorsResponse, error) {
-	var pbs []*api.Connector
+// ListConnectors implements RuntimeService.
+func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnectorsRequest) (*runtimev1.ListConnectorsResponse, error) {
+	var pbs []*runtimev1.Connector
 	for name, connector := range connectors.Connectors {
 		// Build protobufs for properties
-		propPBs := make([]*api.Connector_Property, len(connector.Spec().Properties))
+		propPBs := make([]*runtimev1.Connector_Property, len(connector.Spec().Properties))
 		for j, propSchema := range connector.Spec().Properties {
 			// Get type
-			var t api.Connector_Property_Type
+			var t runtimev1.Connector_Property_Type
 			switch propSchema.Type {
 			case connectors.StringPropertyType:
-				t = api.Connector_Property_TYPE_STRING
+				t = runtimev1.Connector_Property_TYPE_STRING
 			case connectors.NumberPropertyType:
-				t = api.Connector_Property_TYPE_NUMBER
+				t = runtimev1.Connector_Property_TYPE_NUMBER
 			case connectors.BooleanPropertyType:
-				t = api.Connector_Property_TYPE_BOOLEAN
+				t = runtimev1.Connector_Property_TYPE_BOOLEAN
 			case connectors.InformationalPropertyType:
-				t = api.Connector_Property_TYPE_INFORMATIONAL
+				t = runtimev1.Connector_Property_TYPE_INFORMATIONAL
 			default:
 				panic(fmt.Errorf("property type '%v' not handled", propSchema.Type))
 			}
 
 			// Add protobuf for property
-			propPBs[j] = &api.Connector_Property{
+			propPBs[j] = &runtimev1.Connector_Property{
 				Key:         propSchema.Key,
 				DisplayName: propSchema.DisplayName,
 				Description: propSchema.Description,
@@ -44,7 +44,7 @@ func (s *Server) ListConnectors(ctx context.Context, req *api.ListConnectorsRequ
 		}
 
 		// Add connector
-		pbs = append(pbs, &api.Connector{
+		pbs = append(pbs, &runtimev1.Connector{
 			Name:        name,
 			DisplayName: connector.Spec().DisplayName,
 			Description: connector.Spec().Description,
@@ -52,5 +52,5 @@ func (s *Server) ListConnectors(ctx context.Context, req *api.ListConnectorsRequ
 		})
 	}
 
-	return &api.ListConnectorsResponse{Connectors: pbs}, nil
+	return &runtimev1.ListConnectorsResponse{Connectors: pbs}, nil
 }

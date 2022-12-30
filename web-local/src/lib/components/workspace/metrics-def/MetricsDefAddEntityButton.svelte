@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AddIcon from "../../icons/Add.svelte";
+  import AddIcon from "@rilldata/web-common/components/icons/Add.svelte";
 
   export let clickHandler;
   export let label: string;

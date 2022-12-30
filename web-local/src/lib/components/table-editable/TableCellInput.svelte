@@ -1,16 +1,15 @@
 <script lang="ts">
-  import { ValidationState } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MetricsDefinitionEntityService";
-  import AlertCircle from "../icons/AlertCircle.svelte";
-  import AlertTriangle from "../icons/AlertTriangle.svelte";
-
+  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
+  import AlertTriangle from "@rilldata/web-common/components/icons/AlertTriangle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
+  import { ValidationState } from "@rilldata/web-local/lib/temp/metrics";
   import type {
-    ColumnConfig,
     CellConfigInput,
+    ColumnConfig,
     InputValidation,
   } from "./ColumnConfig";
-  import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let columnConfig: ColumnConfig<CellConfigInput>;
   export let index = undefined;
@@ -88,21 +87,22 @@
 
 <td
   class="py-2 px-4 border border-gray-200 hover:bg-gray-200"
+  on:click={startEditing}
   style={editing
     ? "cursor:text; background:white; outline:1px solid #aaa;"
     : ""}
-  on:click={startEditing}
 >
   <div class="flex flex-row">
     <input
       autocomplete="off"
       bind:this={inputElt}
+      class={"table-input w-full text-ellipsis bg-inherit " +
+        (columnConfig?.customClass || "")}
       id="model-title-input"
-      class="table-input w-full text-ellipsis bg-inherit font-normal"
-      on:input={startEditing}
-      on:focus={startEditing}
       on:blur={stopEditing}
       on:change={onchangeHandler}
+      on:focus={startEditing}
+      on:input={startEditing}
       on:keyup={onkeyupHandler}
       value={value ?? ""}
     />

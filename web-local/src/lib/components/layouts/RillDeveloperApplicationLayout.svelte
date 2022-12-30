@@ -1,53 +1,51 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { QueryClientProvider } from "@sveltestack/svelte-query";
+  import { getContext, onMount } from "svelte";
+  import type { Writable } from "svelte/store";
   import {
-    ApplicationStore,
     duplicateSourceName,
     runtimeStore,
-  } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { config } from "@rilldata/web-local/lib/application-state-stores/application-store.js";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
+  } from "../../application-state-stores/application-store";
+  import type { ApplicationBuildMetadata } from "../../application-state-stores/build-metadata";
+  import { fileArtifactsStore } from "../../application-state-stores/file-artifacts-store";
   import {
     importOverlayVisible,
     overlay,
     quickStartDashboardOverlay,
-  } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
-  import DuplicateSource from "@rilldata/web-local/lib/components/navigation/sources/DuplicateSource.svelte";
-  import NotificationCenter from "@rilldata/web-local/lib/components/notifications/NotificationCenter.svelte";
-  import ExportingDataset from "@rilldata/web-local/lib/components/overlay/ExportingDataset.svelte";
-  import FileDrop from "@rilldata/web-local/lib/components/overlay/FileDrop.svelte";
-  import ImportingTable from "@rilldata/web-local/lib/components/overlay/ImportingTable.svelte";
-  import PreparingImport from "@rilldata/web-local/lib/components/overlay/PreparingImport.svelte";
-  import QuickStartDashboard from "@rilldata/web-local/lib/components/overlay/QuickStartDashboard.svelte";
-  import ConfigProvider from "@rilldata/web-local/lib/config/ConfigProvider.svelte";
-  import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import {
-    createQueryClient,
-    queryClient,
-  } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
-  import { QueryClientProvider } from "@sveltestack/svelte-query";
-  import { getContext, onMount } from "svelte";
+  } from "../../application-state-stores/overlay-store";
+  import { initMetrics } from "../../metrics/initMetrics";
+  import { getArtifactErrors } from "../../svelte-query/getArtifactErrors";
+  import { createQueryClient } from "../../svelte-query/globalQueryClient";
+  import DuplicateSource from "../navigation/sources/DuplicateSource.svelte";
   import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
+  import FileDrop from "../overlay/FileDrop.svelte";
+  import PreparingImport from "../overlay/PreparingImport.svelte";
+  import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
-  createQueryClient();
+
+  const queryClient = createQueryClient();
+
+  const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
+    getContext("rill:app:metadata");
 
   onMount(async () => {
-    const instanceResp = await fetchWrapper("v1/runtime/instance-id", "GET");
+    const localConfig = await runtimeServiceGetConfig();
 
     runtimeStore.set({
-      instanceId: instanceResp.instanceId,
-      repoId: instanceResp.repoId,
+      instanceId: localConfig.instance_id,
     });
 
-    return initMetrics();
+    appBuildMetaStore.set({
+      version: localConfig.version,
+      commitHash: localConfig.build_commit,
+    });
+
+    const res = await getArtifactErrors(localConfig.instance_id);
+    fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
+
+    return initMetrics(localConfig);
   });
 
   let dbRunState = "disconnected";
@@ -64,36 +62,8 @@
 
   let showDropOverlay = false;
 
-  const app = getContext("rill:app:store") as ApplicationStore;
-  $: debounceRunstate($app?.status || "disconnected");
-
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  // get any importing tables
-  $: derivedImportedTable = $derivedTableStore?.entities?.find(
-    (table) => table.status === EntityStatus.Importing
-  );
-  $: persistentImportedTable = $persistentTableStore?.entities?.find(
-    (table) => table.id === derivedImportedTable?.id
-  );
-  // get any exporting datasets.
-  $: derivedExportedModel = $derivedModelStore?.entities?.find(
-    (model) => model.status === EntityStatus.Exporting
-  );
-  $: persistentExportedModel = $persistentModelStore?.entities?.find(
-    (model) => model.id === derivedExportedModel?.id
-  );
+  // TODO: add new global run state
+  $: debounceRunstate("disconnected");
 
   function isEventWithFiles(event: DragEvent) {
     let types = event.dataTransfer.types;
@@ -102,54 +72,45 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <ConfigProvider {config}>
-    <div class="body">
-      {#if derivedExportedModel && persistentExportedModel}
-        <ExportingDataset tableName={persistentExportedModel.name} />
-      {:else if derivedImportedTable && persistentImportedTable}
-        <ImportingTable
-          importName={persistentImportedTable.path}
-          tableName={persistentImportedTable.name}
-        />
-      {:else if $importOverlayVisible}
-        <PreparingImport />
-      {:else if $quickStartDashboardOverlay?.show}
-        <QuickStartDashboard
-          sourceName={$quickStartDashboardOverlay.sourceName}
-          timeDimension={$quickStartDashboardOverlay.timeDimension}
-        />
-      {:else if showDropOverlay}
-        <FileDrop bind:showDropOverlay />
-      {:else if $overlay !== null}
-        <BlockingOverlayContainer
-          bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-        >
-          <div slot="title">
-            <span class="font-bold">{$overlay?.title}</span>
-          </div>
-        </BlockingOverlayContainer>
-      {/if}
-
-      {#if $duplicateSourceName !== null}
-        <DuplicateSource />
-      {/if}
-
-      <div
-        class="index-body absolute w-screen h-screen"
-        on:dragenter|preventDefault|stopPropagation
-        on:dragleave|preventDefault|stopPropagation
-        on:dragover|preventDefault|stopPropagation={(e) => {
-          if (isEventWithFiles(e)) showDropOverlay = true;
-        }}
-        on:drag|preventDefault|stopPropagation
-        on:drop|preventDefault|stopPropagation
+  <div class="body">
+    {#if $importOverlayVisible}
+      <PreparingImport />
+    {:else if $quickStartDashboardOverlay?.show}
+      <QuickStartDashboard
+        sourceName={$quickStartDashboardOverlay.sourceName}
+        timeDimension={$quickStartDashboardOverlay.timeDimension}
+      />
+    {:else if showDropOverlay}
+      <FileDrop bind:showDropOverlay />
+    {:else if $overlay !== null}
+      <BlockingOverlayContainer
+        bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
       >
-        <BasicLayout>
-          <slot />
-        </BasicLayout>
-      </div>
+        <div slot="title">
+          <span class="font-bold">{$overlay?.title}</span>
+        </div>
+      </BlockingOverlayContainer>
+    {/if}
+
+    {#if $duplicateSourceName !== null}
+      <DuplicateSource />
+    {/if}
+
+    <div
+      class="index-body absolute w-screen h-screen"
+      on:dragenter|preventDefault|stopPropagation
+      on:dragleave|preventDefault|stopPropagation
+      on:dragover|preventDefault|stopPropagation={(e) => {
+        if (isEventWithFiles(e)) showDropOverlay = true;
+      }}
+      on:drag|preventDefault|stopPropagation
+      on:drop|preventDefault|stopPropagation
+    >
+      <BasicLayout>
+        <slot />
+      </BasicLayout>
     </div>
-  </ConfigProvider>
+  </div>
 </QueryClientProvider>
 
 <NotificationCenter />

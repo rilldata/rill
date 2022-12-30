@@ -1,12 +1,20 @@
-import Axios, { AxiosRequestConfig } from "axios";
+import { HttpRequestQueue } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueue";
+import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
+import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrapper";
 
-export const AXIOS_INSTANCE = Axios.create({
-  baseURL: "http://localhost:8081",
-});
+let RuntimeUrl = "";
+try {
+  RuntimeUrl = RILL_RUNTIME_URL;
+} catch (e) {
+  // no-op
+}
 
-export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {
-  const { data } = await AXIOS_INSTANCE(config);
-  return data;
+export const httpRequestQueue = new HttpRequestQueue(RuntimeUrl);
+
+export const httpClient = async <T>(
+  config: FetchWrapperOptions
+): Promise<T> => {
+  return (await httpRequestQueue.add(config)) as Promise<T>;
 };
 
 export default httpClient;

@@ -1,17 +1,17 @@
 <script lang="ts">
+  import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
-  import { createShiftClickAction } from "../../../util/shift-click-action";
-  import { DataTypeIcon } from "../../data-types";
-  import ArrowDown from "../../icons/ArrowDown.svelte";
-  import Pin from "../../icons/Pin.svelte";
-  import notificationStore from "../../notifications";
-  import Shortcut from "../../tooltip/Shortcut.svelte";
-  import StackingWord from "../../tooltip/StackingWord.svelte";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "../../tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "../../tooltip/TooltipTitle.svelte";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -72,7 +72,7 @@
     use:shiftClickAction
     on:shift-click={async () => {
       await navigator.clipboard.writeText(name);
-      notificationStore.send({
+      notifications.send({
         message: `copied column name "${name}" to clipboard`,
       });
     }}
@@ -120,7 +120,7 @@
         </TooltipTitle>
         <TooltipShortcutContainer>
           <div>
-            <StackingWord key="shift">copy</StackingWord>
+            <StackingWord key="shift">Copy</StackingWord>
             column name to clipboard
           </div>
           <Shortcut>

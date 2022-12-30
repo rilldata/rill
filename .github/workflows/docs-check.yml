@@ -1,0 +1,24 @@
+name: Build and Test docs
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/docs-check.yml"
+      - "docs/**"
+      - "docs-enterprise/**"
+jobs:
+  build:
+    strategy:
+      matrix:
+        name: ["docs", "docs-enterprise"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Build ${{ matrix.name }}
+        run: npm install -w ${{ matrix.name }} && npm run build -w ${{ matrix.name }}

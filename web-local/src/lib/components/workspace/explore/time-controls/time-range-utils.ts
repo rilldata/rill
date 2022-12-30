@@ -3,7 +3,7 @@ import {
   TimeGrain,
   TimeRangeName,
   TimeSeriesTimeRange,
-} from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+} from "@rilldata/web-local/lib/temp/time-control-types";
 
 // TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
 export const getSelectableTimeRangeNames = (
@@ -287,7 +287,7 @@ export const formatDateByInterval = (
 ): string => {
   if (!interval || !date) return "";
   switch (interval) {
-    case "1 minute":
+    case "minute":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
@@ -295,47 +295,31 @@ export const formatDateByInterval = (
         hour: "numeric",
         minute: "numeric",
       });
-    case "5 minute":
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-      });
-    case "15 minute":
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-      });
-    case "1 hour":
+    case "hour":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
         hour: "numeric",
       });
-    case "1 day":
+    case "day":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
       });
-    case "7 day":
+    case "week":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
       });
-    case "1 month":
+    case "month":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
       });
-    case "1 year":
+    case "year":
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
       });

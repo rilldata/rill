@@ -1,98 +1,91 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import type { TimeSeriesValue } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
-  import type { MetricsViewTimeSeriesResponse } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
+  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
+  import {
+    useRuntimeServiceMetricsViewTimeSeries,
+    useRuntimeServiceMetricsViewTotals,
+    V1MetricsViewTimeSeriesResponse,
+    V1MetricsViewTotalsResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { extent } from "d3-array";
+  import { fly } from "svelte/transition";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import SimpleDataGraphic from "../../../data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithBisector } from "../../../data-graphic/functional-components";
-  import { Axis } from "../../../data-graphic/guides";
-  import CrossIcon from "../../../icons/CrossIcon.svelte";
-  import Spinner from "../../../Spinner.svelte";
-  import {
-    useMetaMappedFilters,
-    useMetaMeasureNames,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { useTotalsQuery } from "../../../../svelte-query/queries/metrics-views/totals";
-  import { useTimeSeriesQuery } from "../../../../svelte-query/queries/metrics-views/time-series";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
-  import { removeTimezoneOffset } from "../../../../util/formatters";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { extent } from "d3-array";
-  import { getContext } from "svelte";
-  import { fly } from "svelte/transition";
+  import Spinner from "../../../Spinner.svelte";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
-  export let metricsDefId;
-
-  const config = getContext<RootConfig>("config");
+  export let metricViewName;
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+
+  $: instanceId = $runtimeStore.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(config, metricsDefId);
+  $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    config,
-    metricsDefId,
-    metricsExplorer?.filters
-  );
+  $: timeDimension = $metaQuery.data?.timeDimension;
 
-  $: selectedMeasureNames = useMetaMeasureNames(
-    config,
-    metricsDefId,
-    metricsExplorer?.selectedMeasureIds
-  );
+  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
-  $: interval =
-    metricsExplorer?.selectedTimeRange?.interval ||
-    $metaQuery.data?.timeDimension?.timeRange?.interval;
+  $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
-  let totalsQuery;
+  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(config, metricsDefId, {
-      measures: $selectedMeasureNames.data,
-      filter: $mappedFiltersQuery.data,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useRuntimeServiceMetricsViewTotals(
+      instanceId,
+      metricViewName,
+      {
+        measureNames: selectedMeasureNames,
+        filter: metricsExplorer?.filters,
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+      }
+    );
   }
 
   let timeSeriesQuery: UseQueryStoreResult<
-    MetricsViewTimeSeriesResponse,
+    V1MetricsViewTimeSeriesResponse,
     Error
   >;
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
+    !$metaQuery.isRefetching &&
+    metricsExplorer.selectedTimeRange
   ) {
-    timeSeriesQuery = useTimeSeriesQuery(config, metricsDefId, {
-      measures: $selectedMeasureNames.data,
-      filter: $mappedFiltersQuery.data,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-        granularity: metricsExplorer.selectedTimeRange?.interval,
-      },
-    });
+    timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(
+      instanceId,
+      metricViewName,
+      {
+        measureNames: selectedMeasureNames,
+        filter: metricsExplorer?.filters,
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+        // Quick hack for now, API expects "day" instead of "1 day"
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+      }
+    );
   }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
@@ -101,19 +94,37 @@
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
   let dataCopy;
+
   $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
-  $: if (dataCopy) formattedData = convertTimestampPreview(dataCopy, true);
+  $: if (dataCopy)
+    formattedData = convertTimestampPreview(dataCopy, timeDimension, true)
+      // FIXME: we will need to refactor the graph component animations based on the runtime API return
+      // signature. Previously, we were returning 0s instead of nulls. This was likely due to re-using
+      // the old diagnostic ts code here. Of course, this isn't correct; null is not the same as 0.
+      // For now, let's keep the behavior as-is to ship 0.16. Someone will need to go through and
+      // update the animations to work with line segments in the future.
+      // An ideal way to fix this would be to segmentize the time series per chart and then tween
+      // the individual segments. Alternatively, writing a custom array interpolator could help quite
+      // a bit; null values within the interpolator could tween from 0 or from a contiguous point.
+      .map((di) => {
+        // set nulls to 0, as per the FIXME comment above.
+        Object.keys(di).forEach((k) => {
+          di[k] = di[k] === null ? 0 : di[k];
+        });
+        return di;
+      });
 
   let mouseoverValue = undefined;
 
-  $: key = `${startValue}` + `${endValue}`;
-
-  $: [minVal, maxVal] = extent(dataCopy ?? [], (d: TimeSeriesValue) => d.ts);
-  $: startValue = removeTimezoneOffset(new Date(minVal));
-  $: endValue = removeTimezoneOffset(new Date(maxVal));
+  $: startValue = removeTimezoneOffset(
+    new Date(metricsExplorer?.selectedTimeRange?.start)
+  );
+  $: endValue = removeTimezoneOffset(
+    new Date(metricsExplorer?.selectedTimeRange?.end)
+  );
 </script>
 
 <WithBisector
@@ -129,7 +140,7 @@
       <div style:padding-left="24px">
         {#if point?.ts}
           <div
-            class="absolute italic text-gray-600"
+            class="absolute text-gray-500"
             transition:fly|local={{ duration: 100, y: 4 }}
           >
             {formatDateByInterval(interval, point.ts)}
@@ -153,9 +164,9 @@
     </div>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-      {#each $metaQuery.data?.measures as measure, index (measure.id)}
+      {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery?.data.data?.[measure.sqlName]}
+        {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
         {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
 
         <!-- FIXME: I can't select a time series by measure id. -->
@@ -164,7 +175,7 @@
           description={measure?.description ||
             measure?.label ||
             measure?.expression}
-          formatPreset={measure?.formatPreset || NicelyFormattedTypes.HUMANIZE}
+          formatPreset={measure?.format}
           status={$totalsQuery?.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
@@ -179,12 +190,12 @@
           {:else if formattedData}
             <TimeSeriesBody
               bind:mouseoverValue
-              formatPreset={measure?.formatPreset ||
+              formatPreset={NicelyFormattedTypes[measure?.format] ||
                 NicelyFormattedTypes.HUMANIZE}
               data={formattedData}
-              accessor={measure.sqlName}
+              accessor={measure.name}
               mouseover={point}
-              {key}
+              timeGrain={metricsExplorer.selectedTimeRange?.interval}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}

@@ -1,0 +1,7 @@
+SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times 
+UNION ALL 
+SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times
+UNION ALL 
+SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times
+UNION ALL 
+SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times

@@ -1,42 +1,35 @@
 <script lang="ts">
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
+  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
-  } from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
-  import { createEventDispatcher, getContext, tick } from "svelte";
+  } from "@rilldata/web-local/lib/temp/time-control-types";
+  import { createEventDispatcher, tick } from "svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { useMetaQuery } from "../../../../svelte-query/queries/metrics-views/metadata";
   import { onClickOutside } from "../../../../util/on-click-outside";
-  import { FloatingElement } from "../../../floating-element";
-  import Calendar from "../../../icons/Calendar.svelte";
-  import CaretDownIcon from "../../../icons/CaretDownIcon.svelte";
-  import { Menu, MenuItem } from "../../../menu";
   import {
     getSelectableTimeRangeNames,
     makeTimeRanges,
     prettyFormatTimeRange,
   } from "./time-range-utils";
 
-  export let metricsDefId: string;
+  export let metricViewName: string;
   export let selectedTimeRangeName: TimeRangeName;
-
-  const config = getContext<RootConfig>("config");
+  export let allTimeRange;
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
-
-  // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-  $: allTimeRange = $metaQuery.data?.timeDimension?.timeRange;
 
   // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
   const getSelectableTimeRanges = (
@@ -117,7 +110,7 @@
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
         {#each selectableTimeRanges as timeRange}
           <MenuItem on:select={() => onTimeRangeSelect(timeRange.name)}>
-            <div class="font-bold">
+            <div>
               {timeRange.name}
             </div>
             <div slot="right" let:hovered class:opacity-0={!hovered}>

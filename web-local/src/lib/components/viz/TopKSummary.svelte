@@ -1,15 +1,14 @@
 <script lang="ts">
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import StackingWord from "../tooltip/StackingWord.svelte";
-  import TooltipShortcutContainer from "../tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "../tooltip/Shortcut.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { format } from "d3-format";
+  import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import BarAndLabel from "./BarAndLabel.svelte";
   import notificationStore from "./TopKSummary.svelte";
-  import { COLUMN_PROFILE_CONFIG } from "../../application-config";
-
-  import { createShiftClickAction } from "../../util/shift-click-action";
 
   export let displaySize = "md";
   export let totalRows: number;
@@ -44,7 +43,7 @@
       {@const printValue = value === null ? " null ∅" : value}
       <Tooltip location="right" alignment="center" distance={16}>
         <div
-          class="text-gray-500 italic text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
+          class="text-gray-500 text-ellipsis overflow-hidden whitespace-nowrap {displaySize}-top-k"
           use:shiftClickAction
           on:shift-click={async () => {
             await navigator.clipboard.writeText(value);
@@ -58,12 +57,12 @@
           {printValue}
         </div>
         <TooltipContent slot="tooltip-content">
-          <div class="pt-1 pb-1 italic" style:max-width="360px">
+          <div class="pt-1 pb-1" style:max-width="360px">
             {printValue}
           </div>
           <TooltipShortcutContainer>
             <div>
-              <StackingWord key="shift">copy</StackingWord> column value to clipboard
+              <StackingWord key="shift">Copy</StackingWord> column value to clipboard
             </div>
             <Shortcut>
               <span style="font-family: var(--system);">⇧</span> + Click
@@ -89,6 +88,7 @@
         >
           <BarAndLabel value={count / totalRows} {color}>
             <span
+              class="ui-copy-number"
               class:text-gray-500={negligiblePercentage &&
                 containerWidth >= COLUMN_PROFILE_CONFIG.hideRight}
               >{formatCount(count)}
@@ -103,12 +103,12 @@
         </div>
 
         <TooltipContent slot="tooltip-content">
-          <div class="pt-1 pb-1 italic" style:max-width="360px">
+          <div class="pt-1 pb-1" style:max-width="360px">
             {formatCount(count)} ({percentage})
           </div>
           <TooltipShortcutContainer>
             <div>
-              <StackingWord key="shift">copy</StackingWord>
+              <StackingWord key="shift">Copy</StackingWord>
               {count} to clipboard
             </div>
             <Shortcut>

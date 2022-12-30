@@ -4,15 +4,14 @@ ColumnHeaders – sticky column headers. Utilizes the columnVirtualizer (for now
 TableCells – the cell contents.
 -->
 <script lang="ts">
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import type { VirtualizedTableColumns } from "../../types";
-
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import ColumnHeaders from "../virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
-  import DimensionValueHeader from "./DimensionValueHeader.svelte";
   import { DimensionTableConfig } from "./DimensionTableConfig";
+  import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -291,7 +290,7 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
           />
         {:else}
-          <div class="flex italic text-gray-500 justify-center mt-[30vh]">
+          <div class="flex text-gray-500 justify-center mt-[30vh]">
             No results to show
           </div>
         {/if}

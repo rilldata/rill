@@ -1,107 +1,106 @@
 <script lang="ts">
-  import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-
   /**
    * DimensionDisplay.svelte
    * -------------------------
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
+  import {
+    MetricsViewDimension,
+    MetricsViewFilterCond,
+    useRuntimeServiceMetricsViewToplist,
+    useRuntimeServiceMetricsViewTotals,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    getFilterForDimension,
+    useMetaDimension,
+    useMetaMeasure,
+    useMetaQuery,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import {
+    humanizeGroupByColumns,
+    NicelyFormattedTypes,
+  } from "../../../../util/humanize-numbers";
   import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
   import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
   import DimensionTable from "../../../dimension/DimensionTable.svelte";
-  import {
-    useMetaDimension,
-    useMetaMappedFilters,
-    useMetaMeasure,
-    useMetaMeasureNames,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
-  import { useTotalsQuery } from "../../../../svelte-query/queries/metrics-views/totals";
-  import { humanizeGroupByColumns } from "../../../../util/humanize-numbers";
-  import { getContext } from "svelte";
 
-  import type { MetricsViewDimensionValues } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
-
-  export let metricsDefId: string;
-  export let dimensionId: string;
+  export let metricViewName: string;
+  export let dimensionName: string;
 
   let searchText = "";
+
+  $: instanceId = $runtimeStore.instanceId;
   $: addNull = "null".includes(searchText);
 
-  const config = getContext<RootConfig>("config");
+  $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  $: metaQuery = useMetaQuery(config, metricsDefId);
-
-  $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
-  let dimension: DimensionDefinitionEntity;
+  $: dimensionQuery = useMetaDimension(
+    instanceId,
+    metricViewName,
+    dimensionName
+  );
+  let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
 
-  $: leaderboardMeasureId = metricsExplorer?.leaderboardMeasureId;
+  let metricsExplorer: MetricsExplorerEntity;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+
+  $: leaderboardMeasureName = metricsExplorer?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
-    config,
-    metricsDefId,
-    metricsExplorer?.leaderboardMeasureId
+    instanceId,
+    metricViewName,
+    leaderboardMeasureName
   );
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
-
-  let excludeValues: MetricsViewDimensionValues;
+  let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
   $: excludeMode =
-    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
+    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    config,
-    metricsDefId,
+  $: filterForDimension = getFilterForDimension(
     metricsExplorer?.filters,
-    dimensionId
+    dimensionName
   );
 
-  $: selectedMeasureNames = useMetaMeasureNames(
-    config,
-    metricsDefId,
-    metricsExplorer?.selectedMeasureIds
-  );
+  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
   let selectedValues: Array<unknown>;
   $: selectedValues =
     (excludeMode
-      ? metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.id)
+      ? metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.name)
           ?.in
-      : metricsExplorer?.filters.include.find((d) => d.name === dimension?.id)
+      : metricsExplorer?.filters.include.find((d) => d.name === dimension?.name)
           ?.in) ?? [];
 
   let topListQuery;
 
   $: allMeasures = $metaQuery.data?.measures;
 
-  $: sortByColumn = $leaderboardMeasureQuery.data?.sqlName;
+  $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
 
   $: if (
     sortByColumn &&
     sortDirection &&
-    leaderboardMeasureId &&
+    leaderboardMeasureName &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let filterData = JSON.parse(JSON.stringify($mappedFiltersQuery.data));
+    let filterData = JSON.parse(JSON.stringify(filterForDimension));
 
     if (searchText !== "") {
       let foundDimension = false;
 
       filterData["include"].forEach((filter) => {
-        if (filter.name == dimension?.dimensionColumn) {
+        if (filter.name == dimension?.name) {
           filter.like = [`%${searchText}%`];
           foundDimension = true;
           if (addNull) filter.in.push(null);
@@ -110,7 +109,7 @@
 
       if (!foundDimension) {
         filterData["include"].push({
-          name: dimension?.dimensionColumn,
+          name: dimension?.name,
           in: addNull ? [null] : [],
           like: [`%${searchText}%`],
         });
@@ -122,22 +121,25 @@
       });
     }
 
-    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
-      measures: $selectedMeasureNames.data,
-      limit: 250,
-      offset: 0,
-      sort: [
-        {
-          name: sortByColumn,
-          direction: sortDirection,
-        },
-      ],
-      time: {
-        start: metricsExplorer?.selectedTimeRange?.start,
-        end: metricsExplorer?.selectedTimeRange?.end,
-      },
-      filter: filterData,
-    });
+    topListQuery = useRuntimeServiceMetricsViewToplist(
+      instanceId,
+      metricViewName,
+      {
+        dimensionName: dimensionName,
+        measureNames: selectedMeasureNames,
+        limit: "250",
+        offset: "0",
+        sort: [
+          {
+            name: sortByColumn,
+            ascending: sortDirection === "asc" ? true : false,
+          },
+        ],
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+        filter: filterData,
+      }
+    );
   }
 
   let totalsQuery;
@@ -147,13 +149,15 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    totalsQuery = useTotalsQuery(config, metricsDefId, {
-      measures: $selectedMeasureNames.data,
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-    });
+    totalsQuery = useRuntimeServiceMetricsViewTotals(
+      instanceId,
+      metricViewName,
+      {
+        measureNames: selectedMeasureNames,
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+      }
+    );
   }
 
   let referenceValues = {};
@@ -163,7 +167,7 @@
         m?.expression.toLowerCase()?.includes("count(") ||
         m?.expression?.toLowerCase()?.includes("sum(");
       if (isSummableMeasure) {
-        referenceValues[m.sqlName] = $totalsQuery.data.data?.[m.sqlName];
+        referenceValues[m.name] = $totalsQuery.data.data?.[m.name];
       }
     });
   }
@@ -182,27 +186,25 @@
     if (values.length) {
       let columnNames = Object.keys(values[0]).sort();
 
-      columnNames = columnNames.filter(
-        (name) => name !== dimension?.dimensionColumn
-      );
-      columnNames.unshift(dimension?.dimensionColumn);
-      measureNames = allMeasures.map((m) => m.sqlName);
+      columnNames = columnNames.filter((name) => name !== dimension?.name);
+      columnNames.unshift(dimension?.name);
+      measureNames = allMeasures.map((m) => m.name);
 
       columns = columnNames.map((columnName) => {
         if (measureNames.includes(columnName)) {
-          const measure = allMeasures.find((m) => m.sqlName === columnName);
+          const measure = allMeasures.find((m) => m.name === columnName);
           return {
             name: columnName,
             type: "INT",
             label: measure?.label || measure?.expression,
-            total: referenceValues[measure.sqlName] || 0,
+            total: referenceValues[measure.name] || 0,
             enableResize: false,
           };
         } else
           return {
             name: columnName,
             type: "VARCHAR",
-            label: dimension?.labelSingle,
+            label: dimension?.label,
             enableResize: true,
           };
       });
@@ -210,8 +212,8 @@
   }
 
   function onSelectItem(event) {
-    const label = values[event.detail][dimension?.dimensionColumn];
-    metricsExplorerStore.toggleFilter(metricsDefId, dimension?.id, label);
+    const label = values[event.detail][dimension?.name];
+    metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
 
   function onSortByColumn(event) {
@@ -221,9 +223,9 @@
     if (columnName === sortByColumn) {
       sortDirection = sortDirection === "desc" ? "asc" : "desc";
     } else {
-      metricsExplorerStore.setLeaderboardMeasureId(
-        metricsDefId,
-        allMeasures.find((m) => m.sqlName === columnName)?.id
+      metricsExplorerStore.setLeaderboardMeasureName(
+        metricViewName,
+        columnName
       );
       sortDirection = "desc";
     }
@@ -231,7 +233,10 @@
 
   $: if (values) {
     const measureFormatSpec = allMeasures?.map((m) => {
-      return { columnName: m.sqlName, formatPreset: m.formatPreset };
+      return {
+        columnName: m.name,
+        formatPreset: m.format as NicelyFormattedTypes,
+      };
     });
     values = humanizeGroupByColumns(values, measureFormatSpec);
   }
@@ -240,8 +245,8 @@
 {#if topListQuery}
   <DimensionContainer>
     <DimensionHeader
-      {metricsDefId}
-      {dimensionId}
+      {metricViewName}
+      {dimensionName}
       {excludeMode}
       isFetching={$topListQuery?.isFetching}
       on:search={(event) => {
@@ -253,7 +258,7 @@
       <DimensionTable
         on:select-item={(event) => onSelectItem(event)}
         on:sort={(event) => onSortByColumn(event)}
-        dimensionName={dimension?.dimensionColumn}
+        dimensionName={dimension?.name}
         {columns}
         {selectedValues}
         rows={values}

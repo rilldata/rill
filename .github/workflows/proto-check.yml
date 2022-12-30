@@ -1,0 +1,14 @@
+name: Check .proto files
+on:
+  pull_request:
+    paths:
+      - "proto/**"
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-lint-action@v1
+        with:
+          input: "proto"

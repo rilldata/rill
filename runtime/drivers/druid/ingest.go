@@ -35,7 +35,7 @@ type datasourceDetails struct {
 
 // Ingest uses the Druid REST API to submit an ingestion spec. It returns once Druid has finished ingesting data.
 // This function is for test and development usage and has not been tested for production use.
-func Ingest(coordinatorURL string, specJSON string, datasourceName string, timeout time.Duration) error {
+func Ingest(coordinatorURL, specJSON, datasourceName string, timeout time.Duration) error {
 	var status taskResult
 	err := sendRequest(coordinatorURL, http.MethodPost, "/druid/indexer/v1/task", specJSON, &status)
 	if err != nil {
@@ -81,9 +81,9 @@ func Ingest(coordinatorURL string, specJSON string, datasourceName string, timeo
 	}
 }
 
-func getTaskReport(coordinatorURL string, taskId string) (*taskReport, error) {
+func getTaskReport(coordinatorURL, taskID string) (*taskReport, error) {
 	var res taskReport
-	path := fmt.Sprintf("/druid/indexer/v1/task/%s/reports", taskId)
+	path := fmt.Sprintf("/druid/indexer/v1/task/%s/reports", taskID)
 	err := sendRequest(coordinatorURL, http.MethodGet, path, "", &res)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func getTaskReport(coordinatorURL string, taskId string) (*taskReport, error) {
 	return &res, err
 }
 
-func getDatasourceDetails(coordinatorURL string, datasourceName string) (*datasourceDetails, error) {
+func getDatasourceDetails(coordinatorURL, datasourceName string) (*datasourceDetails, error) {
 	var res datasourceDetails
 	path := fmt.Sprintf("/druid/coordinator/v1/datasources/%s", datasourceName)
 	err := sendRequest(coordinatorURL, http.MethodGet, path, "", &res)
@@ -101,8 +101,8 @@ func getDatasourceDetails(coordinatorURL string, datasourceName string) (*dataso
 	return &res, err
 }
 
-func sendRequest(coordinatorURL string, method string, path string, jsonBody string, out any) error {
-	url, err := url.JoinPath(coordinatorURL, path)
+func sendRequest(coordinatorURL, method, path, jsonBody string, out any) error {
+	reqURL, err := url.JoinPath(coordinatorURL, path)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func sendRequest(coordinatorURL string, method string, path string, jsonBody str
 		reqBody = strings.NewReader(jsonBody)
 	}
 
-	req, err := http.NewRequest(method, url, reqBody)
+	req, err := http.NewRequest(method, reqURL, reqBody)
 	if err != nil {
 		return err
 	}

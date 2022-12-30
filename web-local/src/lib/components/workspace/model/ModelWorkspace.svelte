@@ -1,28 +1,31 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-  import { dataModelerService } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ModelInspector from "./inspector/ModelInspector.svelte";
   import ModelBody from "./ModelBody.svelte";
-  export let modelID;
+  import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
 
-  const switchToModel = async (modelID) => {
-    if (!modelID) return;
+  export let modelName: string;
 
-    await dataModelerService.dispatch("setActiveAsset", [
-      EntityType.Model,
-      modelID,
-    ]);
+  const switchToModel = async (modelName: string) => {
+    if (!modelName) return;
+
+    appStore.setActiveEntity(modelName, EntityType.Model);
   };
 
-  $: switchToModel(modelID);
+  $: switchToModel(modelName);
 </script>
 
-{#key modelID}
-  <WorkspaceContainer assetID={modelID}>
-    <div slot="body">
-      <ModelBody {modelID} />
+{#key modelName}
+  <WorkspaceContainer assetID={modelName}>
+    <div slot="header">
+      <ModelWorkspaceHeader {modelName} />
     </div>
-    <ModelInspector slot="inspector" />
+    <div slot="body">
+      <ModelBody {modelName} />
+    </div>
+    <ModelInspector {modelName} slot="inspector" />
   </WorkspaceContainer>
 {/key}

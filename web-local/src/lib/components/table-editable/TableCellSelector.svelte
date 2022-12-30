@@ -1,12 +1,10 @@
 <script lang="ts">
+  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
   import { onMount } from "svelte";
-
-  import type { ColumnConfig, CellConfigSelector } from "./ColumnConfig";
-  import type { EntityRecord } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
-
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import AlertCircle from "../icons/AlertCircle.svelte";
+  import type { CellConfigSelector, ColumnConfig } from "./ColumnConfig";
 
   export let columnConfig: ColumnConfig<CellConfigSelector>;
   export let index: number;
@@ -30,7 +28,7 @@
   } else if (placeholderLabel) {
     // if there no actual value, use the placeholder label
     value = "__PLACEHOLDER_VALUE__";
-    selectStyle = greyedOut + " font-style: italic;";
+    selectStyle = greyedOut;
   } else {
     // if there is no placeholder label and no actual value, use the first option in the options list
     value = columnConfig.cellRenderer.options[0].value;
@@ -54,15 +52,15 @@
 </script>
 
 <td
+  bind:this={tdElt}
   class="py-2 px-4 border border-gray-200 hover:bg-gray-200"
   style="position:relative"
-  bind:this={tdElt}
 >
   <select
     class="table-select bg-transparent w-full"
+    on:change={onchangeHandler}
     style={selectStyle}
     {value}
-    on:change={onchangeHandler}
   >
     {#if placeholderLabel}
       <option value="__PLACEHOLDER_VALUE__" disabled selected hidden

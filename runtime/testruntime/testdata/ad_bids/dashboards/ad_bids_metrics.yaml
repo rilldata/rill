@@ -1,0 +1,27 @@
+model: ad_bids
+display_name: Ad bids
+description:
+
+timeseries: timestamp
+default_timegrain: ""
+timegrains:
+  - 1 day
+  - 1 month
+
+dimensions:
+  - label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""
+
+measures:
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Average bid price"
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""

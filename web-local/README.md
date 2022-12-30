@@ -4,18 +4,17 @@ This folder contains the local frontend implemented with TypeScript and [SvelteK
 
 ## Running in development
 
-To run the web server with an embedded runtime:
+In development, we run the frontend and backend separately:
 
-1. In `web-local/build-tools/postinstall_runtime.sh`, edit the `RUNTIME_VERSION` constant with the commit hash of the runtime version you want to use.
-2. Run `npm install`, which triggers the `postinstall_runtime.sh` script to pull the runtime binary
-3. Run `npm run dev`
+1. Start the frontend: `npm run dev-web`
+2. Start the backend: `npm run dev-runtime`
 
-To run both the web server and an external development runtime:
-
-1. Run `npm run dev -w runtime`
-2. Run `npm run dev`
-
+You can also run the two together using `npm run dev`. Make sure to wait for both servers to start.
 Note there is no hot reloading for the runtime code. You need to restart the runtime and the web server (in that order) to see changes.
+
+Running in development creates a (gitignored) empty project in `dev-runtime`. You can clear it with `npm run clean`.
+
+In production, the frontend is built into a static site and embedded in the CLI. See `cli/README.md` for details. 
 
 More resources:
 - [Contributor's guide](../CONTRIBUTING.md) for installing any missing dependencies (like Go)

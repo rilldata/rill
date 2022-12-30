@@ -1,103 +1,127 @@
 <script lang="ts">
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/common/errors/ErrorMessages";
-  import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
-  import { Callout } from "../../callout";
-
-  import { getContext, onMount } from "svelte";
-  import { CATEGORICALS } from "../../../duckdb-data-types";
+  import { Callout } from "@rilldata/web-common/components/callout";
+  import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    createDimensionsApi,
-    deleteDimensionsApi,
-    updateDimensionsWrapperApi,
-  } from "../../../redux-store/dimension-definition/dimension-definition-apis";
-  import { getDimensionsByMetricsId } from "../../../redux-store/dimension-definition/dimension-definition-readables";
-  import {
-    createMeasuresApi,
-    deleteMeasuresApi,
-    updateMeasuresWrapperApi,
-    validateMeasureExpressionApi,
-  } from "../../../redux-store/measure-definition/measure-definition-apis";
-  import { getMeasuresByMetricsId } from "../../../redux-store/measure-definition/measure-definition-readables";
-  import { bootstrapMetricsDefinition } from "../../../redux-store/metrics-definition/bootstrapMetricsDefinition";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { store } from "../../../redux-store/store-root";
-  import { queryClient } from "../../../svelte-query/globalQueryClient";
-  import { invalidateMetricsView } from "../../../svelte-query/queries/metrics-views/invalidation";
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServicePutFileAndReconcile,
+    V1PutFileAndReconcileResponse,
+    V1ReconcileError,
+  } from "@rilldata/web-common/runtime-client";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
+  import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
   import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
   import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
   import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
+  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import MetricsDefDisplayNameInput from "./MetricsDefDisplayNameInput.svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
-
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
-  export let metricsDefId;
+
+  // the runtime yaml string
+  export let yaml: string;
+  export let metricsDefName: string;
   export let nonStandardError;
 
-  $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  const queryClient = useQueryClient();
+
+  $: instanceId = $runtimeStore.instanceId;
+
+  const switchToMetrics = async (metricsDefName: string) => {
+    if (!metricsDefName) return;
+
+    appStore.setActiveEntity(metricsDefName, EntityType.MetricsDefinition);
+  };
+
+  $: switchToMetrics(metricsDefName);
+
+  const metricMigrate = useRuntimeServicePutFileAndReconcile();
+  async function callPutAndMigrate(internalYamlString) {
+    const filePath = getFilePathFromNameAndType(
+      metricsDefName,
+      EntityType.MetricsDefinition
+    );
+    const resp = (await $metricMigrate.mutateAsync({
+      data: {
+        instanceId,
+        path: filePath,
+        blob: internalYamlString,
+        create: false,
+      },
+    })) as V1PutFileAndReconcileResponse;
+    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+
+    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
+  }
+
+  // create initial internal representation
+  let metricsInternalRep = createInternalRepresentation(
+    yaml,
+    callPutAndMigrate
+  );
+
+  function updateInternalRep() {
+    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    if (errors) $metricsInternalRep.updateErrors(errors);
+  }
+
+  // reset internal representation in case of deviation from runtime YAML
+  $: if (yaml !== $metricsInternalRep.internalYAML) {
+    updateInternalRep();
+  }
+
+  $: measures = $metricsInternalRep.getMeasures();
+  $: dimensions = $metricsInternalRep.getDimensions();
+
+  $: modelName = $metricsInternalRep.getMetricKey("model");
+  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
+  $: model = $getModel.data?.entry?.model;
 
   function handleCreateMeasure() {
-    store.dispatch(createMeasuresApi({ metricsDefId }));
+    $metricsInternalRep.addNewMeasure();
   }
   function handleUpdateMeasure(index, name, value) {
-    store.dispatch(
-      updateMeasuresWrapperApi({
-        id: $measures[index].id,
-        changes: { [name]: value },
-      })
-    );
+    $metricsInternalRep.updateMeasure(index, name, value);
   }
+
   function handleDeleteMeasure(evt) {
-    store.dispatch(deleteMeasuresApi(evt.detail));
-    invalidateMetricsView(queryClient, metricsDefId);
+    $metricsInternalRep.deleteMeasure(evt.detail);
   }
-  function handleMeasureExpressionValidation(index, name, value) {
-    store.dispatch(
-      validateMeasureExpressionApi({
-        metricsDefId: metricsDefId,
-        measureId: $measures[index].id,
-        expression: value,
-      })
-    );
+  function handleMeasureExpressionValidation(_index, _name, _value) {
+    // store.dispatch(
+    //   validateMeasureExpressionApi({
+    //     metricsDefId: metricsDefId,
+    //     measureId: $measures[index].id,
+    //     expression: value,
+    //   })
+    // );
   }
 
   function handleCreateDimension() {
-    store.dispatch(createDimensionsApi({ metricsDefId }));
+    $metricsInternalRep.addNewDimension();
   }
   function handleUpdateDimension(index, name, value) {
-    store.dispatch(
-      updateDimensionsWrapperApi({
-        id: $dimensions[index].id,
-        changes: {
-          [name]: value,
-        },
-      })
-    );
+    $metricsInternalRep.updateDimension(index, name, value);
   }
   function handleDeleteDimension(evt) {
-    store.dispatch(deleteDimensionsApi(evt.detail));
-    invalidateMetricsView(queryClient, metricsDefId);
+    $metricsInternalRep.deleteDimension(evt.detail);
   }
 
-  // FIXME: the only data that is needed from the derived model store is the data types of the
-  // columns in this model. I need to make this available in the redux store.
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
   let validDimensionSelectorOption: SelectorOption[] = [];
-  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    const selectedMetricsDefModelProfile =
-      $derivedModelStore?.entities.find(
-        (model) => model.id === $selectedMetricsDef.sourceModelId
-      )?.profile ?? [];
+  $: if (model) {
+    const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
-      .filter((column) => CATEGORICALS.has(column.type))
+      .filter((column) => CATEGORICALS.has(column.type.code as string))
       .map((column) => ({ label: column.name, value: column.name }));
   } else {
     validDimensionSelectorOption = [];
@@ -112,75 +136,85 @@
     validDimensionSelectorOption
   );
 
-  $: metricsSourceSelectionError = $selectedMetricsDef
-    ? MetricsSourceSelectionError($selectedMetricsDef)
-    : nonStandardError
-    ? nonStandardError
-    : "";
+  let errors: Array<V1ReconcileError>;
+  $: errors =
+    $fileArtifactsStore.entities[
+      getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+    ]?.errors;
 
-  onMount(() => {
-    store.dispatch(bootstrapMetricsDefinition(metricsDefId));
-  });
+  $: metricsSourceSelectionError = nonStandardError
+    ? nonStandardError
+    : MetricsSourceSelectionError(errors);
 </script>
 
-{#if $selectedMetricsDef}
-  <WorkspaceContainer inspector={false} assetID={`${metricsDefId}-config`}>
-    <div slot="body">
-      <MetricsDefWorkspaceHeader {metricsDefId} />
+<WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
+  <MetricsDefWorkspaceHeader
+    slot="header"
+    {metricsDefName}
+    {metricsInternalRep}
+  />
 
-      <div
-        class="editor-pane bg-gray-100 p-6 pt-0 flex flex-col"
-        style:height="calc(100vh - var(--header-height))"
-      >
-        <div class="flex-none flex flex-row">
-          <div>
-            <MetricsDefModelSelector {metricsDefId} />
-            <MetricsDefTimeColumnSelector {metricsDefId} />
-          </div>
-          <div class="self-center pl-10">
-            {#if metricsSourceSelectionError}
-              <Callout level="error">
-                {metricsSourceSelectionError}
-              </Callout>
-            {:else}
-              <MetricsDefinitionGenerateButton {metricsDefId} />
-            {/if}
-          </div>
+  <div slot="body">
+    <div
+      class="editor-pane bg-gray-100 p-6 flex flex-col"
+      style:height="calc(100vh - var(--header-height))"
+    >
+      <div class="flex-none flex flex-row">
+        <div>
+          <MetricsDefDisplayNameInput {metricsInternalRep} />
+          <MetricsDefModelSelector {metricsInternalRep} />
+          <MetricsDefTimeColumnSelector
+            selectedModel={model}
+            {metricsInternalRep}
+          />
         </div>
-
-        <div
-          style="display: flex; flex-direction:column; overflow:hidden;"
-          class="flex-1"
-        >
-          <LayoutManager let:topResizeCallback let:bottomResizeCallback>
-            <MetricsDefEntityTable
-              slot="top-item"
-              resizeCallback={topResizeCallback}
-              label={"Measures"}
-              addEntityHandler={handleCreateMeasure}
-              updateEntityHandler={handleUpdateMeasure}
-              deleteEntityHandler={handleDeleteMeasure}
-              rows={$measures ?? []}
-              columnNames={MeasuresColumns}
-              tooltipText={"add a new measure"}
-              addButtonId={"add-measure-button"}
+        <div class="self-center pl-10">
+          {#if metricsSourceSelectionError}
+            <Callout level="error">
+              {metricsSourceSelectionError}
+            </Callout>
+          {:else}
+            <MetricsDefinitionGenerateButton
+              handlePutAndMigrate={callPutAndMigrate}
+              selectedModel={model}
+              {metricsInternalRep}
             />
-
-            <MetricsDefEntityTable
-              slot="bottom-item"
-              resizeCallback={bottomResizeCallback}
-              label={"Dimensions"}
-              addEntityHandler={handleCreateDimension}
-              updateEntityHandler={handleUpdateDimension}
-              deleteEntityHandler={handleDeleteDimension}
-              rows={$dimensions ?? []}
-              columnNames={DimensionColumns}
-              tooltipText={"add a new dimension"}
-              addButtonId={"add-dimension-button"}
-            />
-          </LayoutManager>
+          {/if}
         </div>
       </div>
+
+      <div
+        style="display: flex; flex-direction:column; overflow:hidden;"
+        class="flex-1"
+      >
+        <LayoutManager let:topResizeCallback let:bottomResizeCallback>
+          <MetricsDefEntityTable
+            slot="top-item"
+            resizeCallback={topResizeCallback}
+            label={"Measures"}
+            addEntityHandler={handleCreateMeasure}
+            updateEntityHandler={handleUpdateMeasure}
+            deleteEntityHandler={handleDeleteMeasure}
+            rows={measures ?? []}
+            columnNames={MeasuresColumns}
+            tooltipText={"Add a new measure"}
+            addButtonId={"add-measure-button"}
+          />
+
+          <MetricsDefEntityTable
+            slot="bottom-item"
+            resizeCallback={bottomResizeCallback}
+            label={"Dimensions"}
+            addEntityHandler={handleCreateDimension}
+            updateEntityHandler={handleUpdateDimension}
+            deleteEntityHandler={handleDeleteDimension}
+            rows={dimensions ?? []}
+            columnNames={DimensionColumns}
+            tooltipText={"Add a new dimension"}
+            addButtonId={"add-dimension-button"}
+          />
+        </LayoutManager>
+      </div>
     </div>
-  </WorkspaceContainer>
-{/if}
+  </div>
+</WorkspaceContainer>

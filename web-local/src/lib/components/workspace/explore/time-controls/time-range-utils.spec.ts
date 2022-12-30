@@ -1,7 +1,7 @@
 import {
   TimeGrain,
   TimeRangeName,
-} from "@rilldata/web-local/common/database-service/DatabaseTimeSeriesActions";
+} from "@rilldata/web-local/lib/temp/time-control-types";
 import {
   getDefaultTimeGrain,
   getDefaultTimeRangeName,
@@ -46,27 +46,27 @@ describe("getSelectableTimeGrains", () => {
     expect(timeGrains).toEqual([
       {
         enabled: false,
-        timeGrain: "1 minute",
+        timeGrain: "minute",
       },
       {
         enabled: true,
-        timeGrain: "1 hour",
+        timeGrain: "hour",
       },
       {
         enabled: true,
-        timeGrain: "1 day",
+        timeGrain: "day",
       },
       {
         enabled: true,
-        timeGrain: "7 day",
+        timeGrain: "week",
       },
       {
         enabled: false,
-        timeGrain: "1 month",
+        timeGrain: "month",
       },
       {
         enabled: false,
-        timeGrain: "1 year",
+        timeGrain: "year",
       },
     ]);
   });
@@ -107,7 +107,7 @@ describe("makeTimeRange", () => {
       name: TimeRangeName.Last2Weeks,
       start: "2022-03-17T00:00:00.000Z",
       end: "2022-03-30T23:59:59.000Z",
-      interval: "1 day",
+      interval: "day",
     });
   });
 });

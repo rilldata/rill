@@ -1,32 +1,31 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { Button } from "@rilldata/web-common/components/button";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    getRuntimeServiceListCatalogObjectsQueryKey,
-    RuntimeServiceListCatalogObjectsType,
-    useRuntimeServiceMigrateSingle,
+    useRuntimeServiceDeleteFileAndReconcile,
+    useRuntimeServicePutFileAndReconcile,
     V1Connector,
+    V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
-  import { queryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
+  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
   import { runtimeStore } from "../../../application-state-stores/application-store";
   import { overlay } from "../../../application-state-stores/overlay-store";
-  import type { PersistentTableStore } from "../../../application-state-stores/table-stores";
-  import { Button } from "../../button";
-  import InformationalField from "../../forms/InformationalField.svelte";
-  import Input from "../../forms/Input.svelte";
-  import SubmissionError from "../../forms/SubmissionError.svelte";
-  import DialogFooter from "../../modal/dialog/DialogFooter.svelte";
   import { humanReadableErrorMessage } from "./errors";
-  import {
-    compileCreateSourceSql,
-    inferSourceName,
-    waitForSource,
-  } from "./sourceUtils";
+  import { compileCreateSourceYAML, inferSourceName } from "./sourceUtils";
   import {
     fromYupFriendlyKey,
     getYupSchema,
@@ -36,13 +35,14 @@
   export let connector: V1Connector;
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSource = useRuntimeServiceMigrateSingle();
+  $: sourceNames = useSourceNames(runtimeInstanceId);
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
+  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
 
   const dispatch = createEventDispatcher();
+
+  const queryClient = useQueryClient();
 
   let connectorProperties: ConnectorProperty[];
   let yupSchema: yup.AnyObjectSchema;
@@ -55,6 +55,7 @@
   let handleSubmit: (event: Event) => any;
 
   let waitingOnSourceImport = false;
+  let error: V1ReconcileError;
 
   function onConnectorChange(connector: V1Connector) {
     yupSchema = getYupSchema(connector);
@@ -65,7 +66,7 @@
         sourceName: "", // avoids `values.sourceName` warning
       },
       validationSchema: yupSchema,
-      onSubmit: (values) => {
+      onSubmit: async (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
         const formValues = Object.fromEntries(
           Object.entries(values).map(([key, value]) => [
@@ -74,35 +75,37 @@
           ])
         );
 
-        const sql = compileCreateSourceSql(formValues, connector.name);
-        // TODO: call runtime/repo.put() to create source artifact
-        $createSource.mutate(
-          {
-            instanceId: runtimeInstanceId,
-            data: { sql, createOrReplace: false },
-          },
-          {
-            onSuccess: async () => {
-              waitingOnSourceImport = true;
-              const newId = await waitForSource(
-                values.sourceName,
-                persistentTableStore
-              );
-              waitingOnSourceImport = false;
-              goto(`/source/${newId}`);
-              dispatch("close");
-              overlay.set(null);
-              return queryClient.invalidateQueries(
-                getRuntimeServiceListCatalogObjectsQueryKey(runtimeInstanceId, {
-                  type: RuntimeServiceListCatalogObjectsType.TYPE_SOURCE,
-                })
-              );
-            },
-            onError: () => {
-              overlay.set(null);
-            },
+        const yaml = compileCreateSourceYAML(formValues, connector.name);
+
+        waitingOnSourceImport = true;
+        try {
+          const errors = await createSource(
+            queryClient,
+            runtimeInstanceId,
+            values.sourceName,
+            yaml,
+            $createSourceMutation
+          );
+          error = errors[0];
+          if (!error) {
+            dispatch("close");
+          } else {
+            await deleteFileArtifact(
+              queryClient,
+              runtimeInstanceId,
+              values.sourceName,
+              EntityType.Table,
+              $deleteSource,
+              $appStore.activeEntity,
+              $sourceNames.data,
+              false
+            );
           }
-        );
+        } catch (err) {
+          // no-op
+        }
+        waitingOnSourceImport = false;
+        overlay.set(null);
       },
     }));
 
@@ -135,7 +138,7 @@
   }
 </script>
 
-<div class="h-full flex flex-col">
+<div class="h-full w-full flex flex-col">
   <form
     on:submit|preventDefault={handleSubmit}
     id="remote-source-{connector.name}-form"
@@ -143,15 +146,16 @@
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
-      <a href="https://docs.rilldata.com/import-data" target="_blank">docs</a> for
-      more information.
+      <a href="https://docs.rilldata.com/using-rill/import-data" target="_blank"
+        >docs</a
+      > for more information.
     </div>
-    {#if $createSource.isError}
+    {#if $createSourceMutation.isError || error}
       <SubmissionError
         message={humanReadableErrorMessage(
           connector.name,
-          $createSource.error.response.data.code,
-          $createSource.error.response.data.message
+          $createSourceMutation?.error?.response?.data?.code ?? 3,
+          $createSourceMutation?.error?.response?.data?.message ?? error.message
         )}
       />
     {/if}
@@ -198,7 +202,7 @@
           type="primary"
           submitForm
           form="remote-source-{connector.name}-form"
-          disabled={$createSource.isLoading || waitingOnSourceImport}
+          disabled={$createSourceMutation.isLoading || waitingOnSourceImport}
         >
           Add source
         </Button>

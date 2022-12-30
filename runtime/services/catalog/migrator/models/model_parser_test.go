@@ -7,11 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type parseTest struct {
+	query  string
+	tables []string
+}
+
 func Test_extractCTEs(t *testing.T) {
-	cteTests := []struct {
-		query string
-		ctes  []*table
-	}{
+	cteTests := []parseTest{
 		// this query has multiple CTEs.
 		{`
 WITH cte1 AS (
@@ -28,56 +30,71 @@ cte3 AS (
     another_column,
     a_third as the_third_column
 from cte1;
-`, []*table{
-			{20, 49, "cte1", "SELECt * from tbl1 LIMIT 100"},
-			{66, 85, "cte2", "SELECT * from cte1"},
-			{102, 164, "cte3", "select created_date, count(*) from tbl2 GROUP BY created_date"},
-		}},
-		// this query doesn't have a cte.
+`, []string{"cte1", "tbl1", "tbl2"}},
+		// duckdb 0.6 syntax
 		{`
-SELECt * from whatever;
-`, nil},
-		// this query doesn't even technically work.
-		{"this is just a random string", nil},
+WITH cte1 AS (
+    from tbl1 LIMIT 100
+),
+cte2 AS (
+    from cte1
+),
+cte3 AS (
+    select created_date, count(*) from tbl2 GROUP BY created_date
+)   
+        SELECt    
+    date_trunc('day', created_date) AS whatever,
+    another_column,
+    a_third as the_third_column
+from cte1;
+`, []string{"cte1", "tbl1", "tbl2"}},
 		// this query is somewhat malformed after the CTEs,
 		// but the CTEs can still be extracted.
 		{`
 with x AS (select * from whatever),
 y AS (select dt from another_table),
 whatever is next is what is next.
-`, []*table{
-			{12, 34, "x", "select * from whatever"},
-			{43, 71, "y", "select dt from another_table"},
-		}},
+`, []string{"whatever", "another_table"}},
 		// works with doubly-nested CTEs in that it ignores the nested CTEs.
 		// one shouldn't even do this in practice but we'll still support it.
 		{`
 WITH x AS (WITH y as (select * from test) select * from y) select * from x)
 SELECt * from x;
-`, []*table{
-			{12, 58, "x", "WITH y as (select * from test) select * from y"},
-		}},
+`, []string{"test", "y", "x"}},
 	}
 
 	for i, tt := range cteTests {
 		t.Run(fmt.Sprintf("CTE_%d", i), func(t *testing.T) {
-			require.Equal(t, tt.ctes, extractCTEs(tt.query))
+			require.ElementsMatch(t, ExtractTableNames(tt.query), tt.tables)
 		})
 	}
 }
 
 func Test_extractFromStatements(t *testing.T) {
-	fromTests := []struct {
-		query  string
-		tables []*table
-	}{
+	fromTests := []parseTest{
 		{
 			"SELECt * from table1",
-			[]*table{{14, 20, "table1", ""}},
+			[]string{"table1"},
 		},
 		{
 			"SELECt * from table2",
-			[]*table{{14, 20, "table2", ""}},
+			[]string{"table2"},
+		},
+		{
+			"from table1",
+			[]string{"table1"},
+		},
+		{
+			"fRoM table1",
+			[]string{"table1"},
+		},
+		{
+			"from ",
+			nil,
+		},
+		{
+			"select * from ",
+			nil,
 		},
 		{`          select * 
         
@@ -88,138 +105,118 @@ func Test_extractFromStatements(t *testing.T) {
         
         
         `,
-			[]*table{{69, 75, "table3", ""}}},
+			[]string{"table3"}},
+		{`
+        
+        
+        
+        
+        from table3       
+        
+        
+        `,
+			[]string{"table3"}},
 		{`with 
         x as (select * from whatever),
         abcd_wxyz as (select * from x)
            SELECT * from       abcd_wxyz   ;
         `,
-			[]*table{
-				{34, 42, "whatever", ""},
-				{81, 82, "x", ""},
-				{115, 124, "abcd_wxyz", ""},
-			}},
+			[]string{"whatever", "x", "abcd_wxyz"}},
 		// handles nested from statements
 		{
+			"select * from (select * from abc_xyz)",
+			[]string{"abc_xyz"},
+		},
+		{
 			"   select something from (select * from abc_xyz)    ",
-			[]*table{{40, 47, "abc_xyz", ""}},
+			[]string{"abc_xyz"},
 		},
 		{
 			"   select something from            (       select * from abc_xyz         )    ",
-			[]*table{{58, 65, "abc_xyz", ""}},
+			[]string{"abc_xyz"},
+		},
+		{
+			"   select something from            (       from      abc_xyz         )    ",
+			[]string{"abc_xyz"},
 		},
 		// add where clause
 		{
 			"   select something from table WHERE id IS NOT NULL;",
-			[]*table{{25, 30, "table", ""}},
+			[]string{"table"},
 		},
 		// add GROUP BY clause
 		{
 			"   select something, count(*) from       table        GROUP BY count(*);",
-			[]*table{{41, 46, "table", ""}},
+			[]string{"table"},
 		},
 		// check wraps for ?
 		{
 			"\nselect something, count(*) from       table        \n    LEFT JOIN cruds ON cruds.id = table.id;",
-			[]*table{{39, 44, "table", ""}},
+			[]string{"table", "cruds"},
 		},
 		{
 			"\n        select something, count(*) from       table    abc    \n            LEFT JOIN cruds ON cruds.id = table.id;",
-			[]*table{{47, 52, "table", ""}},
+			[]string{"table", "cruds"},
+		},
+		{
+			`FROM "s3://path/to/bucket.parquet"`,
+			[]string{`"s3://path/to/bucket.parquet"`},
+		},
+		{
+			`FROM "s3://path/to/bucket.parquet" as tbl`,
+			[]string{`"s3://path/to/bucket.parquet"`},
+		},
+		{
+			` FROM tbl JOIN "s3://path/to/bucket.parquet" as tbl2 ON tbl2.id = tbl.id`,
+			[]string{"tbl", `"s3://path/to/bucket.parquet"`},
 		},
 	}
 
 	for i, tt := range fromTests {
 		t.Run(fmt.Sprintf("FromStatement_%d", i), func(t *testing.T) {
-			require.Equal(t, tt.tables, extractFromStatements(tt.query))
+			require.ElementsMatch(t, ExtractTableNames(tt.query), tt.tables)
 		})
 	}
 }
 
 func Test_extractJoins(t *testing.T) {
-	joinTests := []struct {
-		query  string
-		tables []*table
-	}{
+	joinTests := []parseTest{
 		{
 			"SELECt * from whatever inner join another ON another.id = whatever.another_id",
-			[]*table{{34, 41, "another", ""}},
+			[]string{"whatever", "another"},
+		},
+		{
+			"fRom whatever inner join another ON another.id = whatever.another_id",
+			[]string{"whatever", "another"},
+		},
+		{
+			`select * from tbl JOIN 
+  
+  x ON tbl.id = x.id`,
+			[]string{"tbl", "x"},
+		},
+		{
+			`from tbl JOIN 
+  
+  x ON tbl.id = x.id`,
+			[]string{"tbl", "x"},
 		},
 		{`with 
         x as (select * from whatever),
         abcd_wxyz as (select * from x)
            SELECT * from       abcd_wxyz    join    y        ON        y.id = abcd_wxyz.whatever   ;
         `,
-			[]*table{{136, 137, "y", ""}}},
+			[]string{"whatever", "x", "abcd_wxyz", "y"}},
 		{`with 
         x as (select * from whatever),
         abcd_wxyz as (select * from x)
            SELECT * from       abcd_wxyz    join    (select * from y)        ON        y.id = abcd_wxyz.whatever   ;
-        `, nil},
+        `, []string{"whatever", "x", "abcd_wxyz", "y"}},
 	}
 
 	for i, tt := range joinTests {
 		t.Run(fmt.Sprintf("JoinQuery_%d", i), func(t *testing.T) {
-			require.Equal(t, tt.tables, extractJoins(tt.query))
-		})
-	}
-}
-
-func TestExtractTableNames(t *testing.T) {
-	extractTests := []struct {
-		query string
-		names []string
-	}{
-		{`
-WITH cte1 AS (
-    SELECt * from tbl1 LIMIT 100
-),
-cte2 AS (
-    SELECT * from cte1
-),
-cte3 AS (
-    select created_date, count(*) from tbl2 GROUP BY created_date
-)   
-        SELECt    
-    date_trunc('day', created_date) AS whatever,
-    another_column,
-    a_third as the_third_column
-from cte1;
-`,
-			[]string{"tbl1", "tbl2"}},
-		{`
-with x AS (select * from whatever),
-y AS (select dt from another_table),
-whatever is next is what is next.
-`,
-			[]string{"whatever", "another_table"}},
-		{`with 
-        x as (select * from whatever),
-        abcd_wxyz as (select * from x)
-           SELECT * from       abcd_wxyz   ;
-        `,
-			[]string{"whatever"}},
-		{`
-WITH x AS (WITH y as (select * from test) select * from y) select * from x)
-SELECt * from x;
-`,
-			// TODO: y is identified as a table
-			[]string{"test", "y"}},
-		{`with 
-        x as (select * from whatever),
-        abcd_wxyz as (select * from x)
-           SELECT * from       abcd_wxyz    join    (select * from y)        ON        y.id = abcd_wxyz.whatever   ;
-        `, []string{"whatever", "y"}},
-		{`with 
-        x as (select * from whatever),
-        abcd_wxyz as (select * from x)
-           SELECT * from       abcd_wxyz    join    y        ON        y.id = abcd_wxyz.whatever   ;
-        `, []string{"whatever", "y"}},
-	}
-
-	for i, tt := range extractTests {
-		t.Run(fmt.Sprintf("Extract_%d", i), func(t *testing.T) {
-			require.Equal(t, tt.names, ExtractTableNames(tt.query))
+			require.ElementsMatch(t, ExtractTableNames(tt.query), tt.tables)
 		})
 	}
 }

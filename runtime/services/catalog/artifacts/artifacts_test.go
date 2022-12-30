@@ -7,7 +7,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -22,35 +22,36 @@ func TestSourceReadWrite(t *testing.T) {
 		// Adding explicit name and using it in the title,
 		// adds the run button on goland for each test case.
 		Name    string
-		Catalog *api.CatalogObject
+		Catalog *drivers.CatalogEntry
 		Raw     string
 	}{
 		{
 			"Source",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "Source",
 				Path: "sources/Source.yaml",
-				Type: api.CatalogObject_TYPE_SOURCE,
-				Source: &api.Source{
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
 					Name:      "Source",
-					Connector: "file",
+					Connector: "local_file",
 					Properties: toProtoStruct(map[string]any{
-						"path": "data/source.csv",
+						"path":          "data/source.csv",
+						"csv.delimiter": "|",
 					}),
 				},
 			},
-			`version: 0.0.1
-type: file
+			`type: local_file
 path: data/source.csv
+csv.delimiter: '|'
 `,
 		},
 		{
 			"S3Source",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "S3Source",
 				Path: "sources/S3Source.yaml",
-				Type: api.CatalogObject_TYPE_SOURCE,
-				Source: &api.Source{
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
 					Name:      "S3Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
@@ -59,38 +60,37 @@ path: data/source.csv
 					}),
 				},
 			},
-			`version: 0.0.1
-type: s3
+			`type: s3
 uri: s3://bucket/path/file.csv
 region: us-east-2
 `,
 		},
 		{
 			"Model",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "Model",
 				Path: "models/Model.sql",
-				Type: api.CatalogObject_TYPE_MODEL,
-				Model: &api.Model{
+				Type: drivers.ObjectTypeModel,
+				Object: &runtimev1.Model{
 					Name:    "Model",
 					Sql:     "select * from A",
-					Dialect: api.Model_DIALECT_DUCKDB,
+					Dialect: runtimev1.Model_DIALECT_DUCKDB,
 				},
 			},
 			"select * from A",
 		},
 		{
 			"MetricsView",
-			&api.CatalogObject{
+			&drivers.CatalogEntry{
 				Name: "MetricsView",
 				Path: "dashboards/MetricsView.yaml",
-				Type: api.CatalogObject_TYPE_METRICS_VIEW,
-				MetricsView: &api.MetricsView{
+				Type: drivers.ObjectTypeMetricsView,
+				Object: &runtimev1.MetricsView{
 					Name:          "MetricsView",
-					From:          "Model",
+					Model:         "Model",
 					TimeDimension: "time",
 					TimeGrains:    []string{"1 day", "1 month"},
-					Dimensions: []*api.MetricsView_Dimension{
+					Dimensions: []*runtimev1.MetricsView_Dimension{
 						{
 							Name:        "dim0",
 							Label:       "Dim0_L",
@@ -102,7 +102,7 @@ region: us-east-2
 							Description: "Dim1_D",
 						},
 					},
-					Measures: []*api.MetricsView_Measure{
+					Measures: []*runtimev1.MetricsView_Measure{
 						{
 							Name:        "measure_0",
 							Label:       "Mea0_L",
@@ -118,13 +118,14 @@ region: us-east-2
 							Format:      "humanise",
 						},
 					},
+					Label:       "dashboard name",
+					Description: "long description for dashboard",
 				},
 			},
-			`version: 0.0.1
-display_name: ""
-description: ""
-from: Model
-time_dimension: time
+			`display_name: dashboard name
+description: long description for dashboard
+model: Model
+timeseries: time
 timegrains:
 - 1 day
 - 1 month
@@ -180,8 +181,7 @@ func TestReadFailure(t *testing.T) {
 		{
 			"InvalidSource",
 			"sources/InvalidSource.yaml",
-			`version: 0.0.1
-type: file
+			`type: local_file
   uri: data/source.csv
 `,
 		},
@@ -208,6 +208,41 @@ type: file
 			_, err = artifacts.Read(ctx, repoStore, "test", tt.Path)
 			require.Error(t, err)
 		})
+	}
+}
+
+func TestSanitizedName(t *testing.T) {
+	variations := []struct {
+		fileName     string
+		expectedName string
+	}{
+		{"table", "table"},
+		{"table.parquet", "table"},
+		{"table.v1.parquet", "table"},
+		{"table.parquet.tgz", "table"},
+		{"22-02-10.parquet", "_22_02_10"},
+		{"-22-02-11.parquet", "_22_02_11"},
+		{"_22-02-12.parquet", "_22_02_12"},
+	}
+
+	for _, variation := range variations {
+		filePathVariations := []struct {
+			filePath     string
+			expectedName string
+		}{
+			{variation.fileName, variation.expectedName},
+			{"/" + variation.fileName, variation.expectedName},
+			{"./" + variation.fileName, variation.expectedName},
+			{"path/to/file/" + variation.fileName, variation.expectedName},
+			{"/path/to/file/" + variation.fileName, variation.expectedName},
+			{"./path/to/file/" + variation.fileName, variation.expectedName},
+		}
+
+		for _, filePathVariation := range filePathVariations {
+			t.Run(filePathVariation.filePath, func(t *testing.T) {
+				require.Equal(t, filePathVariation.expectedName, artifacts.SanitizedName(filePathVariation.filePath))
+			})
+		}
 	}
 }
 

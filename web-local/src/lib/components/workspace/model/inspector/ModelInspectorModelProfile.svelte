@@ -1,71 +1,78 @@
 <script lang="ts">
-  import type { DerivedModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DerivedModelEntityService";
-  import type { PersistentModelEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/PersistentModelEntityService";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+
+  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTableCardinality,
+    useRuntimeServiceListCatalogEntries,
+  } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import type { ApplicationStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type {
-    DerivedModelStore,
-    PersistentModelStore,
-  } from "@rilldata/web-local/lib/application-state-stores/model-stores";
-  import type {
-    DerivedTableStore,
-    PersistentTableStore,
-  } from "@rilldata/web-local/lib/application-state-stores/table-stores";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { formatInteger } from "@rilldata/web-local/lib/util/formatters";
+  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import { getContext } from "svelte";
+  import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  export let modelName: string;
 
-  const persistentTableStore = getContext(
-    "rill:app:persistent-table-store"
-  ) as PersistentTableStore;
-  const derivedTableStore = getContext(
-    "rill:app:derived-table-store"
-  ) as DerivedTableStore;
-  const persistentModelStore = getContext(
-    "rill:app:persistent-model-store"
-  ) as PersistentModelStore;
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  const store = getContext("rill:app:store") as ApplicationStore;
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  // get source tables?
-  let sourceTableReferences = [];
+  $: getModel = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore?.instanceId,
+    modelName
+  );
+  let entry;
+  // refresh entry value only if the data has changed
+  $: entry = $getModel?.data?.entry || entry;
+
+  $: references = getTableReferences(entry?.model?.sql);
+  $: getAllSources = useRuntimeServiceListCatalogEntries(
+    $runtimeStore?.instanceId,
+    { type: "OBJECT_TYPE_SOURCE" }
+  );
+
+  $: viableSources = derived(
+    $getAllSources?.data?.entries
+      ?.filter((entry) => {
+        return references.some((ref) => ref.reference === entry.name);
+      })
+      .map((entry) => {
+        return [entry, references.find((ref) => ref.reference === entry.name)];
+      })
+      .map(([entry, reference]) => {
+        return derived(
+          [
+            writable(entry),
+            writable(reference),
+            useRuntimeServiceGetTableCardinality(
+              $runtimeStore?.instanceId,
+              entry.name
+            ),
+          ],
+          ([entry, reference, $cardinality]) => {
+            return {
+              ...entry,
+              ...reference,
+              totalRows: +$cardinality?.data?.cardinality,
+            };
+          }
+        );
+      }),
+    ($row) => $row
+  );
   let showColumns = true;
-
-  /** Select the explicit ID to prevent unneeded reactive updates in currentModel */
-  $: activeEntityID = $store?.activeEntity?.id;
-
-  /** get current model */
-  let currentModel: PersistentModelEntity;
-  $: currentModel =
-    activeEntityID && $persistentModelStore?.entities
-      ? $persistentModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  /** get current derived model*/
-  let currentDerivedModel: DerivedModelEntity;
-  $: currentDerivedModel =
-    activeEntityID && $derivedModelStore?.entities
-      ? $derivedModelStore.entities.find((q) => q.id === activeEntityID)
-      : undefined;
-  // get source table references.
-  $: if (currentDerivedModel?.sources?.length) {
-    sourceTableReferences = currentDerivedModel.sources;
-  }
 
   // toggle state for inspector sections
   let showSourceTables = true;
 
   function focus(reference) {
     return () => {
-      if (!currentDerivedModel?.error && reference) {
-        queryHighlight.set(reference.tables);
+      // FIXME
+      if (references.length) {
+        queryHighlight.set([reference]);
       }
     };
   }
@@ -73,82 +80,61 @@
     queryHighlight.set(undefined);
   }
 
-  $: modelHasError = !!currentDerivedModel?.error;
+  // FIXME
+  let modelHasError = false;
 </script>
 
 <div class="model-profile">
-  {#if currentModel && currentModel.query.trim().length}
+  {#if entry && entry?.model?.sql?.trim()?.length}
     <div class="pt-4 pb-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="sources"
+          tooltipText="Sources"
           bind:active={showSourceTables}
         >
           Sources
         </CollapsibleSectionTitle>
       </div>
 
-      <!-- source tables -->
       {#if showSourceTables}
         <div
           transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
           class="mt-1"
         >
-          {#each sourceTableReferences as table}
-            {@const persistentTableRef = $persistentTableStore.entities.find(
-              (t) => table.name === t.tableName
-            )}
-            {@const derivedTableRef = $derivedTableStore.entities.find(
-              (derivedTable) => derivedTable?.id === persistentTableRef?.id
-            )}
-            {@const correspondingTableCardinality =
-              derivedTableRef?.cardinality}
+          {#if viableSources && $viableSources}
+            {#each $viableSources as table (table.name)}
+              <WithModelResultTooltip {modelHasError}>
+                <div
+                  class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
+                  style:grid-template-columns="auto max-content"
+                  on:focus={focus(table)}
+                  on:mouseover={focus(table)}
+                  on:mouseleave={blur}
+                  on:blur={blur}
+                  class:text-gray-500={modelHasError}
+                >
+                  <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+                    {table.name}
+                  </div>
 
-            {@const sourceName =
-              persistentTableRef?.tableName || "unknown source"}
-
-            {@const sourceIsDefined = !!persistentTableRef?.tableName}
-
-            <WithModelResultTooltip {modelHasError}>
-              <div
-                class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
-                style:grid-template-columns="auto max-content"
-                on:focus={focus(table)}
-                on:mouseover={focus(table)}
-                on:mouseleave={blur}
-                on:blur={blur}
-                class:text-gray-500={modelHasError}
-                class:italic={modelHasError}
-              >
-                <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                  {sourceName}
+                  <div class="text-gray-500">
+                    {#if table.totalRows}
+                      {`${formatInteger(table.totalRows)} rows` || ""}
+                    {/if}
+                  </div>
                 </div>
 
-                <div class="text-gray-500 italic">
-                  <!-- is there a source table with this name and cardinality established? -->
-                  {#if correspondingTableCardinality}
-                    {`${formatInteger(correspondingTableCardinality)} rows` ||
-                      ""}
-                  {/if}
-                </div>
-              </div>
+                <svelte:fragment slot="tooltip-title"
+                  >{table.name}</svelte:fragment
+                >
+                <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
 
-              <!-- tooltip content -->
-              <svelte:fragment slot="tooltip-title"
-                >{sourceName}</svelte:fragment
-              >
-              <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
-
-              <svelte:fragment slot="tooltip-description">
-                {#if sourceIsDefined}
-                  This source table is referenced in the model query.
-                {:else}
-                  Data source is not known. This is likely due to a source name
-                  changing.
-                {/if}
-              </svelte:fragment>
-            </WithModelResultTooltip>
-          {/each}
+                <svelte:fragment slot="tooltip-description">
+                  This source table is referenced in the model query
+                </svelte:fragment>
+              </WithModelResultTooltip>
+            {/each}
+          {/if}
         </div>
       {/if}
     </div>
@@ -161,19 +147,19 @@
           tooltipText="selected columns"
           bind:active={showColumns}
         >
-          selected columns
+          Selected columns
         </CollapsibleSectionTitle>
       </div>
 
-      {#if currentDerivedModel?.profile && showColumns}
+      {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <!-- {#key entry?.model?.sql} -->
           <ColumnProfile
+            key={entry?.model?.sql}
+            objectName={entry?.model?.name}
             indentLevel={0}
-            cardinality={currentDerivedModel?.cardinality ?? 0}
-            profile={currentDerivedModel?.profile ?? []}
-            head={currentDerivedModel?.preview ?? []}
-            entityId={activeEntityID}
           />
+          <!-- {/key} -->
         </div>
       {/if}
     </div>

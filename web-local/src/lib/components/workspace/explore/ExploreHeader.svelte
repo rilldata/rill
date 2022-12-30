@@ -1,51 +1,53 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-  import { BehaviourEventMedium } from "@rilldata/web-local/common/metrics-service/BehaviourEventTypes";
+  import { Button } from "@rilldata/web-common/components/button";
+  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/common/metrics-service/MetricsTypes";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { invalidateMetricsViewData } from "../../../svelte-query/queries/metrics-views/invalidation";
-  import { useMetaQuery } from "../../../svelte-query/queries/metrics-views/metadata";
-  import { Button } from "../../button";
-  import MetricsIcon from "../../icons/Metrics.svelte";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
-  export let metricsDefId: string;
+  export let metricViewName: string;
 
-  const config = getContext<RootConfig>("config");
+  const navigationVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Tweened<number>;
 
-  const queryClient = useQueryClient();
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
-  $: metaQuery = useMetaQuery(config, metricsDefId);
+  let displayName;
   // TODO: move this "sync" to a more relevant component
-  $: if (metricsDefId && $metaQuery && metricsDefId === $metaQuery.data?.id) {
+  $: if (
+    metricViewName &&
+    $metaQuery &&
+    metricViewName === $metaQuery.data?.name
+  ) {
     if (
       !$metaQuery.data?.measures?.length ||
       !$metaQuery.data?.dimensions?.length
     ) {
-      goto(`/dashboard/${metricsDefId}/edit`);
-    } else if (!$metaQuery.isError && !$metaQuery.isFetching) {
-      // FIXME: understand this logic before removing invalidateMetricsViewData
-      invalidateMetricsViewData(queryClient, metricsDefId);
+      goto(`/dashboard/${metricViewName}/edit`);
     }
-    metricsExplorerStore.sync(metricsDefId, $metaQuery.data);
+    displayName = $metaQuery.data.label;
+    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
   }
 
-  $: metricsDefinition = getMetricsDefReadableById(metricsDefId);
-
-  const viewMetrics = (metricsDefId: string) => {
-    goto(`/dashboard/${metricsDefId}/edit`);
+  const viewMetrics = (metricViewName: string) => {
+    goto(`/dashboard/${metricViewName}/edit`);
 
     navigationEvent.fireEvent(
-      metricsDefId,
+      metricViewName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard,
@@ -54,33 +56,41 @@
   };
 </script>
 
-<section id="header" class="w-full flex flex-col">
+<section
+  class="w-full flex flex-col"
+  id="header"
+  style:padding-left="{$navigationVisibilityTween * 24}px"
+>
   <!-- top row
     title and call to action
   -->
-  <div class="flex justify-between w-full pt-3 pl-1 pr-4">
+  <div
+    style:height="var(--header-height)"
+    class="flex items-center justify-between w-full pl-1 pr-4"
+  >
     <!-- title element -->
-    <h1 style:line-height="1.1">
-      <div class="pl-4 pt-1" style:font-size="24px">
-        {#if $metricsDefinition}
-          {$metricsDefinition?.metricDefLabel}
-        {/if}
+    <h1 style:line-height="1.1" style:margin-top="-1px">
+      <div class="pl-4" style:font-family="InterDisplay" style:font-size="20px">
+        {displayName || metricViewName}
       </div>
     </h1>
     <!-- top right CTAs -->
-    <div>
-      <Button type="secondary" on:click={() => viewMetrics(metricsDefId)}>
-        <div class="flex items-center gap-x-2">
-          Edit Metrics <MetricsIcon />
-        </div>
-      </Button>
+    <div style="flex-shrink: 0;">
+      <Tooltip distance={8}>
+        <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+          Edit Metrics <MetricsIcon size="16px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          Edit this dashboard's metrics & settings
+        </TooltipContent>
+      </Tooltip>
     </div>
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">
-    <TimeControls {metricsDefId} />
-    {#key metricsDefId}
-      <Filters {metricsDefId} />
+    <TimeControls {metricViewName} />
+    {#key metricViewName}
+      <Filters {metricViewName} />
     {/key}
   </div>
 </section>

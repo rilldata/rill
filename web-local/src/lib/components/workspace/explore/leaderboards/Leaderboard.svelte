@@ -1,27 +1,30 @@
 <script lang="ts">
-  import type { RootConfig } from "@rilldata/web-local/common/config/RootConfig";
-
   /**
    * Leaderboard.svelte
    * -------------------------
    * This is the "implemented" feature of the leaderboard, meant to be used
    * in the application itself.
    */
-  import type { DimensionDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-  import type { MeasureDefinitionEntity } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/MeasureDefinitionStateService";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    getFilterForDimension,
+    useMetaDimension,
+    useMetaMeasure,
+    useMetaQuery,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
 
-  import { createEventDispatcher, getContext } from "svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
-    useMetaDimension,
-    useMetaMappedFilters,
-    useMetaMeasure,
-    useMetaQuery,
-  } from "../../../../svelte-query/queries/metrics-views/metadata";
-  import { useTopListQuery } from "../../../../svelte-query/queries/metrics-views/top-list";
+    MetricsViewDimension,
+    MetricsViewMeasure,
+    useRuntimeServiceMetricsViewToplist,
+  } from "@rilldata/web-common/runtime-client";
+  import { createEventDispatcher } from "svelte";
   import {
     humanizeGroupValues,
     NicelyFormattedTypes,
@@ -30,13 +33,10 @@
   import LeaderboardHeader from "../../../leaderboard/LeaderboardHeader.svelte";
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
-  import { getDisplayName } from "../utils";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
 
-  export let metricsDefId: string;
-  export let dimensionId: string;
+  export let metricViewName: string;
+  export let dimensionName: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
    * gets scaled with. For a summable metric, the total is a reference value,
    * or for a count(*) metric, the reference value is the total number of rows.
@@ -53,86 +53,87 @@
 
   const dispatch = createEventDispatcher();
 
-  const config = getContext<RootConfig>("config");
-
-  $: metaQuery = useMetaQuery(config, metricsDefId);
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricsDefId];
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
-    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionId) ?? false;
+    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
   let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
-  $: dimensionQuery = useMetaDimension(config, metricsDefId, dimensionId);
-  let dimension: DimensionDefinitionEntity;
+  $: dimensionQuery = useMetaDimension(
+    $runtimeStore.instanceId,
+    metricViewName,
+    dimensionName
+  );
+  let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
-  let displayName: string;
-  // TODO: select based on label?
-  $: displayName = getDisplayName(dimension);
+  $: displayName = dimension.label || dimension.name;
 
   $: measureQuery = useMetaMeasure(
-    config,
-    metricsDefId,
-    metricsExplorer?.leaderboardMeasureId
+    $runtimeStore.instanceId,
+    metricViewName,
+    metricsExplorer?.leaderboardMeasureName
   );
-  let measure: MeasureDefinitionEntity;
+  let measure: MetricsViewMeasure;
   $: measure = $measureQuery?.data;
 
-  $: mappedFiltersQuery = useMetaMappedFilters(
-    config,
-    metricsDefId,
+  $: filterForDimension = getFilterForDimension(
     metricsExplorer?.filters,
-    dimensionId
+    dimensionName
   );
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters[filterKey]?.find((d) => d.name === dimension?.id)
+    metricsExplorer?.filters[filterKey]?.find((d) => d.name === dimension?.name)
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
   function setLeaderboardValues(values) {
     dispatch("leaderboard-value", {
-      dimensionId,
+      dimensionName,
       values,
     });
   }
 
   function toggleFilterMode() {
-    metricsExplorerStore.toggleFilterMode(metricsDefId, dimensionId);
+    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 
-  function selectDimension(dimensionId) {
-    metricsExplorerStore.setMetricDimensionId(metricsDefId, dimensionId);
+  function selectDimension(dimensionName) {
+    metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
   let topListQuery;
 
   $: if (
-    measure?.id &&
+    measure?.name &&
     metricsExplorer &&
     $metaQuery?.isSuccess &&
     !$metaQuery?.isRefetching
   ) {
-    topListQuery = useTopListQuery(config, metricsDefId, dimensionId, {
-      measures: [measure.sqlName],
-      limit: 250,
-      offset: 0,
-      sort: [
-        {
-          name: measure.sqlName,
-          direction: "desc",
-        },
-      ],
-      time: {
-        start: metricsExplorer.selectedTimeRange?.start,
-        end: metricsExplorer.selectedTimeRange?.end,
-      },
-      filter: $mappedFiltersQuery.data,
-    });
+    topListQuery = useRuntimeServiceMetricsViewToplist(
+      $runtimeStore.instanceId,
+      metricViewName,
+      {
+        dimensionName: dimensionName,
+        measureNames: [measure.name],
+        limit: "250",
+        offset: "0",
+        sort: [
+          {
+            name: measure.name,
+            ascending: false,
+          },
+        ],
+        timeStart: metricsExplorer.selectedTimeRange?.start,
+        timeEnd: metricsExplorer.selectedTimeRange?.end,
+        filter: filterForDimension,
+      }
+    );
   }
 
   let values = [];
@@ -141,8 +142,8 @@
   $: if (!$topListQuery?.isFetching) {
     values =
       $topListQuery?.data?.data.map((val) => ({
-        value: val[measure?.sqlName],
-        label: val[dimension?.dimensionColumn],
+        value: val[measure?.name],
+        label: val[dimension?.name],
       })) ?? [];
     setLeaderboardValues(values);
   }
@@ -198,7 +199,7 @@
       {filterExcludeMode}
       {hovered}
       dimensionDescription={dimension?.description}
-      on:click={() => selectDimension(dimensionId)}
+      on:click={() => selectDimension(dimensionName)}
     />
 
     {#if values}
@@ -234,7 +235,7 @@
             {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
-          <div class="p-1 italic ui-copy-disabled">no available values</div>
+          <div class="p-1 ui-copy-disabled">no available values</div>
         {/if}
 
         {#if values.length > slice}
@@ -242,11 +243,9 @@
             <LeaderboardListItem
               value={0}
               color="=ui-label"
-              on:click={() => selectDimension(dimensionId)}
+              on:click={() => selectDimension(dimensionName)}
             >
-              <div class="italic ui-copy-muted" slot="title">
-                (Expand Table)
-              </div>
+              <div class="ui-copy-muted" slot="title">(Expand Table)</div>
             </LeaderboardListItem>
             <TooltipContent slot="tooltip-content"
               >Expand dimension to see more values</TooltipContent

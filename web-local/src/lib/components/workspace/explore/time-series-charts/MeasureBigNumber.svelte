@@ -1,28 +1,30 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-local/common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import { crossfade, fly } from "svelte/transition";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-  import { WithTween } from "../../../data-graphic/functional-components";
-  import CrossIcon from "../../../icons/CrossIcon.svelte";
   import Spinner from "../../../Spinner.svelte";
-  import Tooltip from "../../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../tooltip/TooltipContent.svelte";
 
   export let value: number;
   export let status: EntityStatus;
   export let description: string = undefined;
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: string; // workaround, since unable to cast `string` to `NicelyFormattedTypes` within MetricsTimeSeriesCharts.svelte's `#each` block
 
+  $: formatPresetEnum =
+    (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
   $: valusIsPresent = value !== undefined && value !== null;
 
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
 <div>
-  <Tooltip location="top" distance={16}>
+  <Tooltip distance={16} location="top">
     <h2>
       <slot name="name" />
     </h2>
@@ -30,7 +32,7 @@
       {description}
     </TooltipContent>
   </Tooltip>
-  <div style:font-size="1.5rem" style:font-weight="light" class="ui-copy-muted">
+  <div class="ui-copy-muted" style:font-size="1.5rem" style:font-weight="light">
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
     override this by filling the slot in the consuming component. -->
     <slot name="value">
@@ -38,8 +40,8 @@
         {#if valusIsPresent && status === EntityStatus.Idle}
           <div>
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {#if formatPreset !== NicelyFormattedTypes.NONE}
-                {humanizeDataType(output, formatPreset)}
+              {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                {humanizeDataType(output, formatPresetEnum)}
               {:else}
                 {output}
               {/if}

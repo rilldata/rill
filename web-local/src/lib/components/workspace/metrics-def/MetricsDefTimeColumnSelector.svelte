@@ -1,54 +1,36 @@
 <script lang="ts">
-  import TimestampIcon from "../../icons/TimestampType.svelte";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
 
-  import { store } from "../../../redux-store/store-root";
-  import { getContext } from "svelte";
-  import type { DerivedModelStore } from "../../../application-state-stores/model-stores";
-  import type { ProfileColumn } from "../../../types";
-  import { updateMetricsDefsWrapperApi } from "../../../redux-store/metrics-definition/metrics-definition-apis";
-  import { getMetricsDefReadableById } from "../../../redux-store/metrics-definition/metrics-definition-readables";
-  import { selectTimestampColumnFromProfileEntity } from "../../../redux-store/source/source-selectors";
-
-  export let metricsDefId;
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+  export let metricsInternalRep;
+  export let selectedModel: V1Model;
 
   $: timeColumnSelectedValue =
-    $selectedMetricsDef?.timeDimension || "__DEFAULT_VALUE__";
+    $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
 
-  const derivedModelStore = getContext(
-    "rill:app:derived-model-store"
-  ) as DerivedModelStore;
-
-  let derivedModelColumns: Array<ProfileColumn>;
-  $: if ($selectedMetricsDef?.sourceModelId && $derivedModelStore?.entities) {
-    derivedModelColumns = selectTimestampColumnFromProfileEntity(
-      $derivedModelStore?.entities.find(
-        (model) => model.id === $selectedMetricsDef.sourceModelId
-      )
-    );
+  let timestampColumns: Array<string>;
+  $: if (selectedModel) {
+    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
   } else {
-    derivedModelColumns = [];
+    timestampColumns = [];
   }
 
   function updateMetricsDefinitionHandler(evt: Event) {
-    store.dispatch(
-      updateMetricsDefsWrapperApi({
-        id: metricsDefId,
-        changes: { timeDimension: (<HTMLSelectElement>evt.target).value },
-      })
+    $metricsInternalRep.updateMetricKey(
+      "timeseries",
+      (<HTMLSelectElement>evt.target).value
     );
   }
 
   let tooltipText = "";
   let dropdownDisabled = true;
-  $: if ($selectedMetricsDef?.sourceModelId === undefined) {
-    tooltipText = "select a model before selecting a timestamp column";
+  $: if (selectedModel?.name === undefined) {
+    tooltipText = "Select a model before selecting a timestamp column";
     dropdownDisabled = true;
-  } else if (derivedModelColumns.length === 0) {
-    tooltipText = "the selected model has no timestamp columns";
+  } else if (timestampColumns.length === 0) {
+    tooltipText = "The selected model has no timestamp columns";
     dropdownDisabled = true;
   } else {
     tooltipText = undefined;
@@ -57,28 +39,28 @@
 </script>
 
 <div class="flex items-center">
-  <div class="flex items-center gap-x-2" style="width:9em">
-    <TimestampIcon size="16px" /> timestamp
+  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+    Timestamp
   </div>
   <div>
     <Tooltip
-      location="right"
       alignment="middle"
       distance={16}
+      location="right"
       suppress={tooltipText === undefined}
     >
       <select
-        class="italic hover:bg-gray-100 rounded border border-6 border-transparent hover:font-bold hover:border-gray-100"
+        class="hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300"
+        disabled={dropdownDisabled}
+        on:change={updateMetricsDefinitionHandler}
         style="background-color: #FFF; width:18em;"
         value={timeColumnSelectedValue}
-        on:change={updateMetricsDefinitionHandler}
-        disabled={dropdownDisabled}
       >
-        <option value="__DEFAULT_VALUE__" disabled selected hidden
-          >select a timestamp...</option
+        <option disabled hidden selected value="__DEFAULT_VALUE__"
+          >Select a timestamp...</option
         >
-        {#each derivedModelColumns as column}
-          <option value={column.name}>{column.name}</option>
+        {#each timestampColumns as column}
+          <option value={column}>{column}</option>
         {/each}
       </select>
 

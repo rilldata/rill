@@ -3,8 +3,9 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/rilldata/rill/runtime/api"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -17,28 +18,28 @@ import (
  * TODO: is this in the right place?
  */
 
-var Migrators = make(map[string]EntityMigrator)
+var Migrators = make(map[drivers.ObjectType]EntityMigrator)
 
-func Register(name string, artifact EntityMigrator) {
-	if Migrators[name] != nil {
-		panic(fmt.Errorf("already registered migrator type with name '%s'", name))
+func Register(t drivers.ObjectType, artifact EntityMigrator) {
+	if Migrators[t] != nil {
+		panic(fmt.Errorf("already registered migrator type with name '%v'", t))
 	}
-	Migrators[name] = artifact
+	Migrators[t] = artifact
 }
 
 type EntityMigrator interface {
-	Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error
-	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error
-	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *api.CatalogObject) error
-	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
-	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string
-	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error
+	Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *drivers.CatalogEntry) error
+	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *drivers.CatalogEntry) error
+	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *drivers.CatalogEntry) error
+	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error
+	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string
+	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError
 	// IsEqual checks everything but the name
-	IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool
-	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error)
+	IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool
+	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error)
 }
 
-func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error {
+func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *drivers.CatalogEntry) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -47,7 +48,7 @@ func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore,
 	return migrator.Create(ctx, olap, repo, catalog)
 }
 
-func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *api.CatalogObject) error {
+func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *drivers.CatalogEntry) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -56,7 +57,7 @@ func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore,
 	return migrator.Update(ctx, olap, repo, catalog)
 }
 
-func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *api.CatalogObject) error {
+func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *drivers.CatalogEntry) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -65,7 +66,7 @@ func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *a
 	return migrator.Rename(ctx, olap, from, catalog)
 }
 
-func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -74,7 +75,7 @@ func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObj
 	return migrator.Delete(ctx, olap, catalog)
 }
 
-func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) []string {
+func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -83,8 +84,8 @@ func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *api.C
 	return migrator.GetDependencies(ctx, olap, catalog)
 }
 
-// Validate also returns list of dependents
-func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) error {
+// Validate also returns list of dependents.
+func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -93,8 +94,8 @@ func Validate(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogO
 	return migrator.Validate(ctx, olap, catalog)
 }
 
-// IsEqual checks everything but the name
-func IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObject) bool {
+// IsEqual checks everything but the name.
+func IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	if cat1.Type != cat2.Type {
 		return false
 	}
@@ -106,7 +107,7 @@ func IsEqual(ctx context.Context, cat1 *api.CatalogObject, cat2 *api.CatalogObje
 	return migrator.IsEqual(ctx, cat1, cat2)
 }
 
-func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.CatalogObject) (bool, error) {
+func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
@@ -115,18 +116,53 @@ func ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *api.Cata
 	return migrator.ExistsInOlap(ctx, olap, catalog)
 }
 
-func getMigrator(catalog *api.CatalogObject) (EntityMigrator, bool) {
-	var objType drivers.CatalogObjectType
-	// TODO: temporary for the merge with main
-	switch catalog.Type {
-	case api.CatalogObject_TYPE_SOURCE:
-		objType = drivers.CatalogObjectTypeSource
-	case api.CatalogObject_TYPE_MODEL:
-		objType = drivers.CatalogObjectTypeModel
-	case api.CatalogObject_TYPE_METRICS_VIEW:
-		objType = drivers.CatalogObjectTypeMetricsView
+func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error {
+	// TODO: do we need to push this to individual implementations?
+	if catalog.Type == drivers.ObjectTypeMetricsView {
+		return nil
 	}
 
-	migrator, ok := Migrators[string(objType)]
-	return migrator, ok
+	table, err := olap.InformationSchema().Lookup(ctx, catalog.Name)
+	if err != nil {
+		return err
+	}
+
+	switch catalog.Type {
+	case drivers.ObjectTypeTable:
+		catalog.GetTable().Schema = table.Schema
+	case drivers.ObjectTypeSource:
+		catalog.GetSource().Schema = table.Schema
+	case drivers.ObjectTypeModel:
+		catalog.GetModel().Schema = table.Schema
+	}
+
+	return nil
+}
+
+func LastUpdated(ctx context.Context, instID string, repo drivers.RepoStore, catalog *drivers.CatalogEntry) (time.Time, error) {
+	// TODO: do we need to push this to individual implementations to handle just local_file source?
+	if catalog.Type != drivers.ObjectTypeSource || catalog.GetSource().Connector != "local_file" {
+		// return a very old time
+		return time.Time{}, nil
+	}
+	stat, err := repo.Stat(ctx, instID, catalog.GetSource().Properties.Fields["path"].GetStringValue())
+	if err != nil {
+		return time.Time{}, err
+	}
+	return stat.LastUpdated, nil
+}
+
+func CreateValidationError(filePath, message string) []*runtimev1.ReconcileError {
+	return []*runtimev1.ReconcileError{
+		{
+			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
+			FilePath: filePath,
+			Message:  message,
+		},
+	}
+}
+
+func getMigrator(catalog *drivers.CatalogEntry) (EntityMigrator, bool) {
+	m, ok := Migrators[catalog.Type]
+	return m, ok
 }

@@ -2,9 +2,13 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
@@ -13,71 +17,59 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/api"
-	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/graceful"
 )
 
-type ServerOptions struct {
-	HTTPPort            int
-	GRPCPort            int
-	ConnectionCacheSize int
+type Options struct {
+	HTTPPort int
+	GRPCPort int
 }
 
 type Server struct {
-	api.UnsafeRuntimeServiceServer
-	opts         *ServerOptions
-	metastore    drivers.Connection
-	logger       *zap.Logger
-	connCache    *connectionCache
-	serviceCache *servicesCache
+	runtimev1.UnsafeRuntimeServiceServer
+	runtime *runtime.Runtime
+	opts    *Options
+	logger  *zap.Logger
 }
 
-var _ api.RuntimeServiceServer = (*Server)(nil)
+var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
 
-func NewServer(opts *ServerOptions, metastore drivers.Connection, logger *zap.Logger) (*Server, error) {
-	_, ok := metastore.RegistryStore()
-	if !ok {
-		return nil, fmt.Errorf("server metastore must be a valid registry")
-	}
-
+func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	return &Server{
-		opts:         opts,
-		metastore:    metastore,
-		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize),
-		serviceCache: newServicesCache(),
+		opts:    opts,
+		runtime: rt,
+		logger:  logger,
 	}, nil
 }
 
-// Starts the gRPC server
+// ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 		),
 	)
-	api.RegisterRuntimeServiceServer(server, s)
+	runtimev1.RegisterRuntimeServiceServer(server, s)
 	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
-// Starts the HTTP server
+// Starts the HTTP server.
 func (s *Server) ServeHTTP(ctx context.Context) error {
 	handler, err := s.HTTPHandler(ctx)
 	if err != nil {
@@ -89,23 +81,55 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// HTTP handler serving REST gateway
+// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
+func ErrorToCode(err error) codes.Code {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return codes.DeadlineExceeded
+	}
+	if errors.Is(err, context.Canceled) {
+		return codes.Canceled
+	}
+	return logging.DefaultErrorToCode(err)
+}
+
+// GRPCCodeToLevel overrides the log level of various gRPC codes.
+// We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
+func GRPCCodeToLevel(code codes.Code) logging.Level {
+	switch code {
+	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
+		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
+		return logging.INFO
+	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
+		return logging.WARNING
+	case codes.Internal, codes.DataLoss:
+		return logging.ERROR
+	default:
+		return logging.ERROR
+	}
+}
+
+// HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux()
+	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-	err := api.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// One-off REST-only path for multipart file upload
-	mux.HandlePath(
-		"POST",
-		"/v1/repos/{repo_id}/objects/file/-/{path=**}",
-		s.UploadMultipartFile,
-	)
+	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	if err != nil {
+		panic(err)
+	}
+
+	// One-off REST-only path for file export
+	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	if err != nil {
+		panic(err)
+	}
 
 	// Register CORS
 	handler := cors(mux)
@@ -113,15 +137,20 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
-// Metrics APIs
-func (s *Server) EstimateRollupInterval(ctx context.Context, req *api.EstimateRollupIntervalRequest) (*api.EstimateRollupIntervalResponse, error) {
-	return &api.EstimateRollupIntervalResponse{}, nil
+// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// code) to HTTP status code 400 instead of 500.
+func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+	s := status.Convert(err)
+	if s.Code() == codes.Unknown {
+		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
+	}
+	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
 // Ping implements RuntimeService
-func (s *Server) Ping(ctx context.Context, req *api.PingRequest) (*api.PingResponse, error) {
-	resp := &api.PingResponse{
-		Version: runtime.Version,
+func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
+	resp := &runtimev1.PingResponse{
+		Version: "", // TODO: Return version
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
