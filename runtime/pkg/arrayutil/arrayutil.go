@@ -23,3 +23,12 @@ func Contains[E string | int](array []E, c E) bool {
 	}
 	return false
 }
+
+func Delete[E string | int](array []E, c E) []E {
+	for i, e := range array {
+		if e == c {
+			return append(array[0:i], array[i+1:]...)
+		}
+	}
+	return array
+}

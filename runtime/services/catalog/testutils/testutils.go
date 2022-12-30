@@ -84,7 +84,7 @@ func ToProtoStruct(obj map[string]any) *structpb.Struct {
 	return s
 }
 
-func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) {
+func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {
 	catalogEntry := AssertInCatalogStore(t, s, name, sourcePath)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{
@@ -114,6 +114,8 @@ func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) {
 	require.NoError(t, err)
 	require.Equal(t, name, table.Name)
 	require.Equal(t, schema.Fields, table.Schema.Fields)
+
+	return catalogEntry
 }
 
 func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {

@@ -689,7 +689,7 @@ export interface V1CategoricalSummary {
 export interface V1CatalogEntry {
   createdOn?: string;
   embedded?: boolean;
-  links?: number;
+  embeds?: string[];
   metricsView?: V1MetricsView;
   model?: V1Model;
   name?: string;

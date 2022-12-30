@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
@@ -20,15 +21,17 @@ type MigrationItem struct {
 	CatalogInStore         *drivers.CatalogEntry
 	Type                   MigrationType
 	FromName               string
+	FromNormalizedName     string
 	FromPath               string
 	NormalizedDependencies []string
 	Error                  *runtimev1.ReconcileError
 }
 
-func (i *MigrationItem) renameFrom(from *MigrationItem) {
+func (i *MigrationItem) renameFrom(name, path string) {
 	i.Type = MigrationRename
-	i.FromName = from.Name
-	i.FromPath = from.Path
+	i.FromName = name
+	i.FromNormalizedName = normalizeName(name)
+	i.FromPath = path
 }
 
 type MigrationType int
@@ -47,6 +50,7 @@ func (s *Service) getMigrationItem(
 	repoPath string,
 	storeObjectsMap map[string]*drivers.CatalogEntry,
 	forcedPathMap map[string]bool,
+	embeddedMigrations map[string]*MigrationItem,
 ) []*MigrationItem {
 	item := &MigrationItem{
 		Type: MigrationNoChange,
@@ -83,7 +87,7 @@ func (s *Service) getMigrationItem(
 		}
 		item.NormalizedDependencies = normalizedDependencies
 
-		items = append(items, s.resolveDependencies(ctx, item, embeddedEntries)...)
+		items = append(items, s.resolveDependencies(ctx, item, embeddedEntries, embeddedMigrations)...)
 
 		repoStat, _ := s.Repo.Stat(ctx, s.InstID, repoPath)
 		catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstID, s.Repo, catalog)
@@ -123,8 +127,7 @@ func (s *Service) getMigrationItem(
 	item.CatalogInStore = catalogInStore
 	if item.Name != catalogInStore.Name && item.CatalogInFile != nil {
 		// rename with same name different case
-		item.FromName = catalogInStore.Name
-		item.Type = MigrationRename
+		item.renameFrom(catalogInStore.Name, item.Path)
 	}
 
 	switch item.Type {
@@ -153,6 +156,7 @@ func (s *Service) resolveDependencies(
 	ctx context.Context,
 	item *MigrationItem,
 	embeddedEntries []*drivers.CatalogEntry,
+	embeddedMigrations map[string]*MigrationItem,
 ) []*MigrationItem {
 	items := make([]*MigrationItem, 0)
 
@@ -161,7 +165,9 @@ func (s *Service) resolveDependencies(
 	for _, prevDependency := range prevDependencies {
 		prevEmbeddedEntries[prevDependency] = true
 	}
-	// TODO: handle 1st time run
+	for _, prevEmbedded := range item.CatalogInFile.Embeds {
+		prevEmbeddedEntries[prevEmbedded] = true
+	}
 
 	item.CatalogInFile.Embeds = make([]string, 0)
 
@@ -174,25 +180,37 @@ func (s *Service) resolveDependencies(
 			delete(prevEmbeddedEntries, normalizedEmbeddedName)
 			continue
 		}
-		embeddedItem := s.newEmbeddedMigrationItem(embeddedEntry, MigrationCreate)
-		if existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, embeddedEntry.Name); ok {
-			existingEntry.Links++
-			embeddedItem.CatalogInFile = existingEntry
-			embeddedItem.Type = MigrationUpdateCatalog
+		embeddedItem, ok := embeddedMigrations[normalizedEmbeddedName]
+		if !ok {
+			embeddedItem = s.newEmbeddedMigrationItem(embeddedEntry, MigrationCreate)
+			if existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, embeddedEntry.Name); ok {
+				// update the catalog for embedded entry to the one from store
+				embeddedItem.CatalogInFile = existingEntry
+				embeddedItem.CatalogInStore = existingEntry
+				if arrayutil.Contains(existingEntry.Embeds, item.NormalizedName) {
+					// if it already has this, no change
+					embeddedItem.Type = MigrationNoChange
+				} else {
+					// else mark as catalog update, this means
+					embeddedItem.Type = MigrationUpdateCatalog
+				}
+			}
 		}
+		embeddedItem.addLink(item.NormalizedName)
 		items = append(items, embeddedItem)
 	}
 
+	// go through previous embedded entries not embedded anymore
 	for prevEmbeddedEntry := range prevEmbeddedEntries {
-		existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, prevEmbeddedEntry)
-		if !ok || !existingEntry.Embedded {
-			continue
+		embeddedItem, ok := embeddedMigrations[prevEmbeddedEntry]
+		if !ok {
+			existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, prevEmbeddedEntry)
+			if !ok || !existingEntry.Embedded {
+				continue
+			}
+			embeddedItem = s.newEmbeddedMigrationItem(existingEntry, MigrationUpdateCatalog)
 		}
-		existingEntry.Links--
-		embeddedItem := s.newEmbeddedMigrationItem(existingEntry, MigrationUpdate)
-		if existingEntry.Links == 0 {
-			embeddedItem.Type = MigrationDelete
-		}
+		embeddedItem.removeLink(item.NormalizedName)
 		items = append(items, embeddedItem)
 	}
 
@@ -207,6 +225,27 @@ func (s *Service) newEmbeddedMigrationItem(newEntry *drivers.CatalogEntry, migra
 		CatalogInFile:  newEntry,
 		CatalogInStore: newEntry,
 		Type:           migrationType,
+	}
+}
+
+func (i *MigrationItem) addLink(name string) {
+	if arrayutil.Contains(i.CatalogInFile.Embeds, name) {
+		return
+	}
+	if i.Type == MigrationNoChange {
+		i.Type = MigrationUpdateCatalog
+	}
+	i.CatalogInFile.Links++
+	i.CatalogInFile.Embeds = append(i.CatalogInFile.Embeds, name)
+}
+
+func (i *MigrationItem) removeLink(name string) {
+	i.CatalogInFile.Links--
+	i.CatalogInFile.Embeds = arrayutil.Delete(i.CatalogInFile.Embeds, name)
+	if i.CatalogInFile.Links == 0 {
+		i.Type = MigrationDelete
+	} else if i.Type == MigrationNoChange {
+		i.Type = MigrationUpdateCatalog
 	}
 }
 

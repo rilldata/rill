@@ -433,11 +433,11 @@ message CatalogEntry {
     MetricsView metrics_view = 5;
   }
   string path = 6;
-  bool embedded = 8;
-  int32 links = 9;
-  google.protobuf.Timestamp created_on = 10;
-  google.protobuf.Timestamp updated_on = 11;
-  google.protobuf.Timestamp refreshed_on = 12;
+  bool embedded = 7;
+  repeated string embeds = 8;
+  google.protobuf.Timestamp created_on = 9;
+  google.protobuf.Timestamp updated_on = 10;
+  google.protobuf.Timestamp refreshed_on = 11;
 }
 
 // Request message for RuntimeService.ListCatalogEntries

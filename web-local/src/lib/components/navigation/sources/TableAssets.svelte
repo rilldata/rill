@@ -1,7 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceListCatalogEntries,
+    useRuntimeServicePutFileAndReconcile,
+    V1CatalogEntry,
+  } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import EmbeddedSource from "@rilldata/web-local/lib/components/navigation/sources/EmbeddedSource.svelte";
   import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
   import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
@@ -21,6 +26,15 @@
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: modelNames = useModelNames($runtimeStore.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
+
+  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
+    $runtimeStore?.instanceId
+  );
+  let embeddedSourceCatalogs: Array<V1CatalogEntry>;
+  $: embeddedSourceCatalogs =
+    $sourceCatalogsQuery?.data?.entries?.filter(
+      (catalog) => catalog.embedded && catalog.source
+    ) ?? [];
 
   const queryClient = useQueryClient();
 
@@ -56,8 +70,8 @@
   bind:show={showTables}
   contextButtonID={"add-table"}
   on:add={openShowAddSourceModal}
-  tooltipText="Add a new data source"
   toggleText="sources"
+  tooltipText="Add a new data source"
 >
   Sources
 </NavigationHeader>
@@ -65,7 +79,6 @@
 {#if showTables}
   <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#if $sourceNames?.data}
-      <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}
         <div
           animate:flip={{ duration: 200 }}
@@ -98,6 +111,11 @@
             </svelte:fragment>
           </NavigationEntry>
         </div>
+      {/each}
+    {/if}
+    {#if embeddedSourceCatalogs.length}
+      {#each embeddedSourceCatalogs as embeddedSourceCatalog (embeddedSourceCatalog.name)}
+        <EmbeddedSource {embeddedSourceCatalog} />
       {/each}
     {/if}
   </div>

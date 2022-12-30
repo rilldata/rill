@@ -23,7 +23,8 @@ type Service struct {
 	// TODO: should we add path to the DAG instead
 	NameToPath map[string]string
 
-	logger *zap.Logger
+	logger      *zap.Logger
+	hasMigrated bool
 }
 
 func NewService(

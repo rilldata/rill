@@ -1388,9 +1388,10 @@ definitions:
         format: date-time
       embedded:
         type: boolean
-      links:
-        type: integer
-        format: int32
+      embeds:
+        type: array
+        items:
+          type: string
       metricsView:
         $ref: '#/definitions/v1MetricsView'
       model:

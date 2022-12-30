@@ -47,7 +47,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		if err != nil {
 			panic(err)
 		}
-		e.Embeds = strings.Split(embeds, ",")
+		if embeds != "" {
+			e.Embeds = strings.Split(embeds, ",")
+		}
 
 		// Parse object protobuf
 		if objBlob != nil {

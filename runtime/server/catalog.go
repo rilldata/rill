@@ -172,6 +172,8 @@ func catalogObjectToPB(obj *drivers.CatalogEntry) (*runtimev1.CatalogEntry, erro
 	catalog := &runtimev1.CatalogEntry{
 		Name:        obj.Name,
 		Path:        obj.Path,
+		Embedded:    obj.Embedded,
+		Embeds:      obj.Embeds,
 		CreatedOn:   timestamppb.New(obj.CreatedOn),
 		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
 		RefreshedOn: timestamppb.New(obj.RefreshedOn),
