@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { MeasureChart } from "./measure-chart";
+  import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
+  import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
+  import MeasureChart from "@rilldata/web-local/lib/components/workspace/explore/time-series-charts/MeasureChart.svelte";
 
   const makeData = (n: number, addBreak = false) => {
     let numBreaks = ~~(Math.random() * 5);
@@ -44,19 +46,27 @@
   }}>randomize</button
 >
 
-{#each dataSet as data}
-  <MeasureChart
-    bind:mouseoverValue
-    {data}
-    xMin={data[0].ts}
-    xMax={data.at(-1).ts}
-    yMin={0}
-    xAccessor="ts"
-    yAccessor="value"
-    height={140}
-    bind:hovered
-    bind:scrubbing
-    bind:scrubStart
-    bind:scrubEnd
-  />
-{/each}
+<GraphicContext
+  xType="number"
+  yType="date"
+  xMin={dataSet[0][0].ts}
+  xMax={dataSet[0].at(-1).ts}
+>
+  {#each dataSet as data}
+    <MeasureChart
+      bind:mouseoverValue
+      {data}
+      xMin={data[0].ts}
+      xMax={data.at(-1).ts}
+      yMin={0}
+      mouseoverFormat={justEnoughPrecision}
+      xAccessor="ts"
+      yAccessor="value"
+      height={140}
+      bind:hovered
+      bind:scrubbing
+      bind:scrubStart
+      bind:scrubEnd
+    />
+  {/each}
+</GraphicContext>

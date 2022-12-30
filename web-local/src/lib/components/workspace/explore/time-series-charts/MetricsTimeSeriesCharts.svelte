@@ -21,13 +21,16 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
-  import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
+  import {
+    humanizeDataType,
+    NicelyFormattedTypes,
+  } from "../../../../util/humanize-numbers";
   import Spinner from "../../../Spinner.svelte";
   import { formatDateByInterval } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
+  import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-
   export let metricViewName;
 
   let metricsExplorer: MetricsExplorerEntity;
@@ -37,11 +40,8 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-
   $: timeDimension = $metaQuery.data?.timeDimension;
-
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
-
   $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
@@ -82,7 +82,6 @@
         filter: metricsExplorer?.filters,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
-        // Quick hack for now, API expects "day" instead of "1 day"
         timeGranularity: metricsExplorer.selectedTimeRange?.interval,
       }
     );
@@ -99,23 +98,8 @@
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
-  $: if (dataCopy)
-    formattedData = convertTimestampPreview(dataCopy, timeDimension, true)
-      // FIXME: we will need to refactor the graph component animations based on the runtime API return
-      // signature. Previously, we were returning 0s instead of nulls. This was likely due to re-using
-      // the old diagnostic ts code here. Of course, this isn't correct; null is not the same as 0.
-      // For now, let's keep the behavior as-is to ship 0.16. Someone will need to go through and
-      // update the animations to work with line segments in the future.
-      // An ideal way to fix this would be to segmentize the time series per chart and then tween
-      // the individual segments. Alternatively, writing a custom array interpolator could help quite
-      // a bit; null values within the interpolator could tween from 0 or from a contiguous point.
-      .map((di) => {
-        // set nulls to 0, as per the FIXME comment above.
-        Object.keys(di).forEach((k) => {
-          di[k] = di[k] === null ? 0 : di[k];
-        });
-        return di;
-      });
+  $: if (dataCopy && dataCopy?.length)
+    formattedData = convertTimestampPreview(dataCopy, timeDimension, true);
 
   let mouseoverValue = undefined;
 
@@ -168,7 +152,9 @@
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
         {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
-
+        {@const formatPreset =
+          NicelyFormattedTypes[measure?.format] ||
+          NicelyFormattedTypes.HUMANIZE}
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}
@@ -188,18 +174,38 @@
           {#if $timeSeriesQuery.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData}
-            <TimeSeriesBody
+            <MeasureChart
               bind:mouseoverValue
-              formatPreset={NicelyFormattedTypes[measure?.format] ||
-                NicelyFormattedTypes.HUMANIZE}
               data={formattedData}
-              accessor={measure.name}
-              mouseover={point}
+              xAccessor="ts"
+              yAccessor={measure.name}
               timeGrain={metricsExplorer.selectedTimeRange?.interval}
+              xMin={startValue}
+              xMax={endValue}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
+              mouseoverFormat={(value) =>
+                formatPreset === NicelyFormattedTypes.NONE
+                  ? `${value}`
+                  : humanizeDataType(value, formatPreset, {
+                      excludeDecimalZeros: true,
+                    })}
             />
+            {#if false}
+              <TimeSeriesBody
+                bind:mouseoverValue
+                formatPreset={NicelyFormattedTypes[measure?.format] ||
+                  NicelyFormattedTypes.HUMANIZE}
+                data={formattedData}
+                accessor={measure.name}
+                mouseover={point}
+                timeGrain={metricsExplorer.selectedTimeRange?.interval}
+                yMin={yExtents[0] < 0 ? yExtents[0] : 0}
+                start={startValue}
+                end={endValue}
+              />
+            {/if}
           {:else}
             <div>
               <Spinner status={EntityStatus.Running} />

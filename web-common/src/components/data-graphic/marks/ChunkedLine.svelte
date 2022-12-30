@@ -1,6 +1,23 @@
+<!-- @component 
+A specialized line component that solves a few problems:
+1. Tweening between arrays of data that have different lengths
+2. Tweening a time series that has gaps in it
+
+I's a re-implementation of Peter Beshai's d3-line-chunked plugin (https://github.com/pbeshai/d3-line-chunked)
+which solves a fairly similar set of problems utilizing d3-select.
+
+Use this component when you're rendering a dynamically changing line chart or spark.
+
+Over time, we'll make this the default Line implementation, but it's not quite there yet.
+-->
 <script lang="ts">
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import WithDelayedValue from "@rilldata/web-common/components/data-graphic/functional-components/WithDelayedValue.svelte";
+  import {
+    computeSegments,
+    gapsFromSegments,
+  } from "@rilldata/web-common/components/data-graphic/marks/segment";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     areaFactory,
@@ -11,13 +28,16 @@
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
-  import { computeSegments, gapsFromSegments } from "./measure-chart/utils";
-  import WithDelayedValue from "./WithDelayedValue.svelte";
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
+  /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
+
+  export let stopOpacity = 0.3;
+  // FIXME – this is a different prop than elsewhere
+  export let color = "hsla(217,70%, 80%, .4)";
 
   const id = guidGenerator();
 
@@ -46,28 +66,6 @@
   $: gaps = gapsFromSegments(segments);
 
   $: filteredData = data.filter(pathIsDefined(yAccessor));
-
-  export function zoomOut(
-    node,
-    { delay = 0, duration = 400, easing = cubicOut, x = 0, y = 0, opacity = 0 }
-  ) {
-    const style = getComputedStyle(node);
-    const target_opacity = +style.opacity;
-    const transform = style.transform === "none" ? "" : style.transform;
-
-    const od = target_opacity * (1 - opacity);
-
-    return {
-      delay,
-      duration,
-      easing,
-      css: (t, u) => `
-			transform: ${transform} translate(${(1 - t) * x}px, ${
-        (1 - t) * y
-      }px) scale({t});
-			opacity: ${target_opacity - od * u}`,
-    };
-  }
 </script>
 
 <WithDelayedValue
@@ -79,23 +77,6 @@
   <!-- {@const delayedGaps = delayedValues[1]} -->
   {@const delayedSegments = delayedValues[1]}
   <g>
-    <!-- gap line -->
-    <!-- {#each delayedGaps as [start, end] (start[xAccessor] + end[xAccessor])}
-      <WithTween
-        value={{ start, end }}
-        tweenProps={{ duration, easing: cubicOut }}
-        let:output
-      >
-        <line
-          x1={$xScale(output.start[xAccessor])}
-          x2={$xScale(output.end[xAccessor])}
-          y1={$yScale(output.start[yAccessor])}
-          y2={$yScale(output.end[yAccessor])}
-          stroke="red"
-          stroke-width="4"
-        />
-      </WithTween>
-    {/each} -->
     {#if false}
       <WithTween
         value={lineFunction(yAccessor)(delayedFilteredData)}
@@ -148,13 +129,17 @@
     >
       <path
         d={at}
-        fill="hsla(217,100%, 50%, 0.1)"
+        fill="url(#gradient-{id})"
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
 
     <!-- clip rects for segments -->
     <defs>
+      <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="5%" stop-color={color} />
+        <stop offset="95%" stop-color={color} stop-opacity={stopOpacity} />
+      </linearGradient>
       <clipPath id="path-segments-{id}">
         {#each delayedSegments as segment (segment[0][xAccessor])}
           {@const x = $xScale(segment[0][xAccessor])}
