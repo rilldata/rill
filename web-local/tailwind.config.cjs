@@ -4,7 +4,7 @@ module.exports = {
   content: [
     "./**/*.html",
     "./**/*.svelte",
-    "./src/lib/duckdb-data-types.ts",
+    '../web-common/src/lib/duckdb-data-types.ts',
     "./src/lib/components/chip/chip-types.ts",
     "../web-common/**/*.svelte"
   ],
