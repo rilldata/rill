@@ -12,12 +12,11 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 -->
 <script lang="ts">
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
-  import WithDelayedValue from "@rilldata/web-common/components/data-graphic/functional-components/WithDelayedValue.svelte";
   import {
-    computeSegments,
-    gapsFromSegments,
-  } from "@rilldata/web-common/components/data-graphic/marks/segment";
+    WithDelayedValue,
+    WithTween,
+  } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { computeSegments } from "@rilldata/web-common/components/data-graphic/marks/segment";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     areaFactory,
@@ -63,7 +62,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   }
 
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
-  $: gaps = gapsFromSegments(segments);
 
   $: filteredData = data.filter(pathIsDefined(yAccessor));
 </script>
@@ -74,31 +72,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   let:output={delayedValues}
 >
   {@const delayedFilteredData = delayedValues[0]}
-  <!-- {@const delayedGaps = delayedValues[1]} -->
   {@const delayedSegments = delayedValues[1]}
   <g>
-    {#if false}
-      <WithTween
-        value={lineFunction(yAccessor)(delayedFilteredData)}
-        tweenProps={{
-          duration,
-          interpolate: interpolatePath,
-          easing: cubicOut,
-        }}
-        let:output={dt}
-      >
-        <path
-          stroke="hsl(217,50%,60%)"
-          fill="none"
-          opacity="1"
-          stroke-width=".2px"
-          d={dt}
-          id="gap-line-{id}"
-          stroke-dasharray="1,2"
-        />
-      </WithTween>
-    {/if}
-    <!-- segments with actual ata -->
     <WithTween
       value={lineFunction(yAccessor)(delayedFilteredData)}
       tweenProps={{

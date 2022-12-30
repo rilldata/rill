@@ -1,13 +1,15 @@
 <script lang="ts">
   import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
-  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
-  import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
+  import {
+    WithGraphicContexts,
+    WithTween,
+  } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
   export let point;
-  export let xAccessor;
-  export let yAccessor;
+  export let xAccessor: string;
+  export let yAccessor: string;
   export let location: "left" | "right" = "right";
   export let showText = true;
   export let showPoint = true;
