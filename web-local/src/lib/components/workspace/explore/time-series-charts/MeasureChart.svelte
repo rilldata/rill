@@ -1,0 +1,101 @@
+<script lang="ts">
+  import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
+  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import {
+    Axis,
+    Grid,
+    TimeSeriesMouseover,
+  } from "@rilldata/web-common/components/data-graphic/guides";
+  import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
+  import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
+  import { extent } from "d3-array";
+  import { cubicOut } from "svelte/easing";
+  import { writable } from "svelte/store";
+  import { fade } from "svelte/transition";
+  export let width: number = undefined;
+  export let height: number = undefined;
+  export let xMin;
+  export let xMax;
+  export let yMin;
+  export let yMax;
+  export let data;
+  export let xAccessor = "ts";
+  export let yAccessor = "value";
+  export let mouseoverValue;
+  export let hovered = false;
+  export let mouseoverFormat: (d: number) => string = (v) => v.toString();
+
+  export let tweenProps = { duration: 400, easing: cubicOut };
+
+  // control point for scrub functionality.
+  export let scrubbing = false;
+  export let scrubStart = undefined;
+  export let scrubEnd = undefined;
+
+  $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
+  $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
+  $: internalXMin = xMin || xExtentMin;
+  $: internalXMax = xMax || xExtentMax;
+  $: inflate =
+    yExtentMin == yExtentMax ? 2 / 3 : (yExtentMax - yExtentMin) / yExtentMax;
+  $: internalYMin = yExtentMin >= 0 ? 0 : yExtentMin;
+
+  $: internalYMax = yMax
+    ? yMax
+    : yExtentMin == yExtentMax
+    ? yExtentMax / inflate
+    : yExtentMax / inflate;
+
+  // we delay the tween if previousYMax < yMax
+  let yMaxStore = writable(yExtentMax);
+  let previousYMax = previousValueStore(yMaxStore);
+  $: yMaxStore.set(yExtentMax);
+  $: delay = $previousYMax < yExtentMax ? 200 : 0;
+
+  function alwaysBetween(min, max, value) {
+    // note: must work with dates
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+  }
+
+  $: if (scrubbing) {
+    scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue);
+  }
+</script>
+
+<SimpleDataGraphic
+  yMin={internalYMin * inflate}
+  yMax={internalYMax}
+  shareYScale={false}
+  yType="number"
+  xType="date"
+  {width}
+  {height}
+  top={4}
+  left={12}
+  right={50}
+  bind:mouseoverValue
+  bind:hovered
+  yMinTweenProps={tweenProps}
+  yMaxTweenProps={tweenProps}
+  xMaxTweenProps={tweenProps}
+  xMinTweenProps={tweenProps}
+>
+  <Axis side="right" format={mouseoverFormat} />
+  <Grid />
+  <Body>
+    <ChunkedLine {delay} {data} {xAccessor} {yAccessor} />
+  </Body>
+  {#if hovered && !scrubbing}
+    <g transition:fade|local={{ duration: 100 }}>
+      <TimeSeriesMouseover
+        {data}
+        {mouseoverValue}
+        {xAccessor}
+        {yAccessor}
+        format={mouseoverFormat}
+      />
+    </g>
+  {/if}
+</SimpleDataGraphic>
