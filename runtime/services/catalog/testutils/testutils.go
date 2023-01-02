@@ -156,9 +156,8 @@ func RenameFile(t *testing.T, dir, from, to string) {
 	require.NoError(t, err)
 }
 
-func CopyFileToData(t *testing.T, dir, source string) {
-	baseName := path.Base(source)
-	dest := path.Join(dir, "data", baseName)
+func CopyFileToData(t *testing.T, dir, source, name string) {
+	dest := path.Join(dir, "data", name)
 
 	err := os.MkdirAll(path.Join(dir, "data"), 0o777)
 	require.NoError(t, err)
