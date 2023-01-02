@@ -7,13 +7,14 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { datesToFormattedTimeRange } from "@rilldata/web-common/lib/formatters";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import GridCell from "@rilldata/web-local/lib/components/left-right-grid/GridCell.svelte";
   import LeftRightGrid from "@rilldata/web-local/lib/components/left-right-grid/LeftRightGrid.svelte";
 
   export let start: Date;
   export let end: Date;
-  export let estimatedSmallestTimeGrain: string;
-  export let rollupTimeGrain: string;
+  export let estimatedSmallestTimeGrain: V1TimeGrain;
+  export let rollupTimeGrain: V1TimeGrain;
 
   enum NicerTimeGrain {
     TIME_GRAIN_MILLISECOND = "milliseconds",
