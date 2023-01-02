@@ -111,29 +111,6 @@ func (c *connection) Put(ctx context.Context, instID, filePath string, reader io
 	return nil
 }
 
-// Put implements drivers.RepoStore.
-func (c *connection) Append(ctx context.Context, instID, filePath string, reader io.Reader) error {
-	filePath = filepath.Join(c.root, filePath)
-
-	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, reader)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
 	toPath = path.Join(c.root, toPath)
