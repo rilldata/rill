@@ -102,7 +102,12 @@ export function microsToTimestring(microseconds: number) {
   )}:${zeroPad(seconds)}.${msPad(ms)}`;
 }
 
-export function intervalToTimestring(inputInterval: Interval) {
+export function datesToFormattedInterval(start: Date, end: Date) {
+  const interval = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+  return intervalToTimestring(interval);
+}
+
+export function intervalToTimestring(inputInterval: Interval | number) {
   const interval =
     typeof inputInterval === "number"
       ? { months: 0, days: inputInterval, micros: 0 }

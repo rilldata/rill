@@ -2,7 +2,7 @@
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
-  import Interval from "@rilldata/web-common/components/data-types/Interval.svelte";
+  //import Interval from "@rilldata/web-common/components/data-types/Interval.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
@@ -103,7 +103,7 @@
             {type}
             data={$timeSeries?.data}
             spark={$timeSeries?.spark}
-            interval={Interval[$timeSeries?.estimatedRollupInterval]}
+            interval={$timeSeries?.estimatedRollupInterval}
             estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
             xAccessor="ts"
             yAccessor="count"

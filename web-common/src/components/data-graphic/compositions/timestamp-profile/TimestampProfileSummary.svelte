@@ -8,14 +8,18 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    intervalToTimestring,
+    datesToFormattedInterval,
     PreviewRollupIntervalFormatter,
   } from "@rilldata/web-common/lib/formatters";
 
   export let type: string;
+  export let start: Date;
+  export let end: Date;
   export let estimatedSmallestTimeGrain: string;
   export let interval: Interval;
   export let rollupGrain: string;
+
+  $: console.log(start, end);
 
   enum NicerTimeGrain {
     TIME_GRAIN_MILLISECOND = "milliseconds",
@@ -30,6 +34,8 @@
 
   $: displayEstimatedSmallestTimegrain =
     NicerTimeGrain?.[estimatedSmallestTimeGrain] || estimatedSmallestTimeGrain;
+
+  $: formattedInterval = datesToFormattedInterval(start, end);
 </script>
 
 <div
@@ -71,12 +77,12 @@
   <Tooltip distance={16} location="top">
     <div>
       {#if interval}
-        {intervalToTimestring(interval)}
+        {formattedInterval}
       {/if}
     </div>
     <TooltipContent slot="tooltip-content">
       <div style:max-width="315px">
-        The range of this timestamp is {intervalToTimestring(interval)}.
+        The range of this timestamp is {formattedInterval}.
       </div>
     </TooltipContent>
   </Tooltip>

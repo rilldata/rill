@@ -78,6 +78,7 @@
   /** rollup grain, time range, etc. */
   export let interval: Interval;
   export let rollupGrain: string;
+
   export let estimatedSmallestTimeGrain: string;
 
   let devicePixelRatio = 1;
@@ -296,6 +297,8 @@
 
 <div style:max-width="{width}px">
   <TimestampProfileSummary
+    start={xExtents[0]}
+    end={xExtents[1]}
     {type}
     {estimatedSmallestTimeGrain}
     {interval}
