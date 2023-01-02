@@ -102,7 +102,10 @@ export function microsToTimestring(microseconds: number) {
   )}:${zeroPad(seconds)}.${msPad(ms)}`;
 }
 
-export function datesToFormattedInterval(start: Date, end: Date) {
+/** convert a start and end date
+ * to a human readable time range (e.g. 6 months, 24 years, etc)
+ */
+export function datesToFormattedTimeRange(start: Date, end: Date) {
   const interval = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
   return intervalToTimestring(interval);
 }
@@ -118,7 +121,9 @@ export function intervalToTimestring(inputInterval: Interval | number) {
       } `
     : "";
   const days = interval.days
-    ? `${formatInteger(interval.days)} day${interval.days > 1 ? "s" : ""} `
+    ? `${justEnoughPrecision(interval.days)} day${
+        interval.days > 1 ? "s" : ""
+      } `
     : "";
   const time =
     interval.months > 0 || interval.days > 1

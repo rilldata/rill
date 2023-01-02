@@ -103,7 +103,7 @@
             {type}
             data={$timeSeries?.data}
             spark={$timeSeries?.spark}
-            interval={$timeSeries?.estimatedRollupInterval}
+            rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
             estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
             xAccessor="ts"
             yAccessor="count"
