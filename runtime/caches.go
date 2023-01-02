@@ -13,8 +13,9 @@ import (
 )
 
 type connectionCache struct {
-	cache *simplelru.LRU
-	lock  sync.Mutex
+	cache  *simplelru.LRU
+	lock   sync.Mutex
+	closed bool
 }
 
 func newConnectionCache(size int) *connectionCache {
@@ -25,12 +26,37 @@ func newConnectionCache(size int) *connectionCache {
 	return &connectionCache{cache: cache}
 }
 
+func (c *connectionCache) Close() error {
+	var firstErr error
+
+	for _, key := range c.cache.Keys() {
+		val, _ := c.cache.Get(key)
+		err := val.(drivers.Connection).Close()
+		if err != nil {
+			fmt.Printf("Error while closing the connections, Error: %v", err)
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.closed = true
+
+	return firstErr
+}
+
 func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string) (drivers.Connection, error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
+
+	if c.closed {
+		return nil, fmt.Errorf("Connection is closed for instanceID : %s", instanceID)
+	}
 
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
