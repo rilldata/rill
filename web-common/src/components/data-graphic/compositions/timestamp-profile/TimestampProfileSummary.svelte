@@ -18,15 +18,18 @@
   export let rollupGrain: string;
 
   enum NicerTimeGrain {
-    TIME_GRAIN_MILLISECOND = "millisecond",
-    TIME_GRAIN_SECOND = "second",
-    TIME_GRAIN_MINUTE = "minute",
+    TIME_GRAIN_MILLISECOND = "milliseconds",
+    TIME_GRAIN_SECOND = "seconds",
+    TIME_GRAIN_MINUTE = "minutes",
     TIME_GRAIN_HOUR = "hourly",
     TIME_GRAIN_DAY = "daily",
     TIME_GRAIN_WEEK = "weekly",
     TIME_GRAIN_MONTH = "monthly",
     TIME_GRAIN_YEAR = "yearly",
   }
+
+  $: displayEstimatedSmallestTimegrain =
+    NicerTimeGrain?.[estimatedSmallestTimeGrain] || estimatedSmallestTimeGrain;
 </script>
 
 <div
@@ -51,14 +54,15 @@
   <Tooltip distance={16} location="top">
     <div class="text-right">
       {#if estimatedSmallestTimeGrain}
-        min. interval
-        {estimatedSmallestTimeGrain}
+        min. interval at
+        {displayEstimatedSmallestTimegrain}
+        level
       {/if}
     </div>
     <TooltipContent slot="tooltip-content">
       <div style:max-width="315px">
         The smallest available time interval in this column appears to be at the <i
-          >{estimatedSmallestTimeGrain}</i
+          >{displayEstimatedSmallestTimegrain}</i
         > level.
       </div>
     </TooltipContent>
