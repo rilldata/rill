@@ -453,7 +453,7 @@ func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias 
 
 	err := rows.Err()
 	if err != nil {
-		return results, err
+		return nil, err
 	}
 
 	return results, nil

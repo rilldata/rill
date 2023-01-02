@@ -114,10 +114,5 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 		}
 	}
 
-	err = r.Err()
-	if err != nil {
-		return nil, err
-	}
-
 	return &runtimev1.StructType{Fields: fields}, nil
 }
