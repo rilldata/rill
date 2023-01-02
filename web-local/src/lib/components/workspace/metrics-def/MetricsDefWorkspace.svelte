@@ -22,6 +22,7 @@
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import MetricsDefDisplayNameInput from "./MetricsDefDisplayNameInput.svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
@@ -160,6 +161,7 @@
     >
       <div class="flex-none flex flex-row">
         <div>
+          <MetricsDefDisplayNameInput {metricsInternalRep} />
           <MetricsDefModelSelector {metricsInternalRep} />
           <MetricsDefTimeColumnSelector
             selectedModel={model}

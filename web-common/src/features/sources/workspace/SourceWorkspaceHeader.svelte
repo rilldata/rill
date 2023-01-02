@@ -41,6 +41,7 @@
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
@@ -149,14 +150,19 @@
     }
 
     try {
+      const toName = e.target.value;
+      const entityType = EntityType.Table;
       await renameFileArtifact(
         queryClient,
         runtimeInstanceId,
         sourceName,
-        e.target.value,
-        EntityType.Table,
+        toName,
+        entityType,
         $renameSource
       );
+      goto(getRouteFromName(toName, entityType), {
+        replaceState: true,
+      });
     } catch (err) {
       console.error(err.response.data.message);
     }

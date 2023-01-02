@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
@@ -19,7 +20,10 @@
     renameFileArtifact,
     useAllNames,
   } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import {
+    getFilePathFromNameAndType,
+    getRouteFromName,
+  } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import { WorkspaceHeader } from "..";
@@ -70,14 +74,19 @@
     }
 
     try {
+      const toName = e.target.value;
+      const entityType = EntityType.Model;
       await renameFileArtifact(
         queryClient,
         runtimeInstanceId,
         modelName,
-        e.target.value,
-        EntityType.Model,
+        toName,
+        entityType,
         $renameModel
       );
+      goto(getRouteFromName(toName, entityType), {
+        replaceState: true,
+      });
     } catch (err) {
       console.error(err.response.data.message);
     }
