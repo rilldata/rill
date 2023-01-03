@@ -1,4 +1,4 @@
-import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+import { EntityType } from "@rilldata/web-common/lib/entity";
 
 export function getFilePathFromNameAndType(
   name: string,

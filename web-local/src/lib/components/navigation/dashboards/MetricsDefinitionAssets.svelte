@@ -7,6 +7,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
@@ -29,7 +30,6 @@
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { SourceModelValidationStatus } from "@rilldata/web-local/lib/temp/metrics.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";

@@ -5,6 +5,7 @@
   import Portal from "@rilldata/web-common/components/Portal.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
@@ -18,7 +19,6 @@
   import Footer from "./Footer.svelte";
   import ModelAssets from "./models/ModelAssets.svelte";
   import { shorthandTitle } from "./shorthand-title";
-  import TableAssets from "./sources/TableAssets.svelte";
 
   let mounted = false;
   onMount(() => {

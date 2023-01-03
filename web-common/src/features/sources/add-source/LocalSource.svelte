@@ -2,6 +2,11 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
   import {
+    openFileUploadDialog,
+    uploadTableFiles,
+  } from "@rilldata/web-common/features/sources/add-source/file-upload";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
@@ -9,18 +14,13 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { compileCreateSourceYAML } from "@rilldata/web-local/lib/components/navigation/sources/sourceUtils";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
-  import {
-    openFileUploadDialog,
-    uploadTableFiles,
-  } from "@rilldata/web-local/lib/util/file-upload";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import { EntityType } from "../../../lib/entity";
+  import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
 

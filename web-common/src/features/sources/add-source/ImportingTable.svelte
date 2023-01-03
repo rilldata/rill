@@ -1,5 +1,6 @@
 <script lang="ts">
-  import BlockingOverlayContainer from "./BlockingOverlayContainer.svelte";
+  import BlockingOverlayContainer from "../../temp/BlockingOverlayContainer.svelte";
+
   export let tableName;
   export let importName;
 </script>
