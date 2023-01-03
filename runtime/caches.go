@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"sync"
 
-	"go.uber.org/zap"
-
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.uber.org/zap"
 )
 
 type connectionCache struct {

@@ -2,12 +2,13 @@ package runtime
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"testing"
 
 	"github.com/google/uuid"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
 func TestConnectionCache(t *testing.T) {

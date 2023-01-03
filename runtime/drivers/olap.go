@@ -38,7 +38,33 @@ type Statement struct {
 // Result wraps the results of query.
 type Result struct {
 	*sqlx.Rows
-	Schema *runtimev1.StructType
+	Schema    *runtimev1.StructType
+	cleanupFn func() error
+}
+
+// SetCleanupFunc sets a function, which will be called when the Result is closed.
+func (r *Result) SetCleanupFunc(fn func() error) {
+	if r.cleanupFn != nil {
+		panic("cleanup function already set")
+	}
+	r.cleanupFn = fn
+}
+
+// Close wraps rows.Close and calls the Result's cleanup function (if it is set).
+// Close should be idempotent.
+func (r *Result) Close() error {
+	firstErr := r.Rows.Close()
+	if r.cleanupFn != nil {
+		err := r.cleanupFn()
+		if firstErr == nil {
+			firstErr = err
+		}
+
+		// Prevent cleanupFn from being called multiple times.
+		// NOTE: Not idempotent for error returned from cleanupFn.
+		r.cleanupFn = nil
+	}
+	return firstErr
 }
 
 // InformationSchema contains information about existing tables in an OLAP driver.

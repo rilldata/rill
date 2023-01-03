@@ -36,8 +36,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		if err != nil {
 			return nil, err
 		}
-		prepared.Close()
-		return nil, nil
+		return nil, prepared.Close()
 	}
 
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)

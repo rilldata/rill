@@ -3,14 +3,14 @@ package drivers_test
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
 
-	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"

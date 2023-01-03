@@ -3,10 +3,9 @@ package druid
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 
 	// Load calcite avatica driver for druid
 	_ "github.com/apache/calcite-avatica-go/v5"

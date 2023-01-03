@@ -2,13 +2,13 @@ package duckdb
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"testing"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -199,30 +199,25 @@ func prepareConn(t *testing.T) drivers.Connection {
 	olap, ok := conn.OLAPStore()
 	require.True(t, ok)
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
 	})
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
-	rows, err = olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
-	rows, err = olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
 	})
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
-	rows, err = olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
-
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
 	return conn
 }

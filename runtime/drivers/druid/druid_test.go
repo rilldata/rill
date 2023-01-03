@@ -3,7 +3,6 @@ package druid
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"net/url"
 	"strings"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
 )
 
 const testTable = "test_data"

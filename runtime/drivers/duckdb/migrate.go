@@ -22,11 +22,11 @@ var migrationVersionTable = "rill.migration_version"
 // Migrate implements drivers.Connection.
 // Migrate for DuckDB may not be safe for concurrent use.
 func (c *connection) Migrate(ctx context.Context) (err error) {
-	conn, release, err := c.getConn(ctx)
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
 	}
-	defer release()
+	defer func() { _ = release() }()
 
 	// Create rill schema if it doesn't exist
 	_, err = conn.ExecContext(ctx, "create schema if not exists rill")
@@ -122,11 +122,11 @@ func (c *connection) migrateSingle(ctx context.Context, conn *sqlx.Conn, name st
 
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
-	conn, release, err := c.getConn(ctx)
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
-	defer release()
+	defer func() { _ = release() }()
 
 	// Get current version
 	err = conn.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)

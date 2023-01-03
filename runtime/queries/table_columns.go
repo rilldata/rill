@@ -49,17 +49,16 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 
 	temporaryTableName := tempName("profile_columns_")
 	// views return duplicate column names, so we need to create a temporary table
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	err = olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
 		Priority: priority,
 	})
 	if err != nil {
 		return err
 	}
-	rows.Close()
 	defer dropTempTable(olap, priority, temporaryTableName)
 
-	rows, err = olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
 		where table_name = '%s' and table_schema = 'temp'`, temporaryTableName),
 		Priority: priority,

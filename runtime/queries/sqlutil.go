@@ -26,13 +26,10 @@ func safeName(name string) string {
 }
 
 func dropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
-	rs, er := olap.Execute(context.Background(), &drivers.Statement{
+	_ = olap.Exec(context.Background(), &drivers.Statement{
 		Query:    `DROP TABLE "` + tableName + `"`,
 		Priority: priority,
 	})
-	if er == nil {
-		rs.Close()
-	}
 }
 
 func tempName(prefix string) string {

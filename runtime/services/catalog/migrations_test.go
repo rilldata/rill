@@ -2,7 +2,6 @@ package catalog_test
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,18 +11,20 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
+	"github.com/rilldata/rill/runtime/services/catalog/testutils"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	"github.com/rilldata/rill/runtime/services/catalog"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
-	"github.com/rilldata/rill/runtime/services/catalog/testutils"
-	"github.com/stretchr/testify/require"
 )
 
 const TestDataPath = "../../../web-local/test/data"
@@ -81,11 +82,10 @@ func TestReconcile(t *testing.T) {
 			testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 
 			// delete from olap
-			res, err := s.Olap.Execute(context.Background(), &drivers.Statement{
+			err = s.Olap.Exec(context.Background(), &drivers.Statement{
 				Query: "drop table AdBids",
 			})
 			require.NoError(t, err)
-			require.NoError(t, res.Close())
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 1, 2, 0, AdBidsAffectedPaths)

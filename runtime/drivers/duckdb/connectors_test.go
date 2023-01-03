@@ -3,15 +3,16 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/connectors"
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
 )
 
 func TestConnectorWithSourceVariations(t *testing.T) {

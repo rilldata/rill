@@ -19,11 +19,11 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 }
 
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	conn, release, err := i.c.getConn(ctx)
+	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer release()
+	defer func() { _ = release() }()
 
 	q := `
 		select
@@ -56,11 +56,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
-	conn, release, err := i.c.getConn(ctx)
+	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer release()
+	defer func() { _ = release() }()
 
 	q := `
 		select

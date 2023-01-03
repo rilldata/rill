@@ -110,7 +110,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
         ORDER BY template.` + tsAlias + `
       )`
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	err = olap.Exec(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
 		Priority: priority,
@@ -119,9 +119,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	if err != nil {
 		return err
 	}
-	rows.Close()
 
-	rows, err = olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    `SELECT * from "` + temporaryTableName + `"`,
 		Priority: priority,
 	})
