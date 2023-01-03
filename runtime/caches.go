@@ -2,47 +2,54 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.uber.org/zap"
 )
+
+var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
 type connectionCache struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
 	closed bool
+	logger *zap.Logger
 }
 
-func newConnectionCache(size int) *connectionCache {
+func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
 	cache, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		panic(err)
 	}
-	return &connectionCache{cache: cache}
+	return &connectionCache{cache: cache, logger: logger}
 }
 
 func (c *connectionCache) Close() error {
-	var firstErr error
+	c.lock.Lock()
+	if c.closed {
+		c.lock.Unlock()
+		return errConnectionCacheClosed
+	}
+	c.closed = true
+	c.lock.Unlock()
 
+	var firstErr error
 	for _, key := range c.cache.Keys() {
 		val, _ := c.cache.Get(key)
 		err := val.(drivers.Connection).Close()
 		if err != nil {
-			fmt.Printf("Error while closing the connections, Error: %v", err)
+			c.logger.Error("failed closing cached connection", zap.Error(err))
 			if firstErr == nil {
 				firstErr = err
 			}
 		}
 	}
-
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.closed = true
 
 	return firstErr
 }
@@ -55,7 +62,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	defer c.lock.Unlock()
 
 	if c.closed {
-		return nil, fmt.Errorf("Connection is closed for instanceID : %s", instanceID)
+		return nil, errConnectionCacheClosed
 	}
 
 	key := instanceID + driver + dsn
