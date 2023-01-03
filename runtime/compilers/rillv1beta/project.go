@@ -35,21 +35,13 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 		return err
 	}
 
-	blob, err := c.Repo.Get(ctx, c.InstanceID, ".gitignore")
-	var blobBuilder strings.Builder
-
-	if os.IsNotExist(err) {
-		blobBuilder.WriteString("# Rill\n*.db\n*.db.wal\ndata/\n")
-	} else {
-		blobBuilder.WriteString(blob)
-		if strings.HasSuffix(blob, "\n") {
-			blobBuilder.WriteString("# Rill\n*.db\n*.db.wal\ndata/\n")
-		} else {
-			blobBuilder.WriteString("\n# Rill\n*.db\n*.db.wal\ndata/\n")
-		}
+	gitignore, _ := c.Repo.Get(ctx, c.InstanceID, ".gitignore")
+	if gitignore != "" {
+		gitignore += "\n"
 	}
+	gitignore += "# Rill\n*.db\n*.db.wal\ndata/\n"
 
-	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(blobBuilder.String()))
+	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
 		return err
 	}
