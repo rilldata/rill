@@ -18,11 +18,11 @@
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
 
   export let modelName: string;

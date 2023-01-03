@@ -1,4 +1,4 @@
-import type { Reference } from "./";
+import type { Reference } from ".";
 interface ReferenceTestCase {
   query: string;
   references: Reference[];
