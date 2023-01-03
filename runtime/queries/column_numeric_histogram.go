@@ -69,6 +69,12 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 			return 0, err
 		}
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
 	if !iqr.Valid || !rangeVal.Valid || rangeVal.Float64 == 0.0 {
 		return 0, nil
 	}
@@ -183,6 +189,12 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		}
 		histogramBins = append(histogramBins, bin)
 	}
+
+	err = histogramRows.Err()
+	if err != nil {
+		return err
+	}
+
 	q.Result = histogramBins
 	return nil
 }

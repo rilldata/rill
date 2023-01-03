@@ -123,6 +123,11 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		}
 	}
 
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	if !timeGrainString.Valid {
 		return nil
 	}
