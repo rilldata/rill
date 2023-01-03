@@ -15,10 +15,10 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
-  import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
+  import { getTableReferences } from "../../utils/get-table-references";
+  import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
   export let containerWidth = 0;

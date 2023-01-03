@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ModelWorkspace } from "@rilldata/web-local/lib/components/workspace";
+  import { ModelWorkspace } from "@rilldata/web-common/features/models";
 
   export let data;
 </script>

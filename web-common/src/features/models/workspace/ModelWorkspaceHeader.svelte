@@ -15,6 +15,8 @@
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
+  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
   import {
     isDuplicateName,
     renameFileArtifact,
@@ -26,9 +28,7 @@
   } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
-  import { WorkspaceHeader } from "..";
-  import ResponsiveButtonText from "../../panel/ResponsiveButtonText.svelte";
-  import CreateDashboardButton from "./inspector/header/CreateDashboardButton.svelte";
+  import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let modelName: string;
 

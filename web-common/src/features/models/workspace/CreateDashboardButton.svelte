@@ -16,6 +16,7 @@
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
   } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -24,16 +25,14 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { overlay } from "../../../../../application-state-stores/overlay-store";
-  import { useDashboardNames } from "../../../../../svelte-query/dashboards";
-  import { invalidateAfterReconcile } from "../../../../../svelte-query/invalidation";
 
   export let modelName: string;
   export let hasError = false;
-
   export let collapse = false;
 
   $: getModel = useRuntimeServiceGetCatalogEntry(

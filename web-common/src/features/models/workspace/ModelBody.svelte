@@ -9,8 +9,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import {
@@ -18,12 +18,12 @@
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { sanitizeQuery } from "@rilldata/web-local/lib/util/sanitize-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import { sanitizeQuery } from "../utils/sanitize-query";
+  import Editor from "./Editor.svelte";
 
   export let modelName: string;
 

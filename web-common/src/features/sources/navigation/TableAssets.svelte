@@ -8,11 +8,11 @@
   import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
   import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
   import RenameAssetModal from "@rilldata/web-local/lib/components/navigation/RenameAssetModal.svelte";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { EntityType } from "../../../lib/entity";
+  import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
   import SourceMenuItems from "./SourceMenuItems.svelte";

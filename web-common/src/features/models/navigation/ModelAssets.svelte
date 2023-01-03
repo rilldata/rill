@@ -3,16 +3,16 @@
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { createModel } from "@rilldata/web-local/lib/components/navigation/models/createModel";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
+  import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
+  import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
+  import RenameAssetModal from "@rilldata/web-local/lib/components/navigation/RenameAssetModal.svelte";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { getName } from "../../../util/incrementName";
-  import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
-  import NavigationEntry from "../NavigationEntry.svelte";
-  import NavigationHeader from "../NavigationHeader.svelte";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
+  import { createModel } from "../createModel";
+  import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
