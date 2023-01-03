@@ -18,7 +18,7 @@
   import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
-  import WithModelResultTooltip from "../WithModelResultTooltip.svelte";
+  import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
   export let containerWidth = 0;

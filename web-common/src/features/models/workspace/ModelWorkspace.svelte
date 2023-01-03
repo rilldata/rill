@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import WorkspaceContainer from "@rilldata/web-local/lib/components/workspace/core/WorkspaceContainer.svelte";
   import ModelInspector from "./inspector/ModelInspector.svelte";
   import ModelBody from "./ModelBody.svelte";
   import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";

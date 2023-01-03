@@ -13,29 +13,29 @@
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { createEventDispatcher } from "svelte";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
   import {
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
-  } from "../../../application-state-stores/metrics-internal-store";
-  import { overlay } from "../../../application-state-stores/overlay-store";
-  import { navigationEvent } from "../../../metrics/initMetrics";
-  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
-  import { useDashboardNames } from "../../../svelte-query/dashboards";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createEventDispatcher } from "svelte";
+  import { useModelNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding

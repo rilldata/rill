@@ -9,8 +9,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import Editor from "@rilldata/web-local/lib/components/Editor.svelte";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import {
@@ -23,7 +23,7 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
+  import Editor from "./Editor.svelte";
 
   export let modelName: string;
 
