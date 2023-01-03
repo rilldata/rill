@@ -47,60 +47,69 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	temporaryTableName := tempName("profile_columns_")
-	// views return duplicate column names, so we need to create a temporary table
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
-		Priority: priority,
-	})
-	if err != nil {
-		return err
-	}
-	defer dropTempTable(olap, priority, temporaryTableName)
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
-		where table_name = '%s' and table_schema = 'temp'`, temporaryTableName),
-		Priority: priority,
-	})
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var pcs []*runtimev1.ProfileColumn
-	i := 0
-	for rows.Next() {
-		pc := runtimev1.ProfileColumn{}
-		if err := rows.StructScan(&pc); err != nil {
+	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
+		// views return duplicate column names, so we need to create a temporary table
+		temporaryTableName := tempName("profile_columns_")
+		err = olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
+			Priority: priority,
+		})
+		if err != nil {
 			return err
 		}
-		pcs = append(pcs, &pc)
-		i++
-	}
+		defer func() {
+			// NOTE: Using ensuredCtx
+			_ = olap.Exec(ensuredCtx, &drivers.Statement{
+				Query:    `DROP TABLE "` + temporaryTableName + `"`,
+				Priority: priority,
+			})
+		}()
 
-	// Disabling this for now. we need to move this to a separate API
-	// It adds a lot of response time to getting columns
-	// for _, pc := range pcs[0:i] {
-	//	columnName := EscapeDoubleQuotes(pc.Name)
-	//	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
-	//		Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
-	//		Priority: int(req.Priority),
-	//	})
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	for rows.Next() {
-	//		var max sql.NullInt32
-	//		if err := rows.Scan(&max); err != nil {
-	//			return nil, err
-	//		}
-	//		if max.Valid {
-	//			pc.LargestStringLength = int32(max.Int32)
-	//		}
-	//	}
-	//	rows.Close()
-	//}
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
+		where table_name = '%s' and table_schema = 'temp'`, temporaryTableName),
+			Priority: priority,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
 
-	q.Result = pcs[0:i]
-	return nil
+		var pcs []*runtimev1.ProfileColumn
+		i := 0
+		for rows.Next() {
+			pc := runtimev1.ProfileColumn{}
+			if err := rows.StructScan(&pc); err != nil {
+				return err
+			}
+			pcs = append(pcs, &pc)
+			i++
+		}
+
+		// Disabling this for now. we need to move this to a separate API
+		// It adds a lot of response time to getting columns
+		// for _, pc := range pcs[0:i] {
+		//	columnName := EscapeDoubleQuotes(pc.Name)
+		//	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
+		//		Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
+		//		Priority: int(req.Priority),
+		//	})
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	for rows.Next() {
+		//		var max sql.NullInt32
+		//		if err := rows.Scan(&max); err != nil {
+		//			return nil, err
+		//		}
+		//		if max.Valid {
+		//			pc.LargestStringLength = int32(max.Int32)
+		//		}
+		//	}
+		//	rows.Close()
+		//}
+
+		q.Result = pcs[0:i]
+		return nil
+	})
 }
