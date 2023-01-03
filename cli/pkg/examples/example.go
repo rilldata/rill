@@ -45,6 +45,7 @@ func Init(name, projectDir string) error {
 	gitignorePath := filepath.Join(projectDir, ".gitignore")
 	prevGitignore, _ := os.ReadFile(gitignorePath)
 
+	// Copy example project to projectDir
 	err = fileutil.CopyEmbedDir(examplesFS, examplePath, projectDir)
 	if err != nil {
 		return err
