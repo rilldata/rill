@@ -43,6 +43,7 @@
 
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import { getRouteFromName } from "../../../util/entity-mappers";
   import { createModelFromSource } from "../../navigation/models/createModel";
   import PanelCTA from "../../panel/PanelCTA.svelte";
   import ResponsiveButtonText from "../../panel/ResponsiveButtonText.svelte";
@@ -150,14 +151,19 @@
     }
 
     try {
+      const toName = e.target.value;
+      const entityType = EntityType.Table;
       await renameFileArtifact(
         queryClient,
         runtimeInstanceId,
         sourceName,
-        e.target.value,
-        EntityType.Table,
+        toName,
+        entityType,
         $renameSource
       );
+      goto(getRouteFromName(toName, entityType), {
+        replaceState: true,
+      });
     } catch (err) {
       console.error(err.response.data.message);
     }

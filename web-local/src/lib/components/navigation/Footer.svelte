@@ -71,7 +71,11 @@
   >
     <span class="text-gray-400">
       <Tooltip alignment="start" distance={16} location="top">
-        <a href="https://docs.rilldata.com" target="_blank">
+        <a
+          href="https://docs.rilldata.com"
+          target="_blank"
+          class="text-gray-400"
+        >
           <InfoCircle size="16px" />
         </a>
         <div slot="tooltip-content" transition:fly={{ duration: 100, y: 8 }}>

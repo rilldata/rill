@@ -25,14 +25,14 @@ const { update, subscribe } = writable({
 const appStoreReducers = {
   setActiveEntity(name: string, type: EntityType) {
     update((state) => {
+      if (state.previousActiveEntity) {
+        httpRequestQueue.inactiveByName(state.previousActiveEntity.name);
+      }
       state.activeEntity = {
         name,
         type,
       };
       state.previousActiveEntity = state.activeEntity;
-      if (state.previousActiveEntity) {
-        httpRequestQueue.inactiveByName(name);
-      }
       return state;
     });
   },
