@@ -44,7 +44,6 @@ func InitCmd(ver version.Version) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
 			defer app.Close()
 
 			if app.IsProjectInit() {

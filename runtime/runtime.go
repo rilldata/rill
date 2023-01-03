@@ -50,3 +50,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		queryCache:   newQueryCache(opts.QueryCacheSize),
 	}, nil
 }
+
+func (r *Runtime) Close() error {
+	return r.connCache.Close()
+}

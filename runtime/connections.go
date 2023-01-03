@@ -65,7 +65,3 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (*catalog.Serv
 
 	return c, err
 }
-
-func (r *Runtime) Close() error {
-	return r.connCache.Close()
-}
