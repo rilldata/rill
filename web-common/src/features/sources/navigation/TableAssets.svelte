@@ -1,20 +1,20 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
+  import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
+  import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
+  import RenameAssetModal from "@rilldata/web-local/lib/components/navigation/RenameAssetModal.svelte";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { useModelNames } from "../../../svelte-query/models";
-  import ColumnProfile from "../../column-profile/ColumnProfile.svelte";
-  import { createModelFromSource } from "../models/createModel";
-  import NavigationEntry from "../NavigationEntry.svelte";
-  import NavigationHeader from "../NavigationHeader.svelte";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
-  import AddSourceModal from "./AddSourceModal.svelte";
+  import { EntityType } from "../../../lib/entity";
+  import AddSourceModal from "../add-source/AddSourceModal.svelte";
+  import { createModelFromSource } from "../createModel";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 

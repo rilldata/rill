@@ -1,10 +1,10 @@
+import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
+import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
 import {
   extractFileExtension,
   extractTableName,
   sanitizeEntityName,
-} from "@rilldata/web-local/lib/util/extract-table-name";
-import { DataProviderData, TestBase } from "@adityahegde/typescript-test-utils";
-import { JestTestLibrary } from "@adityahegde/typescript-test-utils/dist/jest/JestTestLibrary";
+} from "@rilldata/web-common/features/sources/extract-table-name";
 
 @TestBase.Suite
 @TestBase.TestLibrary(JestTestLibrary)

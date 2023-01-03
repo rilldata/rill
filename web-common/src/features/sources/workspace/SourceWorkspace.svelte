@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -12,17 +13,16 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
+  import { ConnectedPreviewTable } from "@rilldata/web-local/lib/components/preview-table";
+  import WorkspaceContainer from "@rilldata/web-local/lib/components/workspace/core/WorkspaceContainer.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
   import {
     hasDuckDBUnicodeError,
     niceDuckdbUnicodeError,
-  } from "../../navigation/sources/errors";
-  import { refreshSource } from "../../navigation/sources/refreshSource";
-  import { ConnectedPreviewTable } from "../../preview-table";
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  } from "../add-source/errors";
+  import { refreshSource } from "../refreshSource";
   import SourceInspector from "./SourceInspector.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 

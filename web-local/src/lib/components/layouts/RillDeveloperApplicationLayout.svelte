@@ -1,13 +1,14 @@
 <script lang="ts">
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
+  import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
+  import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
+  import BlockingOverlayContainer from "@rilldata/web-common/features/temp/BlockingOverlayContainer.svelte";
   import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import {
-    duplicateSourceName,
-    runtimeStore,
-  } from "../../application-state-stores/application-store";
+  import { runtimeStore } from "../../application-state-stores/application-store";
   import type { ApplicationBuildMetadata } from "../../application-state-stores/build-metadata";
   import { fileArtifactsStore } from "../../application-state-stores/file-artifacts-store";
   import {
@@ -18,9 +19,6 @@
   import { initMetrics } from "../../metrics/initMetrics";
   import { getArtifactErrors } from "../../svelte-query/getArtifactErrors";
   import { createQueryClient } from "../../svelte-query/globalQueryClient";
-  import DuplicateSource from "../navigation/sources/DuplicateSource.svelte";
-  import BlockingOverlayContainer from "../overlay/BlockingOverlayContainer.svelte";
-  import FileDrop from "../overlay/FileDrop.svelte";
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";

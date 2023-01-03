@@ -1,21 +1,21 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
-} from "@rilldata/web-local/lib/util/duplicateNameUtils";
+} from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
+import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
+import { importOverlayVisible } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+import { FILE_EXTENSION_TO_TABLE_TYPE } from "@rilldata/web-local/lib/types";
+import {
+  extractFileExtension,
+  getTableNameFromFile,
+} from "../extract-table-name";
 import {
   DuplicateActions,
   duplicateSourceAction,
   duplicateSourceName,
-} from "../application-state-stores/application-store";
-import { importOverlayVisible } from "../application-state-stores/overlay-store";
-import { FILE_EXTENSION_TO_TABLE_TYPE } from "../types";
-import {
-  extractFileExtension,
-  getTableNameFromFile,
-} from "./extract-table-name";
+} from "../sources-store";
 
 /**
  * Uploads all valid files.

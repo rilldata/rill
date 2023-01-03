@@ -1,12 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
+  import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -16,38 +19,34 @@
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { refreshSource } from "@rilldata/web-local/lib/components/navigation/sources/refreshSource";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
+  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
+  import WorkspaceHeader from "@rilldata/web-local/lib/components/workspace/core/WorkspaceHeader.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { fade } from "svelte/transition";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/overlay-store";
   import {
     isDuplicateName,
     renameFileArtifact,
     useAllNames,
     useCreateDashboardFromSource,
-  } from "../../../svelte-query/actions";
-
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
-  import Model from "@rilldata/web-common/components/icons/Model.svelte";
-  import { getRouteFromName } from "../../../util/entity-mappers";
-  import { createModelFromSource } from "../../navigation/models/createModel";
-  import PanelCTA from "../../panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "../../panel/ResponsiveButtonText.svelte";
-  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
+  } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
+  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
+  import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { getName } from "@rilldata/web-local/lib/util/incrementName";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { fade } from "svelte/transition";
+  import { createModelFromSource } from "../createModel";
+  import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
 

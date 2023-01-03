@@ -5,7 +5,7 @@
     DuplicateActions,
     duplicateSourceAction,
     duplicateSourceName,
-  } from "../../../application-state-stores/application-store";
+  } from "../sources-store";
 
   const dispatch = createEventDispatcher();
   function onCancel() {

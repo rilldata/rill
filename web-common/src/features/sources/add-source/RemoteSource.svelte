@@ -4,6 +4,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
@@ -13,19 +14,18 @@
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { createSource } from "@rilldata/web-local/lib/components/navigation/sources/createSource";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useSourceNames } from "@rilldata/web-local/lib/svelte-query/sources";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
-  import { runtimeStore } from "../../../application-state-stores/application-store";
-  import { overlay } from "../../../application-state-stores/overlay-store";
+  import { EntityType } from "../../../lib/entity";
+  import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
+  import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
-  import { compileCreateSourceYAML, inferSourceName } from "./sourceUtils";
   import {
     fromYupFriendlyKey,
     getYupSchema,
