@@ -83,9 +83,11 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-// Builds clause and args for runtimev1.MetricsViewFilter
+// buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
+// Unless the result is empty, it is prefixed with "AND".
+// I.e. it has the format "AND (...) AND (...) ...".
 func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) (string, []any, error) {
-	whereClause := ""
+	var clauses []string
 	var args []any
 
 	if filter != nil && filter.Include != nil {
@@ -93,7 +95,7 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) 
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		clauses = append(clauses, clause)
 		args = append(args, clauseArgs...)
 	}
 
@@ -102,53 +104,54 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) 
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		clauses = append(clauses, clause)
 		args = append(args, clauseArgs...)
 	}
 
-	return whereClause, args, nil
+	return strings.Join(clauses, " "), args, nil
 }
 
+// buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
 func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
-	clause := ""
+	var clauses []string
 	var args []any
 
 	for _, cond := range conds {
 		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude)
 		if err != nil {
-			return "", nil, fmt.Errorf("filter error: %w", err)
+			return "", nil, err
 		}
 		if condClause == "" {
 			continue
 		}
-		clause += condClause
+		clauses = append(clauses, condClause)
 		args = append(args, condArgs...)
 	}
 
-	return clause, args, nil
+	return strings.Join(clauses, " "), args, nil
 }
 
+// buildFilterClauseForCondition returns a string with the format "AND (...)"
 func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
 	var clauses []string
 	var args []any
 
-	var operatorPrefix string
-	var conditionJoiner string
+	name := safeName(cond.Name)
+	notKeyword := ""
 	if exclude {
-		operatorPrefix = " NOT "
-		conditionJoiner = ") AND ("
-	} else {
-		operatorPrefix = ""
-		conditionJoiner = " OR "
+		notKeyword = "NOT"
 	}
 
+	// Tracks if we found NULL(s) in cond.In
+	inHasNull := false
+
+	// Build "dim [NOT] IN (?, ?, ...)" clause
 	if len(cond.In) > 0 {
-		// null values should be added with IS NULL / IS NOT NULL
-		nullCount := 0
+		// Add to args, skipping nulls
 		for _, val := range cond.In {
 			if _, ok := val.Kind.(*structpb.Value_NullValue); ok {
-				nullCount++
-				continue
+				inHasNull = true
+				continue // Handled later using "dim IS [NOT] NULL" clause
 			}
 			arg, err := pbutil.FromValue(val)
 			if err != nil {
@@ -157,44 +160,55 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 			args = append(args, arg)
 		}
 
-		questionMarks := strings.Join(repeatString("?", len(cond.In)-nullCount), ",")
-		// <dimension> (NOT) IN (?,?,...)
-		if questionMarks != "" {
-			clause := fmt.Sprintf("%s %s IN (%s)", cond.Name, operatorPrefix, questionMarks)
-			if nullCount == 0 && exclude {
-				// In case of exclusion, we need to explicitly include NULL value
-				clause = fmt.Sprintf("%s OR (%s IS NULL)", clause, cond.Name)
-			}
+		// If there were non-null args, add a "dim [NOT] IN (...)" clause
+		if len(args) > 0 {
+			questionMarks := strings.Join(repeatString("?", len(args)), ",")
+			clause := fmt.Sprintf("%s %s IN (%s)", name, notKeyword, questionMarks)
 			clauses = append(clauses, clause)
-		}
-		if nullCount > 0 {
-			// <dimension> IS (NOT) NULL
-			clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", cond.Name, operatorPrefix))
 		}
 	}
 
+	// Build "dim [NOT] ILIKE ?"
 	if len(cond.Like) > 0 {
 		for _, val := range cond.Like {
-			arg, err := pbutil.FromValue(val)
-			if err != nil {
-				return "", nil, fmt.Errorf("filter error: %w", err)
-			}
-			args = append(args, arg)
-			// <dimension> (NOT) ILIKE ?
-			clause := fmt.Sprintf("%s %s ILIKE ?", cond.Name, operatorPrefix)
-			if exclude {
-				// In case of exclusion, we need to explicitly include NULL value
-				clause = fmt.Sprintf("%s OR (%s IS NULL)", clause, cond.Name)
-			}
+			// Add arg
+			args = append(args, val)
+
+			// Add clause
+			clause := fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
 			clauses = append(clauses, clause)
 		}
 	}
 
-	clause := ""
-	if len(clauses) > 0 {
-		clause = fmt.Sprintf(" AND (%s)", strings.Join(clauses, conditionJoiner))
+	// Add null check
+	// NOTE: DuckDB doesn't handle NULL values in an "IN" expression. They must be checked with a "dim IS [NOT] NULL" clause.
+	if inHasNull {
+		clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", name, notKeyword))
 	}
-	return clause, args, nil
+
+	// If no checks were added, exit
+	if len(clauses) == 0 {
+		return "", nil, nil
+	}
+
+	// Join conditions
+	var condJoiner string
+	if exclude {
+		condJoiner = " AND "
+	} else {
+		condJoiner = " OR "
+	}
+	condsClause := strings.Join(clauses, condJoiner)
+
+	// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
+	// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
+	// We need to explicitly include it.
+	if exclude && !inHasNull && len(condsClause) > 0 {
+		condsClause += fmt.Sprintf(" OR %s IS NULL", name)
+	}
+
+	// Done
+	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
 func repeatString(val string, n int) []string {

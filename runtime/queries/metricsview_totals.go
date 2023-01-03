@@ -125,7 +125,7 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		whereClause += " " + clause
 		args = append(args, clauseArgs...)
 	}
 

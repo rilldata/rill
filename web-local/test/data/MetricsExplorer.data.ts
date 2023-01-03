@@ -1,5 +1,5 @@
 import { PreviewRollupInterval } from "@rilldata/web-common/lib/duckdb-data-types";
-import type { MetricsViewRequestFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
+import type { MetricsViewFilter } from "@rilldata/web-local/common/rill-developer-service/MetricsViewActions";
 import type { TimeSeriesTimeRange } from "@rilldata/web-local/lib/temp/time-control-types";
 import type { TimeSeriesMeasureRange } from "../utils/time-series-helpers";
 import { getTimeRange } from "../utils/time-series-helpers";
@@ -9,7 +9,7 @@ export interface MetricsExplorerTestDataType {
 
   // request arguments
   measures?: Array<number>;
-  filters?: MetricsViewRequestFilter;
+  filters?: MetricsViewFilter;
   timeRange?: TimeSeriesTimeRange;
 
   // assert arguments

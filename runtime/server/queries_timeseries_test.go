@@ -51,8 +51,8 @@ func TestServer_Timeseries(t *testing.T) {
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -83,8 +83,8 @@ func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Exclude: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "latitude",
 					In:   []*structpb.Value{structpb.NewNumberValue(25)},
@@ -115,8 +115,8 @@ func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Exclude: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "latitude",
 					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNullValue()},
@@ -147,8 +147,8 @@ func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Exclude: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "country",
 					In:   []*structpb.Value{structpb.NewStringValue("Canada")},
@@ -179,8 +179,8 @@ func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Exclude: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "country",
 					In:   []*structpb.Value{structpb.NewStringValue("Canada"), structpb.NewNullValue()},
@@ -211,8 +211,8 @@ func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Exclude: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					Like: []string{"iphone"},
@@ -243,8 +243,8 @@ func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Exclude: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "country",
 					In:   []*structpb.Value{structpb.NewNullValue()},
@@ -276,8 +276,8 @@ func TestServer_Timeseries_numeric_dim(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "latitude",
 					In:   []*structpb.Value{structpb.NewNumberValue(25)},
@@ -308,8 +308,8 @@ func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "latitude",
 					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNumberValue(35)},
@@ -340,8 +340,8 @@ func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "latitude",
 					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNullValue()},
@@ -371,8 +371,8 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange:           new(runtimev1.TimeSeriesTimeRange),
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -406,7 +406,7 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: new(runtimev1.MetricsViewRequestFilter),
+		Filters: new(runtimev1.MetricsViewFilter),
 	})
 
 	require.NoError(t, err)
@@ -428,7 +428,7 @@ func TestServer_Timeseries_No_Measures(t *testing.T) {
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: new(runtimev1.MetricsViewRequestFilter),
+		Filters: new(runtimev1.MetricsViewFilter),
 	})
 
 	require.NoError(t, err)
@@ -449,7 +449,7 @@ func TestServer_Timeseries_Nil_Measures(t *testing.T) {
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: new(runtimev1.MetricsViewRequestFilter),
+		Filters: new(runtimev1.MetricsViewFilter),
 	})
 
 	require.NoError(t, err)
@@ -482,8 +482,8 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -518,8 +518,8 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 			End:      parseTime(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android")},
@@ -550,8 +550,8 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		TimestampColumnName: "time",
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "publisher",
 					In:   []*structpb.Value{structpb.NewNullValue()},
@@ -582,8 +582,8 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		TimestampColumnName: "time",
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "publisher",
 					In: []*structpb.Value{
@@ -617,8 +617,8 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		TimestampColumnName: "time",
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "publisher",
 					In: []*structpb.Value{
@@ -655,8 +655,8 @@ func TestServer_Timeseries_1dim_2like(t *testing.T) {
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		TimestampColumnName: "time",
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
 					Like: []string{
@@ -690,8 +690,8 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		TimestampColumnName: "time",
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "publisher",
 					In: []*structpb.Value{
@@ -753,8 +753,8 @@ func TestServer_Timeseries_1day(t *testing.T) {
 			End:      parseTime(t, "2019-01-02T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
@@ -787,8 +787,8 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 			End:      parseTime(t, "2019-01-02T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
-		Filters: &runtimev1.MetricsViewRequestFilter{
-			Include: []*runtimev1.MetricsViewDimensionValue{
+		Filters: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
 					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},

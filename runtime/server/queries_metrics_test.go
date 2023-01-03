@@ -183,9 +183,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_like(t *testing.T) {
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("iphone"),
-					},
+					Like: []string{"iphone"},
 				},
 			},
 		},
@@ -209,9 +207,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_like_and_null(t *testing.T) {
 					In: []*structpb.Value{
 						structpb.NewNullValue(),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("iphone"),
-					},
+					Like: []string{"iphone"},
 				},
 			},
 		},
@@ -232,9 +228,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_like_doesntexist(t *testing.T
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "device",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("doesntexist"),
-					},
+					Like: []string{"doesntexist"},
 				},
 			},
 		},
@@ -438,9 +432,7 @@ func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%com"),
-					},
+					Like: []string{"%com"},
 				},
 			},
 		},
@@ -464,9 +456,7 @@ func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 					In: []*structpb.Value{
 						structpb.NewStringValue("yahoo"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%com"),
-					},
+					Like: []string{"%com"},
 				},
 			},
 		},
@@ -487,10 +477,7 @@ func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("msn%"),
-						structpb.NewStringValue("y%"),
-					},
+					Like: []string{"msn%", "y%"},
 				},
 			},
 		},
@@ -511,9 +498,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%com"),
-					},
+					Like: []string{"%com"},
 				},
 			},
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
@@ -568,9 +553,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 					In: []*structpb.Value{
 						structpb.NewStringValue("msn.com"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%yahoo%"),
-					},
+					Like: []string{"%yahoo%"},
 				},
 			},
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
@@ -579,9 +562,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 					In: []*structpb.Value{
 						structpb.NewNullValue(),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("Y%"),
-					},
+					Like: []string{"Y%"},
 				},
 			},
 		},
@@ -890,9 +871,7 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 					In: []*structpb.Value{
 						structpb.NewStringValue("msn.com"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%yahoo%"),
-					},
+					Like: []string{"%yahoo%"},
 				},
 			},
 		},

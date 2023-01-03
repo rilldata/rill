@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 	"time"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -22,7 +20,7 @@ type ColumnTimeseries struct {
 	Measures            []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                              `json:"timestamp_column_name"`
 	TimeRange           *runtimev1.TimeSeriesTimeRange                      `json:"time_range"`
-	Filters             *runtimev1.MetricsViewRequestFilter                 `json:"filters"`
+	Filters             *runtimev1.MetricsViewFilter                        `json:"filters"`
 	Pixels              int32                                               `json:"pixels"`
 	SampleSize          int32                                               `json:"sample_size"`
 	Result              *runtimev1.TimeSeriesResponse                       `json:"-"`
@@ -75,13 +73,17 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return nil
 	}
 
+	filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters)
+	if err != nil {
+		return err
+	}
+	if filter != "" {
+		filter = "WHERE 1=1 " + filter
+	}
+
 	measures := normaliseMeasures(q.Measures, true)
-	filter, args := getFilterFromMetricsViewFilters(q.Filters)
 	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 	tsAlias := tempName("_ts_")
-	if filter != "" {
-		filter = "WHERE " + filter
-	}
 	temporaryTableName := tempName("_timeseries_")
 	sql := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
         -- generate a time series column that has the intended range
@@ -367,115 +369,6 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesReque
 		}
 	}
 	return result
-}
-
-func getFilterFromDimensionValuesFilter(
-	dimensionValues []*runtimev1.MetricsViewDimensionValue,
-	exclude bool,
-	dimensionJoiner string,
-) (string, []interface{}) {
-	prefix := ""
-	if exclude {
-		prefix = "NOT"
-	}
-	var args []interface{}
-	if len(dimensionValues) == 0 {
-		return "", []interface{}{}
-	}
-
-	var result string
-	conditions := make([]string, 3)
-	if len(dimensionValues) > 0 {
-		result += " ( "
-	}
-
-	for i, dv := range dimensionValues {
-		escapedName := safeName(dv.Name)
-		var nulls bool
-		var notNulls bool
-		for _, iv := range dv.In {
-			if _, ok := iv.Kind.(*structpb.Value_NullValue); ok {
-				nulls = true
-			} else {
-				notNulls = true
-			}
-		}
-		conditions = conditions[:0]
-		if notNulls {
-			inClause := escapedName + " " + prefix + " IN ("
-			for j, iv := range dv.In {
-				switch iv.Kind.(type) {
-				case *structpb.Value_StringValue:
-					inClause += "?"
-					args = append(args, iv.GetStringValue())
-				case *structpb.Value_NumberValue:
-					inClause += "?"
-					args = append(args, iv.GetNumberValue())
-				case *structpb.Value_BoolValue:
-					inClause += "?"
-					args = append(args, iv.GetBoolValue())
-				case *structpb.Value_NullValue:
-					continue
-				default:
-					panic("unknown value type")
-				}
-				if j < len(dv.In)-1 {
-					inClause += ", "
-				}
-			}
-			inClause += ")"
-			if !nulls && exclude {
-				// In case of exclusion, we need to explicitly include NULL value
-				inClause = fmt.Sprintf("%s OR (%s IS NULL)", inClause, escapedName)
-			}
-			conditions = append(conditions, inClause)
-		}
-		if nulls {
-			nullClause := escapedName + " IS " + prefix + " NULL"
-			conditions = append(conditions, nullClause)
-		}
-
-		if len(dv.Like) > 0 {
-			var likeClause string
-			for j, lv := range dv.Like {
-				likeClause += escapedName + " " + prefix + " ILIKE ?"
-				args = append(args, lv)
-				if j < len(dv.Like)-1 {
-					likeClause += " OR "
-				}
-			}
-			if !nulls && exclude {
-				// In case of exclusion, we need to explicitly include NULL value
-				likeClause = fmt.Sprintf("%s OR %s IS NULL", likeClause, escapedName)
-			}
-			conditions = append(conditions, likeClause)
-		}
-		result += strings.Join(conditions, " "+dimensionJoiner+" ")
-		if i < len(dimensionValues)-1 {
-			result += ") AND ("
-		}
-	}
-	result += " ) "
-
-	return result, args
-}
-
-func getFilterFromMetricsViewFilters(filters *runtimev1.MetricsViewRequestFilter) (string, []interface{}) {
-	if filters == nil {
-		return "", nil
-	}
-	includeFilters, args := getFilterFromDimensionValuesFilter(filters.Include, false, "OR")
-	excludeFilters, excludeArgs := getFilterFromDimensionValuesFilter(filters.Exclude, true, "AND")
-	args = append(args, excludeArgs...)
-	if includeFilters != "" && excludeFilters != "" {
-		return " ( " + includeFilters + ") AND (" + excludeFilters + ")", args
-	} else if includeFilters != "" {
-		return includeFilters, args
-	} else if excludeFilters != "" {
-		return excludeFilters, args
-	} else {
-		return "", nil
-	}
 }
 
 func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
