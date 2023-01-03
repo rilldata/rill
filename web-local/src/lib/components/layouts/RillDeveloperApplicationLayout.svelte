@@ -56,8 +56,6 @@
     }, 500);
   }
 
-  // FROM OLD INDEX.SVELTE
-
   let showDropOverlay = false;
 
   // TODO: add new global run state
