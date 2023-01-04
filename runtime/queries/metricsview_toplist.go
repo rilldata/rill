@@ -110,8 +110,8 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (
 		}
 	}
 
-	args := []any{}
 	whereClause := "1=1"
+	args := []any{}
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
 			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
