@@ -16,9 +16,8 @@
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
   import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
-  import DefaultViewContainer from "./view-containers/DefaultViewContainer.svelte";
-  import NoTimeSeriesContainer from "./view-containers/NoTimeSeriesContainer.svelte";
   import MeasuresContainer from "./metrics-container/MeasuresContainer.svelte";
+  import ExploreContainer from "./ExploreContainer.svelte";
 
   export let metricViewName: string;
 
@@ -39,9 +38,9 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
 
-  $: ExploreContainer = hasTimeSeries
-    ? DefaultViewContainer
-    : NoTimeSeriesContainer;
+  $: gridConfig = hasTimeSeries
+    ? "560px minmax(355px, auto)"
+    : "240px minmax(355px, auto)";
 
   $: MetricsContainer = hasTimeSeries
     ? MetricsTimeSeriesCharts
@@ -54,7 +53,7 @@
   bgClass="bg-white"
   inspector={false}
 >
-  <svelte:component this={ExploreContainer} slot="body">
+  <ExploreContainer {gridConfig} slot="body">
     <ExploreHeader {metricViewName} slot="header" />
     <svelte:component this={MetricsContainer} {metricViewName} slot="metrics" />
     <svelte:fragment slot="leaderboards">
@@ -67,5 +66,5 @@
         <LeaderboardDisplay {metricViewName} />
       {/if}
     </svelte:fragment>
-  </svelte:component>
+  </ExploreContainer>
 </WorkspaceContainer>

@@ -1,6 +1,10 @@
+<script lang="ts">
+  export let gridConfig: string;
+</script>
+
 <section
   class="grid items-stretch leaderboard-layout surface"
-  style:grid-template-columns="240px minmax(355px, auto)"
+  style:grid-template-columns={gridConfig}
 >
   <div class="explore-header">
     <slot name="header" />
