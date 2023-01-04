@@ -43,10 +43,6 @@ func TestGetSourceFromPath(t *testing.T) {
 	s := GetSourceFromPath("AdBids")
 	require.Nil(t, s)
 
-	s = GetSourceFromPath("/path/to/AdBids")
-	// TODO
-	require.Nil(t, s)
-
 	s = GetSourceFromPath("http://server/path/to/AdBids.csv.tgz")
 	require.NotNil(t, s)
 	require.Equal(t, "https", s.Connector)
@@ -61,4 +57,14 @@ func TestGetSourceFromPath(t *testing.T) {
 	require.NotNil(t, s)
 	require.Equal(t, "local_file", s.Connector)
 	require.Equal(t, "local_file_data_AdBids_csv", s.Name)
+
+	s = GetSourceFromPath("data/AdBids.csv")
+	require.NotNil(t, s)
+	require.Equal(t, "local_file", s.Connector)
+	require.Equal(t, "local_file_data_AdBids_csv", s.Name)
+
+	s = GetSourceFromPath("/path/to/AdBids")
+	require.NotNil(t, s)
+	require.Equal(t, "local_file", s.Connector)
+	require.Equal(t, "local_file__path_to_AdBids", s.Name)
 }

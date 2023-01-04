@@ -160,23 +160,27 @@ var (
 func GetSourceFromPath(path string) *Source {
 	path = strings.TrimSpace(strings.Trim(path, `"'`))
 	matches := protocolExtraction.FindStringSubmatch(path)
-	// TODO: support file
-	if len(matches) < 3 {
-		return nil
-	}
 	var connector string
-	switch matches[1] {
-	case "http", "https":
-		connector = "https"
-	case "gs":
-		connector = "gcs"
-	case "s3":
-		connector = "s3"
-	case "file":
-		connector = "local_file"
-		path = strings.Replace(path, "file://", "", 1)
-	default:
-		return nil
+	if len(matches) < 3 {
+		if strings.Contains(path, "/") {
+			connector = "local_file"
+		} else {
+			return nil
+		}
+	} else {
+		switch matches[1] {
+		case "http", "https":
+			connector = "https"
+		case "gs":
+			connector = "gcs"
+		case "s3":
+			connector = "s3"
+		case "file":
+			connector = "local_file"
+			path = strings.Replace(path, "file://", "", 1)
+		default:
+			return nil
+		}
 	}
 	name := fmt.Sprintf("%s_%s", connector, sanitiser.ReplaceAllString(path, "_"))
 	return &Source{

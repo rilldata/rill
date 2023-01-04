@@ -74,7 +74,7 @@ func TestEmbeddedSourcesQueryChanging(t *testing.T) {
 		t,
 		s,
 		AdBidsNewModeName,
-		`select id, timestamp, publisher from "file://data/AdBids.csv.gz"`,
+		`select id, timestamp, publisher from "data/AdBids.csv.gz"`,
 		AdBidsNewModelPath,
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
@@ -100,10 +100,10 @@ func TestEmbeddedMultipleSources(t *testing.T) {
 		AdBidsNewModeName,
 		`with
     NewYorkImpressions as (
-        select imp.id, imp.city, imp.country from "file://data/AdImpressions.csv" imp where imp.city = 'NewYork'
+        select imp.id, imp.city, imp.country from "data/AdImpressions.csv" imp where imp.city = 'NewYork'
     )
     select count(*) as impressions, bid.publisher, bid.domain, imp.city, imp.country
-    from "file://data/AdBids.csv" bid join "file://data/AdImpressions.csv" imp on bid.id = imp.id
+    from "data/AdBids.csv" bid join "data/AdImpressions.csv" imp on bid.id = imp.id
     group by bid.publisher, bid.domain, imp.city, imp.country`,
 		AdBidsNewModelPath,
 	)
@@ -125,7 +125,7 @@ func TestEmbeddedMultipleSources(t *testing.T) {
 		s,
 		AdBidsNewModeName,
 		`select count(*) as impressions, bid.publisher, bid.domain, imp.city, imp.country
-    from "file://data/AdBids.csv" bid join "file://data/AdImpressions.csv" imp on bid.id = imp.id
+    from "data/AdBids.csv" bid join "data/AdImpressions.csv" imp on bid.id = imp.id
     group by bid.publisher, bid.domain, imp.city, imp.country`,
 		AdBidsNewModelPath,
 	)
@@ -179,7 +179,7 @@ func addEmbeddedModel(t *testing.T, s *catalog.Service) {
 		t,
 		s,
 		"AdBids_model",
-		`select id, timestamp, publisher, domain, bid_price from "file://data/AdBids.csv"`,
+		`select id, timestamp, publisher, domain, bid_price from "data/AdBids.csv"`,
 		AdBidsModelRepoPath,
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
@@ -194,7 +194,7 @@ func addEmbeddedNewModel(t *testing.T, s *catalog.Service) {
 		t,
 		s,
 		AdBidsNewModeName,
-		`select id, timestamp, publisher from "file://data/AdBids.csv"`,
+		`select id, timestamp, publisher from "data/AdBids.csv"`,
 		AdBidsNewModelPath,
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
