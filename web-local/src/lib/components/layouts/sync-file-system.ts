@@ -1,7 +1,7 @@
-/* Poll the filesystem when:
- * 1. The user navigates to a new page
- * 2. Every X seconds
- * 3. The user returns focus to the browser tab
+/* Poll the filesystem under 3 scenarios:
+ * - Scenario 1. The user navigates to a new page
+ * - Scenario 2. Every X seconds
+ * - Scenario 3. The user returns focus to the browser tab
  *
  * It's slightly complicated because we sync a different file depending on the page we're on.
  */
@@ -74,13 +74,16 @@ export function syncFileSystemPeriodically(
     // this guard clause ensures we only run the below code once
     if (afterNavigateRanOnce) return;
 
-    syncFileSystem(queryClient, runtimeInstanceId, page, 1); // sync now
+    // Scenario 1: sync when the user navigates to a new page
+    syncFileSystem(queryClient, runtimeInstanceId, page, 1);
 
+    // Setup scenario 2: sync every X seconds
     syncFileSystemInterval = setInterval(
       async () => await syncFileSystem(queryClient, runtimeInstanceId, page, 2),
       SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS
     );
 
+    // Setup scenario 3: sync when the user returns focus to the browser tab
     syncFileSystemOnVisibleDocument = async () => {
       if (document.visibilityState === "visible") {
         await syncFileSystem(queryClient, runtimeInstanceId, page, 3);
@@ -95,11 +98,15 @@ export function syncFileSystemPeriodically(
   });
 
   beforeNavigate(() => {
+    // Teardown scenario 2
     clearInterval(syncFileSystemInterval);
+
+    // Teardown scenario 3
     document.removeEventListener(
       "visibilitychange",
       syncFileSystemOnVisibleDocument
     );
+
     afterNavigateRanOnce = false;
   });
 }
