@@ -3,6 +3,8 @@
 
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import SourceEmbedded from "@rilldata/web-common/components/icons/SourceEmbedded.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
@@ -119,8 +121,9 @@
           {#if viableSources && $viableSources}
             {#each $viableSources as source (source.name)}
               <WithModelResultTooltip {modelHasError}>
-                <div
-                  class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
+                <a
+                  href="/source/{source.name}"
+                  class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                   style:grid-template-columns="auto max-content"
                   on:focus={focus(source)}
                   on:mouseover={focus(source)}
@@ -152,7 +155,7 @@
                       {`${formatCompactInteger(source.totalRows)} rows` || ""}
                     {/if}
                   </div>
-                </div>
+                </a>
 
                 <svelte:fragment slot="tooltip-title">
                   <div class="break-all">
@@ -170,7 +173,10 @@
                 </svelte:fragment>
 
                 <svelte:fragment slot="tooltip-description">
-                  This data source is referenced in the model query.
+                  <TooltipShortcutContainer>
+                    <div>Open in workspace</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
                 </svelte:fragment>
               </WithModelResultTooltip>
             {/each}

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetTableCardinality,
@@ -46,25 +51,38 @@
   {#if showModelReferences}
     <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
       {#each $modelsAndRowCounts as { modelName, totalRows }}
-        <a
-          href="/model/{modelName}"
-          class="grid justify-between gap-x-2 py-1 ui-copy-muted"
-          style:grid-template-columns="auto max-content"
-        >
-          <div
-            class="text-ellipsis overflow-hidden whitespace-nowrap flex items-center gap-x-2"
+        <Tooltip>
+          <a
+            href="/model/{modelName}"
+            class="grid justify-between gap-x-2 py-1 ui-copy-muted"
+            style:grid-template-columns="auto max-content"
           >
-            <div class=" text-ellipsis overflow-hidden whitespace-nowrap">
-              {modelName}
+            <div
+              class="text-ellipsis overflow-hidden whitespace-nowrap flex items-center gap-x-2"
+            >
+              <div class=" text-ellipsis overflow-hidden whitespace-nowrap">
+                {modelName}
+              </div>
             </div>
-          </div>
 
-          <div class="text-gray-500">
-            {#if totalRows && !isNaN(totalRows)}
-              {`${formatCompactInteger(totalRows)} rows`}
-            {/if}
-          </div>
-        </a>
+            <div class="text-gray-500">
+              {#if totalRows && !isNaN(totalRows)}
+                {`${formatCompactInteger(totalRows)} rows`}
+              {/if}
+            </div>
+          </a>
+          <TooltipContent slot="tooltip-content">
+            <TooltipTitle
+              ><svelte:fragment slot="name">{modelName}</svelte:fragment>
+              <svelte:fragment slot="description">model</svelte:fragment
+              ></TooltipTitle
+            >
+            <TooltipShortcutContainer>
+              <div>Open in workspace</div>
+              <Shortcut>Click</Shortcut>
+            </TooltipShortcutContainer>
+          </TooltipContent>
+        </Tooltip>
       {/each}
     </div>
   {/if}

@@ -43,7 +43,7 @@
   >
   <!-- display all the embed sources-->
   {#each embeds.slice(0, 9) as embeddedIn, i}
-    <div>go to {embeddedIn} reference</div>
+    <div>Open {embeddedIn} in workspace</div>
     <Shortcut>
       Ctrl + {i + 1}
     </Shortcut>
