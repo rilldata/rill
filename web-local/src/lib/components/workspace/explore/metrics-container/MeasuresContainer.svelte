@@ -57,7 +57,8 @@
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       <div
-        style:width="160px"
+        style:min-width="170px"
+        style:max-width="200px"
         class="inline-grid justify-center text-center mt-5"
       >
         <MeasureBigNumber
