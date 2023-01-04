@@ -5,7 +5,6 @@
  * It's slightly complicated because we sync a different file depending on the page we're on.
  */
 
-import { beforeNavigate } from "$app/navigation";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
@@ -17,66 +16,32 @@ import { getFilePathFromPagePath } from "../../util/entity-mappers";
 export async function syncFileSystem(
   queryClient: QueryClient,
   instanceId: string,
-  current_page: Page
+  current_page: Page,
+  id: number
 ) {
-  const pagePath = current_page.url.pathname;
-  console.log("syncFileSystem", instanceId, pagePath);
   if (!instanceId) return;
 
-  await Promise.all([
-    queryClient.invalidateQueries(
+  const pagePath = current_page.url.pathname;
+  console.log("syncFileSystem", instanceId, pagePath, id);
+
+  // invalidate `GetFile` only if on a /source, /model, or /dashboard page
+  if (
+    pagePath.startsWith("/model") ||
+    pagePath.startsWith("/source") ||
+    pagePath.startsWith("/dashboard")
+  ) {
+    await queryClient.invalidateQueries(
       getRuntimeServiceGetFileQueryKey(
         instanceId,
         getFilePathFromPagePath(pagePath)
       )
-    ),
-    // TODO: should we also invalidate ListCatalogObjects?
-    queryClient.invalidateQueries(
-      getRuntimeServiceListFilesQueryKey(instanceId)
-    ),
-  ]);
+    );
+  }
+
+  // TODO: should we also invalidate ListCatalogObjects?
+  await queryClient.invalidateQueries(
+    getRuntimeServiceListFilesQueryKey(instanceId)
+  );
 
   // TODO: call reconcile
-}
-
-const POLL_FILE_SYSTEM_MILLISECONDS = 3000;
-
-export async function syncFileSystemOnInterval(
-  queryClient: QueryClient,
-  instanceId: string,
-  page: Page
-) {
-  const interval = setInterval(
-    async () => await syncFileSystem(queryClient, instanceId, page),
-    POLL_FILE_SYSTEM_MILLISECONDS
-  );
-
-  beforeNavigate(() => {
-    clearInterval(interval);
-  });
-}
-
-export async function syncFileSystemOnVisibleDocument(
-  queryClient: QueryClient,
-  instanceId: string,
-  page: Page
-) {
-  const _syncFileSystemOnVisibleDocument = async () => {
-    if (document.visibilityState === "visible") {
-      await syncFileSystem(queryClient, instanceId, page);
-    }
-  };
-
-  document.addEventListener(
-    "visibilitychange",
-    _syncFileSystemOnVisibleDocument
-  );
-
-  beforeNavigate(() => {
-    // TODO: this doesn't seem to remove the listener.
-    document.removeEventListener(
-      "visibilitychange",
-      _syncFileSystemOnVisibleDocument
-    );
-  });
 }

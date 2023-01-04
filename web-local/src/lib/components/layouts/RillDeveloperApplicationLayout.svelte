@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { afterNavigate, beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
@@ -23,11 +24,7 @@
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
-  import {
-    syncFileSystem,
-    syncFileSystemOnInterval,
-    syncFileSystemOnVisibleDocument,
-  } from "./sync-file-system";
+  import { syncFileSystem } from "./sync-file-system";
 
   const queryClient = createQueryClient();
 
@@ -52,13 +49,52 @@
     return initMetrics(localConfig);
   });
 
-  $: syncFileSystem(queryClient, $runtimeStore.instanceId, $page); // syncs immediately on page change
-  $: syncFileSystemOnInterval(queryClient, $runtimeStore.instanceId, $page);
-  $: syncFileSystemOnVisibleDocument(
-    queryClient,
-    $runtimeStore.instanceId,
-    $page
-  );
+  const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
+
+  let syncFileSystemInterval: any; // NodeJS.Timer
+  let syncFileSystemOnVisibleDocument: () => void;
+  let afterNavigateRanOnce: boolean;
+
+  afterNavigate(async () => {
+    // afterNavigate races against onMount, which sets the runtimeInstanceId
+    // loop until we have a runtimeInstanceID
+    while (!$runtimeStore.instanceId) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    // on first page load, afterNavigate runs twice
+    // this guard clause ensures we only run the below code once
+    if (afterNavigateRanOnce) return;
+
+    syncFileSystem(queryClient, $runtimeStore.instanceId, $page, 1); // sync now
+
+    syncFileSystemInterval = setInterval(
+      async () =>
+        await syncFileSystem(queryClient, $runtimeStore.instanceId, $page, 2),
+      SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS
+    );
+
+    syncFileSystemOnVisibleDocument = async () => {
+      if (document.visibilityState === "visible") {
+        await syncFileSystem(queryClient, $runtimeStore.instanceId, $page, 3);
+      }
+    };
+    document.addEventListener(
+      "visibilitychange",
+      syncFileSystemOnVisibleDocument
+    );
+
+    afterNavigateRanOnce = true;
+  });
+
+  beforeNavigate(() => {
+    clearInterval(syncFileSystemInterval);
+    document.removeEventListener(
+      "visibilitychange",
+      syncFileSystemOnVisibleDocument
+    );
+    afterNavigateRanOnce = false;
+  });
 
   let dbRunState = "disconnected";
   let runstateTimer;
