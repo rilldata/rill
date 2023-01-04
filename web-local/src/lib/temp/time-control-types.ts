@@ -51,9 +51,11 @@ export enum TimeGrain {
   OneMonth = "month",
   OneYear = "year",
 }
+
+// The start and end times are rounded to the time grain (interval) such that start is inclusive and end is exclusive.
 export interface TimeSeriesTimeRange {
   name?: TimeRangeName;
   start?: string;
   end?: string;
-  interval?: string; // TODO: switch this to TimeGrain
+  interval?: TimeGrain; // TODO: switch this to TimeGrain
 }

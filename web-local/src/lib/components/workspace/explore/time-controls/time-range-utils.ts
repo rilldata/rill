@@ -129,24 +129,30 @@ export const makeTimeRange = (
   timeGrain: TimeGrain,
   allTimeRange: TimeSeriesTimeRange
 ): TimeSeriesTimeRange => {
-  if (lastXTimeRanges.includes(timeRangeName)) {
-    return makeLastXTimeRange(
-      timeRangeName,
-      new Date(allTimeRange?.end),
-      timeGrain
-    );
-  }
-
+  // Compute actual start time
+  let start: Date;
   if (timeRangeName === TimeRangeName.AllTime) {
-    return {
-      name: timeRangeName,
-      start: allTimeRange?.start,
-      end: allTimeRange?.end,
-      interval: timeGrain.toString(),
-    };
+    start = new Date(allTimeRange.start);
+  } else if (lastXTimeRanges.includes(timeRangeName)) {
+    const allTimeEnd = new Date(allTimeRange?.end);
+    start = new Date(allTimeEnd.getTime() - getLastXTimeRangeDuration(timeRangeName));
+  } else {
+    throw new Error(`Unknown time range name: ${timeRangeName}`);
   }
 
-  throw new Error(`Unknown time range name: ${timeRangeName}`);
+  // Round start time to nearest lower time grain
+  start = floorDate(start, timeGrain);
+
+  // Round end time to start of next grain, since end times are exclusive
+  let end = addGrains(new Date(allTimeRange?.end), 1, timeGrain);
+  end = floorDate(end, timeGrain);
+  
+  return {
+    name: timeRangeName,
+    start: start.toISOString(),
+    end: end.toISOString(),
+    interval: timeGrain,
+  };
 };
 
 export const makeTimeRanges = (
@@ -197,7 +203,8 @@ export const prettyFormatTimeRange = (
   }
 
   const start = new Date(timeRange.start);
-  const end = new Date(timeRange.end);
+  // timeRange.end is exclusive. We subtract one ms to render the last inclusive value.
+  const end = new Date((new Date(timeRange.end)).getTime() - 1);
 
   const TIMEZONE = "UTC";
   // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
@@ -226,13 +233,13 @@ export const prettyFormatTimeRange = (
         timeZone: TIMEZONE,
       })
       .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone: TIMEZONE,
-      })
-      .replace(/\s/g, "")})`;
+        .toLocaleString(undefined, {
+          hour12: true,
+          hour: "numeric",
+          minute: "numeric",
+          timeZone: TIMEZONE,
+        })
+        .replace(/\s/g, "")})`;
   }
 
   // month is the same
@@ -248,13 +255,13 @@ export const prettyFormatTimeRange = (
         timeZone: TIMEZONE,
       })
       .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone: TIMEZONE,
-      })
-      .replace(/\s/g, "")})`;
+        .toLocaleString(undefined, {
+          hour12: true,
+          hour: "numeric",
+          minute: "numeric",
+          timeZone: TIMEZONE,
+        })
+        .replace(/\s/g, "")})`;
   }
   // year is the same
   if (startYear === endYear) {
@@ -352,23 +359,6 @@ export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
   }
 };
 
-const makeLastXTimeRange = (
-  name: TimeRangeName,
-  anchorDate: Date,
-  timeGrain: TimeGrain
-): TimeSeriesTimeRange => {
-  const roundedUpAnchorDate = roundDateUp(anchorDate, timeGrain);
-  const duration = getLastXTimeRangeDuration(name);
-  const startDate = new Date(roundedUpAnchorDate.getTime() - duration);
-  const endDate = subtractOneUnit(roundedUpAnchorDate, TimeUnit.Second);
-  return {
-    name: name,
-    start: startDate.toISOString(),
-    end: endDate.toISOString(),
-    interval: timeGrain.toString(),
-  };
-};
-
 const getTimeRangeDuration = (
   timeRangeName: TimeRangeName,
   allTimeRange: TimeSeriesTimeRange
@@ -433,52 +423,7 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
   }
 };
 
-const roundDateUp = (date: Date | undefined, timeGrain: TimeGrain): Date => {
-  if (!date) return new Date();
-  switch (timeGrain) {
-    case TimeGrain.OneMinute: {
-      const interval = 60 * 1000;
-      return new Date(Math.ceil(date.getTime() / interval) * interval);
-    }
-    // case TimeGrain.FiveMinutes: {
-    //   const interval = 5 * 60 * 1000;
-    //   return new Date(Math.ceil(date.getTime() / interval) * interval);
-    // }
-    // case TimeGrain.FifteenMinutes: {
-    //   const interval = 15 * 60 * 1000;
-    //   return new Date(Math.ceil(date.getTime() / interval) * interval);
-    // }
-    case TimeGrain.OneHour: {
-      const interval = 60 * 60 * 1000;
-      return new Date(Math.ceil(date.getTime() / interval) * interval);
-    }
-    case TimeGrain.OneDay: {
-      const interval = 24 * 60 * 60 * 1000;
-      return new Date(Math.ceil(date.getTime() / interval) * interval);
-    }
-    case TimeGrain.OneWeek: {
-      // rounds to the next Monday
-      const day = date.getUTCDay();
-      const dateRoundedDownByDay = roundDateDown(date, TimeGrain.OneDay);
-      const timeUntilMonday = (day === 0 ? 1 : 8 - day) * 24 * 60 * 60 * 1000;
-      return new Date(dateRoundedDownByDay.getTime() + timeUntilMonday);
-    }
-    case TimeGrain.OneMonth: {
-      // rounds to the 1st of the next month
-      return new Date(
-        Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)
-      );
-    }
-    case TimeGrain.OneYear: {
-      // rounds to Jan 1st of the next year
-      return new Date(Date.UTC(date.getUTCFullYear() + 1, 1, 1));
-    }
-    default:
-      throw new Error(`Unknown time grain: ${timeGrain}`);
-  }
-};
-
-const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
+const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   if (!date) return new Date();
   switch (timeGrain) {
     case TimeGrain.OneMinute: {
@@ -504,7 +449,7 @@ const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
     case TimeGrain.OneWeek: {
       // rounds to the most recent Monday
       const day = date.getUTCDay();
-      const dateRoundedDownByDay = roundDateDown(date, TimeGrain.OneDay);
+      const dateRoundedDownByDay = floorDate(date, TimeGrain.OneDay);
       const timeFromMonday = (day === 0 ? 6 : day - 1) * 24 * 60 * 60 * 1000;
       return new Date(dateRoundedDownByDay.getTime() - timeFromMonday);
     }
@@ -523,33 +468,21 @@ const roundDateDown = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   }
 };
 
-enum TimeUnit {
-  Second = "second",
-  Minute = "minute",
-  Hour = "hour",
-  Day = "day",
-  Week = "week",
-  Month = "month",
-  Year = "year",
-}
-
-const subtractOneUnit = (date: Date, unit: TimeUnit): Date => {
-  switch (unit) {
-    case TimeUnit.Second:
-      return new Date(date.getTime() - 1000);
-    case TimeUnit.Minute:
-      return new Date(date.getTime() - 60 * 1000);
-    case TimeUnit.Hour:
-      return new Date(date.getTime() - 60 * 60 * 1000);
-    case TimeUnit.Day:
-      return new Date(date.getTime() - 24 * 60 * 60 * 1000);
-    case TimeUnit.Week:
-      return new Date(date.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case TimeUnit.Month:
-      return new Date(date.getUTCFullYear(), date.getUTCMonth() - 1, 1);
-    case TimeUnit.Year:
-      return new Date(date.getUTCFullYear() - 1, 1, 1);
+export const addGrains = (date: Date, units: number, grain: TimeGrain): Date => {
+  switch (grain) {
+    case TimeGrain.OneMinute:
+      return new Date(date.getTime() + units * 60 * 1000);
+    case TimeGrain.OneHour:
+      return new Date(date.getTime() + units * 60 * 60 * 1000);
+    case TimeGrain.OneDay:
+      return new Date(date.getTime() + units * 24 * 60 * 60 * 1000);
+    case TimeGrain.OneWeek:
+      return new Date(date.getTime() + units * 7 * 24 * 60 * 60 * 1000);
+    case TimeGrain.OneMonth:
+      return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + units, 1));
+    case TimeGrain.OneYear:
+      return new Date(Date.UTC(date.getUTCFullYear() + units, 1, 1));
     default:
-      throw new Error(`Unknown time unit: ${unit}`);
+      throw new Error(`Unknown time grain: ${grain}`);
   }
 };
