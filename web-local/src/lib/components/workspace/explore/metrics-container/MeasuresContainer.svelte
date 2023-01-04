@@ -36,8 +36,6 @@
     let totalsQueryParams = {
       measureNames: selectedMeasureNames,
       filter: metricsExplorer?.filters,
-      timeStart: metricsExplorer.selectedTimeRange?.start,
-      timeEnd: metricsExplorer.selectedTimeRange?.end,
     };
 
     totalsQuery = useRuntimeServiceMetricsViewTotals(
