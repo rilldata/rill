@@ -1,22 +1,30 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import {
+    getEmbeddedReferences,
+    Reference,
+  } from "@rilldata/web-common/features/models/utils/get-table-references";
+  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
+    V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
@@ -49,6 +57,13 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
+  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
+  $: embeddedSourceCatalogs = getMapFromArray(
+    $sourceCatalogsQuery?.data ?? [],
+    (entity) => entity.source.properties.path?.toLowerCase()
+  ) as Map<string, V1CatalogEntry>;
+
   const outputLayout = getContext("rill:app:output-layout");
   const outputPosition = getContext("rill:app:output-height-tween");
   const outputVisibilityTween = getContext(
@@ -71,38 +86,75 @@
     "rill:app:navigation-visibility-tween"
   ) as Writable<number>;
 
+  function filterKnownEmbeddedSources(
+    embeddedRefs: Array<Reference>
+  ): Array<string> {
+    const unknownEmbeddedSources = new Array<string>();
+    for (const embeddedRef of embeddedRefs) {
+      const cleanedRef = embeddedRef.reference.slice(
+        1,
+        embeddedRef.reference.length - 1
+      );
+      const ref = cleanedRef.toLowerCase();
+      if (embeddedSourceCatalogs.has(ref)) continue;
+      unknownEmbeddedSources.push(cleanedRef);
+    }
+    return unknownEmbeddedSources;
+  }
+
   async function updateModelContent(content: string) {
     const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
+    let overlayShown = false;
 
-    if (hasChanged) {
-      httpRequestQueue.removeByName(modelName);
-      // cancel all existing analytical queries currently running.
-      await queryClient.cancelQueries({
-        fetching: true,
-        predicate: (query) => {
-          return invalidationForProfileQueries(query.queryHash, modelName);
+    try {
+      if (hasChanged) {
+        const unknownEmbeddedSources = filterKnownEmbeddedSources(
+          getEmbeddedReferences(sanitizedQuery)
+        );
+        if (unknownEmbeddedSources.length > 0) {
+          overlay.set({
+            title: `Importing embedded sources for the 1st time : ${unknownEmbeddedSources.join(
+              ","
+            )}`,
+          });
+          overlayShown = true;
+        }
+
+        httpRequestQueue.removeByName(modelName);
+        // cancel all existing analytical queries currently running.
+        await queryClient.cancelQueries({
+          fetching: true,
+          predicate: (query) => {
+            return invalidationForProfileQueries(query.queryHash, modelName);
+          },
+        });
+      }
+
+      // TODO: why is the response type not present?
+      const resp = (await $updateModel.mutateAsync({
+        data: {
+          instanceId: runtimeInstanceId,
+          path: modelPath,
+          blob: content,
         },
-      });
+      })) as V1PutFileAndReconcileResponse;
+
+      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+      if (!resp.errors.length && hasChanged) {
+        sanitizedQuery = sanitizeQuery(content);
+      }
+      await invalidateAfterReconcile(
+        queryClient,
+        $runtimeStore.instanceId,
+        resp
+      );
+    } catch (err) {
+      console.error(err);
     }
 
-    // TODO: why is the response type not present?
-    const resp = (await $updateModel.mutateAsync({
-      data: {
-        instanceId: runtimeInstanceId,
-        path: modelPath,
-        blob: content,
-      },
-    })) as V1PutFileAndReconcileResponse;
-
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    if (!resp.errors.length && hasChanged) {
-      sanitizedQuery = sanitizeQuery(content);
+    if (overlayShown) {
+      overlay.set(null);
     }
-    return invalidateAfterReconcile(
-      queryClient,
-      $runtimeStore.instanceId,
-      resp
-    );
   }
 
   $: selections = $queryHighlight?.map((selection) => ({

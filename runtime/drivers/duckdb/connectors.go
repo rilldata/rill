@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -45,7 +46,14 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 	}
 
 	path := conf.Path
-	if !filepath.IsAbs(path) {
+	if path[0] == '~' {
+		// If path has `~` replace it with user's home dir
+		usr, err := user.Current()
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(usr.HomeDir, path[1:])
+	} else if !filepath.IsAbs(path) {
 		// If the path is relative, it's relative to the repo root
 		if env.RepoDriver != "file" || env.RepoDSN == "" {
 			return fmt.Errorf("file connector cannot ingest source '%s': path is relative, but repo is not available", source.Name)

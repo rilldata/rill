@@ -154,7 +154,7 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 
 var (
 	protocolExtraction = regexp.MustCompile(`^(.*?)://(.*)$`)
-	sanitiser          = regexp.MustCompile(`(?im)[:/?\-.]`)
+	sanitiser          = regexp.MustCompile(`(?im)[:/?\-.~]`)
 )
 
 func GetSourceFromPath(path string) *Source {

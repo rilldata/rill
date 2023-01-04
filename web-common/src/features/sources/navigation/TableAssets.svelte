@@ -1,9 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import EmbeddedSource from "@rilldata/web-common/features/sources/navigation/EmbeddedSource.svelte";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
-    useRuntimeServiceListCatalogEntries,
+    useEmbeddedSources,
+    useSourceNames,
+  } from "@rilldata/web-common/features/sources/selectors";
+  import {
     useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
@@ -27,14 +29,9 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
-  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId
-  );
+  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
   let embeddedSourceCatalogs: Array<V1CatalogEntry>;
-  $: embeddedSourceCatalogs =
-    $sourceCatalogsQuery?.data?.entries?.filter(
-      (catalog) => catalog.embedded && catalog.source
-    ) ?? [];
+  $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 
   const queryClient = useQueryClient();
 
