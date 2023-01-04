@@ -3,19 +3,20 @@ package artifacts_test
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"os"
 	"path"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestSourceReadWrite(t *testing.T) {
