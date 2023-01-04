@@ -234,7 +234,11 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			continue
 		}
 		// go through the children only if forced paths is false
-		children := s.dag.GetChildren(item.NormalizedName)
+		children, err := s.dag.GetChildren(item.NormalizedName)
+		if err != nil {
+			return nil, err
+		}
+
 		for _, child := range children {
 			childPath, ok := s.NameToPath[child]
 			if !ok || (changedPathsHint && changedPathsMap[childPath]) {
@@ -476,14 +480,18 @@ func (s *Service) collectMigrationItems(
 		migrationItems = append(migrationItems, item)
 
 		// get all the children and make sure they are not present before the parent in the order
+		c1, _ := tempDag.GetChildren(name)
+		c2, _ := s.dag.GetChildren(name)
 		children := arrayutil.Dedupe(append(
-			tempDag.GetChildren(name),
-			s.dag.GetChildren(name)...,
+			c1,
+			c2...,
 		))
 		if item.FromName != "" {
+			c3, _ := tempDag.GetChildren(strings.ToLower(item.FromName))
+			c4, _ := s.dag.GetChildren(strings.ToLower(item.FromName))
 			children = append(children, arrayutil.Dedupe(append(
-				tempDag.GetChildren(strings.ToLower(item.FromName)),
-				s.dag.GetChildren(strings.ToLower(item.FromName))...,
+				c3,
+				c4...,
 			))...)
 		}
 		for _, child := range children {
