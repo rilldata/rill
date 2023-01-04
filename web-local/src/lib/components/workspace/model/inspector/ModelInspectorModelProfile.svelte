@@ -1,11 +1,14 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
-  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import Source from "@rilldata/web-common/components/icons/Source.svelte";
+  import SourceEmbedded from "@rilldata/web-common/components/icons/SourceEmbedded.svelte";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
+    V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
@@ -37,12 +40,23 @@
   $: viableSources = derived(
     $getAllSources?.data?.entries
       ?.filter((entry) => {
-        return references.some((ref) => ref.reference === entry.name);
+        return references.some(
+          (ref) =>
+            ref.reference === entry.name || entry?.embeds?.includes(modelName)
+        );
       })
       .map((entry) => {
-        return [entry, references.find((ref) => ref.reference === entry.name)];
+        return [
+          entry,
+          references.find(
+            (ref) =>
+              ref.reference === entry.name || entry?.embeds?.includes(modelName)
+          ),
+        ];
       })
-      .map(([entry, reference]) => {
+      .map((arr) => {
+        const entry = arr[0] as V1CatalogEntry;
+        const reference = arr[1];
         return derived(
           [
             writable(entry),
@@ -102,35 +116,60 @@
           class="mt-1"
         >
           {#if viableSources && $viableSources}
-            {#each $viableSources as table (table.name)}
+            {#each $viableSources as source (source.name)}
               <WithModelResultTooltip {modelHasError}>
                 <div
                   class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                   style:grid-template-columns="auto max-content"
-                  on:focus={focus(table)}
-                  on:mouseover={focus(table)}
+                  on:focus={focus(source)}
+                  on:mouseover={focus(source)}
                   on:mouseleave={blur}
                   on:blur={blur}
                   class:text-gray-500={modelHasError}
                 >
-                  <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                    {table.name}
+                  <div
+                    class="text-ellipsis overflow-hidden whitespace-nowrap flex items-center gap-x-2"
+                  >
+                    <div class="text-gray-400">
+                      {#if source?.embedded}
+                        <SourceEmbedded size="13px" />
+                      {:else}
+                        <Source size="13px" />
+                      {/if}
+                    </div>
+                    <div
+                      class=" text-ellipsis overflow-hidden whitespace-nowrap"
+                    >
+                      {source?.embedded
+                        ? source?.source?.properties?.path
+                        : source.name}
+                    </div>
                   </div>
 
                   <div class="text-gray-500">
-                    {#if table.totalRows}
-                      {`${formatInteger(table.totalRows)} rows` || ""}
+                    {#if source.totalRows}
+                      {`${formatCompactInteger(source.totalRows)} rows` || ""}
                     {/if}
                   </div>
                 </div>
 
-                <svelte:fragment slot="tooltip-title"
-                  >{table.name}</svelte:fragment
+                <svelte:fragment slot="tooltip-title">
+                  <div class="break-all">
+                    {source?.embedded
+                      ? source?.source?.properties?.path
+                      : source.name}
+                  </div></svelte:fragment
                 >
-                <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
+                <svelte:fragment slot="tooltip-right">
+                  {#if source.source}
+                    {source.source.connector}
+                  {/if}
+                  <!-- </div>
+                  </div> -->
+                </svelte:fragment>
 
                 <svelte:fragment slot="tooltip-description">
-                  This source table is referenced in the model query
+                  This data source is referenced in the model query.
                 </svelte:fragment>
               </WithModelResultTooltip>
             {/each}

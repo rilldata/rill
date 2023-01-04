@@ -27,6 +27,8 @@
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceName: string;
+  export let embedded = false;
+  export let path: string = undefined;
 
   const switchToSource = async (name: string) => {
     if (!name) return;
@@ -40,6 +42,8 @@
     $runtimeStore?.instanceId,
     sourceName
   );
+
+  $: console.log(checkForSourceInCatalog);
 
   $: getSource = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
@@ -98,7 +102,10 @@
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
     <div slot="header">
-      <SourceWorkspaceHeader {sourceName} />
+      <SourceWorkspaceHeader
+        sourceName={embedded ? path : sourceName}
+        editable={!embedded}
+      />
     </div>
     <div
       slot="body"

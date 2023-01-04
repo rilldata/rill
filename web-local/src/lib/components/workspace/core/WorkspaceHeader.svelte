@@ -16,11 +16,13 @@
   export let onChangeCallback;
   export let titleInput;
   export let showStatus = true;
+  export let editable = true;
   export let showInspectorToggle = true;
   export let width: number = undefined;
 
   let titleInputElement;
   let editingTitle = false;
+
   let titleInputValue;
   let tooltipActive;
 
@@ -63,17 +65,22 @@
         <Tooltip
           distance={8}
           bind:active={tooltipActive}
-          suppress={editingTitle}
+          suppress={editingTitle || !editable}
         >
           <input
             autocomplete="off"
+            disabled={!editable}
             id="model-title-input"
             bind:this={titleInputElement}
             on:input={(evt) => {
-              titleInputValue = evt.target.value;
-              editingTitle = true;
+              if (editable) {
+                titleInputValue = evt.target.value;
+                editingTitle = true;
+              }
             }}
-            class="bg-transparent border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
+            class="bg-transparent border border-transparent border-2 {editable
+              ? 'hover:border-gray-400 cursor-pointer'
+              : ''} rounded pl-2 pr-2"
             class:font-bold={editingTitle === false}
             on:blur={() => {
               editingTitle = false;

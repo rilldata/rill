@@ -13,7 +13,8 @@ export interface Reference {
 export function getTableReferences(sql: string) {
   if (!sql) return [];
   // eslint-disable-next-line no-useless-escape
-  const regex = /(?:from|join)\s+([a-zA-z0-9_.]+|"[a-zA-z0-9\.\-_\/:\s]+")/gim;
+  const regex =
+    /(?:from|join)\s+([a-zA-z0-9_.]+|"[a-zA-z0-9\.\-_\/:\s]+"|'[a-zA-z0-9\.\-_\/:\s]+')/gim;
   return [...sql.matchAll(regex)].map((match) => {
     return {
       reference: match[1],

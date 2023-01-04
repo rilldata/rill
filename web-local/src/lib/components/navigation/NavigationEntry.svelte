@@ -16,6 +16,7 @@
   export let href: string;
   export let open = false;
   export let notExpandable = false;
+  export let tooltipMaxWidth: string = undefined;
 
   const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
@@ -83,13 +84,20 @@
     </div>
 
     <a
-      class="ui-copy  text-ellipsis overflow-hidden whitespace-nowrap"
+      class="ui-copy flex items-center gap-x-2 w-full text-ellipsis overflow-hidden whitespace-nowrap"
       {href}
       on:click={() => {
         if (open) onShowDetails();
       }}
     >
-      {name}
+      {#if $$slots["icon"]}
+        <div class="text-gray-400" style:width="1em" style:height="1em">
+          <slot name="icon" />
+        </div>
+      {/if}
+      <div class=" text-ellipsis overflow-hidden whitespace-nowrap">
+        {name}
+      </div>
     </a>
 
     <!-- context menu -->
@@ -134,7 +142,9 @@
   <!-- if tooltip content is present in a slot, render the tooltip -->
   <div slot="tooltip-content" class:hidden={!$$slots["tooltip-content"]}>
     {#if $$slots["tooltip-content"]}
-      <TooltipContent><slot name="tooltip-content" /></TooltipContent>
+      <TooltipContent maxWidth={tooltipMaxWidth}
+        ><slot name="tooltip-content" /></TooltipContent
+      >
     {/if}
   </div>
 </Tooltip>

@@ -104,10 +104,9 @@
       resp
     );
   }
-
   $: selections = $queryHighlight?.map((selection) => ({
-    from: selection.referenceIndex,
-    to: selection.referenceIndex + selection.reference.length,
+    from: selection?.referenceIndex,
+    to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 </script>
 

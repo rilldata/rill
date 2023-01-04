@@ -1,39 +1,44 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import SourceEmbedded from "@rilldata/web-common/components/icons/SourceEmbedded.svelte";
   import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import SourceIcon from "@rilldata/web-common/components/icons/Source.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
+  import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
+  import { slide } from "svelte/transition";
+  import EmbeddedSourceTooltip from "./EmbeddedSourceTooltip.svelte";
 
   export let embeddedSourceCatalog: V1CatalogEntry;
+  $: sourceName = embeddedSourceCatalog.source.properties.path;
+  $: cachedTableName = embeddedSourceCatalog.name;
+  $: connector = embeddedSourceCatalog.source.connector;
+  $: embeds = embeddedSourceCatalog.embeds;
 </script>
 
-<Tooltip alignment="start" distance={16} location="right">
-  <div
-    class="navigation-entry-title grid gap-x-1 items-center pl-4 pr-3 hover:bg-gray-100"
-    on:command-click
-    style:grid-template-columns="max-content auto max-content"
-    style:height="24px"
-  >
-    <div class="embedded-source-icon">
-      <SourceIcon />
+<NavigationEntry
+  href={`/source/${cachedTableName}`}
+  open={$page.url.pathname === `/source/${cachedTableName}`}
+  name={sourceName}
+  tooltipMaxWidth="300px"
+>
+  <SourceEmbedded slot="icon" />
+  <svelte:fragment slot="more">
+    <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      <ColumnProfile indentLevel={1} objectName={sourceName} />
     </div>
-    <a class="ui-copy  text-ellipsis overflow-hidden whitespace-nowrap">
-      {embeddedSourceCatalog.source.properties.path}
-    </a>
-  </div>
-  <TooltipContent slot="tooltip-content">
-    <TooltipTitle>
-      <svelte:fragment slot="name">Embedded source for</svelte:fragment>
-    </TooltipTitle>
-    {#each embeddedSourceCatalog.embeds as embeds (embeds)}
-      {embeds}<br />
-    {/each}
-  </TooltipContent>
-</Tooltip>
+  </svelte:fragment>
 
-<style>
-  .embedded-source-icon {
-    margin: 0px 6px 0px 4px;
-  }
-</style>
+  <svelte:fragment slot="tooltip-content">
+    <EmbeddedSourceTooltip {sourceName} {connector} {embeds} />
+  </svelte:fragment>
+
+  <svelte:fragment slot="menu-items" let:toggleMenu>
+    <!-- <SourceMenuItems
+              {sourceName}
+              {toggleMenu}
+              on:rename-asset={() => {
+                openRenameTableModal(sourceName);
+              }}
+            /> -->
+  </svelte:fragment>
+</NavigationEntry>
