@@ -1,6 +1,6 @@
+import { EntityType } from "@rilldata/web-common/lib/entity";
 import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
-import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error } from "@sveltejs/kit";
 

@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 

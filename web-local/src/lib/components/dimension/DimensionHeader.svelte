@@ -9,11 +9,11 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
-  import Spinner from "../../../lib/components/Spinner.svelte";
-  import { EntityStatus } from "../../../lib/temp/entity";
   import { metricsExplorerStore } from "../../application-state-stores/explorer-stores";
 
   export let metricViewName: string;

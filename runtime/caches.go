@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -12,9 +13,12 @@ import (
 	"go.uber.org/zap"
 )
 
+var errConnectionCacheClosed = errors.New("connectionCache: closed")
+
 type connectionCache struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
+	closed bool
 	logger *zap.Logger
 }
 
@@ -26,12 +30,40 @@ func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
 	return &connectionCache{cache: cache, logger: logger}
 }
 
+func (c *connectionCache) Close() error {
+	c.lock.Lock()
+	if c.closed {
+		c.lock.Unlock()
+		return errConnectionCacheClosed
+	}
+	c.closed = true
+	c.lock.Unlock()
+
+	var firstErr error
+	for _, key := range c.cache.Keys() {
+		val, _ := c.cache.Get(key)
+		err := val.(drivers.Connection).Close()
+		if err != nil {
+			c.logger.Error("failed closing cached connection", zap.Error(err))
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+
+	return firstErr
+}
+
 func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string) (drivers.Connection, error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
+
+	if c.closed {
+		return nil, errConnectionCacheClosed
+	}
 
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
