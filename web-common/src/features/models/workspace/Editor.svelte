@@ -48,6 +48,7 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
+  import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     useRuntimeServiceGetCatalogEntry,
@@ -55,14 +56,14 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { Debounce } from "@rilldata/web-local/lib/util/Debounce";
   import { createEventDispatcher, onMount } from "svelte";
 
-  const dispatch = createEventDispatcher();
   export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
+
+  const dispatch = createEventDispatcher();
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;

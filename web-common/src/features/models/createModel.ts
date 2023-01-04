@@ -4,7 +4,7 @@ import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
-import { getFilePathFromNameAndType } from "../../../util/entity-mappers";
+import { getFilePathFromNameAndType } from "../../../../web-local/src/lib/util/entity-mappers";
 
 export async function createModel(
   queryClient: QueryClient,

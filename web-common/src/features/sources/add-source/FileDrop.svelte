@@ -3,8 +3,8 @@
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";

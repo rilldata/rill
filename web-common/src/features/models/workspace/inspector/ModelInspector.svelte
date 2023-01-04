@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import ModelInspectorHeader from "./header/ModelInspectorHeader.svelte";
+  import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
   export let modelName: string;

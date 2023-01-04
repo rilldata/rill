@@ -1,7 +1,10 @@
 import {
   useRuntimeServiceGetFile,
+  useRuntimeServiceListCatalogEntries,
   useRuntimeServiceListFiles,
+  V1CatalogEntry,
 } from "@rilldata/web-common/runtime-client";
+import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 import { parse } from "yaml";
 
@@ -43,4 +46,19 @@ export function useSourceFromYaml(instanceId: string, filePath: string) {
       select: (data) => (data.blob ? parse(data.blob) : {}),
     },
   }) as UseQueryStoreResult<SourceFromYaml>;
+}
+
+export function useEmbeddedSources(instanceId: string) {
+  return useRuntimeServiceListCatalogEntries(
+    instanceId,
+    {},
+    {
+      query: {
+        select: (data) =>
+          data?.entries?.filter(
+            (catalog) => catalog.embedded && catalog.source
+          ) ?? [],
+      },
+    }
+  );
 }

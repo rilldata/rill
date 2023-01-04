@@ -15,11 +15,11 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { EntityType } from "../../../lib/entity";
+  import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";

@@ -14,11 +14,12 @@
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { getTableReferences } from "../../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+
   export let modelName: string;
 
   const queryHighlight = getContext("rill:app:query-highlight");

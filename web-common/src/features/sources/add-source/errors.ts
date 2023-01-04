@@ -59,6 +59,8 @@ export function humanReadableErrorMessage(
           return "Unauthorized. Please check your credentials.";
         } else if (serverError.includes("AccessDenied")) {
           return "Access denied. Please ensure you have the correct permissions.";
+        } else if (serverError.includes("object doesn't exist")) {
+          return "Invalid path. Please check your path.";
         }
       }
 

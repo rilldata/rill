@@ -40,11 +40,11 @@
   import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
+  import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshSource } from "../refreshSource";
 

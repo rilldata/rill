@@ -1,9 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import EmbeddedSource from "@rilldata/web-common/features/sources/navigation/EmbeddedSource.svelte";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
-    useRuntimeServiceListCatalogEntries,
+    useEmbeddedSources,
+    useSourceNames,
+  } from "@rilldata/web-common/features/sources/selectors";
+  import {
     useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
@@ -13,11 +15,11 @@
   import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
   import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
   import RenameAssetModal from "@rilldata/web-local/lib/components/navigation/RenameAssetModal.svelte";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { EntityType } from "../../../lib/entity";
+  import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
   import SourceMenuItems from "./SourceMenuItems.svelte";
@@ -27,14 +29,9 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
-  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId
-  );
+  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
   let embeddedSourceCatalogs: Array<V1CatalogEntry>;
-  $: embeddedSourceCatalogs =
-    $sourceCatalogsQuery?.data?.entries?.filter(
-      (catalog) => catalog.embedded && catalog.source
-    ) ?? [];
+  $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 
   const queryClient = useQueryClient();
 

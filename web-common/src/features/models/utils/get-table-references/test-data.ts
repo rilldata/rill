@@ -1,7 +1,8 @@
-import type { Reference } from "./";
+import type { Reference } from ".";
 interface ReferenceTestCase {
   query: string;
   references: Reference[];
+  embeddedReferences: Reference[];
 }
 
 export const singleFrom: ReferenceTestCase = {
@@ -14,6 +15,7 @@ export const singleFrom: ReferenceTestCase = {
       referenceIndex: 14,
     },
   ],
+  embeddedReferences: [],
 };
 
 export const bigGapInFrom: ReferenceTestCase = {
@@ -31,6 +33,7 @@ tbl`,
       referenceIndex: 19,
     },
   ],
+  embeddedReferences: [],
 };
 
 /** subqueries don't count as a reference, exactly, but the FROM statement
@@ -46,12 +49,14 @@ export const subqueryFrom: ReferenceTestCase = {
       referenceIndex: 29,
     },
   ],
+  embeddedReferences: [],
 };
 
 /** unfinished queries shouldn't have any references */
 export const unfinishedFrom: ReferenceTestCase = {
   query: `select * from `,
   references: [],
+  embeddedReferences: [],
 };
 
 /** simple join. Also tests line breaks. */
@@ -73,11 +78,20 @@ export const simpleJoin: ReferenceTestCase = {
       referenceIndex: 29,
     },
   ],
+  embeddedReferences: [],
 };
 
 export const remoteSourceFrom: ReferenceTestCase = {
   query: `FROM "s3://path/to/bucket.parquet"`,
   references: [
+    {
+      reference: '"s3://path/to/bucket.parquet"',
+      type: "from",
+      index: 0,
+      referenceIndex: 5,
+    },
+  ],
+  embeddedReferences: [
     {
       reference: '"s3://path/to/bucket.parquet"',
       type: "from",
@@ -91,6 +105,14 @@ export const remoteSourceFrom: ReferenceTestCase = {
 export const remoteSourceFromAlias: ReferenceTestCase = {
   query: `FROM "s3://path/to/bucket.parquet" as tbl`,
   references: [
+    {
+      reference: '"s3://path/to/bucket.parquet"',
+      type: "from",
+      index: 0,
+      referenceIndex: 5,
+    },
+  ],
+  embeddedReferences: [
     {
       reference: '"s3://path/to/bucket.parquet"',
       type: "from",
@@ -116,6 +138,14 @@ export const remoteSourceJoin: ReferenceTestCase = {
       referenceIndex: 17,
     },
   ],
+  embeddedReferences: [
+    {
+      reference: '"s3://path/to/bucket.parquet"',
+      type: "join",
+      index: 12,
+      referenceIndex: 17,
+    },
+  ],
 };
 
 export const fromInCTE: ReferenceTestCase = {
@@ -124,6 +154,7 @@ export const fromInCTE: ReferenceTestCase = {
     { reference: "tbl", type: "from", index: 20, referenceIndex: 25 },
     { reference: "x", type: "from", index: 30, referenceIndex: 35 },
   ],
+  embeddedReferences: [],
 };
 
 export const tests = [
@@ -131,6 +162,7 @@ export const tests = [
   bigGapInFrom,
   subqueryFrom,
   unfinishedFrom,
+  simpleJoin,
   remoteSourceFrom,
   remoteSourceFromAlias,
   remoteSourceJoin,
