@@ -100,10 +100,7 @@
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
     <div slot="header">
-      <SourceWorkspaceHeader
-        sourceName={embedded ? path : sourceName}
-        {embedded}
-      />
+      <SourceWorkspaceHeader {sourceName} {path} {embedded} />
     </div>
     <div
       slot="body"

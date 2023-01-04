@@ -63,6 +63,9 @@
   );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
+  $: embedded = $getSource?.data?.entry;
+  $: path = source?.properties?.path;
+
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
@@ -91,14 +94,15 @@
     toggleMenu();
   };
 
-  const handleCreateModel = async (tableName: string) => {
+  const handleCreateModel = async () => {
     try {
       const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
         queryClient,
         runtimeInstanceId,
         $modelNames.data,
-        tableName,
+        sourceName,
+        embedded ? `"${path}"` : sourceName,
         $createFileMutation
       );
 

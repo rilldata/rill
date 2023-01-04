@@ -49,6 +49,7 @@
   import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
+  export let path: string;
   export let embedded = false;
 
   const queryClient = useQueryClient();
@@ -84,6 +85,7 @@
       runtimeInstanceId,
       $modelNames.data,
       sourceName,
+      embedded ? `"${path}"` : sourceName,
       $createModelMutation
     );
     navigationEvent.fireEvent(
@@ -209,7 +211,7 @@
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
-    {...{ titleInput: sourceName, onChangeCallback }}
+    {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
     showStatus={false}
     let:width
     editable={!embedded}

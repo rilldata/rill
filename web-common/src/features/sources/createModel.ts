@@ -9,6 +9,7 @@ export async function createModelFromSource(
   instanceId: string,
   modelNames: Array<string>,
   sourceName: string,
+  sourceNameInQuery: string,
   createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
   setAsActive = true
 ): Promise<string> {
@@ -18,11 +19,11 @@ export async function createModelFromSource(
     instanceId,
     newModelName,
     createModelMutation,
-    `select * from ${sourceName}`,
+    `select * from ${sourceNameInQuery}`,
     setAsActive
   );
   notifications.send({
-    message: `Queried ${sourceName} in workspace`,
+    message: `Queried ${sourceNameInQuery} in workspace`,
   });
   return newModelName;
 }
