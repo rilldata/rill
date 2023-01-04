@@ -5,6 +5,7 @@
     getEmbeddedReferences,
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
+  import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/add-source/errors";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
@@ -63,6 +64,8 @@
     $sourceCatalogsQuery?.data ?? [],
     (entity) => entity.source.properties.path?.toLowerCase()
   ) as Map<string, V1CatalogEntry>;
+
+  let embeddedSourceError: string;
 
   const outputLayout = getContext("rill:app:output-layout");
   const outputPosition = getContext("rill:app:output-height-tween");
@@ -139,6 +142,20 @@
         },
       })) as V1PutFileAndReconcileResponse;
 
+      embeddedSourceError = "";
+      for (const reconcileError of resp.errors) {
+        if (
+          reconcileError.filePath.startsWith("/source") &&
+          embeddedSourceError === ""
+        ) {
+          // TODO: add url to this message
+          embeddedSourceError = humanReadableErrorMessage(
+            reconcileError.filePath.replace(/\/sources\/(.*?)_.*$/, "$1"),
+            3,
+            reconcileError.message
+          );
+        }
+      }
       fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
@@ -233,12 +250,12 @@
         <!--  </div>-->
         <!--{/if}-->
       </div>
-      {#if modelError}
+      {#if embeddedSourceError || modelError}
         <div
           transition:slide={{ duration: 200 }}
           class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
         >
-          {modelError}
+          {embeddedSourceError ?? modelError}
         </div>
       {/if}
     </div>
