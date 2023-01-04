@@ -5,7 +5,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import {
     MetricsExplorerEntity,

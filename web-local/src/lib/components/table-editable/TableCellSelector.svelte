@@ -2,7 +2,7 @@
   import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
+  import type { EntityRecord } from "@rilldata/web-common/lib/entity";
   import { onMount } from "svelte";
   import type { CellConfigSelector, ColumnConfig } from "./ColumnConfig";
 
