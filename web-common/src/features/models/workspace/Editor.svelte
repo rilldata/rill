@@ -280,27 +280,21 @@
 
   // REACTIVE FUNCTIONS
 
-  // function updateEditorContents(newContent: string) {
-  //   if (editor) {
-  //     let curContent = editor.state.doc.toString();
-  //     if (newContent != curContent) {
-  //       latestContent = newContent;
-  //       debounce.debounce(
-  //         "update",
-  //         () => {
-  //           editor.dispatch({
-  //             changes: {
-  //               from: 0,
-  //               to: latestContent.length,
-  //               insert: latestContent,
-  //             },
-  //           });
-  //         },
-  //         QUERY_SYNC_DEBOUNCE_TIMEOUT
-  //       );
-  //     }
-  //   }
-  // }
+  function updateEditorContents(newContent: string) {
+    if (editor) {
+      let curContent = editor.state.doc.toString();
+      if (newContent != curContent) {
+        // TODO: should we debounce this?
+        editor.dispatch({
+          changes: {
+            from: 0,
+            to: curContent.length,
+            insert: newContent,
+          },
+        });
+      }
+    }
+  }
 
   function updateAutocompleteSources(schema: { [table: string]: string[] }) {
     if (editor) {
@@ -327,7 +321,7 @@
   }
 
   // reactive statements to dynamically update the editor when inputs change
-  // $: updateEditorContents(content);
+  $: updateEditorContents(content);
   $: updateAutocompleteSources(schema);
   $: underlineSelection(selections || []);
 </script>
