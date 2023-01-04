@@ -23,7 +23,10 @@
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
-  import { formatDateByInterval, addGrains } from "../time-controls/time-range-utils";
+  import {
+    formatDateByInterval,
+    addGrains,
+  } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -122,11 +125,17 @@
   let startValue: Date;
   let endValue: Date;
   $: if (metricsExplorer?.selectedTimeRange) {
-    startValue = removeTimezoneOffset(new Date(metricsExplorer?.selectedTimeRange?.start));
+    startValue = removeTimezoneOffset(
+      new Date(metricsExplorer?.selectedTimeRange?.start)
+    );
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
-    endValue = addGrains(endValue, -1, metricsExplorer?.selectedTimeRange?.interval);
+    endValue = addGrains(
+      endValue,
+      -1,
+      metricsExplorer?.selectedTimeRange?.interval
+    );
     endValue = removeTimezoneOffset(endValue);
   }
 </script>

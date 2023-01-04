@@ -135,7 +135,9 @@ export const makeTimeRange = (
     start = new Date(allTimeRange.start);
   } else if (lastXTimeRanges.includes(timeRangeName)) {
     const allTimeEnd = new Date(allTimeRange?.end);
-    start = new Date(allTimeEnd.getTime() - getLastXTimeRangeDuration(timeRangeName));
+    start = new Date(
+      allTimeEnd.getTime() - getLastXTimeRangeDuration(timeRangeName)
+    );
   } else {
     throw new Error(`Unknown time range name: ${timeRangeName}`);
   }
@@ -146,7 +148,7 @@ export const makeTimeRange = (
   // Round end time to start of next grain, since end times are exclusive
   let end = addGrains(new Date(allTimeRange?.end), 1, timeGrain);
   end = floorDate(end, timeGrain);
-  
+
   return {
     name: timeRangeName,
     start: start.toISOString(),
@@ -204,7 +206,7 @@ export const prettyFormatTimeRange = (
 
   const start = new Date(timeRange.start);
   // timeRange.end is exclusive. We subtract one ms to render the last inclusive value.
-  const end = new Date((new Date(timeRange.end)).getTime() - 1);
+  const end = new Date(new Date(timeRange.end).getTime() - 1);
 
   const TIMEZONE = "UTC";
   // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
@@ -233,13 +235,13 @@ export const prettyFormatTimeRange = (
         timeZone: TIMEZONE,
       })
       .replace(/\s/g, "")}-${end
-        .toLocaleString(undefined, {
-          hour12: true,
-          hour: "numeric",
-          minute: "numeric",
-          timeZone: TIMEZONE,
-        })
-        .replace(/\s/g, "")})`;
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+        timeZone: TIMEZONE,
+      })
+      .replace(/\s/g, "")})`;
   }
 
   // month is the same
@@ -255,13 +257,13 @@ export const prettyFormatTimeRange = (
         timeZone: TIMEZONE,
       })
       .replace(/\s/g, "")}-${end
-        .toLocaleString(undefined, {
-          hour12: true,
-          hour: "numeric",
-          minute: "numeric",
-          timeZone: TIMEZONE,
-        })
-        .replace(/\s/g, "")})`;
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+        timeZone: TIMEZONE,
+      })
+      .replace(/\s/g, "")})`;
   }
   // year is the same
   if (startYear === endYear) {
@@ -468,7 +470,11 @@ const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   }
 };
 
-export const addGrains = (date: Date, units: number, grain: TimeGrain): Date => {
+export const addGrains = (
+  date: Date,
+  units: number,
+  grain: TimeGrain
+): Date => {
   switch (grain) {
     case TimeGrain.OneMinute:
       return new Date(date.getTime() + units * 60 * 1000);
@@ -479,7 +485,9 @@ export const addGrains = (date: Date, units: number, grain: TimeGrain): Date => 
     case TimeGrain.OneWeek:
       return new Date(date.getTime() + units * 7 * 24 * 60 * 60 * 1000);
     case TimeGrain.OneMonth:
-      return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + units, 1));
+      return new Date(
+        Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + units, 1)
+      );
     case TimeGrain.OneYear:
       return new Date(Date.UTC(date.getUTCFullYear() + units, 1, 1));
     default:
