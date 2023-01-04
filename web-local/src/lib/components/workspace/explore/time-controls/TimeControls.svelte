@@ -167,7 +167,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       class="px-3 py-2 flex flex-row items-center gap-x-3 cursor-pointer"
     >
       <span class="ui-copy-icon"><Calendar size="16px" /></span>
-      <span class="italic ui-copy-disabled">No time dimension specified</span>
+      <span class="ui-copy-disabled">No time dimension specified</span>
     </div>
   {:else}
     <TimeRangeNameSelector

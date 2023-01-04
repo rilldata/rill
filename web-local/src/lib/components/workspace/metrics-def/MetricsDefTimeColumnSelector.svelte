@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { IconButton } from "@rilldata/web-common/components/button";
-  import AlertTriangle from "@rilldata/web-common/components/icons/AlertTriangle.svelte";
-  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
@@ -98,7 +98,7 @@
           removeTimeseries();
         }}
       >
-        <CrossIcon color="gray" size="12px" />
+        <CancelCircle color="gray" size="16px" />
       </IconButton>
       <TooltipContent slot="tooltip-content">
         Remove timestamp column
@@ -113,11 +113,11 @@
           noTimeseriesCTA();
         }}
       >
-        <AlertTriangle color="gray" size="16px" />
+        <InfoCircle color="gray" size="16px" />
       </IconButton>
-      <TooltipContent slot="tooltip-content">
-        No timestamp is selected. Add a timeseries to see timeseries charts on
-        the dashboard
+      <TooltipContent slot="tooltip-content" maxWidth="300px">
+        No timestamp column selected. Select a column to see the time series
+        charts on the dashboard.
       </TooltipContent>
     </Tooltip>
   {/if}
