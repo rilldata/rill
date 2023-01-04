@@ -14,7 +14,7 @@
     if (event.ctrlKey && numbers.includes(event.key)) {
       let number = +event.key - 1;
       if (number === -1) number = 9;
-      goto(`/model/${embeds[number]}`);
+      if (embeds.length - 1 >= number) goto(`/model/${embeds[number]}`);
     }
   }
 </script>
