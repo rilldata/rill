@@ -45,8 +45,12 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		opts:         opts,
 		metastore:    metastore,
 		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize),
+		connCache:    newConnectionCache(opts.ConnectionCacheSize, logger),
 		catalogCache: newCatalogCache(),
 		queryCache:   newQueryCache(opts.QueryCacheSize),
 	}, nil
+}
+
+func (r *Runtime) Close() error {
+	return r.connCache.Close()
 }

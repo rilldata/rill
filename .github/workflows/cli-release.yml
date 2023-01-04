@@ -85,8 +85,8 @@ jobs:
         if: github.event_name == 'schedule'
         run: |-
           mkdir nightly
-          mv dist/*.zip nightly/
-          mv dist/checksums.txt nightly/
+          cp dist/*.zip nightly/
+          cp dist/checksums.txt nightly/
 
       - name: Upload nightly to CDN
         if: github.event_name == 'schedule'

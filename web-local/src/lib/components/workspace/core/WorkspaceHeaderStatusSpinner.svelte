@@ -1,8 +1,8 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Spinner from "@rilldata/web-local/lib/components/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
 
   let applicationStatus = 0;
   let asTimer;

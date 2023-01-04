@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
+import { EntityType } from "@rilldata/web-common/lib/entity";
 import {
   RpcStatus,
   runtimeServiceGetCatalogEntry,
@@ -13,7 +14,6 @@ import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-clien
 import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-stores/app-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import {
   getFilePathFromNameAndType,
   getLabel,
@@ -74,9 +74,6 @@ export async function renameFileArtifact(
   });
 
   invalidateAfterReconcile(queryClient, instanceId, resp);
-  goto(getRouteFromName(toName, type), {
-    replaceState: true,
-  });
 }
 
 export async function deleteFileArtifact(

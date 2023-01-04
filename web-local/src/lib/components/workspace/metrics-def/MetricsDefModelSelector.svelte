@@ -1,7 +1,6 @@
 <script lang="ts">
-  import ModelIcon from "@rilldata/web-common/components/icons/Model.svelte";
+  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useModelNames } from "@rilldata/web-local/lib/svelte-query/models";
   import type { Readable } from "svelte/store";
   import type { MetricsInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
 
@@ -17,8 +16,8 @@
 </script>
 
 <div class="flex items-center mb-3">
-  <div class="flex items-center gap-x-2" style="width:9em">
-    <ModelIcon size="16px" />Model
+  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+    Model
   </div>
   <div>
     <select

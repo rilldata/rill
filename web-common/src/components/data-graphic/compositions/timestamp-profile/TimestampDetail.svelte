@@ -15,9 +15,10 @@
    */
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
   import { scaleLinear } from "d3-scale";
@@ -75,9 +76,8 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
 
   /** rollup grain, time range, etc. */
-  export let interval: Interval;
-  export let rollupGrain: string;
-  export let estimatedSmallestTimeGrain: string;
+  export let rollupTimeGrain: V1TimeGrain;
+  export let estimatedSmallestTimeGrain: V1TimeGrain;
 
   let devicePixelRatio = 1;
   onMount(() => {
@@ -295,10 +295,10 @@
 
 <div style:max-width="{width}px">
   <TimestampProfileSummary
-    {type}
+    start={xExtents[0]}
+    end={xExtents[1]}
     {estimatedSmallestTimeGrain}
-    {interval}
-    {rollupGrain}
+    {rollupTimeGrain}
   />
   <Tooltip location="right" alignment="center" distance={32}>
     <svg

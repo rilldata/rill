@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Callout } from "@rilldata/web-common/components/callout";
   import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
@@ -11,7 +12,6 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
@@ -22,6 +22,7 @@
   import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
   import type { SelectorOption } from "../../table-editable/ColumnConfig";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import MetricsDefDisplayNameInput from "./MetricsDefDisplayNameInput.svelte";
   import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
   import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
   import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
@@ -160,6 +161,7 @@
     >
       <div class="flex-none flex flex-row">
         <div>
+          <MetricsDefDisplayNameInput {metricsInternalRep} />
           <MetricsDefModelSelector {metricsInternalRep} />
           <MetricsDefTimeColumnSelector
             selectedModel={model}
