@@ -3,6 +3,8 @@ package dag
 import (
 	"container/list"
 	"fmt"
+
+	"golang.org/x/exp/slices"
 )
 
 // DAG is a simple implementation of a directed acyclic graph.
@@ -31,9 +33,10 @@ func (d *DAG) Add(name string, dependants []string) (*Node, error) {
 
 	dependantMap := make(map[string]bool)
 	for _, dependant := range dependants {
-		_, err := d.GetChildren(name)
-		if err != nil {
-			return nil, err
+		childrens := d.GetChildren(name)
+		ok := slices.Contains(childrens, dependant)
+		if ok {
+			return nil, fmt.Errorf("circular dependencies not allowed")
 		}
 
 		dependantMap[dependant] = true
@@ -62,12 +65,12 @@ func (d *DAG) Delete(name string) {
 	d.deleteBranch(n)
 }
 
-func (d *DAG) GetChildren(name string) ([]string, error) {
+func (d *DAG) GetChildren(name string) []string {
 	children := make([]string, 0)
 
 	n, ok := d.NameMap[name]
 	if !ok {
-		return []string{}, nil
+		return []string{}
 	}
 
 	visited := make(map[string]*Node)
@@ -82,9 +85,6 @@ func (d *DAG) GetChildren(name string) ([]string, error) {
 		// iterate through all of its neighbors
 		// mark the visited nodes; enqueue the non-visted
 		for child, node := range qnode.Value.(*Node).Children {
-			if child == name {
-				return nil, fmt.Errorf("circular dependencies not allowed")
-			}
 			if _, ok := visited[child]; !ok {
 				children = append(children, child)
 				visited[child] = node
@@ -94,7 +94,7 @@ func (d *DAG) GetChildren(name string) ([]string, error) {
 		queue.Remove(qnode)
 	}
 
-	return children, nil
+	return children
 }
 
 func (d *DAG) Has(name string) bool {
