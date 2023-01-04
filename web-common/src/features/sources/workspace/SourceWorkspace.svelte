@@ -43,8 +43,6 @@
     sourceName
   );
 
-  $: console.log(checkForSourceInCatalog);
-
   $: getSource = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
@@ -104,7 +102,7 @@
     <div slot="header">
       <SourceWorkspaceHeader
         sourceName={embedded ? path : sourceName}
-        editable={!embedded}
+        {embedded}
       />
     </div>
     <div

@@ -49,7 +49,7 @@
   import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
-  export let editable = true;
+  export let embedded = false;
 
   const queryClient = useQueryClient();
 
@@ -212,7 +212,7 @@
     {...{ titleInput: sourceName, onChangeCallback }}
     showStatus={false}
     let:width
-    {editable}
+    editable={!embedded}
   >
     <svelte:fragment slot="icon">
       <Source />

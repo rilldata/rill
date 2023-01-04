@@ -11,6 +11,7 @@
     useRuntimeServiceProfileColumns,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
@@ -19,8 +20,8 @@
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
-  import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
   import { slide } from "svelte/transition";
+  import ReferenceModels from "./ReferenceModels.svelte";
 
   export let sourceName: string;
 
@@ -31,9 +32,10 @@
     sourceName
   );
   let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
+  $: source = $getSource?.data?.entry;
 
   let showColumns = true;
+  let showModelReferences = true;
 
   // get source table references.
 
@@ -151,12 +153,16 @@
       </LeftRightGrid>
     </div>
 
-    <StickToHeaderDivider />
+    <hr />
+
+    {#if source?.embedded}
+      <ReferenceModels {source} />
+    {/if}
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="Source tables"
+          tooltipText="available columns"
           bind:active={showColumns}
         >
           columns
@@ -164,7 +170,7 @@
       </div>
 
       {#if showColumns}
-        <div transition:slide|local={{ duration: 200 }}>
+        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
           <ColumnProfile objectName={sourceName} indentLevel={0} />
         </div>
       {/if}
