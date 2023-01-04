@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
@@ -22,6 +23,11 @@
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
+  import {
+    syncFileSystem,
+    syncFileSystemOnInterval,
+    syncFileSystemOnVisibleDocument,
+  } from "./sync-file-system";
 
   const queryClient = createQueryClient();
 
@@ -45,6 +51,14 @@
 
     return initMetrics(localConfig);
   });
+
+  $: syncFileSystem(queryClient, $runtimeStore.instanceId, $page); // syncs immediately on page change
+  $: syncFileSystemOnInterval(queryClient, $runtimeStore.instanceId, $page);
+  $: syncFileSystemOnVisibleDocument(
+    queryClient,
+    $runtimeStore.instanceId,
+    $page
+  );
 
   let dbRunState = "disconnected";
   let runstateTimer;
