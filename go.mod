@@ -12,7 +12,6 @@ require (
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/getkin/kin-openapi v0.100.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
-	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/jackc/pgx/v4 v4.10.1
@@ -28,6 +27,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
+	google.golang.org/api v0.97.0
 	google.golang.org/grpc v1.49.0
 	modernc.org/sqlite v1.10.6
 )
@@ -55,6 +55,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.5.1 // indirect
@@ -115,7 +116,6 @@ require (
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
-	google.golang.org/api v0.97.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

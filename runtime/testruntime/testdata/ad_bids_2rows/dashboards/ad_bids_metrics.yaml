@@ -19,7 +19,8 @@ dimensions:
     property: id
   - label: Numeric Dim
     property: numeric_dim
-
+  - label: Device
+    property: device
 
 measures:
   - label: "Number of bids"
