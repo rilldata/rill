@@ -1,9 +1,9 @@
+import { EntityType } from "@rilldata/web-common/lib/entity";
 import {
   runtimeServiceGetCatalogEntry,
   runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
-import { EntityType } from "@rilldata/web-local/lib/temp/entity";
 import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error, redirect } from "@sveltejs/kit";
 import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";

@@ -49,7 +49,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	sanitizedColumnName := quoteName(q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 	descriptiveStatisticsSQL := fmt.Sprintf("SELECT "+
 		"min(%s) as min, "+
 		"approx_quantile(%s, 0.25) as q25, "+
@@ -66,7 +66,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,
-		quoteName(q.TableName))
+		safeName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    descriptiveStatisticsSQL,

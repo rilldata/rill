@@ -17,6 +17,9 @@ dimensions:
     description: ""
   - label: Id
     property: id
+  - label: Numeric Dim
+    property: numeric_dim
+
 
 measures:
   - label: "Number of bids"

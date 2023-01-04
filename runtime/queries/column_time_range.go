@@ -45,8 +45,8 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
-		quoteName(q.ColumnName),
-		quoteName(q.TableName),
+		safeName(q.ColumnName),
+		safeName(q.TableName),
 	)
 
 	olap, err := rt.OLAP(ctx, instanceID)

@@ -27,6 +27,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer app.Close()
 
 			// If not initialized, init repo with an empty project
 			if !app.IsProjectInit() {

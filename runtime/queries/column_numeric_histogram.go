@@ -41,7 +41,7 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
-	sanitizedColumnName := quoteName(q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 	querySQL := fmt.Sprintf(
 		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
 		sanitizedColumnName,
@@ -49,7 +49,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,
-		quoteName(q.TableName),
+		safeName(q.TableName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -96,7 +96,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	sanitizedColumnName := quoteName(q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 	bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	      `,
 		selectColumn,
 		sanitizedColumnName,
-		q.TableName,
+		safeName(q.TableName),
 		bucketSize,
 	)
 
