@@ -63,95 +63,102 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
-	if err != nil {
-		return err
-	}
-
-	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		q.Result = &runtimev1.TimeSeriesResponse{}
-		return nil
-	}
-
-	filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters)
-	if err != nil {
-		return err
-	}
-	if filter != "" {
-		filter = "WHERE 1=1 " + filter
-	}
-
-	measures := normaliseMeasures(q.Measures, true)
-	dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
-	tsAlias := tempName("_ts_")
-	temporaryTableName := tempName("_timeseries_")
-	sql := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
-        -- generate a time series column that has the intended range
-        WITH template as (
-          SELECT 
-            generate_series as ` + tsAlias + `
-          FROM 
-            generate_series(
-              date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
-              date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
-              interval '1 ` + dateTruncSpecifier + `')
-        ),
-        -- transform the original data, and optionally sample it.
-        series AS (
-          SELECT 
-            date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
-          FROM ` + safeName(q.TableName) + ` ` + filter + `
-          GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
-        )
-        -- join the transformed data with the generated time series column,
-        -- coalescing the first value to get the 0-default when the rolled up data
-        -- does not have that value.
-        SELECT 
-          ` + getCoalesceStatementsMeasures(measures) + `,
-          template.` + tsAlias + ` from template
-        LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
-        ORDER BY template.` + tsAlias + `
-      )`
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: priority,
-	})
-	defer dropTempTable(olap, priority, temporaryTableName)
-	if err != nil {
-		return err
-	}
-	rows.Close()
-
-	rows, err = olap.Execute(ctx, &drivers.Statement{
-		Query:    `SELECT * from "` + temporaryTableName + `"`,
-		Priority: priority,
-	})
-	if err != nil {
-		return err
-	}
-
-	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
-	rows.Close()
-	if err != nil {
-		return err
-	}
-
-	var sparkValues []*runtimev1.TimeSeriesValue
-	if q.Pixels != 0 {
-		sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
+	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
+		timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
 		if err != nil {
 			return err
 		}
-	}
 
-	q.Result = &runtimev1.TimeSeriesResponse{
-		Results:   results,
-		TimeRange: timeRange,
-		Spark:     sparkValues,
-	}
-	return nil
+		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			q.Result = &runtimev1.TimeSeriesResponse{}
+			return nil
+		}
+
+		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters)
+		if err != nil {
+			return err
+		}
+		if filter != "" {
+			filter = "WHERE 1=1 " + filter
+		}
+
+		measures := normaliseMeasures(q.Measures, true)
+		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+		tsAlias := tempName("_ts_")
+		temporaryTableName := tempName("_timeseries_")
+		sql := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
+			-- generate a time series column that has the intended range
+			WITH template as (
+			SELECT 
+				generate_series as ` + tsAlias + `
+			FROM 
+				generate_series(
+				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
+				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
+				interval '1 ` + dateTruncSpecifier + `')
+			),
+			-- transform the original data, and optionally sample it.
+			series AS (
+			SELECT 
+				date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+			FROM ` + safeName(q.TableName) + ` ` + filter + `
+			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
+			)
+			-- join the transformed data with the generated time series column,
+			-- coalescing the first value to get the 0-default when the rolled up data
+			-- does not have that value.
+			SELECT 
+			` + getCoalesceStatementsMeasures(measures) + `,
+			template.` + tsAlias + ` from template
+			LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
+			ORDER BY template.` + tsAlias + `
+		)`
+
+		err = olap.Exec(ctx, &drivers.Statement{
+			Query:    sql,
+			Args:     args,
+			Priority: priority,
+		})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			// NOTE: Using ensuredCtx
+			_ = olap.Exec(ensuredCtx, &drivers.Statement{
+				Query:    `DROP TABLE "` + temporaryTableName + `"`,
+				Priority: priority,
+			})
+		}()
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    `SELECT * from "` + temporaryTableName + `"`,
+			Priority: priority,
+		})
+		if err != nil {
+			return err
+		}
+
+		results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
+		rows.Close()
+		if err != nil {
+			return err
+		}
+
+		var sparkValues []*runtimev1.TimeSeriesValue
+		if q.Pixels != 0 {
+			sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
+			if err != nil {
+				return err
+			}
+		}
+
+		q.Result = &runtimev1.TimeSeriesResponse{
+			Results:   results,
+			TimeRange: timeRange,
+			Spark:     sparkValues,
+		}
+		return nil
+	})
 }
 
 func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {

@@ -19,7 +19,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
-	github.com/marcboeker/go-duckdb v1.0.6
+	github.com/marcboeker/go-duckdb v1.0.8-0.20221228213732-dfbf45d4dc67
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.6.1

@@ -53,6 +53,8 @@ func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRe
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	var data []*structpb.Struct
 	if data, err = rowsToData(rows); err != nil {
 		return nil, err

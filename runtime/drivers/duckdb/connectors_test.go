@@ -7,10 +7,12 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/connectors"
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
 )
 
 func TestConnectorWithSourceVariations(t *testing.T) {
@@ -44,7 +46,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := driver{}.Open("?access_mode=read_write")
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 
@@ -84,7 +86,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 
 func TestCSVDelimiter(t *testing.T) {
 	ctx := context.Background()
-	conn, err := driver{}.Open("?access_mode=read_write")
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.OLAPStore()
 

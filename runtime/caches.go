@@ -68,7 +68,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
 	if !ok {
-		conn, err := drivers.Open(driver, dsn)
+		conn, err := drivers.Open(driver, dsn, c.logger)
 		if err != nil {
 			return nil, err
 		}
