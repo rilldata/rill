@@ -1,4 +1,4 @@
-import { getTableReferences } from "./";
+import { getTableReferences } from ".";
 import { tests } from "./test-data";
 
 describe("getAllTableReferences", () => {

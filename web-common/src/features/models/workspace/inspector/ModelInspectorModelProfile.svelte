@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
@@ -8,14 +6,16 @@
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { getTableReferences } from "@rilldata/web-local/lib/util/get-table-references";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { getTableReferences } from "../../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+
   export let modelName: string;
 
   const queryHighlight = getContext("rill:app:query-highlight");
