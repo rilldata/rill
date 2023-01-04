@@ -1,5 +1,10 @@
 package dag
 
+import (
+	"container/list"
+	"fmt"
+)
+
 // DAG is a simple implementation of a directed acyclic graph.
 type DAG struct {
 	NameMap map[string]*Node
@@ -20,12 +25,15 @@ type Node struct {
 	Children map[string]*Node
 }
 
-func (d *DAG) Add(name string, dependants []string) *Node {
+func (d *DAG) Add(name string, dependants []string) (*Node, error) {
 	n := d.getNode(name)
 	n.Present = true
 
 	dependantMap := make(map[string]bool)
 	for _, dependant := range dependants {
+		// if d.DependsOn(name, dependant) {
+		// 	return nil, errors.New("circular dependencies not allowed")
+		// }
 		dependantMap[dependant] = true
 	}
 
@@ -43,7 +51,7 @@ func (d *DAG) Add(name string, dependants []string) *Node {
 		n.Parents[newParent] = d.addChild(newParent, n)
 	}
 
-	return n
+	return n, nil
 }
 
 func (d *DAG) Delete(name string) {
@@ -52,33 +60,92 @@ func (d *DAG) Delete(name string) {
 	d.deleteBranch(n)
 }
 
-func (d *DAG) GetChildren(name string) []string {
+func (d *DAG) GetChildren(name string) ([]string, error) {
 	children := make([]string, 0)
-	childMap := make(map[string]bool)
+	// childMap := make(map[string]bool)
 
 	n, ok := d.NameMap[name]
 	if !ok {
-		return []string{}
+		return []string{}, nil
 	}
 
-	// we need the immediate children to be loaded 1st.
-	for _, child := range n.Children {
-		children = append(children, child.Name)
-		childMap[child.Name] = true
-	}
+	// // we need the immediate children to be loaded 1st.
+	// for _, child := range n.Children {
+	// 	children = append(children, child.Name)
+	// 	childMap[child.Name] = true
+	// }
 
-	// then we load deeper children
-	for _, child := range n.Children {
-		deepChildren := d.GetChildren(child.Name)
-		for _, deepChild := range deepChildren {
-			if _, ok := childMap[deepChild]; !ok {
-				children = append(children, deepChild)
-				childMap[deepChild] = true
+	visited := make(map[string]*Node)
+	// queue of the nodes to visit
+	queue := list.New()
+	queue.PushBack(n)
+	// add the root node to the map of the visited nodes
+	visited[n.Name] = n
+
+	for queue.Len() > 0 {
+		qnode := queue.Front()
+		// iterate through all of its friends
+		// mark the visited nodes; enqueue the non-visted
+		for child, node := range qnode.Value.(*Node).Children {
+			if child == name {
+				return nil, fmt.Errorf("cycle")
+			}
+			if _, ok := visited[child]; !ok {
+				children = append(children, child)
+				visited[child] = node
+				queue.PushBack(node)
 			}
 		}
+		queue.Remove(qnode)
 	}
 
-	return children
+	// for k := range visited {
+	// 	children = append(children, k)
+	// }
+
+	// // then we load deeper children
+	// for _, child := range n.Children {
+	// 	deepChildren := d.GetChildren(child.Name)
+	// 	for _, deepChild := range deepChildren {
+	// 		if _, ok := childMap[deepChild]; !ok {
+	// 			children = append(children, deepChild)
+	// 			childMap[deepChild] = true
+	// 		}
+	// 	}
+	// }
+
+	return children, nil
+}
+
+type nodeset map[string]struct{}
+
+func (d *DAG) DependsOn(child, parent string) bool {
+	deps := d.Dependencies(child)
+	_, ok := deps[parent]
+	return ok
+}
+
+func (d *DAG) Dependencies(child string) nodeset {
+	_, ok := d.NameMap[child]
+	if !ok {
+		return nil
+	}
+
+	out := make(nodeset)
+	searchNext := []string{child}
+	for len(searchNext) > 0 {
+		discovered := []string{}
+		for _, node := range searchNext {
+			for nextNode := range d.NameMap[node].Children {
+				if _, ok := out[nextNode]; !ok {
+					out[nextNode] = struct{}{}
+					discovered = append(discovered, nextNode)
+				}
+			}
+		}
+		searchNext = discovered
+	}
+	return out
 }
 
 func (d *DAG) Has(name string) bool {
