@@ -46,14 +46,20 @@
       totalsQueryParams
     );
   }
+
+  $: numColumns =
+    $metaQuery.data?.measures?.length >= 5 ? "grid-cols-3" : "grid-cols-1";
 </script>
 
-<div class="flex flex-col">
+<div class="grid {numColumns} gap-2">
   {#if $metaQuery.data?.measures}
     {#each $metaQuery.data?.measures as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
-      <div class="mt-5">
+      <div
+        style:width="160px"
+        class="inline-grid justify-center text-center mt-5"
+      >
         <MeasureBigNumber
           value={bigNum}
           description={measure?.description ||

@@ -35,7 +35,7 @@
   </Tooltip>
   <div
     class="ui-copy-muted"
-    style:font-size={compact ? "1.5rem" : "2rem"}
+    style:font-size={compact ? "1.5rem" : "1.8rem"}
     style:font-weight="light"
   >
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
