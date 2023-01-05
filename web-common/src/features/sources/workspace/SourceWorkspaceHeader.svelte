@@ -272,26 +272,28 @@
             Model this source with SQL
           </TooltipContent>
         </Tooltip>
-        <Tooltip location="bottom" alignment="right" distance={16}>
-          <Button
-            type="primary"
-            disabled={!timestampColumns?.length}
-            on:click={() => handleCreateDashboardFromSource(sourceName)}
-          >
-            <ResponsiveButtonText collapse={width < 800}>
-              Create Dashboard
-            </ResponsiveButtonText>
+        {#if !embedded}
+          <Tooltip location="bottom" alignment="right" distance={16}>
+            <Button
+              type="primary"
+              disabled={!timestampColumns?.length}
+              on:click={() => handleCreateDashboardFromSource(sourceName)}
+            >
+              <ResponsiveButtonText collapse={width < 800}>
+                Create Dashboard
+              </ResponsiveButtonText>
 
-            <Explore size="16px" />
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            {#if timestampColumns?.length}
-              Create a dashboard for this source
-            {:else}
-              This data source does not have a TIMESTAMP column
-            {/if}
-          </TooltipContent>
-        </Tooltip>
+              <Explore size="16px" />
+            </Button>
+            <TooltipContent slot="tooltip-content">
+              {#if timestampColumns?.length}
+                Create a dashboard for this source
+              {:else}
+                This data source does not have a TIMESTAMP column
+              {/if}
+            </TooltipContent>
+          </Tooltip>
+        {/if}
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>
