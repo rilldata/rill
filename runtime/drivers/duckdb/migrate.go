@@ -7,6 +7,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Embed migrations directory in the binary
@@ -20,27 +22,33 @@ var migrationVersionTable = "rill.migration_version"
 // Migrate implements drivers.Connection.
 // Migrate for DuckDB may not be safe for concurrent use.
 func (c *connection) Migrate(ctx context.Context) (err error) {
-	// Create rill schema if it doens't exist
-	_, err = c.db.ExecContext(ctx, "create schema if not exists rill")
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	// Create rill schema if it doesn't exist
+	_, err = conn.ExecContext(ctx, "create schema if not exists rill")
 	if err != nil {
 		return err
 	}
 
 	// Create migrationVersionTable if it doesn't exist
-	_, err = c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
+	_, err = conn.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
 	if err != nil {
 		return err
 	}
 
 	// Set the version to 0 if table is empty
-	_, err = c.db.ExecContext(ctx, fmt.Sprintf("insert into %s(version) select 0 where 0=(select count(*) from %s)", migrationVersionTable, migrationVersionTable))
+	_, err = conn.ExecContext(ctx, fmt.Sprintf("insert into %s(version) select 0 where 0=(select count(*) from %s)", migrationVersionTable, migrationVersionTable))
 	if err != nil {
 		return err
 	}
 
 	// Get version of latest migration
 	var currentVersion int
-	err = c.db.QueryRowContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&currentVersion)
+	err = conn.QueryRowContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&currentVersion)
 	if err != nil {
 		return err
 	}
@@ -69,7 +77,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 			return err
 		}
 
-		err = c.migrateSingle(ctx, file.Name(), sql, version)
+		err = c.migrateSingle(ctx, conn, file.Name(), sql, version)
 		if err != nil {
 			return err
 		}
@@ -78,9 +86,9 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
+func (c *connection) migrateSingle(ctx context.Context, conn *sqlx.Conn, name string, sql []byte, version int) (err error) {
 	// Start a transaction
-	tx, err := c.db.BeginTx(ctx, nil)
+	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -105,7 +113,7 @@ func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte,
 	}
 
 	// Force DuckDB to merge WAL into .db file
-	_, err = c.db.ExecContext(ctx, "CHECKPOINT;")
+	_, err = conn.ExecContext(ctx, "CHECKPOINT;")
 	if err != nil {
 		return err
 	}
@@ -114,8 +122,14 @@ func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte,
 
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer func() { _ = release() }()
+
 	// Get current version
-	err = c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
+	err = conn.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {
 		return 0, 0, err
 	}

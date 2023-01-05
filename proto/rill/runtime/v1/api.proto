@@ -757,9 +757,8 @@ message MetricsViewFilter {
   message Cond {
     string name = 1;
     repeated google.protobuf.Value in = 2;
-    repeated google.protobuf.Value like = 3;
+    repeated string like = 3;
   }
-  repeated string match = 1;
   repeated Cond include = 2;
   repeated Cond exclude = 3;
 }
@@ -984,7 +983,7 @@ message GenerateTimeSeriesRequest {
   repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
   TimeSeriesTimeRange time_range = 5;
-  MetricsViewRequestFilter filters = 6;
+  MetricsViewFilter filters = 6;
   int32 pixels = 7;
   int32 sample_size = 8;
   int32 priority = 9;
@@ -1018,17 +1017,6 @@ enum TimeRangeName {
   // Today
   // MonthToDate
   // CustomRange
-}
-
-message MetricsViewDimensionValue {
-  string name = 1;
-  repeated google.protobuf.Value in = 2;
-  repeated string like = 3;
-}
-
-message MetricsViewRequestFilter {
-  repeated MetricsViewDimensionValue include = 1;
-  repeated MetricsViewDimensionValue exclude = 2;
 }
 
 message TimeSeriesResponse {

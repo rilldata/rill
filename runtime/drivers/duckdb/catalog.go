@@ -29,9 +29,14 @@ func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*d
 }
 
 func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
-	sql := fmt.Sprintf("SELECT name, type, object, path, embeds, links, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = release() }()
 
-	rows, err := c.db.QueryxContext(ctx, sql, args...)
+	sql := fmt.Sprintf("SELECT name, type, object, path, embeds, links, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
+	rows, err := conn.QueryxContext(ctx, sql, args...)
 	if err != nil {
 		panic(err)
 	}
@@ -79,6 +84,12 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 }
 
 func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
 	if err != nil {
@@ -86,7 +97,7 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	}
 
 	now := time.Now()
-	_, err = c.db.ExecContext(
+	_, err = conn.ExecContext(
 		ctx,
 		"INSERT INTO rill.catalog(name, type, object, path, embeds, links, embedded, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		e.Name,
@@ -111,13 +122,19 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.db.ExecContext(
+	_, err = conn.ExecContext(
 		ctx,
 		"UPDATE rill.catalog SET type = ?, object = ?, path = ?, embeds = ?, links = ?, embedded = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
 		e.Type,
@@ -138,6 +155,12 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 }
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
 	return err
 }

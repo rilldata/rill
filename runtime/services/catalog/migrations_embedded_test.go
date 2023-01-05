@@ -14,11 +14,11 @@ import (
 )
 
 var EmbeddedSourceName = "local_file_data_AdBids_csv"
-var EmbeddedSourcePath = "/sources/local_file_data_AdBids_csv.yaml"
+var EmbeddedSourcePath = "data/AdBids.csv"
 var EmbeddedGzSourceName = "local_file_data_AdBids_csv_gz"
-var EmbeddedGzSourcePath = "/sources/local_file_data_AdBids_csv_gz.yaml"
+var EmbeddedGzSourcePath = "data/AdBids.csv.gz"
 var ImpEmbeddedSourceName = "local_file_data_AdImpressions_csv"
-var ImpEmbeddedSourcePath = "/sources/local_file_data_AdImpressions_csv.yaml"
+var ImpEmbeddedSourcePath = "data/AdImpressions.csv"
 var AdBidsNewModeName = "AdBids_new_model"
 var AdBidsNewModelPath = "/models/AdBids_new_model.sql"
 

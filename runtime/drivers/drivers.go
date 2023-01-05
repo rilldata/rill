@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 // ErrClosed indicates the connection is closed.
@@ -23,14 +25,14 @@ func Register(name string, driver Driver) {
 	Drivers[name] = driver
 }
 
-// Open opens a new connection.
-func Open(driver, dsn string) (Connection, error) {
+// Open opens a new connection
+func Open(driver, dsn string, logger *zap.Logger) (Connection, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	conn, err := d.Open(dsn)
+	conn, err := d.Open(dsn, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +42,7 @@ func Open(driver, dsn string) (Connection, error) {
 
 // Driver represents an underlying DB.
 type Driver interface {
-	Open(dsn string) (Connection, error)
+	Open(dsn string, logger *zap.Logger) (Connection, error)
 }
 
 // Connection represents a connection to an underlying DB.

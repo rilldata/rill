@@ -76,12 +76,7 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
 
-	rows, err := c.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
-	if err != nil {
-		return err
-	}
-	err = rows.Close()
-	return err
+	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
 func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string) error {
@@ -89,15 +84,10 @@ func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.S
 	if err != nil {
 		return err
 	}
-	rows, err := c.Execute(ctx, &drivers.Statement{
+	return c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from),
 		Priority: 1,
 	})
-	if err != nil {
-		return err
-	}
-	err = rows.Close()
-	return err
 }
 
 func getSourceReader(path string) (string, error) {

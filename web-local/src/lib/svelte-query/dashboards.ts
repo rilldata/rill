@@ -2,7 +2,7 @@ import {
   useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceListFiles,
   V1MetricsView,
-  V1MetricsViewRequestFilter,
+  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 
 export function useDashboardNames(repoId: string) {
@@ -66,7 +66,7 @@ export const useMetaDimension = (
  * Returns a copy of the filter without the passed in dimension filters.
  */
 export const getFilterForDimension = (
-  filters: V1MetricsViewRequestFilter,
+  filters: V1MetricsViewFilter,
   dimensionName?: string
 ) => {
   if (!filters) return undefined;

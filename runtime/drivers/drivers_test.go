@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
 
-	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
@@ -31,7 +32,7 @@ func TestAll(t *testing.T) {
 	for _, withDriver := range matrix {
 		err := withDriver(t, func(driver string, dsn string) {
 			// Open
-			conn, err := drivers.Open(driver, dsn)
+			conn, err := drivers.Open(driver, dsn, zap.NewNop())
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 
@@ -64,7 +65,7 @@ func TestAll(t *testing.T) {
 }
 
 func withDuckDB(t *testing.T, fn func(driver string, dsn string)) error {
-	fn("duckdb", "?access_mode=read_write")
+	fn("duckdb", "?access_mode=read_write&rill_pool_size=4")
 	return nil
 }
 
