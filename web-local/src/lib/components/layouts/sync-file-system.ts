@@ -161,12 +161,10 @@ function isPathToAsset(path: string) {
 }
 
 async function waitForRuntimeInstanceId(runtimeStore: Writable<RuntimeState>) {
-  return new Promise<string>((resolve) => {
-    const unsubscribe = runtimeStore.subscribe((runtimeState) => {
-      if (runtimeState.instanceId) {
-        unsubscribe();
-        resolve(runtimeState.instanceId);
-      }
-    });
-  });
+  let runtimeInstanceId;
+  while (!runtimeInstanceId) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    runtimeInstanceId = get(runtimeStore).instanceId;
+  }
+  return runtimeInstanceId;
 }
