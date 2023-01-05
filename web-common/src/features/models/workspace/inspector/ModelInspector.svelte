@@ -1,10 +1,7 @@
 <script lang="ts">
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { modelIsEmpty } from "../../utils/model-is-empty";
   import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
@@ -13,24 +10,12 @@
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore?.instanceId,
-    modelName
-  );
-
-  $: getFile = useRuntimeServiceGetFile(
-    $runtimeStore?.instanceId,
-    `/models/${modelName}.sql`
-  );
-
-  // $: emptyModel = modelIsEmpty($runtimeStore?.instanceId, modelName);
-
-  $: fileHasSQL = !$getModel?.isError && $getFile?.data?.blob?.length > 0;
+  $: emptyModel = modelIsEmpty($runtimeStore?.instanceId, modelName);
 </script>
 
-{#if fileHasSQL === true}
+{#if !$emptyModel?.data}
   <div>
-    {#key modelName + fileHasSQL}
+    {#key modelName}
       <div use:listenToNodeResize>
         <ModelInspectorHeader
           {modelName}
