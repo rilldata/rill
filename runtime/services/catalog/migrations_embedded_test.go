@@ -146,15 +146,14 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 	s, dir := initBasicService(t)
 
 	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
-
 	addEmbeddedModel(t, s)
 
 	sc := copyService(s)
 	result, err := sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
 	// no updates other than when a new service is started
 	// dashboards don't have equals check implemented right now. hence it is updated here
 	testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsDashboardRepoPath})
-	require.NoError(t, err)
 
 	addEmbeddedNewModel(t, s)
 
@@ -172,6 +171,49 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 	sc = copyService(s)
 	result, err = sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
+}
+
+func TestEmbeddingModelRename(t *testing.T) {
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+		{"ReconcileSelected", catalog.ReconcileConfig{
+			ChangedPaths: []string{AdBidsModelRepoPath, AdBidsNewModelPath},
+		}},
+	}
+
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
+
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+			addEmbeddedModel(t, s)
+
+			testutils.RenameFile(t, dir, AdBidsModelRepoPath, AdBidsNewModelPath)
+			result, err := s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 1, 0, 2, 0, []string{AdBidsDashboardRepoPath, EmbeddedSourcePath, AdBidsNewModelPath})
+			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
+			require.Equal(t, 1, adBidsEntry.Links)
+		})
+	}
+}
+
+func TestEmbeddedSourceRefresh(t *testing.T) {
+	s, dir := initBasicService(t)
+
+	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+	addEmbeddedModel(t, s)
+
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		ChangedPaths: []string{EmbeddedSourcePath},
+		ForcedPaths:  []string{EmbeddedSourcePath},
+	})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 0, 3, 0, []string{EmbeddedSourcePath, AdBidsModelRepoPath, AdBidsDashboardRepoPath})
 }
 
 func addEmbeddedModel(t *testing.T, s *catalog.Service) {

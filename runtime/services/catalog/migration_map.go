@@ -244,8 +244,10 @@ func (s *Service) checkEmbeddedEntries(
 ) {
 	// update embedded items
 	for _, item := range migrationMap {
-		// only need to updated for deleted items
 		if item.CatalogInStore == nil {
+			if item.Type == MigrationRename {
+				s.checkEmbeddingOnRename(item, migrationMap)
+			}
 			continue
 		}
 		for _, embedded := range item.CatalogInStore.Embeds {
@@ -301,4 +303,19 @@ func (s *Service) checkEmbeddedSourceEntry(
 		return
 	}
 	item.removeLink(embedded)
+}
+
+func (s *Service) checkEmbeddingOnRename(
+	item *MigrationItem,
+	migrationMap map[string]*MigrationItem,
+) {
+	for _, embedding := range item.CatalogInFile.Embeds {
+		existing, ok := migrationMap[embedding]
+		if !ok {
+			continue
+		}
+
+		existing.CatalogInStore.Embeds = arrayutil.Delete(existing.CatalogInStore.Embeds, item.FromNormalizedName)
+		existing.CatalogInStore.Links--
+	}
 }

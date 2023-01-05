@@ -21,6 +21,11 @@ export const invalidateAfterReconcile = async (
     queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
     ),
+    queryClient.refetchQueries(
+      getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
+        type: "OBJECT_TYPE_SOURCE",
+      })
+    ),
   ]);
 
   // invalidate affected catalog entries and files

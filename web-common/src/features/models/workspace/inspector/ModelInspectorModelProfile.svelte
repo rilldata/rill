@@ -45,7 +45,8 @@
       ?.filter((entry) => {
         return references.some(
           (ref) =>
-            ref.reference === entry.name || entry?.embeds?.includes(modelName)
+            ref.reference === entry.name ||
+            entry?.embeds?.includes(modelName.toLowerCase())
         );
       })
       .map((entry) => {
@@ -53,7 +54,8 @@
           entry,
           references.find(
             (ref) =>
-              ref.reference === entry.name || entry?.embeds?.includes(modelName)
+              ref.reference === entry.name ||
+              entry?.embeds?.includes(modelName.toLowerCase())
           ),
         ];
       })
