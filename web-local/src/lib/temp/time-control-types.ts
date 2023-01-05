@@ -57,5 +57,5 @@ export interface TimeSeriesTimeRange {
   name?: TimeRangeName;
   start?: string;
   end?: string;
-  interval?: TimeGrain; // TODO: switch this to TimeGrain
+  interval?: TimeGrain;
 }
