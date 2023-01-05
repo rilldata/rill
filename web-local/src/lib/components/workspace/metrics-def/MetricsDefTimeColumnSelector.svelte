@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -32,15 +31,6 @@
 
   function removeTimeseries() {
     $metricsInternalRep.updateMetricKey("timeseries", "");
-  }
-
-  function noTimeseriesCTA() {
-    if (timestampColumns?.length) {
-      $metricsInternalRep.updateMetricKey("timeseries", timestampColumns[0]);
-    } else {
-      let sourceModelName = $metricsInternalRep.getMetricKey("model");
-      goto(`/model/${sourceModelName}`);
-    }
   }
 
   let tooltipText = "";
@@ -107,13 +97,7 @@
     </Tooltip>
   {:else}
     <Tooltip location="bottom" distance={8}>
-      <IconButton
-        compact
-        marginClasses="ml-1"
-        on:click={() => {
-          noTimeseriesCTA();
-        }}
-      >
+      <IconButton compact marginClasses="ml-1" disabled>
         <InfoCircle color="gray" size="16px" />
       </IconButton>
       <TooltipContent slot="tooltip-content" maxWidth="300px">
