@@ -1,5 +1,13 @@
 <script lang="ts">
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+
+  export let containerHeight = 0;
   export let gridConfig: string;
+
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
+
+  $: containerHeight = $observedNode?.offsetHeight || 0;
 </script>
 
 <section
@@ -10,7 +18,7 @@
     <slot name="header" />
   </div>
   <hr class="pb-3 pt-1 ui-divider" />
-  <div class="explore-metrics pl-8 pb-8">
+  <div use:listenToNodeResize class="explore-metrics pl-8 pb-8">
     <slot name="metrics" />
   </div>
   <div class="explore-leaderboards pr-4 pb-8">

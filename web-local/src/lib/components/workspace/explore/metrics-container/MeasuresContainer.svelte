@@ -14,6 +14,10 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   export let metricViewName;
+  export let metricsContainerHeight;
+
+  const MEASURE_HEIGHT = 60;
+  const MARGIN_TOP = 15;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -45,11 +49,30 @@
     );
   }
 
-  $: numColumns =
-    $metaQuery.data?.measures?.length >= 5 ? "grid-cols-3" : "grid-cols-1";
+  $: numColumns = 1;
+
+  $: if (metricsContainerHeight) {
+    const columns =
+      ($metaQuery.data?.measures?.length * (MEASURE_HEIGHT + MARGIN_TOP)) /
+      metricsContainerHeight;
+
+    numColumns = columns > 3 ? 3 : Math.ceil(columns);
+
+    // Check if two columns can individually accomodate all measures without scrollbar
+    if (numColumns == 2) {
+      const maxMeasuresInColumn = Math.ceil(
+        $metaQuery.data?.measures?.length / 2
+      );
+
+      const extraHeight =
+        metricsContainerHeight -
+        maxMeasuresInColumn * (MEASURE_HEIGHT + MARGIN_TOP);
+      if (extraHeight < 0) numColumns = 3;
+    }
+  }
 </script>
 
-<div class="grid {numColumns} gap-2">
+<div class="grid grid-cols-{numColumns} gap-2">
   {#if $metaQuery.data?.measures}
     {#each $metaQuery.data?.measures as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
@@ -57,8 +80,9 @@
       <div
         style:min-width="170px"
         style:max-width="200px"
-        style:height="60px"
-        class="inline-grid mt-5"
+        style:height="{MEASURE_HEIGHT}px"
+        style:margin-top="{MARGIN_TOP}px"
+        class="inline-grid"
       >
         <MeasureBigNumber
           value={bigNum}
