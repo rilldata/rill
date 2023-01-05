@@ -100,8 +100,9 @@
       >
         <CancelCircle color="gray" size="16px" />
       </IconButton>
-      <TooltipContent slot="tooltip-content">
-        Remove timestamp column
+      <TooltipContent slot="tooltip-content" maxWidth="300px">
+        Remove the timestamp column to remove the time series charts on the
+        dashboard.
       </TooltipContent>
     </Tooltip>
   {:else}
@@ -116,8 +117,7 @@
         <InfoCircle color="gray" size="16px" />
       </IconButton>
       <TooltipContent slot="tooltip-content" maxWidth="300px">
-        No timestamp column selected. Select a column to see the time series
-        charts on the dashboard.
+        Select a column to see the time series charts on the dashboard.
       </TooltipContent>
     </Tooltip>
   {/if}

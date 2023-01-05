@@ -57,6 +57,7 @@
       <div
         style:min-width="170px"
         style:max-width="200px"
+        style:height="60px"
         class="inline-grid mt-5"
       >
         <MeasureBigNumber
