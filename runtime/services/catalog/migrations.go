@@ -484,17 +484,11 @@ func (s *Service) collectMigrationItems(
 
 		visited[name] = len(migrationItems)
 		migrationItems = append(migrationItems, item)
-
-		// get all the children and make sure they are not present before the parent in the order
-		// c1, _ := tempDag.GetChildren(name)
-		// c2, _ := s.dag.GetChildren(name)
 		children := arrayutil.Dedupe(append(
 			tempDag.GetChildren(name),
 			s.dag.GetChildren(name)...,
 		))
 		if item.FromName != "" {
-			// c3, _ := tempDag.GetChildren(strings.ToLower(item.FromName))
-			// c4, _ := s.dag.GetChildren(strings.ToLower(item.FromName))
 			children = append(children, arrayutil.Dedupe(append(
 				tempDag.GetChildren(strings.ToLower(item.FromName)),
 				s.dag.GetChildren(strings.ToLower(item.FromName))...,
