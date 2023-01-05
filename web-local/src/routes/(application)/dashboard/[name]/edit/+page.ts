@@ -8,6 +8,8 @@ import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-
 import { error } from "@sveltejs/kit";
 import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
+export const ssr = false;
+
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
   const localConfig = await runtimeServiceGetConfig();
