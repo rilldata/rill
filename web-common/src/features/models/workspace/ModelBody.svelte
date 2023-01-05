@@ -2,6 +2,10 @@
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
   import {
+    embeddedSourcesError,
+    filterKnownEmbeddedSources,
+  } from "@rilldata/web-common/features/models/utils/embedded";
+  import {
     getEmbeddedReferences,
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
@@ -65,7 +69,7 @@
     (entity) => entity.source.properties.path?.toLowerCase()
   ) as Map<string, V1CatalogEntry>;
 
-  let embeddedSourceError: string;
+  let embeddedSourceErrors: Array<string>;
 
   const outputLayout = getContext("rill:app:output-layout");
   const outputPosition = getContext("rill:app:output-height-tween");
@@ -89,30 +93,17 @@
     "rill:app:navigation-visibility-tween"
   ) as Writable<number>;
 
-  function filterKnownEmbeddedSources(
-    embeddedRefs: Array<Reference>
-  ): Array<string> {
-    const unknownEmbeddedSources = new Array<string>();
-    for (const embeddedRef of embeddedRefs) {
-      const cleanedRef = embeddedRef.reference.slice(
-        1,
-        embeddedRef.reference.length - 1
-      );
-      const ref = cleanedRef.toLowerCase();
-      if (embeddedSourceCatalogs.has(ref)) continue;
-      unknownEmbeddedSources.push(cleanedRef);
-    }
-    return unknownEmbeddedSources;
-  }
-
   async function updateModelContent(content: string) {
     const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
     let overlayShown = false;
+    let embeddedSources: Array<Reference> = [];
 
     try {
       if (hasChanged) {
+        embeddedSources = getEmbeddedReferences(content);
         const unknownEmbeddedSources = filterKnownEmbeddedSources(
-          getEmbeddedReferences(sanitizedQuery)
+          embeddedSources,
+          embeddedSourceCatalogs
         );
         if (unknownEmbeddedSources.length > 0) {
           overlay.set({
@@ -142,20 +133,7 @@
         },
       })) as V1PutFileAndReconcileResponse;
 
-      embeddedSourceError = "";
-      for (const reconcileError of resp.errors) {
-        if (
-          reconcileError.filePath.startsWith("/source") &&
-          embeddedSourceError === ""
-        ) {
-          // TODO: add url to this message
-          embeddedSourceError = humanReadableErrorMessage(
-            reconcileError.filePath.replace(/\/sources\/(.*?)_.*$/, "$1"),
-            3,
-            reconcileError.message
-          );
-        }
-      }
+      embeddedSourceErrors = embeddedSourcesError(resp.errors, embeddedSources);
       fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
@@ -249,12 +227,18 @@
         <!--  </div>-->
         <!--{/if}-->
       </div>
-      {#if embeddedSourceError || modelError}
+      {#if embeddedSourceErrors?.length || modelError}
         <div
           transition:slide={{ duration: 200 }}
           class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
         >
-          {embeddedSourceError ?? modelError}
+          {#if embeddedSourceErrors?.length}
+            {#each embeddedSourceErrors as embeddedSourceError}
+              {embeddedSourceError}<br />
+            {/each}
+          {:else}
+            {modelError}
+          {/if}
         </div>
       {/if}
     </div>

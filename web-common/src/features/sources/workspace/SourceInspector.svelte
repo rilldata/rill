@@ -9,6 +9,7 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
+    V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
@@ -31,8 +32,8 @@
     runtimeInstanceId,
     sourceName
   );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry;
+  let sourceCatalog: V1CatalogEntry;
+  $: sourceCatalog = $getSource?.data?.entry;
 
   let showColumns = true;
   let showModelReferences = true;
@@ -68,8 +69,8 @@
     return "";
   }
 
-  $: connectorType = formatConnectorType(source?.connector);
-  $: fileExtension = getFileExtension(source);
+  $: connectorType = formatConnectorType(sourceCatalog?.source?.connector);
+  $: fileExtension = getFileExtension(sourceCatalog);
 
   $: cardinalityQuery = useRuntimeServiceGetTableCardinality(
     $runtimeStore.instanceId,
@@ -88,7 +89,9 @@
 
   /** get the current column count */
   $: {
-    columnCount = `${formatInteger(source?.schema?.fields?.length)} columns`;
+    columnCount = `${formatInteger(
+      sourceCatalog?.source?.schema?.fields?.length
+    )} columns`;
   }
 
   /** total % null cells */
@@ -115,13 +118,14 @@
     );
   }
   $: {
-    const totalCells = source?.schema?.fields?.length * cardinality;
+    const totalCells =
+      sourceCatalog?.source?.schema?.fields?.length * cardinality;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 </script>
 
 <div class="table-profile">
-  {#if source}
+  {#if sourceCatalog}
     <!-- summary info -->
     <div class=" p-4 pt-2">
       <LeftRightGrid>
@@ -155,8 +159,8 @@
 
     <hr />
 
-    {#if source?.embedded}
-      <ReferenceModels {source} />
+    {#if sourceCatalog?.embedded}
+      <ReferenceModels {sourceCatalog} />
       <hr />
     {/if}
 

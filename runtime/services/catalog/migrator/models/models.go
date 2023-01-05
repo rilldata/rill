@@ -98,7 +98,7 @@ func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPSt
 				Connector:  source.Connector,
 				Properties: props,
 			},
-			Path:     fmt.Sprintf("/sources/%s.yaml", source.Name),
+			Path:     source.Properties["path"].(string),
 			Embedded: true,
 		}
 

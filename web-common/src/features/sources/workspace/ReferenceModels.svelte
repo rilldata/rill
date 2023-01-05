@@ -7,7 +7,7 @@
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetTableCardinality,
-    V1Source,
+    V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -16,8 +16,8 @@
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
 
-  export let source: V1Source;
-  $: embeds = source?.embeds;
+  export let sourceCatalog: V1CatalogEntry;
+  $: embeds = sourceCatalog?.embeds;
   $: modelsAndRowCounts = derived(
     embeds.map((modelName) => {
       return derived(
