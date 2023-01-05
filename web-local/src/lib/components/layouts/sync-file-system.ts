@@ -10,6 +10,11 @@ import { afterNavigate, beforeNavigate } from "$app/navigation";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
+  runtimeServiceGetFile,
+  RuntimeServiceGetFileQueryResult,
+  runtimeServiceListFiles,
+  RuntimeServiceListFilesQueryResult,
+  runtimeServiceReconcile,
 } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
@@ -19,6 +24,45 @@ import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
 
+async function syncFile(
+  queryClient: QueryClient,
+  instanceId: string,
+  filePath: string
+): Promise<boolean> {
+  const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, filePath);
+
+  const cachedFile =
+    queryClient.getQueryData<RuntimeServiceGetFileQueryResult>(queryKey);
+  await queryClient.invalidateQueries(queryKey);
+  const freshFile = await queryClient.fetchQuery(queryKey, () =>
+    runtimeServiceGetFile(instanceId, filePath)
+  );
+
+  // return true if the file has changed
+  return freshFile.blob !== cachedFile.blob ? true : false;
+}
+
+async function syncFileList(
+  queryClient: QueryClient,
+  instanceId: string
+): Promise<string[]> {
+  const queryKey = getRuntimeServiceListFilesQueryKey(instanceId);
+
+  const cachedFileList =
+    queryClient.getQueryData<RuntimeServiceListFilesQueryResult>(queryKey);
+  await queryClient.invalidateQueries(queryKey);
+  const freshFileList = await queryClient.fetchQuery(queryKey, () =>
+    runtimeServiceListFiles(instanceId, {
+      glob: "{sources,models,dashboards}/*.{yaml,sql}",
+    })
+  );
+
+  const newFiles = freshFileList?.paths.filter(
+    (file) => !cachedFileList?.paths.includes(file)
+  );
+  return newFiles;
+}
+
 export async function syncFileSystem(
   queryClient: QueryClient,
   instanceId: string,
@@ -26,30 +70,32 @@ export async function syncFileSystem(
   id: number
 ) {
   if (!instanceId) return;
+  let changedPaths = [];
 
   const pagePath = get(page).url.pathname;
   console.log("syncFileSystem", instanceId, pagePath, id);
-
-  // invalidate `GetFile` only if on a /source, /model, or /dashboard page
-  if (
-    pagePath.startsWith("/model") ||
-    pagePath.startsWith("/source") ||
-    pagePath.startsWith("/dashboard")
-  ) {
-    await queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey(
-        instanceId,
-        getFilePathFromPagePath(pagePath)
-      )
-    );
+  if (isPathToCodeAsset(pagePath)) {
+    const filePath = getFilePathFromPagePath(pagePath);
+    const isChanged = await syncFile(queryClient, instanceId, filePath);
+    if (isChanged) {
+      changedPaths.push(filePath);
+    }
   }
 
-  // TODO: should we also invalidate ListCatalogObjects?
-  await queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(instanceId)
-  );
+  const newFiles = await syncFileList(queryClient, instanceId);
+  changedPaths.push(...newFiles);
+  changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
 
-  // TODO: call reconcile
+  // Option 1: reconcile the entire filesystem
+  // await runtimeServiceReconcile(instanceId, {});
+
+  // Option 2: reconcile only the changed paths
+  if (changedPaths.length) {
+    console.log("calling reconcile with changed paths:", changedPaths);
+    await runtimeServiceReconcile(instanceId, {
+      changedPaths: changedPaths,
+    });
+  }
 }
 
 export function syncFileSystemPeriodically(
@@ -57,7 +103,7 @@ export function syncFileSystemPeriodically(
   runtimeStore: Writable<RuntimeState>,
   page: Readable<Page<Record<string, string>, string>>
 ) {
-  let syncFileSystemInterval: any; // NodeJS.Timer
+  let syncFileSystemInterval: NodeJS.Timer;
   let syncFileSystemOnVisibleDocument: () => void;
   let afterNavigateRanOnce: boolean;
 
@@ -109,4 +155,12 @@ export function syncFileSystemPeriodically(
 
     afterNavigateRanOnce = false;
   });
+}
+
+function isPathToCodeAsset(path: string) {
+  return (
+    path.startsWith("/source") ||
+    path.startsWith("/model") ||
+    path.startsWith("/dashboard")
+  );
 }
