@@ -78,7 +78,13 @@ async function syncFileSystem(
   page: Readable<Page<Record<string, string>, string>>,
   id: number
 ) {
-  let changedPaths = [];
+  // const changedPaths = [];
+
+  const newFiles = await refetchFileListAndDetectChanges(
+    queryClient,
+    instanceId
+  );
+  // changedPaths.push(...newFiles);
 
   const pagePath = get(page).url.pathname;
   console.log("syncFileSystem", instanceId, pagePath, id);
@@ -90,27 +96,27 @@ async function syncFileSystem(
       filePath
     );
     if (isChanged) {
-      changedPaths.push(filePath);
+      // changedPaths.push(filePath);
+      // Option 3: reconcile only the open code file
+      console.log("calling reconcile on path", filePath);
+      const resp = await runtimeServiceReconcile(instanceId, {
+        changedPaths: [filePath],
+      });
+      invalidateAfterReconcile(queryClient, instanceId, resp);
     }
   }
-
-  const newFiles = await refetchFileListAndDetectChanges(
-    queryClient,
-    instanceId
-  );
-  changedPaths.push(...newFiles);
-  changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
 
   // Option 1: reconcile the entire filesystem
   // const resp = await runtimeServiceReconcile(instanceId, {});
   // invalidateAfterReconcile(queryClient, instanceId, resp);
 
   // Option 2: reconcile only the changed paths
-  if (changedPaths.length) {
-    console.log("calling reconcile with changed paths:", changedPaths);
-    const resp = await runtimeServiceReconcile(instanceId, { changedPaths });
-    invalidateAfterReconcile(queryClient, instanceId, resp);
-  }
+  // if (changedPaths.length) {
+  //   changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
+  //   console.log("calling reconcile with changed paths:", changedPaths);
+  //   const resp = await runtimeServiceReconcile(instanceId, { changedPaths });
+  //   invalidateAfterReconcile(queryClient, instanceId, resp);
+  // }
 }
 
 async function refetchFileAndDetectChange(
@@ -126,6 +132,22 @@ async function refetchFileAndDetectChange(
   const freshFile = await queryClient.fetchQuery(queryKey, () =>
     runtimeServiceGetFile(instanceId, filePath)
   );
+  if (freshFile?.blob !== cachedFile?.blob) {
+    if (freshFile?.blob === "") {
+      console.log(
+        "uh oh",
+        filePath,
+        "queryKey",
+        queryKey,
+        "cached file",
+        cachedFile?.blob,
+        "fresh file",
+        freshFile?.blob
+      );
+    } else {
+      console.log("queryKey", queryKey);
+    }
+  }
 
   // return true if the file has changed
   return freshFile?.blob !== cachedFile?.blob ? true : false;
