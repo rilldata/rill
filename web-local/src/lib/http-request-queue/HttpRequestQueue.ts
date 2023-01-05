@@ -24,7 +24,7 @@ let QueryQueueSize = 5;
 try {
   if (
     window.location.protocol === "https:" ||
-    window.location.host !== "localhost"
+    window.location.hostname !== "localhost"
   ) {
     QueryQueueSize = 200;
   }
