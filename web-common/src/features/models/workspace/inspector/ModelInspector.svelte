@@ -27,5 +27,7 @@
     {/key}
   </div>
 {:else}
-  <div class="px-4 py-2">Model is empty.</div>
+  <div class="px-4 py-24 italic ui-copy-disabled text-center">
+    Model is empty.
+  </div>
 {/if}
