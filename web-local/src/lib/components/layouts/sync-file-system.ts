@@ -20,6 +20,7 @@ import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
 import type { RuntimeState } from "../../application-state-stores/application-store";
+import { invalidateAfterReconcile } from "../../svelte-query/invalidation";
 import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
@@ -107,12 +108,14 @@ export async function syncFileSystem(
   changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
 
   // Option 1: reconcile the entire filesystem
-  // await runtimeServiceReconcile(instanceId, {});
+  // const resp = await runtimeServiceReconcile(instanceId, {});
+  // invalidateAfterReconcile(queryClient, instanceId, resp);
 
   // Option 2: reconcile only the changed paths
   if (changedPaths.length) {
     console.log("calling reconcile with changed paths:", changedPaths);
-    await runtimeServiceReconcile(instanceId, { changedPaths });
+    const resp = await runtimeServiceReconcile(instanceId, { changedPaths });
+    invalidateAfterReconcile(queryClient, instanceId, resp);
   }
 }
 
