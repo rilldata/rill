@@ -156,24 +156,52 @@
   );
 
   let schema: { [table: string]: string[] };
+
+  /** Track embedded sources separately*/
+  let embeddedSources = [];
   $: if ($sourceCatalogsQuery?.data?.entries) {
     schema = {};
+    embeddedSources = [];
     for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      schema[sourceTable.name] =
+      const sourceIdentifier = sourceTable?.embedded
+        ? sourceTable?.source?.properties?.path
+        : sourceTable?.name;
+      if (sourceTable?.embedded) embeddedSources.push(sourceIdentifier);
+      schema[sourceIdentifier] =
         sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
     }
   }
+
+  /** This autocompletion will add any defined remote sources to the mix. */
+  $: completeForEmbeddedSources = (embeddedSources) => (context) => {
+    // FIXME: only match after FROM and JOIN.
+    let word = context.matchBefore(/\w*/);
+    if (word.from == word.to && !context.explicit) return null;
+    return {
+      from: word.from,
+      options: embeddedSources.map((source) => {
+        return {
+          label: source,
+          type: "keyword",
+        };
+      }),
+    };
+  };
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
   });
 
-  function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
+  function makeAutocompleteConfig(
+    schema: { [table: string]: string[] },
+    embeddedSources: string[]
+  ) {
     return autocompletion({
       override: [
         keywordCompletionSource(DuckDBSQL),
         schemaCompletionSource({ schema }),
+        completeForEmbeddedSources(embeddedSources),
       ],
       icons: false,
     });
@@ -223,7 +251,9 @@
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
-          autocompleteCompartment.of(makeAutocompleteConfig(schema)), // a compartment makes the config dynamic
+          autocompleteCompartment.of(
+            makeAutocompleteConfig(schema, embeddedSources)
+          ), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
           highlightSelectionMatches(),
@@ -302,11 +332,14 @@
   //   }
   // }
 
-  function updateAutocompleteSources(schema: { [table: string]: string[] }) {
+  function updateAutocompleteSources(
+    schema: { [table: string]: string[] },
+    embeddedSources
+  ) {
     if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema)
+          makeAutocompleteConfig(schema, embeddedSources)
         ),
       });
     }
@@ -328,7 +361,7 @@
 
   // reactive statements to dynamically update the editor when inputs change
   // $: updateEditorContents(content);
-  $: updateAutocompleteSources(schema);
+  $: updateAutocompleteSources(schema, embeddedSources);
   $: underlineSelection(selections || []);
 </script>
 
