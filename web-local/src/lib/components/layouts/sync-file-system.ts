@@ -35,28 +35,22 @@ export function syncFileSystemPeriodically(
   let afterNavigateRanOnce: boolean;
 
   afterNavigate(async () => {
-    // afterNavigate races against onMount, which sets the runtimeInstanceId
-    // loop until we have a runtimeInstanceID
-    let runtimeInstanceId: string;
-    while (!runtimeInstanceId) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      runtimeInstanceId = get(runtimeStore).instanceId;
-    }
+    // on first page load, afterNavigate races against onMount, which sets the runtimeInstanceId
+    const runtimeInstanceId = await waitForRuntimeInstanceId(runtimeStore);
 
-    // on first page load, afterNavigate runs twice
-    // this guard clause ensures we only run the below code once
+    // on first page load, afterNavigate runs twice, but we only want to run the below code once
     if (afterNavigateRanOnce) return;
 
     // Scenario 1: sync when the user navigates to a new page
     syncFileSystem(queryClient, runtimeInstanceId, page, 1);
 
-    // Setup scenario 2: sync every X seconds
+    // setup Scenario 2: sync every X seconds
     syncFileSystemInterval = setInterval(
       async () => await syncFileSystem(queryClient, runtimeInstanceId, page, 2),
       SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS
     );
 
-    // Setup scenario 3: sync when the user returns focus to the browser tab
+    // setup Scenario 3: sync when the user returns focus to the browser tab
     syncFileSystemOnVisibleDocument = async () => {
       if (document.visibilityState === "visible") {
         await syncFileSystem(queryClient, runtimeInstanceId, page, 3);
@@ -68,17 +62,17 @@ export function syncFileSystemPeriodically(
   });
 
   beforeNavigate(() => {
-    // Teardown scenario 2
+    // teardown Scenario 2
     clearInterval(syncFileSystemInterval);
 
-    // Teardown scenario 3
+    // teardown Scenario 3
     window.removeEventListener("focus", syncFileSystemOnVisibleDocument);
 
     afterNavigateRanOnce = false;
   });
 }
 
-export async function syncFileSystem(
+async function syncFileSystem(
   queryClient: QueryClient,
   instanceId: string,
   page: Readable<Page<Record<string, string>, string>>,
@@ -134,7 +128,7 @@ async function refetchFileAndDetectChange(
   );
 
   // return true if the file has changed
-  return freshFile.blob !== cachedFile.blob ? true : false;
+  return freshFile?.blob !== cachedFile?.blob ? true : false;
 }
 
 async function refetchFileListAndDetectChanges(
@@ -164,4 +158,15 @@ function isPathToAsset(path: string) {
     path.startsWith("/model") ||
     path.startsWith("/dashboard")
   );
+}
+
+async function waitForRuntimeInstanceId(runtimeStore: Writable<RuntimeState>) {
+  return new Promise<string>((resolve) => {
+    const unsubscribe = runtimeStore.subscribe((runtimeState) => {
+      if (runtimeState.instanceId) {
+        unsubscribe();
+        resolve(runtimeState.instanceId);
+      }
+    });
+  });
 }
