@@ -24,45 +24,6 @@ import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
 
-export async function syncFileSystem(
-  queryClient: QueryClient,
-  instanceId: string,
-  page: Readable<Page<Record<string, string>, string>>,
-  id: number
-) {
-  let changedPaths = [];
-
-  const pagePath = get(page).url.pathname;
-  console.log("syncFileSystem", instanceId, pagePath, id);
-  if (isPathToAsset(pagePath)) {
-    const filePath = getFilePathFromPagePath(pagePath);
-    const isChanged = await refetchFileAndDetectChange(
-      queryClient,
-      instanceId,
-      filePath
-    );
-    if (isChanged) {
-      changedPaths.push(filePath);
-    }
-  }
-
-  const newFiles = await refetchFileListAndDetectChanges(
-    queryClient,
-    instanceId
-  );
-  changedPaths.push(...newFiles);
-  changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
-
-  // Option 1: reconcile the entire filesystem
-  // await runtimeServiceReconcile(instanceId, {});
-
-  // Option 2: reconcile only the changed paths
-  if (changedPaths.length) {
-    console.log("calling reconcile with changed paths:", changedPaths);
-    await runtimeServiceReconcile(instanceId, { changedPaths });
-  }
-}
-
 export function syncFileSystemPeriodically(
   queryClient: QueryClient,
   runtimeStore: Writable<RuntimeState>,
@@ -100,10 +61,7 @@ export function syncFileSystemPeriodically(
         await syncFileSystem(queryClient, runtimeInstanceId, page, 3);
       }
     };
-    document.addEventListener(
-      "visibilitychange",
-      syncFileSystemOnVisibleDocument
-    );
+    window.addEventListener("focus", syncFileSystemOnVisibleDocument);
 
     afterNavigateRanOnce = true;
   });
@@ -113,13 +71,49 @@ export function syncFileSystemPeriodically(
     clearInterval(syncFileSystemInterval);
 
     // Teardown scenario 3
-    document.removeEventListener(
-      "visibilitychange",
-      syncFileSystemOnVisibleDocument
-    );
+    window.removeEventListener("focus", syncFileSystemOnVisibleDocument);
 
     afterNavigateRanOnce = false;
   });
+}
+
+export async function syncFileSystem(
+  queryClient: QueryClient,
+  instanceId: string,
+  page: Readable<Page<Record<string, string>, string>>,
+  id: number
+) {
+  let changedPaths = [];
+
+  const pagePath = get(page).url.pathname;
+  console.log("syncFileSystem", instanceId, pagePath, id);
+  if (isPathToAsset(pagePath)) {
+    const filePath = getFilePathFromPagePath(pagePath);
+    const isChanged = await refetchFileAndDetectChange(
+      queryClient,
+      instanceId,
+      filePath
+    );
+    if (isChanged) {
+      changedPaths.push(filePath);
+    }
+  }
+
+  const newFiles = await refetchFileListAndDetectChanges(
+    queryClient,
+    instanceId
+  );
+  changedPaths.push(...newFiles);
+  changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
+
+  // Option 1: reconcile the entire filesystem
+  // await runtimeServiceReconcile(instanceId, {});
+
+  // Option 2: reconcile only the changed paths
+  if (changedPaths.length) {
+    console.log("calling reconcile with changed paths:", changedPaths);
+    await runtimeServiceReconcile(instanceId, { changedPaths });
+  }
 }
 
 async function refetchFileAndDetectChange(
