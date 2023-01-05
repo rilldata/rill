@@ -157,6 +157,7 @@
 
     {#if source?.embedded}
       <ReferenceModels {source} />
+      <hr />
     {/if}
 
     <div class="pb-4 pt-4">

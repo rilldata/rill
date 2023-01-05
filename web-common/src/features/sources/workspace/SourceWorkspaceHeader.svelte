@@ -263,7 +263,7 @@
       <PanelCTA side="right">
         <Tooltip location="left" distance={16}>
           <Button type="secondary" on:click={handleCreateModelFromSource}>
-            <ResponsiveButtonText collapse={width < 800}>
+            <ResponsiveButtonText collapse={width < 1100}>
               Create Model
             </ResponsiveButtonText>
             <Model size="16px" />
@@ -279,7 +279,7 @@
               disabled={!timestampColumns?.length}
               on:click={() => handleCreateDashboardFromSource(sourceName)}
             >
-              <ResponsiveButtonText collapse={width < 800}>
+              <ResponsiveButtonText collapse={width < 1100}>
                 Create Dashboard
               </ResponsiveButtonText>
 

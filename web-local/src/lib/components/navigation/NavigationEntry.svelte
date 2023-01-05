@@ -17,6 +17,7 @@
   export let open = false;
   export let notExpandable = false;
   export let tooltipMaxWidth: string = undefined;
+  export let maxMenuWidth: string = undefined;
 
   const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
@@ -130,6 +131,7 @@
       </span>
       <Menu
         dark
+        maxWidth={maxMenuWidth}
         on:click-outside={toggleFloatingElement}
         on:escape={toggleFloatingElement}
         on:item-select={toggleFloatingElement}

@@ -113,33 +113,6 @@
     {#if embeddedSourceCatalogs.length}
       {#each embeddedSourceCatalogs as embeddedSourceCatalog (embeddedSourceCatalog.name)}
         <EmbeddedSource {embeddedSourceCatalog} />
-
-        <!-- <NavigationEntry
-          href={`/source/${sourceName}`}
-          open={$page.url.pathname === `/source/${sourceName}`}
-          name={sourceName}
-        >
-          <SourceEmbedded slot="icon" />
-          <svelte:fragment slot="more">
-            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-              <ColumnProfile indentLevel={1} objectName={sourceName} />
-            </div>
-          </svelte:fragment>
-
-          <svelte:fragment slot="tooltip-content">
-            <SourceTooltip {sourceName} />
-          </svelte:fragment>
-
-          <svelte:fragment slot="menu-items" let:toggleMenu>
-            <SourceMenuItems
-              {sourceName}
-              {toggleMenu}
-              on:rename-asset={() => {
-                openRenameTableModal(sourceName);
-              }}
-            />
-          </svelte:fragment>
-        </NavigationEntry> -->
       {/each}
     {/if}
   </div>
