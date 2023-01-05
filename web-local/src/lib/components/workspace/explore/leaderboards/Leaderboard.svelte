@@ -71,7 +71,7 @@
   );
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
-  $: displayName = dimension.label || dimension.name;
+  $: displayName = dimension?.label || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
     $runtimeStore.instanceId,
