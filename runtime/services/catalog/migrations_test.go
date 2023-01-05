@@ -37,6 +37,7 @@ const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 const AdBidsSourceModelRepoPath = "/models/AdBids_source_model.sql"
+const AdBidsSourceModelRepoPath2 = "/models/AdBids_source_model2.sql"
 const AdBidsDashboardRepoPath = "/dashboards/AdBids_dashboard.yaml"
 
 var AdBidsAffectedPaths = []string{AdBidsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
@@ -290,6 +291,37 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.AssertMigration(t, result, 0, 3, 1, 0, AdBidsAllAffectedPaths)
 			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
 			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+		})
+	}
+}
+
+func TestInterdependentModelCycle(t *testing.T) {
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+	}
+
+	AdBidsSourceAffectedPaths := []string{AdBidsSourceModelRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+	// AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
+
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, _ := initBasicService(t)
+
+			testutils.CreateModel(t, s, "AdBids_source_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
+			testutils.CreateModel(t, s, "AdBids_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
+
+			// Adding source with circular dependencies
+			testutils.CreateModel(t, s, "AdBids_source_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids_model", AdBidsSourceModelRepoPath)
+			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+			require.NoError(t, err)
+			require.Contains(t, result.Errors[0].Message, `circular dependencies not allowed`)
+			testutils.AssertMigration(t, result, 4, 1, 1, 0, AdBidsSourceAffectedPaths)
 		})
 	}
 }
