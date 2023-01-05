@@ -113,7 +113,7 @@ The main feature-set component for dashboard filters
 
   /** prune the values and prepare for templating */
   let currentDimensionFilters = [];
-  $: if (includeValues && excludeValues) {
+  $: if (includeValues && excludeValues && dimensions) {
     const dimensionIdMap = getMapFromArray(
       dimensions,
       (dimension) => dimension.name
