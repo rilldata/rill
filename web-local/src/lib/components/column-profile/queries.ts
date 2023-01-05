@@ -7,6 +7,7 @@ import {
   useRuntimeServiceGetNumericHistogram,
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
+  V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
 import { derived, writable } from "svelte/store";
@@ -17,7 +18,11 @@ export function isFetching(...queries) {
 }
 
 /** for each entry in a profile column results, return the null count and the column cardinality */
-export function getSummaries(objectName, instanceId, profileColumnResults) {
+export function getSummaries(
+  objectName: string,
+  instanceId: string,
+  profileColumnResults: Array<V1ProfileColumn>
+) {
   if (!profileColumnResults && !profileColumnResults?.length) return;
   return derived(
     profileColumnResults.map((column) => {
@@ -56,7 +61,11 @@ export function getSummaries(objectName, instanceId, profileColumnResults) {
   );
 }
 
-export function getNullPercentage(instanceId, objectName, columnName) {
+export function getNullPercentage(
+  instanceId: string,
+  objectName: string,
+  columnName: string
+) {
   const nullQuery = useRuntimeServiceGetNullCount(instanceId, objectName, {
     columnName,
   });
@@ -73,7 +82,11 @@ export function getNullPercentage(instanceId, objectName, columnName) {
   });
 }
 
-export function getCountDistinct(instanceId, objectName, columnName) {
+export function getCountDistinct(
+  instanceId: string,
+  objectName: string,
+  columnName: string
+) {
   const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
     instanceId,
     objectName,
@@ -97,7 +110,12 @@ export function getCountDistinct(instanceId, objectName, columnName) {
   );
 }
 
-export function getTopK(instanceId, objectName, columnName, active = false) {
+export function getTopK(
+  instanceId: string,
+  objectName: string,
+  columnName: string,
+  active = false
+) {
   const topKQuery = useRuntimeServiceGetTopK(instanceId, objectName, {
     columnName: columnName,
     agg: "count(*)",
@@ -110,9 +128,9 @@ export function getTopK(instanceId, objectName, columnName, active = false) {
 }
 
 export function getTimeSeriesAndSpark(
-  instanceId,
-  objectName,
-  columnName,
+  instanceId: string,
+  objectName: string,
+  columnName: string,
   active = false
 ) {
   const query = useRuntimeServiceGenerateTimeSeries(
@@ -167,9 +185,9 @@ export function getTimeSeriesAndSpark(
 }
 
 export function getNumericHistogram(
-  instanceId,
-  objectName,
-  columnName,
+  instanceId: string,
+  objectName: string,
+  columnName: string,
   active = false
 ) {
   return useRuntimeServiceGetNumericHistogram(

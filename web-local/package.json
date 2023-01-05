@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "RILL_DEV=true vite dev",
-    "build": "vite build",
+    "build": "vite build && tsc",
     "install-and-build": "npm install && npm run build",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
