@@ -24,65 +24,32 @@ import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
 
-async function syncFile(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string
-): Promise<boolean> {
-  const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, filePath);
-
-  const cachedFile =
-    queryClient.getQueryData<RuntimeServiceGetFileQueryResult>(queryKey);
-  await queryClient.invalidateQueries(queryKey);
-  const freshFile = await queryClient.fetchQuery(queryKey, () =>
-    runtimeServiceGetFile(instanceId, filePath)
-  );
-
-  // return true if the file has changed
-  return freshFile.blob !== cachedFile.blob ? true : false;
-}
-
-async function syncFileList(
-  queryClient: QueryClient,
-  instanceId: string
-): Promise<string[]> {
-  const queryKey = getRuntimeServiceListFilesQueryKey(instanceId);
-
-  const cachedFileList =
-    queryClient.getQueryData<RuntimeServiceListFilesQueryResult>(queryKey);
-  await queryClient.invalidateQueries(queryKey);
-  const freshFileList = await queryClient.fetchQuery(queryKey, () =>
-    runtimeServiceListFiles(instanceId, {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    })
-  );
-
-  const newFiles = freshFileList?.paths.filter(
-    (file) => !cachedFileList?.paths.includes(file)
-  );
-  return newFiles;
-}
-
 export async function syncFileSystem(
   queryClient: QueryClient,
   instanceId: string,
   page: Readable<Page<Record<string, string>, string>>,
   id: number
 ) {
-  if (!instanceId) return;
   let changedPaths = [];
 
   const pagePath = get(page).url.pathname;
   console.log("syncFileSystem", instanceId, pagePath, id);
-  if (isPathToCodeAsset(pagePath)) {
+  if (isPathToAsset(pagePath)) {
     const filePath = getFilePathFromPagePath(pagePath);
-    const isChanged = await syncFile(queryClient, instanceId, filePath);
+    const isChanged = await refetchFileAndDetectChange(
+      queryClient,
+      instanceId,
+      filePath
+    );
     if (isChanged) {
       changedPaths.push(filePath);
     }
   }
 
-  const newFiles = await syncFileList(queryClient, instanceId);
+  const newFiles = await refetchFileListAndDetectChanges(
+    queryClient,
+    instanceId
+  );
   changedPaths.push(...newFiles);
   changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
 
@@ -92,9 +59,7 @@ export async function syncFileSystem(
   // Option 2: reconcile only the changed paths
   if (changedPaths.length) {
     console.log("calling reconcile with changed paths:", changedPaths);
-    await runtimeServiceReconcile(instanceId, {
-      changedPaths: changedPaths,
-    });
+    await runtimeServiceReconcile(instanceId, { changedPaths });
   }
 }
 
@@ -157,7 +122,46 @@ export function syncFileSystemPeriodically(
   });
 }
 
-function isPathToCodeAsset(path: string) {
+async function refetchFileAndDetectChange(
+  queryClient: QueryClient,
+  instanceId: string,
+  filePath: string
+): Promise<boolean> {
+  const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, filePath);
+
+  const cachedFile =
+    queryClient.getQueryData<RuntimeServiceGetFileQueryResult>(queryKey);
+  await queryClient.invalidateQueries(queryKey);
+  const freshFile = await queryClient.fetchQuery(queryKey, () =>
+    runtimeServiceGetFile(instanceId, filePath)
+  );
+
+  // return true if the file has changed
+  return freshFile.blob !== cachedFile.blob ? true : false;
+}
+
+async function refetchFileListAndDetectChanges(
+  queryClient: QueryClient,
+  instanceId: string
+): Promise<string[]> {
+  const queryKey = getRuntimeServiceListFilesQueryKey(instanceId);
+
+  const cachedFileList =
+    queryClient.getQueryData<RuntimeServiceListFilesQueryResult>(queryKey);
+  await queryClient.invalidateQueries(queryKey);
+  const freshFileList = await queryClient.fetchQuery(queryKey, () =>
+    runtimeServiceListFiles(instanceId, {
+      glob: "{sources,models,dashboards}/*.{yaml,sql}",
+    })
+  );
+
+  const newFiles = freshFileList?.paths.filter(
+    (file) => !cachedFileList?.paths.includes(file)
+  );
+  return newFiles;
+}
+
+function isPathToAsset(path: string) {
   return (
     path.startsWith("/source") ||
     path.startsWith("/model") ||
