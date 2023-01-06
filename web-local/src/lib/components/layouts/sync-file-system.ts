@@ -10,10 +10,6 @@ import { afterNavigate, beforeNavigate } from "$app/navigation";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
-  runtimeServiceGetFile,
-  RuntimeServiceGetFileQueryResult,
-  runtimeServiceListFiles,
-  RuntimeServiceListFilesQueryResult,
   runtimeServiceReconcile,
 } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
@@ -35,7 +31,7 @@ export function syncFileSystemPeriodically(
   let afterNavigateRanOnce: boolean;
 
   afterNavigate(async () => {
-    // on first page load, afterNavigate races against onMount, which sets the runtimeInstanceId
+    // on first page load, afterNavigate races against the async onMount, which sets the runtimeInstanceId
     const runtimeInstanceId = await waitForRuntimeInstanceId(runtimeStore);
 
     // on first page load, afterNavigate runs twice, but we only want to run the below code once
@@ -78,100 +74,23 @@ async function syncFileSystem(
   page: Readable<Page<Record<string, string>, string>>,
   id: number
 ) {
-  // const changedPaths = [];
-
-  const newFiles = await refetchFileListAndDetectChanges(
-    queryClient,
-    instanceId
+  await queryClient.invalidateQueries(
+    getRuntimeServiceListFilesQueryKey(instanceId)
   );
-  // changedPaths.push(...newFiles);
 
   const pagePath = get(page).url.pathname;
   console.log("syncFileSystem", instanceId, pagePath, id);
-  if (isPathToAsset(pagePath)) {
-    const filePath = getFilePathFromPagePath(pagePath);
-    const isChanged = await refetchFileAndDetectChange(
-      queryClient,
-      instanceId,
-      filePath
-    );
-    if (isChanged) {
-      // changedPaths.push(filePath);
-      // Option 3: reconcile only the open code file
-      console.log("calling reconcile on path", filePath);
-      const resp = await runtimeServiceReconcile(instanceId, {
-        changedPaths: [filePath],
-      });
-      invalidateAfterReconcile(queryClient, instanceId, resp);
-    }
-  }
+  if (!isPathToAsset(pagePath)) return;
 
-  // Option 1: reconcile the entire filesystem
-  // const resp = await runtimeServiceReconcile(instanceId, {});
-  // invalidateAfterReconcile(queryClient, instanceId, resp);
-
-  // Option 2: reconcile only the changed paths
-  // if (changedPaths.length) {
-  //   changedPaths = [...new Set(changedPaths)]; // removes duplicates, in case a new file is the same as the file on page
-  //   console.log("calling reconcile with changed paths:", changedPaths);
-  //   const resp = await runtimeServiceReconcile(instanceId, { changedPaths });
-  //   invalidateAfterReconcile(queryClient, instanceId, resp);
-  // }
-}
-
-async function refetchFileAndDetectChange(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string
-): Promise<boolean> {
-  const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, filePath);
-
-  const cachedFile =
-    queryClient.getQueryData<RuntimeServiceGetFileQueryResult>(queryKey);
-  await queryClient.invalidateQueries(queryKey);
-  const freshFile = await queryClient.fetchQuery(queryKey, () =>
-    runtimeServiceGetFile(instanceId, filePath)
+  const filePath = getFilePathFromPagePath(pagePath);
+  await queryClient.invalidateQueries(
+    getRuntimeServiceGetFileQueryKey(instanceId, filePath)
   );
-  if (freshFile?.blob !== cachedFile?.blob) {
-    if (freshFile?.blob === "") {
-      console.log(
-        "uh oh",
-        filePath,
-        "queryKey",
-        queryKey,
-        "cached file",
-        cachedFile?.blob,
-        "fresh file",
-        freshFile?.blob
-      );
-    } else {
-      console.log("queryKey", queryKey);
-    }
-  }
-
-  // return true if the file has changed
-  return freshFile?.blob !== cachedFile?.blob ? true : false;
-}
-
-async function refetchFileListAndDetectChanges(
-  queryClient: QueryClient,
-  instanceId: string
-): Promise<string[]> {
-  const queryKey = getRuntimeServiceListFilesQueryKey(instanceId);
-
-  const cachedFileList =
-    queryClient.getQueryData<RuntimeServiceListFilesQueryResult>(queryKey);
-  await queryClient.invalidateQueries(queryKey);
-  const freshFileList = await queryClient.fetchQuery(queryKey, () =>
-    runtimeServiceListFiles(instanceId, {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    })
-  );
-
-  const newFiles = freshFileList?.paths.filter(
-    (file) => !cachedFileList?.paths.includes(file)
-  );
-  return newFiles;
+  console.log("reconcile", filePath);
+  const resp = await runtimeServiceReconcile(instanceId, {
+    changedPaths: [filePath],
+  });
+  invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 
 function isPathToAsset(path: string) {
