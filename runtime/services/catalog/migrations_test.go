@@ -304,7 +304,6 @@ func TestInterdependentModelCycle(t *testing.T) {
 	}
 
 	AdBidsSourceAffectedPaths := []string{AdBidsSourceModelRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
-	// AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
 
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
@@ -319,9 +318,17 @@ func TestInterdependentModelCycle(t *testing.T) {
 			testutils.CreateModel(t, s, "AdBids_source_model",
 				"select id, timestamp, publisher, domain, bid_price from AdBids_model", AdBidsSourceModelRepoPath)
 			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+
 			require.NoError(t, err)
 			require.Contains(t, result.Errors[0].Message, `circular dependencies not allowed`)
-			testutils.AssertMigration(t, result, 4, 1, 1, 0, AdBidsSourceAffectedPaths)
+			testutils.AssertMigration(t, result, 3, 1, 1, 0, AdBidsSourceAffectedPaths)
+
+			// removing the circular dependencies by updating model
+			testutils.CreateModel(t, s, "AdBids_source_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 2, 1, 0, AdBidsSourceAffectedPaths)
 		})
 	}
 }

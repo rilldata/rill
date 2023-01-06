@@ -589,13 +589,13 @@ func (s *Service) runMigrationItems(
 					}
 				}
 			case MigrationCreate:
-				err = s.createInStore(ctx, item, result)
+				err = s.createInStore(ctx, item)
 				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)
 			case MigrationRename:
-				err = s.renameInStore(ctx, item, result)
+				err = s.renameInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationUpdate:
-				err = s.updateInStore(ctx, item, result)
+				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationDelete:
 				err = s.deleteInStore(ctx, item)
@@ -646,17 +646,13 @@ func (s *Service) runMigrationItems(
 // TODO: should we remove from dag if validation fails?
 // TODO: store only valid metrics view
 
-func (s *Service) createInStore(ctx context.Context, item *MigrationItem, result *ReconcileResult) error {
+func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
 	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG
 	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
-		result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-			Code:     runtimev1.ReconcileError_CODE_SOURCE,
-			Message:  err.Error(),
-			FilePath: item.Path,
-		})
+		return err
 	}
 
 	// create in olap
@@ -680,7 +676,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem, result
 	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 }
 
-func (s *Service) renameInStore(ctx context.Context, item *MigrationItem, result *ReconcileResult) error {
+func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
 	fromLowerName := strings.ToLower(item.FromName)
 	delete(s.NameToPath, fromLowerName)
 
@@ -693,11 +689,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem, result
 	s.dag.Delete(fromLowerName)
 	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
-		result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-			Code:     runtimev1.ReconcileError_CODE_SOURCE,
-			Message:  err.Error(),
-			FilePath: item.Path,
-		})
+		return err
 	}
 
 	// rename the item in olap
@@ -720,17 +712,13 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem, result
 	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 }
 
-func (s *Service) updateInStore(ctx context.Context, item *MigrationItem, result *ReconcileResult) error {
+func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
 	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG with new dependencies
 	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
-		result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-			Code:     runtimev1.ReconcileError_CODE_SOURCE,
-			Message:  err.Error(),
-			FilePath: item.Path,
-		})
+		return err
 	}
 
 	// update in olap
