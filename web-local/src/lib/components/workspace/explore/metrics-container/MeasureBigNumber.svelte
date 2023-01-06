@@ -24,9 +24,12 @@
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
-<div class="w-max">
+<div class="flex flex-col justify-between">
   <Tooltip distance={16} location="top">
-    <h2 style:font-size={compact ? "" : "0.8rem"}>
+    <h2
+      class="break-words line-clamp-2"
+      style:font-size={compact ? "" : "0.8rem"}
+    >
       <slot name="name" />
     </h2>
     <TooltipContent slot="tooltip-content">

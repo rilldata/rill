@@ -17,7 +17,10 @@
   export let metricsContainerHeight;
 
   const MEASURE_HEIGHT = 60;
+  const MEASURE_HEIGHT_MULTILINE = 80;
+  const MEASURE_WIDTH = 175;
   const MARGIN_TOP = 15;
+  const CHARACTER_LIMIT_FOR_WRAPPING = 26;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -29,7 +32,22 @@
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
+  function getMeasureHeightsForColumn(measuresHeight, numColumns) {
+    const recalculatedHeights = [...measuresHeight];
+    for (let i = 0; i < measuresHeight.length; i = i + numColumns) {
+      const row = measuresHeight.slice(i, i + numColumns);
+      if (row.indexOf(MEASURE_HEIGHT_MULTILINE) != -1) {
+        for (let j = i; j < i + numColumns && j < measuresHeight.length; j++) {
+          recalculatedHeights[j] = MEASURE_HEIGHT_MULTILINE;
+        }
+      }
+    }
+    return recalculatedHeights;
+  }
+
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  $: numColumns = 1;
+  let measureGridHeights = [];
 
   $: if (
     metricsExplorer &&
@@ -47,40 +65,56 @@
       metricViewName,
       totalsQueryParams
     );
-  }
 
-  $: numColumns = 1;
+    const measures = $metaQuery.data?.measures;
 
-  $: if (metricsContainerHeight) {
-    const columns =
-      ($metaQuery.data?.measures?.length * (MEASURE_HEIGHT + MARGIN_TOP)) /
-      metricsContainerHeight;
+    let measuresHeight = measures.map((measure) => {
+      const label = measure?.label || measure?.expression;
+      if (label.length > CHARACTER_LIMIT_FOR_WRAPPING)
+        return MEASURE_HEIGHT_MULTILINE;
+      else return MEASURE_HEIGHT;
+    });
 
-    numColumns = columns > 3 ? 3 : Math.ceil(columns);
+    const totalMeasuresHeight = measuresHeight.reduce(
+      (s, v) => s + v + MARGIN_TOP,
+      0
+    );
 
-    // Check if two columns can individually accomodate all measures without scrollbar
-    if (numColumns == 2) {
-      const maxMeasuresInColumn = Math.ceil(
-        $metaQuery.data?.measures?.length / 2
-      );
+    if (metricsContainerHeight) {
+      const columns = totalMeasuresHeight / metricsContainerHeight;
+      if (columns <= 1) {
+        numColumns = 1;
+        measureGridHeights = [...measuresHeight];
+      } else if (columns > 2) {
+        numColumns = 3;
+        measureGridHeights = getMeasureHeightsForColumn(measuresHeight, 3);
+      } else {
+        numColumns = 2;
+        measureGridHeights = getMeasureHeightsForColumn(measuresHeight, 2);
 
-      const extraHeight =
-        metricsContainerHeight -
-        maxMeasuresInColumn * (MEASURE_HEIGHT + MARGIN_TOP);
-      if (extraHeight < 0) numColumns = 3;
+        // Check if two columns can individually accommodate all measures without scroll
+        const measuresHeightInSingleColumn = measureGridHeights
+          .filter((_, i) => i % 2 == 0)
+          .reduce((s, v) => s + v + MARGIN_TOP, 0);
+        const extraHeight =
+          metricsContainerHeight - measuresHeightInSingleColumn;
+        if (extraHeight < 0) {
+          numColumns = 3;
+          measureGridHeights = getMeasureHeightsForColumn(measuresHeight, 3);
+        }
+      }
     }
   }
 </script>
 
-<div class="grid grid-cols-{numColumns} gap-2">
+<div class="grid grid-cols-{numColumns} gap-x-1">
   {#if $metaQuery.data?.measures}
     {#each $metaQuery.data?.measures as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       <div
-        style:min-width="170px"
-        style:max-width="200px"
-        style:height="{MEASURE_HEIGHT}px"
+        style:width="{MEASURE_WIDTH}px"
+        style:height="{measureGridHeights[index]}px"
         style:margin-top="{MARGIN_TOP}px"
         class="inline-grid"
       >
