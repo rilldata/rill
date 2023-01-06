@@ -62,84 +62,127 @@ func TestEmbeddedSourcesHappyPath(t *testing.T) {
 }
 
 func TestEmbeddedSourcesQueryChanging(t *testing.T) {
-	s, dir := initBasicService(t)
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+		{"ReconcileSelected", catalog.ReconcileConfig{
+			ChangedPaths: []string{AdBidsNewModelPath},
+		}},
+	}
 
-	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
-	testutils.CopyFileToData(t, dir, AdBidsCsvGzPath, "AdBids.csv.gz")
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
 
-	addEmbeddedModel(t, s)
-	addEmbeddedNewModel(t, s)
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+			testutils.CopyFileToData(t, dir, AdBidsCsvGzPath, "AdBids.csv.gz")
 
-	testutils.CreateModel(
-		t,
-		s,
-		AdBidsNewModeName,
-		`select id, timestamp, publisher from "data/AdBids.csv.gz"`,
-		AdBidsNewModelPath,
-	)
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, EmbeddedGzSourcePath})
-	adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.Equal(t, []string{"adbids_model"}, adBidsEntry.Embeds)
-	adBidsGzEntry := testutils.AssertTable(t, s, EmbeddedGzSourceName, EmbeddedGzSourcePath)
-	require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsGzEntry.Embeds)
-	testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
+			addEmbeddedModel(t, s)
+			addEmbeddedNewModel(t, s)
+
+			testutils.CreateModel(
+				t,
+				s,
+				AdBidsNewModeName,
+				`select id, timestamp, publisher from "data/AdBids.csv.gz"`,
+				AdBidsNewModelPath,
+			)
+			result, err := s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, EmbeddedGzSourcePath})
+			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.Equal(t, []string{"adbids_model"}, adBidsEntry.Embeds)
+			adBidsGzEntry := testutils.AssertTable(t, s, EmbeddedGzSourceName, EmbeddedGzSourcePath)
+			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsGzEntry.Embeds)
+			testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
+
+			sc, _ := copyService(t, s)
+			testutils.CreateModel(
+				t,
+				s,
+				AdBidsNewModeName,
+				`select id, timestamp, publisher from "data/AdBids.csv"`,
+				AdBidsNewModelPath,
+			)
+			result, err = sc.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 0, 2, 1, []string{AdBidsNewModelPath, EmbeddedSourcePath, EmbeddedGzSourcePath})
+			adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.Equal(t, []string{"adbids_model", strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
+			testutils.AssertTableAbsence(t, s, EmbeddedGzSourceName)
+		})
+	}
 }
 
 func TestEmbeddedMultipleSources(t *testing.T) {
-	s, dir := initBasicService(t)
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+		{"ReconcileSelected", catalog.ReconcileConfig{
+			ChangedPaths: []string{AdBidsNewModelPath},
+		}},
+	}
 
-	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
-	testutils.CopyFileToData(t, dir, AdImpressionsCsvPath, "AdImpressions.csv")
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
 
-	// create a model with 2 embedded sources, one repeated twice
-	testutils.CreateModel(
-		t,
-		s,
-		AdBidsNewModeName,
-		`with
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+			testutils.CopyFileToData(t, dir, AdImpressionsCsvPath, "AdImpressions.csv")
+
+			// create a model with 2 embedded sources, one repeated twice
+			testutils.CreateModel(
+				t,
+				s,
+				AdBidsNewModeName,
+				`with
     NewYorkImpressions as (
         select imp.id, imp.city, imp.country from "data/AdImpressions.csv" imp where imp.city = 'NewYork'
     )
     select count(*) as impressions, bid.publisher, bid.domain, imp.city, imp.country
     from "data/AdBids.csv" bid join "data/AdImpressions.csv" imp on bid.id = imp.id
     group by bid.publisher, bid.domain, imp.city, imp.country`,
-		AdBidsNewModelPath,
-	)
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 3, 0, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, ImpEmbeddedSourcePath})
-	adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-	require.Equal(t, 1, adBidsEntry.Links)
-	adImpEntry := testutils.AssertTable(t, s, ImpEmbeddedSourceName, ImpEmbeddedSourcePath)
-	require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Embeds)
-	require.Equal(t, 1, adImpEntry.Links)
-	modelEntry := testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
-	require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Embeds)
+				AdBidsNewModelPath,
+			)
+			result, err := s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 3, 0, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, ImpEmbeddedSourcePath})
+			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
+			require.Equal(t, 1, adBidsEntry.Links)
+			adImpEntry := testutils.AssertTable(t, s, ImpEmbeddedSourceName, ImpEmbeddedSourcePath)
+			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Embeds)
+			require.Equal(t, 1, adImpEntry.Links)
+			modelEntry := testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
+			require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Embeds)
 
-	// update the model to have embedded sources without repetitions
-	testutils.CreateModel(
-		t,
-		s,
-		AdBidsNewModeName,
-		`select count(*) as impressions, bid.publisher, bid.domain, imp.city, imp.country
+			// update the model to have embedded sources without repetitions
+			testutils.CreateModel(
+				t,
+				s,
+				AdBidsNewModeName,
+				`select count(*) as impressions, bid.publisher, bid.domain, imp.city, imp.country
     from "data/AdBids.csv" bid join "data/AdImpressions.csv" imp on bid.id = imp.id
     group by bid.publisher, bid.domain, imp.city, imp.country`,
-		AdBidsNewModelPath,
-	)
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsNewModelPath})
-	adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-	require.Equal(t, 1, adBidsEntry.Links)
-	adImpEntry = testutils.AssertTable(t, s, ImpEmbeddedSourceName, ImpEmbeddedSourcePath)
-	require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Embeds)
-	require.Equal(t, 1, adImpEntry.Links)
-	modelEntry = testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
-	require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Embeds)
+				AdBidsNewModelPath,
+			)
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsNewModelPath})
+			adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
+			require.Equal(t, 1, adBidsEntry.Links)
+			adImpEntry = testutils.AssertTable(t, s, ImpEmbeddedSourceName, ImpEmbeddedSourcePath)
+			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Embeds)
+			require.Equal(t, 1, adImpEntry.Links)
+			modelEntry = testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
+			require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Embeds)
+		})
+	}
 }
 
 func TestEmbeddedSourceOnNewService(t *testing.T) {
@@ -148,9 +191,7 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
 	addEmbeddedModel(t, s)
 
-	sc := copyService(s)
-	result, err := sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
+	sc, result := copyService(t, s)
 	// no updates other than when a new service is started
 	// dashboards don't have equals check implemented right now. hence it is updated here
 	testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsDashboardRepoPath})
@@ -166,11 +207,19 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 		AdBidsModelRepoPath,
 	)
 	// delete the other model embedding the source
-	err = os.Remove(path.Join(dir, AdBidsNewModelPath))
-	// create another copy
-	sc = copyService(s)
-	result, err = sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	err := os.Remove(path.Join(dir, AdBidsNewModelPath))
 	require.NoError(t, err)
+	// create another copy
+	sc, result = copyService(t, s)
+	testutils.AssertMigration(
+		t,
+		result,
+		0,
+		0,
+		3,
+		1,
+		[]string{EmbeddedSourcePath, AdBidsModelRepoPath, AdBidsDashboardRepoPath, AdBidsNewModelPath},
+	)
 }
 
 func TestEmbeddingModelRename(t *testing.T) {
@@ -265,6 +314,9 @@ func addEmbeddedNewModel(t *testing.T, s *catalog.Service) {
 	testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
 }
 
-func copyService(s *catalog.Service) *catalog.Service {
-	return catalog.NewService(s.Catalog, s.Repo, s.Olap, s.InstID, nil)
+func copyService(t *testing.T, s *catalog.Service) (*catalog.Service, *catalog.ReconcileResult) {
+	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.InstID, nil)
+	result, err := sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	return sc, result
 }

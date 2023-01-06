@@ -135,7 +135,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					item.Type = MigrationUpdate
 				}
-			} else if _, ok := s.NameToPath[item.NormalizedName]; ok || (item.CatalogInFile != nil && item.CatalogInFile.Embedded) {
+			} else if _, ok := s.NameToPath[item.NormalizedName]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -181,6 +181,9 @@ func (s *Service) collectMigrationItems(
 			}
 
 			migrationItems = append(migrationItems, childItem)
+			if item.Type == MigrationNoChange {
+				continue
+			}
 			if childItem.Type == MigrationNoChange || childItem.Error != nil {
 				// if the child has no change then mark it as update or create based on presence of catalog in store
 				if childItem.CatalogInStore == nil {
