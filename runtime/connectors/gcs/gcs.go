@@ -3,18 +3,85 @@ package gcs
 import (
 	"context"
 	"fmt"
+	_ "io"
 	"net/url"
+	_ "os"
 	"strings"
+	_ "sync"
 
 	"cloud.google.com/go/storage"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/api/option"
+
+	"gocloud.dev/blob"
+	_ "gocloud.dev/blob/gcsblob"
 )
 
 func init() {
 	connectors.Register("gcs", connector{})
+	// ctx := context.Background()
+	// bucket, err := blob.OpenBucket(ctx, "gs://druid-demo.gorill-stage.io/?prefix=safegraph_social_distancing")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// defer bucket.Close()
+	// before := func(as func(interface{}) bool) error {
+	// 	// Access storage.Query via q here.
+	// 	var q *storage.Query
+	// 	if as(&q) {
+	// 		q.SetAttrSelection([]string{"Name", "Size"})
+	// 	}
+	// 	return nil
+	// }
+
+	// var names []string
+	// var wg sync.WaitGroup
+	// if iter, _, err := bucket.ListPage(ctx, blob.FirstPageToken, 10, &blob.ListOptions{BeforeList: before}); err == nil {
+	// 	names = make([]string, len(iter))
+	// 	for i, obj := range iter {
+	// 		names[i] = obj.Key
+	// 		if err != nil {
+	// 			fmt.Printf("failed to parse path %s, %s\n", obj.Key, err)
+	// 		}
+	// 		wg.Add(1)
+	// 		go func(name string) {
+	// 			defer wg.Done()
+	// 			fmt.Printf("starting copying %s\n", name)
+	// 			if rc, err := bucket.NewReader(ctx, name, nil); err == nil {
+	// 				defer rc.Close()
+	// 				f, err := os.OpenFile("/Users/kanshul/Downloads/test" + name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+	// 				if err != nil {
+	// 					fmt.Println(err)
+	// 				}
+	// 				defer f.Close()
+	// 				if _, err = io.Copy(f, rc); err != nil {
+	// 					fmt.Println(err)
+	// 				}
+	// 			} else {
+	// 				fmt.Printf("error in opening reader for %s %s", name, err)
+	// 			}
+	// 			fmt.Printf("ending copying %s\n", name)
+	// 		} (obj.Key)
+	// 	}
+	// }
+	// wg.Wait()
+	// // fmt.Println(names)
+	// // for {
+	// // 	obj, err := iter.Next(ctx)
+	// // 	if err == io.EOF {
+	// // 		break
+	// // 	}
+	// // 	if err != nil {
+	// // 		fmt.Println(err)
+	// // 	}
+	// // 	fmt.Println(obj)
+	// // }
+	// // if err := bucket.Copy(ctx, "/Users/kanshul/Documents/projects/rill-developer/000000000165.csv.gz", "000000000165.csv.gz", nil); err != nil {
+	// // 	fmt.Println(err)
+	// // }
+
 }
 
 var spec = connectors.Spec{
@@ -42,7 +109,10 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path string `key:"path"`
+	Path          string `key:"path"`
+	MaxSize       int64  `key:"max_size" default:int64(10 * 1024 * 1024* 1024)`
+	MaxDownload   int    `key:"max_download" default:int64(100)`
+	MaxIterations int    `key:"max_iterations" default:int64(10000)`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -86,6 +156,10 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	return fileutil.CopyToTempFile(rc, source.Name, extension)
 }
 
+func main() {
+	fmt.Println(gcsURLParts("gs://druid-demo.gorill-stage.io/**/nytimes_hex/00000000016[0-9]*.csv.gz"))
+}
+
 func gcsURLParts(path string) (string, string, string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
@@ -104,4 +178,34 @@ func getGcsClient(ctx context.Context) (*storage.Client, error) {
 		return nil, err
 	}
 	return client, nil
+}
+
+// Responsibility of caller to close bucketObject
+func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors.Source) (*connectors.BlobResult, error) {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	if err := validatePath(conf.Path); err != nil {
+		return nil, err
+	}
+	bucket, glob, _, err := gcsURLParts(conf.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+	}
+	bucketObj, err := blob.OpenBucket(ctx, bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
+	}
+	fetchConfigs := connectors.FetchConfigs{
+		MaxSize: conf.MaxSize,
+		MaxDownload: conf.MaxDownload,
+		MaxIterations: int64(conf.MaxIterations),
+	}
+	return connectors.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+}
+
+func validatePath(path string) error {
+	return nil
 }

@@ -132,3 +132,7 @@ func awsURLParts(path string) (string, string, string, error) {
 	}
 	return u.Host, u.Path, fileutil.FullExt(u.Path), nil
 }
+
+func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors.Source) (*connectors.BlobResult, error) {
+	return nil, nil
+}

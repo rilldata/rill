@@ -82,3 +82,7 @@ func urlExtension(path string) (string, error) {
 
 	return fileutil.FullExt(u.Path), nil
 }
+
+func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors.Source) (*connectors.BlobResult, error) {
+	return nil, nil
+}

@@ -26,6 +26,8 @@ type Connector interface {
 	// Consume(ctx context.Context, source Source) error
 
 	ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error)
+
+	FetchFileNamesForGlob(ctx context.Context, source *Source) (*BlobResult, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -133,6 +135,22 @@ func ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error
 	}
 
 	return path, nil
+}
+
+func FetchFileNamesForGlob(ctx context.Context, source *Source) (*BlobResult, error) {
+	connector, ok := Connectors[source.Connector]
+	if !ok {
+		return nil, fmt.Errorf("connector: not found")
+	}
+
+	// TODO: connector.ConsumeAsFile should output a list of files to support globs
+	//       this should be output back to drivers that should import each file into the same table
+	result, err := connector.FetchFileNamesForGlob(ctx, source)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {
