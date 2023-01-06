@@ -19,7 +19,7 @@
   const MEASURE_HEIGHT = 60;
   const MEASURE_HEIGHT_MULTILINE = 80;
   const MEASURE_WIDTH = 175;
-  const MARGIN_TOP = 15;
+  const MARGIN_TOP = 20;
   const CHARACTER_LIMIT_FOR_WRAPPING = 26;
 
   let metricsExplorer: MetricsExplorerEntity;
