@@ -49,6 +49,7 @@ func (s *Service) getMigrationItem(
 	ctx context.Context,
 	repoPath string,
 	storeObjectsMap map[string]*drivers.CatalogEntry,
+	storeObjectsPathMap map[string]*drivers.CatalogEntry,
 	forcedPathMap map[string]bool,
 	embeddedMigrations map[string]*MigrationItem,
 ) []*MigrationItem {
@@ -70,10 +71,21 @@ func (s *Service) getMigrationItem(
 				FilePath: repoPath,
 			}
 		}
-
-		item.Name = fileutil.Stem(repoPath)
-		item.NormalizedName = normalizeName(item.Name)
 		item.Type = MigrationDelete
+
+		existing, ok := storeObjectsPathMap[repoPath]
+		if ok {
+			item.Name = existing.Name
+			if existing.Embedded {
+				item.CatalogInFile = existing
+				item.Type = MigrationNoChange
+				item.Error = nil
+			}
+		} else {
+			item.Name = fileutil.Stem(repoPath)
+		}
+
+		item.NormalizedName = normalizeName(item.Name)
 	} else {
 		item.Name = catalog.Name
 		item.NormalizedName = normalizeName(item.Name)

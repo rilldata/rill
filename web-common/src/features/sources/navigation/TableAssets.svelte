@@ -49,6 +49,7 @@
       $runtimeStore.instanceId,
       $modelNames.data,
       tableName,
+      tableName,
       $createModelMutation
     );
     // TODO: fire telemetry

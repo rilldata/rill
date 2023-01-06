@@ -20,7 +20,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
-  import { refreshSource } from "../refreshSource";
+  import { refreshAndReconcile } from "../refreshSource";
 
   export let uri: string;
   export let cachedSourceName: string;
@@ -32,7 +32,6 @@
   $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
   const handleCreateModel = async () => {
@@ -67,13 +66,12 @@
     }
 
     try {
-      await refreshSource(
-        connector,
+      await refreshAndReconcile(
         cachedSourceName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createEntityMutation,
-        queryClient
+        queryClient,
+        uri
       );
 
       // invalidate the data preview (async)

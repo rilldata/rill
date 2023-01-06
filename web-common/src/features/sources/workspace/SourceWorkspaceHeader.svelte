@@ -46,7 +46,7 @@
   import { fade } from "svelte/transition";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
-  import { refreshSource } from "../refreshSource";
+  import { refreshAndReconcile, refreshSource } from "../refreshSource";
 
   export let sourceName: string;
   export let path: string;
@@ -173,18 +173,24 @@
 
   const onRefreshClick = async (tableName: string) => {
     try {
-      await refreshSource(
-        connector,
-        tableName,
-        runtimeInstanceId,
-        $refreshSourceMutation,
-        $createSource,
-        queryClient
-      );
-      // invalidate the data preview (async)
-      // TODO: use new runtime approach
-      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
-
+      if (embedded) {
+        await refreshAndReconcile(
+          tableName,
+          runtimeInstanceId,
+          $refreshSourceMutation,
+          queryClient,
+          source.properties.path
+        );
+      } else {
+        await refreshSource(
+          connector,
+          tableName,
+          runtimeInstanceId,
+          $refreshSourceMutation,
+          $createSource,
+          queryClient
+        );
+      }
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,
@@ -212,9 +218,9 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
-    showStatus={false}
-    let:width
     editable={!embedded}
+    let:width
+    showStatus={false}
   >
     <svelte:fragment slot="icon">
       <Source />
@@ -261,8 +267,8 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        <Tooltip location="left" distance={16}>
-          <Button type="secondary" on:click={handleCreateModelFromSource}>
+        <Tooltip distance={16} location="left">
+          <Button on:click={handleCreateModelFromSource} type="secondary">
             <ResponsiveButtonText collapse={width < 1100}>
               Create Model
             </ResponsiveButtonText>

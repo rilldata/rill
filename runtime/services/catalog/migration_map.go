@@ -35,10 +35,12 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 	}
 
 	storeObjectsMap := make(map[string]*drivers.CatalogEntry)
+	storeObjectsPathMap := make(map[string]*drivers.CatalogEntry)
 	storeObjectsConsumed := make(map[string]bool)
 	storeObjects := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeUnspecified)
 	for _, storeObject := range storeObjects {
 		storeObjectsMap[strings.ToLower(storeObject.Name)] = storeObject
+		storeObjectsPathMap[storeObject.Path] = storeObject
 	}
 
 	migrationMap := make(map[string]*MigrationItem)
@@ -48,7 +50,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 	additions := make(map[string]*MigrationItem)
 
 	for _, repoPath := range repoPaths {
-		items := s.getMigrationItem(ctx, repoPath, storeObjectsMap, forcedPathMap, embeddedMigrations)
+		items := s.getMigrationItem(ctx, repoPath, storeObjectsMap, storeObjectsPathMap, forcedPathMap, embeddedMigrations)
 		for _, item := range items {
 			keepNew, errPath := s.isInvalidDuplicate(migrationMap, changedPathsHint, changedPathsMap, item)
 			if errPath != "" {
@@ -82,7 +84,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 					continue
 				}
 
-				childItems := s.getMigrationItem(ctx, childPath, storeObjectsMap, forcedPathMap, embeddedMigrations)
+				childItems := s.getMigrationItem(ctx, childPath, storeObjectsMap, storeObjectsPathMap, forcedPathMap, embeddedMigrations)
 				for _, childItem := range childItems {
 					migrationMap[childItem.NormalizedName] = childItem
 				}

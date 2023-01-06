@@ -194,7 +194,15 @@ func TestEmbeddingModelRename(t *testing.T) {
 			testutils.RenameFile(t, dir, AdBidsModelRepoPath, AdBidsNewModelPath)
 			result, err := s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 1, 0, 2, 0, []string{AdBidsDashboardRepoPath, EmbeddedSourcePath, AdBidsNewModelPath})
+			testutils.AssertMigration(
+				t,
+				result,
+				1,
+				0,
+				2,
+				0,
+				[]string{AdBidsDashboardRepoPath, EmbeddedSourcePath, AdBidsNewModelPath},
+			)
 			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
 			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
 			require.Equal(t, 1, adBidsEntry.Links)
@@ -208,12 +216,23 @@ func TestEmbeddedSourceRefresh(t *testing.T) {
 	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
 	addEmbeddedModel(t, s)
 
+	testutils.CopyFileToData(t, dir, AdImpressionsCsvPath, "AdBids.csv")
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
 		ChangedPaths: []string{EmbeddedSourcePath},
 		ForcedPaths:  []string{EmbeddedSourcePath},
 	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 0, 3, 0, []string{EmbeddedSourcePath, AdBidsModelRepoPath, AdBidsDashboardRepoPath})
+	// refreshing the embedded source and replacing with different file caused errors
+	// the model depended on column not present in the new file
+	testutils.AssertMigration(
+		t,
+		result,
+		2,
+		0,
+		1,
+		0,
+		[]string{EmbeddedSourcePath, AdBidsModelRepoPath, AdBidsDashboardRepoPath},
+	)
 }
 
 func addEmbeddedModel(t *testing.T, s *catalog.Service) {

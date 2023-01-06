@@ -63,7 +63,7 @@
   );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
-  $: embedded = $getSource?.data?.entry;
+  $: embedded = $getSource?.data?.entry?.embedded;
   $: path = source?.properties?.path;
 
   $: sourceFromYaml = useSourceFromYaml(

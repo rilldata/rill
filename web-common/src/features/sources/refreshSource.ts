@@ -14,6 +14,25 @@ import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/i
 import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 
+export async function refreshAndReconcile(
+  sourceName: string,
+  instanceId: string,
+  refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
+  queryClient: QueryClient,
+  path = getFilePathFromNameAndType(sourceName, EntityType.Table)
+) {
+  overlay.set({ title: `Importing ${sourceName}` });
+  const resp = await refreshSource.mutateAsync({
+    data: {
+      instanceId,
+      path,
+    },
+  });
+  invalidateAfterReconcile(queryClient, instanceId, resp);
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+  return resp;
+}
+
 export async function refreshSource(
   connector: string,
   sourceName: string,
@@ -23,16 +42,12 @@ export async function refreshSource(
   queryClient: QueryClient
 ) {
   if (connector !== "local_file") {
-    overlay.set({ title: `Importing ${sourceName}` });
-    const resp = await refreshSource.mutateAsync({
-      data: {
-        instanceId,
-        path: getFilePathFromNameAndType(sourceName, EntityType.Table),
-      },
-    });
-    invalidateAfterReconcile(queryClient, instanceId, resp);
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    return resp;
+    return refreshAndReconcile(
+      sourceName,
+      instanceId,
+      refreshSource,
+      queryClient
+    );
   }
 
   // different logic for the file connector
