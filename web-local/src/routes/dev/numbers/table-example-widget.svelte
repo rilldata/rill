@@ -10,59 +10,42 @@
   } from "./number-to-string-formatters";
 
   export let defaultFormatterIndex = 1;
-  // import { numStrToAlignedNumSpec } from "./num-string-to-aligned-spec";
-
   let alignDecimalPoints = false;
   let alignSuffixes = false;
   let lowerCaseEForEng = false;
   let minimumSignificantDigits = 3;
   let maximumSignificantDigits = 5;
+  let onlyUseLargestMagnitude = false;
+  let usePlainNumsForThousands = false;
+  let usePlainNumsForThousandsOneDecimal = false;
+  let usePlainNumForThousandths = true;
+  let usePlainNumForThousandthsPadZeros = false;
 
-  // $: formatterOptions = { minimumSignificantDigits, maximumSignificantDigits };
-
-  // $: selectedFormatter = formatterFactories[defaultFormatterIndex];
-  // $: selectedFormatterForSamples = Object.fromEntries(
-  //   numberLists.map((nl) => {
-  //     return [nl.desc, selectedFormatter.fn(nl.sample, formatterOptions)];
-  //   })
-  // );
-  // let formatterOptions;
   let selectedFormatter = formatterFactories[defaultFormatterIndex];
   let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
 
-  $: formatterOptions = { minimumSignificantDigits, maximumSignificantDigits };
+  $: usePlainNumForThousandthsPadZeros =
+    usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
+
+  $: formatterOptions = {
+    minimumSignificantDigits,
+    maximumSignificantDigits,
+    onlyUseLargestMagnitude,
+    usePlainNumsForThousands,
+    usePlainNumsForThousandsOneDecimal,
+    usePlainNumForThousandths,
+    usePlainNumForThousandthsPadZeros,
+  };
 
   $: {
-    console.log("something updated", Date.now());
     selectedFormatterForSamples = Object.fromEntries(
       numberLists.map((nl) => {
         return [nl.desc, selectedFormatter.fn(nl.sample, formatterOptions)];
       })
     );
-
-    console.log({ selectedFormatterForSamples });
   }
 
-  let numericType;
-
-  let formattedColumns: { [colName: string]: RichFormatNumber[] };
-  let firstColSample: RichFormatNumber[];
-
-  $: {
-    console.log("data columns updated", Date.now());
-    formattedColumns = Object.fromEntries(
-      numberLists.map((nl) => {
-        const formatter = selectedFormatter.fn(nl.sample, formatterOptions);
-        return [nl.desc, nl.sample.map(formatter)];
-      })
-    );
-    formattedColumns = formattedColumns;
-    firstColSample = formattedColumns[Object.keys(formattedColumns)[0]];
-    firstColSample = firstColSample;
-
-    console.log({ formattedColumns });
-    console.log({ firstColSample });
-  }
+  let numberInputType;
 </script>
 
 <div>
@@ -70,17 +53,27 @@
     <label>
       <input
         type="radio"
-        bind:group={numericType}
+        bind:group={numberInputType}
         name="number"
         value={"number"}
       />
-      plain numbers (humanize)
+      real numbers (no special treament)
     </label>
 
     <label>
       <input
         type="radio"
-        bind:group={numericType}
+        bind:group={numberInputType}
+        name="number"
+        value={"number"}
+      />
+      integers (inputs rounded)
+    </label>
+
+    <label>
+      <input
+        type="radio"
+        bind:group={numberInputType}
         name="currency"
         value={"currency"}
       />
@@ -90,7 +83,7 @@
     <label>
       <input
         type="radio"
-        bind:group={numericType}
+        bind:group={numberInputType}
         name="percentage"
         value={"percentage"}
       />
@@ -109,43 +102,90 @@
     {/each}
   </select>
 </div>
-formatter options
-<div>
-  <label>
-    <input type="checkbox" bind:checked={alignDecimalPoints} />
-    align decimal points
-  </label>
-</div>
-<div>
-  <label>
-    <input type="checkbox" bind:checked={alignSuffixes} />
-    align suffixes (requires "aligns decimal points")
-  </label>
-</div>
-<div>
-  <label>
-    <input type="checkbox" bind:checked={lowerCaseEForEng} />
-    force lower case "e" for exponential variants
-  </label>
-</div>
-<div>
-  significant digits:
-  <label>
-    min
-    <input
-      class="number-input"
-      type="number"
-      bind:value={minimumSignificantDigits}
-    />
-  </label>
-  <label>
-    max
-    <input
-      class="number-input"
-      type="number"
-      bind:value={maximumSignificantDigits}
-    />
-  </label>
+
+<div class="options-container-row">
+  <div>
+    generic formatter options
+    <div>
+      <label>
+        <input type="checkbox" bind:checked={alignDecimalPoints} />
+        align decimal points
+      </label>
+    </div>
+    <div>
+      <label>
+        <input type="checkbox" bind:checked={alignSuffixes} />
+        align suffixes (requires "aligns decimal points")
+      </label>
+    </div>
+    <div>
+      <label>
+        <input type="checkbox" bind:checked={lowerCaseEForEng} />
+        force lower case "e" for exponential variants
+      </label>
+    </div>
+    <div>
+      significant digits:
+      <label>
+        min
+        <input
+          class="number-input"
+          type="number"
+          bind:value={minimumSignificantDigits}
+        />
+      </label>
+      <label>
+        max
+        <input
+          class="number-input"
+          type="number"
+          bind:value={maximumSignificantDigits}
+        />
+      </label>
+    </div>
+  </div>
+
+  <div style="padding-left: 40px;">
+    new humanizer options
+    <div class="option-box">
+      <label>
+        <input type="checkbox" bind:checked={onlyUseLargestMagnitude} />
+        only use largest magnitude
+      </label>
+      <div class="option-box">
+        <label>
+          <input type="checkbox" bind:checked={usePlainNumsForThousands} />
+          for samples in open interval (-1e6,1e6), just show plain number (requires
+          onlyUseLargestMagnitude)
+        </label>
+        <div class="option-box">
+          <label>
+            <input
+              type="checkbox"
+              bind:checked={usePlainNumsForThousandsOneDecimal}
+            />
+            show one digit after the decimal point (to indicate non-integer sample)
+          </label>
+        </div>
+      </div>
+      <div class="option-box">
+        <label>
+          <input type="checkbox" bind:checked={usePlainNumForThousandths} />
+          show a plain number if the largest order of magnitude is thousandths
+        </label>
+
+        <div class="option-box" class:inactive={!usePlainNumForThousandths}>
+          <label>
+            <input
+              type="checkbox"
+              bind:checked={usePlainNumForThousandthsPadZeros}
+            />
+            pad with zeros
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <table class="ui-copy-number fixed-width-cols">
@@ -174,60 +214,6 @@ formatter options
   {/each}
 </table>
 
-<table class="ui-copy-number fixed-width-cols">
-  <thead>
-    {#each Object.keys(formattedColumns) as sampleName}
-      <td>{sampleName}</td>
-    {/each}
-  </thead>
-  {#each firstColSample as richNum_, i (richNum_.number)}
-    {@const rowOfValuesNums = Object.values(formattedColumns).map(
-      (col) => col[i]
-    )}
-    <tr>
-      {#each rowOfValuesNums as richNum}
-        <td class="table-body" title={richNum.number.toString()}>
-          <div class="align-content-right">
-            <AlignedNumber
-              {richNum}
-              alignSuffix={alignSuffixes}
-              {alignDecimalPoints}
-              {lowerCaseEForEng}
-            />
-          </div>
-        </td>
-      {/each}
-    </tr>
-  {/each}
-</table>
-
-<!-- 
-<table class="ui-copy-number fixed-width-cols">
-  <thead>
-    {#each numberLists as { desc, sample }, _i}
-      <td>{desc}</td>
-    {/each}
-  </thead>
-  {#each numberLists[0].sample as _, i}
-    {@const rowOfRichNums = Object.entries(numberLists).map(([desc, sample]) =>
-      selectedFormatterForSamples[desc](sample[i])
-    )}
-    <tr>
-      {#each rowOfRichNums as richNum}
-        <td class="table-body" title={richNum.number.toString()}>
-          <div class="align-content-right">
-            <AlignedNumber
-              {richNum}
-              alignSuffix={alignSuffixes}
-              {alignDecimalPoints}
-              {lowerCaseEForEng}
-            />
-          </div>
-        </td>
-      {/each}
-    </tr>
-  {/each}
-</table> -->
 <style>
   thead td {
     text-align: right;
@@ -240,6 +226,10 @@ formatter options
     /* text-align: right; */
     padding-left: 30px;
     white-space: nowrap;
+  }
+
+  .options-container-row {
+    display: flex;
   }
 
   .align-content-right {
@@ -256,6 +246,15 @@ formatter options
 
   table.fixed-width-cols td {
     width: 120px;
+  }
+
+  .option-box {
+    padding-left: 30px;
+  }
+
+  .inactive {
+    color: rgb(144, 144, 144);
+    pointer-events: none;
   }
 
   .number-input {

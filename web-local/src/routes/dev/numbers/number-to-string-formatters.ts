@@ -13,7 +13,7 @@ import {
 type FormatterSpacingMeta = {
   maxWholeDigits: number;
   maxFracDigits: number;
-  maxFracDigitsWithSuffix: number;
+  // maxFracDigitsWithSuffix: number;
   maxSuffixChars: number;
 };
 
@@ -173,6 +173,13 @@ const ORDER_OF_MAG_TO_LONG_SCALE_SUFFIX = {
   6: "M",
   9: "B",
   12: "T",
+  15: "Q",
+};
+
+const longScaleSuffixIfAvailable = (x: number): string => {
+  let suffix = ORDER_OF_MAG_TO_LONG_SCALE_SUFFIX[x];
+  if (suffix !== undefined) return suffix;
+  return "E" + x;
 };
 
 let humanized2FormatterFactory: FormatterFactory = (
@@ -196,40 +203,60 @@ let humanized2FormatterFactory: FormatterFactory = (
     if (suff !== undefined) ss.suffix = suff;
   });
 
-  if (options.topMagnitudesOnly === true) {
-    // FIXME
-    // if top magnitude is e3 (thousands) AND ALL ARE INTEGERS, can just show 6 digits of integer parts
-    // if (maxOrder === 3) {
-    //   splitStrs = splitStrs.map((ss, i) => ({
-    //     int: Math.round(sample[i]).toString(),
-    //     frac: "",
-    //     suffix: "",
-    //   }));
-    // }
+  splitStrs.forEach((ss) => {
+    if (ss.suffix === undefined) console.log("bad suffix pre", ss);
+  });
 
-    let thousandthsTruncator = new Intl.NumberFormat("en-US", {
-      // notation: "engineering",
-      minimumFractionDigits: 3,
-    });
+  if (options.onlyUseLargestMagnitude === true) {
+    if (options.usePlainNumsForThousands && maxOrder === 3) {
+      // if top magnitude is e3 (thousands) AND ALL ARE INTEGERS, can just show 6 digits of integer parts
+      const decimals = options.usePlainNumsForThousandsOneDecimal ? 1 : 0;
+      let formatter = new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
 
-    splitStrs = splitStrs.map((ss, i) => {
-      let mag = ordersOfMag[i];
-      let num = sample[i];
-      let suffix = ORDER_OF_MAG_TO_LONG_SCALE_SUFFIX[maxOrder];
-      if (mag !== maxOrder) {
-        let newNum = Math.abs(num / 10 ** maxOrder);
-        let resplit = thousandthsTruncator.format(newNum).split(".");
-        let frac = resplit.length == 2 ? resplit[1] : resplit[0];
-        return {
-          int: num >= 0 ? "0" : "-0",
-          frac,
-          suffix,
-        };
-      } else {
-        return ss;
-      }
-    });
+      splitStrs = sample
+        .map((x) => formatter.format(x).replace(",", ""))
+        .map(splitNumStr);
+    } else if (options.usePlainNumForThousandths && maxOrder === -3) {
+      const formatter = new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: options.usePlainNumForThousandthsPadZeros
+          ? 6
+          : 1,
+        maximumFractionDigits: 6,
+      });
+
+      splitStrs = sample.map((x) => formatter.format(x)).map(splitNumStr);
+    } else {
+      let thousandthsTruncator = new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 3,
+      });
+
+      splitStrs = splitStrs.map((ss, i) => {
+        let mag = ordersOfMag[i];
+        let num = sample[i];
+        let maxOrderSuffix: string = longScaleSuffixIfAvailable(maxOrder);
+
+        if (mag !== maxOrder) {
+          let newNum = Math.abs(num / 10 ** maxOrder);
+          let resplit = thousandthsTruncator.format(newNum).split(".");
+          let frac = resplit.length == 2 ? resplit[1] : resplit[0];
+          return {
+            int: num >= 0 ? "0" : "-0",
+            frac,
+            suffix: maxOrderSuffix,
+          };
+        } else {
+          return ss;
+        }
+      });
+    }
   }
+
+  splitStrs.forEach((ss) => {
+    if (ss.suffix === undefined) console.log("bad suffix post", ss);
+  });
 
   let spacing: FormatterSpacingMeta =
     getSpacingMetadataForSplitStrings(splitStrs);
@@ -253,7 +280,10 @@ type NamedFormatterFactory = {
 export const formatterFactories: NamedFormatterFactory[] = [
   { desc: "JS `toString()`", fn: rawStrFormatterFactory },
 
-  { desc: "humanizeGroupValues", fn: humanizeGroupValuesFormatterFactory },
+  {
+    desc: "humanizeGroupValues (current humanizer)",
+    fn: humanizeGroupValuesFormatterFactory,
+  },
 
   { desc: "humanized 2", fn: humanized2FormatterFactory },
 
@@ -262,7 +292,7 @@ export const formatterFactories: NamedFormatterFactory[] = [
     fn: (sample, options) =>
       humanized2FormatterFactory(sample, {
         ...options,
-        topMagnitudesOnly: true,
+        useLargestMagnitudeOnly: true,
       }),
   },
 

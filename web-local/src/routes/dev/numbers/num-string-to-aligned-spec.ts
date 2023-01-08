@@ -22,6 +22,9 @@ export function splitNumStr(numStr: string) {
     int = numStr.split(".")[0];
     frac = numStr.split(".")[1] ?? "";
   }
+  if (suffix === undefined) {
+    console.log({ numStr, int, frac, suffix });
+  }
   return { int, frac, suffix };
 }
 
@@ -39,26 +42,32 @@ export const getSpacingMetadataForSplitStrings = (
   numStrParts: NumberStringParts[]
 ) => {
   return numStrParts
-    .map((s) => ({
-      maxWholeDigits: s.int.length,
-      maxFracDigits: s.frac.length,
-      maxFracDigitsWithSuffix: s.frac.length + s.suffix.length,
-      maxSuffixChars: s.suffix.length,
-    }))
+    .map((s) => {
+      try {
+        return {
+          maxWholeDigits: s.int.length,
+          maxFracDigits: s.frac.length,
+          // maxFracDigitsWithSuffix: s.frac.length + s.suffix.length,
+          maxSuffixChars: s?.suffix?.length ?? 0,
+        };
+      } catch (error) {
+        console.log(s);
+      }
+    })
     .reduce(
       (a, b) => ({
         maxWholeDigits: Math.max(a.maxWholeDigits, b.maxWholeDigits),
         maxFracDigits: Math.max(a.maxFracDigits, b.maxFracDigits),
-        maxFracDigitsWithSuffix: Math.max(
-          a.maxFracDigitsWithSuffix,
-          b.maxFracDigitsWithSuffix
-        ),
+        // maxFracDigitsWithSuffix: Math.max(
+        //   a.maxFracDigitsWithSuffix,
+        //   b.maxFracDigitsWithSuffix
+        // ),
         maxSuffixChars: Math.max(a.maxSuffixChars, b.maxSuffixChars),
       }),
       {
         maxWholeDigits: 0,
         maxFracDigits: 0,
-        maxFracDigitsWithSuffix: 0,
+        // maxFracDigitsWithSuffix: 0,
         maxSuffixChars: 0,
       }
     );
