@@ -24,7 +24,7 @@
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
-<div class="flex flex-col justify-between">
+<div class="flex flex-col {compact ? 'justify-center' : 'justify-between'}">
   <Tooltip distance={16} location="top">
     <h2
       class="break-words line-clamp-2"
