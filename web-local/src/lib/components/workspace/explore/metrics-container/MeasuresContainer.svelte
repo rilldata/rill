@@ -21,6 +21,7 @@
   const MEASURE_WIDTH = 175;
   const MARGIN_TOP = 20;
   const CHARACTER_LIMIT_FOR_WRAPPING = 26;
+  const GRID_MARGIN_TOP = 20;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -81,7 +82,9 @@
     );
 
     if (metricsContainerHeight) {
-      const columns = totalMeasuresHeight / metricsContainerHeight;
+      const measuresContainerHeight = metricsContainerHeight - GRID_MARGIN_TOP;
+
+      const columns = totalMeasuresHeight / measuresContainerHeight;
       if (columns <= 1) {
         numColumns = 1;
         measureGridHeights = [...measuresHeight];
@@ -97,7 +100,7 @@
           .filter((_, i) => i % 2 == 0)
           .reduce((s, v) => s + v + MARGIN_TOP, 0);
         const extraHeight =
-          metricsContainerHeight - measuresHeightInSingleColumn;
+          measuresContainerHeight - measuresHeightInSingleColumn;
         if (extraHeight < 0) {
           numColumns = 3;
           measureGridHeights = getMeasureHeightsForColumn(measuresHeight, 3);
@@ -107,7 +110,10 @@
   }
 </script>
 
-<div class="grid grid-cols-{numColumns} gap-x-1">
+<div
+  class="grid grid-cols-{numColumns} gap-x-1"
+  style:margin-top="{GRID_MARGIN_TOP}px"
+>
   {#if $metaQuery.data?.measures}
     {#each $metaQuery.data?.measures as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
