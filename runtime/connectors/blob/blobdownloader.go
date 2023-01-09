@@ -59,7 +59,7 @@ func FetchBlobHandler(ctx context.Context, bucket *blob.Bucket, config FetchConf
 	// list max matched files or 100 in one API listing
 	pageSize := int(math.Max(100, float64(config.MaxDownload)))
 	fetched := int64(0)
-	var returnErr error = nil
+	var returnErr error
 	for token := blob.FirstPageToken; token != nil; {
 		iter, nextToken, err := bucket.ListPage(ctx, token, pageSize, &listOptions)
 		if err != nil {
