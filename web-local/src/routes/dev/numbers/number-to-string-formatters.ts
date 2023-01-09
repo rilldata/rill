@@ -3,6 +3,7 @@ import {
   humanizeGroupValues,
   NicelyFormattedTypes,
 } from "@rilldata/web-local/lib/util/humanize-numbers";
+import { humanized2FormatterFactory } from "./humanizer-2";
 
 import {
   splitNumStr,
@@ -10,16 +11,16 @@ import {
   getSpacingMetadataForSplitStrings,
 } from "./num-string-to-aligned-spec";
 
-type FormatterSpacingMeta = {
+export type FormatterSpacingMeta = {
   maxWholeDigits: number;
   maxFracDigits: number;
   // maxFracDigitsWithSuffix: number;
   maxSuffixChars: number;
 };
 
-type NumToRawStringFormatter = (x: number) => string;
-type NumToHtmlStringFormatter = (x: number) => string;
-type RawStrToHtmlStrFormatter = (s: string) => string;
+export type NumToRawStringFormatter = (x: number) => string;
+export type NumToHtmlStringFormatter = (x: number) => string;
+export type RawStrToHtmlStrFormatter = (s: string) => string;
 
 export type NumberFormatter = (x: number) => RichFormatNumber;
 
@@ -36,7 +37,7 @@ export type RichFormatNumber = {
   spacing: FormatterSpacingMeta;
 };
 
-type FormatterFactory = (sample: number[], options) => NumberFormatter;
+export type FormatterFactory = (sample: number[], options) => NumberFormatter;
 
 let humanizeGroupValuesFormatterFactory: FormatterFactory = (
   sample: number[],
@@ -82,27 +83,27 @@ let rawStrFormatterFactory: FormatterFactory = (sample: number[], _options) => {
   };
 };
 
-let IntlFormatterFactory: FormatterFactory = (sample: number[], _options) => {
-  let intlFormatter = new Intl.NumberFormat("en-US", {
-    notation: "scientific",
-  });
+// let IntlFormatterFactory: FormatterFactory = (sample: number[], _options) => {
+//   let intlFormatter = new Intl.NumberFormat("en-US", {
+//     notation: "scientific",
+//   });
 
-  let rawStrings = sample.map((x) => intlFormatter.format(x));
-  let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+//   let rawStrings = sample.map((x) => intlFormatter.format(x));
+//   let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-  let spacing: FormatterSpacingMeta =
-    getSpacingMetadataForRawStrings(rawStrings);
+//   let spacing: FormatterSpacingMeta =
+//     getSpacingMetadataForRawStrings(rawStrings);
 
-  return (x: number) => {
-    let i = sample.findIndex((h) => h === x);
-    return {
-      number: x,
-      rawStr: rawStrings[i],
-      splitStr: splitStrs[i],
-      spacing,
-    };
-  };
-};
+//   return (x: number) => {
+//     let i = sample.findIndex((h) => h === x);
+//     return {
+//       number: x,
+//       rawStr: rawStrings[i],
+//       splitStr: splitStrs[i],
+//       spacing,
+//     };
+//   };
+// };
 
 let IntlFormatterFactoryWithBaseOptions =
   (baseOptions) => (sample: number[], options) => {
@@ -166,111 +167,6 @@ let formatterFactoryFromStringifierWithOptions =
       };
     };
   };
-
-const ORDER_OF_MAG_TO_LONG_SCALE_SUFFIX = {
-  0: "",
-  3: "k",
-  6: "M",
-  9: "B",
-  12: "T",
-  15: "Q",
-};
-
-const longScaleSuffixIfAvailable = (x: number): string => {
-  let suffix = ORDER_OF_MAG_TO_LONG_SCALE_SUFFIX[x];
-  if (suffix !== undefined) return suffix;
-  return "E" + x;
-};
-
-let humanized2FormatterFactory: FormatterFactory = (
-  sample: number[],
-  options
-) => {
-  const engFmt = new Intl.NumberFormat("en-US", {
-    notation: "engineering",
-    minimumFractionDigits: 3,
-  });
-  let rawStrings = sample.map(engFmt.format);
-  let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
-
-  let ordersOfMag = splitStrs.map((ss) => +ss.suffix.slice(1));
-  let maxOrder = Math.max(...ordersOfMag);
-  let minOrder = Math.min(...ordersOfMag);
-  // console.log({ ordersOfMag, maxOrder, minOrder });
-
-  splitStrs.forEach((ss, i) => {
-    let suff = ORDER_OF_MAG_TO_LONG_SCALE_SUFFIX[ordersOfMag[i]];
-    if (suff !== undefined) ss.suffix = suff;
-  });
-
-  splitStrs.forEach((ss) => {
-    if (ss.suffix === undefined) console.log("bad suffix pre", ss);
-  });
-
-  if (options.onlyUseLargestMagnitude === true) {
-    if (options.usePlainNumsForThousands && maxOrder === 3) {
-      // if top magnitude is e3 (thousands) AND ALL ARE INTEGERS, can just show 6 digits of integer parts
-      const decimals = options.usePlainNumsForThousandsOneDecimal ? 1 : 0;
-      let formatter = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-
-      splitStrs = sample
-        .map((x) => formatter.format(x).replace(",", ""))
-        .map(splitNumStr);
-    } else if (options.usePlainNumForThousandths && maxOrder === -3) {
-      const formatter = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: options.usePlainNumForThousandthsPadZeros
-          ? 6
-          : 1,
-        maximumFractionDigits: 6,
-      });
-
-      splitStrs = sample.map((x) => formatter.format(x)).map(splitNumStr);
-    } else {
-      let thousandthsTruncator = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 3,
-      });
-
-      splitStrs = splitStrs.map((ss, i) => {
-        let mag = ordersOfMag[i];
-        let num = sample[i];
-        let maxOrderSuffix: string = longScaleSuffixIfAvailable(maxOrder);
-
-        if (mag !== maxOrder) {
-          let newNum = Math.abs(num / 10 ** maxOrder);
-          let resplit = thousandthsTruncator.format(newNum).split(".");
-          let frac = resplit.length == 2 ? resplit[1] : resplit[0];
-          return {
-            int: num >= 0 ? "0" : "-0",
-            frac,
-            suffix: maxOrderSuffix,
-          };
-        } else {
-          return ss;
-        }
-      });
-    }
-  }
-
-  splitStrs.forEach((ss) => {
-    if (ss.suffix === undefined) console.log("bad suffix post", ss);
-  });
-
-  let spacing: FormatterSpacingMeta =
-    getSpacingMetadataForSplitStrings(splitStrs);
-
-  return (x: number) => {
-    let i = sample.findIndex((h) => h === x);
-    return {
-      number: x,
-      rawStr: rawStrings[i],
-      splitStr: splitStrs[i],
-      spacing,
-    };
-  };
-};
 
 type NamedFormatterFactory = {
   desc: string;
