@@ -30,6 +30,9 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
  — the _local path_ of the connector you are using for the source relative to your project's root directory.   _(required for type: file)_
 - _`/path/to/file.csv`_ —  the path to your file
 
+**`region`**
+ — The specific geographical location where you can host your resources, for example "us-east-1"
+
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 
 ## Model transformation
