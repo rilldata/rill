@@ -1,19 +1,12 @@
 <script lang="ts">
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
 
-  export let containerHeight = 0;
   export let gridConfig: string;
 
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
-
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-
-  $: containerHeight = $observedNode?.offsetHeight || 0;
 </script>
 
 <section
@@ -25,8 +18,7 @@
   </div>
   <hr class="pb-3 pt-1 ui-divider" />
   <div
-    use:listenToNodeResize
-    class="explore-metrics pb-8"
+    class="explore-metrics mb-8"
     style:padding-left="calc({$navigationVisibilityTween * 24}px + 1.25rem)"
   >
     <slot name="metrics" />

@@ -29,7 +29,6 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricViewName;
-  export const metricsContainerHeight = 0;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];

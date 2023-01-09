@@ -21,7 +21,6 @@
 
   export let metricViewName: string;
 
-  let metricsContainerHeight;
   let hasTimeSeries = true;
   $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
     hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
@@ -54,18 +53,9 @@
   bgClass="bg-white"
   inspector={false}
 >
-  <ExploreContainer
-    bind:containerHeight={metricsContainerHeight}
-    {gridConfig}
-    slot="body"
-  >
+  <ExploreContainer {gridConfig} slot="body">
     <ExploreHeader {metricViewName} slot="header" />
-    <svelte:component
-      this={MetricsContainer}
-      {metricsContainerHeight}
-      {metricViewName}
-      slot="metrics"
-    />
+    <svelte:component this={MetricsContainer} {metricViewName} slot="metrics" />
     <svelte:fragment slot="leaderboards">
       {#if selectedDimensionName}
         <DimensionDisplay

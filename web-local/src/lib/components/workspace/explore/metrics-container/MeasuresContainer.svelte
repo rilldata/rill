@@ -12,9 +12,9 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let metricViewName;
-  export let metricsContainerHeight;
 
   const MEASURE_HEIGHT = 60;
   const MEASURE_HEIGHT_MULTILINE = 80;
@@ -32,6 +32,10 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
+  $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
 
   function getMeasureHeightsForColumn(measuresHeight, numColumns) {
     const recalculatedHeights = [...measuresHeight];
@@ -82,9 +86,7 @@
     );
 
     if (metricsContainerHeight) {
-      const measuresContainerHeight = metricsContainerHeight - GRID_MARGIN_TOP;
-
-      const columns = totalMeasuresHeight / measuresContainerHeight;
+      const columns = totalMeasuresHeight / metricsContainerHeight;
       if (columns <= 1) {
         numColumns = 1;
         measureGridHeights = [...measuresHeight];
@@ -100,7 +102,7 @@
           .filter((_, i) => i % 2 == 0)
           .reduce((s, v) => s + v + MARGIN_TOP, 0);
         const extraHeight =
-          measuresContainerHeight - measuresHeightInSingleColumn;
+          metricsContainerHeight - measuresHeightInSingleColumn;
         if (extraHeight < 0) {
           numColumns = 3;
           measureGridHeights = getMeasureHeightsForColumn(measuresHeight, 3);
@@ -111,35 +113,38 @@
 </script>
 
 <div
-  class="grid grid-cols-{numColumns} gap-x-4"
+  use:listenToNodeResize
+  style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:margin-top="{GRID_MARGIN_TOP}px"
 >
-  {#if $metaQuery.data?.measures}
-    {#each $metaQuery.data?.measures as measure, index (measure.name)}
-      <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
-      <div
-        style:width="{MEASURE_WIDTH}px"
-        style:height="{measureGridHeights[index]}px"
-        style:margin-top="{MARGIN_TOP}px"
-        class="inline-grid"
-      >
-        <MeasureBigNumber
-          value={bigNum}
-          description={measure?.description ||
-            measure?.label ||
-            measure?.expression}
-          formatPreset={measure?.format}
-          withTimeseries={false}
-          status={$totalsQuery?.isFetching
-            ? EntityStatus.Running
-            : EntityStatus.Idle}
+  <div class="grid grid-cols-{numColumns} gap-x-4">
+    {#if $metaQuery.data?.measures}
+      {#each $metaQuery.data?.measures as measure, index (measure.name)}
+        <!-- FIXME: I can't select the big number by the measure id. -->
+        {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
+        <div
+          style:width="{MEASURE_WIDTH}px"
+          style:height="{measureGridHeights[index]}px"
+          style:margin-top="{MARGIN_TOP}px"
+          class="inline-grid"
         >
-          <svelte:fragment slot="name">
-            {measure?.label || measure?.expression}
-          </svelte:fragment>
-        </MeasureBigNumber>
-      </div>
-    {/each}
-  {/if}
+          <MeasureBigNumber
+            value={bigNum}
+            description={measure?.description ||
+              measure?.label ||
+              measure?.expression}
+            formatPreset={measure?.format}
+            withTimeseries={false}
+            status={$totalsQuery?.isFetching
+              ? EntityStatus.Running
+              : EntityStatus.Idle}
+          >
+            <svelte:fragment slot="name">
+              {measure?.label || measure?.expression}
+            </svelte:fragment>
+          </MeasureBigNumber>
+        </div>
+      {/each}
+    {/if}
+  </div>
 </div>
