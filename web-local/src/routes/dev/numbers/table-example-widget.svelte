@@ -10,9 +10,9 @@
   } from "./number-to-string-formatters";
 
   export let defaultFormatterIndex = 1;
-  let alignDecimalPoints = false;
-  let alignSuffixes = false;
-  let lowerCaseEForEng = false;
+  let alignDecimalPoints = true;
+  let alignSuffixes = true;
+  let lowerCaseEForEng = true;
   let minimumSignificantDigits = 3;
   let maximumSignificantDigits = 5;
   let onlyUseLargestMagnitude = false;
@@ -20,6 +20,10 @@
   let usePlainNumsForThousandsOneDecimal = false;
   let usePlainNumForThousandths = true;
   let usePlainNumForThousandthsPadZeros = false;
+
+  let truncateThousandths = true;
+  let truncateTinyOrdersIfBigOrderExists = true;
+  let zeroHandling = "noSpecial";
 
   let selectedFormatter = formatterFactories[defaultFormatterIndex];
   let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
@@ -30,11 +34,14 @@
   $: formatterOptions = {
     minimumSignificantDigits,
     maximumSignificantDigits,
-    onlyUseLargestMagnitude,
+    magnitudeStrategy,
     usePlainNumsForThousands,
     usePlainNumsForThousandsOneDecimal,
     usePlainNumForThousandths,
     usePlainNumForThousandthsPadZeros,
+    truncateThousandths,
+    truncateTinyOrdersIfBigOrderExists,
+    zeroHandling,
   };
 
   $: {
@@ -46,6 +53,7 @@
   }
 
   let numberInputType;
+  let magnitudeStrategy = "largest";
 </script>
 
 <div>
@@ -146,45 +154,134 @@
   </div>
 
   <div style="padding-left: 40px;">
-    new humanizer options
+    new humanizer shared options
+
     <div class="option-box">
-      <label>
-        <input type="checkbox" bind:checked={onlyUseLargestMagnitude} />
-        only use largest magnitude
-      </label>
+      <form>
+        <label>
+          <input
+            type="radio"
+            bind:group={zeroHandling}
+            name="noSpecial"
+            value={"noSpecial"}
+          />
+          no special treament for exact zeros
+        </label>
+        <label>
+          <input
+            type="radio"
+            bind:group={zeroHandling}
+            name="exactZero"
+            value={"exactZero"}
+          />
+          "0" for exact zeros
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            bind:group={zeroHandling}
+            name="zeroDot"
+            value={"zeroDot"}
+          />
+          "0." for exact zeros
+        </label>
+      </form>
+    </div>
+
+    new humanizer strategy
+    <form>
       <div class="option-box">
         <label>
-          <input type="checkbox" bind:checked={usePlainNumsForThousands} />
-          for samples in open interval (-1e6,1e6), just show plain number (requires
-          onlyUseLargestMagnitude)
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
+            name="largest"
+            value={"largest"}
+          />
+          only use largest magnitude (like current humanizer)
         </label>
+        <div class:inactive={magnitudeStrategy !== "largest"}>
+          <div class="option-box">
+            <label>
+              <input type="checkbox" bind:checked={usePlainNumsForThousands} />
+              for samples in interval (-1e6,1e6), just show plain number
+            </label>
+            <div class="option-box">
+              <label>
+                <input
+                  type="checkbox"
+                  bind:checked={usePlainNumsForThousandsOneDecimal}
+                />
+                show one digit after the decimal point (to indicate non-integer sample)
+              </label>
+            </div>
+          </div>
+          <div class="option-box">
+            <label>
+              <input type="checkbox" bind:checked={usePlainNumForThousandths} />
+              show a plain number if the largest order of magnitude is thousandths
+            </label>
+
+            <div class="option-box" class:inactive={!usePlainNumForThousandths}>
+              <label>
+                <input
+                  type="checkbox"
+                  bind:checked={usePlainNumForThousandthsPadZeros}
+                />
+                pad with zeros
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-box">
+        <label>
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
+            name="unlimited"
+            value={"unlimited"}
+          />
+          allow as many magnitudes as needed
+        </label>
+        <div class="option-box">
+          <label>
+            <input type="checkbox" bind:checked={truncateThousandths} />
+            truncate and render thousandths without suffix
+          </label>
+        </div>
         <div class="option-box">
           <label>
             <input
               type="checkbox"
-              bind:checked={usePlainNumsForThousandsOneDecimal}
+              bind:checked={truncateTinyOrdersIfBigOrderExists}
             />
-            show one digit after the decimal point (to indicate non-integer sample)
+            truncate tiny numbers if sample has any non-tiny numbers
           </label>
         </div>
       </div>
-      <div class="option-box">
-        <label>
-          <input type="checkbox" bind:checked={usePlainNumForThousandths} />
-          show a plain number if the largest order of magnitude is thousandths
-        </label>
 
-        <div class="option-box" class:inactive={!usePlainNumForThousandths}>
-          <label>
-            <input
-              type="checkbox"
-              bind:checked={usePlainNumForThousandthsPadZeros}
-            />
-            pad with zeros
-          </label>
-        </div>
-      </div>
-    </div>
+      <!-- <div class="option-box">
+        <label>
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
+            name="outliers"
+            value={"outliers"}
+          />
+          allow a limited number of magnitudes (for outliers) NOT YET IMPLEMENTED
+        </label>
+      </div> -->
+    </form>
+
+    <!-- <div class="option-box">
+      <label>
+        <input type="checkbox" bind:checked={onlyUseLargestMagnitude} />
+        only use largest magnitude
+      </label>
+    </div> -->
   </div>
 </div>
 
@@ -206,6 +303,7 @@
               alignSuffix={alignSuffixes}
               {alignDecimalPoints}
               {lowerCaseEForEng}
+              {zeroHandling}
             />
           </div>
         </td>

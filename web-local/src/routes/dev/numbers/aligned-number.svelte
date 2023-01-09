@@ -5,6 +5,7 @@
   export let alignSuffix = false;
   export let lowerCaseEForEng = false;
   export let alignDecimalPoints = false;
+  export let zeroHandling: "noSpecial" | "exactZero" | "zeroDot" = "noSpecial";
 
   $: whole = richNum.splitStr.int;
   $: frac = richNum.splitStr.frac;
@@ -37,7 +38,20 @@
         suffixChars + SUFFIX_PADDING
       }em)`;
 
-  $: decimalPoint = frac !== "" ? "." : "";
+  let decimalPoint: "" | ".";
+
+  $: {
+    decimalPoint = frac !== "" ? "." : "";
+    if (richNum.number === 0) {
+      if (zeroHandling === "exactZero") {
+        decimalPoint = "";
+        frac = "";
+      } else if (zeroHandling === "zeroDot") {
+        decimalPoint = ".";
+        frac = "";
+      }
+    }
+  }
 
   $: logProps = () => {
     console.log({ ...richNum, lowerCaseEForEng });
