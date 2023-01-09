@@ -15,7 +15,7 @@
   export let name: string;
   export let href: string;
   export let open = false;
-  export let notExpandable = false;
+  export let expandable = true;
   export let tooltipMaxWidth: string = undefined;
   export let maxMenuWidth: string = undefined;
 
@@ -59,7 +59,7 @@
     style:height="24px"
     class:font-bold={open}
     class:bg-gray-200={open}
-    class="navigation-entry-title grid gap-x-1 items-center pl-4 pr-3 {!open
+    class="navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!open
       ? 'hover:bg-gray-100'
       : ''}"
     style:grid-template-columns="max-content auto max-content"
@@ -70,8 +70,8 @@
   >
     <!-- slot for navigation click -->
 
-    <div class="mr-1">
-      {#if !notExpandable}
+    <div>
+      {#if expandable}
         <ExpanderButton
           bind:isHovered={seeMoreHovered}
           rotated={showDetails}
@@ -80,12 +80,12 @@
           <CaretDownIcon size="14px" />
         </ExpanderButton>
       {:else}
-        <Spacer size="16px" />
+        <Spacer size="14px" />
       {/if}
     </div>
 
     <a
-      class="ui-copy flex items-center gap-x-2 w-full text-ellipsis overflow-hidden whitespace-nowrap"
+      class="ui-copy flex items-center gap-x-1 w-full text-ellipsis overflow-hidden whitespace-nowrap"
       {href}
       on:click={() => {
         if (open) onShowDetails();
@@ -97,7 +97,11 @@
         </div>
       {/if}
       <div class=" text-ellipsis overflow-hidden whitespace-nowrap">
-        {name}
+        {#if $$slots["name"]}
+          <slot name="name" />
+        {:else}
+          {name}
+        {/if}
       </div>
     </a>
 
