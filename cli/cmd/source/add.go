@@ -44,6 +44,7 @@ func AddCmd(ver version.Version) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer app.Close()
 
 			if !app.IsProjectInit() {
 				return fmt.Errorf("not a valid Rill project")

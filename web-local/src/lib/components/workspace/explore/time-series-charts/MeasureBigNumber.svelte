@@ -3,13 +3,13 @@
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
+  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { crossfade, fly } from "svelte/transition";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
   } from "../../../../util/humanize-numbers";
-  import Spinner from "../../../Spinner.svelte";
 
   export let value: number;
   export let status: EntityStatus;

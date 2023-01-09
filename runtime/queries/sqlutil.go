@@ -1,13 +1,11 @@
 package queries
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func quoteName(name string) string {
@@ -23,16 +21,6 @@ func safeName(name string) string {
 		return name
 	}
 	return quoteName(escapeDoubleQuotes(name))
-}
-
-func dropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
-	rs, er := olap.Execute(context.Background(), &drivers.Statement{
-		Query:    `DROP TABLE "` + tableName + `"`,
-		Priority: priority,
-	})
-	if er == nil {
-		rs.Close()
-	}
 }
 
 func tempName(prefix string) string {

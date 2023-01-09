@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,8 +27,6 @@ func TestQuery(t *testing.T) {
 
 	err = conn.Close()
 	require.NoError(t, err)
-	err = conn.(*connection).db.Ping()
-	require.Error(t, err)
 }
 
 func TestPriorityQueue(t *testing.T) {
@@ -38,9 +37,6 @@ func TestPriorityQueue(t *testing.T) {
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
-
-	// pause the priority worker to allow the queue to fill up
-	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -67,17 +63,19 @@ func TestPriorityQueue(t *testing.T) {
 		})
 	}
 
-	// give the queue plenty of time to fill up, then unpause
+	// give the queue plenty of time to fill up
 	time.Sleep(1000 * time.Millisecond)
-	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
 	require.NoError(t, err)
 
+	actual := 0
+	expected := 0
 	for i := n; i > 0; i-- {
-		x := <-results
-		assert.Equal(t, i, x)
+		actual += <-results
+		expected += i
 	}
+	assert.Equal(t, expected, actual)
 }
 
 func TestCancel(t *testing.T) {
@@ -88,9 +86,6 @@ func TestCancel(t *testing.T) {
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
-
-	// pause the priority worker to allow the queue to fill up
-	conn.(*connection).worker.Pause()
 
 	n := 100
 	cancelIdx := 50
@@ -133,20 +128,22 @@ func TestCancel(t *testing.T) {
 		})
 	}
 
-	// give the queue plenty of time to fill up, then unpause
+	// give the queue plenty of time to fill up
 	time.Sleep(1000 * time.Millisecond)
-	conn.(*connection).worker.Unpause()
 
 	err := g.Wait()
 	require.NoError(t, err)
 
+	actual := 0
+	expected := 0
 	for i := n; i > 0; i-- {
 		if i == cancelIdx {
 			continue
 		}
-		x := <-results
-		assert.Equal(t, i, x)
+		actual += <-results
+		expected += i
 	}
+	assert.Equal(t, expected, actual)
 }
 
 func TestClose(t *testing.T) {
@@ -156,9 +153,6 @@ func TestClose(t *testing.T) {
 
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
-
-	// pause the priority worker to allow the queue to fill up
-	conn.(*connection).worker.Pause()
 
 	n := 100
 	results := make(chan int, n)
@@ -185,9 +179,6 @@ func TestClose(t *testing.T) {
 		})
 	}
 
-	// unpause the queue, so it con process a bit before closing
-	conn.(*connection).worker.Unpause()
-
 	g.Go(func() error {
 		err := conn.Close()
 		require.NoError(t, err)
@@ -202,36 +193,31 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Connection {
-	conn, err := driver{}.Open("?access_mode=read_write")
+	conn, err := Driver{}.Open("?access_mode=read_write&rill_pool_size=4", zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.OLAPStore()
 	require.True(t, ok)
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
 	})
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
-	rows, err = olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
-	rows, err = olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
 	})
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
-	rows, err = olap.Execute(context.Background(), &drivers.Statement{
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
-
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
 
 	return conn
 }
