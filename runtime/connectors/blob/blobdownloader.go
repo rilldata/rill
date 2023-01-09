@@ -111,7 +111,7 @@ func validateConfigs(fetchConfigs *FetchConfigs) {
 	}
 	if fetchConfigs.MaxSize == 0 {
 		// 10 GB
-		fetchConfigs.MaxDownload = 10 * 1024 * 1024 * 1024
+		fetchConfigs.MaxSize = 10 * 1024 * 1024 * 1024
 	}
 }
 
