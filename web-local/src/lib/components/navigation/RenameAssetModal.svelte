@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
@@ -11,7 +12,10 @@
     renameFileArtifact,
     useAllNames,
   } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { getLabel } from "@rilldata/web-local/lib/util/entity-mappers";
+  import {
+    getLabel,
+    getRouteFromName,
+  } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -63,6 +67,9 @@
           entityType,
           $renameAsset
         );
+        goto(getRouteFromName(values.newName, entityType), {
+          replaceState: true,
+        });
         closeModal();
       } catch (err) {
         error = err.response.data.message;

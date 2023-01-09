@@ -44,6 +44,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer app.Close()
 
 			if app.IsProjectInit() {
 				if projectPath == "." {
@@ -75,6 +76,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 
 			return nil
 		},
+		Args: cobra.ExactArgs(0),
 	}
 
 	initCmd.Flags().SortFlags = false

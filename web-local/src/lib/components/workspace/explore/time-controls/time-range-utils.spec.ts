@@ -100,13 +100,13 @@ describe("makeTimeRange", () => {
   it("should create a TimeRange object representing the Last Two Weeks", () => {
     expect(
       makeTimeRange(TimeRangeName.Last2Weeks, TimeGrain.OneDay, {
-        start: "2022-01-01",
-        end: "2022-03-31",
+        start: "2022-01-01T11:00:01",
+        end: "2022-03-31T20:00:01",
       })
     ).toEqual({
       name: TimeRangeName.Last2Weeks,
       start: "2022-03-17T00:00:00.000Z",
-      end: "2022-03-30T23:59:59.000Z",
+      end: "2022-04-01T00:00:00.000Z",
       interval: "day",
     });
   });

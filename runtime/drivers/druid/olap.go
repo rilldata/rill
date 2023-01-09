@@ -17,6 +17,18 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	return drivers.ErrUnsupportedConnector
 }
 
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+	panic("not implemented")
+}
+
+func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	res, err := c.Execute(ctx, stmt)
+	if err != nil {
+		return err
+	}
+	return res.Close()
+}
+
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
@@ -24,8 +36,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		if err != nil {
 			return nil, err
 		}
-		prepared.Close()
-		return nil, nil
+		return nil, prepared.Close()
 	}
 
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)

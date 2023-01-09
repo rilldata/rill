@@ -11,24 +11,27 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
+	"github.com/rilldata/rill/runtime/services/catalog/testutils"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	"github.com/rilldata/rill/runtime/services/catalog"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
-	"github.com/rilldata/rill/runtime/services/catalog/testutils"
-	"github.com/stretchr/testify/require"
 )
 
 const TestDataPath = "../../../web-local/test/data"
 
 var AdBidsCsvPath = filepath.Join(TestDataPath, "AdBids.csv")
 var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
+var BrokenCsvPath = filepath.Join(TestDataPath, "BrokenCSV.csv")
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
@@ -80,11 +83,10 @@ func TestReconcile(t *testing.T) {
 			testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 
 			// delete from olap
-			res, err := s.Olap.Execute(context.Background(), &drivers.Statement{
+			err = s.Olap.Exec(context.Background(), &drivers.Statement{
 				Query: "drop table AdBids",
 			})
 			require.NoError(t, err)
-			require.NoError(t, res.Close())
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 1, 2, 0, AdBidsAffectedPaths)
@@ -195,7 +197,7 @@ func TestRefreshSource(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			s, dir := initBasicService(t)
 
-			testutils.CopyFileToData(t, dir, AdBidsCsvPath)
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
 			AdBidsDataPath := "data/AdBids.csv"
 
 			// update with same content
@@ -226,6 +228,20 @@ func TestRefreshSource(t *testing.T) {
 			})
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 0, 3, 0, AdBidsAffectedPaths)
+
+			// refresh with invalid data
+			time.Sleep(10 * time.Millisecond)
+			testutils.CopyFileToData(t, dir, BrokenCsvPath, "AdBids.csv")
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 2, 0, 1, 0, AdBidsAffectedPaths)
+
+			// refresh again with valid data
+			time.Sleep(10 * time.Millisecond)
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 2, 1, 0, AdBidsAffectedPaths)
 		})
 	}
 }
@@ -637,7 +653,7 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 func getService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"))
+	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
@@ -646,7 +662,7 @@ func getService(t *testing.T) (*catalog.Service, string) {
 	catalogObject, ok := duckdbStore.CatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", dir)
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
 	require.NoError(t, err)
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)

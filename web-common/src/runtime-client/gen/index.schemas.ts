@@ -33,7 +33,7 @@ export type RuntimeServiceGetTopKBody = {
 };
 
 export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewRequestFilter;
+  filters?: V1MetricsViewFilter;
   measures?: GenerateTimeSeriesRequestBasicMeasure[];
   pixels?: number;
   priority?: number;
@@ -462,12 +462,12 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewTimeSeriesResponse {
-  data?: V1MetricsViewTimeSeriesResponseDataItem[];
+export interface V1MetricsViewToplistResponse {
+  data?: V1MetricsViewToplistResponseDataItem[];
   meta?: V1MetricsViewColumn[];
 }
+
+export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewSort {
   ascending?: boolean;
@@ -477,18 +477,6 @@ export interface V1MetricsViewSort {
 export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
   include?: MetricsViewFilterCond[];
-  match?: string[];
-}
-
-export interface V1MetricsViewDimensionValue {
-  in?: unknown[];
-  like?: string[];
-  name?: string;
-}
-
-export interface V1MetricsViewRequestFilter {
-  exclude?: V1MetricsViewDimensionValue[];
-  include?: V1MetricsViewDimensionValue[];
 }
 
 export interface V1MetricsViewColumn {
@@ -497,8 +485,8 @@ export interface V1MetricsViewColumn {
   type?: string;
 }
 
-export interface V1MetricsViewToplistResponse {
-  data?: V1MetricsViewToplistResponseDataItem[];
+export interface V1MetricsViewTimeSeriesResponse {
+  data?: V1MetricsViewTimeSeriesResponseDataItem[];
   meta?: V1MetricsViewColumn[];
 }
 
@@ -786,7 +774,7 @@ export interface MetricsViewMeasure {
 
 export interface MetricsViewFilterCond {
   in?: unknown[];
-  like?: unknown[];
+  like?: string[];
   name?: string;
 }
 

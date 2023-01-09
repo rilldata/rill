@@ -42,7 +42,7 @@
     $runtimeStore?.instanceId,
     objectName,
     columnName,
-    true
+    active
   );
   $: rug = useRuntimeServiceGetRugHistogram(
     $runtimeStore?.instanceId,

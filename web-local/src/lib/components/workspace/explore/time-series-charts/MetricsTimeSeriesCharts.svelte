@@ -3,6 +3,8 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceMetricsViewTimeSeries,
@@ -12,7 +14,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { EntityStatus } from "@rilldata/web-local/lib/temp/entity";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
@@ -22,8 +23,10 @@
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
-  import Spinner from "../../../Spinner.svelte";
-  import { formatDateByInterval } from "../time-controls/time-range-utils";
+  import {
+    formatDateByInterval,
+    addGrains,
+  } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -119,12 +122,22 @@
 
   let mouseoverValue = undefined;
 
-  $: startValue = removeTimezoneOffset(
-    new Date(metricsExplorer?.selectedTimeRange?.start)
-  );
-  $: endValue = removeTimezoneOffset(
-    new Date(metricsExplorer?.selectedTimeRange?.end)
-  );
+  let startValue: Date;
+  let endValue: Date;
+  $: if (metricsExplorer?.selectedTimeRange) {
+    startValue = removeTimezoneOffset(
+      new Date(metricsExplorer?.selectedTimeRange?.start)
+    );
+    // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
+    // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
+    endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
+    endValue = addGrains(
+      endValue,
+      -1,
+      metricsExplorer?.selectedTimeRange?.interval
+    );
+    endValue = removeTimezoneOffset(endValue);
+  }
 </script>
 
 <WithBisector
