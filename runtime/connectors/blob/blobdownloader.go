@@ -60,6 +60,7 @@ func FetchBlobHandler(ctx context.Context, bucket *blob.Bucket, config FetchConf
 	pageSize := int(math.Max(100, float64(config.MaxDownload)))
 	fetched := int64(0)
 	var returnErr error
+	validateConfigs(&config)
 	for token := blob.FirstPageToken; token != nil; {
 		iter, nextToken, err := bucket.ListPage(ctx, token, pageSize, &listOptions)
 		if err != nil {
@@ -99,6 +100,19 @@ func validateLimits(size int64, matchCount int, fetched int64, config FetchConfi
 		return fmt.Errorf("glob pattern exceeds limits: files listed %v, max file listing allowed %v", size, config.MaxIterations)
 	}
 	return nil
+}
+
+func validateConfigs(fetchConfigs *FetchConfigs) {
+	if fetchConfigs.MaxDownload == 0 {
+		fetchConfigs.MaxDownload = 100
+	}
+	if fetchConfigs.MaxIterations == int64(0) {
+		fetchConfigs.MaxIterations = 10 * 1000
+	}
+	if fetchConfigs.MaxSize == int64(0) {
+		// 10 GB
+		fetchConfigs.MaxDownload = 10 * 1024 * 1024 * 1024
+	}
 }
 
 func match(glob, fileName string) bool {

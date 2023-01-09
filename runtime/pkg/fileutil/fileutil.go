@@ -117,4 +117,3 @@ func HasMeta(path string) bool {
 	}
 	return false
 }
-

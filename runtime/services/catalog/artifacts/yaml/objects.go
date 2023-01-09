@@ -97,20 +97,14 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 	if source.MaxSize != 0 {
 		props["glob.max_size"] = source.MaxSize
-	} else {
-		props["glob.max_size"] = int64(10 * 1024 * 1024 * 1024)
 	}
 
 	if source.MaxDownload != 0 {
 		props["glob.max_download"] = source.MaxDownload
-	} else {
-		props["glob.max_download"] = 1000
 	}
 
 	if source.MaxIterations != 0 {
 		props["glob.max_iterations"] = source.MaxIterations
-	} else {
-		props["glob.max_iterations"] = int64(10 * 1000)
 	}
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {
