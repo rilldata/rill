@@ -121,10 +121,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	}
 
 	// order the items to have parents before children
-	migrations, err := s.collectMigrationItems(migrationMap, result)
-	if err != nil {
-		return nil, err
-	}
+	migrations := s.collectMigrationItems(migrationMap, result)
 
 	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
@@ -237,12 +234,8 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 			continue
 		}
 		// go through the children only if forced paths is false
-		// children, err := s.dag.GetChildren(item.NormalizedName)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		for _, child := range s.dag.GetChildren(item.NormalizedName) {
+		children := s.dag.GetChildren(item.NormalizedName)
+		for _, child := range children {
 			childPath, ok := s.NameToPath[child]
 			if !ok || (changedPathsHint && changedPathsMap[childPath]) {
 				// if there is no entry for name to path or already in forced path then ignore the child
@@ -450,7 +443,7 @@ func (s *Service) isInvalidDuplicate(
 func (s *Service) collectMigrationItems(
 	migrationMap map[string]*MigrationItem,
 	result *ReconcileResult,
-) ([]*MigrationItem, error) {
+) []*MigrationItem {
 	migrationItems := make([]*MigrationItem, 0)
 	visited := make(map[string]int)
 	update := make(map[string]bool)
@@ -489,6 +482,8 @@ func (s *Service) collectMigrationItems(
 
 		visited[name] = len(migrationItems)
 		migrationItems = append(migrationItems, item)
+
+		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
 			tempDag.GetChildren(name),
 			s.dag.GetChildren(name)...,
@@ -539,7 +534,7 @@ func (s *Service) collectMigrationItems(
 		cleanedMigrationItems = append(cleanedMigrationItems, migration)
 	}
 
-	return cleanedMigrationItems, nil
+	return cleanedMigrationItems
 }
 
 // runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type.

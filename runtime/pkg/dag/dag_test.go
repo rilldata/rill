@@ -1,7 +1,6 @@
 package dag
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,7 +34,7 @@ func TestDAG_Add(t *testing.T) {
 	require.ElementsMatch(t, []string{"A1", "B1", "B2"}, d.GetChildren("B0"))
 	require.ElementsMatch(t, []string{"B1", "A2", "B2"}, d.GetChildren("C0"))
 	require.Equal(t, []string{"B2"}, d.GetChildren("A1"))
-	require.Equal(t, []string{"B2"}, d.GetChildren("A1"))
+	require.Equal(t, []string{"B2"}, d.GetChildren("B1"))
 
 	d.Add("A1", []string{"C0"})
 	d.Add("B1", []string{"C0"})
@@ -115,6 +114,5 @@ func TestCyclicDAG(t *testing.T) {
 	// |  \   |
 	// B2 B0 -
 	_, err = d.Add("A0", []string{"B0"})
-	fmt.Println(err)
 	require.Error(t, err)
 }
