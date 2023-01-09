@@ -19,7 +19,7 @@ import (
 // increasing this limit can increase speed ingestion
 // but may increase bottleneck at duckdb or network/db IO
 // set without any benchamarks
-const CONCURRENT_BLOB_DOWNLOAD_LIMIT = 32
+const concurrentBlobDownloadLimit = 32
 
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	err := source.Validate()
@@ -61,7 +61,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 		g.Go(func() error {
 			return c.downloadAndIngest(errCtx, source, blobHandler, localFile, false)
 		})
-		if (i+1)%CONCURRENT_BLOB_DOWNLOAD_LIMIT == 0 {
+		if (i+1)%concurrentBlobDownloadLimit == 0 {
 			if err := g.Wait(); err != nil {
 				return err
 			}
