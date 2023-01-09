@@ -16,15 +16,11 @@
     "gs://moz-test-bucket-123-very-long-title-that-overflows/predictions/model/xyz/partition-00000000.parquet",
   ];
 
-  function locatorAndRest(url) {
-    const [_, locator, rest] = url.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
-  }
-
-  function extractDomain(url, pathSegments = 0) {
-    const [locator, rest] = locatorAndRest(url);
-
-    const [domain, ...path] = rest.split("/");
-    return `${domain}/${path.slice(0, pathSegments).join("/")}`;
+  function addUniqueURIAndFullPath(uri: string) {
+    return {
+      uri,
+      shortestPossiblePath,
+    };
   }
 
   function groupByUniqueParts(uris: string[]) {
@@ -39,12 +35,10 @@
         .split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
 
       const components = rest.split("/");
-      // domain name or bucket name.
-      const domainName = components[0];
       const domain =
         components.length > 2
           ? components.slice(0, 2).join("/")
-          : components[0];
+          : components.join("/");
       obj[domain] = obj[domain] ? [...obj[domain], uri] : [uri];
       return obj;
     }, {});
@@ -71,8 +65,14 @@
           .replace(identifier, ""),
         uris:
           domainURIs.length > 1
-            ? domainURIs.map((uri) => uri.slice(endingIndex - 1))
-            : domainURIs.map((uri) => uri.split("/").at(-1)),
+            ? domainURIs.map((uri) => ({
+                uri,
+                abbreviatedURI: uri.slice(endingIndex - 1),
+              }))
+            : domainURIs.map((uri) => ({
+                uri,
+                abbreviatedURI: uri.split("/").at(-1),
+              })),
       };
     }
     return groupedURIs;

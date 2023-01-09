@@ -17,11 +17,11 @@
     tooltipText="these sources"
   >
     <div
-      class="grid items-center gap-x-2 justify-start justify-items-start px-2 font-normal"
+      class="grid items-center gap-x-2 justify-start justify-items-start pl-2 pr-3 font-normal"
       style:grid-template-columns="auto 1fr max-content"
       style:height="24px"
     >
-      <div style:width="36px">
+      <div>
         <SourceTypeLabel {type} />
       </div>
       <div
@@ -29,7 +29,7 @@
       >
         {location}
       </div>
-      <div style:width="24px">
+      <div style:width="24px" class="text-right">
         {#if !active}<div
             transition:fly|local={{ duration: LIST_SLIDE_DURATION, y: 4 }}
           >
