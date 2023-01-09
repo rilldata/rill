@@ -75,7 +75,9 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			q.Result = &ColumnTimeseriesResult{}
+			q.Result = &ColumnTimeseriesResult{
+				Data: &runtimev1.TimeSeriesResponse{},
+			}
 			return nil
 		}
 
