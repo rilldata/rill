@@ -87,7 +87,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			Interval: runtimev1.TimeGrain(runtimev1.TimeGrain_value["TIME_GRAIN_"+strings.ToUpper(q.TimeGranularity)]),
 		},
 		Measures: measures,
-		Filters:  toFilter(q.Filter),
+		Filters:  q.Filter,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -117,34 +117,6 @@ func toData(data []*runtimev1.TimeSeriesValue, mv *runtimev1.MetricsView) []*str
 			Fields: m,
 		})
 	}
-	return res
-}
-
-func toFilter(filter *runtimev1.MetricsViewFilter) *runtimev1.MetricsViewRequestFilter {
-	if filter == nil {
-		return nil
-	}
-
-	res := &runtimev1.MetricsViewRequestFilter{}
-	res.Include = toConditions(filter.Include)
-	res.Exclude = toConditions(filter.Exclude)
-	return res
-}
-
-func toConditions(conditions []*runtimev1.MetricsViewFilter_Cond) []*runtimev1.MetricsViewDimensionValue {
-	var res []*runtimev1.MetricsViewDimensionValue
-	for _, f := range conditions {
-		var likes []string
-		for _, l := range f.Like {
-			likes = append(likes, l.GetStringValue())
-		}
-		res = append(res, &runtimev1.MetricsViewDimensionValue{
-			Name: f.Name,
-			In:   f.In,
-			Like: likes,
-		})
-	}
-
 	return res
 }
 

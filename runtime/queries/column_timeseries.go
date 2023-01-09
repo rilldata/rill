@@ -74,10 +74,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 
-	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		q.Result = &ColumnTimeseriesResult{}
-		return nil
-	}
+		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			q.Result = &ColumnTimeseriesResult{}
+			return nil
+		}
 
 		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters)
 		if err != nil {
@@ -87,7 +87,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			filter = "WHERE 1=1 " + filter
 		}
 
-		measures := normaliseMeasures(q.Measures, true)
+		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
@@ -143,12 +143,12 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 
-	results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
-	meta := structTypeToMetricsViewColumn(rows.Schema)
-	rows.Close()
-	if err != nil {
-		return err
-	}
+		results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
+		meta := structTypeToMetricsViewColumn(rows.Schema)
+		rows.Close()
+		if err != nil {
+			return err
+		}
 
 		var sparkValues []*runtimev1.TimeSeriesValue
 		if q.Pixels != 0 {
@@ -158,15 +158,16 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			}
 		}
 
-	q.Result = &ColumnTimeseriesResult{
-		Meta: meta,
-		Data: &runtimev1.TimeSeriesResponse{
-			Results:   results,
-			TimeRange: timeRange,
-			Spark:     sparkValues,
-		},
-	}
-	return nil
+		q.Result = &ColumnTimeseriesResult{
+			Meta: meta,
+			Data: &runtimev1.TimeSeriesResponse{
+				Results:   results,
+				TimeRange: timeRange,
+				Spark:     sparkValues,
+			},
+		}
+		return nil
+	})
 }
 
 func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
