@@ -36,8 +36,7 @@ func (b *BlobHandler) DownloadObject(ctx context.Context, objpath string) (strin
 	objName := filepath.Base(objpath)
 	if name, ext, found := strings.Cut(objName, "."); found {
 		return fileutil.CopyToTempFile(rc, name, fmt.Sprintf(".%s", ext))
-	} else {
-		//ideally code should never reach here
-		return "", fmt.Errorf("malformed file name %s", objpath)
 	}
+	//ideally code should never reach here
+	return "", fmt.Errorf("malformed file name %s", objpath)
 }

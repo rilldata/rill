@@ -12,7 +12,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/fileblob"
+	_ "gocloud.dev/blob/fileblob" // blank import required
 )
 
 func init() {

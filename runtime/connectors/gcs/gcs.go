@@ -3,11 +3,8 @@ package gcs
 import (
 	"context"
 	"fmt"
-	_ "io"
 	"net/url"
-	_ "os"
 	"strings"
-	_ "sync"
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
@@ -18,7 +15,7 @@ import (
 	"google.golang.org/api/option"
 
 	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/gcsblob"
+	_ "gocloud.dev/blob/gcsblob" // blank import required for bucket functions
 )
 
 func init() {
@@ -95,10 +92,6 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	defer rc.Close()
 
 	return fileutil.CopyToTempFile(rc, source.Name, extension)
-}
-
-func main() {
-	fmt.Println(gcsURLParts("gs://druid-demo.gorill-stage.io/**/nytimes_hex/00000000016[0-9]*.csv.gz"))
 }
 
 func gcsURLParts(path string) (string, string, string, error) {

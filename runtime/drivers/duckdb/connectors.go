@@ -80,7 +80,7 @@ func (c *connection) downloadAndIngest(ctx context.Context, source *connectors.S
 		err = fmt.Errorf("file %s download failed with error %w", fileName, err)
 		return err
 	}
-	if err = c.ingestFromRawFile(ctx, source, path, createNewTable); err != nil {
+	if err := c.ingestFromRawFile(ctx, source, path, createNewTable); err != nil {
 		return err
 	}
 	c.logger.Debug("finished ingesting ", zap.String("filename", fileName))

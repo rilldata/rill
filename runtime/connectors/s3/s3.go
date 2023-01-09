@@ -17,7 +17,7 @@ import (
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/s3blob"
+	_ "gocloud.dev/blob/s3blob" // s3 blob required
 )
 
 func init() {
@@ -149,7 +149,7 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 
 	if !doublestar.ValidatePattern(conf.Path) {
 		// ideally this should be validated at much earlier stage
-		// keeping it here to have gcs specific validations
+		// keeping it here to have s3 specific validations
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
 
@@ -165,7 +165,7 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 	fetchConfigs := rillblob.FetchConfigs{
 		MaxSize:       conf.MaxSize,
 		MaxDownload:   conf.MaxDownload,
-		MaxIterations: int64(conf.MaxIterations),
+		MaxIterations: conf.MaxIterations,
 	}
 	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
