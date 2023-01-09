@@ -29,18 +29,17 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 		// locally uploaded file
 		if !fileutil.IsGlob(conf.Path) {
 			return c.ingestFile(ctx, env, source)
-		} else {
-			return c.ingestLocalGlob(ctx, source, conf.Path)
 		}
+		return c.ingestLocalGlob(ctx, source, conf.Path)
 	}
 
 	localPaths, err := connectors.ConsumeAsFile(ctx, env, source)
 	if err != nil {
 		return err
 	}
-	c.logger.Info(fmt.Sprintf("ingesting files %v", localPaths))
 	defer os.RemoveAll(filepath.Dir(localPaths[0]))
-	// mutliple parquet files can be loaded in single sql
+	c.logger.Info(fmt.Sprintf("ingesting files %v", localPaths))
+	// multiple parquet files can be loaded in single sql
 	// this seems to be performing very fast as compared to appending individual files
 	return c.ingestMulti(ctx, source, localPaths)
 }

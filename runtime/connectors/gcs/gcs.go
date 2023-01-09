@@ -6,13 +6,11 @@ import (
 	"net/url"
 	"strings"
 
-	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"google.golang.org/api/option"
 
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/gcsblob" // blank import required for bucket functions
@@ -51,6 +49,7 @@ type Config struct {
 	MaxSize       int64  `mapstructure:"glob.max_size"`
 	MaxDownload   int    `mapstructure:"glob.max_download"`
 	MaxIterations int64  `mapstructure:"glob.max_iterations"`
+	PageSize      int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -93,6 +92,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		MaxTotalSize:       conf.MaxSize,
 		MaxDownloadObjetcs: conf.MaxDownload,
 		MaxObjectsListed:   conf.MaxIterations,
+		PageSize:           conf.PageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
@@ -103,16 +103,4 @@ func gcsURLParts(path string) (string, string, string, error) {
 		return "", "", "", err
 	}
 	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
-}
-
-func getGcsClient(ctx context.Context) (*storage.Client, error) {
-	client, err := storage.NewClient(ctx)
-	if err == nil || !strings.Contains(err.Error(), "google: could not find default credentials") {
-		return client, err
-	}
-	client, err = storage.NewClient(ctx, option.WithoutAuthentication())
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }

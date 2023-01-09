@@ -56,6 +56,7 @@ type Config struct {
 	MaxSize       int64  `mapstructure:"glob.max_size"`
 	MaxDownload   int    `mapstructure:"glob.max_download"`
 	MaxIterations int64  `mapstructure:"glob.max_iterations"`
+	PageSize      int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -78,13 +79,13 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
+// local file connectors should directly use glob patterns
+// keeping it for reference
 func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
-	//todo :: validate path
-	// bucket, glob := fetchFileParts(conf.Path)
 
 	bucket, glob := doublestar.SplitPattern(conf.Path)
 
@@ -97,6 +98,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		MaxTotalSize:       conf.MaxSize,
 		MaxDownloadObjetcs: conf.MaxDownload,
 		MaxObjectsListed:   conf.MaxIterations,
+		PageSize:           conf.PageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

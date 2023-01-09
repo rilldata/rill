@@ -58,6 +58,7 @@ type Config struct {
 	MaxSize       int64  `mapstructure:"glob.max_size"`
 	MaxDownload   int    `mapstructure:"glob.max_download"`
 	MaxIterations int64  `mapstructure:"glob.max_iterations"`
+	PageSize      int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -100,6 +101,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 		MaxTotalSize:       conf.MaxSize,
 		MaxDownloadObjetcs: conf.MaxDownload,
 		MaxObjectsListed:   conf.MaxIterations,
+		PageSize:           conf.PageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

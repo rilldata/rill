@@ -71,12 +71,10 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	}
 	defer resp.Body.Close()
 
-	if file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension); err == nil {
+	if file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension, "http"); err == nil {
 		return []string{file}, nil
-	} else {
-		return nil, err
 	}
-
+	return nil, err
 }
 
 func urlExtension(path string) (string, error) {

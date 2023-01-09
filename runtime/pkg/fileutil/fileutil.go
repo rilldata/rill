@@ -106,7 +106,7 @@ func CopyEmbedDir(fs embed.FS, src, dst string) error {
 	return nil
 }
 
-// hasMeta reports whether path contains any of the magic characters
+// IsGlob reports whether path contains any of the magic characters
 // recognized by path.Match.
 func IsGlob(path string) bool {
 	for i := 0; i < len(path); i++ {

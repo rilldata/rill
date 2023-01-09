@@ -24,6 +24,7 @@ type Source struct {
 	MaxSize       int64  `yaml:"glob.max_size,omitempty" mapstructure:"glob.max_size,omitempty"`
 	MaxDownload   int    `yaml:"glob.max_download,omitempty" mapstructure:"glob.max_download,omitempty"`
 	MaxIterations int64  `yaml:"glob.max_iterations,omitempty" mapstructure:"glob.max_iterations,omitempty"`
+	PageSize      int    `yaml:"glob.page_size,omitempty"`
 }
 
 type MetricsView struct {
@@ -105,6 +106,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.MaxIterations != 0 {
 		props["glob.max_iterations"] = source.MaxIterations
+	}
+
+	if source.PageSize != 0 {
+		props["glob.page_size"] = source.PageSize
 	}
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {

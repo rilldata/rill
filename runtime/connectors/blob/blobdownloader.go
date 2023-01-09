@@ -36,10 +36,12 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 	defer bucket.Close()
 	validateConfigs(&config)
 	prefix, glob := doublestar.SplitPattern(globPattern)
-	handler := &BlobHandler{prefix: prefix,
+	handler := &BlobHandler{
+		prefix:   prefix,
 		bucket:   bucket,
 		BlobType: blobType(bucketPath),
-		path:     bucketPath}
+		path:     bucketPath,
+	}
 	if !fileutil.IsGlob(glob) {
 		// glob represent plain object
 		handler.FileNames = []string{globPattern}
