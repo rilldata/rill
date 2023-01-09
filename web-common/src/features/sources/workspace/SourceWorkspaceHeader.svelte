@@ -141,7 +141,7 @@
       e.target.value = sourceName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, sourceName, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -209,8 +209,8 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
-    showStatus={false}
     let:width
+    showStatus={false}
   >
     <svelte:fragment slot="icon">
       <Source />
@@ -257,8 +257,8 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        <Tooltip location="left" distance={16}>
-          <Button type="secondary" on:click={handleCreateModelFromSource}>
+        <Tooltip distance={16} location="left">
+          <Button on:click={handleCreateModelFromSource} type="secondary">
             <ResponsiveButtonText collapse={width < 800}>
               Create Model
             </ResponsiveButtonText>
@@ -268,11 +268,11 @@
             Model this source with SQL
           </TooltipContent>
         </Tooltip>
-        <Tooltip location="bottom" alignment="right" distance={16}>
+        <Tooltip alignment="right" distance={16} location="bottom">
           <Button
-            type="primary"
             disabled={!timestampColumns?.length}
             on:click={() => handleCreateDashboardFromSource(sourceName)}
+            type="primary"
           >
             <ResponsiveButtonText collapse={width < 800}>
               Create Dashboard
