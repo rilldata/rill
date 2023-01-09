@@ -5,8 +5,10 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
+import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
+import { get } from "svelte/store";
 
 // invalidation helpers
 
@@ -38,7 +40,8 @@ export const invalidateAfterReconcile = async (
         queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
             instanceId,
-            getNameFromFile(path)
+            get(fileArtifactsStore).entities[path]?.name ??
+              getNameFromFile(path)
           )
         ),
       ])

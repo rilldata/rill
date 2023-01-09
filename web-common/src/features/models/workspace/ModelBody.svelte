@@ -9,7 +9,6 @@
     getEmbeddedReferences,
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
-  import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/add-source/errors";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {

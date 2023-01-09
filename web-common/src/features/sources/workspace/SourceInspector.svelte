@@ -14,6 +14,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import { getSummaries } from "@rilldata/web-local/lib/components/column-profile/queries";
@@ -34,6 +35,10 @@
   );
   let sourceCatalog: V1CatalogEntry;
   $: sourceCatalog = $getSource?.data?.entry;
+  $: if (sourceCatalog?.embedded) {
+    // TODO: add this for non embedded items as well
+    fileArtifactsStore.setName(sourceCatalog.path, sourceCatalog.name);
+  }
 
   let showColumns = true;
   let showModelReferences = true;
