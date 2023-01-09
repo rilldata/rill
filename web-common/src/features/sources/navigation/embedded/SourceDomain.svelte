@@ -2,11 +2,12 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import { fly } from "svelte/transition";
+  import type { SourceURI } from "../../group-uris";
   import SourceTypeLabel from "./SourceTypeLabel.svelte";
   export let active = true;
-  export let type: string;
+  export let connector: string;
   export let location: string;
-  export let sources: string[];
+  export let sources: SourceURI[];
   export let expandable = true;
 </script>
 
@@ -14,7 +15,7 @@
   <CollapsibleSectionTitle
     bind:active
     suppressTooltip={!expandable}
-    tooltipText="these sources"
+    tooltipText="sources"
   >
     <div
       class="grid items-center gap-x-2 justify-start justify-items-start pl-2 pr-3 font-normal"
@@ -22,10 +23,10 @@
       style:height="24px"
     >
       <div>
-        <SourceTypeLabel {type} />
+        <SourceTypeLabel {connector} />
       </div>
       <div
-        class="text-left w-full grow text-ellipsis overflow-hidden whitespace-nowrap text-gray-600 font-medium"
+        class="text-left w-full grow text-ellipsis overflow-hidden whitespace-nowrap text-gray-600"
       >
         {location}
       </div>

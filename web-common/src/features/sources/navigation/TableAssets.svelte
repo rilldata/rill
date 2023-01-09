@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import EmbeddedSource from "@rilldata/web-common/features/sources/navigation/EmbeddedSource.svelte";
   import {
     useEmbeddedSources,
     useSourceNames,
@@ -22,6 +21,7 @@
   import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
+  import EmbeddedSourceNav from "./embedded/EmbeddedSourceNav.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
@@ -111,11 +111,7 @@
         </div>
       {/each}
     {/if}
-    {#if embeddedSourceCatalogs.length}
-      {#each embeddedSourceCatalogs as embeddedSourceCatalog (embeddedSourceCatalog.name)}
-        <EmbeddedSource {embeddedSourceCatalog} />
-      {/each}
-    {/if}
+    <EmbeddedSourceNav />
   </div>
 {/if}
 

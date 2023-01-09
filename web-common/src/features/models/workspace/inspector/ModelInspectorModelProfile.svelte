@@ -1,8 +1,6 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
-  import Source from "@rilldata/web-common/components/icons/Source.svelte";
-  import SourceEmbedded from "@rilldata/web-common/components/icons/SourceEmbedded.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
@@ -20,6 +18,7 @@
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { getTableReferences } from "../../utils/get-table-references";
+  import EmbeddedSourceReferences from "./EmbeddedSourceReferences.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -82,6 +81,15 @@
       }),
     ($row) => $row
   );
+
+  $: viableEmbeddedSources = $viableSources?.filter((source) => {
+    return source?.embeds?.includes(modelName.toLowerCase());
+  });
+
+  $: viableExplicitSources = $viableSources?.filter((source) => {
+    return !source?.embedded;
+  });
+
   let showColumns = true;
 
   // toggle state for inspector sections
@@ -121,7 +129,11 @@
           class="mt-1"
         >
           {#if viableSources && $viableSources}
-            {#each $viableSources as source (source.name)}
+            <EmbeddedSourceReferences
+              {references}
+              entries={viableEmbeddedSources}
+            />
+            {#each viableExplicitSources as source (source.name)}
               <WithModelResultTooltip {modelHasError}>
                 <a
                   href="/source/{source.name}"
@@ -136,13 +148,13 @@
                   <div
                     class="text-ellipsis overflow-hidden whitespace-nowrap flex items-center gap-x-2"
                   >
-                    <div class="text-gray-400">
+                    <!-- <div class="text-gray-400">
                       {#if source?.embedded}
                         <SourceEmbedded size="13px" />
                       {:else}
                         <Source size="13px" />
                       {/if}
-                    </div>
+                    </div> -->
                     <div
                       class=" text-ellipsis overflow-hidden whitespace-nowrap"
                     >
