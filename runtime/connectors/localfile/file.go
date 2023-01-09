@@ -54,9 +54,9 @@ type Config struct {
 	Path          string `mapstructure:"path"`
 	Format        string `mapstructure:"format"`
 	CSVDelimiter  string `mapstructure:"csv.delimiter"`
-	MaxSize       int64  `mapstructure:"max_size"`
-	MaxDownload   int    `mapstructure:"max_download"`
-	MaxIterations int64  `mapstructure:"max_iterations"`
+	MaxSize       int64  `mapstructure:"glob.max_size"`
+	MaxDownload   int    `mapstructure:"glob.max_download"`
+	MaxIterations int64  `mapstructure:"glob.max_iterations"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -92,7 +92,6 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 	// bucket, glob := fetchFileParts(conf.Path)
 
 	bucket, glob := doublestar.SplitPattern(conf.Path)
-	fmt.Printf("%s:%s\n", bucket, glob)
 
 	replaceBucket := fmt.Sprintf("%s%s", "file://", bucket)
 	bucketObj, err := blob.OpenBucket(ctx, replaceBucket)
@@ -100,9 +99,9 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxSize:       int64(10 * 1024 * 1024 * 1024),
-		MaxDownload:   100,
-		MaxIterations: int64(10 * 1024 * 1024 * 1024),
+		MaxSize:       conf.MaxSize,
+		MaxDownload:   conf.MaxDownload,
+		MaxIterations: conf.MaxIterations,
 	}
 	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

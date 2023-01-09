@@ -23,67 +23,6 @@ import (
 
 func init() {
 	connectors.Register("gcs", connector{})
-	// ctx := context.Background()
-	// bucket, err := blob.OpenBucket(ctx, "gs://druid-demo.gorill-stage.io/?prefix=safegraph_social_distancing")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// defer bucket.Close()
-	// before := func(as func(interface{}) bool) error {
-	// 	// Access storage.Query via q here.
-	// 	var q *storage.Query
-	// 	if as(&q) {
-	// 		q.SetAttrSelection([]string{"Name", "Size"})
-	// 	}
-	// 	return nil
-	// }
-
-	// var names []string
-	// var wg sync.WaitGroup
-	// if iter, _, err := bucket.ListPage(ctx, blob.FirstPageToken, 10, &blob.ListOptions{BeforeList: before}); err == nil {
-	// 	names = make([]string, len(iter))
-	// 	for i, obj := range iter {
-	// 		names[i] = obj.Key
-	// 		if err != nil {
-	// 			fmt.Printf("failed to parse path %s, %s\n", obj.Key, err)
-	// 		}
-	// 		wg.Add(1)
-	// 		go func(name string) {
-	// 			defer wg.Done()
-	// 			fmt.Printf("starting copying %s\n", name)
-	// 			if rc, err := bucket.NewReader(ctx, name, nil); err == nil {
-	// 				defer rc.Close()
-	// 				f, err := os.OpenFile("/Users/kanshul/Downloads/test" + name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
-	// 				if err != nil {
-	// 					fmt.Println(err)
-	// 				}
-	// 				defer f.Close()
-	// 				if _, err = io.Copy(f, rc); err != nil {
-	// 					fmt.Println(err)
-	// 				}
-	// 			} else {
-	// 				fmt.Printf("error in opening reader for %s %s", name, err)
-	// 			}
-	// 			fmt.Printf("ending copying %s\n", name)
-	// 		} (obj.Key)
-	// 	}
-	// }
-	// wg.Wait()
-	// // fmt.Println(names)
-	// // for {
-	// // 	obj, err := iter.Next(ctx)
-	// // 	if err == io.EOF {
-	// // 		break
-	// // 	}
-	// // 	if err != nil {
-	// // 		fmt.Println(err)
-	// // 	}
-	// // 	fmt.Println(obj)
-	// // }
-	// // if err := bucket.Copy(ctx, "/Users/kanshul/Documents/projects/rill-developer/000000000165.csv.gz", "000000000165.csv.gz", nil); err != nil {
-	// // 	fmt.Println(err)
-	// // }
-
 }
 
 var spec = connectors.Spec{
@@ -112,9 +51,9 @@ var spec = connectors.Spec{
 
 type Config struct {
 	Path          string `key:"path"`
-	MaxSize       int64  `key:"glob.max_size"`
-	MaxDownload   int    `key:"glob.max_download"`
-	MaxIterations int    `key:"glob.max_iterations"`
+	MaxSize       int64  `mapstructure:"glob.max_size"`
+	MaxDownload   int    `mapstructure:"glob.max_download"`
+	MaxIterations int64  `mapstructure:"glob.max_iterations"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -204,15 +143,10 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
-	// fetchConfigs := connectors.FetchConfigs{
-	// 	MaxSize: conf.MaxSize,
-	// 	MaxDownload: conf.MaxDownload,
-	// 	MaxIterations: int64(conf.MaxIterations),
-	// }
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxSize:       int64(10 * 1024 * 1024 * 1024),
-		MaxDownload:   100,
-		MaxIterations: int64(10 * 1024 * 1024 * 1024),
+		MaxSize:       conf.MaxSize,
+		MaxDownload:   conf.MaxDownload,
+		MaxIterations: conf.MaxIterations,
 	}
 	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

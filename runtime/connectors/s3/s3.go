@@ -58,8 +58,11 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path      string `mapstructure:"path"`
-	AWSRegion string `mapstructure:"aws.region"`
+	Path          string `mapstructure:"path"`
+	AWSRegion     string `mapstructure:"aws.region"`
+	MaxSize       int64  `mapstructure:"glob.max_size"`
+	MaxDownload   int    `mapstructure:"glob.max_download"`
+	MaxIterations int64  `mapstructure:"glob.max_iterations"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -159,15 +162,10 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
-	// fetchConfigs := connectors.FetchConfigs{
-	// 	MaxSize: conf.MaxSize,
-	// 	MaxDownload: conf.MaxDownload,
-	// 	MaxIterations: int64(conf.MaxIterations),
-	// }
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxSize:       int64(10 * 1024 * 1024 * 1024),
-		MaxDownload:   100,
-		MaxIterations: int64(10 * 1024 * 1024 * 1024),
+		MaxSize:       conf.MaxSize,
+		MaxDownload:   conf.MaxDownload,
+		MaxIterations: int64(conf.MaxIterations),
 	}
 	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

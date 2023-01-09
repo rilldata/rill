@@ -12,9 +12,13 @@ import (
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
+// increasing this limit can increase speed ingestion
+// but may increase bottleneck at duckdb or network/db IO
+// set without any benchamarks
 const CONCURRENT_BLOB_DOWNLOAD_LIMIT = 32
 
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
@@ -24,6 +28,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	}
 
 	// todo :: check if this exceptional handling can be merged
+	// locally uploaded file
 	if source.Connector == "local_file" {
 		conf, err := localfile.ParseConfig(source.Properties)
 		if err != nil {
@@ -42,43 +47,43 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	if len(blobHandler.FileNames) == 0 {
 		return fmt.Errorf("no filenames matching glob pattern")
 	}
-	fmt.Println(blobHandler.FileNames)
+	c.logger.Info(fmt.Sprintf("matching files %v", blobHandler.FileNames))
 
+	// downloading first file and creating new table
 	if err := c.downloadAndIngest(ctx, source, blobHandler, blobHandler.FileNames[0], true); err != nil {
 		return err
 	}
+	// downloading other files in batch and appending to previoulsy created table
 	remainingFiles := blobHandler.FileNames[1:]
+	g, errCtx := errgroup.WithContext(ctx)
 	for i, file := range remainingFiles {
-		g, errCtx := errgroup.WithContext(ctx)
 		localFile := file
 		g.Go(func() error {
 			return c.downloadAndIngest(errCtx, source, blobHandler, localFile, false)
 		})
-		if i%CONCURRENT_BLOB_DOWNLOAD_LIMIT == 0 || i == len(remainingFiles)-1 {
+		if (i+1)%CONCURRENT_BLOB_DOWNLOAD_LIMIT == 0 {
 			if err := g.Wait(); err != nil {
 				return err
 			}
 		}
 	}
-	return nil
+	return g.Wait()
 }
 
 func (c *connection) downloadAndIngest(ctx context.Context, source *connectors.Source, blobHandler *blob.BlobHandler, fileName string, createNewTable bool) error {
-	fmt.Printf("started ingesting %s\n", fileName)
+	c.logger.Debug("started ingesting ", zap.String("filename", fileName))
 	path, err := blobHandler.DownloadObject(ctx, fileName)
 	if blobHandler.BlobType != blob.File {
 		defer os.Remove(path)
 	}
 	if err != nil {
 		err = fmt.Errorf("file %s download failed with error %w", fileName, err)
-		fmt.Println(err)
 		return err
 	}
 	if err = c.ingestFromRawFile(ctx, source, path, createNewTable); err != nil {
-		fmt.Printf("%s\n", err.Error())
 		return err
 	}
-	fmt.Printf("finished ingesting %s\n", fileName)
+	c.logger.Debug("finished ingesting ", zap.String("filename", fileName))
 	return nil
 }
 
