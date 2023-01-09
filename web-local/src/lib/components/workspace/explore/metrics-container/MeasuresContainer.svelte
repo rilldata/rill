@@ -111,7 +111,7 @@
 </script>
 
 <div
-  class="grid grid-cols-{numColumns} gap-x-1"
+  class="grid grid-cols-{numColumns} gap-x-4"
   style:margin-top="{GRID_MARGIN_TOP}px"
 >
   {#if $metaQuery.data?.measures}
