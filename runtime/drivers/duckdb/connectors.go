@@ -55,19 +55,19 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	}
 	// downloading other files in batch and appending to previoulsy created table
 	remainingFiles := blobHandler.FileNames[1:]
-	g, errCtx := errgroup.WithContext(ctx)
 	for i, file := range remainingFiles {
 		localFile := file
+		g, errCtx := errgroup.WithContext(ctx)
 		g.Go(func() error {
 			return c.downloadAndIngest(errCtx, source, blobHandler, localFile, false)
 		})
-		if (i+1)%concurrentBlobDownloadLimit == 0 {
+		if (i+1)%concurrentBlobDownloadLimit == 0 || (i == len(remainingFiles)-1) {
 			if err := g.Wait(); err != nil {
 				return err
 			}
 		}
 	}
-	return g.Wait()
+	return nil
 }
 
 func (c *connection) downloadAndIngest(ctx context.Context, source *connectors.Source, blobHandler *blob.BlobHandler, fileName string, createNewTable bool) error {
