@@ -1,3 +1,5 @@
+import type { FileArtifactsData } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+
 export interface Reference {
   reference: string;
   type: "from" | "join";
@@ -44,4 +46,15 @@ export function getEmbeddedReferences(sql: string): Array<Reference> {
   }
 
   return embeddedSources;
+}
+
+export function getTableName(
+  ref: Reference,
+  entities: Record<string, FileArtifactsData>
+): string {
+  if (!ref.reference) return "";
+  const tableRef = ref.reference.substring(1, ref.reference.length - 1);
+  if (!tableRef.match(/\//) && !ProtocolMatcher.test(tableRef))
+    return ref.reference;
+  return entities[tableRef]?.name ?? "";
 }

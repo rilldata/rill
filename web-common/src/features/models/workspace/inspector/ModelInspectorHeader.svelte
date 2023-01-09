@@ -17,7 +17,10 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
-  import { getTableReferences } from "../../utils/get-table-references";
+  import {
+    getTableName,
+    getTableReferences,
+  } from "../../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -49,7 +52,7 @@
     cardinalityQueries = sourceTableReferences.map((table) => {
       return useRuntimeServiceGetTableCardinality(
         $runtimeStore?.instanceId,
-        table.reference,
+        getTableName(table.reference, $fileArtifactsStore.entities),
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
@@ -57,7 +60,7 @@
     sourceProfileColumns = sourceTableReferences.map((table) => {
       return useRuntimeServiceProfileColumns(
         $runtimeStore?.instanceId,
-        table.reference,
+        getTableName(table.reference, $fileArtifactsStore.entities),
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
@@ -70,6 +73,7 @@
       .map((c: { data: number }) => c.data)
       .reduce((total: number, cardinality: number) => total + cardinality, 0);
   });
+  $: console.log($inputCardinalities);
 
   // get all source column amounts. We will use this determine the number of dropped columns.
   $: sourceColumns = derived(

@@ -19,7 +19,7 @@ export async function refreshAndReconcile(
   instanceId: string,
   refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
   queryClient: QueryClient,
-  path = getFilePathFromNameAndType(sourceName, EntityType.Table)
+  path: string
 ) {
   overlay.set({ title: `Importing ${sourceName}` });
   const resp = await refreshSource.mutateAsync({
@@ -41,12 +41,15 @@ export async function refreshSource(
   createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
   queryClient: QueryClient
 ) {
+  const artifactPath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+
   if (connector !== "local_file") {
     return refreshAndReconcile(
       sourceName,
       instanceId,
       refreshSource,
-      queryClient
+      queryClient,
+      artifactPath
     );
   }
 
@@ -70,7 +73,7 @@ export async function refreshSource(
   const resp = await createSource.mutateAsync({
     data: {
       instanceId,
-      path: getFilePathFromNameAndType(sourceName, EntityType.Table),
+      path: artifactPath,
       blob: yaml,
       create: true,
       strict: true,
