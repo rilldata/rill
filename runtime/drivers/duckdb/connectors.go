@@ -8,18 +8,11 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 )
-
-// increasing this limit can increase speed ingestion
-// but may increase bottleneck at duckdb or network/db IO
-// set without any benchamarks
-const concurrentBlobDownloadLimit = 32
 
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	err := source.Validate()
@@ -28,63 +21,44 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	}
 
 	// todo :: check if this exceptional handling can be merged
-	// locally uploaded file
 	if source.Connector == "local_file" {
 		conf, err := localfile.ParseConfig(source.Properties)
 		if err != nil {
 			return err
 		}
-		if !fileutil.HasMeta(conf.Path) {
+		// locally uploaded file
+		if !fileutil.IsGlob(conf.Path) {
 			return c.ingestFile(ctx, env, source)
+		} else {
+			return c.ingestLocalGlob(ctx, source, conf.Path)
 		}
 	}
 
-	blobHandler, err := connectors.PrepareBlob(ctx, source)
+	localPaths, err := connectors.ConsumeAsFile(ctx, env, source)
 	if err != nil {
 		return err
 	}
-	defer blobHandler.Close()
-	if len(blobHandler.FileNames) == 0 {
-		return fmt.Errorf("no filenames matching glob pattern")
-	}
-	c.logger.Info(fmt.Sprintf("matching files %v", blobHandler.FileNames))
-
-	// downloading first file and creating new table
-	if err := c.downloadAndIngest(ctx, source, blobHandler, blobHandler.FileNames[0], true); err != nil {
-		return err
-	}
-	// downloading other files in batch and appending to previoulsy created table
-	remainingFiles := blobHandler.FileNames[1:]
-	for i, file := range remainingFiles {
-		localFile := file
-		g, errCtx := errgroup.WithContext(ctx)
-		g.Go(func() error {
-			return c.downloadAndIngest(errCtx, source, blobHandler, localFile, false)
-		})
-		if (i+1)%concurrentBlobDownloadLimit == 0 || (i == len(remainingFiles)-1) {
-			if err := g.Wait(); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	c.logger.Info(fmt.Sprintf("ingesting files %v", localPaths))
+	defer os.RemoveAll(filepath.Dir(localPaths[0]))
+	// mutliple parquet files can be loaded in single sql
+	// this seems to be performing very fast as compared to appending individual files
+	return c.ingestMulti(ctx, source, localPaths)
 }
 
-func (c *connection) downloadAndIngest(ctx context.Context, source *connectors.Source, blobHandler *blob.BlobHandler, fileName string, createNewTable bool) error {
-	c.logger.Debug("started ingesting ", zap.String("filename", fileName))
-	path, err := blobHandler.DownloadObject(ctx, fileName)
-	if blobHandler.BlobType != blob.File {
-		defer os.Remove(path)
-	}
+func (c *connection) ingestLocalGlob(ctx context.Context, source *connectors.Source, glob string) error {
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, glob)
+	c.logger.Info("running query %v", zap.String("query", query))
+	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+}
+
+func (c *connection) ingestMulti(ctx context.Context, source *connectors.Source, filenames []string) error {
+	from, err := getMultiSourceReader(filenames)
 	if err != nil {
-		err = fmt.Errorf("file %s download failed with error %w", fileName, err)
 		return err
 	}
-	if err := c.ingestFromRawFile(ctx, source, path, createNewTable); err != nil {
-		return err
-	}
-	c.logger.Debug("finished ingesting ", zap.String("filename", fileName))
-	return nil
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
+	c.logger.Info("running query %v", zap.String("query", query))
+	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
 func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
@@ -120,22 +94,6 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string, createNewTable bool) error {
-	from, err := getSourceReader(path)
-	if err != nil {
-		return err
-	}
-	insertStatement := ""
-	if createNewTable {
-		insertStatement = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS", source.Name)
-	} else {
-		insertStatement = fmt.Sprintf("insert into %s", source.Name)
-	}
-
-	query := fmt.Sprintf("%s (SELECT * FROM %s);", insertStatement, from)
-	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
-}
-
 func getSourceReader(path string) (string, error) {
 	ext := fileutil.FullExt(path)
 	if ext == "" {
@@ -144,6 +102,20 @@ func getSourceReader(path string) (string, error) {
 		return fmt.Sprintf("read_csv_auto('%s')", path), nil
 	} else if strings.Contains(ext, ".parquet") {
 		return fmt.Sprintf("read_parquet('%s')", path), nil
+	} else {
+		return "", fmt.Errorf("file type not supported : %s", ext)
+	}
+}
+
+func getMultiSourceReader(paths []string) (string, error) {
+	ext := fileutil.FullExt(paths[0])
+	dir := filepath.Dir(paths[0])
+	if ext == "" {
+		return "", fmt.Errorf("invalid file")
+	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") || strings.Contains(ext, ".txt") {
+		return fmt.Sprintf("read_csv_auto('%s/*%s')", dir, ext), nil
+	} else if strings.Contains(ext, ".parquet") {
+		return fmt.Sprintf("read_parquet('%s/*%s')", dir, ext), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", ext)
 	}

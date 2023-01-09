@@ -3,8 +3,6 @@ package connectors
 import (
 	"context"
 	"fmt"
-
-	"github.com/rilldata/rill/runtime/connectors/blob"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -27,9 +25,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error)
-
-	PrepareBlob(ctx context.Context, source *Source) (*blob.BlobHandler, error)
+	ConsumeAsFile(ctx context.Context, env *Env, source *Source) ([]string, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -123,17 +119,12 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func PrepareBlob(ctx context.Context, source *Source) (*blob.BlobHandler, error) {
+func ConsumeAsFile(ctx context.Context, env *Env, source *Source) ([]string, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-	handler, err := connector.PrepareBlob(ctx, source)
-	if err != nil {
-		return nil, err
-	}
-
-	return handler, nil
+	return connector.ConsumeAsFile(ctx, env, source)
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

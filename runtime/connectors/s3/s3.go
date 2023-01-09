@@ -4,13 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -80,68 +75,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
-	conf, err := ParseConfig(source.Properties)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	// The session the S3 Downloader will use
-	sess, err := getAwsSessionConfig(conf)
-	if err != nil {
-		return "", fmt.Errorf("failed to start session: %w", err)
-	}
-
-	// Create a downloader with the session and default options
-	downloader := s3manager.NewDownloader(sess)
-
-	bucket, key, extension, err := awsURLParts(conf.Path)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
-	}
-
-	f, err := os.CreateTemp(
-		os.TempDir(),
-		fmt.Sprintf("%s*%s", source.Name, extension),
-	)
-	if err != nil {
-		return "", fmt.Errorf("os.Create: %w", err)
-	}
-	defer f.Close()
-
-	// Write the contents of S3 Object to the f
-	_, err = downloader.DownloadWithContext(ctx, f, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to download f, %w", err)
-	}
-
-	return f.Name(), nil
-}
-
-func getAwsSessionConfig(conf *Config) (*session.Session, error) {
-	if conf.AWSRegion != "" {
-		return session.NewSession(&aws.Config{
-			Region: aws.String(conf.AWSRegion),
-		})
-	}
-	return session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
-}
-
-func awsURLParts(path string) (string, string, string, error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", "", "", err
-	}
-	return u.Host, u.Path, fileutil.FullExt(u.Path), nil
-}
-
-func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (*rillblob.BlobHandler, error) {
+func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -163,11 +97,11 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxSize:       conf.MaxSize,
-		MaxDownload:   conf.MaxDownload,
-		MaxIterations: conf.MaxIterations,
+		MaxTotalSize:       conf.MaxSize,
+		MaxDownloadObjetcs: conf.MaxDownload,
+		MaxObjectsListed:   conf.MaxIterations,
 	}
-	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
 
 func s3URLParts(path string) (string, string, string, error) {

@@ -3,7 +3,6 @@ package blob
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -14,9 +13,10 @@ import (
 )
 
 type FetchConfigs struct {
-	MaxSize       int64
-	MaxDownload   int
-	MaxIterations int64
+	MaxTotalSize       int64
+	MaxDownloadObjetcs int
+	MaxObjectsListed   int64
+	PageSize           int
 }
 
 func blobType(path string) BlobType {
@@ -30,15 +30,27 @@ func blobType(path string) BlobType {
 	return File
 }
 
-func FetchBlobHandler(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, globPattern, bucketPath string) (*BlobHandler, error) {
+// downloads file to local paths
+// todo :: return blob handler as iterator
+func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, globPattern, bucketPath string) ([]string, error) {
+	defer bucket.Close()
+	validateConfigs(&config)
 	prefix, glob := doublestar.SplitPattern(globPattern)
-	result := &BlobHandler{prefix: prefix, bucket: bucket, BlobType: blobType(bucketPath), path: bucketPath}
-	if !fileutil.HasMeta(glob) {
+	handler := &BlobHandler{prefix: prefix,
+		bucket:   bucket,
+		BlobType: blobType(bucketPath),
+		path:     bucketPath}
+	if !fileutil.IsGlob(glob) {
 		// glob represent plain object
-		result.FileNames = []string{globPattern}
-		return result, nil
+		handler.FileNames = []string{globPattern}
+		err := handler.DownloadAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return handler.LocalPaths, nil
 	}
-	before := func(as func(interface{}) bool) error {
+
+	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
 		// Access storage.Query via q here.
 		var q *storage.Query
 		if as(&q) {
@@ -46,76 +58,72 @@ func FetchBlobHandler(ctx context.Context, bucket *blob.Bucket, config FetchConf
 			_ = q.SetAttrSelection([]string{"Name", "Size"})
 		}
 		return nil
-	}
+	}}
 
-	listOptions := blob.ListOptions{BeforeList: before}
 	if prefix != "." {
 		listOptions.Prefix = prefix
 	}
 
-	var size int64
-	matchCount := 0
+	var size, fetched int64
+	var matchCount int
 	fileNames := make([]string, 0)
 	// list max matched files or 100 in one API listing
-	pageSize := int(math.Max(100, float64(config.MaxDownload)))
-	fetched := int64(0)
-	var returnErr error
-	validateConfigs(&config)
-	for token := blob.FirstPageToken; token != nil; {
-		iter, nextToken, err := bucket.ListPage(ctx, token, pageSize, &listOptions)
+
+	token := blob.FirstPageToken
+	for token != nil {
+		objs, nextToken, err := bucket.ListPage(ctx, token, config.PageSize, listOptions)
 		if err != nil {
-			returnErr = err
-			break
+			return nil, err
 		}
 		token = nextToken
-		for _, obj := range iter {
-			if match(glob, obj.Key) {
+
+		for _, obj := range objs {
+			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
 				fileNames = append(fileNames, obj.Key)
 			}
 		}
-
+		fetched += int64(len(objs))
 		if err := validateLimits(size, matchCount, fetched, config); err != nil {
-			returnErr = err
-			break
+			return nil, err
 		}
 	}
-	if returnErr != nil {
-		bucket.Close()
-		return nil, returnErr
+	if len(fileNames) == 0 {
+		return nil, fmt.Errorf("no filenames matching glob pattern")
 	}
-	result.FileNames = fileNames
-	return result, nil
+	handler.FileNames = fileNames
+	if err := handler.DownloadAll(ctx); err != nil {
+		return nil, err
+	}
+	return handler.LocalPaths, nil
 }
 
 func validateLimits(size int64, matchCount int, fetched int64, config FetchConfigs) error {
-	if size > config.MaxSize {
-		return fmt.Errorf("glob pattern exceeds limits: size fetched %v, max size %v", size, config.MaxSize)
+	if size > config.MaxTotalSize {
+		return fmt.Errorf("glob pattern exceeds limits: size fetched %v, max size %v", size, config.MaxTotalSize)
 	}
-	if matchCount > config.MaxDownload {
-		return fmt.Errorf("glob pattern exceeds limits: files matched %v, max matches allowed %v", size, config.MaxDownload)
+	if matchCount > config.MaxDownloadObjetcs {
+		return fmt.Errorf("glob pattern exceeds limits: files matched %v, max matches allowed %v", size, config.MaxDownloadObjetcs)
 	}
-	if fetched > config.MaxIterations {
-		return fmt.Errorf("glob pattern exceeds limits: files listed %v, max file listing allowed %v", size, config.MaxIterations)
+	if fetched > config.MaxObjectsListed {
+		return fmt.Errorf("glob pattern exceeds limits: files listed %v, max file listing allowed %v", size, config.MaxObjectsListed)
 	}
 	return nil
 }
 
 func validateConfigs(fetchConfigs *FetchConfigs) {
-	if fetchConfigs.MaxDownload == 0 {
-		fetchConfigs.MaxDownload = 100
+	if fetchConfigs.MaxDownloadObjetcs == 0 {
+		fetchConfigs.MaxDownloadObjetcs = 100
 	}
-	if fetchConfigs.MaxIterations == 0 {
-		fetchConfigs.MaxIterations = 10 * 1000
+	if fetchConfigs.MaxObjectsListed == 0 {
+		fetchConfigs.MaxObjectsListed = 10 * 1000
 	}
-	if fetchConfigs.MaxSize == 0 {
+	if fetchConfigs.MaxTotalSize == 0 {
 		// 10 GB
-		fetchConfigs.MaxSize = 10 * 1024 * 1024 * 1024
+		fetchConfigs.MaxTotalSize = 10 * 1024 * 1024 * 1024
 	}
-}
-
-func match(glob, fileName string) bool {
-	matched, _ := doublestar.Match(glob, fileName)
-	return matched
+	if fetchConfigs.PageSize == 0 {
+		fetchConfigs.PageSize = 1000
+	}
 }

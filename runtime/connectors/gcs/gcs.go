@@ -68,54 +68,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
-	conf, err := ParseConfig(source.Properties)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	client, err := getGcsClient(ctx)
-	if err != nil {
-		return "", fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer client.Close()
-
-	bucket, object, extension, err := gcsURLParts(conf.Path)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
-	}
-
-	rc, err := client.Bucket(bucket).Object(object).NewReader(ctx)
-	if err != nil {
-		return "", fmt.Errorf("Object(%q).NewReader: %w", object, err)
-	}
-	defer rc.Close()
-
-	return fileutil.CopyToTempFile(rc, source.Name, extension)
-}
-
-func gcsURLParts(path string) (string, string, string, error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", "", "", err
-	}
-	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
-}
-
-func getGcsClient(ctx context.Context) (*storage.Client, error) {
-	client, err := storage.NewClient(ctx)
-	if err == nil || !strings.Contains(err.Error(), "google: could not find default credentials") {
-		return client, err
-	}
-	client, err = storage.NewClient(ctx, option.WithoutAuthentication())
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
-// Responsibility of caller to close bucketObject
-func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (*rillblob.BlobHandler, error) {
+func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -137,9 +90,29 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxSize:       conf.MaxSize,
-		MaxDownload:   conf.MaxDownload,
-		MaxIterations: conf.MaxIterations,
+		MaxTotalSize:       conf.MaxSize,
+		MaxDownloadObjetcs: conf.MaxDownload,
+		MaxObjectsListed:   conf.MaxIterations,
 	}
-	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+}
+
+func gcsURLParts(path string) (string, string, string, error) {
+	u, err := url.Parse(path)
+	if err != nil {
+		return "", "", "", err
+	}
+	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
+}
+
+func getGcsClient(ctx context.Context) (*storage.Client, error) {
+	client, err := storage.NewClient(ctx)
+	if err == nil || !strings.Contains(err.Error(), "google: could not find default credentials") {
+		return client, err
+	}
+	client, err = storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }

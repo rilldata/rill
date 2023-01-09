@@ -2,7 +2,6 @@ package localfile
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 
@@ -79,11 +78,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
-	return "", errors.New("not implemented")
-}
-
-func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (*rillblob.BlobHandler, error) {
+func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
@@ -99,9 +94,9 @@ func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxSize:       conf.MaxSize,
-		MaxDownload:   conf.MaxDownload,
-		MaxIterations: conf.MaxIterations,
+		MaxTotalSize:       conf.MaxSize,
+		MaxDownloadObjetcs: conf.MaxDownload,
+		MaxObjectsListed:   conf.MaxIterations,
 	}
-	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

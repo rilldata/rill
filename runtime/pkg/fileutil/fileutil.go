@@ -36,7 +36,7 @@ func Stem(path string) string {
 
 // CopyToTempFile pipes a reader to a temporary file. The caller must delete
 // the temporary file when it's no longer needed.
-func CopyToTempFile(r io.Reader, name, ext string) (string, error) {
+func CopyToTempFile(r io.Reader, name, ext string, dir ...string) (string, error) {
 	// The * in the pattern will be replaced by a random string
 	f, err := os.CreateTemp("", fmt.Sprintf("%s*%s", name, ext))
 	if err != nil {
@@ -108,10 +108,10 @@ func CopyEmbedDir(fs embed.FS, src, dst string) error {
 
 // hasMeta reports whether path contains any of the magic characters
 // recognized by path.Match.
-func HasMeta(path string) bool {
+func IsGlob(path string) bool {
 	for i := 0; i < len(path); i++ {
 		switch path[i] {
-		case '*', '?', '[', '\\':
+		case '*', '?', '[', '\\', '{':
 			return true
 		}
 	}
