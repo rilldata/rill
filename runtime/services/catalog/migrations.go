@@ -233,6 +233,12 @@ func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result
 		if !changedPathsHint {
 			continue
 		}
+
+		if item.Type == MigrationNoChange && item.CatalogInStore == nil && changedPathsMap[repoPath] {
+			// new file added adhoc
+			item.Type = MigrationCreate
+		}
+
 		// go through the children only if forced paths is false
 		children := s.dag.GetChildren(item.NormalizedName)
 		for _, child := range children {

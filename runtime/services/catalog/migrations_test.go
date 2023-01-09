@@ -32,6 +32,7 @@ var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
 var BrokenCsvPath = filepath.Join(TestDataPath, "BrokenCSV.csv")
 
 const AdBidsRepoPath = "/sources/AdBids.yaml"
+const AdImpressionsRepoPath = "/sources/AdImpressions.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 const AdBidsSourceModelRepoPath = "/models/AdBids_source_model.sql"
@@ -600,6 +601,25 @@ func TestReconcileDryRun(t *testing.T) {
 	require.Equal(t, AdBidsDashboardRepoPath, result.Errors[0].FilePath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	testutils.AssertMigration(t, result, 0, 2, 0, 0, AdBidsModelDashboardPath)
+}
+
+func TestReconcileNewFile(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	testutils.CreateSource(t, s, "AdImpressions", AdImpressionsCsvPath, AdImpressionsRepoPath)
+	// reconcile with changed paths
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		ChangedPaths: []string{AdBidsRepoPath},
+	})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
+
+	time.Sleep(time.Millisecond * 10)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		ChangedPaths: []string{AdImpressionsRepoPath},
+	})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdImpressionsRepoPath})
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {
