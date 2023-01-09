@@ -1,4 +1,4 @@
-package connectors
+package blob
 
 type BlobType string
 

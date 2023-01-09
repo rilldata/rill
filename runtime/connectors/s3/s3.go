@@ -5,14 +5,19 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"gocloud.dev/blob"
+	_ "gocloud.dev/blob/s3blob"
 )
 
 func init() {
@@ -133,6 +138,44 @@ func awsURLParts(path string) (string, string, string, error) {
 	return u.Host, u.Path, fileutil.FullExt(u.Path), nil
 }
 
-func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors.Source) (*connectors.BlobResult, error) {
-	return nil, nil
+func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (*rillblob.BlobHandler, error) {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	if !doublestar.ValidatePattern(conf.Path) {
+		// ideally this should be validated at much earlier stage
+		// keeping it here to have gcs specific validations
+		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
+	}
+
+	bucket, glob, _, err := s3URLParts(conf.Path)
+	bucket = fmt.Sprintf("s3://%s", bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+	}
+	bucketObj, err := blob.OpenBucket(ctx, bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
+	}
+	// fetchConfigs := connectors.FetchConfigs{
+	// 	MaxSize: conf.MaxSize,
+	// 	MaxDownload: conf.MaxDownload,
+	// 	MaxIterations: int64(conf.MaxIterations),
+	// }
+	fetchConfigs := rillblob.FetchConfigs{
+		MaxSize:       int64(10 * 1024 * 1024 * 1024),
+		MaxDownload:   100,
+		MaxIterations: int64(10 * 1024 * 1024 * 1024),
+	}
+	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
+}
+
+func s3URLParts(path string) (string, string, string, error) {
+	u, err := url.Parse(path)
+	if err != nil {
+		return "", "", "", err
+	}
+	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
 }

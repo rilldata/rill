@@ -3,6 +3,8 @@ package connectors
 import (
 	"context"
 	"fmt"
+
+	"github.com/rilldata/rill/runtime/connectors/blob"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -27,7 +29,7 @@ type Connector interface {
 
 	ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error)
 
-	FetchFileNamesForGlob(ctx context.Context, source *Source) (*BlobResult, error)
+	PrepareBlob(ctx context.Context, source *Source) (*blob.BlobHandler, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -121,36 +123,17 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFile(ctx context.Context, env *Env, source *Source) (string, error) {
-	connector, ok := Connectors[source.Connector]
-	if !ok {
-		return "", fmt.Errorf("connector: not found")
-	}
-
-	// TODO: connector.ConsumeAsFile should output a list of files to support globs
-	//       this should be output back to drivers that should import each file into the same table
-	path, err := connector.ConsumeAsFile(ctx, env, source)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
-}
-
-func FetchFileNamesForGlob(ctx context.Context, source *Source) (*BlobResult, error) {
+func PrepareBlob(ctx context.Context, source *Source) (*blob.BlobHandler, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-
-	// TODO: connector.ConsumeAsFile should output a list of files to support globs
-	//       this should be output back to drivers that should import each file into the same table
-	result, err := connector.FetchFileNamesForGlob(ctx, source)
+	handler, err := connector.PrepareBlob(ctx, source)
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return handler, nil
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

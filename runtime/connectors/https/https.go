@@ -8,6 +8,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
@@ -83,6 +84,6 @@ func urlExtension(path string) (string, error) {
 	return fileutil.FullExt(u.Path), nil
 }
 
-func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors.Source) (*connectors.BlobResult, error) {
-	return nil, nil
+func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (*blob.BlobHandler, error) {
+	return nil, fmt.Errorf("not implemented")
 }

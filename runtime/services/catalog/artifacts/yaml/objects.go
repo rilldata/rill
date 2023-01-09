@@ -16,11 +16,14 @@ import (
  */
 
 type Source struct {
-	Type         string
-	Path         string `yaml:"path,omitempty"`
-	CsvDelimiter string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
-	URI          string `yaml:"uri,omitempty"`
-	Region       string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
+	Type          string
+	Path          string `yaml:"path,omitempty"`
+	CsvDelimiter  string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
+	URI           string `yaml:"uri,omitempty"`
+	Region        string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
+	MaxSize       int64  `yaml:"glob.max_size,omitempty" mapstructure:"glob.max_size,omitempty"`
+	MaxDownload   int    `yaml:"glob.max_download,omitempty" mapstructure:"glob.max_download,omitempty"`
+	MaxIterations int64  `yaml:"glob.max_iterations,omitempty" mapstructure:"glob.max_iterations,omitempty"`
 }
 
 type MetricsView struct {
@@ -91,6 +94,23 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 	if source.CsvDelimiter != "" {
 		props["csv.delimiter"] = source.CsvDelimiter
+	}
+	if source.MaxSize != 0 {
+		props["glob.max_size"] = source.MaxSize
+	} else {
+		props["glob.max_size"] = int64(10 * 1024 * 1024 * 1024)
+	}
+
+	if source.MaxDownload != 0 {
+		props["glob.max_download"] = source.MaxDownload
+	} else {
+		props["glob.max_download"] = 1000
+	}
+
+	if source.MaxIterations != 0 {
+		props["glob.max_iterations"] = source.MaxIterations
+	} else {
+		props["glob.max_iterations"] = int64(10 * 1000)
 	}
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {

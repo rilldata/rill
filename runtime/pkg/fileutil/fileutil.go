@@ -105,3 +105,16 @@ func CopyEmbedDir(fs embed.FS, src, dst string) error {
 
 	return nil
 }
+
+// hasMeta reports whether path contains any of the magic characters
+// recognized by path.Match.
+func HasMeta(path string) bool {
+	for i := 0; i < len(path); i++ {
+		switch path[i] {
+		case '*', '?', '[', '\\':
+			return true
+		}
+	}
+	return false
+}
+

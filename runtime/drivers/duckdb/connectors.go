@@ -8,11 +8,14 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"golang.org/x/sync/errgroup"
 )
+
+const CONCURRENT_BLOB_DOWNLOAD_LIMIT = 32
 
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	err := source.Validate()
@@ -20,73 +23,63 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 		return err
 	}
 
-	// Driver-specific overrides
-	// switch source.Connector {
-	// case "local_file":
-	// 	return c.ingestFile(ctx, env, source)
-	// }
+	// todo :: check if this exceptional handling can be merged
+	if source.Connector == "local_file" {
+		conf, err := localfile.ParseConfig(source.Properties)
+		if err != nil {
+			return err
+		}
+		if !fileutil.HasMeta(conf.Path) {
+			return c.ingestFile(ctx, env, source)
+		}
+	}
 
-	// if source.Connector == "local_file" {
-	// 	return c.ingestFile(ctx, env, source)
-	// }
-
-	result, err := connectors.FetchFileNamesForGlob(ctx, source)
+	blobHandler, err := connectors.PrepareBlob(ctx, source)
 	if err != nil {
 		return err
 	}
-	defer result.Bucket.Close()
-	if len(result.FileNames) == 0 {
+	defer blobHandler.Close()
+	if len(blobHandler.FileNames) == 0 {
 		return fmt.Errorf("no filenames matching glob pattern")
 	}
+	fmt.Println(blobHandler.FileNames)
 
-	fmt.Println(result.FileNames)
-
-	path, err := result.DownloadObject(ctx, result.FileNames[0])
-	if err != nil {
+	if err := c.downloadAndIngest(ctx, source, blobHandler, blobHandler.FileNames[0], true); err != nil {
 		return err
 	}
-	if err := c.ingestFromRawFile(ctx, source, path, true); err != nil {
-		return err
-	}
-
-	batchSize := 10
-
-	for i, file := range result.FileNames[1:] {
+	remainingFiles := blobHandler.FileNames[1:]
+	for i, file := range remainingFiles {
 		g, errCtx := errgroup.WithContext(ctx)
 		localFile := file
-		ingest := func() error {
-			fmt.Printf("started ingesting %s\n", localFile)
-			path, err := result.DownloadObject(errCtx, localFile)
-			if source.Connector != "local_file" {
-				defer os.Remove(path)
-			}
-			if err != nil {
-				err = fmt.Errorf("file %s download failed with error %w", localFile, err)
-				fmt.Println(err)
-				return err
-			}
-			if err = c.ingestFromRawFile(errCtx, source, path, false); err != nil {
-				fmt.Printf("%s\n", err.Error())
-				return err
-			}
-			fmt.Printf("finished ingesting %s\n", localFile)
-			return nil
-		}
-		g.Go(ingest)
-		if i%batchSize == 0 || i == len(result.FileNames)-1 {
+		g.Go(func() error {
+			return c.downloadAndIngest(errCtx, source, blobHandler, localFile, false)
+		})
+		if i%CONCURRENT_BLOB_DOWNLOAD_LIMIT == 0 || i == len(remainingFiles)-1 {
 			if err := g.Wait(); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
-	// path, err := connectors.ConsumeAsFile(ctx, env, source)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer os.Remove(path)
+}
 
-	// return c.ingestFromRawFile(ctx, source, path)
+func (c *connection) downloadAndIngest(ctx context.Context, source *connectors.Source, blobHandler *blob.BlobHandler, fileName string, createNewTable bool) error {
+	fmt.Printf("started ingesting %s\n", fileName)
+	path, err := blobHandler.DownloadObject(ctx, fileName)
+	if blobHandler.BlobType != blob.File {
+		defer os.Remove(path)
+	}
+	if err != nil {
+		err = fmt.Errorf("file %s download failed with error %w", fileName, err)
+		fmt.Println(err)
+		return err
+	}
+	if err = c.ingestFromRawFile(ctx, source, path, createNewTable); err != nil {
+		fmt.Printf("%s\n", err.Error())
+		return err
+	}
+	fmt.Printf("finished ingesting %s\n", fileName)
+	return nil
 }
 
 func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source *connectors.Source) error {

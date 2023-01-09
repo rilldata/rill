@@ -10,8 +10,10 @@ import (
 	_ "sync"
 
 	"cloud.google.com/go/storage"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/api/option"
 
@@ -110,9 +112,9 @@ var spec = connectors.Spec{
 
 type Config struct {
 	Path          string `key:"path"`
-	MaxSize       int64  `key:"max_size" default:int64(10 * 1024 * 1024* 1024)`
-	MaxDownload   int    `key:"max_download" default:int64(100)`
-	MaxIterations int    `key:"max_iterations" default:int64(10000)`
+	MaxSize       int64  `key:"glob.max_size"`
+	MaxDownload   int    `key:"glob.max_download"`
+	MaxIterations int    `key:"glob.max_iterations"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -181,16 +183,20 @@ func getGcsClient(ctx context.Context) (*storage.Client, error) {
 }
 
 // Responsibility of caller to close bucketObject
-func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors.Source) (*connectors.BlobResult, error) {
+func (c connector) PrepareBlob(ctx context.Context, source *connectors.Source) (*rillblob.BlobHandler, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	if err := validatePath(conf.Path); err != nil {
-		return nil, err
+	if !doublestar.ValidatePattern(conf.Path) {
+		// ideally this should be validated at much earlier stage
+		// keeping it here to have gcs specific validations
+		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
+
 	bucket, glob, _, err := gcsURLParts(conf.Path)
+	bucket = fmt.Sprintf("gs://%s", bucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
@@ -198,14 +204,15 @@ func (c connector) FetchFileNamesForGlob(ctx context.Context, source *connectors
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
-	fetchConfigs := connectors.FetchConfigs{
-		MaxSize: conf.MaxSize,
-		MaxDownload: conf.MaxDownload,
-		MaxIterations: int64(conf.MaxIterations),
+	// fetchConfigs := connectors.FetchConfigs{
+	// 	MaxSize: conf.MaxSize,
+	// 	MaxDownload: conf.MaxDownload,
+	// 	MaxIterations: int64(conf.MaxIterations),
+	// }
+	fetchConfigs := rillblob.FetchConfigs{
+		MaxSize:       int64(10 * 1024 * 1024 * 1024),
+		MaxDownload:   100,
+		MaxIterations: int64(10 * 1024 * 1024 * 1024),
 	}
-	return connectors.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
-}
-
-func validatePath(path string) error {
-	return nil
+	return rillblob.FetchBlobHandler(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
