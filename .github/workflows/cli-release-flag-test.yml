@@ -1,0 +1,32 @@
+name: Test release Rill CLI
+on:
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: Release nightly only
+        required: true
+        type: boolean
+        default: true
+  schedule:
+    - cron: '5 * * * *'
+env:
+  PUBLISH_NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly }}
+jobs:
+  release:
+    name: Release rill-developer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Printing it
+        run: |-
+          echo "Printing it:"
+          echo ${{ env.PUBLISH_NIGHTLY }}
+      - name: Printing if true
+        if: env.PUBLISH_NIGHTLY == 'true'
+        run: |-
+          echo "Printing if true:"
+          echo ${{ env.PUBLISH_NIGHTLY }}
+      - name: Printing if false
+        if: env.PUBLISH_NIGHTLY != 'true'
+        run: |-
+          echo "Printing if false:"
+          echo ${{ env.PUBLISH_NIGHTLY }}
