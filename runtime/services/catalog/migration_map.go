@@ -246,14 +246,19 @@ func (s *Service) checkEmbeddedEntries(
 ) {
 	// update embedded items
 	for _, item := range migrationMap {
-		if item.CatalogInStore == nil {
-			if item.Type == MigrationRename {
-				s.checkEmbeddingOnRename(item, migrationMap)
-			}
+		if item.Type == MigrationRename {
+			// update embedded source's links on rename
+			s.checkEmbeddingOnRename(item, migrationMap)
+		}
+		catalogEntry := item.CatalogInStore
+		if catalogEntry == nil {
+			catalogEntry = item.CatalogInFile
+		}
+		if catalogEntry == nil {
 			continue
 		}
-		for _, embedded := range item.CatalogInStore.Embeds {
-			if item.CatalogInStore.Embedded {
+		for _, embedded := range catalogEntry.Embeds {
+			if catalogEntry.Embedded {
 				s.checkEmbeddedSourceEntry(migrationMap, embedded, item)
 			} else {
 				s.checkEmbeddedEntry(ctx, migrationMap, embedded, item)
@@ -286,7 +291,10 @@ func (s *Service) checkEmbeddedEntry(
 
 	contains := arrayutil.Contains(embeddedMigrationItem.CatalogInFile.Embeds, item.NormalizedName)
 	if item.Type == MigrationDelete && contains {
-		embeddedMigrationItem.removeLink(embedded)
+		embeddedMigrationItem.removeLink(item.NormalizedName)
+		migrationMap[embeddedMigrationItem.NormalizedName] = embeddedMigrationItem
+	} else if item.Type == MigrationCreate && !contains {
+		embeddedMigrationItem.addLink(item.NormalizedName)
 		migrationMap[embeddedMigrationItem.NormalizedName] = embeddedMigrationItem
 	}
 }

@@ -284,6 +284,44 @@ func TestEmbeddedSourceRefresh(t *testing.T) {
 	)
 }
 
+func TestEmbeddedSourcesErroredOut(t *testing.T) {
+	s, dir := initBasicService(t)
+
+	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+	addEmbeddedModel(t, s)
+	addEmbeddedNewModel(t, s)
+
+	// change the model to point to invalid file
+	testutils.CreateModel(
+		t,
+		s,
+		"AdBids_model",
+		`select id, timestamp, publisher, domain, bid_price from "data/AdBids.cs"`,
+		AdBidsNewModelPath,
+	)
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/AdBids.cs"})
+	adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+	require.Equal(t, []string{strings.ToLower("AdBids_model")}, adBidsEntry.Embeds)
+	require.Equal(t, 1, adBidsEntry.Links)
+
+	// change back to original valid file
+	testutils.CreateModel(
+		t,
+		s,
+		"AdBids_model",
+		`select id, timestamp, publisher, domain, bid_price from "data/AdBids.csv"`,
+		AdBidsNewModelPath,
+	)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath})
+	adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+	require.Equal(t, []string{strings.ToLower("AdBids_model"), strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
+	require.Equal(t, 2, adBidsEntry.Links)
+}
+
 func addEmbeddedModel(t *testing.T, s *catalog.Service) {
 	testutils.CreateModel(
 		t,
