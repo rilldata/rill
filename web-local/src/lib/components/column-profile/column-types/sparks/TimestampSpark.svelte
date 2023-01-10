@@ -93,33 +93,6 @@
         y2={config.plotBottom}
         stroke="black"
       />
-      <!-- {#if zoomPreviewWidth}
-  <g transition:fade={{ duration: 100 }}>
-    <rect
-      x={zoomPreviewX}
-      y={plotTop}
-      width={zoomPreviewWidth}
-      {height}
-      fill={zoomWindowColor}
-      opacity=".9"
-      style:mix-blend-mode="lighten"
-    />
-    <line
-      x1={zoomPreviewX}
-      x2={zoomPreviewX}
-      y1={plotTop}
-      y2={plotBottom}
-      stroke={zoomWindowBoundaryColor}
-    />
-    <line
-      x1={zoomPreviewX + zoomPreviewWidth}
-      x2={zoomPreviewX + zoomPreviewWidth}
-      y1={plotTop}
-      y2={plotBottom}
-      stroke={zoomWindowBoundaryColor}
-    />
-  </g>
-{/if} -->
     </SimpleDataGraphic>
   </WithParentClientRect>
 {/if}

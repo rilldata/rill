@@ -42,36 +42,27 @@ func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, rep
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		err := olap.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, tempName),
 			Priority: 100,
 		})
 		if err != nil {
 			return err
 		}
-		rows.Close()
 		from = tempName
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	return olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,
 	})
-	if err != nil {
-		return err
-	}
-	return rows.Close()
 }
 
 func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	return olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", catalogObj.Name),
 		Priority: 100,
 	})
-	if err != nil {
-		return err
-	}
-	return rows.Close()
 }
 
 func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {

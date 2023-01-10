@@ -89,6 +89,12 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		q.Result = summary
 		return nil
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	return errors.New("no rows returned")
 }
 

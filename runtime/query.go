@@ -40,7 +40,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		if err != nil {
 			return fmt.Errorf("query dependency %q not found", dep)
 		}
-		depKeys[i] = entry.Name + ":" + entry.UpdatedOn.String()
+		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
 	}
 	depKey := strings.Join(depKeys, ";")
 	key := queryCacheKey{

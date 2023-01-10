@@ -3,6 +3,7 @@ package sqlite
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 
 	// Load sqlite driver
 	_ "modernc.org/sqlite"
@@ -14,11 +15,12 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string) (drivers.Connection, error) {
+func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	db, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
+	db.SetMaxOpenConns(1)
 	return &connection{db: db}, nil
 }
 

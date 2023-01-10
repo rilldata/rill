@@ -1,3 +1,3 @@
-id,timestamp,publisher,domain,bid_price,volume,impressions,ad words,clicks
-0,2022-01-01T14:49:50.459Z,,msn.com,2,4,2,cars,
-1,2022-01-02T11:58:12.475Z,Yahoo,yahoo.com,2,4,1,cars,1
+id,timestamp,publisher,domain,bid_price,volume,impressions,ad words,clicks,device
+0,2022-01-01T14:49:50.459Z,,msn.com,2,4,2,cars,,iphone
+1,2022-01-02T11:58:12.475Z,Yahoo,yahoo.com,2,4,1,cars,1,
