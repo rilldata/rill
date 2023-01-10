@@ -104,6 +104,9 @@ export async function deleteFileArtifact(
       notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
     }
 
+    if (type == EntityType.Model)
+      removeModelQueries(queryClient, instanceId, name);
+
     invalidateAfterReconcile(queryClient, instanceId, resp);
     if (activeEntity?.name === name) {
       goto(getRouteFromName(getNextEntityName(names, name), type));
