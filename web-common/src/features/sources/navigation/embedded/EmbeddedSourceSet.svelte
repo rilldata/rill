@@ -14,7 +14,10 @@
 <div>
   <SourceDomain bind:active {connector} {location} {sources} />
   {#if active}
-    <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="pb-2">
+    <div
+      transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+      class="pb-2"
+    >
       {#each sources as { uri, abbreviatedURI, name }}
         <EmbeddedSourceLink
           {uri}

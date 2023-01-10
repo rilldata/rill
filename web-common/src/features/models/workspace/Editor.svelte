@@ -172,22 +172,6 @@
     }
   }
 
-  /** This autocompletion will add any defined remote sources to the mix. */
-  $: completeForEmbeddedSources = (embeddedSources) => (context) => {
-    // FIXME: only match after FROM and JOIN.
-    let word = context.matchBefore(/\w*/);
-    if (word.from == word.to && !context.explicit) return null;
-    return {
-      from: word.from,
-      options: embeddedSources.map((source) => {
-        return {
-          label: source,
-          type: "keyword",
-        };
-      }),
-    };
-  };
-
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
@@ -201,7 +185,6 @@
       override: [
         keywordCompletionSource(DuckDBSQL),
         schemaCompletionSource({ schema }),
-        completeForEmbeddedSources(embeddedSources),
       ],
       icons: false,
     });

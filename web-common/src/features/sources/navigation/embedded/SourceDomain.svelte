@@ -30,7 +30,7 @@
       >
         {location}
       </div>
-      <div style:width="24px" class="text-right">
+      <div style:min-width="16px" class="text-right">
         {#if !active}<div
             transition:fly|local={{ duration: LIST_SLIDE_DURATION, y: 4 }}
           >

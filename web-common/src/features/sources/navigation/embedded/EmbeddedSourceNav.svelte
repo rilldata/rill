@@ -12,8 +12,8 @@
   $: chunksOfLinks = groupURIs(embeddedSourceCatalogs) as GroupedURIObject;
 </script>
 
-<div class="py-2 space-y-2">
-  {#each Object.keys(chunksOfLinks) as domain, i}
+<div class="space-y-2">
+  {#each Object.keys(chunksOfLinks) as domain, i (domain)}
     {@const domainSet = chunksOfLinks[domain]}
     {@const links = domainSet.uris}
     {@const connector = domainSet.connector}
