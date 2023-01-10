@@ -1,11 +1,21 @@
+# This workflow runs full or nightly releases.
+# Full releases are published to brew, CDN (for install script), and Github Releases.
+# Full releases get infer the version number from the git tag.
+# Nightly releases are only published to CDN and do not have a version. Their version number is "nightly".
 name: Release Rill CLI
 on:
-  workflow_dispatch:
+  # Trigger release on new tag
   push:
     tags:
       - "**"
+  # Trigger a nightly at midnight
   schedule:
     - cron: '0 0 * * *'
+  # Trigger a nightly release manually
+  workflow_dispatch:
+env:
+  # PUBLISH_NIGHTLY becomes a string with values 'true' or 'false'
+  PUBLISH_NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
 jobs:
   release:
     name: Release rill-developer
@@ -46,7 +56,7 @@ jobs:
 
       - name: Release Publish
         run: |-
-          if [[ ${{ github.event_name }} == "schedule" ]]; then
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             export NIGHTLY="--snapshot"
           fi
 
@@ -75,21 +85,21 @@ jobs:
           destination: prod-cdn.rilldata.com/
 
       - name: Publish nightly docker image
-        if: github.event_name == 'schedule'
+        if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
           docker tag rilldata/rill:latest rilldata/rill:nightly
           docker push rilldata/rill:nightly
 
       - name: Prepare for nightly GCS upload
-        if: github.event_name == 'schedule'
+        if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
           mkdir nightly
           cp dist/*.zip nightly/
           cp dist/checksums.txt nightly/
 
       - name: Upload nightly to CDN
-        if: github.event_name == 'schedule'
+        if: env.PUBLISH_NIGHTLY == 'true'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: nightly/
