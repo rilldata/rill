@@ -71,7 +71,7 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	}
 	defer resp.Body.Close()
 
-	file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension, "http")
+	file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 	if err != nil {
 		return nil, err
 	}

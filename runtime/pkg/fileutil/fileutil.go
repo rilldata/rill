@@ -36,9 +36,9 @@ func Stem(path string) string {
 
 // CopyToTempFile pipes a reader to a temporary file. The caller must delete
 // the temporary file when it's no longer needed.
-func CopyToTempFile(r io.Reader, name, ext, dir string) (string, error) {
+func CopyToTempFile(r io.Reader, name, ext string) (string, error) {
 	// The * in the pattern will be replaced by a random string
-	f, err := os.CreateTemp(dir, fmt.Sprintf("%s*%s", name, ext))
+	f, err := os.CreateTemp("", fmt.Sprintf("%s*%s", name, ext))
 	if err != nil {
 		return "", fmt.Errorf("os.Create: %w", err)
 	}
@@ -116,4 +116,12 @@ func IsGlob(path string) bool {
 		}
 	}
 	return false
+}
+
+// deletes multiple files
+// ignores path errors if any
+func RemoveFiles(paths []string) {
+	for _, path := range paths {
+		_ = os.Remove(path)
+	}
 }

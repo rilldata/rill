@@ -3,7 +3,6 @@ package blob
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -23,7 +22,6 @@ type BlobHandler struct {
 
 	FileNames  []string
 	LocalPaths []string
-	TempDir    string
 }
 
 // object path is relative to bucket
@@ -34,16 +32,11 @@ func (b *BlobHandler) DownloadObject(ctx context.Context, objpath string) (strin
 	}
 	defer rc.Close()
 	objName := filepath.Base(objpath)
-	return fileutil.CopyToTempFile(rc, fileutil.Stem(objName), fileutil.FullExt(objName), b.TempDir)
+	return fileutil.CopyToTempFile(rc, fileutil.Stem(objName), fileutil.FullExt(objName))
 }
 
 // object path is relative to bucket
 func (b *BlobHandler) DownloadAll(ctx context.Context) error {
-	dir, err := os.MkdirTemp("", "download-temp")
-	if err != nil {
-		return fmt.Errorf("create temp dir for downloading files failed with error %w", err)
-	}
-	b.TempDir = dir
 	b.LocalPaths = make([]string, len(b.FileNames))
 
 	g, grpCtx := errgroup.WithContext(ctx)
@@ -64,7 +57,7 @@ func (b *BlobHandler) DownloadAll(ctx context.Context) error {
 	if err := g.Wait(); err != nil {
 		// one of the download failed
 		// remove the temp directory
-		os.RemoveAll(b.TempDir)
+		fileutil.RemoveFiles(b.LocalPaths)
 		return err
 	}
 

@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.27.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/apache/calcite-avatica-go/v5 v5.1.0
+	github.com/aws/aws-sdk-go v1.44.118
 	github.com/bmatcuk/doublestar/v4 v4.4.0
 	github.com/coreos/go-oidc/v3 v3.4.0
 	github.com/deepmap/oapi-codegen v1.11.0
@@ -27,7 +28,6 @@ require (
 	go.uber.org/zap v1.21.0
 	gocloud.dev v0.27.0
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
-	google.golang.org/api v0.97.0
 	google.golang.org/grpc v1.49.0
 	modernc.org/sqlite v1.10.6
 )
@@ -39,7 +39,6 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Microsoft/hcsshim v0.9.2 // indirect
-	github.com/aws/aws-sdk-go v1.44.118 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.16.8 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.3 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.15.15 // indirect
@@ -133,6 +132,7 @@ require (
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	golang.org/x/tools v0.1.11 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	google.golang.org/api v0.97.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

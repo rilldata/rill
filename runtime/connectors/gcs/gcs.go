@@ -80,15 +80,17 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	}
 
 	bucket, glob, _, err := gcsURLParts(conf.Path)
-	bucket = fmt.Sprintf("gs://%s", bucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
+
+	bucket = fmt.Sprintf("gs://%s", bucket)
 	bucketObj, err := blob.OpenBucket(ctx, bucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
 	defer bucketObj.Close()
+
 	fetchConfigs := rillblob.FetchConfigs{
 		MaxTotalSize:      conf.MaxTotalSize,
 		MaxMatchedObjects: conf.MaxMatchedObjects,
