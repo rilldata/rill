@@ -20,7 +20,7 @@ type Source struct {
 	Path         string `yaml:"path,omitempty"`
 	CsvDelimiter string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
 	URI          string `yaml:"uri,omitempty"`
-	Region       string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
+	Region       string `yaml:"region,omitempty" mapstructure:"region,omitempty"`
 }
 
 type MetricsView struct {
@@ -87,7 +87,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["path"] = source.URI
 	}
 	if source.Region != "" {
-		props["aws.region"] = source.Region
+		props["region"] = source.Region
 	}
 	if source.CsvDelimiter != "" {
 		props["csv.delimiter"] = source.CsvDelimiter
