@@ -14,17 +14,16 @@ import (
 /**
  * This file contains the mapping from CatalogObject to Yaml files
  */
-
 type Source struct {
-	Type          string
-	Path          string `yaml:"path,omitempty"`
-	CsvDelimiter  string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
-	URI           string `yaml:"uri,omitempty"`
-	Region        string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
-	MaxSize       int64  `yaml:"glob.max_size,omitempty" mapstructure:"glob.max_size,omitempty"`
-	MaxDownload   int    `yaml:"glob.max_download,omitempty" mapstructure:"glob.max_download,omitempty"`
-	MaxIterations int64  `yaml:"glob.max_iterations,omitempty" mapstructure:"glob.max_iterations,omitempty"`
-	PageSize      int    `yaml:"glob.page_size,omitempty"`
+	Type              string
+	Path              string `yaml:"path,omitempty"`
+	CsvDelimiter      string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
+	URI               string `yaml:"uri,omitempty"`
+	Region            string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
+	MaxTotalSize      int64  `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
+	MaxMatchedObjects int    `yaml:"glob.max_matched_objects,omitempty" mapstructure:"glob.max_matched_objects,omitempty"`
+	MaxObjectsListed  int64  `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
+	PageSize          int    `yaml:"glob.page_size,omitempty"`
 }
 
 type MetricsView struct {
@@ -96,16 +95,16 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.CsvDelimiter != "" {
 		props["csv.delimiter"] = source.CsvDelimiter
 	}
-	if source.MaxSize != 0 {
-		props["glob.max_size"] = source.MaxSize
+	if source.MaxTotalSize != 0 {
+		props["glob.max_total_size"] = source.MaxTotalSize
 	}
 
-	if source.MaxDownload != 0 {
-		props["glob.max_download"] = source.MaxDownload
+	if source.MaxMatchedObjects != 0 {
+		props["glob.max_matched_objects"] = source.MaxMatchedObjects
 	}
 
-	if source.MaxIterations != 0 {
-		props["glob.max_iterations"] = source.MaxIterations
+	if source.MaxObjectsListed != 0 {
+		props["glob.max_objects_listed"] = source.MaxObjectsListed
 	}
 
 	if source.PageSize != 0 {

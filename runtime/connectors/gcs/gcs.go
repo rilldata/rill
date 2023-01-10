@@ -45,11 +45,11 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path          string `key:"path"`
-	MaxSize       int64  `mapstructure:"glob.max_size"`
-	MaxDownload   int    `mapstructure:"glob.max_download"`
-	MaxIterations int64  `mapstructure:"glob.max_iterations"`
-	PageSize      int    `mapstructure:"glob.page_size"`
+	Path              string `key:"path"`
+	MaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
+	MaxMatchedObjects int    `mapstructure:"glob.max_matched_objects"`
+	MaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
+	PageSize          int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -88,11 +88,12 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
+	defer bucketObj.Close()
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxTotalSize:       conf.MaxSize,
-		MaxDownloadObjetcs: conf.MaxDownload,
-		MaxObjectsListed:   conf.MaxIterations,
-		PageSize:           conf.PageSize,
+		MaxTotalSize:      conf.MaxTotalSize,
+		MaxMatchedObjects: conf.MaxMatchedObjects,
+		MaxObjectsListed:  conf.MaxObjectsListed,
+		PageSize:          conf.PageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

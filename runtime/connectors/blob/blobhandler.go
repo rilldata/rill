@@ -21,7 +21,6 @@ type BlobHandler struct {
 	prefix string
 	path   string
 
-	BlobType   BlobType
 	FileNames  []string
 	LocalPaths []string
 	TempDir    string
@@ -34,9 +33,6 @@ func (b *BlobHandler) Close() {
 
 // object path is relative to bucket
 func (b *BlobHandler) DownloadObject(ctx context.Context, objpath string) (string, error) {
-	if b.BlobType == File {
-		return fmt.Sprintf("%s/%s", b.path, objpath), nil
-	}
 	rc, err := b.bucket.NewReader(ctx, objpath, nil)
 	if err != nil {
 		return "", fmt.Errorf("Object(%q).NewReader: %w", objpath, err)
@@ -54,29 +50,28 @@ func (b *BlobHandler) DownloadAll(ctx context.Context) error {
 	}
 	b.TempDir = dir
 	b.LocalPaths = make([]string, len(b.FileNames))
-	if b.BlobType == File {
-		copy(b.LocalPaths, b.FileNames)
-		return nil
-	}
-	g := errgroup.Group{}
+
+	g, grpCtx := errgroup.WithContext(ctx)
 	g.SetLimit(concurrentBlobDownloadLimit)
 	for i, file := range b.FileNames {
 		objectPath := file
 		index := i
 		g.Go(func() error {
-			localPath, err := b.DownloadObject(ctx, objectPath)
-			if err == nil {
-				b.LocalPaths[index] = localPath
+			localPath, err := b.DownloadObject(grpCtx, objectPath)
+			if err != nil {
 				return err
 			}
-			return err
+			b.LocalPaths[index] = localPath
+			return nil
 		})
 	}
-	if err := g.Wait(); err == nil {
-		return nil
+
+	if err := g.Wait(); err != nil {
+		// one of the download failed
+		// remove the temp directory
+		os.RemoveAll(b.TempDir)
+		return err
 	}
-	// one of the download failed
-	// remove the temp directory
-	os.RemoveAll(b.TempDir)
-	return err
+
+	return nil
 }

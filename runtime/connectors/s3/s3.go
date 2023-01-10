@@ -6,13 +6,14 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/s3blob" // s3 blob required
+	"gocloud.dev/blob/s3blob"
 )
 
 func init() {
@@ -53,12 +54,12 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path          string `mapstructure:"path"`
-	AWSRegion     string `mapstructure:"aws.region"`
-	MaxSize       int64  `mapstructure:"glob.max_size"`
-	MaxDownload   int    `mapstructure:"glob.max_download"`
-	MaxIterations int64  `mapstructure:"glob.max_iterations"`
-	PageSize      int    `mapstructure:"glob.page_size"`
+	Path              string `mapstructure:"path"`
+	AWSRegion         string `mapstructure:"aws.region"`
+	MaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
+	MaxMatchedObjects int    `mapstructure:"glob.max_matched_objects"`
+	MaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
+	PageSize          int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -89,19 +90,26 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	}
 
 	bucket, glob, _, err := s3URLParts(conf.Path)
-	bucket = fmt.Sprintf("s3://%s", bucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
-	bucketObj, err := blob.OpenBucket(ctx, bucket)
+
+	sess, err := getAwsSessionConfig(conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start session: %w", err)
+	}
+
+	bucketObj, err := s3blob.OpenBucket(ctx, sess, bucket, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
+	defer bucketObj.Close()
+
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxTotalSize:       conf.MaxSize,
-		MaxDownloadObjetcs: conf.MaxDownload,
-		MaxObjectsListed:   conf.MaxIterations,
-		PageSize:           conf.PageSize,
+		MaxTotalSize:      conf.MaxTotalSize,
+		MaxMatchedObjects: conf.MaxMatchedObjects,
+		MaxObjectsListed:  conf.MaxObjectsListed,
+		PageSize:          conf.PageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
@@ -112,4 +120,15 @@ func s3URLParts(path string) (string, string, string, error) {
 		return "", "", "", err
 	}
 	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
+}
+
+func getAwsSessionConfig(conf *Config) (*session.Session, error) {
+	if conf.AWSRegion != "" {
+		return session.NewSession(&aws.Config{
+			Region: aws.String(conf.AWSRegion),
+		})
+	}
+	return session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"go.uber.org/zap"
 )
 
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
@@ -46,7 +45,6 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 func (c *connection) ingestLocalGlob(ctx context.Context, source *connectors.Source, glob string) error {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM '%s');", source.Name, glob)
-	c.logger.Info("running query %v", zap.String("query", query))
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
@@ -56,7 +54,6 @@ func (c *connection) ingestMulti(ctx context.Context, source *connectors.Source,
 		return err
 	}
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
-	c.logger.Info("running query %v", zap.String("query", query))
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 

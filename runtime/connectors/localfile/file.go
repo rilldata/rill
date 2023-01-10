@@ -7,11 +7,6 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
-	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
-
-	"github.com/bmatcuk/doublestar/v4"
-	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/fileblob" // blank import required
 )
 
 func init() {
@@ -50,13 +45,9 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path          string `mapstructure:"path"`
-	Format        string `mapstructure:"format"`
-	CSVDelimiter  string `mapstructure:"csv.delimiter"`
-	MaxSize       int64  `mapstructure:"glob.max_size"`
-	MaxDownload   int    `mapstructure:"glob.max_download"`
-	MaxIterations int64  `mapstructure:"glob.max_iterations"`
-	PageSize      int    `mapstructure:"glob.page_size"`
+	Path         string `mapstructure:"path"`
+	Format       string `mapstructure:"format"`
+	CSVDelimiter string `mapstructure:"csv.delimiter"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -82,23 +73,5 @@ func (c connector) Spec() connectors.Spec {
 // local file connectors should directly use glob patterns
 // keeping it for reference
 func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
-	conf, err := ParseConfig(source.Properties)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
-	}
-
-	bucket, glob := doublestar.SplitPattern(conf.Path)
-
-	replaceBucket := fmt.Sprintf("%s%s", "file://", bucket)
-	bucketObj, err := blob.OpenBucket(ctx, replaceBucket)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
-	}
-	fetchConfigs := rillblob.FetchConfigs{
-		MaxTotalSize:       conf.MaxSize,
-		MaxDownloadObjetcs: conf.MaxDownload,
-		MaxObjectsListed:   conf.MaxIterations,
-		PageSize:           conf.PageSize,
-	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return nil, fmt.Errorf("not implemented")
 }
