@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"gocloud.dev/blob/s3blob"
 )
 
 func init() {
@@ -53,8 +54,12 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path      string `mapstructure:"path"`
-	AWSRegion string `mapstructure:"region"`
+	Path                  string `mapstructure:"path"`
+	AWSRegion             string `mapstructure:"region"`
+	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -62,6 +67,9 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
+	}
+	if !doublestar.ValidatePattern(conf.Path) {
+		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
 	return conf, nil
 }
@@ -72,46 +80,43 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
+func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// The session the S3 Downloader will use
+	bucket, glob, _, err := s3URLParts(conf.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+	}
+
 	sess, err := getAwsSessionConfig(conf)
 	if err != nil {
-		return "", fmt.Errorf("failed to start session: %w", err)
+		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
 
-	// Create a downloader with the session and default options
-	downloader := s3manager.NewDownloader(sess)
-
-	bucket, key, extension, err := awsURLParts(conf.Path)
+	bucketObj, err := s3blob.OpenBucket(ctx, sess, bucket, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
 	}
+	defer bucketObj.Close()
 
-	f, err := os.CreateTemp(
-		os.TempDir(),
-		fmt.Sprintf("%s*%s", source.Name, extension),
-	)
+	fetchConfigs := rillblob.FetchConfigs{
+		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
+		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
+		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
+		GlobPageSize:          conf.GlobPageSize,
+	}
+	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+}
+
+func s3URLParts(path string) (string, string, string, error) {
+	u, err := url.Parse(path)
 	if err != nil {
-		return "", fmt.Errorf("os.Create: %w", err)
+		return "", "", "", err
 	}
-	defer f.Close()
-
-	// Write the contents of S3 Object to the f
-	_, err = downloader.DownloadWithContext(ctx, f, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to download f, %w", err)
-	}
-
-	return f.Name(), nil
+	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
 }
 
 func getAwsSessionConfig(conf *Config) (*session.Session, error) {
@@ -123,12 +128,4 @@ func getAwsSessionConfig(conf *Config) (*session.Session, error) {
 	return session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})
-}
-
-func awsURLParts(path string) (string, string, string, error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", "", "", err
-	}
-	return u.Host, u.Path, fileutil.FullExt(u.Path), nil
 }
