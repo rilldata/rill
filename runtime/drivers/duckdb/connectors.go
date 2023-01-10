@@ -65,6 +65,9 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	if err != nil {
 		return err
 	}
+	if len(localPaths) == 0 {
+		return fmt.Errorf("file does not exist at %s", conf.Path)
+	}
 
 	// Not using query args since not quite sure about behaviour of injecting table names that way.
 	// Also, it's a source, so the caller can be trusted.
