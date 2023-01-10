@@ -1,3 +1,4 @@
+import { EntityType } from "@rilldata/web-common/lib/entity";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
@@ -5,7 +6,10 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
+import {
+  getFilePathFromNameAndType,
+  getNameFromFile,
+} from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
 
 // invalidation helpers
@@ -90,3 +94,28 @@ export function invalidateProfilingQueries(
     },
   });
 }
+
+export const removeModelQueries = async (
+  queryClient: QueryClient,
+  instanceId: string,
+  name: string
+) => {
+  const path = getFilePathFromNameAndType(name, EntityType.Model);
+
+  // remove affected catalog entries and files
+  await Promise.all([
+    queryClient.removeQueries(
+      getRuntimeServiceGetFileQueryKey(instanceId, path)
+    ),
+    queryClient.removeQueries(
+      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name)
+    ),
+  ]);
+
+  // remove profiling queries
+  return queryClient.removeQueries({
+    predicate: (query) => {
+      return invalidationForProfileQueries(query.queryHash, name);
+    },
+  });
+};

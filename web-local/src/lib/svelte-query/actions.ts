@@ -13,7 +13,10 @@ import {
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-stores/app-store";
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+import {
+  invalidateAfterReconcile,
+  removeModelQueries,
+} from "@rilldata/web-local/lib/svelte-query/invalidation";
 import {
   getFilePathFromNameAndType,
   getLabel,
@@ -73,6 +76,7 @@ export async function renameFileArtifact(
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
 
+  removeModelQueries(queryClient, instanceId, fromName);
   invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 
