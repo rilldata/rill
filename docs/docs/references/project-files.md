@@ -32,7 +32,7 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 
 **`region`**
  — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
- - _`us-east-1`_ —  the cloud region identifer
+  - _`us-east-1`_ —  the cloud region identifer
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 
