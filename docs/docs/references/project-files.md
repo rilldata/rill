@@ -31,7 +31,8 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 - _`/path/to/file.csv`_ —  the path to your file
 
 **`region`**
- — The specific geographical location where you can host your resources, for example "us-east-1"
+ — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
+ - _`us-east-1`_ —  the cloud region identifer
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 
