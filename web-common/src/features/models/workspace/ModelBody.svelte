@@ -106,9 +106,7 @@
         );
         if (unknownEmbeddedSources.length > 0) {
           overlay.set({
-            title: `Importing embedded sources for the 1st time : ${unknownEmbeddedSources.join(
-              ","
-            )}`,
+            title: `Caching ${unknownEmbeddedSources.join(",")}`,
           });
           overlayShown = true;
         }

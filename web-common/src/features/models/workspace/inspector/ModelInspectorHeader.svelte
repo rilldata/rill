@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     formatBigNumberPercentage,
@@ -18,7 +19,7 @@
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
   import {
-    getTableName,
+    getMatchingCatalogReference,
     getTableReferences,
   } from "../../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
@@ -45,14 +46,21 @@
     sourceTableReferences = getTableReferences(model.sql);
   }
 
+  $: embeddedSources = useEmbeddedSources($runtimeStore.instanceId);
+
   // get the cardinalitie & table information.
   let cardinalityQueries = [];
   let sourceProfileColumns = [];
+
   $: if (sourceTableReferences?.length) {
     cardinalityQueries = sourceTableReferences.map((table) => {
       return useRuntimeServiceGetTableCardinality(
         $runtimeStore?.instanceId,
-        getTableName(table.reference, $fileArtifactsStore.entities),
+        getMatchingCatalogReference(
+          table,
+          $embeddedSources?.data,
+          $fileArtifactsStore.entities
+        ),
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
@@ -60,7 +68,11 @@
     sourceProfileColumns = sourceTableReferences.map((table) => {
       return useRuntimeServiceProfileColumns(
         $runtimeStore?.instanceId,
-        getTableName(table.reference, $fileArtifactsStore.entities),
+        getMatchingCatalogReference(
+          table,
+          $embeddedSources?.data,
+          $fileArtifactsStore.entities
+        ),
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
@@ -73,7 +85,6 @@
       .map((c: { data: number }) => c.data)
       .reduce((total: number, cardinality: number) => total + cardinality, 0);
   });
-  $: console.log($inputCardinalities);
 
   // get all source column amounts. We will use this determine the number of dropped columns.
   $: sourceColumns = derived(

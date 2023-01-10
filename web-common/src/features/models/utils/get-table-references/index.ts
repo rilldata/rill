@@ -1,3 +1,4 @@
+import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
 import type { FileArtifactsData } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 
 export interface Reference {
@@ -57,4 +58,39 @@ export function getTableName(
   if (!tableRef.match(/\//) && !ProtocolMatcher.test(tableRef))
     return ref.reference;
   return entities[tableRef]?.name ?? "";
+}
+
+function sourcePathMatchesReference(source: V1CatalogEntry, table: Reference) {
+  return (
+    `"${source.path}"` === table.reference ||
+    `'${source.path}'` === table.reference
+  );
+}
+
+function sourceTableReferenceIsEmbedded(
+  table: Reference,
+  embeddedSources: V1CatalogEntry[]
+) {
+  // check to see if the quoted version of this reference is in the embedded sources
+  return embeddedSources?.some((source) =>
+    sourcePathMatchesReference(source, table)
+  );
+}
+
+/**
+ * Returns the name of the table reference, or the cached name of the embedded source.
+ */
+export function getMatchingCatalogReference(
+  table: Reference,
+  embeddedSources: V1CatalogEntry[],
+  existingEntities: Record<string, FileArtifactsData>
+) {
+  // if this reference is embedded, return the cached name
+  if (sourceTableReferenceIsEmbedded(table, embeddedSources)) {
+    return embeddedSources?.find((source) =>
+      sourcePathMatchesReference(source, table)
+    ).name;
+  } else {
+    return getTableName(table, existingEntities);
+  }
 }
