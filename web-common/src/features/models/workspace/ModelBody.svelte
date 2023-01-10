@@ -26,6 +26,7 @@
   import Editor from "./Editor.svelte";
 
   export let modelName: string;
+  export let focusEditorOnMount = false;
 
   const queryClient = useQueryClient();
 
@@ -125,6 +126,7 @@
             {modelName}
             content={modelSql}
             {selections}
+            focusOnMount={focusEditorOnMount}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
         {/key}

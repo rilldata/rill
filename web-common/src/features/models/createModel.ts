@@ -25,7 +25,8 @@ export async function createModel(
     },
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  goto(`/model/${newModelName}`);
+  goto(`/model/${newModelName}?focus`);
+
   invalidateAfterReconcile(queryClient, instanceId, resp);
   if (resp.errors?.length && sql !== "") {
     resp.errors.forEach((error) => {
@@ -33,5 +34,6 @@ export async function createModel(
     });
     throw new Error(resp.errors[0].filePath);
   }
+
   if (!setAsActive) return;
 }

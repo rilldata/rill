@@ -62,6 +62,7 @@
   export let content: string;
   export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
+  export let focusOnMount = false;
 
   const dispatch = createEventDispatcher();
 
@@ -276,6 +277,7 @@
       }),
       parent: editorContainerComponent,
     });
+    if (focusOnMount) editor.focus();
   });
 
   // REACTIVE FUNCTIONS
