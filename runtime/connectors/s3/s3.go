@@ -34,7 +34,7 @@ var spec = connectors.Spec{
 			Hint:        "Note that glob patterns aren't yet supported",
 		},
 		{
-			Key:         "aws.region",
+			Key:         "region",
 			DisplayName: "AWS region",
 			Description: "AWS Region for the bucket.",
 			Placeholder: "us-east-1",
@@ -55,7 +55,7 @@ var spec = connectors.Spec{
 
 type Config struct {
 	Path              string `mapstructure:"path"`
-	AWSRegion         string `mapstructure:"aws.region"`
+	AWSRegion         string `mapstructure:"region"`
 	MaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
 	MaxMatchedObjects int    `mapstructure:"glob.max_matched_objects"`
 	MaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
