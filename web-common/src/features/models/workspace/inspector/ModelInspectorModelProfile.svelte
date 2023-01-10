@@ -148,13 +148,6 @@
                   <div
                     class="text-ellipsis overflow-hidden whitespace-nowrap flex items-center gap-x-2"
                   >
-                    <!-- <div class="text-gray-400">
-                      {#if source?.embedded}
-                        <SourceEmbedded size="13px" />
-                      {:else}
-                        <Source size="13px" />
-                      {/if}
-                    </div> -->
                     <div
                       class=" text-ellipsis overflow-hidden whitespace-nowrap"
                     >

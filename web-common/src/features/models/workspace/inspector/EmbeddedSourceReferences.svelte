@@ -1,9 +1,8 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import EmbeddedSourceEntry from "@rilldata/web-common/features/sources/embedded/EmbeddedSourceEntry.svelte";
   import { groupURIs } from "@rilldata/web-common/features/sources/group-uris";
-  import EndOfPath from "@rilldata/web-common/features/sources/navigation/embedded/EndOfPath.svelte";
-  import SourceTypeLabel from "@rilldata/web-common/features/sources/navigation/embedded/SourceTypeLabel.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
@@ -44,23 +43,10 @@
         on:blur={blur}
         class:text-gray-500={modelHasError}
       >
-        <div class="flex shrink overflow-x-hidden">
-          <div class="flex gap-x-2 overflow-x-hidden">
-            <div class="shrink-0  flex items">
-              <SourceTypeLabel connector={domainSet.connector} />
-            </div>
-            <div
-              style:min-width="52px"
-              style:flex-shrink="3"
-              class=" text-ellipsis overflow-hidden whitespace-nowrap"
-            >
-              {domain}/
-            </div>
-          </div>
-          <div style:flex-shrink="2">
-            <EndOfPath path={source.abbreviatedURI} />
-          </div>
-        </div>
+        <EmbeddedSourceEntry
+          connector={domainSet.connector}
+          path={source.path}
+        />
 
         <div class="text-gray-500 shrink-0">
           {#if source.totalRows}

@@ -4,7 +4,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
 
-  export let sourceName;
+  export let sourceName: string;
   export let connector = undefined;
 </script>
 

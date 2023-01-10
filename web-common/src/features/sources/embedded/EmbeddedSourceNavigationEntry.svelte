@@ -4,11 +4,10 @@
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
   import { slide } from "svelte/transition";
-  import EmbeddedSourceMenuItems from "../EmbeddedSourceMenuItems.svelte";
-  import EmbeddedSourceTooltip from "../EmbeddedSourceTooltip.svelte";
-  import EndOfPath from "./EndOfPath.svelte";
-  export let uri: string;
-  export let abbreviatedURI = uri;
+  import EmbeddedSourceEntry from "./EmbeddedSourceEntry.svelte";
+  import EmbeddedSourceMenuItems from "./EmbeddedSourceMenuItems.svelte";
+  import EmbeddedSourceTooltip from "./EmbeddedSourceTooltip.svelte";
+  export let path: string;
   export let connector: string;
   export let cachedSourceName: string;
 </script>
@@ -16,11 +15,11 @@
 <NavigationEntry
   href={`/source/${cachedSourceName}`}
   open={$page.url.pathname === `/source/${cachedSourceName}`}
-  name={uri}
+  name={path}
   tooltipMaxWidth="300px"
   maxMenuWidth="300px"
 >
-  <EndOfPath slot="name" path={abbreviatedURI} />
+  <EmbeddedSourceEntry slot="name" {connector} {path} />
 
   <svelte:fragment slot="more">
     <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
@@ -28,13 +27,13 @@
     </div>
   </svelte:fragment>
   <svelte:fragment slot="tooltip-content">
-    <EmbeddedSourceTooltip sourceName={uri} {connector} />
+    <EmbeddedSourceTooltip sourceName={path} {connector} />
   </svelte:fragment>
 
   <EmbeddedSourceMenuItems
     slot="menu-items"
     {cachedSourceName}
-    {uri}
+    uri={path}
     {connector}
   />
 </NavigationEntry>

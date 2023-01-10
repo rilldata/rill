@@ -21,7 +21,7 @@
   import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
-  import EmbeddedSourceNav from "./embedded/EmbeddedSourceNav.svelte";
+  import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 

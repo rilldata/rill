@@ -96,7 +96,12 @@
           <slot name="icon" />
         </div>
       {/if}
-      <div class=" text-ellipsis overflow-hidden whitespace-nowrap">
+      <div
+        class:text-ellipsis={!$$slots["name"]}
+        class:overflow-hidden={!$$slots["name"]}
+        class:whitespace-nowrap={!$$slots["name"]}
+        class="w-full"
+      >
         {#if $$slots["name"]}
           <slot name="name" />
         {:else}
