@@ -28,7 +28,7 @@ export function getTableReferences(sql: string): Array<Reference> {
   });
 }
 
-const ProtocolMatcher = /^(?:https?|s3):\/\//;
+const ProtocolMatcher = /^(?:https?|s3|gs):\/\//;
 
 export function getEmbeddedReferences(sql: string): Array<Reference> {
   const dedupe = new Set<string>();
