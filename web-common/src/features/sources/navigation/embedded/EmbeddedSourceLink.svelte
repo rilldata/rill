@@ -24,7 +24,7 @@
 
   <svelte:fragment slot="more">
     <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-      <ColumnProfile indentLevel={1} objectName={uri} />
+      <ColumnProfile indentLevel={1} objectName={cachedSourceName} />
     </div>
   </svelte:fragment>
   <svelte:fragment slot="tooltip-content">
