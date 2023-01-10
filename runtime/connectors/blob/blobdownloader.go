@@ -81,7 +81,7 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 	}
 
 	if len(fileNames) == 0 {
-		return nil, fmt.Errorf("no filenames matching glob pattern %q", globPattern)
+		return nil, fmt.Errorf("no files found for glob pattern %q", globPattern)
 	}
 
 	handler.FileNames = fileNames
@@ -93,13 +93,13 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 
 func validateLimits(size int64, matchCount int, fetched int64, config FetchConfigs) error {
 	if size > config.GlobMaxTotalSize {
-		return fmt.Errorf("glob pattern exceeds limits: size fetched %v, max size %v", size, config.GlobMaxTotalSize)
+		return fmt.Errorf("glob pattern exceeds limits: would fetch more than %d bytes", config.GlobMaxTotalSize)
 	}
 	if matchCount > config.GlobMaxObjectsMatched {
-		return fmt.Errorf("glob pattern exceeds limits: files matched %v, max matches allowed %v", size, config.GlobMaxObjectsMatched)
+		return fmt.Errorf("glob pattern exceeds limits: matched more than %d files", config.GlobMaxObjectsMatched)
 	}
 	if fetched > config.GlobMaxObjectsListed {
-		return fmt.Errorf("glob pattern exceeds limits: files listed %v, max file listing allowed %v", size, config.GlobMaxObjectsListed)
+		return fmt.Errorf("glob pattern exceeds limits: listed more than %d files", config.GlobMaxObjectsListed)
 	}
 	return nil
 }
