@@ -1,6 +1,6 @@
 # This workflow runs full or nightly releases.
 # Full releases are published to brew, CDN (for install script), and Github Releases.
-# Full releases get infer the version number from the git tag.
+# Full releases infer the version number from the git tag.
 # Nightly releases are only published to CDN and do not have a version. Their version number is "nightly".
 name: Release Rill CLI
 on:
