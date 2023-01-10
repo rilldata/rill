@@ -57,7 +57,7 @@ func (b *BlobHandler) DownloadAll(ctx context.Context) error {
 	if err := g.Wait(); err != nil {
 		// one of the download failed
 		// remove the temp directory
-		fileutil.RemoveFiles(b.LocalPaths)
+		fileutil.ForceRemoveFiles(b.LocalPaths)
 		return err
 	}
 

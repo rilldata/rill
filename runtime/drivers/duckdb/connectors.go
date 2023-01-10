@@ -19,16 +19,21 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 		return err
 	}
 
-	// todo :: check if this exceptional handling can be merged
+	// Driver-specific overrides
+	// switch source.Connector {
+	// case "local_file":
+	// 	return c.ingestFile(ctx, env, source)
+	// }
+
 	if source.Connector == "local_file" {
 		return c.ingestLocalFiles(ctx, env, source)
 	}
 
-	localPaths, err := connectors.ConsumeAsFile(ctx, env, source)
+	localPaths, err := connectors.ConsumeAsFiles(ctx, env, source)
 	if err != nil {
 		return err
 	}
-	defer fileutil.RemoveFiles(localPaths)
+	defer fileutil.ForceRemoveFiles(localPaths)
 	// multiple parquet files can be loaded in single sql
 	// this seems to be performing very fast as compared to appending individual files
 	return c.ingestFiles(ctx, source, localPaths)

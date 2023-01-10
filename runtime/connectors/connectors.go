@@ -25,7 +25,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFile(ctx context.Context, env *Env, source *Source) ([]string, error)
+	ConsumeAsFiles(ctx context.Context, env *Env, source *Source) ([]string, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -119,12 +119,12 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFile(ctx context.Context, env *Env, source *Source) ([]string, error) {
+func ConsumeAsFiles(ctx context.Context, env *Env, source *Source) ([]string, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-	return connector.ConsumeAsFile(ctx, env, source)
+	return connector.ConsumeAsFiles(ctx, env, source)
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

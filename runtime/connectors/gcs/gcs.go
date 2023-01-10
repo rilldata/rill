@@ -11,9 +11,10 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-
 	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/gcsblob" // blank import required for bucket functions
+
+	// blank import required for bucket functions
+	_ "gocloud.dev/blob/gcsblob"
 )
 
 func init() {
@@ -46,10 +47,10 @@ var spec = connectors.Spec{
 
 type Config struct {
 	Path              string `key:"path"`
-	MaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	MaxMatchedObjects int    `mapstructure:"glob.max_matched_objects"`
-	MaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	PageSize          int    `mapstructure:"glob.page_size"`
+	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -57,6 +58,11 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
+	}
+	if !doublestar.ValidatePattern(conf.Path) {
+		// ideally this should be validated at much earlier stage
+		// keeping it here to have gcs specific validations
+		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
 	return conf, nil
 }
@@ -67,16 +73,10 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	if !doublestar.ValidatePattern(conf.Path) {
-		// ideally this should be validated at much earlier stage
-		// keeping it here to have gcs specific validations
-		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
 
 	bucket, glob, _, err := gcsURLParts(conf.Path)
@@ -92,10 +92,10 @@ func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, sourc
 	defer bucketObj.Close()
 
 	fetchConfigs := rillblob.FetchConfigs{
-		MaxTotalSize:      conf.MaxTotalSize,
-		MaxMatchedObjects: conf.MaxMatchedObjects,
-		MaxObjectsListed:  conf.MaxObjectsListed,
-		PageSize:          conf.PageSize,
+		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
+		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
+		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
+		GlobPageSize:          conf.GlobPageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }

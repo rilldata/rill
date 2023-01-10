@@ -7,15 +7,14 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-
 	"gocloud.dev/blob"
 )
 
 type FetchConfigs struct {
-	MaxTotalSize      int64
-	MaxMatchedObjects int
-	MaxObjectsListed  int64
-	PageSize          int
+	GlobMaxTotalSize      int64
+	GlobMaxObjectsMatched int
+	GlobMaxObjectsListed  int64
+	GlobPageSize          int
 }
 
 // downloads file to local paths
@@ -60,7 +59,7 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 
 	token := blob.FirstPageToken
 	for token != nil {
-		objs, nextToken, err := bucket.ListPage(ctx, token, config.PageSize, listOptions)
+		objs, nextToken, err := bucket.ListPage(ctx, token, config.GlobPageSize, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -93,30 +92,30 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 }
 
 func validateLimits(size int64, matchCount int, fetched int64, config FetchConfigs) error {
-	if size > config.MaxTotalSize {
-		return fmt.Errorf("glob pattern exceeds limits: size fetched %v, max size %v", size, config.MaxTotalSize)
+	if size > config.GlobMaxTotalSize {
+		return fmt.Errorf("glob pattern exceeds limits: size fetched %v, max size %v", size, config.GlobMaxTotalSize)
 	}
-	if matchCount > config.MaxMatchedObjects {
-		return fmt.Errorf("glob pattern exceeds limits: files matched %v, max matches allowed %v", size, config.MaxMatchedObjects)
+	if matchCount > config.GlobMaxObjectsMatched {
+		return fmt.Errorf("glob pattern exceeds limits: files matched %v, max matches allowed %v", size, config.GlobMaxObjectsMatched)
 	}
-	if fetched > config.MaxObjectsListed {
-		return fmt.Errorf("glob pattern exceeds limits: files listed %v, max file listing allowed %v", size, config.MaxObjectsListed)
+	if fetched > config.GlobMaxObjectsListed {
+		return fmt.Errorf("glob pattern exceeds limits: files listed %v, max file listing allowed %v", size, config.GlobMaxObjectsListed)
 	}
 	return nil
 }
 
 func validateConfigs(fetchConfigs *FetchConfigs) {
-	if fetchConfigs.MaxMatchedObjects == 0 {
-		fetchConfigs.MaxMatchedObjects = 100
+	if fetchConfigs.GlobMaxObjectsMatched == 0 {
+		fetchConfigs.GlobMaxObjectsMatched = 100
 	}
-	if fetchConfigs.MaxObjectsListed == 0 {
-		fetchConfigs.MaxObjectsListed = 10 * 1000
+	if fetchConfigs.GlobMaxObjectsListed == 0 {
+		fetchConfigs.GlobMaxObjectsListed = 10 * 1000
 	}
-	if fetchConfigs.MaxTotalSize == 0 {
+	if fetchConfigs.GlobMaxTotalSize == 0 {
 		// 10 GB
-		fetchConfigs.MaxTotalSize = 10 * 1024 * 1024 * 1024
+		fetchConfigs.GlobMaxTotalSize = 10 * 1024 * 1024 * 1024
 	}
-	if fetchConfigs.PageSize == 0 {
-		fetchConfigs.PageSize = 1000
+	if fetchConfigs.GlobPageSize == 0 {
+		fetchConfigs.GlobPageSize = 1000
 	}
 }

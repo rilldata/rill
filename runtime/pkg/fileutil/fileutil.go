@@ -118,9 +118,9 @@ func IsGlob(path string) bool {
 	return false
 }
 
-// deletes multiple files
+// ForceRemoveFiles deletes multiple files
 // ignores path errors if any
-func RemoveFiles(paths []string) {
+func ForceRemoveFiles(paths []string) {
 	for _, path := range paths {
 		_ = os.Remove(path)
 	}
