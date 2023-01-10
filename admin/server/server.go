@@ -6,20 +6,17 @@ import (
 	"fmt"
 	"net/http"
 
-	// oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware".
-
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/prometheus"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"go.uber.org/zap"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/labstack/echo-contrib/session"
 	"github.com/rilldata/rill/admin/api"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 type Server struct {
