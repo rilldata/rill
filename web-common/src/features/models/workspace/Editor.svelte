@@ -332,8 +332,11 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div class="h-full" use:listenToNodeResize>
-  <div bind:this={editorContainer} class="editor-container  h-full">
+<div class="h-full w-full overflow-auto" use:listenToNodeResize>
+  <div
+    bind:this={editorContainer}
+    class="editor-container  h-full w-full overflow-x-auto"
+  >
     <div bind:this={editorContainerComponent} />
   </div>
 </div>
