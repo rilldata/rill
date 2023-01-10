@@ -26,11 +26,6 @@ type BlobHandler struct {
 	TempDir    string
 }
 
-func (b *BlobHandler) Close() {
-	b.bucket.Close()
-	os.RemoveAll(b.TempDir)
-}
-
 // object path is relative to bucket
 func (b *BlobHandler) DownloadObject(ctx context.Context, objpath string) (string, error) {
 	rc, err := b.bucket.NewReader(ctx, objpath, nil)
