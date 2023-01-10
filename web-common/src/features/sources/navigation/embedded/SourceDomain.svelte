@@ -18,7 +18,7 @@
     tooltipText="sources"
   >
     <div
-      class="grid items-center gap-x-2 justify-start justify-items-start pl-2 pr-3 font-normal"
+      class="grid items-center gap-x-2 justify-start justify-items-start pl-3 pr-3 font-normal"
       style:grid-template-columns="auto 1fr max-content"
       style:height="24px"
     >
