@@ -60,7 +60,7 @@
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"
-        class="grid grid-flow-col justify-start items-center gap-x-1"
+        class="w-full  overflow-x-hidden  grid grid-flow-col justify-start items-center gap-x-1"
       >
         <Tooltip
           distance={8}
@@ -71,6 +71,7 @@
             autocomplete="off"
             disabled={!editable}
             id="model-title-input"
+            class:text-overflow-ellipsis={!editable}
             bind:this={titleInputElement}
             on:input={(evt) => {
               if (editable) {
@@ -78,7 +79,7 @@
                 editingTitle = true;
               }
             }}
-            class="bg-transparent border border-transparent border-2 {editable
+            class="w-full text-overflow-ellipses whitespace-wrap bg-transparent border border-transparent border-2 {editable
               ? 'hover:border-gray-400 cursor-pointer'
               : ''} rounded pl-2 pr-2"
             class:font-bold={editingTitle === false}
