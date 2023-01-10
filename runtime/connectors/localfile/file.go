@@ -72,6 +72,6 @@ func (c connector) Spec() connectors.Spec {
 
 // local file connectors should directly use glob patterns
 // keeping it for reference
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
 }

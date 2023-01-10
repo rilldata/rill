@@ -49,7 +49,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)

@@ -46,7 +46,7 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path              string `key:"path"`
+	Path                  string `key:"path"`
 	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
