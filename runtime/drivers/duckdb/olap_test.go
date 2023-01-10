@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -186,7 +187,7 @@ func TestClose(t *testing.T) {
 	})
 
 	err := g.Wait()
-	require.Equal(t, drivers.ErrClosed, err)
+	require.Equal(t, errors.New("sql: database is closed"), err)
 
 	x := <-results
 	require.Greater(t, x, 0)
