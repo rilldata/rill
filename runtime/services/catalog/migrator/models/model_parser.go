@@ -8,7 +8,7 @@ import (
  * Parses a model query but looks specifically for source table names
  */
 
-var tableNameRegex = regexp.MustCompile(`(?im)(?:from|join)\s+([a-zA-z0-9_.]+|"[a-zA-z0-9.\-_/:\s~]+")`)
+var tableNameRegex = regexp.MustCompile(`(?im)(?:from|join)\s+([a-zA-z0-9_.]+|"[^"]+")`)
 
 func ExtractTableNames(query string) []string {
 	subMatches := tableNameRegex.FindAllStringSubmatch(query, -1)

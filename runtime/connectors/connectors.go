@@ -171,13 +171,14 @@ func GetSourceFromPath(path string) *Source {
 		switch matches[1] {
 		case "http", "https":
 			connector = "https"
-		case "gs":
-			connector = "gcs"
 		case "s3":
 			connector = "s3"
-		case "file":
-			connector = "local_file"
-			path = strings.Replace(path, "file://", "", 1)
+		// This syntax is not supported in duckdb hence we will not support it for now.
+		// case "gs":
+		//	 connector = "gcs"
+		// case "file":
+		//	 connector = "local_file"
+		//	 path = strings.Replace(path, "file://", "", 1)
 		default:
 			return nil
 		}

@@ -1,7 +1,7 @@
 import {
   getEmbeddedReferences,
   getTableReferences,
-} from "@rilldata/web-common/features/models/utils/get-table-references/index";
+} from "@rilldata/web-common/features/models/utils/get-table-references";
 import { tests } from "@rilldata/web-common/features/models/utils/get-table-references/test-data";
 
 describe("getAllTableReferences", () => {
