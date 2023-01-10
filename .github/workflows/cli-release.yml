@@ -1,14 +1,14 @@
 # This workflow runs full or nightly releases.
 # Full releases are published to brew, CDN (for install script), and Github Releases.
-# Full releases infer the version number from the git tag.
+# A full release gets its version number from the Git tag that triggered it.
 # Nightly releases are only published to CDN and do not have a version. Their version number is "nightly".
 name: Release Rill CLI
 on:
-  # Trigger release on new tag
+  # Trigger a full release on new Git tag
   push:
     tags:
       - "**"
-  # Trigger a nightly at midnight
+  # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
   # Trigger a nightly release manually
