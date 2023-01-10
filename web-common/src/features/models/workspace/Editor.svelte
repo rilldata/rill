@@ -332,9 +332,21 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div class="h-full" use:listenToNodeResize>
+<div
+  class="h-full"
+  use:listenToNodeResize
+  on:click={() => {
+    console.log(editor);
+  }}
+>
   <div bind:this={editorContainer} class="editor-container  h-full">
-    <div bind:this={editorContainerComponent} />
+    <div
+      bind:this={editorContainerComponent}
+      on:click={() => {
+        /** give the editor focus no matter where we click */
+        if (!editor.hasFocus) editor.focus();
+      }}
+    />
   </div>
 </div>
 
