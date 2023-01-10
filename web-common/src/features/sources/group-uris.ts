@@ -28,19 +28,24 @@ export interface GroupedURI {
 
 export function groupURIs(uris: V1CatalogEntry[]): GroupedURIObject {
   /** create the grouped URIs object. */
-  const groupedURIs = uris.reduce((obj, entry) => {
-    const uri = entry.path;
-    const [_, __, rest] = uri.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
+  const groupedURIs: Record<string, Array<V1CatalogEntry>> = uris.reduce(
+    (obj, entry) => {
+      const uri = entry.path;
+      const [, , rest] = uri.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
 
-    const components = rest.split("/");
-    const domain =
-      components.length > 2
-        ? components.slice(0, 2).join("/")
-        : components.join("/");
+      const components = rest ? rest.split("/") : [uri];
+      const domain =
+        components.length > 2
+          ? components.slice(0, 2).join("/")
+          : components.join("/");
 
-    obj[domain] = obj[domain] ? [...obj[domain], entry] : [entry];
-    return obj;
-  }, {});
+      obj[domain] = obj[domain] ? [...obj[domain], entry] : [entry];
+      return obj;
+    },
+    {} as Record<string, Array<V1CatalogEntry>>
+  );
+
+  const groupedURIObjects: GroupedURIObject = {};
 
   /** iterate through the keys of the grouped URIs object and
    * transform such that:
@@ -58,10 +63,9 @@ export function groupURIs(uris: V1CatalogEntry[]): GroupedURIObject {
         break;
       }
     }
-    const identifier = domainURIs[0].path.split(
-      /(gs:\/\/|s3:\/\/|https:\/\/)/
-    )[1];
-    groupedURIs[domain] = {
+    const identifier =
+      domainURIs[0].path.split(/(gs:\/\/|s3:\/\/|https:\/\/)/)[1] ?? "";
+    groupedURIObjects[domain] = {
       endingIndex,
       domain,
       connector: identifier.replace("://", ""),
@@ -85,5 +89,5 @@ export function groupURIs(uris: V1CatalogEntry[]): GroupedURIObject {
             })),
     };
   }
-  return groupedURIs;
+  return groupedURIObjects;
 }
