@@ -840,7 +840,7 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: "DAY",
+		TimeGranularity: "day",
 		MeasureNames:    []string{"measure_0", "measure_2"},
 	})
 	require.NoError(t, err)

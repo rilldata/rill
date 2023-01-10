@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -84,7 +83,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    q.TimeStart,
 			End:      q.TimeEnd,
-			Interval: runtimev1.TimeGrain(runtimev1.TimeGrain_value["TIME_GRAIN_"+strings.ToUpper(q.TimeGranularity)]),
+			Interval: toTimeGrain(q.TimeGranularity),
 		},
 		Measures: measures,
 		Filters:  q.Filter,
