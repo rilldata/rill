@@ -82,26 +82,26 @@ func TestDAG_DeleteBranch(t *testing.T) {
 	require.Equal(t, []string{}, d.GetChildren("A0"))
 }
 
-func getTestDAG() (*DAG, error ){
+func getTestDAG() (*DAG, error) {
 	d := NewDAG()
 	_, err := d.Add("A0", []string{})
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	_, err = d.Add("B1", []string{"B0", "C0"})
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	_, err = d.Add("B2", []string{"A1", "B1"})
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	_, err = d.Add("A1", []string{"A0", "B0"})
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	_, err = d.Add("A2", []string{"C0"})
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	// A0  B0  C0
@@ -117,7 +117,7 @@ func TestCyclicDAG(t *testing.T) {
 	n, err := d.Add("A0", []string{"B1"})
 	require.NoError(t, err)
 	require.Equal(t, "A0", n.Name)
-	
+
 	p, ok := n.Parents["B1"]
 	require.Equal(t, true, ok)
 	require.Equal(t, "B1", p.Name)
