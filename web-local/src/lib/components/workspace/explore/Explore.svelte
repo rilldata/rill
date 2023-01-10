@@ -55,7 +55,17 @@
 >
   <ExploreContainer {gridConfig} slot="body">
     <ExploreHeader {metricViewName} slot="header" />
-    <svelte:component this={MetricsContainer} {metricViewName} slot="metrics" />
+
+    <svelte:fragment slot="metrics">
+      {#key metricViewName}
+        {#if hasTimeSeries}
+          <MetricsTimeSeriesCharts {metricViewName} />
+        {:else}
+          <MeasuresContainer {metricViewName} />
+        {/if}
+      {/key}
+    </svelte:fragment>
+
     <svelte:fragment slot="leaderboards">
       {#if selectedDimensionName}
         <DimensionDisplay

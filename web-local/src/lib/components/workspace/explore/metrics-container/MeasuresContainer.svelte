@@ -20,8 +20,9 @@
   const MEASURE_HEIGHT_MULTILINE = 80;
   const MEASURE_WIDTH = 175;
   const MARGIN_TOP = 20;
-  const CHARACTER_LIMIT_FOR_WRAPPING = 26;
   const GRID_MARGIN_TOP = 20;
+
+  let measuresWrapper;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -36,6 +37,7 @@
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
   $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
+  $: metricsContainerWidth = $observedNode?.offsetWidth || 0;
 
   function getMeasureHeightsForColumn(measuresHeight, numColumns) {
     const recalculatedHeights = [...measuresHeight];
@@ -52,6 +54,7 @@
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
   $: numColumns = 1;
+  let measuresHeight = [];
   let measureGridHeights = [];
 
   $: if (
@@ -70,23 +73,28 @@
       metricViewName,
       totalsQueryParams
     );
+  }
 
-    const measures = $metaQuery.data?.measures;
+  let measureNodes;
 
-    let measuresHeight = measures.map((measure) => {
-      const label = measure?.label || measure?.expression;
-      if (label.length > CHARACTER_LIMIT_FOR_WRAPPING)
-        return MEASURE_HEIGHT_MULTILINE;
-      else return MEASURE_HEIGHT;
-    });
+  $: measureNodes = [...(measuresWrapper?.children || [])];
 
+  $: if (measureNodes && $metaQuery?.data?.measures) {
+    measuresHeight = measureNodes.map(
+      (measureNode) => measureNode?.offsetHeight
+    );
+
+    const minInMeasures = Math.min(...measuresHeight);
+    measuresHeight = measuresHeight.map((height) =>
+      height > minInMeasures ? MEASURE_HEIGHT_MULTILINE : MEASURE_HEIGHT
+    );
     const totalMeasuresHeight = measuresHeight.reduce(
       (s, v) => s + v + MARGIN_TOP,
       0
     );
 
     if (metricsContainerHeight) {
-      const columns = totalMeasuresHeight / metricsContainerHeight;
+      let columns = totalMeasuresHeight / metricsContainerHeight;
       if (columns <= 1) {
         numColumns = 1;
         measureGridHeights = [...measuresHeight];
@@ -114,10 +122,11 @@
 
 <div
   use:listenToNodeResize
+  style:min-width="{MEASURE_WIDTH * numColumns}px"
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:margin-top="{GRID_MARGIN_TOP}px"
 >
-  <div class="grid grid-cols-{numColumns} gap-x-4">
+  <div bind:this={measuresWrapper} class="grid grid-cols-{numColumns} gap-x-4">
     {#if $metaQuery.data?.measures}
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
