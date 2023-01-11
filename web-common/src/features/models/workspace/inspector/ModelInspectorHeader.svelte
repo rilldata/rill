@@ -29,8 +29,7 @@
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
-    modelName,
-    { query: { queryKey: `current-model-query-in-inspector-${modelName}` } }
+    modelName
   );
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
@@ -78,6 +77,7 @@
       );
     });
   }
+  $: console.log(sourceTableReferences);
 
   // get input table cardinalities. We use this to determine the rollup factor.
   $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {

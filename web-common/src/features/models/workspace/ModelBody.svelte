@@ -156,8 +156,6 @@
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
-
-  $: console.log(modelError, embeddedSourceErrors);
 </script>
 
 <svelte:window bind:innerHeight />
