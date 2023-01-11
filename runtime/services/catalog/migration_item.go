@@ -17,9 +17,11 @@ type MigrationItem struct {
 	Name                   string
 	NormalizedName         string
 	Path                   string
+	Type                   MigrationType
 	CatalogInFile          *drivers.CatalogEntry
 	CatalogInStore         *drivers.CatalogEntry
-	Type                   MigrationType
+	NewCatalog             *drivers.CatalogEntry
+	HasChanged             bool
 	FromName               string
 	FromNormalizedName     string
 	FromPath               string
@@ -45,130 +47,157 @@ const (
 	MigrationDelete        MigrationType = 5
 )
 
-func (s *Service) getMigrationItem(
+func (s *Service) getMigrationItems(
 	ctx context.Context,
 	repoPath string,
 	storeObjectsMap map[string]*drivers.CatalogEntry,
-	storeObjectsPathMap map[string]*drivers.CatalogEntry,
 	forcedPathMap map[string]bool,
-	embeddedMigrations map[string]*MigrationItem,
 ) []*MigrationItem {
-	item := &MigrationItem{
-		Type: MigrationNoChange,
-		Path: repoPath,
-	}
-
-	forceChange := forcedPathMap[repoPath]
-	items := []*MigrationItem{item}
-	var embeddedEntries []*drivers.CatalogEntry
+	var items []*MigrationItem
+	// primary item for repoPath
+	var item *MigrationItem
+	hasFileObject := false
 
 	catalog, err := artifacts.Read(ctx, s.Repo, s.InstID, repoPath)
 	if err != nil {
-		if !errors.Is(err, artifacts.ErrFileRead) {
-			item.Error = &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_SYNTAX,
-				Message:  err.Error(),
-				FilePath: repoPath,
-			}
-		}
-		item.Type = MigrationDelete
-
-		existing, ok := storeObjectsPathMap[repoPath]
-		if ok {
-			item.Name = existing.Name
-			if existing.Embedded {
-				item.CatalogInFile = existing
-				item.Type = MigrationNoChange
-				item.Error = nil
-			}
-		} else {
-			item.Name = fileutil.Stem(repoPath)
-		}
-
-		item.NormalizedName = normalizeName(item.Name)
+		item = s.newMigrationItemFromError(repoPath, err)
+		items = []*MigrationItem{item}
 	} else {
-		item.Name = catalog.Name
-		item.NormalizedName = normalizeName(item.Name)
-		item.CatalogInFile = catalog
+		item, items = s.newMigrationItemFromFile(ctx, repoPath, catalog, storeObjectsMap)
+		items = append(items, item)
+		hasFileObject = true
+	}
+	// mark the item as changed if it was forced to update
+	item.HasChanged = forcedPathMap[repoPath]
 
-		var normalizedDependencies []string
-		normalizedDependencies, embeddedEntries = migrator.GetDependencies(ctx, s.Olap, item.CatalogInFile)
-		// convert dependencies to lower case
-		for i, dep := range normalizedDependencies {
-			normalizedDependencies[i] = normalizeName(dep)
-		}
-		item.NormalizedDependencies = normalizedDependencies
+	if hasFileObject {
+		s.checkFileChange(ctx, item)
+	}
 
-		items = append(items, s.resolveDependencies(ctx, item, embeddedEntries, embeddedMigrations)...)
-
-		repoStat, _ := s.Repo.Stat(ctx, s.InstID, repoPath)
-		catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstID, s.Repo, catalog)
-		if repoStat.LastUpdated.After(catalogLastUpdated) {
-			item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
-		} else {
-			item.CatalogInFile.UpdatedOn = catalogLastUpdated
-			// if catalog has changed in any way then always re-create/update
-			forceChange = true
-		}
-		if item.CatalogInFile.UpdatedOn.After(s.LastMigration) {
-			// assume creation until we see a catalog object
-			item.Type = MigrationCreate
+	catalogInStore, hasStoreObject := storeObjectsMap[item.NormalizedName]
+	if hasStoreObject {
+		item.CatalogInStore = catalogInStore
+		if !hasFileObject {
+			item.NewCatalog = catalogInStore
 		}
 	}
 
-	catalogInStore, ok := storeObjectsMap[item.NormalizedName]
-
-	if item.Type == MigrationNoChange && forcedPathMap[repoPath] {
-		if ok {
+	if item.Type == MigrationNoChange && item.HasChanged {
+		if hasStoreObject {
 			item.Type = MigrationUpdate
 		} else {
 			item.Type = MigrationCreate
 		}
 	}
 
-	if !ok {
-		if item.CatalogInFile == nil {
-			item.Type = MigrationNoChange
-			if errors.Is(err, artifacts.ErrFileRead) {
-				// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
-				return nil
+	if !hasFileObject && !hasStoreObject {
+		// invalid file created/updated
+		// do not run any migration on this, changed are already saved to the file
+		item.Type = MigrationNoChange
+		if errors.Is(err, artifacts.ErrFileRead) {
+			// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
+			return nil
+		}
+	}
+
+	if hasFileObject && hasStoreObject {
+		if item.Name != catalogInStore.Name {
+			// rename with same name different case
+			item.renameFrom(catalogInStore.Name, item.Path)
+		}
+
+		switch item.Type {
+		case MigrationCreate:
+			if migrator.IsEqual(ctx, item.CatalogInFile, item.CatalogInStore) && !item.HasChanged {
+				// if the actual content has not changed, mark as MigrationNoChange
+				item.Type = MigrationNoChange
+			} else {
+				// else mark as MigrationUpdate
+				item.Type = MigrationUpdate
 			}
-		}
-		return items
-	}
-	item.CatalogInStore = catalogInStore
-	if item.Name != catalogInStore.Name && item.CatalogInFile != nil {
-		// rename with same name different case
-		item.renameFrom(catalogInStore.Name, item.Path)
-	}
 
-	switch item.Type {
-	case MigrationCreate:
-		if migrator.IsEqual(ctx, item.CatalogInFile, item.CatalogInStore) && !forceChange {
-			// if the actual content has not changed, mark as MigrationNoChange
-			item.Type = MigrationNoChange
-		} else {
-			// else mark as MigrationUpdate
-			item.Type = MigrationUpdate
-		}
-
-	case MigrationNoChange:
-		// if item doesn't exist in olap, mark as create
-		// happens when the catalog table is modified directly
-		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
-		if !ok {
-			item.Type = MigrationCreate
+		case MigrationNoChange:
+			// if item doesn't exist in olap, mark as create
+			// happens when the catalog table is modified directly in some way
+			ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
+			if !ok {
+				item.Type = MigrationCreate
+			}
 		}
 	}
 
 	return items
 }
 
+func (s *Service) newMigrationItemFromError(repoPath string, err error) *MigrationItem {
+	item := &MigrationItem{
+		Type: MigrationNoChange,
+		Path: repoPath,
+	}
+
+	if !errors.Is(err, artifacts.ErrFileRead) {
+		item.Error = &runtimev1.ReconcileError{
+			Code:     runtimev1.ReconcileError_CODE_SYNTAX,
+			Message:  err.Error(),
+			FilePath: repoPath,
+		}
+	}
+	item.Type = MigrationDelete
+
+	item.Name = fileutil.Stem(repoPath)
+	item.NormalizedName = normalizeName(item.Name)
+	return item
+}
+
+func (s *Service) newMigrationItemFromFile(
+	ctx context.Context,
+	repoPath string,
+	catalogInFile *drivers.CatalogEntry,
+	storeObjectsMap map[string]*drivers.CatalogEntry,
+) (*MigrationItem, []*MigrationItem) {
+	item := &MigrationItem{
+		Type:           MigrationNoChange,
+		Path:           repoPath,
+		Name:           catalogInFile.Name,
+		NormalizedName: normalizeName(catalogInFile.Name),
+		CatalogInFile:  catalogInFile,
+		NewCatalog:     catalogInFile,
+	}
+	item.Name = catalogInFile.Name
+	item.NormalizedName = normalizeName(item.Name)
+	item.CatalogInFile = catalogInFile
+
+	normalizedDependencies, embeddedEntries := migrator.GetDependencies(ctx, s.Olap, item.CatalogInFile)
+	// convert dependencies to lower case
+	for i, dep := range normalizedDependencies {
+		normalizedDependencies[i] = normalizeName(dep)
+	}
+	item.NormalizedDependencies = normalizedDependencies
+
+	return item, s.resolveDependencies(ctx, item, storeObjectsMap, embeddedEntries)
+}
+
+func (s *Service) checkFileChange(ctx context.Context, item *MigrationItem) {
+	repoStat, _ := s.Repo.Stat(ctx, s.InstID, item.Path)
+	catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstID, s.Repo, item.CatalogInFile)
+	if repoStat.LastUpdated.After(catalogLastUpdated) {
+		item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
+	} else {
+		item.CatalogInFile.UpdatedOn = catalogLastUpdated
+		// if catalog has changed in any way then always re-create/update
+		item.HasChanged = true
+	}
+	if item.CatalogInFile.UpdatedOn.After(s.LastMigration) {
+		// assume creation until we see a catalog object
+		item.Type = MigrationCreate
+	}
+}
+
 func (s *Service) resolveDependencies(
 	ctx context.Context,
 	item *MigrationItem,
+	storeObjectsMap map[string]*drivers.CatalogEntry,
 	embeddedEntries []*drivers.CatalogEntry,
-	embeddedMigrations map[string]*MigrationItem,
 ) []*MigrationItem {
 	items := make([]*MigrationItem, 0)
 
@@ -192,21 +221,12 @@ func (s *Service) resolveDependencies(
 			delete(prevEmbeddedEntries, normalizedEmbeddedName)
 			continue
 		}
-		embeddedItem, ok := embeddedMigrations[normalizedEmbeddedName]
-		if !ok {
-			embeddedItem = s.newEmbeddedMigrationItem(embeddedEntry, MigrationCreate)
-			if existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, embeddedEntry.Name); ok {
-				// update the catalog for embedded entry to the one from store
-				embeddedItem.CatalogInFile = existingEntry
-				embeddedItem.CatalogInStore = existingEntry
-				if arrayutil.Contains(existingEntry.Embeds, item.NormalizedName) {
-					// if it already has this, no change
-					embeddedItem.Type = MigrationNoChange
-				} else {
-					// else mark as catalog update, this means
-					embeddedItem.Type = MigrationUpdateCatalog
-				}
-			}
+		embeddedItem := s.newEmbeddedMigrationItem(embeddedEntry, MigrationCreate)
+		if existingEntry, ok := storeObjectsMap[embeddedItem.NormalizedName]; ok {
+			// update the catalog for embedded entry to the one from store
+			embeddedItem.CatalogInFile = existingEntry
+			embeddedItem.CatalogInStore = existingEntry
+			embeddedItem.Type = MigrationNoChange
 		}
 		embeddedItem.addLink(item.NormalizedName)
 		items = append(items, embeddedItem)
@@ -214,14 +234,12 @@ func (s *Service) resolveDependencies(
 
 	// go through previous embedded entries not embedded anymore
 	for prevEmbeddedEntry := range prevEmbeddedEntries {
-		embeddedItem, ok := embeddedMigrations[prevEmbeddedEntry]
-		if !ok {
-			existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, prevEmbeddedEntry)
-			if !ok || !existingEntry.Embedded {
-				continue
-			}
-			embeddedItem = s.newEmbeddedMigrationItem(existingEntry, MigrationUpdateCatalog)
+		existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, prevEmbeddedEntry)
+		if !ok || !existingEntry.Embedded {
+			// should not happen
+			continue
 		}
+		embeddedItem := s.newEmbeddedMigrationItem(existingEntry, MigrationUpdateCatalog)
 		embeddedItem.removeLink(item.NormalizedName)
 		items = append(items, embeddedItem)
 	}
@@ -236,6 +254,7 @@ func (s *Service) newEmbeddedMigrationItem(newEntry *drivers.CatalogEntry, migra
 		Path:           newEntry.Path,
 		CatalogInFile:  newEntry,
 		CatalogInStore: newEntry,
+		NewCatalog:     newEntry,
 		Type:           migrationType,
 	}
 }

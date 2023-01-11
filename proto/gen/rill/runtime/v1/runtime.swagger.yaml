@@ -1389,10 +1389,17 @@ definitions:
         format: date-time
       embedded:
         type: boolean
+        description: Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
+      embeddedBy:
+        type: array
+        items:
+          type: string
+        description: Contains list of entry names this is embedded by.
       embeds:
         type: array
         items:
           type: string
+        description: Contains list of entry names this embeds.
       metricsView:
         $ref: '#/definitions/v1MetricsView'
       model:

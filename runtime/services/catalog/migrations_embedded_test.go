@@ -216,10 +216,11 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 		result,
 		0,
 		0,
-		3,
-		1,
+		2,
+		2,
 		[]string{EmbeddedSourcePath, AdBidsModelRepoPath, AdBidsDashboardRepoPath, AdBidsNewModelPath},
 	)
+	testutils.AssertTableAbsence(t, s, EmbeddedSourceName)
 }
 
 func TestEmbeddingModelRename(t *testing.T) {

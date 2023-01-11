@@ -39,7 +39,6 @@ const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 const AdBidsSourceModelRepoPath = "/models/AdBids_source_model.sql"
-const AdBidsSourceModelRepoPath2 = "/models/AdBids_source_model2.sql"
 const AdBidsDashboardRepoPath = "/dashboards/AdBids_dashboard.yaml"
 
 var AdBidsAffectedPaths = []string{AdBidsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
@@ -311,11 +310,8 @@ func TestInterdependentModelCycle(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			s, _ := initBasicService(t)
 
-			testutils.CreateModel(t, s, "AdBids_source_model",
-				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
 			testutils.CreateModel(t, s, "AdBids_model",
 				"select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
-
 			// Adding source with circular dependencies
 			testutils.CreateModel(t, s, "AdBids_source_model",
 				"select id, timestamp, publisher, domain, bid_price from AdBids_model", AdBidsSourceModelRepoPath)

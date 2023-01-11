@@ -92,7 +92,8 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	result.Errors = reconcileErrors
 
 	// order the items to have parents before children
-	migrations := s.collectMigrationItems(migrationMap, result)
+	migrations, reconcileErrors := s.collectMigrationItems(migrationMap)
+	result.Errors = append(result.Errors, reconcileErrors...)
 
 	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
@@ -112,9 +113,9 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 // It will order the items based on DAG with parents coming before children.
 func (s *Service) collectMigrationItems(
 	migrationMap map[string]*MigrationItem,
-	result *ReconcileResult,
-) []*MigrationItem {
+) ([]*MigrationItem, []*runtimev1.ReconcileError) {
 	migrationItems := make([]*MigrationItem, 0)
+	reconcileErrors := make([]*runtimev1.ReconcileError, 0)
 	visited := make(map[string]int)
 	update := make(map[string]bool)
 
@@ -125,7 +126,7 @@ func (s *Service) collectMigrationItems(
 	for name, migration := range migrationMap {
 		_, err := tempDag.Add(name, migration.NormalizedDependencies)
 		if err != nil {
-			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+			reconcileErrors = append(reconcileErrors, &runtimev1.ReconcileError{
 				Code:     runtimev1.ReconcileError_CODE_SOURCE,
 				Message:  err.Error(),
 				FilePath: migration.Path,
@@ -172,8 +173,10 @@ func (s *Service) collectMigrationItems(
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
-				// if not already visited, mark the child as needing update
-				update[child] = true
+				if item.Type != MigrationNoChange {
+					// if not already visited, mark the child as needing update
+					update[child] = true
+				}
 				continue
 			}
 
@@ -212,7 +215,7 @@ func (s *Service) collectMigrationItems(
 		cleanedMigrationItems = append(cleanedMigrationItems, migration)
 	}
 
-	return cleanedMigrationItems
+	return cleanedMigrationItems, reconcileErrors
 }
 
 // TODO: test changing source make an invalid model valid. should propagate validity to metrics

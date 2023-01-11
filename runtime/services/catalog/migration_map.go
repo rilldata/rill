@@ -44,13 +44,18 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 	}
 
 	migrationMap := make(map[string]*MigrationItem)
-	embeddedMigrations := make(map[string]*MigrationItem)
 	reconcileErrors := make([]*runtimev1.ReconcileError, 0)
 	deletions := make(map[string]*MigrationItem)
 	additions := make(map[string]*MigrationItem)
 
 	for _, repoPath := range repoPaths {
-		items := s.getMigrationItem(ctx, repoPath, storeObjectsMap, storeObjectsPathMap, forcedPathMap, embeddedMigrations)
+		var items []*MigrationItem
+		if embedded, ok := storeObjectsPathMap[repoPath]; ok && embedded.Embedded {
+			// embedded items need to be created differently
+			items = []*MigrationItem{s.newEmbeddedMigrationItem(embedded, MigrationUpdate)}
+		} else {
+			items = s.getMigrationItems(ctx, repoPath, storeObjectsMap, forcedPathMap)
+		}
 		for _, item := range items {
 			keepNew, errPath := s.isInvalidDuplicate(migrationMap, changedPathsHint, changedPathsMap, item)
 			if errPath != "" {
@@ -62,9 +67,6 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 			}
 			if !keepNew {
 				continue
-			}
-			if item.CatalogInFile != nil && item.CatalogInFile.Embedded {
-				embeddedMigrations[item.NormalizedName] = item
 			}
 
 			if s.lookForRenames(ctx, item, migrationMap, additions, deletions) {
@@ -84,7 +86,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 					continue
 				}
 
-				childItems := s.getMigrationItem(ctx, childPath, storeObjectsMap, storeObjectsPathMap, forcedPathMap, embeddedMigrations)
+				childItems := s.getMigrationItems(ctx, childPath, storeObjectsMap, forcedPathMap)
 				for _, childItem := range childItems {
 					migrationMap[childItem.NormalizedName] = childItem
 				}
@@ -132,6 +134,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 				Type:           MigrationDelete,
 				Path:           storeObject.Path,
 				CatalogInStore: storeObject,
+				NewCatalog:     storeObject,
 			}
 		}
 	}
@@ -250,15 +253,11 @@ func (s *Service) checkEmbeddedEntries(
 			// update embedded source's links on rename
 			s.checkEmbeddingOnRename(item, migrationMap)
 		}
-		catalogEntry := item.CatalogInStore
-		if catalogEntry == nil {
-			catalogEntry = item.CatalogInFile
-		}
-		if catalogEntry == nil {
+		if item.NewCatalog == nil {
 			continue
 		}
-		for _, embedded := range catalogEntry.Embeds {
-			if catalogEntry.Embedded {
+		for _, embedded := range item.NewCatalog.Embeds {
+			if item.NewCatalog.Embedded {
 				s.checkEmbeddedSourceEntry(migrationMap, embedded, item)
 			} else {
 				s.checkEmbeddedEntry(ctx, migrationMap, embedded, item)
@@ -305,11 +304,7 @@ func (s *Service) checkEmbeddedSourceEntry(
 	item *MigrationItem,
 ) {
 	embeddedMigrationItem, ok := migrationMap[embedded]
-	if !ok ||
-		(embeddedMigrationItem.CatalogInFile != nil &&
-			arrayutil.Contains(embeddedMigrationItem.CatalogInFile.Embeds, item.NormalizedName)) ||
-		(embeddedMigrationItem.CatalogInStore != nil &&
-			arrayutil.Contains(embeddedMigrationItem.CatalogInStore.Embeds, item.NormalizedName)) {
+	if !ok || arrayutil.Contains(embeddedMigrationItem.NewCatalog.Embeds, item.NormalizedName) {
 		return
 	}
 	item.removeLink(embedded)
@@ -319,13 +314,11 @@ func (s *Service) checkEmbeddingOnRename(
 	item *MigrationItem,
 	migrationMap map[string]*MigrationItem,
 ) {
-	for _, embedding := range item.CatalogInFile.Embeds {
+	for _, embedding := range item.NewCatalog.Embeds {
 		existing, ok := migrationMap[embedding]
 		if !ok {
 			continue
 		}
-
-		existing.CatalogInStore.Embeds = arrayutil.Delete(existing.CatalogInStore.Embeds, item.FromNormalizedName)
-		existing.CatalogInStore.Links--
+		existing.removeLink(item.FromNormalizedName)
 	}
 }
