@@ -15,7 +15,7 @@ import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-sto
 import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 import {
   invalidateAfterReconcile,
-  removeModelQueries,
+  removeEntityQueries,
 } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import {
   getFilePathFromNameAndType,
@@ -76,7 +76,11 @@ export async function renameFileArtifact(
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
 
-  removeModelQueries(queryClient, instanceId, fromName);
+  removeEntityQueries(
+    queryClient,
+    instanceId,
+    getFilePathFromNameAndType(fromName, type)
+  );
   invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 
@@ -90,11 +94,12 @@ export async function deleteFileArtifact(
   names: Array<string>,
   showNotification = true
 ) {
+  const path = getFilePathFromNameAndType(name, type);
   try {
     const resp = await deleteMutation.mutateAsync({
       data: {
         instanceId,
-        path: getFilePathFromNameAndType(name, type),
+        path,
       },
     });
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
@@ -104,8 +109,7 @@ export async function deleteFileArtifact(
       notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
     }
 
-    if (type == EntityType.Model)
-      removeModelQueries(queryClient, instanceId, name);
+    removeEntityQueries(queryClient, instanceId, path);
 
     invalidateAfterReconcile(queryClient, instanceId, resp);
     if (activeEntity?.name === name) {

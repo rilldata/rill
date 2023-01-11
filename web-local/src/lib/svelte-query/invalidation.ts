@@ -1,4 +1,3 @@
-import { EntityType } from "@rilldata/web-common/lib/entity";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
@@ -6,10 +5,7 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import {
-  getFilePathFromNameAndType,
-  getNameFromFile,
-} from "@rilldata/web-local/lib/util/entity-mappers";
+import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
 
 // invalidation helpers
@@ -77,6 +73,14 @@ export const invalidateMetricsViewData = (
   });
 };
 
+export function invalidationForMetricsViewData(query, metricsViewName: string) {
+  const r = new RegExp(
+    `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
+  );
+
+  return typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]);
+}
+
 export function invalidationForProfileQueries(queryHash, name: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
@@ -95,13 +99,12 @@ export function invalidateProfilingQueries(
   });
 }
 
-export const removeModelQueries = async (
+export const removeEntityQueries = async (
   queryClient: QueryClient,
   instanceId: string,
-  name: string
+  path: string
 ) => {
-  const path = getFilePathFromNameAndType(name, EntityType.Model);
-
+  const name = getNameFromFile(path);
   // remove affected catalog entries and files
   await Promise.all([
     queryClient.removeQueries(
@@ -112,10 +115,18 @@ export const removeModelQueries = async (
     ),
   ]);
 
-  // remove profiling queries
-  return queryClient.removeQueries({
-    predicate: (query) => {
-      return invalidationForProfileQueries(query.queryHash, name);
-    },
-  });
+  if (path.startsWith("/dashboards")) {
+    return queryClient.removeQueries({
+      predicate: (query) => {
+        return invalidationForMetricsViewData(query, name);
+      },
+    });
+  } else {
+    // remove profiling queries
+    return queryClient.removeQueries({
+      predicate: (query) => {
+        return invalidationForProfileQueries(query.queryHash, name);
+      },
+    });
+  }
 };
