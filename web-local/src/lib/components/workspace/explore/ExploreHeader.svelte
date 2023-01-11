@@ -10,11 +10,10 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
+  import { useMetaQuery } from "../../../svelte-query/dashboards";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
@@ -23,25 +22,6 @@
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
-
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
-
-  let displayName;
-  // TODO: move this "sync" to a more relevant component
-  $: if (
-    metricViewName &&
-    $metaQuery &&
-    metricViewName === $metaQuery.data?.name
-  ) {
-    if (
-      !$metaQuery.data?.measures?.length ||
-      !$metaQuery.data?.dimensions?.length
-    ) {
-      goto(`/dashboard/${metricViewName}/edit`);
-    }
-    displayName = $metaQuery.data.label;
-    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
-  }
 
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
@@ -54,6 +34,9 @@
       MetricsEventScreenName.MetricsDefinition
     );
   };
+
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: displayName = $metaQuery.data?.label;
 </script>
 
 <section

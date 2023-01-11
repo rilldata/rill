@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../../../application-state-stores/explorer-stores";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
+  import { useMetaQuery } from "../../../svelte-query/dashboards";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
@@ -22,9 +22,17 @@
 
   $: switchToMetrics(metricViewName);
 
-  let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
+
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: if ($metaQuery.data) {
+    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
+  }
+
+  $: if ($metaQuery.isError) {
+    goto(`/dashboard/${metricViewName}/edit`);
+  }
 </script>
 
 <WorkspaceContainer
