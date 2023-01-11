@@ -60,19 +60,6 @@ const getInvalidationsForPath = (
   }
 };
 
-export const invalidateMetricsViewData = (
-  queryClient: QueryClient,
-  metricsViewName: string
-) => {
-  const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
-  );
-  return queryClient.refetchQueries({
-    predicate: (query) =>
-      typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]),
-  });
-};
-
 export function invalidationForMetricsViewData(query, metricsViewName: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
@@ -87,6 +74,16 @@ export function invalidationForProfileQueries(queryHash, name: string) {
   );
   return r.test(queryHash);
 }
+
+export const invalidateMetricsViewData = (
+  queryClient: QueryClient,
+  metricsViewName: string
+) => {
+  return queryClient.refetchQueries({
+    predicate: (query) =>
+      invalidationForMetricsViewData(query, metricsViewName),
+  });
+};
 
 export function invalidateProfilingQueries(
   queryClient: QueryClient,
