@@ -96,6 +96,9 @@
   // colors. Might have to navigated CodeMirror generated classes.
   const rillTheme = EditorView.theme({
     "&.cm-editor": {
+      overflowX: "hidden",
+      width: "100%",
+      height: "100%",
       "&.cm-focused": {
         outline: "none",
       },
@@ -104,6 +107,7 @@
       { backgroundColor: "rgb(65 99 255 / 25%)" },
     ".cm-selectionMatch": { backgroundColor: "rgb(189 233 255)" },
     ".cm-activeLine": { backgroundColor: highlightBackground },
+
     ".cm-activeLineGutter": {
       backgroundColor: highlightBackground,
     },
@@ -111,6 +115,7 @@
       paddingLeft: "5px",
       paddingRight: "10px",
       minWidth: "32px",
+      backgroundColor: "white",
     },
     ".cm-breakpoint-gutter .cm-gutterElement": {
       color: "red",
@@ -334,15 +339,13 @@
   $: underlineSelection(selections || []);
 </script>
 
-<div
-  class="h-full"
-  use:listenToNodeResize
-  on:click={() => {
-    console.log(editor);
-  }}
->
-  <div bind:this={editorContainer} class="editor-container  h-full">
+<div class="h-full w-full overflow-x-auto" use:listenToNodeResize>
+  <div
+    bind:this={editorContainer}
+    class="editor-container  h-full w-full overflow-x-auto"
+  >
     <div
+      class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
       on:click={() => {
         /** give the editor focus no matter where we click */
