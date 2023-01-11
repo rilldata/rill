@@ -16,6 +16,7 @@ import (
 
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
+	_ "github.com/rilldata/rill/runtime/connectors/localfile"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
