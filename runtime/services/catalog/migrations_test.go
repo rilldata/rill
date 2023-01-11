@@ -320,7 +320,7 @@ func TestInterdependentModelCycle(t *testing.T) {
 			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 
 			require.NoError(t, err)
-			require.Contains(t, result.Errors[0].Message, `circular dependencies not allowed`)
+			require.Contains(t, result.Errors[0].Message, `encountered circular dependency between "adbids_source_model" and "adbids_model"`)
 			testutils.AssertMigration(t, result, 3, 1, 1, 0, AdBidsSourceAffectedPaths)
 
 			// removing the circular dependencies by updating model
