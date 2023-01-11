@@ -3,14 +3,12 @@ package gcs
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"gocloud.dev/blob"
 
 	// blank import required for bucket functions
@@ -79,7 +77,7 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	bucket, glob, _, err := gcsURLParts(conf.Path)
+	bucket, glob, err := gcsURLParts(conf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
@@ -100,10 +98,11 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
 
-func gcsURLParts(path string) (string, string, string, error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", "", "", err
+func gcsURLParts(path string) (string, string, error) {
+	trimmedPath := strings.Replace(path, "gs://", "", 1)
+	bucket, glob, found := strings.Cut(trimmedPath, "/")
+	if !found {
+		return "", "", fmt.Errorf("failed to parse path %s", path)
 	}
-	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
+	return bucket, glob, nil
 }
