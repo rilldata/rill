@@ -32,12 +32,12 @@ export function embeddedSourcesError(
   );
   const embeddedSourceErrors = new Array<string>();
   for (const reconcileError of errors) {
-    if (!embeddedSourcesMap.has(reconcileError.filePath)) {
+    if (!embeddedSourcesMap.has(reconcileError.filePath.toLowerCase())) {
       continue;
     }
     embeddedSourceErrors.push(
       `${reconcileError.filePath} - ${humanReadableErrorMessage(
-        reconcileError.filePath.replace(/\/sources\/(.*?)_.*$/, "$1"),
+        reconcileError.filePath.replace(/(.*?):\/\/.*$/, "$1"),
         3,
         reconcileError.message
       )}`

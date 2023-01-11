@@ -99,7 +99,7 @@
 
     try {
       if (hasChanged) {
-        embeddedSources = getEmbeddedReferences(content);
+        embeddedSources = getEmbeddedReferences(sanitizeQuery(content));
         const unknownEmbeddedSources = filterKnownEmbeddedSources(
           embeddedSources,
           embeddedSourceCatalogs
@@ -152,6 +152,8 @@
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
+
+  $: console.log(modelError, embeddedSourceErrors);
 </script>
 
 <svelte:window bind:innerHeight />

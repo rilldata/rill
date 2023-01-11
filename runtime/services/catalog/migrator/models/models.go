@@ -64,7 +64,7 @@ func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cata
 func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
 	model := catalog.GetModel()
 	model.SanitizedSql = sanitizeQuery(model.Sql, false)
-	dependencies := ExtractTableNames(model.Sql)
+	dependencies := ExtractTableNames(model.SanitizedSql)
 
 	embeddedSourcesMap := make(map[string]*drivers.CatalogEntry)
 	for i, dependency := range dependencies {
