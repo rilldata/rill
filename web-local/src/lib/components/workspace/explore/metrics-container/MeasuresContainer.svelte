@@ -74,7 +74,10 @@
       let columns = totalMeasuresHeight / metricsContainerHeight;
       if (columns <= 1 || columns > 2) {
         numColumns = Math.min(Math.ceil(columns), 3);
-        getMeasureHeightsForColumn(measuresHeight, numColumns);
+        measureGridHeights = getMeasureHeightsForColumn(
+          measuresHeight,
+          numColumns
+        );
       } else {
         numColumns = 2;
         measureGridHeights = getMeasureHeightsForColumn(measuresHeight, 2);

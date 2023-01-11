@@ -37,7 +37,7 @@
     </TooltipContent>
   </Tooltip>
   <div
-    class="ui-copy-muted"
+    class="ui-copy-muted relative"
     style:font-size={withTimeseries ? "1.5rem" : "1.8rem"}
     style:font-weight="light"
   >
@@ -59,7 +59,7 @@
           <CrossIcon />
         {:else if status === EntityStatus.Running}
           <div
-            class="absolute p-2"
+            class="{withTimeseries ? '' : 'bottom-0'} absolute p-2"
             in:receive|local={{ key: "spinner" }}
             out:send|local={{ key: "spinner" }}
           >
