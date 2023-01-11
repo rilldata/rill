@@ -110,10 +110,6 @@
     ".cm-activeLineGutter": {
       backgroundColor: highlightBackground,
     },
-    ".cm-gutter.cm-lineNumbers": {
-      position: "sticky",
-      left: 0,
-    },
     ".cm-lineNumbers .cm-gutterElement": {
       paddingLeft: "5px",
       paddingRight: "10px",
