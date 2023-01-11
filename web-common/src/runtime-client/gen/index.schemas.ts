@@ -202,24 +202,20 @@ export interface V1TopK {
   entries?: TopKEntry[];
 }
 
-export type V1TimeSeriesValueRecords = { [key: string]: number };
-
-export interface V1TimeSeriesValue {
-  bin?: number;
-  records?: V1TimeSeriesValueRecords;
-  ts?: string;
-}
-
 export interface V1TimeSeriesTimeRange {
   end?: string;
   interval?: V1TimeGrain;
   start?: string;
 }
 
+export type V1TimeSeriesResponseSparkItem = { [key: string]: any };
+
+export type V1TimeSeriesResponseResultsItem = { [key: string]: any };
+
 export interface V1TimeSeriesResponse {
-  results?: V1TimeSeriesValue[];
+  results?: V1TimeSeriesResponseResultsItem[];
   sampleSize?: number;
-  spark?: V1TimeSeriesValue[];
+  spark?: V1TimeSeriesResponseSparkItem[];
   timeRange?: V1TimeSeriesTimeRange;
 }
 

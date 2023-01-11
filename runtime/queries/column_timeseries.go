@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strconv"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
@@ -138,21 +137,21 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}()
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:    `SELECT * from "` + temporaryTableName + `"`,
+			Query:    fmt.Sprintf(`SELECT %s as ts, * EXCLUDE(%s) FROM %s`, tsAlias, tsAlias, temporaryTableName),
 			Priority: priority,
 		})
 		if err != nil {
 			return err
 		}
 
-		results, err := convertRowsToTimeSeriesValues(rows, len(measures)+1, tsAlias)
+		results, err := rowsToData(rows)
 		meta := structTypeToMetricsViewColumn(rows.Schema)
 		rows.Close()
 		if err != nil {
 			return err
 		}
 
-		var sparkValues []*runtimev1.TimeSeriesValue
+		var sparkValues []*structpb.Struct
 		if q.Pixels != 0 {
 			sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
 			if err != nil {
@@ -256,7 +255,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	tableName string,
 	timestampColumnName string,
 	valueColumn string,
-) ([]*runtimev1.TimeSeriesValue, error) {
+) ([]*structpb.Struct, error) {
 	safeTimestampColumnName := safeName(timestampColumnName)
 	tc := &TableCardinality{
 		TableName: tableName,
@@ -274,20 +273,9 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 		if err != nil {
 			return nil, err
 		}
+
 		defer rows.Close()
-		results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
-		for rows.Next() {
-			var ts time.Time
-			var count float64
-			err = rows.Scan(&ts, &count)
-			if err != nil {
-				return nil, err
-			}
-			results = append(results, &runtimev1.TimeSeriesValue{
-				Ts:      ts.Format(IsoFormat),
-				Records: sMap("count", count),
-			})
-		}
+		results, err := rowsToData(rows)
 		return results, nil
 	}
 
@@ -331,38 +319,29 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 		return nil, err
 	}
 	defer rows.Close()
-	results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
-	for rows.Next() {
-		var minT, maxT, argminVT, argmaxVT int64
-		var argminTV, argmaxTV, minV, maxV float64
-		var bin float64
-		err = rows.Scan(&minT, &argminTV, &maxT, &argmaxTV, &minV, &argminVT, &maxV, &argmaxVT, &bin)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, &runtimev1.TimeSeriesValue{
-			Ts:      time.UnixMilli(minT).Format(IsoFormat),
-			Bin:     &bin,
-			Records: sMap("count", argminTV),
-		}, &runtimev1.TimeSeriesValue{
-			Ts:      time.UnixMilli(argminVT).Format(IsoFormat),
-			Bin:     &bin,
-			Records: sMap("count", minV),
-		}, &runtimev1.TimeSeriesValue{
-			Ts:      time.UnixMilli(argmaxVT).Format(IsoFormat),
-			Bin:     &bin,
-			Records: sMap("count", maxV),
-		}, &runtimev1.TimeSeriesValue{
-			Ts:      time.UnixMilli(maxT).Format(IsoFormat),
-			Bin:     &bin,
-			Records: sMap("count", argmaxTV),
-		})
-		if argminVT > argmaxVT {
+	aggs, err := rowsToData(rows)
+	results := make([]*structpb.Struct, 0, len(aggs)*4)
+	for _, v := range aggs {
+		addStruct(v, &results, "min_t", "argmin_tv")
+		addStruct(v, &results, "argmin_vt", "min_v")
+		addStruct(v, &results, "argmax_vt", "max_v")
+		addStruct(v, &results, "max_t", "argmax_tv")
+		if v.Fields["argmin_vt"].GetStringValue() > v.Fields["argmax_vt"].GetStringValue() {
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
 	}
 	return results, nil
+}
+
+func addStruct(v *structpb.Struct, results *[]*structpb.Struct, key string, value string) {
+	s := &structpb.Struct{
+		Fields: make(map[string]*structpb.Value, 3),
+	}
+	s.Fields["ts"] = v.Fields[key]
+	s.Fields["count"] = v.Fields[value]
+	s.Fields["bin"] = v.Fields["bin"]
+	*results = append(*results, s)
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
@@ -381,7 +360,7 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRe
 func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`COALESCE(series.%s, 0) as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
+		result += fmt.Sprintf(`series.%s as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -426,40 +405,4 @@ func sMap(k string, v float64) map[string]float64 {
 	m := make(map[string]float64, 1)
 	m[k] = v
 	return m
-}
-
-func convertRowsToTimeSeriesValues(rows *drivers.Result, rowLength int, tsAlias string) ([]*runtimev1.TimeSeriesValue, error) {
-	results := make([]*runtimev1.TimeSeriesValue, 0)
-	for rows.Next() {
-		value := runtimev1.TimeSeriesValue{}
-		results = append(results, &value)
-		row := make(map[string]interface{}, rowLength)
-		err := rows.MapScan(row)
-		if err != nil {
-			return results, err
-		}
-		value.Ts = row[tsAlias].(time.Time).Format(IsoFormat)
-		value.Records = make(map[string]float64, len(row))
-		for k, v := range row {
-			if k == tsAlias {
-				continue
-			}
-			switch x := v.(type) {
-			case int32:
-				value.Records[k] = float64(x)
-			case int64:
-				value.Records[k] = float64(x)
-			case float32:
-				value.Records[k] = float64(x)
-			case float64:
-				value.Records[k] = x
-			case *big.Int:
-				f, _ := new(big.Float).SetInt(x).Float64()
-				value.Records[k] = f
-			default:
-				return nil, fmt.Errorf("unknown type %T ", v)
-			}
-		}
-	}
-	return results, nil
 }

@@ -8,7 +8,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -97,26 +96,10 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
 		Meta: r.Meta,
-		Data: toData(r.Data.Results, mv),
+		Data: r.Data.Results,
 	}
 
 	return nil
-}
-
-func toData(data []*runtimev1.TimeSeriesValue, mv *runtimev1.MetricsView) []*structpb.Struct {
-	var res []*structpb.Struct
-
-	for _, d := range data {
-		m := map[string]*structpb.Value{}
-		m[mv.TimeDimension] = structpb.NewStringValue(d.Ts)
-		for n, r := range d.Records {
-			m[n] = structpb.NewNumberValue(r)
-		}
-		res = append(res, &structpb.Struct{
-			Fields: m,
-		})
-	}
-	return res
 }
 
 func toMeasures(measures []*runtimev1.MetricsView_Measure, measureNames []string) ([]*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, error) {

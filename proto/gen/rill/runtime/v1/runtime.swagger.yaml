@@ -2159,14 +2159,14 @@ definitions:
       results:
         type: array
         items:
-          $ref: '#/definitions/v1TimeSeriesValue'
+          type: object
       sampleSize:
         type: integer
         format: int32
       spark:
         type: array
         items:
-          $ref: '#/definitions/v1TimeSeriesValue'
+          type: object
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
   v1TimeSeriesTimeRange:
@@ -2180,19 +2180,6 @@ definitions:
       start:
         type: string
         format: date-time
-  v1TimeSeriesValue:
-    type: object
-    properties:
-      bin:
-        type: number
-        format: double
-      records:
-        type: object
-        additionalProperties:
-          type: number
-          format: double
-      ts:
-        type: string
   v1TopK:
     type: object
     properties:

@@ -1018,8 +1018,8 @@ enum TimeRangeName {
 }
 
 message TimeSeriesResponse {
-  repeated TimeSeriesValue results = 1;
-  repeated TimeSeriesValue spark = 2;
+  repeated google.protobuf.Struct results = 1;
+  repeated google.protobuf.Struct spark = 2;
   TimeSeriesTimeRange time_range = 3;
   int32 sample_size = 4;
 }

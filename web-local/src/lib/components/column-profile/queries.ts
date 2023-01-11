@@ -143,21 +143,26 @@ export function getTimeSeriesAndSpark(
   return derived(
     [query, estimatedInterval, smallestTimeGrain],
     ([$query, $estimatedInterval, $smallestTimeGrain]) => {
+      
       return {
         isFetching: $query?.isFetching,
         estimatedRollupInterval: $estimatedInterval?.data,
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
-          $query?.data?.rollup?.results?.map((di) => {
-            const next = { ...di, count: di.records.count };
-            return next;
+          $query?.data?.rollup?.results.map((di) => {
+            Object.keys(di).forEach((k) => {
+              di[k] = di[k] === null ? 0 : di[k];
+            });
+            return di;
           }) || [],
           "ts"
         ),
         spark: convertTimestampPreview(
-          $query?.data?.rollup?.spark?.map((di) => {
-            const next = { ...di, count: di.records.count };
-            return next;
+          $query?.data?.rollup?.spark.map((di) => {
+            Object.keys(di).forEach((k) => {
+              di[k] = di[k] === null ? 0 : di[k];
+            });
+            return di;
           }) || [],
           "ts"
         ),
