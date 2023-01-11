@@ -8,4 +8,7 @@
   <title>Rill Developer | {data.modelName}</title>
 </svelte:head>
 
-<ModelWorkspace modelName={data.modelName} />
+<ModelWorkspace
+  modelName={data.modelName}
+  focusEditorOnMount={data.focusEditor}
+/>

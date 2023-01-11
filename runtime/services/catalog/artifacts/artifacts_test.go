@@ -9,12 +9,14 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestSourceReadWrite(t *testing.T) {
@@ -55,8 +57,8 @@ csv.delimiter: '|'
 					Name:      "S3Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":       "s3://bucket/path/file.csv",
-						"aws.region": "us-east-2",
+						"path":   "s3://bucket/path/file.csv",
+						"region": "us-east-2",
 					}),
 				},
 			},
@@ -151,7 +153,7 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir)
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -188,7 +190,7 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir)
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()

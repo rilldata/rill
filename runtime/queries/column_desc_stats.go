@@ -85,6 +85,12 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			return err
 		}
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	if min.Valid {
 		stats.Min = min.Float64
 		stats.Max = max.Float64

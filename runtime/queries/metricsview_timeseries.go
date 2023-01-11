@@ -129,7 +129,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		whereClause += " " + clause
 		args = append(args, clauseArgs...)
 	}
 

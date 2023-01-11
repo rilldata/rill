@@ -121,7 +121,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	}
 
 	// order the items to have parents before children
-	migrations := s.collectMigrationItems(migrationMap)
+	migrations := s.collectMigrationItems(migrationMap, result)
 
 	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
@@ -448,6 +448,7 @@ func (s *Service) isInvalidDuplicate(
 // It will order the items based on DAG with parents coming before children.
 func (s *Service) collectMigrationItems(
 	migrationMap map[string]*MigrationItem,
+	result *ReconcileResult,
 ) []*MigrationItem {
 	migrationItems := make([]*MigrationItem, 0)
 	visited := make(map[string]int)
@@ -458,7 +459,14 @@ func (s *Service) collectMigrationItems(
 	// TODO: is there a better way to do this?
 	tempDag := dag.NewDAG()
 	for name, migration := range migrationMap {
-		tempDag.Add(name, migration.NormalizedDependencies)
+		_, err := tempDag.Add(name, migration.NormalizedDependencies)
+		if err != nil {
+			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_SOURCE,
+				Message:  err.Error(),
+				FilePath: migration.Path,
+			})
+		}
 	}
 
 	for name, item := range migrationMap {
@@ -572,7 +580,14 @@ func (s *Service) runMigrationItems(
 					// this is perhaps an init. so populate cache data
 					s.PathToName[item.Path] = item.NormalizedName
 					s.NameToPath[item.NormalizedName] = item.Path
-					s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+					_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+					if err != nil {
+						result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+							Code:     runtimev1.ReconcileError_CODE_SOURCE,
+							Message:  err.Error(),
+							FilePath: item.Path,
+						})
+					}
 				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
@@ -636,10 +651,13 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	s.NameToPath[item.NormalizedName] = item.Path
 	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG
-	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return err
+	}
 
 	// create in olap
-	err := s.wrapMigrator(item.CatalogInFile, func() error {
+	err = s.wrapMigrator(item.CatalogInFile, func() error {
 		return migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	})
 	if err != nil {
@@ -670,10 +688,13 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 	// delete old item and add new item to dag
 	s.dag.Delete(fromLowerName)
-	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return err
+	}
 
 	// rename the item in olap
-	err := migrator.Rename(ctx, s.Olap, item.FromName, item.CatalogInFile)
+	err = migrator.Rename(ctx, s.Olap, item.FromName, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
@@ -696,10 +717,13 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	s.NameToPath[item.NormalizedName] = item.Path
 	s.PathToName[item.Path] = item.NormalizedName
 	// add the item to DAG with new dependencies
-	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return err
+	}
 
 	// update in olap
-	err := s.wrapMigrator(item.CatalogInFile, func() error {
+	err = s.wrapMigrator(item.CatalogInFile, func() error {
 		return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	})
 	if err != nil {

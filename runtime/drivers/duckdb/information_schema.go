@@ -19,6 +19,12 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 }
 
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
 	q := `
 		select
 			coalesce(t.table_catalog, '') as "database",
@@ -35,7 +41,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		order by 1, 2, 3, 4
 	`
 
-	rows, err := i.c.db.QueryxContext(ctx, q)
+	rows, err := conn.QueryxContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +56,12 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
 	q := `
 		select
 			coalesce(t.table_catalog, '') as "database",
@@ -66,7 +78,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 		order by 1, 2, 3, 4
 	`
 
-	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	rows, err := conn.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
 	}
