@@ -48,7 +48,12 @@
     return initMetrics(localConfig);
   });
 
-  syncFileSystemPeriodically(queryClient, runtimeStore, page);
+  syncFileSystemPeriodically(
+    queryClient,
+    runtimeStore,
+    page,
+    fileArtifactsStore
+  );
 
   let dbRunState = "disconnected";
   let runstateTimer;

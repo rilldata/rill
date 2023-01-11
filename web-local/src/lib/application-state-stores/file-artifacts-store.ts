@@ -6,6 +6,7 @@ import type { MetricsConfig } from "./metrics-internal-store";
 export type FileArtifactsData = {
   errors?: Array<V1ReconcileError>;
   jsonRepresentation?: MetricsConfig | Record<string, never>;
+  isReconciling?: boolean;
 };
 
 /**
@@ -28,6 +29,7 @@ const createOrUpdateFileArtifact = (
       state.entities[path] = {
         errors: [],
         jsonRepresentation: {},
+        isReconciling: false,
       };
     }
     callback(state.entities[path]);
@@ -76,10 +78,21 @@ const fileArtifactsEntitiesReducers = {
       }
     );
   },
+
+  setIsReconciling(affectedPath: string, isReconciling: boolean) {
+    createOrUpdateFileArtifact(
+      affectedPath,
+      (entityData: FileArtifactsData) => {
+        entityData.isReconciling = isReconciling;
+      }
+    );
+  },
 };
 
-export const fileArtifactsStore: Readable<FileArtifactsState> &
-  typeof fileArtifactsEntitiesReducers = {
+export type FileArtifactsStore = Readable<FileArtifactsState> &
+  typeof fileArtifactsEntitiesReducers;
+
+export const fileArtifactsStore: FileArtifactsStore = {
   subscribe,
   ...fileArtifactsEntitiesReducers,
 };

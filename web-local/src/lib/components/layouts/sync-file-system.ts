@@ -16,6 +16,7 @@ import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
 import type { RuntimeState } from "../../application-state-stores/application-store";
+import type { FileArtifactsStore } from "../../application-state-stores/file-artifacts-store";
 import { invalidateAfterReconcile } from "../../svelte-query/invalidation";
 import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
@@ -24,7 +25,8 @@ const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
 export function syncFileSystemPeriodically(
   queryClient: QueryClient,
   runtimeStore: Writable<RuntimeState>,
-  page: Readable<Page<Record<string, string>, string>>
+  page: Readable<Page<Record<string, string>, string>>,
+  fileArtifactsStore: FileArtifactsStore
 ) {
   let syncFileSystemInterval: NodeJS.Timer;
   let syncFileSystemOnVisibleDocument: () => void;
@@ -38,18 +40,31 @@ export function syncFileSystemPeriodically(
     if (afterNavigateRanOnce) return;
 
     // Scenario 1: sync when the user navigates to a new page
-    syncFileSystem(queryClient, runtimeInstanceId, page, 1);
+    syncFileSystem(queryClient, runtimeInstanceId, page, 1, fileArtifactsStore);
 
     // setup Scenario 2: sync every X seconds
     syncFileSystemInterval = setInterval(
-      async () => await syncFileSystem(queryClient, runtimeInstanceId, page, 2),
+      async () =>
+        await syncFileSystem(
+          queryClient,
+          runtimeInstanceId,
+          page,
+          2,
+          fileArtifactsStore
+        ),
       SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS
     );
 
     // setup Scenario 3: sync when the user returns focus to the browser tab
     syncFileSystemOnVisibleDocument = async () => {
       if (document.visibilityState === "visible") {
-        await syncFileSystem(queryClient, runtimeInstanceId, page, 3);
+        await syncFileSystem(
+          queryClient,
+          runtimeInstanceId,
+          page,
+          3,
+          fileArtifactsStore
+        );
       }
     };
     window.addEventListener("focus", syncFileSystemOnVisibleDocument);
@@ -72,7 +87,8 @@ async function syncFileSystem(
   queryClient: QueryClient,
   instanceId: string,
   page: Readable<Page<Record<string, string>, string>>,
-  id: number
+  id: number,
+  fileArtifactsStore: FileArtifactsStore
 ) {
   await queryClient.invalidateQueries(
     getRuntimeServiceListFilesQueryKey(instanceId)
@@ -81,15 +97,17 @@ async function syncFileSystem(
   const pagePath = get(page).url.pathname;
   console.log("syncFileSystem", instanceId, pagePath, id);
   if (!isPathToAsset(pagePath)) return;
-
   const filePath = getFilePathFromPagePath(pagePath);
+  fileArtifactsStore.setIsReconciling(filePath, true);
+
   await queryClient.invalidateQueries(
     getRuntimeServiceGetFileQueryKey(instanceId, filePath)
   );
-  console.log("reconcile", filePath);
   const resp = await runtimeServiceReconcile(instanceId, {
     changedPaths: [filePath],
   });
+
+  fileArtifactsStore.setIsReconciling(filePath, false);
   invalidateAfterReconcile(queryClient, instanceId, resp);
 }
 

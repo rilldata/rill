@@ -90,6 +90,8 @@
     }
     overlay.set(null);
   };
+
+  $: isReconciling = $fileArtifactsStore.entities[sourcePath]?.isReconciling;
 </script>
 
 {#key sourceName}
@@ -190,6 +192,11 @@
                 >view the documentation</a
               >.
             </div>
+          {:else if isReconciling}
+            <div class="text-center">
+              The source <span class="font-bold">{sourceName}</span> is being imported.
+            </div>
+            <div class="text-center">This may take a few seconds.</div>
           {:else}
             <div class="text-center">
               The source <span class="font-bold">{sourceName}</span> has not been
