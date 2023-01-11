@@ -62,6 +62,7 @@
   export let content: string;
   export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
+  export let focusOnMount = false;
 
   const dispatch = createEventDispatcher();
 
@@ -281,6 +282,7 @@
       }),
       parent: editorContainerComponent,
     });
+    if (focusOnMount) editor.focus();
   });
 
   // REACTIVE FUNCTIONS
@@ -345,6 +347,10 @@
     <div
       class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
+      on:click={() => {
+        /** give the editor focus no matter where we click */
+        if (!editor.hasFocus) editor.focus();
+      }}
     />
   </div>
 </div>

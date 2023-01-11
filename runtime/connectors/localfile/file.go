@@ -2,7 +2,7 @@ package localfile
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"path"
 
 	"github.com/mitchellh/mapstructure"
@@ -70,6 +70,8 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
-	return "", errors.New("not implemented")
+// local file connectors should directly use glob patterns
+// keeping it for reference
+func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+	return nil, fmt.Errorf("not implemented")
 }

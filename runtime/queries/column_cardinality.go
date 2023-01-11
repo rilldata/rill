@@ -69,5 +69,10 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return nil
 	}
 
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	return errors.New("no rows returned")
 }

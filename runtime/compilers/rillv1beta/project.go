@@ -79,7 +79,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		out.Path = val
 	}
 
-	if val, ok := props["aws.region"].(string); ok {
+	if val, ok := props["region"].(string); ok {
 		out.Region = val
 	}
 

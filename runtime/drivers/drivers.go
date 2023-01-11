@@ -8,9 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// ErrClosed indicates the connection is closed.
-var ErrClosed = errors.New("driver: connection is closed")
-
 // ErrNotFound indicates the resource wasn't found.
 var ErrNotFound = errors.New("driver: not found")
 
