@@ -51,8 +51,8 @@ var spec = connectors.Spec{
 	},
 }
 
-type Config struct {
-	Path                  string `mapstructure:"path"`
+type s3Config struct {
+	connectors.Config     `mapstructure:",squash"`
 	AWSRegion             string `mapstructure:"region"`
 	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
@@ -60,8 +60,8 @@ type Config struct {
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
-func ParseConfig(props map[string]any) (*Config, error) {
-	conf := &Config{}
+func parseConfig(props map[string]any) (*s3Config, error) {
+	conf := &s3Config{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (c connector) Spec() connectors.Spec {
 }
 
 func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
-	conf, err := ParseConfig(source.Properties)
+	conf, err := parseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -118,7 +118,7 @@ func s3URLParts(path string) (string, string, error) {
 	return bucket, glob, nil
 }
 
-func getAwsSessionConfig(conf *Config) (*session.Session, error) {
+func getAwsSessionConfig(conf *s3Config) (*session.Session, error) {
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
 			Region: aws.String(conf.AWSRegion),

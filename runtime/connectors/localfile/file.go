@@ -45,9 +45,7 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path         string `mapstructure:"path"`
-	Format       string `mapstructure:"format"`
-	CSVDelimiter string `mapstructure:"csv.delimiter"`
+	connectors.Config `mapstructure:",squash"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {

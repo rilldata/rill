@@ -43,16 +43,16 @@ var spec = connectors.Spec{
 	},
 }
 
-type Config struct {
-	Path                  string `key:"path"`
-	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int    `mapstructure:"glob.page_size"`
+type gcsConfig struct {
+	connectors.Config     `mapstructure:",squash"`
+	GlobMaxTotalSize      int64 `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int   `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64 `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int   `mapstructure:"glob.page_size"`
 }
 
-func ParseConfig(props map[string]any) (*Config, error) {
-	conf := &Config{}
+func parseConfig(props map[string]any) (*gcsConfig, error) {
+	conf := &gcsConfig{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (c connector) Spec() connectors.Spec {
 }
 
 func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
-	conf, err := ParseConfig(source.Properties)
+	conf, err := parseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}

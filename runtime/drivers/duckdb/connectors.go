@@ -8,7 +8,6 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -41,7 +40,12 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 // for files downloaded locally from remote sources
 func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source, filenames []string) error {
-	from, err := getSourceReader(filenames)
+	config, err := connectors.ParseCommonConfig(source.Properties)
+	if err != nil {
+		return err
+	}
+
+	from, err := getSourceReader(filenames, config)
 	if err != nil {
 		return err
 	}
@@ -51,7 +55,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 
 // local files
 func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	conf, err := localfile.ParseConfig(source.Properties)
+	conf, err := connectors.ParseCommonConfig(source.Properties)
 	if err != nil {
 		return err
 	}
@@ -77,14 +81,9 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	// Not using query args since not quite sure about behaviour of injecting table names that way.
 	// Also, it's a source, so the caller can be trusted.
 
-	var from string
-	if conf.Format == ".csv" && conf.CSVDelimiter != "" {
-		from = fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", path, conf.CSVDelimiter)
-	} else {
-		from, err = getSourceReader(localPaths)
-		if err != nil {
-			return err
-		}
+	from, err := getSourceReader(localPaths, conf)
+	if err != nil {
+		return err
 	}
 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
@@ -92,15 +91,28 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func getSourceReader(paths []string) (string, error) {
-	ext := fileutil.FullExt(paths[0])
-	if ext == "" {
+func getSourceReader(paths []string, config *connectors.Config) (string, error) {
+	format := config.Format
+	if format == "" {
+		format = fileutil.FullExt(paths[0])
+	}
+
+	if format == "" {
 		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") || strings.Contains(ext, ".txt") {
+	} else if strings.Contains(format, ".csv") {
+		return getCsvSourceReader(paths, config.CSVDelimiter), nil
+	} else if strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
 		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','")), nil
-	} else if strings.Contains(ext, ".parquet") {
+	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'])", strings.Join(paths, "','")), nil
 	} else {
-		return "", fmt.Errorf("file type not supported : %s", ext)
+		return "", fmt.Errorf("file type not supported : %s", format)
 	}
+}
+
+func getCsvSourceReader(paths []string, delimitter string) string {
+	if delimitter == "" {
+		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','"))
+	}
+	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", strings.Join(paths, "','"), delimitter)
 }
