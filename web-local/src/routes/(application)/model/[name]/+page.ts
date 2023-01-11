@@ -7,7 +7,9 @@ import { error } from "@sveltejs/kit";
 export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
-export async function load({ params }) {
+export async function load({ params, url }) {
+  /** If ?focus, tell the page to focus the editor as soon as available */
+  const focusEditor = url.searchParams.get("focus") === "";
   try {
     const localConfig = await runtimeServiceGetConfig();
 
@@ -18,6 +20,7 @@ export async function load({ params }) {
 
     return {
       modelName: params.name,
+      focusEditor,
     };
   } catch (e) {
     if (e.response?.status && e.response?.data?.message) {
