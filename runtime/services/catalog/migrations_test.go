@@ -645,21 +645,32 @@ func TestReconcileDryRun(t *testing.T) {
 
 func TestReconcileNewFile(t *testing.T) {
 	s, _ := initBasicService(t)
+	ctx := context.Background()
 
 	testutils.CreateSource(t, s, "AdImpressions", AdImpressionsCsvPath, AdImpressionsRepoPath)
 	// reconcile with changed paths
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
+	result, err := s.Reconcile(ctx, catalog.ReconcileConfig{
 		ChangedPaths: []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 
 	time.Sleep(time.Millisecond * 10)
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+	result, err = s.Reconcile(ctx, catalog.ReconcileConfig{
 		ChangedPaths: []string{AdImpressionsRepoPath},
 	})
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdImpressionsRepoPath})
+
+	// new file with invalid content
+	err = s.Repo.Put(ctx, s.InstID, AdBidsNewRepoPath, strings.NewReader(`type: local_file
+path: "data/AdBids.csv`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(ctx, catalog.ReconcileConfig{
+		ChangedPaths: []string{AdBidsNewRepoPath},
+	})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsNewRepoPath})
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {
