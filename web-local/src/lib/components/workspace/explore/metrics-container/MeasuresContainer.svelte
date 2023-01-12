@@ -155,6 +155,7 @@
   use:listenToNodeResize
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:margin-top="{GRID_MARGIN_TOP}px"
+  style:min-width="240px"
 >
   <div bind:this={measuresWrapper} class="grid grid-cols-{numColumns} gap-x-4">
     {#if $metaQuery.data?.measures}

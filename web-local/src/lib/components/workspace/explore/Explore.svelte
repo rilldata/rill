@@ -42,7 +42,7 @@
 
   $: gridConfig = hasTimeSeries
     ? "560px minmax(355px, auto)"
-    : "minmax(240px, max-content) minmax(355px, auto)";
+    : "max-content minmax(355px, auto)";
 </script>
 
 <WorkspaceContainer
