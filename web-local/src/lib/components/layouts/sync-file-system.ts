@@ -39,7 +39,7 @@ export function syncFileSystemPeriodically(
     if (afterNavigateRanOnce) return;
 
     // Scenario 1: sync when the user navigates to a new page
-    syncFileSystem(queryClient, runtimeInstanceId, page, 1, fileArtifactsStore);
+    syncFileSystem(queryClient, runtimeInstanceId, page, fileArtifactsStore);
 
     // setup Scenario 2: sync every X seconds
     syncFileSystemInterval = setInterval(
@@ -48,7 +48,6 @@ export function syncFileSystemPeriodically(
           queryClient,
           runtimeInstanceId,
           page,
-          2,
           fileArtifactsStore
         ),
       SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS
@@ -61,7 +60,6 @@ export function syncFileSystemPeriodically(
           queryClient,
           runtimeInstanceId,
           page,
-          3,
           fileArtifactsStore
         );
       }
@@ -86,7 +84,6 @@ async function syncFileSystem(
   queryClient: QueryClient,
   instanceId: string,
   page: Readable<Page<Record<string, string>, string>>,
-  id: number,
   fileArtifactsStore: FileArtifactsStore
 ) {
   await queryClient.invalidateQueries(
@@ -94,7 +91,6 @@ async function syncFileSystem(
   );
 
   const pagePath = get(page).url.pathname;
-  console.log("syncFileSystem", instanceId, pagePath, id);
   if (!isPathToAsset(pagePath)) return;
 
   const filePath = getFilePathFromPagePath(pagePath);
