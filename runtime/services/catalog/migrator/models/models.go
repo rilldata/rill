@@ -127,7 +127,7 @@ var (
 	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
 )
 
-// TODO: use this while extracting source names to get case insensitive DAG
+// TODO: use this while extracting source names to get case insensitive dag
 // TODO: should this be used to store the sql in catalog?
 func sanitizeQuery(query string) string {
 	// remove all comments

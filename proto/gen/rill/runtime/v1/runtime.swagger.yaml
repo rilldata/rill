@@ -1384,28 +1384,28 @@ definitions:
   v1CatalogEntry:
     type: object
     properties:
+      children:
+        type: array
+        items:
+          type: string
+        title: Immediate child entries in the DAG
       createdOn:
         type: string
         format: date-time
       embedded:
         type: boolean
         description: Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
-      embeddedBy:
-        type: array
-        items:
-          type: string
-        description: Contains list of entry names this is embedded by.
-      embeds:
-        type: array
-        items:
-          type: string
-        description: Contains list of entry names this embeds.
       metricsView:
         $ref: '#/definitions/v1MetricsView'
       model:
         $ref: '#/definitions/v1Model'
       name:
         type: string
+      parents:
+        type: array
+        items:
+          type: string
+        title: Immediate parent entries in the DAG
       path:
         type: string
       refreshedOn:

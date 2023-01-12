@@ -435,10 +435,10 @@ message CatalogEntry {
   string path = 6;
   // Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
   bool embedded = 7;
-  // Contains list of entry names this embeds.
-  repeated string embeds = 8;
-  // Contains list of entry names this is embedded by.
-  repeated string embeddedBy = 9;
+  // Immediate parent entries in the DAG
+  repeated string parents = 8;
+  // Immediate child entries in the DAG
+  repeated string children = 9;
   google.protobuf.Timestamp created_on = 10;
   google.protobuf.Timestamp updated_on = 11;
   google.protobuf.Timestamp refreshed_on = 12;

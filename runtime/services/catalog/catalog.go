@@ -51,9 +51,22 @@ func NewService(
 }
 
 func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
-	return s.Catalog.FindEntries(ctx, s.InstID, typ)
+	entries := s.Catalog.FindEntries(ctx, s.InstID, typ)
+	for _, entry := range entries {
+		s.fillDAGInEntry(entry)
+	}
+	return entries
 }
 
 func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
-	return s.Catalog.FindEntry(ctx, s.InstID, name)
+	entry, ok := s.Catalog.FindEntry(ctx, s.InstID, name)
+	if ok {
+		s.fillDAGInEntry(entry)
+	}
+	return entry, ok
+}
+
+func (s *Service) fillDAGInEntry(entry *drivers.CatalogEntry) {
+	entry.Children = s.dag.GetChildren(normalizeName(entry.Name))
+	entry.Parents = s.dag.GetParents(normalizeName(entry.Name))
 }

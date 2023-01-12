@@ -3,7 +3,6 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -35,7 +34,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 	}
 	defer func() { _ = release() }()
 
-	sql := fmt.Sprintf("SELECT name, type, object, path, embeds, links, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, object, path, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 	rows, err := conn.QueryxContext(ctx, sql, args...)
 	if err != nil {
 		panic(err)
@@ -47,13 +46,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		var objBlob []byte
 		e := &drivers.CatalogEntry{}
 
-		var embeds string
-		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &embeds, &e.Links, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
+		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
 			panic(err)
-		}
-		if embeds != "" {
-			e.Embeds = strings.Split(embeds, ",")
 		}
 
 		// Parse object protobuf
@@ -99,13 +94,11 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = conn.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, object, path, embeds, links, embedded, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, object, path, embedded, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		e.Name,
 		e.Type,
 		obj,
 		e.Path,
-		strings.Join(e.Embeds, ","),
-		e.Links,
 		e.Embedded,
 		now,
 		now,
@@ -136,12 +129,10 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 
 	_, err = conn.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, object = ?, path = ?, embeds = ?, links = ?, embedded = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, object = ?, path = ?, embedded = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
 		e.Type,
 		obj,
 		e.Path,
-		strings.Join(e.Embeds, ","),
-		e.Links,
 		e.Embedded,
 		e.UpdatedOn, // TODO: Use time.Now()
 		e.RefreshedOn,

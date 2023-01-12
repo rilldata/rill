@@ -466,7 +466,7 @@ func TestModelWithMissingSource(t *testing.T) {
 	// update source with same content
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
-		// force update to test DAG
+		// force update to test dag
 		ForcedPaths: []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)

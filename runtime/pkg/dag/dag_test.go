@@ -20,11 +20,11 @@ func TestDAG_Add(t *testing.T) {
 	// A1  B1
 	//   \ |
 	//     B2
-	require.Equal(t, []string{}, d.GetChildren("A0"))
-	require.Equal(t, []string{"B1", "B2"}, d.GetChildren("B0"))
-	require.Equal(t, []string{"B1", "B2"}, d.GetChildren("C0"))
-	require.Equal(t, []string{"B2"}, d.GetChildren("A1"))
-	require.Equal(t, []string{"B2"}, d.GetChildren("B1"))
+	require.Equal(t, []string{}, d.GetDeepChildren("A0"))
+	require.Equal(t, []string{"B1", "B2"}, d.GetDeepChildren("B0"))
+	require.Equal(t, []string{"B1", "B2"}, d.GetDeepChildren("C0"))
+	require.Equal(t, []string{"B2"}, d.GetDeepChildren("A1"))
+	require.Equal(t, []string{"B2"}, d.GetDeepChildren("B1"))
 
 	_, err = d.Add("A1", []string{"A0", "B0"})
 	require.NoError(t, err)
@@ -35,11 +35,11 @@ func TestDAG_Add(t *testing.T) {
 	// A1  B1  |
 	//   \ |   |
 	//     B2  A2
-	require.Equal(t, []string{"A1", "B2"}, d.GetChildren("A0"))
-	require.ElementsMatch(t, []string{"A1", "B1", "B2"}, d.GetChildren("B0"))
-	require.ElementsMatch(t, []string{"B1", "A2", "B2"}, d.GetChildren("C0"))
-	require.Equal(t, []string{"B2"}, d.GetChildren("A1"))
-	require.Equal(t, []string{"B2"}, d.GetChildren("B1"))
+	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
+	require.ElementsMatch(t, []string{"A1", "B1", "B2"}, d.GetDeepChildren("B0"))
+	require.ElementsMatch(t, []string{"B1", "A2", "B2"}, d.GetDeepChildren("C0"))
+	require.Equal(t, []string{"B2"}, d.GetDeepChildren("A1"))
+	require.Equal(t, []string{"B2"}, d.GetDeepChildren("B1"))
 
 	_, err = d.Add("A1", []string{"C0"})
 	require.NoError(t, err)
@@ -50,24 +50,24 @@ func TestDAG_Add(t *testing.T) {
 	// A1  B1  |
 	//   \ |   |
 	//     B2  A2
-	require.Equal(t, []string{}, d.GetChildren("A0"))
-	require.Equal(t, []string{}, d.GetChildren("B0"))
-	require.ElementsMatch(t, []string{"B1", "A2", "A1", "B2"}, d.GetChildren("C0"))
+	require.Equal(t, []string{}, d.GetDeepChildren("A0"))
+	require.Equal(t, []string{}, d.GetDeepChildren("B0"))
+	require.ElementsMatch(t, []string{"B1", "A2", "A1", "B2"}, d.GetDeepChildren("C0"))
 }
 
 func TestDAG_DeleteButBranchRetained(t *testing.T) {
 	d, err := getTestDAG()
 	require.NoError(t, err)
 	d.Delete("A0")
-	require.Equal(t, []string{"A1", "B2"}, d.GetChildren("A0"))
+	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
 
 	d.Delete("A1")
-	require.Equal(t, []string{"A1", "B2"}, d.GetChildren("A0"))
+	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
 
 	_, err = d.Add("A1", []string{"A0"})
 	require.NoError(t, err)
 	d.Delete("B2")
-	require.Equal(t, []string{"A1"}, d.GetChildren("A0"))
+	require.Equal(t, []string{"A1"}, d.GetDeepChildren("A0"))
 }
 
 func TestDAG_DeleteBranch(t *testing.T) {
@@ -76,10 +76,10 @@ func TestDAG_DeleteBranch(t *testing.T) {
 
 	d.Delete("A0")
 	d.Delete("A1")
-	require.Equal(t, []string{"A1", "B2"}, d.GetChildren("A0"))
+	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
 
 	d.Delete("B2")
-	require.Equal(t, []string{}, d.GetChildren("A0"))
+	require.Equal(t, []string{}, d.GetDeepChildren("A0"))
 }
 
 func getTestDAG() (*DAG, error) {
@@ -143,7 +143,7 @@ func TestCyclicDAG(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, "B0", n.Name)
-	require.Equal(t, []string{"B1", "B2", "B0"}, d.GetChildren("A0"))
+	require.Equal(t, []string{"B1", "B2", "B0"}, d.GetDeepChildren("A0"))
 
 	// A0 ----
 	// |      |

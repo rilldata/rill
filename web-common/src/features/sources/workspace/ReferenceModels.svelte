@@ -17,7 +17,7 @@
   import { slide } from "svelte/transition";
 
   export let sourceCatalog: V1CatalogEntry;
-  $: embeds = sourceCatalog?.embeds;
+  $: embeds = sourceCatalog?.children;
   $: modelsAndRowCounts = derived(
     embeds.map((modelName) => {
       return derived(

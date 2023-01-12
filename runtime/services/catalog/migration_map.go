@@ -6,7 +6,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 )
 
@@ -78,7 +77,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 				continue
 			}
 			// go through the children only if forced paths is false
-			children := s.dag.GetChildren(item.NormalizedName)
+			children := s.dag.GetDeepChildren(item.NormalizedName)
 			for _, child := range children {
 				childPath, ok := s.NameToPath[child]
 				if !ok || (changedPathsHint && changedPathsMap[childPath]) {
@@ -94,33 +93,31 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 		}
 	}
 
-	embeddedStoreObjects := make([]*drivers.CatalogEntry, 0)
-
-	for _, storeObject := range storeObjectsMap {
-		lowerStoreName := strings.ToLower(storeObject.Name)
+	for _, storeEntry := range storeObjectsMap {
+		normalisedStoreName := normalizeName(storeEntry.Name)
 		// ignore consumed store objects
-		if storeObjectsConsumed[lowerStoreName] ||
+		if storeObjectsConsumed[normalisedStoreName] ||
 			// ignore tables and unspecified objects
-			storeObject.Type == drivers.ObjectTypeTable || storeObject.Type == drivers.ObjectTypeUnspecified {
-			continue
-		}
-		// if repo paths were forced and the catalog was not in the paths then ignore
-		if _, ok := changedPathsMap[storeObject.Path]; changedPathsHint && !ok {
+			storeEntry.Type == drivers.ObjectTypeTable || storeEntry.Type == drivers.ObjectTypeUnspecified {
 			continue
 		}
 		// ignore embedded sources
-		if storeObject.Embedded {
-			if !s.hasMigrated {
-				// only add if it was the 1st migration
-				embeddedStoreObjects = append(embeddedStoreObjects, storeObject)
+		if storeEntry.Embedded {
+			if _, added := migrationMap[normalisedStoreName]; !added && !s.hasMigrated {
+				// only add if it was the 1st migration and has not already been added
+				migrationMap[normalisedStoreName] = s.newEmbeddedMigrationItem(storeEntry, MigrationNoChange)
 			}
+			continue
+		}
+		// if repo paths were forced and the catalog was not in the paths then ignore
+		if _, ok := changedPathsMap[storeEntry.Path]; changedPathsHint && !ok {
 			continue
 		}
 		found := false
 		// find any additions that match and mark it as a MigrationRename
 		for _, addition := range additions {
-			if migrator.IsEqual(ctx, addition.CatalogInFile, storeObject) {
-				addition.renameFrom(storeObject.Name, storeObject.Path)
+			if migrator.IsEqual(ctx, addition.CatalogInFile, storeEntry) {
+				addition.renameFrom(storeEntry.Name, storeEntry.Path)
 				delete(additions, addition.NormalizedName)
 				found = true
 				break
@@ -128,18 +125,22 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 		}
 		// if no matching item is found, add as a MigrationDelete
 		if !found {
-			migrationMap[lowerStoreName] = &MigrationItem{
-				Name:           storeObject.Name,
-				NormalizedName: lowerStoreName,
-				Type:           MigrationDelete,
-				Path:           storeObject.Path,
-				CatalogInStore: storeObject,
-				NewCatalog:     storeObject,
+			migrationMap[normalisedStoreName] = s.newDeleteMigrationItem(storeEntry)
+			parents := s.dag.GetParents(normalisedStoreName)
+			for _, parent := range parents {
+				_, migrating := migrationMap[parent]
+				if migrating {
+					continue
+				}
+				parentEntry, ok := storeObjectsMap[parent]
+				if !ok || !parentEntry.Embedded {
+					// only add embedded entries for now
+					continue
+				}
+				migrationMap[parent] = s.newEmbeddedMigrationItem(parentEntry, MigrationReportUpdate)
 			}
 		}
 	}
-
-	s.checkEmbeddedEntries(ctx, migrationMap, embeddedStoreObjects)
 
 	return migrationMap, reconcileErrors, nil
 }
@@ -156,7 +157,7 @@ func (s *Service) isInvalidDuplicate(
 	existing, ok := migrationMap[item.NormalizedName]
 
 	if ok {
-		if item.CatalogInStore != nil && item.CatalogInStore.Embedded {
+		if item.NewCatalog != nil && item.NewCatalog.Embedded {
 			// ignore duplicate check for embedded items
 			return false, ""
 		}
@@ -240,85 +241,4 @@ func (s *Service) lookForRenames(
 	}
 
 	return add
-}
-
-func (s *Service) checkEmbeddedEntries(
-	ctx context.Context,
-	migrationMap map[string]*MigrationItem,
-	embeddedStoreObjects []*drivers.CatalogEntry,
-) {
-	// update embedded items
-	for _, item := range migrationMap {
-		if item.Type == MigrationRename {
-			// update embedded source's links on rename
-			s.checkEmbeddingOnRename(item, migrationMap)
-		}
-		if item.NewCatalog == nil {
-			continue
-		}
-		for _, embedded := range item.NewCatalog.Embeds {
-			if item.NewCatalog.Embedded {
-				s.checkEmbeddedSourceEntry(migrationMap, embedded, item)
-			} else {
-				s.checkEmbeddedEntry(ctx, migrationMap, embedded, item)
-			}
-		}
-	}
-
-	for _, embeddedStoreObject := range embeddedStoreObjects {
-		item := s.newEmbeddedMigrationItem(embeddedStoreObject, MigrationNoChange)
-		for _, embedded := range embeddedStoreObject.Embeds {
-			s.checkEmbeddedSourceEntry(migrationMap, embedded, item)
-		}
-	}
-}
-
-func (s *Service) checkEmbeddedEntry(
-	ctx context.Context,
-	migrationMap map[string]*MigrationItem,
-	embedded string,
-	item *MigrationItem,
-) {
-	embeddedMigrationItem, ok := migrationMap[embedded]
-	if !ok {
-		existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, embedded)
-		if !ok {
-			return
-		}
-		embeddedMigrationItem = s.newEmbeddedMigrationItem(existingEntry, MigrationUpdateCatalog)
-	}
-
-	contains := arrayutil.Contains(embeddedMigrationItem.CatalogInFile.Embeds, item.NormalizedName)
-	if item.Type == MigrationDelete && contains {
-		embeddedMigrationItem.removeLink(item.NormalizedName)
-		migrationMap[embeddedMigrationItem.NormalizedName] = embeddedMigrationItem
-	} else if item.Type == MigrationCreate && !contains {
-		embeddedMigrationItem.addLink(item.NormalizedName)
-		migrationMap[embeddedMigrationItem.NormalizedName] = embeddedMigrationItem
-	}
-}
-
-func (s *Service) checkEmbeddedSourceEntry(
-	migrationMap map[string]*MigrationItem,
-	embedded string,
-	item *MigrationItem,
-) {
-	embeddedMigrationItem, ok := migrationMap[embedded]
-	if !ok || arrayutil.Contains(embeddedMigrationItem.NewCatalog.Embeds, item.NormalizedName) {
-		return
-	}
-	item.removeLink(embedded)
-}
-
-func (s *Service) checkEmbeddingOnRename(
-	item *MigrationItem,
-	migrationMap map[string]*MigrationItem,
-) {
-	for _, embedding := range item.NewCatalog.Embeds {
-		existing, ok := migrationMap[embedding]
-		if !ok {
-			continue
-		}
-		existing.removeLink(item.FromNormalizedName)
-	}
 }
