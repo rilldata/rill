@@ -8,7 +8,6 @@
 
 import { afterNavigate, beforeNavigate } from "$app/navigation";
 import {
-  getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceReconcile,
 } from "@rilldata/web-common/runtime-client";
@@ -97,16 +96,12 @@ async function syncFileSystem(
   const pagePath = get(page).url.pathname;
   console.log("syncFileSystem", instanceId, pagePath, id);
   if (!isPathToAsset(pagePath)) return;
+
   const filePath = getFilePathFromPagePath(pagePath);
   fileArtifactsStore.setIsReconciling(filePath, true);
-
-  await queryClient.invalidateQueries(
-    getRuntimeServiceGetFileQueryKey(instanceId, filePath)
-  );
   const resp = await runtimeServiceReconcile(instanceId, {
     changedPaths: [filePath],
   });
-
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   fileArtifactsStore.setIsReconciling(filePath, false);
   invalidateAfterReconcile(queryClient, instanceId, resp);
