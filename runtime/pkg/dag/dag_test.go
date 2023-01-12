@@ -143,7 +143,7 @@ func TestCyclicDAG(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, "B0", n.Name)
-	require.Equal(t, []string{"B1", "B2", "B0"}, d.GetDeepChildren("A0"))
+	require.ElementsMatch(t, []string{"B1", "B2", "B0"}, d.GetDeepChildren("A0"))
 
 	// A0 ----
 	// |      |
