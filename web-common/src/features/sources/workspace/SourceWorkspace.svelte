@@ -202,14 +202,6 @@
               The source <span class="font-bold">{sourceName}</span> has not been
               imported.
             </div>
-            <Button
-              type="primary"
-              on:click={async () => {
-                uploadErrors = undefined;
-                await onRefreshClick(sourceName);
-              }}
-              >Import data
-            </Button>
           {/if}
           <!-- show any remaining errors -->
           {#if uploadErrors?.length}
