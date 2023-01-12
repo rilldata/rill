@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -124,4 +125,20 @@ func ForceRemoveFiles(paths []string) {
 	for _, path := range paths {
 		_ = os.Remove(path)
 	}
+}
+
+func ExpandHome(path string) (string, error) {
+	if path == "" || path[0] != '~' {
+		return path, nil
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	if usr.HomeDir == "" {
+		return "", fmt.Errorf("home not set to exapand file %s", path)
+	}
+
+	return filepath.Join(usr.HomeDir, path[1:]), nil
 }

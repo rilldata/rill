@@ -3,7 +3,6 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -57,15 +56,11 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return err
 	}
 
-	path := conf.Path
-	if path[0] == '~' {
-		// If path has `~` replace it with user's home dir
-		usr, err := user.Current()
-		if err != nil {
-			return err
-		}
-		path = filepath.Join(usr.HomeDir, path[1:])
-	} else if !filepath.IsAbs(path) {
+	path, err := fileutil.ExpandHome(conf.Path)
+	if err != nil {
+		return err
+	}
+	if !filepath.IsAbs(path) {
 		// If the path is relative, it's relative to the repo root
 		if env.RepoDriver != "file" || env.RepoDSN == "" {
 			return fmt.Errorf("file connector cannot ingest source '%s': path is relative, but repo is not available", source.Name)

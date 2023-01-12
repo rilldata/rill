@@ -1790,8 +1790,6 @@ definitions:
       name:
         type: string
         title: Name of the model
-      sanitizedSql:
-        type: string
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the model

@@ -49,11 +49,10 @@ message Model {
   string name = 1;
   // SQL is a SELECT statement representing the model
   string sql = 2;
-  string sanitized_sql = 3;
   // Dialect of the SQL statement
-  Dialect dialect = 4;
+  Dialect dialect = 3;
   // Detected schema of the model
-  StructType schema = 5;
+  StructType schema = 4;
 }
 
 // Metrics view is the internal representation of a metrics view definition
