@@ -25,7 +25,7 @@ const createOrUpdateFileArtifact = (
   callback: (entityData: FileArtifactsData) => void
 ) => {
   update((state) => {
-    if (!state[path]) {
+    if (!state.entities[path]) {
       state.entities[path] = {
         errors: [],
         jsonRepresentation: {},
