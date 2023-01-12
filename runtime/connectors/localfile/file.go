@@ -44,12 +44,12 @@ var spec = connectors.Spec{
 	},
 }
 
-type Config struct {
+type config struct {
 	connectors.Config `mapstructure:",squash"`
 }
 
-func ParseConfig(props map[string]any) (*Config, error) {
-	conf := &Config{}
+func parseConfig(props map[string]any) (*config, error) {
+	conf := &config{}
 	err := mapstructure.Decode(props, &conf)
 	if err != nil {
 		return nil, err

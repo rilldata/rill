@@ -43,7 +43,7 @@ var spec = connectors.Spec{
 	},
 }
 
-type gcsConfig struct {
+type config struct {
 	connectors.Config     `mapstructure:",squash"`
 	GlobMaxTotalSize      int64 `mapstructure:"glob.max_total_size"`
 	GlobMaxObjectsMatched int   `mapstructure:"glob.max_objects_matched"`
@@ -51,8 +51,8 @@ type gcsConfig struct {
 	GlobPageSize          int   `mapstructure:"glob.page_size"`
 }
 
-func parseConfig(props map[string]any) (*gcsConfig, error) {
-	conf := &gcsConfig{}
+func parseConfig(props map[string]any) (*config, error) {
+	conf := &config{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err

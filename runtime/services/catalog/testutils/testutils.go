@@ -16,6 +16,9 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load connectors for testing
+	_ "github.com/rilldata/rill/runtime/connectors/localfile"
 )
 
 func CreateSource(t *testing.T, s *catalog.Service, name, file, sourcePath string) string {

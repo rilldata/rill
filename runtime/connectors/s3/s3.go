@@ -51,7 +51,7 @@ var spec = connectors.Spec{
 	},
 }
 
-type s3Config struct {
+type config struct {
 	connectors.Config     `mapstructure:",squash"`
 	AWSRegion             string `mapstructure:"region"`
 	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
@@ -60,8 +60,8 @@ type s3Config struct {
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
-func parseConfig(props map[string]any) (*s3Config, error) {
-	conf := &s3Config{}
+func parseConfig(props map[string]any) (*config, error) {
+	conf := &config{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func s3URLParts(path string) (string, string, error) {
 	return bucket, glob, nil
 }
 
-func getAwsSessionConfig(conf *s3Config) (*session.Session, error) {
+func getAwsSessionConfig(conf *config) (*session.Session, error) {
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
 			Region: aws.String(conf.AWSRegion),

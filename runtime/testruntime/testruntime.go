@@ -11,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 
+	// Load connectors for testing
+	_ "github.com/rilldata/rill/runtime/connectors/localfile"
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
