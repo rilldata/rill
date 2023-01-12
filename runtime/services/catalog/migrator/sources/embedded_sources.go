@@ -1,6 +1,8 @@
 package sources
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,10 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-var (
-	protocolExtraction = regexp.MustCompile(`^(\w*?)://(.*)$`)
-	sanitiser          = regexp.MustCompile(`(?im)[:/?\-.~]`)
-)
+var protocolExtraction = regexp.MustCompile(`^(\w*?)://(.*)$`)
 
 func GetEmbeddedSource(path string) (*runtimev1.Source, bool) {
 	path = strings.TrimSpace(strings.Trim(path, `"'`))
@@ -36,7 +35,11 @@ func GetEmbeddedSource(path string) (*runtimev1.Source, bool) {
 			return nil, false
 		}
 	}
-	name := fmt.Sprintf("%s_%s", connector, sanitiser.ReplaceAllString(path, "_"))
+
+	hash := md5.Sum([]byte(fmt.Sprintf("%s_%s", connector, path)))
+	// prepend a char to make sure the name is a valid table name
+	name := "a" + hex.EncodeToString(hash[:])
+
 	props, err := structpb.NewStruct(map[string]any{
 		"path": path,
 	})

@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var EmbeddedSourceName = "local_file_data_adbids_csv"
+var EmbeddedSourceName = "a4c0405f9a09d7e055a371c405d93e067"
 var EmbeddedSourcePath = "data/adbids.csv"
-var EmbeddedGzSourceName = "local_file_data_adbids_csv_gz"
+var EmbeddedGzSourceName = "a23ac470311241eaed9c9d9731e56f6e9"
 var EmbeddedGzSourcePath = "data/adbids.csv.gz"
-var ImpEmbeddedSourceName = "local_file_data_adimpressions_csv"
+var ImpEmbeddedSourceName = "a251693674604e998f126e4ce6e999ade"
 var ImpEmbeddedSourcePath = "data/adimpressions.csv"
 var AdBidsNewModeName = "AdBids_new_model"
 var AdBidsNewModelPath = "/models/AdBids_new_model.sql"

@@ -300,7 +300,6 @@ func (s *Service) runMigrationItems(
 		if failed && !conf.DryRun {
 			// remove entity from catalog and OLAP if it failed validation or during migration
 			err := s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
-			_, err = s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 			if err != nil {
 				// shouldn't ideally happen
 				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
