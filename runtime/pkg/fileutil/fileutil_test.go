@@ -59,6 +59,7 @@ func TestExpandHome(t *testing.T) {
 		{"./file.tar.gz", "./file.tar.gz"},
 		{"~", home},
 		{"~/", home},
+		{"~file.yaml", "~file.yaml"},
 		{"~/path/to/file.tar.gz", home + "/path/to/file.tar.gz"},
 		{"/path/to/file.tar.gz", "/path/to/file.tar.gz"},
 	}

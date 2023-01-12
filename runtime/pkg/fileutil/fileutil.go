@@ -131,13 +131,16 @@ func ExpandHome(path string) (string, error) {
 	if path == "" || path[0] != '~' {
 		return path, nil
 	}
+	if len(path) > 1 && path[1] != '/' {
+		return path, nil
+	}
 
 	usr, err := user.Current()
 	if err != nil {
 		return "", err
 	}
 	if usr.HomeDir == "" {
-		return "", fmt.Errorf("home not set to exapand file %s", path)
+		return "", fmt.Errorf("cannot expand '~' in path %q because the current user doesn't have a home directory", path)
 	}
 
 	return filepath.Join(usr.HomeDir, path[1:]), nil

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetEmbeddedSourcePositiveTest(t *testing.T) {
+func TestParseEmbeddedSourcePositiveTest(t *testing.T) {
 	positiveTests := []struct {
 		path      string
 		connector string
@@ -22,7 +22,7 @@ func TestGetEmbeddedSourcePositiveTest(t *testing.T) {
 
 	for _, tt := range positiveTests {
 		t.Run(tt.path, func(t *testing.T) {
-			s, ok := GetEmbeddedSource(tt.path)
+			s, ok := ParseEmbeddedSource(tt.path)
 			require.True(t, ok)
 			require.NotNil(t, s)
 			require.Equal(t, tt.connector, s.Connector)
@@ -31,7 +31,7 @@ func TestGetEmbeddedSourcePositiveTest(t *testing.T) {
 	}
 }
 
-func TestGetEmbeddedSourceNegativeTest(t *testing.T) {
+func TestParseEmbeddedSourceNegativeTest(t *testing.T) {
 	negativeTests := []string{
 		"AdBids",
 		"Ad_Bids",
@@ -41,7 +41,7 @@ func TestGetEmbeddedSourceNegativeTest(t *testing.T) {
 
 	for _, tt := range negativeTests {
 		t.Run(tt, func(t *testing.T) {
-			s, ok := GetEmbeddedSource(tt)
+			s, ok := ParseEmbeddedSource(tt)
 			require.Nil(t, s)
 			require.False(t, ok)
 		})

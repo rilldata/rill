@@ -67,7 +67,7 @@ func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPSt
 
 	embeddedSourcesMap := make(map[string]*drivers.CatalogEntry)
 	for i, dependency := range dependencies {
-		source, ok := sources.GetEmbeddedSource(dependency)
+		source, ok := sources.ParseEmbeddedSource(dependency)
 		if !ok {
 			continue
 		}

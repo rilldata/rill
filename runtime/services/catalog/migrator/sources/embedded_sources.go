@@ -13,7 +13,7 @@ import (
 
 var protocolExtraction = regexp.MustCompile(`^(\w*?)://(.*)$`)
 
-func GetEmbeddedSource(path string) (*runtimev1.Source, bool) {
+func ParseEmbeddedSource(path string) (*runtimev1.Source, bool) {
 	path = strings.TrimSpace(strings.Trim(path, `"'`))
 	matches := protocolExtraction.FindStringSubmatch(path)
 	var connector string
