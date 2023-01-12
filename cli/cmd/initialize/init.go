@@ -17,6 +17,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 	var exampleName string
 	var listExamples bool
 	var verbose bool
+	var logFormat string
 
 	initCmd := &cobra.Command{
 		Use:   "init",
@@ -40,7 +41,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, logFormat)
 			if err != nil {
 				return err
 			}
@@ -87,6 +88,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	initCmd.Flags().StringVar(&logFormat, "log-format", "color", "Sets the log format to color/json")
 
 	return initCmd
 }

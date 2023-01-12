@@ -57,12 +57,20 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string) (*App, error) {
-	// Setup a friendly-looking colored logger
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath, logFormat string) (*App, error) {
+	// Setup a friendly-looking colored/json logger
 	conf := zap.NewDevelopmentEncoderConfig()
-	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	var encoder zapcore.Encoder
+	switch logFormat {
+	case "json":
+		encoder = zapcore.NewJSONEncoder(conf)
+	default:
+		conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		encoder = zapcore.NewConsoleEncoder(conf)
+	}
+
 	logger := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(conf),
+		encoder,
 		zapcore.AddSync(colorable.NewColorableStdout()),
 		zapcore.DebugLevel,
 	))

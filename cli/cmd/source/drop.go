@@ -16,6 +16,7 @@ func DropCmd(ver version.Version) *cobra.Command {
 	var olapDSN string
 	var projectPath string
 	var verbose bool
+	var logFormat string
 
 	dropCmd := &cobra.Command{
 		Use:   "drop <source>",
@@ -28,7 +29,7 @@ func DropCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("not a valid source name: %s", sourceName)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, logFormat)
 			if err != nil {
 				return err
 			}
@@ -63,6 +64,7 @@ func DropCmd(ver version.Version) *cobra.Command {
 	dropCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	dropCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	dropCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	dropCmd.Flags().StringVar(&logFormat, "log-format", "color", "Sets the log format to color/json")
 
 	return dropCmd
 }

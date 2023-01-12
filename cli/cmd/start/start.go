@@ -18,12 +18,13 @@ func StartCmd(ver version.Version) *cobra.Command {
 	var verbose bool
 	var noUI bool
 	var noOpen bool
+	var logFormat string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, logFormat)
 			if err != nil {
 				return err
 			}
@@ -60,6 +61,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for gRPC")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	startCmd.Flags().StringVar(&logFormat, "log-format", "color", "Sets the log format to color/json")
 
 	return startCmd
 }
