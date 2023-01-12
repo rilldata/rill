@@ -107,6 +107,7 @@ async function syncFileSystem(
     changedPaths: [filePath],
   });
 
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   fileArtifactsStore.setIsReconciling(filePath, false);
   invalidateAfterReconcile(queryClient, instanceId, resp);
 }
