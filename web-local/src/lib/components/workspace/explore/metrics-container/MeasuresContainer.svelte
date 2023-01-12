@@ -15,14 +15,24 @@
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let metricViewName;
+  export let exploreContainerWidth;
 
   const MEASURE_HEIGHT = 60;
   const MEASURE_HEIGHT_MULTILINE = 80;
   const MEASURE_WIDTH = 175;
-  const MARGIN_TOP = 20;
-  const GRID_MARGIN_TOP = 20;
+  const MARGIN_TOP = 36;
+  const GRID_MARGIN_TOP = 8;
 
-  let measuresWrapper;
+  // external sizes
+  const MIN_LEADERBOARD_WIDTH = 355;
+  const MEASURES_PADDING_LEFT = 44;
+  const LEADERBOARD_PADDING_RIGHT = 16;
+
+  $: maxWidthMeasuresContainer =
+    exploreContainerWidth -
+    MIN_LEADERBOARD_WIDTH -
+    MEASURES_PADDING_LEFT -
+    LEADERBOARD_PADDING_RIGHT;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -39,6 +49,7 @@
   $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
   $: metricsContainerWidth = $observedNode?.offsetWidth || 0;
 
+  let measuresWrapper;
   let measuresHeight = [];
   let measureGridHeights = [];
 
@@ -96,9 +107,9 @@
     }
 
     // Check if there is any horizontal overlap between measures
-    if (metricsContainerWidth) {
+    if (maxWidthMeasuresContainer) {
       while (numColumns > 1) {
-        const widthPerColumn = metricsContainerWidth / numColumns;
+        const widthPerColumn = maxWidthMeasuresContainer / numColumns;
         // gap-x-4 = 16px
         if (widthPerColumn < MEASURE_WIDTH + 16 / 2) {
           numColumns = numColumns - 1;

@@ -1,15 +1,23 @@
 <script lang="ts">
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let gridConfig: string;
+  export let exploreContainerWidth;
 
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
+
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
+
+  $: exploreContainerWidth = $observedNode?.offsetWidth || 0;
 </script>
 
 <section
+  use:listenToNodeResize
   class="grid items-stretch leaderboard-layout surface"
   style:grid-template-columns={gridConfig}
 >

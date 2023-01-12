@@ -21,6 +21,8 @@
 
   export let metricViewName: string;
 
+  let exploreContainerWidth;
+
   let hasTimeSeries = true;
   $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
     hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
@@ -49,7 +51,7 @@
   bgClass="bg-white"
   inspector={false}
 >
-  <ExploreContainer {gridConfig} slot="body">
+  <ExploreContainer bind:exploreContainerWidth {gridConfig} slot="body">
     <ExploreHeader {metricViewName} slot="header" />
 
     <svelte:fragment slot="metrics">
@@ -57,7 +59,7 @@
         {#if hasTimeSeries}
           <MetricsTimeSeriesCharts {metricViewName} />
         {:else}
-          <MeasuresContainer {metricViewName} />
+          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
         {/if}
       {/key}
     </svelte:fragment>
