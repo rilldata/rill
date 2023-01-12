@@ -36,7 +36,7 @@ func (d *DAG) Add(name string, dependants []string) (*Node, error) {
 		childrens := d.GetChildren(name)
 		ok := slices.Contains(childrens, dependant)
 		if ok {
-			return nil, fmt.Errorf("circular dependencies not allowed")
+			return nil, fmt.Errorf("encountered circular dependency between %q and %q", name, dependant)
 		}
 
 		dependantMap[dependant] = true
