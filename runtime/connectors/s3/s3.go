@@ -3,7 +3,6 @@ package s3
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -11,6 +10,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob/s3blob"
 )
 
@@ -51,8 +51,8 @@ var spec = connectors.Spec{
 	},
 }
 
-type config struct {
-	connectors.Config     `mapstructure:",squash"`
+type Config struct {
+	Path                  string `mapstructure:"path"`
 	AWSRegion             string `mapstructure:"region"`
 	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
@@ -60,15 +60,17 @@ type config struct {
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
-func parseConfig(props map[string]any) (*config, error) {
-	conf := &config{}
+func ParseConfig(props map[string]any) (*Config, error) {
+	conf := &Config{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
 	}
+
 	if !doublestar.ValidatePattern(conf.Path) {
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
+
 	return conf, nil
 }
 
@@ -79,14 +81,18 @@ func (c connector) Spec() connectors.Spec {
 }
 
 func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
-	conf, err := parseConfig(source.Properties)
+	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	bucket, glob, err := s3URLParts(conf.Path)
+	scheme, bucket, glob, err := globutil.ParseURL(conf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+	}
+
+	if scheme != "s3" {
+		return nil, fmt.Errorf("invalid s3 path %s, should start with s3://", conf.Path)
 	}
 
 	sess, err := getAwsSessionConfig(conf)
@@ -109,16 +115,7 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
 }
 
-func s3URLParts(path string) (string, string, error) {
-	trimmedPath := strings.Replace(path, "s3://", "", 1)
-	bucket, glob, found := strings.Cut(trimmedPath, "/")
-	if !found {
-		return "", "", fmt.Errorf("failed to parse path %s", path)
-	}
-	return bucket, glob, nil
-}
-
-func getAwsSessionConfig(conf *config) (*session.Session, error) {
+func getAwsSessionConfig(conf *Config) (*session.Session, error) {
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
 			Region: aws.String(conf.AWSRegion),

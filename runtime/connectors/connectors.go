@@ -3,8 +3,6 @@ package connectors
 import (
 	"context"
 	"fmt"
-
-	"github.com/mitchellh/mapstructure"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -97,14 +95,6 @@ type SamplePolicy struct {
 	Limit    int
 }
 
-// Config is common config for all connectors
-// Different connectors may add more configs
-type Config struct {
-	Path         string `mapstructure:"path"`
-	Format       string `mapstructure:"format"`
-	CSVDelimiter string `mapstructure:"csv.delimiter"`
-}
-
 // Validate checks the source's properties against its connector's spec.
 func (s *Source) Validate() error {
 	connector, ok := Connectors[s.Connector]
@@ -150,12 +140,4 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 	}
 
 	return true
-}
-
-func ParseCommonConfig(props map[string]any) (*Config, error) {
-	conf := &Config{}
-	if err := mapstructure.Decode(props, &conf); err != nil {
-		return nil, err
-	}
-	return conf, nil
 }

@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/localfile"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
 )
 

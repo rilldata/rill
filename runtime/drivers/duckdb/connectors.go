@@ -8,6 +8,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -40,12 +41,17 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 // for files downloaded locally from remote sources
 func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source, filenames []string) error {
-	config, err := connectors.ParseCommonConfig(source.Properties)
-	if err != nil {
-		return err
+	format := ""
+	if value, ok := source.Properties["format"]; ok {
+		format = value.(string)
 	}
 
-	from, err := getSourceReader(filenames, config)
+	delimiter := ""
+	if value, ok := source.Properties["csv.delimiter"]; ok {
+		format = value.(string)
+	}
+
+	from, err := getSourceReader(filenames, delimiter, format)
 	if err != nil {
 		return err
 	}
@@ -55,7 +61,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 
 // local files
 func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	conf, err := connectors.ParseCommonConfig(source.Properties)
+	conf, err := localfile.ParseConfig(source.Properties)
 	if err != nil {
 		return err
 	}
@@ -78,10 +84,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	// Not using query args since not quite sure about behaviour of injecting table names that way.
-	// Also, it's a source, so the caller can be trusted.
-
-	from, err := getSourceReader(localPaths, conf)
+	from, err := getSourceReader(localPaths, conf.CSVDelimiter, conf.Format)
 	if err != nil {
 		return err
 	}
@@ -91,18 +94,15 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func getSourceReader(paths []string, config *connectors.Config) (string, error) {
-	format := config.Format
+func getSourceReader(paths []string, csvDelimiter, format string) (string, error) {
 	if format == "" {
 		format = fileutil.FullExt(paths[0])
 	}
 
 	if format == "" {
 		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(format, ".csv") {
-		return getCsvSourceReader(paths, config.CSVDelimiter), nil
-	} else if strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
-		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','")), nil
+	} else if strings.Contains(format, ".csv") || strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
+		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
 	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'])", strings.Join(paths, "','")), nil
 	} else {
@@ -110,7 +110,7 @@ func getSourceReader(paths []string, config *connectors.Config) (string, error) 
 	}
 }
 
-func getCsvSourceReader(paths []string, delimitter string) string {
+func sourceReaderWithDelimiter(paths []string, delimitter string) string {
 	if delimitter == "" {
 		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','"))
 	}

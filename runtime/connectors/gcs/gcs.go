@@ -3,12 +3,12 @@ package gcs
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob"
 
 	// blank import required for bucket functions
@@ -43,16 +43,16 @@ var spec = connectors.Spec{
 	},
 }
 
-type config struct {
-	connectors.Config     `mapstructure:",squash"`
-	GlobMaxTotalSize      int64 `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int   `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64 `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int   `mapstructure:"glob.page_size"`
+type Config struct {
+	Path                  string `key:"path"`
+	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
-func parseConfig(props map[string]any) (*config, error) {
-	conf := &config{}
+func ParseConfig(props map[string]any) (*Config, error) {
+	conf := &Config{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
@@ -72,14 +72,18 @@ func (c connector) Spec() connectors.Spec {
 }
 
 func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
-	conf, err := parseConfig(source.Properties)
+	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	bucket, glob, err := gcsURLParts(conf.Path)
+	scheme, bucket, glob, err := globutil.ParseURL(conf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+	}
+
+	if scheme != "gs" {
+		return nil, fmt.Errorf("invalid gcs path %s, should start with gs://", conf.Path)
 	}
 
 	bucket = fmt.Sprintf("gs://%s", bucket)
@@ -96,13 +100,4 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		GlobPageSize:          conf.GlobPageSize,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
-}
-
-func gcsURLParts(path string) (string, string, error) {
-	trimmedPath := strings.Replace(path, "gs://", "", 1)
-	bucket, glob, found := strings.Cut(trimmedPath, "/")
-	if !found {
-		return "", "", fmt.Errorf("failed to parse path %s", path)
-	}
-	return bucket, glob, nil
 }

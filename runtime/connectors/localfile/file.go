@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 )
 
@@ -42,9 +43,21 @@ var spec = connectors.Spec{
 	},
 }
 
-// type config struct {
-// 	connectors.Config `mapstructure:",squash"`
-// }
+type Config struct {
+	Path         string `mapstructure:"path"`
+	Format       string `mapstructure:"format"`
+	CSVDelimiter string `mapstructure:"csv.delimiter"`
+}
+
+func ParseConfig(props map[string]any) (*Config, error) {
+	conf := &Config{}
+	err := mapstructure.Decode(props, &conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return conf, nil
+}
 
 type connector struct{}
 
