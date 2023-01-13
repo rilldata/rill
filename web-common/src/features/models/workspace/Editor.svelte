@@ -288,7 +288,7 @@
   // REACTIVE FUNCTIONS
 
   function updateEditorContents(newContent: string) {
-    if (editor) {
+    if (editor && !editor.hasFocus) {
       let curContent = editor.state.doc.toString();
       if (newContent != curContent) {
         // TODO: should we debounce this?
