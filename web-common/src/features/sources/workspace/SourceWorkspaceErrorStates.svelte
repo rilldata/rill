@@ -22,19 +22,18 @@
 
   export let sourceName: string;
 
-  $: checkForSourceInCatalog = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore?.instanceId,
-    sourceName
-  );
-
   let sourcePath: string;
   $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
   $: getSource = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
     sourcePath
   );
-
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
+
+  $: checkForSourceInCatalog = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore?.instanceId,
+    sourceName
+  );
   $: entryExists =
     $checkForSourceInCatalog?.error?.response?.data?.message !==
     "entry not found";
@@ -52,12 +51,10 @@
     ?.map((connector) => connector.name)
     ?.filter((name) => name !== "local_file");
 
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createSource = useRuntimeServicePutFileAndReconcile();
   const queryClient = useQueryClient();
+  const createSource = useRuntimeServicePutFileAndReconcile();
+  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
 
-  let uploadErrors = undefined;
-  $: uploadErrors = $fileArtifactsStore.entities[sourcePath]?.errors;
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
@@ -78,7 +75,10 @@
     }
     overlay.set(null);
   };
+
   $: isReconciling = $fileArtifactsStore.entities[sourcePath]?.isReconciling;
+  let uploadErrors = undefined;
+  $: uploadErrors = $fileArtifactsStore.entities[sourcePath]?.errors;
 </script>
 
 <div
