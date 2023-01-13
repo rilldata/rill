@@ -71,6 +71,7 @@
         runtimeInstanceId,
         $refreshSourceMutation,
         queryClient,
+        uri,
         uri
       );
 

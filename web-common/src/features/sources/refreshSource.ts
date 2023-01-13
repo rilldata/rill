@@ -19,9 +19,10 @@ export async function refreshAndReconcile(
   instanceId: string,
   refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
   queryClient: QueryClient,
-  path: string
+  path: string,
+  displayName = undefined
 ) {
-  overlay.set({ title: `Importing ${sourceName}` });
+  overlay.set({ title: `Importing ${displayName || sourceName}` });
   const resp = await refreshSource.mutateAsync({
     data: {
       instanceId,
@@ -39,7 +40,8 @@ export async function refreshSource(
   instanceId: string,
   refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
   createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
-  queryClient: QueryClient
+  queryClient: QueryClient,
+  displayName = undefined
 ) {
   const artifactPath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
@@ -49,7 +51,8 @@ export async function refreshSource(
       instanceId,
       refreshSource,
       queryClient,
-      artifactPath
+      artifactPath,
+      displayName
     );
   }
 

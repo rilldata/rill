@@ -179,7 +179,8 @@
           runtimeInstanceId,
           $refreshSourceMutation,
           queryClient,
-          source.properties.path
+          source.properties.path,
+          path
         );
       } else {
         await refreshSource(
@@ -188,7 +189,12 @@
           runtimeInstanceId,
           $refreshSourceMutation,
           $createSource,
-          queryClient
+          queryClient,
+          source?.connector === "s3" ||
+            source?.connector === "gcs" ||
+            source?.connector === "https"
+            ? source?.properties?.path
+            : sourceName
         );
       }
       // invalidate the "refreshed_on" time

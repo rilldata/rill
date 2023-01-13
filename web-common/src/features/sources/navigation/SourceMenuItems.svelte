@@ -166,7 +166,6 @@
       // TODO: show the import source modal with fixed tableName
       return;
     }
-
     try {
       await refreshSource(
         connector,
@@ -174,7 +173,10 @@
         runtimeInstanceId,
         $refreshSourceMutation,
         $createEntityMutation,
-        queryClient
+        queryClient,
+        connector === "s3" || connector === "gcs" || connector === "https"
+          ? source?.properties?.path
+          : sourceName
       );
 
       // invalidate the data preview (async)

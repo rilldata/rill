@@ -80,7 +80,12 @@
         $runtimeStore?.instanceId,
         $refreshSourceMutation,
         $createSource,
-        queryClient
+        queryClient,
+        source?.type === "s3" ||
+          source?.type === "gcs" ||
+          source?.type === "https"
+          ? source?.properties?.path
+          : sourceName
       );
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         $runtimeStore?.instanceId,
