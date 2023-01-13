@@ -1,12 +1,12 @@
-import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
-import { MetricsExplorerEntity } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
+import type {
+  MetricsViewDimension,
+  V1MetricsView,
+} from "@rilldata/web-common/runtime-client";
 
 export function getDisplayName(dimension: MetricsViewDimension) {
   return dimension?.label?.length ? dimension?.label : dimension?.name;
 }
 
-export function hasDefinedTimeSeries(
-  metricsExplorerStore: MetricsExplorerEntity
-) {
-  return !!metricsExplorerStore?.selectedTimeRange;
+export function hasDefinedTimeSeries(metricsView: V1MetricsView) {
+  return !!metricsView?.timeDimension;
 }

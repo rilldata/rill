@@ -34,6 +34,7 @@
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import { hasDefinedTimeSeries } from "../utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -92,6 +93,12 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
+  let hasTimeSeries;
+
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
+  }
+
   function setLeaderboardValues(values) {
     dispatch("leaderboard-value", {
       dimensionName,
@@ -115,24 +122,34 @@
     $metaQuery?.isSuccess &&
     !$metaQuery?.isRefetching
   ) {
+    let topListParams = {
+      dimensionName: dimensionName,
+      measureNames: [measure.name],
+      limit: "250",
+      offset: "0",
+      sort: [
+        {
+          name: measure.name,
+          ascending: false,
+        },
+      ],
+      filter: filterForDimension,
+    };
+
+    if (hasTimeSeries) {
+      topListParams = {
+        ...topListParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
+
     topListQuery = useRuntimeServiceMetricsViewToplist(
       $runtimeStore.instanceId,
       metricViewName,
-      {
-        dimensionName: dimensionName,
-        measureNames: [measure.name],
-        limit: "250",
-        offset: "0",
-        sort: [
-          {
-            name: measure.name,
-            ascending: false,
-          },
-        ],
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-        filter: filterForDimension,
-      }
+      topListParams
     );
   }
 

@@ -443,8 +443,8 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*S
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
 	require.NoError(t, err)
-
 	defer res.Close()
+
 	var n int
 	for res.Next() {
 		err := res.Scan(&n)

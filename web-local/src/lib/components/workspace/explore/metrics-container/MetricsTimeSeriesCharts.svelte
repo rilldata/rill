@@ -23,8 +23,10 @@
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
-  import { formatDateByInterval } from "../time-controls/time-range-utils";
-  import { hasDefinedTimeSeries } from "../utils";
+  import {
+    formatDateByInterval,
+    addGrains,
+  } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -33,7 +35,6 @@
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -53,15 +54,17 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    const totalsQueryParams = {
+      measureNames: selectedMeasureNames,
+      filter: metricsExplorer?.filters,
+      timeStart: metricsExplorer.selectedTimeRange?.start,
+      timeEnd: metricsExplorer.selectedTimeRange?.end,
+    };
+
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        filter: metricsExplorer?.filters,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 
@@ -72,7 +75,6 @@
   $: if (
     metricsExplorer &&
     metaQuery &&
-    hasTimeSeries &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching &&
     metricsExplorer.selectedTimeRange
@@ -122,12 +124,22 @@
 
   let mouseoverValue = undefined;
 
-  $: startValue = removeTimezoneOffset(
-    new Date(metricsExplorer?.selectedTimeRange?.start)
-  );
-  $: endValue = removeTimezoneOffset(
-    new Date(metricsExplorer?.selectedTimeRange?.end)
-  );
+  let startValue: Date;
+  let endValue: Date;
+  $: if (metricsExplorer?.selectedTimeRange) {
+    startValue = removeTimezoneOffset(
+      new Date(metricsExplorer?.selectedTimeRange?.start)
+    );
+    // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
+    // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
+    endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
+    endValue = addGrains(
+      endValue,
+      -1,
+      metricsExplorer?.selectedTimeRange?.interval
+    );
+    endValue = removeTimezoneOffset(endValue);
+  }
 </script>
 
 <WithBisector
@@ -189,30 +201,28 @@
             {measure?.label || measure?.expression}
           </svelte:fragment>
         </MeasureBigNumber>
-        {#if metricsExplorer?.selectedTimeRange}
-          <div class="time-series-body" style:height="125px">
-            {#if $timeSeriesQuery?.isError}
-              <div class="p-5"><CrossIcon /></div>
-            {:else if formattedData}
-              <TimeSeriesBody
-                bind:mouseoverValue
-                formatPreset={NicelyFormattedTypes[measure?.format] ||
-                  NicelyFormattedTypes.HUMANIZE}
-                data={formattedData}
-                accessor={measure.name}
-                mouseover={point}
-                timeGrain={metricsExplorer.selectedTimeRange?.interval}
-                yMin={yExtents[0] < 0 ? yExtents[0] : 0}
-                start={startValue}
-                end={endValue}
-              />
-            {:else}
-              <div>
-                <Spinner status={EntityStatus.Running} />
-              </div>
-            {/if}
-          </div>
-        {/if}
+        <div class="time-series-body" style:height="125px">
+          {#if $timeSeriesQuery?.isError}
+            <div class="p-5"><CrossIcon /></div>
+          {:else if formattedData}
+            <TimeSeriesBody
+              bind:mouseoverValue
+              formatPreset={NicelyFormattedTypes[measure?.format] ||
+                NicelyFormattedTypes.HUMANIZE}
+              data={formattedData}
+              accessor={measure.name}
+              mouseover={point}
+              timeGrain={metricsExplorer.selectedTimeRange?.interval}
+              yMin={yExtents[0] < 0 ? yExtents[0] : 0}
+              start={startValue}
+              end={endValue}
+            />
+          {:else}
+            <div>
+              <Spinner status={EntityStatus.Running} />
+            </div>
+          {/if}
+        </div>
       {/each}
     {/if}
   </TimeSeriesChartContainer>

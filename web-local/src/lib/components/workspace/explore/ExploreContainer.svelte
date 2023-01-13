@@ -1,25 +1,34 @@
 <script lang="ts">
-  import type { MetricsExplorerEntity } from "@rilldata/web-local/lib/application-state-stores/explorer-stores";
+  import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
-  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
-  import { hasDefinedTimeSeries } from "./utils";
+  export let gridConfig: string;
+  export let exploreContainerWidth;
 
-  export let metricViewName: string;
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-  $: hasTimeSeries = hasDefinedTimeSeries(metricsExplorer);
+  const navigationVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Tweened<number>;
+
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
+
+  $: exploreContainerWidth = $observedNode?.offsetWidth || 0;
 </script>
 
 <section
+  use:listenToNodeResize
   class="grid items-stretch leaderboard-layout surface"
-  style:grid-template-columns="{hasTimeSeries ? "560px" : "240px"} minmax(355px,
-  auto)"
+  style:grid-template-columns={gridConfig}
 >
   <div class="explore-header">
     <slot name="header" />
   </div>
   <hr class="pb-3 pt-1 ui-divider" />
-  <div class="explore-metrics pl-8 pb-8">
+  <div
+    class="explore-metrics mb-8"
+    style:padding-left="calc({$navigationVisibilityTween * 24}px + 1.25rem)"
+  >
     <slot name="metrics" />
   </div>
   <div class="explore-leaderboards pr-4 pb-8">

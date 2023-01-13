@@ -19,7 +19,7 @@ func init() {
 type modelMigrator struct{}
 
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	return olap.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
 			"CREATE OR REPLACE VIEW %s AS (%s)",
 			catalogObj.Name,
@@ -27,10 +27,6 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 		),
 		Priority: 100,
 	})
-	if err != nil {
-		return err
-	}
-	return rows.Close()
 }
 
 func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
@@ -40,36 +36,27 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
-		rows, err := olap.Execute(ctx, &drivers.Statement{
+		err := olap.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, tempName),
 			Priority: 100,
 		})
 		if err != nil {
 			return err
 		}
-		rows.Close()
 		from = tempName
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	return olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, catalogObj.Name),
 		Priority: 100,
 	})
-	if err != nil {
-		return err
-	}
-	return rows.Close()
 }
 
 func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	return olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", catalogObj.Name),
 		Priority: 100,
 	})
-	if err != nil {
-		return err
-	}
-	return rows.Close()
 }
 
 func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
@@ -77,7 +64,7 @@ func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPSt
 }
 
 func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
-	_, err := olap.Execute(ctx, &drivers.Statement{
+	err := olap.Exec(ctx, &drivers.Statement{
 		Query:    catalog.GetModel().Sql,
 		Priority: 100,
 		DryRun:   true,

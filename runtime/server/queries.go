@@ -34,9 +34,9 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// NOTE: Currently, query returns nil res for successful dry-run queries
 	if req.DryRun {
 		// TODO: Return a meta object for dry-run queries
-		// NOTE: Currently, instance.Query return nil rows for successful dry-run queries
 		return &runtimev1.QueryResponse{}, nil
 	}
 

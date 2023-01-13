@@ -57,8 +57,8 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	if err != nil {
 		return err
 	}
-
 	defer rows.Close()
+
 	var count float64
 	if rows.Next() {
 		err = rows.Scan(&count)
@@ -67,6 +67,11 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		}
 		q.Result = count
 		return nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 
 	return errors.New("no rows returned")

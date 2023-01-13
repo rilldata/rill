@@ -21,6 +21,7 @@
     ShortHandSymbols,
   } from "../../../../util/humanize-numbers";
   import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
+  import { hasDefinedTimeSeries } from "../utils";
   import Leaderboard from "./Leaderboard.svelte";
 
   export let metricViewName: string;
@@ -42,6 +43,11 @@
       (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
     );
 
+  let hasTimeSeries;
+  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
+  }
+
   $: formatPreset =
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
@@ -53,14 +59,20 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    if (hasTimeSeries) {
+      totalsQueryParams = {
+        ...totalsQueryParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       $runtimeStore.instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 
