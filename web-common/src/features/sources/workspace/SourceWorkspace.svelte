@@ -19,9 +19,7 @@
 
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
-    <div slot="header">
-      <SourceWorkspaceHeader {sourceName} />
-    </div>
+    <SourceWorkspaceHeader {sourceName} slot="header" />
     <SourceWorkspaceErrorStates {sourceName} slot="body" />
     <SourceInspector {sourceName} slot="inspector" />
   </WorkspaceContainer>
