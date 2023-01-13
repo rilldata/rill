@@ -6,13 +6,11 @@
 
   export let sourceName: string;
 
-  $: checkForSourceInCatalog = useRuntimeServiceGetCatalogEntry(
+  $: getSource = useRuntimeServiceGetCatalogEntry(
     $runtimeStore?.instanceId,
     sourceName
   );
-  $: entryExists =
-    $checkForSourceInCatalog?.error?.response?.data?.message !==
-    "entry not found";
+  $: isSourceValid = $getSource?.data?.entry;
 </script>
 
 <div
@@ -20,7 +18,7 @@
   style:grid-template-rows="max-content auto"
   style:height="100vh"
 >
-  {#if entryExists}
+  {#if isSourceValid}
     <div
       style:overflow="auto"
       style:height="calc(100vh - var(--header-height) - 2rem)"
