@@ -24,7 +24,6 @@ func AddCmd(ver version.Version) *cobra.Command {
 	var delimiter string
 	var force bool
 	var verbose bool
-	var logFormat string
 
 	addCmd := &cobra.Command{
 		Use:   "add <file>",
@@ -41,7 +40,7 @@ func AddCmd(ver version.Version) *cobra.Command {
 				dataPath = relPath
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, logFormat)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatColor)
 			if err != nil {
 				return err
 			}
@@ -102,7 +101,6 @@ func AddCmd(ver version.Version) *cobra.Command {
 	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	addCmd.Flags().StringVar(&delimiter, "delimiter", "", "CSV delimiter override (defaults to autodetect)")
 	addCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	addCmd.Flags().StringVar(&logFormat, "log-format", "color", "Sets the log format to color/json")
 
 	return addCmd
 }

@@ -36,6 +36,14 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
+type LogFormat string
+
+// Default log formats for logger
+const (
+	LogFormatColor = "color"
+	LogFormatJSON  = "json"
+)
+
 // Default instance config on local.
 const (
 	DefaultInstanceID = "default"
@@ -57,15 +65,16 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath, logFormat string) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat) (*App, error) {
 	// Setup a friendly-looking colored/json logger
-	conf := zap.NewDevelopmentEncoderConfig()
 	var encoder zapcore.Encoder
+	conf := zap.NewDevelopmentEncoderConfig()
+	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
 	switch logFormat {
-	case "json":
+	case LogFormatJSON:
 		encoder = zapcore.NewJSONEncoder(conf)
-	default:
-		conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	case LogFormatColor:
 		encoder = zapcore.NewConsoleEncoder(conf)
 	}
 
@@ -447,4 +456,15 @@ func cors(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+func ParseLogFormat(format string) (LogFormat, bool) {
+	switch format {
+	case "json":
+		return LogFormatJSON, true
+	case "color":
+		return LogFormatColor, true
+	default:
+		return "", false
+	}
 }
