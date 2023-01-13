@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/memblob"
 )
@@ -19,10 +20,7 @@ var filesData = map[string][]byte{
 func TestFetchFileNames(t *testing.T) {
 
 	bucket, err := prepareBucket()
-	if err != nil {
-		t.Errorf("failed with error %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	type args struct {
 		ctx         context.Context
