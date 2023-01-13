@@ -10,7 +10,7 @@
     $runtimeStore?.instanceId,
     sourceName
   );
-  $: isSourceValid = $getSource?.data?.entry;
+  $: isValidSource = $getSource?.data?.entry;
 </script>
 
 <div
@@ -18,7 +18,7 @@
   style:grid-template-rows="max-content auto"
   style:height="100vh"
 >
-  {#if isSourceValid}
+  {#if isValidSource}
     <div
       style:overflow="auto"
       style:height="calc(100vh - var(--header-height) - 2rem)"
