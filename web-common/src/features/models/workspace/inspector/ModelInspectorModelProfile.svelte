@@ -145,12 +145,8 @@
                   on:blur={blur}
                   class:text-gray-500={modelHasError}
                 >
-                  <div
-                    class="text-ellipsis overflow-hidden whitespace-nowrap flex items-center gap-x-2"
-                  >
-                    <div
-                      class=" text-ellipsis overflow-hidden whitespace-nowrap"
-                    >
+                  <div class="truncate flex items-center gap-x-2">
+                    <div class="truncate">
                       {source?.embedded
                         ? source?.source?.properties?.path
                         : source.name}
@@ -175,8 +171,6 @@
                   {#if source.source}
                     {source.source.connector}
                   {/if}
-                  <!-- </div>
-                  </div> -->
                 </svelte:fragment>
 
                 <svelte:fragment slot="tooltip-description">
