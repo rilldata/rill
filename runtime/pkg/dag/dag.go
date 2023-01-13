@@ -33,7 +33,7 @@ func (d *DAG) Add(name string, dependants []string) (*Node, error) {
 
 	dependantMap := make(map[string]bool)
 	for _, dependant := range dependants {
-		childrens := d.GetChildren(name)
+		childrens := d.GetDeepChildren(name)
 		ok := slices.Contains(childrens, dependant)
 		if ok {
 			return nil, fmt.Errorf("circular dependencies not allowed")
@@ -65,7 +65,8 @@ func (d *DAG) Delete(name string) {
 	d.deleteBranch(n)
 }
 
-func (d *DAG) GetChildren(name string) []string {
+// GetDeepChildren will go down the DAG and get all children in the subtree
+func (d *DAG) GetDeepChildren(name string) []string {
 	children := make([]string, 0)
 
 	n, ok := d.NameMap[name]
@@ -97,13 +98,31 @@ func (d *DAG) GetChildren(name string) []string {
 	return children
 }
 
+// GetChildren only returns the immediate children
+func (d *DAG) GetChildren(name string) []string {
+	n, ok := d.NameMap[name]
+	if !ok {
+		return []string{}
+	}
+	children := make([]string, 0)
+	for childName, childNode := range n.Children {
+		if !childNode.Present {
+			continue
+		}
+		children = append(children, childName)
+	}
+	return children
+}
+
+// GetParents only returns the immediate parents
 func (d *DAG) GetParents(name string) []string {
 	n := d.getNode(name)
 	parents := make([]string, 0)
 	for _, parent := range n.Parents {
-		if parent.Present {
-			parents = append(parents, parent.Name)
+		if !parent.Present {
+			continue
 		}
+		parents = append(parents, parent.Name)
 	}
 	return parents
 }

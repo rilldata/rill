@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var EmbeddedSourceName = "local_file_data_AdBids_csv"
-var EmbeddedSourcePath = "data/AdBids.csv"
-var EmbeddedGzSourceName = "local_file_data_AdBids_csv_gz"
-var EmbeddedGzSourcePath = "data/AdBids.csv.gz"
-var ImpEmbeddedSourceName = "local_file_data_AdImpressions_csv"
-var ImpEmbeddedSourcePath = "data/AdImpressions.csv"
+var EmbeddedSourceName = "a4c0405f9a09d7e055a371c405d93e067"
+var EmbeddedSourcePath = "data/adbids.csv"
+var EmbeddedGzSourceName = "a23ac470311241eaed9c9d9731e56f6e9"
+var EmbeddedGzSourcePath = "data/adbids.csv.gz"
+var ImpEmbeddedSourceName = "a251693674604e998f126e4ce6e999ade"
+var ImpEmbeddedSourcePath = "data/adimpressions.csv"
 var AdBidsNewModeName = "AdBids_new_model"
 var AdBidsNewModelPath = "/models/AdBids_new_model.sql"
 
@@ -93,9 +93,9 @@ func TestEmbeddedSourcesQueryChanging(t *testing.T) {
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 1, 2, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, EmbeddedGzSourcePath})
 			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-			require.Equal(t, []string{"adbids_model"}, adBidsEntry.Embeds)
+			require.ElementsMatch(t, []string{"adbids_model"}, adBidsEntry.Children)
 			adBidsGzEntry := testutils.AssertTable(t, s, EmbeddedGzSourceName, EmbeddedGzSourcePath)
-			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsGzEntry.Embeds)
+			require.ElementsMatch(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsGzEntry.Children)
 			testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
 
 			sc, _ := copyService(t, s)
@@ -109,9 +109,9 @@ func TestEmbeddedSourcesQueryChanging(t *testing.T) {
 			result, err = sc.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 0, 2, 1, []string{AdBidsNewModelPath, EmbeddedSourcePath, EmbeddedGzSourcePath})
-			adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-			require.Equal(t, []string{"adbids_model", strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-			testutils.AssertTableAbsence(t, s, EmbeddedGzSourceName)
+			adBidsEntry = testutils.AssertTable(t, sc, EmbeddedSourceName, EmbeddedSourcePath)
+			require.ElementsMatch(t, []string{"adbids_model", strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
+			testutils.AssertTableAbsence(t, sc, EmbeddedGzSourceName)
 		})
 	}
 }
@@ -152,13 +152,11 @@ func TestEmbeddedMultipleSources(t *testing.T) {
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 3, 0, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, ImpEmbeddedSourcePath})
 			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-			require.Equal(t, 1, adBidsEntry.Links)
+			require.ElementsMatch(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
 			adImpEntry := testutils.AssertTable(t, s, ImpEmbeddedSourceName, ImpEmbeddedSourcePath)
-			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Embeds)
-			require.Equal(t, 1, adImpEntry.Links)
+			require.ElementsMatch(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Children)
 			modelEntry := testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
-			require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Embeds)
+			require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Parents)
 
 			// update the model to have embedded sources without repetitions
 			testutils.CreateModel(
@@ -174,13 +172,11 @@ func TestEmbeddedMultipleSources(t *testing.T) {
 			require.NoError(t, err)
 			testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsNewModelPath})
 			adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-			require.Equal(t, 1, adBidsEntry.Links)
+			require.ElementsMatch(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
 			adImpEntry = testutils.AssertTable(t, s, ImpEmbeddedSourceName, ImpEmbeddedSourcePath)
-			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Embeds)
-			require.Equal(t, 1, adImpEntry.Links)
+			require.ElementsMatch(t, []string{strings.ToLower(AdBidsNewModeName)}, adImpEntry.Children)
 			modelEntry = testutils.AssertTable(t, s, AdBidsNewModeName, AdBidsNewModelPath)
-			require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Embeds)
+			require.ElementsMatch(t, []string{strings.ToLower(EmbeddedSourceName), strings.ToLower(ImpEmbeddedSourceName)}, modelEntry.Parents)
 		})
 	}
 }
@@ -194,7 +190,7 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 	sc, result := copyService(t, s)
 	// no updates other than when a new service is started
 	// dashboards don't have equals check implemented right now. hence it is updated here
-	testutils.AssertMigration(t, result, 0, 0, 1, 0, []string{AdBidsDashboardRepoPath})
+	testutils.AssertMigration(t, result, 0, 0, 2, 0, []string{AdBidsDashboardRepoPath, EmbeddedSourcePath})
 
 	addEmbeddedNewModel(t, s)
 
@@ -254,8 +250,7 @@ func TestEmbeddingModelRename(t *testing.T) {
 				[]string{AdBidsDashboardRepoPath, EmbeddedSourcePath, AdBidsNewModelPath},
 			)
 			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-			require.Equal(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-			require.Equal(t, 1, adBidsEntry.Links)
+			require.ElementsMatch(t, []string{strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
 		})
 	}
 }
@@ -302,10 +297,9 @@ func TestEmbeddedSourcesErroredOut(t *testing.T) {
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/AdBids.cs"})
+	testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/adbids.cs"})
 	adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.Equal(t, []string{strings.ToLower("AdBids_model")}, adBidsEntry.Embeds)
-	require.Equal(t, 1, adBidsEntry.Links)
+	require.ElementsMatch(t, []string{strings.ToLower("AdBids_model")}, adBidsEntry.Children)
 
 	// change back to original valid file
 	testutils.CreateModel(
@@ -319,8 +313,7 @@ func TestEmbeddedSourcesErroredOut(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertMigration(t, result, 0, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath})
 	adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.Equal(t, []string{strings.ToLower("AdBids_model"), strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Embeds)
-	require.Equal(t, 2, adBidsEntry.Links)
+	require.ElementsMatch(t, []string{strings.ToLower("AdBids_model"), strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
 }
 
 func addEmbeddedModel(t *testing.T, s *catalog.Service) {

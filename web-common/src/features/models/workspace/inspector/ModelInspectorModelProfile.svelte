@@ -1,19 +1,21 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetFile,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
@@ -33,7 +35,12 @@
   // refresh entry value only if the data has changed
   $: entry = $getModel?.data?.entry || entry;
 
-  $: references = getTableReferences(entry?.model?.sql);
+  $: getModelFile = useRuntimeServiceGetFile(
+    $runtimeStore?.instanceId,
+    getFilePathFromNameAndType(modelName, EntityType.Model)
+  );
+
+  $: references = getTableReferences($getModelFile?.data.blob ?? "");
   $: getAllSources = useRuntimeServiceListCatalogEntries(
     $runtimeStore?.instanceId,
     { type: "OBJECT_TYPE_SOURCE" }
@@ -45,7 +52,7 @@
         return references.some(
           (ref) =>
             ref.reference === entry.name ||
-            entry?.embeds?.includes(modelName.toLowerCase())
+            entry?.children?.includes(modelName.toLowerCase())
         );
       })
       .map((entry) => {
@@ -54,7 +61,7 @@
           references.find(
             (ref) =>
               ref.reference === entry.name ||
-              entry?.embeds?.includes(modelName.toLowerCase())
+              entry?.children?.includes(modelName.toLowerCase())
           ),
         ];
       })
@@ -83,7 +90,7 @@
   );
 
   $: viableEmbeddedSources = $viableSources?.filter((source) => {
-    return source?.embeds?.includes(modelName.toLowerCase());
+    return source?.embedded;
   });
 
   $: viableExplicitSources = $viableSources?.filter((source) => {

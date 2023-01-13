@@ -449,7 +449,6 @@ export interface V1NumericSummary {
 export interface V1Model {
   dialect?: ModelDialect;
   name?: string;
-  sanitizedSql?: string;
   schema?: V1StructType;
   sql?: string;
 }
@@ -675,16 +674,14 @@ export interface V1CategoricalSummary {
 }
 
 export interface V1CatalogEntry {
+  children?: string[];
   createdOn?: string;
   /** Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact. */
   embedded?: boolean;
-  /** Contains list of entry names this is embedded by. */
-  embeddedBy?: string[];
-  /** Contains list of entry names this embeds. */
-  embeds?: string[];
   metricsView?: V1MetricsView;
   model?: V1Model;
   name?: string;
+  parents?: string[];
   path?: string;
   refreshedOn?: string;
   source?: V1Source;

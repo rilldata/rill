@@ -7,7 +7,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
@@ -39,12 +38,12 @@ func (i *MigrationItem) renameFrom(name, path string) {
 type MigrationType int
 
 const (
-	MigrationNoChange      MigrationType = 0
-	MigrationCreate        MigrationType = 1
-	MigrationRename        MigrationType = 2
-	MigrationUpdate        MigrationType = 3
-	MigrationUpdateCatalog MigrationType = 4
-	MigrationDelete        MigrationType = 5
+	MigrationNoChange     MigrationType = 0
+	MigrationCreate       MigrationType = 1
+	MigrationRename       MigrationType = 2
+	MigrationUpdate       MigrationType = 3
+	MigrationReportUpdate MigrationType = 4
+	MigrationDelete       MigrationType = 5
 )
 
 func (s *Service) getMigrationItems(
@@ -174,7 +173,7 @@ func (s *Service) newMigrationItemFromFile(
 	}
 	item.NormalizedDependencies = normalizedDependencies
 
-	return item, s.resolveDependencies(ctx, item, storeObjectsMap, embeddedEntries)
+	return item, s.resolveDependencies(item, storeObjectsMap, embeddedEntries)
 }
 
 func (s *Service) checkFileChange(ctx context.Context, item *MigrationItem) {
@@ -194,7 +193,6 @@ func (s *Service) checkFileChange(ctx context.Context, item *MigrationItem) {
 }
 
 func (s *Service) resolveDependencies(
-	ctx context.Context,
 	item *MigrationItem,
 	storeObjectsMap map[string]*drivers.CatalogEntry,
 	embeddedEntries []*drivers.CatalogEntry,
@@ -206,15 +204,9 @@ func (s *Service) resolveDependencies(
 	for _, prevDependency := range prevDependencies {
 		prevEmbeddedEntries[prevDependency] = true
 	}
-	for _, prevEmbedded := range item.CatalogInFile.Embeds {
-		prevEmbeddedEntries[prevEmbedded] = true
-	}
-
-	item.CatalogInFile.Embeds = make([]string, 0)
 
 	for _, embeddedEntry := range embeddedEntries {
 		normalizedEmbeddedName := normalizeName(embeddedEntry.Name)
-		item.CatalogInFile.Embeds = append(item.CatalogInFile.Embeds, normalizedEmbeddedName)
 		if prevEmbeddedEntries[normalizedEmbeddedName] {
 			// delete from map for unchanged embedded entry.
 			// this map will later be used to remove link from previously embedded entry
@@ -226,21 +218,19 @@ func (s *Service) resolveDependencies(
 			// update the catalog for embedded entry to the one from store
 			embeddedItem.CatalogInFile = existingEntry
 			embeddedItem.CatalogInStore = existingEntry
-			embeddedItem.Type = MigrationNoChange
+			embeddedItem.Type = MigrationReportUpdate
 		}
-		embeddedItem.addLink(item.NormalizedName)
 		items = append(items, embeddedItem)
 	}
 
 	// go through previous embedded entries not embedded anymore
 	for prevEmbeddedEntry := range prevEmbeddedEntries {
-		existingEntry, ok := s.Catalog.FindEntry(ctx, s.InstID, prevEmbeddedEntry)
+		existingEntry, ok := storeObjectsMap[prevEmbeddedEntry]
 		if !ok || !existingEntry.Embedded {
 			// should not happen
 			continue
 		}
-		embeddedItem := s.newEmbeddedMigrationItem(existingEntry, MigrationUpdateCatalog)
-		embeddedItem.removeLink(item.NormalizedName)
+		embeddedItem := s.newEmbeddedMigrationItem(existingEntry, MigrationReportUpdate)
 		items = append(items, embeddedItem)
 	}
 
@@ -259,24 +249,14 @@ func (s *Service) newEmbeddedMigrationItem(newEntry *drivers.CatalogEntry, migra
 	}
 }
 
-func (i *MigrationItem) addLink(name string) {
-	if arrayutil.Contains(i.CatalogInFile.Embeds, name) {
-		return
-	}
-	if i.Type == MigrationNoChange {
-		i.Type = MigrationUpdateCatalog
-	}
-	i.CatalogInFile.Links++
-	i.CatalogInFile.Embeds = append(i.CatalogInFile.Embeds, name)
-}
-
-func (i *MigrationItem) removeLink(name string) {
-	i.CatalogInFile.Links--
-	i.CatalogInFile.Embeds = arrayutil.Delete(i.CatalogInFile.Embeds, name)
-	if i.CatalogInFile.Links == 0 {
-		i.Type = MigrationDelete
-	} else if i.Type == MigrationNoChange {
-		i.Type = MigrationUpdateCatalog
+func (s *Service) newDeleteMigrationItem(entry *drivers.CatalogEntry) *MigrationItem {
+	return &MigrationItem{
+		Name:           entry.Name,
+		NormalizedName: normalizeName(entry.Name),
+		Type:           MigrationDelete,
+		Path:           entry.Path,
+		CatalogInStore: entry,
+		NewCatalog:     entry,
 	}
 }
 

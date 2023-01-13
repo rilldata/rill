@@ -110,7 +110,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 }
 
 // collectMigrationItems collects all valid MigrationItem
-// It will order the items based on DAG with parents coming before children.
+// It will order the items based on dag with parents coming before children.
 func (s *Service) collectMigrationItems(
 	migrationMap map[string]*MigrationItem,
 ) ([]*MigrationItem, []*runtimev1.ReconcileError) {
@@ -154,20 +154,27 @@ func (s *Service) collectMigrationItems(
 		visited[name] = len(migrationItems)
 		migrationItems = append(migrationItems, item)
 
-		if item.Type == MigrationUpdateCatalog {
-			// do not update children of embedded items.
-			continue
+		newChildren := tempDag.GetDeepChildren(name)
+
+		if item.NewCatalog != nil && item.NewCatalog.Embedded {
+			if len(newChildren) == 0 {
+				// if embedded item's children is empty then delete it
+				item.Type = MigrationDelete
+			} else if item.Type == MigrationReportUpdate {
+				// do not update children for embedded sources that didn't change
+				continue
+			}
 		}
 
 		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
-			tempDag.GetChildren(name),
-			s.dag.GetChildren(name)...,
+			s.dag.GetDeepChildren(name),
+			newChildren...,
 		))
 		if item.FromName != "" {
 			children = append(children, arrayutil.Dedupe(append(
-				tempDag.GetChildren(strings.ToLower(item.FromNormalizedName)),
-				s.dag.GetChildren(strings.ToLower(item.FromNormalizedName))...,
+				s.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
+				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
 			))...)
 		}
 		for _, child := range children {
@@ -253,17 +260,9 @@ func (s *Service) runMigrationItems(
 			// only run the actual migration if in dry run
 			switch item.Type {
 			case MigrationNoChange:
-				if _, ok := s.NameToPath[item.NormalizedName]; !ok {
-					// this is perhaps an init. so populate cache data
-					s.NameToPath[item.NormalizedName] = item.Path
-					_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
-					if err != nil {
-						result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-							Code:     runtimev1.ReconcileError_CODE_SOURCE,
-							Message:  err.Error(),
-							FilePath: item.Path,
-						})
-					}
+				recErr := s.addToDag(item)
+				if recErr != nil {
+					result.Errors = append(result.Errors, recErr)
 				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
@@ -271,9 +270,18 @@ func (s *Service) runMigrationItems(
 			case MigrationRename:
 				err = s.renameInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
-			case MigrationUpdate, MigrationUpdateCatalog:
+			case MigrationUpdate:
 				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
+			case MigrationReportUpdate:
+				// only report the update
+				// UI needs to know when dag changed. we use this for now to notify it
+				// TODO: have a better way to notify UI of DAG changes
+				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
+				recErr := s.addToDag(item)
+				if recErr != nil {
+					result.Errors = append(result.Errors, recErr)
+				}
 			case MigrationDelete:
 				err = s.deleteInStore(ctx, item)
 				result.DroppedObjects = append(result.DroppedObjects, item.CatalogInStore)
@@ -294,6 +302,14 @@ func (s *Service) runMigrationItems(
 			err := s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
 			if err != nil {
 				// shouldn't ideally happen
+				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+					Code:     runtimev1.ReconcileError_CODE_OLAP,
+					Message:  err.Error(),
+					FilePath: item.Path,
+				})
+			}
+			_, err = s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+			if err != nil {
 				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
 					Code:     runtimev1.ReconcileError_CODE_OLAP,
 					Message:  err.Error(),
@@ -322,7 +338,7 @@ func (s *Service) runMigrationItems(
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
-	// add the item to DAG
+	// add the item to dag
 	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
@@ -383,7 +399,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
-	// add the item to DAG with new dependencies
+	// add the item to dag with new dependencies
 	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
@@ -462,4 +478,21 @@ func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() er
 		}
 	}
 	return err
+}
+
+func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
+	if _, ok := s.NameToPath[item.NormalizedName]; ok {
+		return nil
+	}
+	// this is perhaps an init. so populate cache data
+	s.NameToPath[item.NormalizedName] = item.Path
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return &runtimev1.ReconcileError{
+			Code:     runtimev1.ReconcileError_CODE_SOURCE,
+			Message:  err.Error(),
+			FilePath: item.Path,
+		}
+	}
+	return nil
 }

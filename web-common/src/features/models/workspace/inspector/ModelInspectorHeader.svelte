@@ -77,7 +77,6 @@
       );
     });
   }
-  $: console.log(sourceTableReferences);
 
   // get input table cardinalities. We use this to determine the rollup factor.
   $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {
