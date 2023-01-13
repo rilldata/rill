@@ -19,7 +19,7 @@ import type { FileArtifactsStore } from "../../application-state-stores/file-art
 import { invalidateAfterReconcile } from "../../svelte-query/invalidation";
 import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
-const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 5000;
+const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 1000;
 
 export function syncFileSystemPeriodically(
   queryClient: QueryClient,
