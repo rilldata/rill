@@ -3,7 +3,7 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { WorkspaceContainer } from "@rilldata/web-local/lib/components/workspace/index.js";
   import SourceInspector from "./SourceInspector.svelte";
-  import SourceWorkspaceErrorStates from "./SourceWorkspaceErrorStates.svelte";
+  import SourceWorkspaceBody from "./SourceWorkspaceBody.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceName: string;
@@ -20,7 +20,7 @@
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
     <SourceWorkspaceHeader {sourceName} slot="header" />
-    <SourceWorkspaceErrorStates {sourceName} slot="body" />
+    <SourceWorkspaceBody {sourceName} slot="body" />
     <SourceInspector {sourceName} slot="inspector" />
   </WorkspaceContainer>
 {/key}
