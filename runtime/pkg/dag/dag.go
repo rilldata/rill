@@ -18,8 +18,6 @@ func NewDAG() *DAG {
 	}
 }
 
-// TODO: handle cycles when we support model to model connection
-
 type Node struct {
 	Name     string
 	Present  bool

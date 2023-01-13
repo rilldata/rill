@@ -317,7 +317,8 @@ func TestInterdependentModelCycle(t *testing.T) {
 			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 
 			require.NoError(t, err)
-			require.Contains(t, result.Errors[0].Message, `encountered circular dependency between "adbids_source_model" and "adbids_model"`)
+			//just checking the deterministic part of the error message
+			require.Contains(t, result.Errors[0].Message, `encountered circular dependency`)
 			// order of execution can make a difference here.
 			// so checking for exact response is not worth it
 			// testutils.AssertMigration(t, result, 4, 1, 1, 0, AdBidsSourceAffectedPaths)
