@@ -195,8 +195,7 @@
       $dashboardNamesOrFiles.map((d) => d.file),
       //$dashboardNames?.data,
       $createDashboard,
-      queryClient,
-      () => {}
+      queryClient
     );
   }
   $: dashboardNamesOrFiles = useDashboardOrFileNames($runtimeStore?.instanceId);
