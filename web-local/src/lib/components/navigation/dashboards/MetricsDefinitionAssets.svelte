@@ -7,11 +7,13 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
+  import { createDashboardFromModel } from "@rilldata/web-common/features/models/utils/create-dashboard-from-model";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
+    V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
@@ -28,18 +30,23 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
+    useDashboardNames,
+    useDashboardOrFileNames,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { SourceModelValidationStatus } from "@rilldata/web-local/lib/temp/metrics.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { slide } from "svelte/transition";
+  import { fly, slide } from "svelte/transition";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
   import RenameAssetModal from "../RenameAssetModal.svelte";
+  import AddDashboardContextButton from "./AddDashboardContextButton.svelte";
+  import BootstrapDashboardNavCTA from "./BootstrapDashboardNavCTA.svelte";
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -178,84 +185,119 @@
     );
     return entities[dashboardPath];
   };
+
+  $: hasDashboardableModels = $dashboardNames?.data?.length > 0;
+
+  function bootstrapDashboard(model: V1Model) {
+    createDashboardFromModel(
+      model,
+      $dashboardNamesOrFiles.map((d) => d.label),
+      $dashboardNamesOrFiles.map((d) => d.file),
+      //$dashboardNames?.data,
+      $createDashboard,
+      queryClient,
+      () => {}
+    );
+  }
+  $: dashboardNamesOrFiles = useDashboardOrFileNames($runtimeStore?.instanceId);
 </script>
 
-<NavigationHeader
-  bind:show={showMetricsDefs}
-  on:add={dispatchAddEmptyMetricsDef}
-  tooltipText="Create a new dashboard"
-  toggleText="dashboards"
->
-  Dashboards
-</NavigationHeader>
-
-{#if showMetricsDefs && $dashboardNames.data}
-  <div
-    class="pb-3 justify-self-end"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
-    id="assets-metrics-list"
+<!-- 76px is the min height to support the empty CTA-->
+<div style:min-height="76px" class="pb-3">
+  <NavigationHeader
+    bind:show={showMetricsDefs}
+    on:add={dispatchAddEmptyMetricsDef}
+    tooltipText="Create a new dashboard"
+    toggleText="dashboards"
+    showContextButton={hasDashboardableModels}
   >
-    {#each $dashboardNames.data as dashboardName (dashboardName)}
-      {@const dashboardData = getDashboardData(
-        $fileArtifactsStore.entities,
-        dashboardName
-      )}
-      <NavigationEntry
-        notExpandable={true}
-        name={dashboardName}
-        href={`/dashboard/${dashboardName}`}
-        open={$page.url.pathname === `/dashboard/${dashboardName}` ||
-          $page.url.pathname === `/dashboard/${dashboardName}/edit`}
-      >
-        <svelte:fragment slot="menu-items">
-          {@const selectionError = MetricsSourceSelectionError(
-            dashboardData?.errors
-          )}
-          {@const hasSourceError =
-            selectionError !== SourceModelValidationStatus.OK &&
-            selectionError !== ""}
-          <MenuItem
-            icon
-            disabled={hasSourceError}
-            on:select={() => editModel(dashboardName)}
-          >
-            <Model slot="icon" />
-            Edit model
-            <svelte:fragment slot="description">
-              {#if hasSourceError}
-                {selectionError}
-              {/if}
-            </svelte:fragment>
-          </MenuItem>
-          <MenuItem
-            icon
-            disabled={hasSourceError}
-            on:select={() => editMetrics(dashboardName)}
-          >
-            <MetricsIcon slot="icon" />
-            Edit metrics
-          </MenuItem>
-          <Divider />
-          <MenuItem
-            icon
-            on:select={() => openRenameMetricsDefModal(dashboardName)}
-          >
-            <EditIcon slot="icon" />
-            Rename...</MenuItem
-          >
-          <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
-            <Cancel slot="icon" />
-            Delete</MenuItem
-          >
-        </svelte:fragment>
-      </NavigationEntry>
-    {/each}
-  </div>
-  {#if showRenameMetricsDefinitionModal}
-    <RenameAssetModal
-      entityType={EntityType.MetricsDefinition}
-      closeModal={() => (showRenameMetricsDefinitionModal = false)}
-      currentAssetName={renameMetricsDefName}
+    Dashboards
+    <div
+      slot="context-button"
+      transition:fly={{ duration: LIST_SLIDE_DURATION / 2, x: 4 }}
+    >
+      <AddDashboardContextButton
+        on:create-empty-dashboard={dispatchAddEmptyMetricsDef}
+        on:bootstrap-dashboard={(event) => {
+          bootstrapDashboard(event.detail.model);
+        }}
+      />
+    </div>
+  </NavigationHeader>
+
+  {#if showMetricsDefs && $dashboardNames.data}
+    <div
+      class="justify-self-end"
+      transition:slide={{ duration: LIST_SLIDE_DURATION }}
+      id="assets-metrics-list"
+    >
+      {#each $dashboardNamesOrFiles as { label, file } (file)}
+        {@const dashboardData = getDashboardData(
+          $fileArtifactsStore.entities,
+          file
+        )}
+        <NavigationEntry
+          notExpandable={true}
+          name={label}
+          href={`/dashboard/${file}`}
+          open={$page.url.pathname === `/dashboard/${file}` ||
+            $page.url.pathname === `/dashboard/${file}/edit`}
+        >
+          <svelte:fragment slot="menu-items">
+            {@const selectionError = MetricsSourceSelectionError(
+              dashboardData?.errors
+            )}
+            {@const hasSourceError =
+              selectionError !== SourceModelValidationStatus.OK &&
+              selectionError !== ""}
+            <MenuItem
+              icon
+              disabled={hasSourceError}
+              on:select={() => editModel(file)}
+            >
+              <Model slot="icon" />
+              Edit model
+              <svelte:fragment slot="description">
+                {#if hasSourceError}
+                  {selectionError}
+                {/if}
+              </svelte:fragment>
+            </MenuItem>
+            <MenuItem
+              icon
+              disabled={hasSourceError}
+              on:select={() => editMetrics(file)}
+            >
+              <MetricsIcon slot="icon" />
+              Edit metrics
+            </MenuItem>
+            <Divider />
+            <MenuItem icon on:select={() => openRenameMetricsDefModal(file)}>
+              <EditIcon slot="icon" />
+              Rename...</MenuItem
+            >
+            <MenuItem icon on:select={() => deleteMetricsDef(file)}>
+              <Cancel slot="icon" />
+              Delete</MenuItem
+            >
+          </svelte:fragment>
+        </NavigationEntry>
+      {/each}
+    </div>
+    {#if showRenameMetricsDefinitionModal}
+      <RenameAssetModal
+        entityType={EntityType.MetricsDefinition}
+        closeModal={() => (showRenameMetricsDefinitionModal = false)}
+        currentAssetName={renameMetricsDefName}
+      />
+    {/if}
+  {/if}
+  {#if !$dashboardNames?.data?.length}
+    <BootstrapDashboardNavCTA
+      on:bootstrap-dashboard={(event) => {
+        bootstrapDashboard(event.detail.model);
+      }}
+      on:create-empty-dashboard={dispatchAddEmptyMetricsDef}
     />
   {/if}
-{/if}
+</div>

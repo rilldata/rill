@@ -2,7 +2,6 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -60,7 +59,7 @@
     class="navigation-entry-title grid gap-x-1 items-center pl-4 pr-3 {!open
       ? 'hover:bg-gray-100'
       : ''}"
-    style:grid-template-columns="max-content auto max-content"
+    style:grid-template-columns="{notExpandable ? "" : "max-content"} auto max-content"
     use:commandClickAction
     use:shiftClickAction
     on:command-click
@@ -68,8 +67,8 @@
   >
     <!-- slot for navigation click -->
 
-    <div class="mr-1">
-      {#if !notExpandable}
+    {#if !notExpandable}
+      <div class="mr-1">
         <ExpanderButton
           bind:isHovered={seeMoreHovered}
           rotated={showDetails}
@@ -77,10 +76,8 @@
         >
           <CaretDownIcon size="14px" />
         </ExpanderButton>
-      {:else}
-        <Spacer size="16px" />
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     <a
       class="ui-copy  text-ellipsis overflow-hidden whitespace-nowrap"

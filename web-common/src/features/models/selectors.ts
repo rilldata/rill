@@ -1,4 +1,9 @@
-import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
+import {
+  useRuntimeServiceListCatalogEntries,
+  useRuntimeServiceListFiles,
+  V1StructType,
+} from "@rilldata/web-common/runtime-client";
+import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
 
 export function useModelNames(instanceId: string) {
   return useRuntimeServiceListFiles(
@@ -17,6 +22,25 @@ export function useModelNames(instanceId: string) {
             .sort((a, b) =>
               a.localeCompare(b, undefined, { sensitivity: "base" })
             ),
+      },
+    }
+  );
+}
+
+function isDashboardable(schema: V1StructType) {
+  return schemaHasTimestampColumn(schema);
+}
+
+export function useDashboardableModels(instanceId) {
+  return useRuntimeServiceListCatalogEntries(
+    instanceId,
+    { type: "OBJECT_TYPE_MODEL" },
+    {
+      query: {
+        select: (data) =>
+          data?.entries?.filter((entry) =>
+            isDashboardable(entry?.model?.schema)
+          ),
       },
     }
   );

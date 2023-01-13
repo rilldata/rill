@@ -1,9 +1,11 @@
 import {
   useRuntimeServiceGetCatalogEntry,
+  useRuntimeServiceListCatalogEntries,
   useRuntimeServiceListFiles,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
+import { derived } from "svelte/store";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
@@ -25,6 +27,36 @@ export function useDashboardNames(repoId: string) {
               a.localeCompare(b, undefined, { sensitivity: "base" })
             ),
       },
+    }
+  );
+}
+
+export function useDashboardOrFileNames(repoId: string) {
+  return derived(
+    [
+      useDashboardNames(repoId),
+      useRuntimeServiceListCatalogEntries(repoId, {
+        type: "OBJECT_TYPE_METRICS_VIEW",
+      }),
+    ],
+    ([$dashboardNames, $metricsViews]) => {
+      // for metrics views, we want to show the name of the view, not the file name
+      const metricsViewFileNames = $metricsViews?.data?.entries?.map(
+        (view) => view?.name
+      );
+      const brokenDashboards = $dashboardNames?.data
+        ?.filter((name) => !metricsViewFileNames?.includes(name))
+        .map((name) => ({ label: name, file: name }));
+
+      const availableCatalogEntries = $metricsViews?.data?.entries || [];
+      return [
+        // valid catalog entries
+        ...availableCatalogEntries.map((view) => ({
+          label: view?.metricsView?.label,
+          file: view.name,
+        })),
+        ...(brokenDashboards || []),
+      ];
     }
   );
 }

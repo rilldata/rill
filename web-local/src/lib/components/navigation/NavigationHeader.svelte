@@ -9,6 +9,7 @@
   export let show = true;
   export let tooltipText: string;
   export let toggleText = "models";
+  export let showContextButton = true;
   /** The CSS ID used for tests for the context button */
   export let contextButtonID: string = undefined;
 
@@ -16,6 +17,7 @@
 </script>
 
 <div
+  style:height="28px"
   class="pl-4 pb-1 pr-3 grid justify-between"
   style="grid-template-columns: auto max-content;"
   out:slide|local={{ duration: LIST_SLIDE_DURATION }}
@@ -25,16 +27,20 @@
       <slot />
     </div>
   </CollapsibleSectionTitle>
-  <ContextButton
-    id={contextButtonID}
-    {tooltipText}
-    on:click={() => {
-      dispatch("add");
-    }}
-    width={24}
-    height={24}
-    rounded
-  >
-    <AddIcon />
-  </ContextButton>
+  {#if showContextButton}
+    <slot name="context-button">
+      <ContextButton
+        id={contextButtonID}
+        {tooltipText}
+        on:click={() => {
+          dispatch("add");
+        }}
+        width={24}
+        height={24}
+        rounded
+      >
+        <AddIcon />
+      </ContextButton>
+    </slot>
+  {/if}
 </div>

@@ -132,9 +132,9 @@
             </Tooltip>
           </h1>
         </header>
+        <MetricsDefinitionAssets />
         <TableAssets />
         <ModelAssets />
-        <MetricsDefinitionAssets />
       </div>
       <Footer />
     </div>
