@@ -67,22 +67,23 @@ type App struct {
 
 func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat) (*App, error) {
 	// Setup a friendly-looking colored/json logger
-	var encoder zapcore.Encoder
-	conf := zap.NewDevelopmentEncoderConfig()
-	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-
+	var logger *zap.Logger
+	var err error
 	switch logFormat {
 	case LogFormatJSON:
-		encoder = zapcore.NewJSONEncoder(conf)
+		logger, err = zap.NewProduction()
 	case LogFormatColor:
-		encoder = zapcore.NewConsoleEncoder(conf)
+		conf := zap.NewProductionEncoderConfig()
+		conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger = zap.New(zapcore.NewCore(zapcore.NewConsoleEncoder(conf),
+			zapcore.AddSync(colorable.NewColorableStdout()),
+			zapcore.DebugLevel,
+		))
 	}
 
-	logger := zap.New(zapcore.NewCore(
-		encoder,
-		zapcore.AddSync(colorable.NewColorableStdout()),
-		zapcore.DebugLevel,
-	))
+	if err != nil {
+		return nil, err
+	}
 
 	// Set logging level
 	lvl := zap.InfoLevel
