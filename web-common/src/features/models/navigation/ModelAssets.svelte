@@ -16,6 +16,9 @@
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
+  import { SidebarCTAButton } from "@rilldata/web-common/components/button";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+
   $: modelNames = useModelNames($runtimeStore.instanceId);
 
   const queryClient = useQueryClient();
@@ -46,52 +49,63 @@
   };
 </script>
 
-<NavigationHeader
-  bind:show={showModels}
-  contextButtonID={"create-model-button"}
-  on:add={handleAddModel}
-  tooltipText="Create a new model"
->
-  Models
-</NavigationHeader>
-
-{#if showModels}
-  <div
-    class="pb-3 justify-self-end"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
-    id="assets-model-list"
+<div class="pb-3">
+  <NavigationHeader
+    bind:show={showModels}
+    contextButtonID={"create-model-button"}
+    on:add={handleAddModel}
+    tooltipText="Create a new model"
+    showContextButton={$modelNames?.data?.length > 0}
   >
-    {#if $modelNames?.data}
-      {#each $modelNames.data as modelName (modelName)}
-        <NavigationEntry
-          name={modelName}
-          href={`/model/${modelName}`}
-          open={$page.url.pathname === `/model/${modelName}`}
-        >
-          <svelte:fragment slot="more">
-            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-              <ColumnProfile indentLevel={1} objectName={modelName} />
-            </div>
-          </svelte:fragment>
+    Models
+  </NavigationHeader>
 
-          <svelte:fragment slot="tooltip-content">
-            <ModelTooltip {modelName} />
-          </svelte:fragment>
+  {#if showModels}
+    <div
+      class="justify-self-end"
+      transition:slide={{ duration: LIST_SLIDE_DURATION }}
+      id="assets-model-list"
+    >
+      {#if $modelNames?.data}
+        {#each $modelNames.data as modelName (modelName)}
+          <NavigationEntry
+            name={modelName}
+            href={`/model/${modelName}`}
+            open={$page.url.pathname === `/model/${modelName}`}
+          >
+            <svelte:fragment slot="more">
+              <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+                <ColumnProfile indentLevel={1} objectName={modelName} />
+              </div>
+            </svelte:fragment>
 
-          <svelte:fragment slot="menu-items" let:toggleMenu>
-            <ModelMenuItems
-              {modelName}
-              {toggleMenu}
-              on:rename-asset={() => {
-                openRenameModelModal(modelName);
-              }}
-            />
-          </svelte:fragment>
-        </NavigationEntry>
-      {/each}
-    {/if}
-  </div>
-{/if}
+            <svelte:fragment slot="tooltip-content">
+              <ModelTooltip {modelName} />
+            </svelte:fragment>
+
+            <svelte:fragment slot="menu-items" let:toggleMenu>
+              <ModelMenuItems
+                {modelName}
+                {toggleMenu}
+                on:rename-asset={() => {
+                  openRenameModelModal(modelName);
+                }}
+              />
+            </svelte:fragment>
+          </NavigationEntry>
+        {/each}
+      {/if}
+    </div>
+  {/if}
+  {#if $modelNames?.data?.length === 0}
+    <div class="px-4">
+      <SidebarCTAButton on:click={handleAddModel}
+        >Create Model
+        <Add />
+      </SidebarCTAButton>
+    </div>
+  {/if}
+</div>
 
 {#if showRenameModelModal}
   <RenameAssetModal

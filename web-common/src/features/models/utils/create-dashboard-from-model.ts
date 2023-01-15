@@ -29,21 +29,19 @@ import { get } from "svelte/store";
 
 export function createDashboardFromModel(
   model: V1Model,
-  //modelName: string,
   dashboardDisplayNames,
   dashboardNames,
-  // mutation for creating the file
   createFileMutation,
   queryClient,
-  settledCallback
+  settledCallback = undefined
 ) {
   overlay.set({
-    title: "Creating a dashboard for " + model.name, //modelName,
+    title: "Creating a dashboard for " + model.name,
   });
   const dashboardFileName = getName(`${model.name}_dashboard`, dashboardNames);
   const newDashboardName = getName(
-    displayName(`${model.name}_dashboard`), //`${model.name}_dashboard`, //`${modelName}_dashboard`,
-    dashboardDisplayNames, //$dashboardNames.data
+    displayName(`${model.name}_dashboard`),
+    dashboardDisplayNames,
     true
   );
   const blankDashboardYAML = initBlankDashboardYAML(newDashboardName);
@@ -51,11 +49,10 @@ export function createDashboardFromModel(
     blankDashboardYAML,
     model
   );
-  //$createFileMutation.mutate(
   createFileMutation.mutate(
     {
       data: {
-        instanceId: get(runtimeStore).instanceId, //$runtimeStore.instanceId,
+        instanceId: get(runtimeStore).instanceId,
         path: getFilePathFromNameAndType(
           dashboardFileName,
           EntityType.MetricsDefinition
@@ -70,7 +67,7 @@ export function createDashboardFromModel(
       onSuccess: (resp: V1ReconcileResponse) => {
         fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
         goto(`/dashboard/${dashboardFileName}`);
-        const previousActiveEntity = get(appStore)?.activeEntity?.type; //$appStore?.activeEntity?.type;
+        const previousActiveEntity = get(appStore)?.activeEntity?.type;
         navigationEvent.fireEvent(
           dashboardFileName,
           BehaviourEventMedium.Menu,
@@ -80,7 +77,7 @@ export function createDashboardFromModel(
         );
         return invalidateAfterReconcile(
           queryClient,
-          get(runtimeStore).instanceId, //$runtimeStore.instanceId,
+          get(runtimeStore).instanceId,
           resp
         );
       },
@@ -89,7 +86,7 @@ export function createDashboardFromModel(
       },
       onSettled: () => {
         overlay.set(null);
-        if (settledCallback) settledCallback(); //toggleMenu(); // unmount component
+        if (settledCallback) settledCallback();
       },
     }
   );

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SidebarCTAButton } from "@rilldata/web-common/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
@@ -14,14 +15,17 @@
     let:active
     let:toggleFloatingElement={toggle}
   >
-    <button
+    <SidebarCTAButton on:click={toggle}
+      >Create Dashboard <Add /></SidebarCTAButton
+    >
+    <!-- <button
       class:bg-gray-100={active}
       class:bg-gray-50={!active}
       class="w-full rounded flex items-center gap-x-2 justify-center py-1 border hover:bg-gray-100 text-gray-500"
       on:click={toggle}
     >
       create a dashboard <Add />
-    </button>
+    </button> -->
 
     <div
       slot="floating-element"

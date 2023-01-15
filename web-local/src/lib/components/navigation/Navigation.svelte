@@ -133,8 +133,8 @@
           </h1>
         </header>
         <MetricsDefinitionAssets />
-        <TableAssets />
         <ModelAssets />
+        <TableAssets />
       </div>
       <Footer />
     </div>

@@ -10,7 +10,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
-  import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceListCatalogEntries,
+    useRuntimeServiceRenameFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
@@ -44,6 +47,20 @@
   $: modelHasError = !!modelError;
 
   let contextMenuOpen = false;
+
+  $: availableDashboards = useRuntimeServiceListCatalogEntries(
+    $runtimeStore.instanceId,
+    { type: "OBJECT_TYPE_METRICS_VIEW" },
+    {
+      query: {
+        select(data) {
+          return data?.entries?.filter(
+            (entry) => entry?.metricsView?.model === modelName
+          );
+        },
+      },
+    }
+  );
 
   const onExport = async (exportExtension: "csv" | "parquet") => {
     // TODO: how do we handle errors ?

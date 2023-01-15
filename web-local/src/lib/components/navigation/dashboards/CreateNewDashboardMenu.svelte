@@ -14,10 +14,12 @@
 </script>
 
 <Menu dark on:item-select on:escape on:click-outside>
-  <h2 class="px-2 text-gray-400 py-1" style:font-size="11px">
-    bootstrap a dashboard from a model
-  </h2>
-  <Divider />
+  {#if models?.length}
+    <h2 class="px-2 text-gray-400 py-1" style:font-size="11px">
+      bootstrap a dashboard from a model
+    </h2>
+    <Divider />
+  {/if}
 
   {#each models as entry (entry.name)}
     <MenuItem
@@ -28,7 +30,9 @@
       {entry.name}
     </MenuItem>
   {:else}{/each}
-  <Divider />
+  {#if models?.length}
+    <Divider />
+  {/if}
   <MenuItem
     on:select={() => {
       dispatch("create-empty-dashboard");
