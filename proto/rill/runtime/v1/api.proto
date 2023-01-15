@@ -6,6 +6,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/schema.proto";
+import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
 // It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
@@ -295,7 +296,7 @@ message PingResponse {
 // just a single instance.
 message Instance {
   // Identifier (UUID)
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.min_len = 1];
   // Driver to connect to for OLAP (options: duckdb, druid)
   string olap_driver = 2;
   // DSN for connection to OLAP
