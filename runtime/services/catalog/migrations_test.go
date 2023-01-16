@@ -596,22 +596,20 @@ path:
 	require.Contains(t, result.Errors[0].Message, "yaml: unmarshal errors")
 
 	testutils.CreateSource(t, s, "Ad-Bids", "AdBids.csv", "/sources/Ad-Bids.yaml")
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		ChangedPaths: []string{"/sources/Ad-Bids.yaml"},
+	})
 	require.NoError(t, err)
 	testutils.AssertMigration(
 		t,
 		result,
-		4,
+		1,
 		0,
 		0,
 		0,
-		append([]string{"/sources/Ad-Bids.yaml"}, AdBidsAffectedPaths...),
+		[]string{"/sources/Ad-Bids.yaml"},
 	)
-	reconcileError := result.Errors[0]
-	if result.Errors[1].FilePath == "/sources/Ad-Bids.yaml" {
-		reconcileError = result.Errors[1]
-	}
-	require.Equal(t, "invalid file name", reconcileError.Message)
+	require.Equal(t, "invalid file name", result.Errors[0].Message)
 }
 
 func TestReconcileDryRun(t *testing.T) {
