@@ -8,7 +8,7 @@
   export let show = false;
   export let left = undefined;
   export let right = undefined;
-  export let top = "calc(var(--header-height) / 2 - 24px / 2)";
+  export let top = "calc(var(--header-height) / 2 - 26px / 2)";
 </script>
 
 <Tooltip location="bottom" alignment="start" distance={12}>

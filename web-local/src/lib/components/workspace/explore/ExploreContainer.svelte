@@ -20,13 +20,9 @@
     overflow-y: hidden;
     grid-template-areas:
       "header header"
-      "hr hr"
       "metrics leaderboards";
   }
 
-  hr {
-    grid-area: hr;
-  }
   .explore-header {
     grid-area: header;
   }

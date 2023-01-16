@@ -156,7 +156,7 @@
   {#if $navigationLayout?.visible}
     <HideLeftSidebar size="18px" />
   {:else}
-    <SurfaceViewIcon size="16px" mode={"hamburger"} />
+    <SurfaceViewIcon size="13px" mode={"hamburger"} />
   {/if}
   <svelte:fragment slot="tooltip-content">
     {#if $navVisibilityTween === 0} Close {:else} Show {/if} sidebar

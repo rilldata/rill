@@ -5,7 +5,6 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../application-state-stores/explorer-stores";
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
@@ -27,24 +26,24 @@
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
 </script>
 
-<WorkspaceContainer
+<!-- <WorkspaceContainer
   top="0px"
   assetID={metricViewName}
   bgClass="bg-white"
   inspector={false}
->
-  <ExploreContainer slot="body">
-    <ExploreHeader {metricViewName} slot="header" />
-    <MetricsTimeSeriesCharts {metricViewName} slot="metrics" />
-    <svelte:fragment slot="leaderboards">
-      {#if selectedDimensionName}
-        <DimensionDisplay
-          {metricViewName}
-          dimensionName={selectedDimensionName}
-        />
-      {:else}
-        <LeaderboardDisplay {metricViewName} />
-      {/if}
-    </svelte:fragment>
-  </ExploreContainer>
-</WorkspaceContainer>
+> -->
+<ExploreContainer>
+  <ExploreHeader {metricViewName} slot="header" />
+  <MetricsTimeSeriesCharts {metricViewName} slot="metrics" />
+  <svelte:fragment slot="leaderboards">
+    {#if selectedDimensionName}
+      <DimensionDisplay
+        {metricViewName}
+        dimensionName={selectedDimensionName}
+      />
+    {:else}
+      <LeaderboardDisplay {metricViewName} />
+    {/if}
+  </svelte:fragment>
+</ExploreContainer>
+<!-- </WorkspaceContainer> -->
