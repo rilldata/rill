@@ -81,7 +81,7 @@
       0
     );
 
-    if (metricsContainerHeight) {
+    if (totalMeasuresHeight && metricsContainerHeight) {
       let columns = totalMeasuresHeight / metricsContainerHeight;
       if (columns <= 1 || columns > 2) {
         numColumns = Math.min(Math.ceil(columns), 3);
