@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 // ListInstances implements RuntimeService.
@@ -40,6 +41,18 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	}, nil
 }
 
+type Validater interface {
+	Validate() error
+}
+
+func validate(m proto.Message, r Validater) error {
+	err := r.Validate()
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	return nil
+}
+
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
 	inst := &drivers.Instance{
@@ -51,7 +64,12 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		EmbedCatalog: req.EmbedCatalog,
 	}
 
-	err := s.runtime.CreateInstance(ctx, inst)
+	err := validate(req, req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.runtime.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
