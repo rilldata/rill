@@ -131,6 +131,12 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		}
 		outlierBins = append(outlierBins, outlier)
 	}
+
+	err = outlierResults.Err()
+	if err != nil {
+		return err
+	}
+
 	q.Result = outlierBins
 
 	return nil

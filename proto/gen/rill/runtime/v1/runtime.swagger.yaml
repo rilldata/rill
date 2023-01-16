@@ -908,7 +908,7 @@ paths:
             type: object
             properties:
               filters:
-                $ref: '#/definitions/v1MetricsViewRequestFilter'
+                $ref: '#/definitions/v1MetricsViewFilter'
               measures:
                 type: array
                 items:
@@ -1239,7 +1239,8 @@ definitions:
         items: {}
       like:
         type: array
-        items: {}
+        items:
+          type: string
       name:
         type: string
   MetricsViewMeasure:
@@ -1713,18 +1714,6 @@ definitions:
       type:
         type: string
     title: MetricsViewColumn represents a column in a metrics view
-  v1MetricsViewDimensionValue:
-    type: object
-    properties:
-      in:
-        type: array
-        items: {}
-      like:
-        type: array
-        items:
-          type: string
-      name:
-        type: string
   v1MetricsViewFilter:
     type: object
     properties:
@@ -1736,22 +1725,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/MetricsViewFilterCond'
-      match:
-        type: array
-        items:
-          type: string
     title: Filter clause for metrics view requests
-  v1MetricsViewRequestFilter:
-    type: object
-    properties:
-      exclude:
-        type: array
-        items:
-          $ref: '#/definitions/v1MetricsViewDimensionValue'
-      include:
-        type: array
-        items:
-          $ref: '#/definitions/v1MetricsViewDimensionValue'
   v1MetricsViewSort:
     type: object
     properties:

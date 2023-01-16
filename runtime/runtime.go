@@ -26,7 +26,7 @@ type Runtime struct {
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
-	metastore, err := drivers.Open(opts.MetastoreDriver, opts.MetastoreDSN)
+	metastore, err := drivers.Open(opts.MetastoreDriver, opts.MetastoreDSN, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
 	}
@@ -45,8 +45,12 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		opts:         opts,
 		metastore:    metastore,
 		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize),
+		connCache:    newConnectionCache(opts.ConnectionCacheSize, logger),
 		catalogCache: newCatalogCache(),
 		queryCache:   newQueryCache(opts.QueryCacheSize),
 	}, nil
+}
+
+func (r *Runtime) Close() error {
+	return r.connCache.Close()
 }

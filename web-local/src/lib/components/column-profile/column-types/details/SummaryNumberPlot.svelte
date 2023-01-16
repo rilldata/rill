@@ -17,7 +17,7 @@
   export let rowHeight = 24;
   export let type: string;
 
-  $: formatter = INTEGERS.has(type) ? format(".0r") : justEnoughPrecision;
+  $: formatter = INTEGERS.has(type) ? format(".0f") : justEnoughPrecision;
   $: values = [
     { label: "min", value: min, format: formatter },
     { label: "q25", value: q25, format: formatter },

@@ -105,3 +105,23 @@ func CopyEmbedDir(fs embed.FS, src, dst string) error {
 
 	return nil
 }
+
+// IsGlob reports whether path contains any of the magic characters
+// recognized by path.Match.
+func IsGlob(path string) bool {
+	for i := 0; i < len(path); i++ {
+		switch path[i] {
+		case '*', '?', '[', '\\', '{':
+			return true
+		}
+	}
+	return false
+}
+
+// ForceRemoveFiles deletes multiple files
+// ignores path errors if any
+func ForceRemoveFiles(paths []string) {
+	for _, path := range paths {
+		_ = os.Remove(path)
+	}
+}
