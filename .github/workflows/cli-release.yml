@@ -2,6 +2,9 @@
 # Full releases are published to brew, CDN (for install script), and Github Releases.
 # A full release gets its version number from the Git tag that triggered it.
 # Nightly releases are only published to CDN and do not have a version. Their version number is "nightly".
+# Caching of the release artifacts are intentionally disabled at the bucket level by setting the Cache-Control header of the objects to 'no-store',
+# this is done because the files are cached at the CDN layer instead and multiple caching layers makes invalidating the cache difficult.
+# The CDN cache is explicitly invalidated as part of the release process, to prevent old versions from being accidentally served after the release is done.
 name: Release Rill CLI
 on:
   # Trigger a full release on new Git tag
