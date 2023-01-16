@@ -108,7 +108,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 }
 
 func (m *modelMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
-	return cat1.GetModel().Dialect == cat2.GetModel().Dialect && cat1.GetModel().Sql == cat2.GetModel().Sql
+	return cat1.GetModel().Dialect == cat2.GetModel().Dialect && strings.EqualFold(cat1.GetModel().Sql, cat2.GetModel().Sql)
 }
 
 func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -139,5 +139,5 @@ func sanitizeQuery(query string) string {
 	// remove all spaces after a comma
 	query = SpacesAfterCommaRegex.ReplaceAllString(query, ",")
 	query = strings.ReplaceAll(query, ";", "")
-	return strings.TrimSpace(strings.ToLower(query))
+	return strings.TrimSpace(query)
 }

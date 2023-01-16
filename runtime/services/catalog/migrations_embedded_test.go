@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var EmbeddedSourceName = "a4c0405f9a09d7e055a371c405d93e067"
-var EmbeddedSourcePath = "data/adbids.csv"
-var EmbeddedGzSourceName = "a23ac470311241eaed9c9d9731e56f6e9"
-var EmbeddedGzSourcePath = "data/adbids.csv.gz"
-var ImpEmbeddedSourceName = "a251693674604e998f126e4ce6e999ade"
-var ImpEmbeddedSourcePath = "data/adimpressions.csv"
+var EmbeddedSourceName = "a5679a659bbebf0ea9bf47a382e380b7b"
+var EmbeddedSourcePath = "data/AdBids.csv"
+var EmbeddedGzSourceName = "af7de1e5523cb411afc9c5112d5e2cc1e"
+var EmbeddedGzSourcePath = "data/AdBids.csv.gz"
+var ImpEmbeddedSourceName = "aee12850b230f8be0ff25d8d9d65648c7"
+var ImpEmbeddedSourcePath = "data/AdImpressions.csv"
 var AdBidsNewModeName = "AdBids_new_model"
 var AdBidsNewModelPath = "/models/AdBids_new_model.sql"
 
@@ -297,7 +297,7 @@ func TestEmbeddedSourcesErroredOut(t *testing.T) {
 	)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/adbids.cs"})
+	testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/AdBids.cs"})
 	adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
 	require.ElementsMatch(t, []string{strings.ToLower("AdBids_model")}, adBidsEntry.Children)
 
