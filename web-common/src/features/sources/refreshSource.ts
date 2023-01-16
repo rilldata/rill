@@ -14,27 +14,46 @@ import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/i
 import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 
+export async function refreshAndReconcile(
+  sourceName: string,
+  instanceId: string,
+  refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
+  queryClient: QueryClient,
+  path: string,
+  displayName = undefined
+) {
+  overlay.set({ title: `Importing ${displayName || sourceName}` });
+  const resp = await refreshSource.mutateAsync({
+    data: {
+      instanceId,
+      path,
+    },
+  });
+  invalidateAfterReconcile(queryClient, instanceId, resp);
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+  return resp;
+}
+
 export async function refreshSource(
   connector: string,
   sourceName: string,
   instanceId: string,
   refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
   createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
-  queryClient: QueryClient
+  queryClient: QueryClient,
+  displayName = undefined
 ) {
   const artifactPath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   if (connector !== "local_file") {
-    overlay.set({ title: `Importing ${sourceName}` });
-    const resp = await refreshSource.mutateAsync({
-      data: {
-        instanceId,
-        path: artifactPath,
-      },
-    });
-    invalidateAfterReconcile(queryClient, instanceId, resp);
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    return resp;
+    return refreshAndReconcile(
+      sourceName,
+      instanceId,
+      refreshSource,
+      queryClient,
+      artifactPath,
+      displayName
+    );
   }
 
   // different logic for the file connector

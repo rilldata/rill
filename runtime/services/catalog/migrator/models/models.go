@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 )
 
 func init() {
@@ -23,7 +24,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 		Query: fmt.Sprintf(
 			"CREATE OR REPLACE VIEW %s AS (%s)",
 			catalogObj.Name,
-			sanitizeQuery(catalogObj.GetModel().Sql, false),
+			catalogObj.GetModel().Sql,
 		),
 		Priority: 100,
 	})
@@ -59,8 +60,39 @@ func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cata
 	})
 }
 
-func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
-	return ExtractTableNames(catalog.GetModel().Sql)
+func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
+	model := catalog.GetModel()
+	model.Sql = sanitizeQuery(model.Sql)
+	dependencies := ExtractTableNames(model.Sql)
+
+	embeddedSourcesMap := make(map[string]*drivers.CatalogEntry)
+	for i, dependency := range dependencies {
+		source, ok := sources.ParseEmbeddedSource(dependency)
+		if !ok {
+			continue
+		}
+		if _, ok := embeddedSourcesMap[source.Name]; ok {
+			continue
+		}
+
+		embeddedSourcesMap[source.Name] = &drivers.CatalogEntry{
+			Name:     source.Name,
+			Type:     drivers.ObjectTypeSource,
+			Object:   source,
+			Path:     source.Properties.AsMap()["path"].(string),
+			Embedded: true,
+		}
+
+		// replace the dependency
+		dependencies[i] = source.Name
+		model.Sql = strings.ReplaceAll(model.Sql, dependency, source.Name)
+	}
+
+	embeddedSources := make([]*drivers.CatalogEntry, 0)
+	for _, embeddedSource := range embeddedSourcesMap {
+		embeddedSources = append(embeddedSources, embeddedSource)
+	}
+	return dependencies, embeddedSources
 }
 
 func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
@@ -76,9 +108,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 }
 
 func (m *modelMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
-	return cat1.GetModel().Dialect == cat2.GetModel().Dialect &&
-		// TODO: handle same queries but different text
-		sanitizeQuery(cat1.GetModel().Sql, true) == sanitizeQuery(cat2.GetModel().Sql, true)
+	return cat1.GetModel().Dialect == cat2.GetModel().Dialect && strings.EqualFold(cat1.GetModel().Sql, cat2.GetModel().Sql)
 }
 
 func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -97,9 +127,9 @@ var (
 	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
 )
 
-// TODO: use this while extracting source names to get case insensitive DAG
+// TODO: use this while extracting source names to get case insensitive dag
 // TODO: should this be used to store the sql in catalog?
-func sanitizeQuery(query string, toLower bool) string {
+func sanitizeQuery(query string) string {
 	// remove all comments
 	query = QueryCommentRegex.ReplaceAllString(query, " ")
 	// new line => space
@@ -109,8 +139,5 @@ func sanitizeQuery(query string, toLower bool) string {
 	// remove all spaces after a comma
 	query = SpacesAfterCommaRegex.ReplaceAllString(query, ",")
 	query = strings.ReplaceAll(query, ";", "")
-	if toLower {
-		query = strings.ToLower(query)
-	}
 	return strings.TrimSpace(query)
 }

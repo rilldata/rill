@@ -84,7 +84,7 @@ func ToProtoStruct(obj map[string]any) *structpb.Struct {
 	return s
 }
 
-func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) {
+func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {
 	catalogEntry := AssertInCatalogStore(t, s, name, sourcePath)
 
 	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{
@@ -114,10 +114,12 @@ func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) {
 	require.NoError(t, err)
 	require.Equal(t, name, table.Name)
 	require.Equal(t, schema.Fields, table.Schema.Fields)
+
+	return catalogEntry
 }
 
 func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {
-	catalogEntry, ok := s.Catalog.FindEntry(context.Background(), s.InstID, name)
+	catalogEntry, ok := s.FindEntry(context.Background(), name)
 	require.True(t, ok)
 	require.Equal(t, name, catalogEntry.Name)
 	require.Equal(t, sourcePath, catalogEntry.Path)
@@ -125,7 +127,7 @@ func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, sourcePath str
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
-	_, ok := s.Catalog.FindEntry(context.Background(), s.InstID, name)
+	_, ok := s.FindEntry(context.Background(), name)
 	require.False(t, ok)
 
 	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)

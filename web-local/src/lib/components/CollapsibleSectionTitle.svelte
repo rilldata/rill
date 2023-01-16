@@ -5,22 +5,26 @@
 
   export let active = true;
   export let tooltipText = "";
+  export let suppressTooltip = false;
 
   let tooltipActive;
 </script>
 
-<div
-  class="collapsible-title align grid grid-cols-max justify-between"
-  style="grid-template-columns: auto max-content;"
+<Tooltip
+  location="right"
+  alignment="middle"
+  distance={8}
+  bind:active={tooltipActive}
+  suppress={suppressTooltip}
 >
-  <Tooltip
-    location="right"
-    alignment="middle"
-    distance={8}
-    bind:active={tooltipActive}
+  <div
+    class="w-full collapsible-title align grid grid-cols-max"
+    style="grid-template-columns: auto max-content;"
   >
     <button
       class="
+        text-left
+            w-full 
             bg-transparent 
             grid 
             grid-flow-col 
@@ -45,13 +49,14 @@
         <slot />
       </div>
     </button>
-    <TooltipContent slot="tooltip-content">
-      <SlidingWords {active}>
-        {tooltipText}
-      </SlidingWords>
-    </TooltipContent>
-  </Tooltip>
-  <div class="contextual-information justify-self-stretch text-right">
-    <slot name="contextual-information" />
+
+    <div class="contextual-information justify-self-stretch text-right">
+      <slot name="contextual-information" />
+    </div>
   </div>
-</div>
+  <TooltipContent slot="tooltip-content">
+    <SlidingWords {active}>
+      {tooltipText}
+    </SlidingWords>
+  </TooltipContent>
+</Tooltip>

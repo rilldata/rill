@@ -18,7 +18,7 @@
         <slot name="tooltip-right" />
       </svelte:fragment>
     </TooltipTitle>
-    <div class="pb-1">
+    <div class="pb-1 leading-4">
       <p class="text-gray-200">
         <slot name="tooltip-description" />
       </p>
