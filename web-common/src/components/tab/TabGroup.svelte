@@ -62,15 +62,22 @@
 </script>
 
 <div
-  class="flex flex-row gap-x-4 relative items-stretch"
+  class="flex flex-row relative items-stretch"
+  class:gap-x-4={variant === "panel"}
+  class:bg-gray-50={variant !== "panel"}
+  class:border={variant !== "panel"}
+  class:border-gray-200={variant !== "panel"}
+  class:rounded={variant !== "panel"}
   bind:this={container}
-  style:height="40px"
+  style:height={variant === "panel" ? "40px" : "28px"}
 >
   <slot />
   {#if $selectedValue !== undefined && $tweenedMovingElement?.left !== undefined}
     <div
       class:opacity-20={variant === "secondary"}
-      class="absolute rounded bg-gray-600 z-10 pointer-events-none"
+      class:border={variant === "secondary"}
+      class:border-gray-700={variant === "secondary"}
+      class="absolute rounded bg-gray-700 z-10 pointer-events-none"
       style:left="{$tweenedMovingElement.left}px"
       style:top={variant === "panel"
         ? `calc(${

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
@@ -108,9 +108,15 @@
     on:click={handleCreateDashboard}
     type="primary"
   >
+    <!-- <button
+    style:height="28px"
+    style:padding-left="8px"
+    class="flex items-center gap-x-2 pr-3 bg-gray-700 text-gray-100 rounded"
+  > -->
+    <Add />
     <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
-    <Explore size="14px" /></Button
-  >
+    <!-- </button> -->
+  </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard

@@ -2,7 +2,8 @@
   import { goto } from "$app/navigation";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -143,21 +144,23 @@
       >
         <!-- attach floating element right here-->
         <WithTogglableFloatingElement
-          alignment="start"
+          alignment="end"
           bind:active={contextMenuOpen}
-          distance={16}
+          distance={8}
           let:toggleFloatingElement
-          location="left"
+          location="bottom"
         >
           <Button
             disabled={modelHasError}
             on:click={toggleFloatingElement}
             type="secondary"
           >
+            <div style:margin-left="-4px">
+              <CaretDownIcon />
+            </div>
             <ResponsiveButtonText collapse={width < 800}>
-              Export Results
+              Export
             </ResponsiveButtonText>
-            <Export size="14px" />
           </Button>
           <Menu
             dark
@@ -190,11 +193,32 @@
           {/if}
         </TooltipContent>
       </Tooltip>
-      <CreateDashboardButton
-        collapse={width < 800}
-        hasError={modelHasError}
-        {modelName}
-      />
+
+      {#if $availableDashboards?.data?.length === 0}
+        <CreateDashboardButton
+          collapse={width < 800}
+          hasError={modelHasError}
+          {modelName}
+        />
+      {:else if $availableDashboards?.data?.length === 1}
+        <Button
+          on:click={() => {
+            goto(`/dashboard/${$availableDashboards.data[0].name}`);
+          }}
+        >
+          <div style:margin-left="-4px"><Forward /></div>
+          Go to Dashboard
+        </Button>
+      {:else}
+        <Button
+          on:click={() => {
+            goto(`/dashboard/${$availableDashboards.data[0].name}`);
+          }}
+        >
+          <div style:margin-left="-4px"><Forward /></div>
+          Go to Dashboard
+        </Button>
+      {/if}
     </PanelCTA>
   </svelte:fragment>
 </WorkspaceHeader>

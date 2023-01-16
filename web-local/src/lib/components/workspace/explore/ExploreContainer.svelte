@@ -2,7 +2,7 @@
   <div class="explore-header">
     <slot name="header" />
   </div>
-  <hr class="pb-3 pt-1 ui-divider" />
+  <!-- <hr class="pb-3 pt-1 ui-divider" /> -->
   <div class="explore-metrics pl-8 pb-8">
     <slot name="metrics" />
   </div>
