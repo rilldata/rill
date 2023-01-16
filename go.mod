@@ -14,6 +14,7 @@ require (
 	github.com/getkin/kin-openapi v0.100.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/gorilla/sessions v1.2.1
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/jinzhu/copier v0.3.5
