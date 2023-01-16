@@ -313,7 +313,7 @@ message Instance {
 
 // Request message for RuntimeService.ListInstances
 message ListInstancesRequest {
-  int32 page_size = 1;
+  int32 page_size = 1 [(validate.rules).int32.gte = 0];
   string page_token = 2;
 }
 
@@ -442,7 +442,7 @@ message CatalogEntry {
 // Request message for RuntimeService.ListCatalogEntries
 message ListCatalogEntriesRequest {
   string instance_id = 1 [(validate.rules).string.uuid = true];
-  ObjectType type = 2;
+  ObjectType type = 2 [(validate.rules).enum.defined_only = true];
 }
 
 // Response message for RuntimeService.ListCatalogEntries
@@ -535,11 +535,11 @@ message ReconcileError {
   }
   // CharLocation is a line and column in a code artifact
   message CharLocation {
-    uint32 line = 1;
-    uint32 column = 2;
+    uint32 line = 1 [(validate.rules).uint32 = { gte: 1}];
+    uint32 column = 2 [(validate.rules).uint32 = { gte: 1}];
   }
   // Code denotes the category of error
-  Code code = 1;
+  Code code = 1 [(validate.rules).enum.defined_only = true];
   // Message is a developer-friendly error message
   string message = 2;
   // File path of the code artifact that this error relates to (if any)

@@ -446,7 +446,16 @@ func (m *ListInstancesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for PageSize
+	if m.GetPageSize() < 0 {
+		err := ListInstancesRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PageToken
 
@@ -2949,7 +2958,16 @@ func (m *ListCatalogEntriesRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Type
+	if _, ok := ObjectType_name[int32(m.GetType())]; !ok {
+		err := ListCatalogEntriesRequestValidationError{
+			field:  "Type",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return ListCatalogEntriesRequestMultiError(errors)
@@ -4170,7 +4188,16 @@ func (m *ReconcileError) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Code
+	if _, ok := ReconcileError_Code_name[int32(m.GetCode())]; !ok {
+		err := ReconcileErrorValidationError{
+			field:  "Code",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Message
 
@@ -12639,9 +12666,27 @@ func (m *ReconcileError_CharLocation) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Line
+	if m.GetLine() < 1 {
+		err := ReconcileError_CharLocationValidationError{
+			field:  "Line",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Column
+	if m.GetColumn() < 1 {
+		err := ReconcileError_CharLocationValidationError{
+			field:  "Column",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return ReconcileError_CharLocationMultiError(errors)
