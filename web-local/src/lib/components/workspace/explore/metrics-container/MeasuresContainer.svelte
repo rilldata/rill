@@ -21,6 +21,7 @@
   const MEASURE_HEIGHT_MULTILINE = 80;
   const MEASURE_WIDTH = 175;
   const MARGIN_TOP = 36;
+  const COLUMN_GAP = 28;
   const GRID_MARGIN_TOP = 8;
 
   // external sizes
@@ -47,7 +48,6 @@
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
   $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
-  $: metricsContainerWidth = $observedNode?.offsetWidth || 0;
 
   let measuresWrapper;
   let measuresHeight = [];
@@ -110,8 +110,7 @@
     if (maxWidthMeasuresContainer) {
       while (numColumns > 1) {
         const widthPerColumn = maxWidthMeasuresContainer / numColumns;
-        // gap-x-4 = 16px
-        if (widthPerColumn < MEASURE_WIDTH + 16 / 2) {
+        if (widthPerColumn < MEASURE_WIDTH + COLUMN_GAP / 2) {
           numColumns = numColumns - 1;
           measureGridHeights = getMeasureHeightsForColumn(
             measuresHeight,
@@ -143,9 +142,9 @@
     );
   }
 
-  $: measureNodes = [...(measuresWrapper?.children || [])];
+  let measureNodes = [];
 
-  $: if (metricsContainerWidth && measureNodes && $metaQuery?.data?.measures) {
+  $: if (metricsContainerHeight && measureNodes.length) {
     calculateGridColumns();
   }
 </script>
@@ -157,12 +156,17 @@
   style:margin-top="{GRID_MARGIN_TOP}px"
   style:min-width="240px"
 >
-  <div bind:this={measuresWrapper} class="grid grid-cols-{numColumns} gap-x-4">
+  <div
+    bind:this={measuresWrapper}
+    class="grid grid-cols-{numColumns}"
+    style:column-gap="{COLUMN_GAP}px"
+  >
     {#if $metaQuery.data?.measures}
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
         <div
+          bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"
           style:height="{measureGridHeights[index]}px"
           style:margin-top="{MARGIN_TOP}px"
