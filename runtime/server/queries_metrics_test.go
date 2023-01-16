@@ -879,7 +879,7 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 0)
 	require.Equal(t, 3, len(tr.Data[0].Fields))
-	require.NotEmpty(t, tr.Data[0].Fields["ts"].GetStringValue())
+	require.NotEmpty(t, tr.Data[0].Fields["timestamp"].GetStringValue())
 	require.True(t, tr.Data[0].Fields["measure_0"].GetNumberValue() > 0)
 	require.True(t, tr.Data[0].Fields["measure_1"].GetNumberValue() > 0)
 }
