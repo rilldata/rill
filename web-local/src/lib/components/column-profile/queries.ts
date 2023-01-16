@@ -143,7 +143,6 @@ export function getTimeSeriesAndSpark(
   return derived(
     [query, estimatedInterval, smallestTimeGrain],
     ([$query, $estimatedInterval, $smallestTimeGrain]) => {
-      
       return {
         isFetching: $query?.isFetching,
         estimatedRollupInterval: $estimatedInterval?.data,
