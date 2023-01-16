@@ -18,7 +18,7 @@
 
 <div
   style:height="28px"
-  class="pl-4 pb-1 pr-3 grid justify-between"
+  class="pl-3 pb-1 pr-2 grid justify-between"
   style="grid-template-columns: auto max-content;"
   out:slide|local={{ duration: LIST_SLIDE_DURATION }}
 >

@@ -9,9 +9,12 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceProfileColumns,
+    V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import { getSummaries } from "@rilldata/web-local/lib/components/column-profile/queries";
@@ -19,8 +22,8 @@
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
-  import StickToHeaderDivider from "@rilldata/web-local/lib/components/panel/StickToHeaderDivider.svelte";
   import { slide } from "svelte/transition";
+  import ReferenceModels from "./ReferenceModels.svelte";
 
   export let sourceName: string;
 
@@ -30,10 +33,15 @@
     runtimeInstanceId,
     sourceName
   );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
+  let sourceCatalog: V1CatalogEntry;
+  $: sourceCatalog = $getSource?.data?.entry;
+  $: if (sourceCatalog?.embedded) {
+    // TODO: add this for non embedded items as well
+    fileArtifactsStore.setName(sourceCatalog.path, sourceCatalog.name);
+  }
 
   let showColumns = true;
+  let showModelReferences = true;
 
   // get source table references.
 
@@ -66,8 +74,8 @@
     return "";
   }
 
-  $: connectorType = formatConnectorType(source?.connector);
-  $: fileExtension = getFileExtension(source);
+  $: connectorType = formatConnectorType(sourceCatalog?.source?.connector);
+  $: fileExtension = getFileExtension(sourceCatalog);
 
   $: cardinalityQuery = useRuntimeServiceGetTableCardinality(
     $runtimeStore.instanceId,
@@ -86,7 +94,9 @@
 
   /** get the current column count */
   $: {
-    columnCount = `${formatInteger(source?.schema?.fields?.length)} columns`;
+    columnCount = `${formatInteger(
+      sourceCatalog?.source?.schema?.fields?.length
+    )} columns`;
   }
 
   /** total % null cells */
@@ -113,13 +123,14 @@
     );
   }
   $: {
-    const totalCells = source?.schema?.fields?.length * cardinality;
+    const totalCells =
+      sourceCatalog?.source?.schema?.fields?.length * cardinality;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 </script>
 
 <div class="table-profile">
-  {#if source}
+  {#if sourceCatalog}
     <!-- summary info -->
     <div class=" p-4 pt-2">
       <LeftRightGrid>
@@ -151,12 +162,17 @@
       </LeftRightGrid>
     </div>
 
-    <StickToHeaderDivider />
+    <hr />
+
+    {#if sourceCatalog?.embedded}
+      <ReferenceModels {sourceCatalog} />
+      <hr />
+    {/if}
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="Source tables"
+          tooltipText="available columns"
           bind:active={showColumns}
         >
           columns
@@ -164,7 +180,7 @@
       </div>
 
       {#if showColumns}
-        <div transition:slide|local={{ duration: 200 }}>
+        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
           <ColumnProfile objectName={sourceName} indentLevel={0} />
         </div>
       {/if}

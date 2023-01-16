@@ -96,6 +96,9 @@
   // colors. Might have to navigated CodeMirror generated classes.
   const rillTheme = EditorView.theme({
     "&.cm-editor": {
+      overflowX: "hidden",
+      width: "100%",
+      height: "100%",
       "&.cm-focused": {
         outline: "none",
       },
@@ -104,6 +107,7 @@
       { backgroundColor: "rgb(65 99 255 / 25%)" },
     ".cm-selectionMatch": { backgroundColor: "rgb(189 233 255)" },
     ".cm-activeLine": { backgroundColor: highlightBackground },
+
     ".cm-activeLineGutter": {
       backgroundColor: highlightBackground,
     },
@@ -111,6 +115,7 @@
       paddingLeft: "5px",
       paddingRight: "10px",
       minWidth: "32px",
+      backgroundColor: "white",
     },
     ".cm-breakpoint-gutter .cm-gutterElement": {
       color: "red",
@@ -157,10 +162,18 @@
   );
 
   let schema: { [table: string]: string[] };
+
+  /** Track embedded sources separately*/
+  let embeddedSources = [];
   $: if ($sourceCatalogsQuery?.data?.entries) {
     schema = {};
+    embeddedSources = [];
     for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      schema[sourceTable.name] =
+      const sourceIdentifier = sourceTable?.embedded
+        ? sourceTable?.source?.properties?.path
+        : sourceTable?.name;
+      if (sourceTable?.embedded) embeddedSources.push(sourceIdentifier);
+      schema[sourceIdentifier] =
         sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
     }
   }
@@ -170,7 +183,10 @@
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
   });
 
-  function makeAutocompleteConfig(schema: { [table: string]: string[] }) {
+  function makeAutocompleteConfig(
+    schema: { [table: string]: string[] },
+    embeddedSources: string[]
+  ) {
     return autocompletion({
       override: [
         keywordCompletionSource(DuckDBSQL),
@@ -224,7 +240,9 @@
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
-          autocompleteCompartment.of(makeAutocompleteConfig(schema)), // a compartment makes the config dynamic
+          autocompleteCompartment.of(
+            makeAutocompleteConfig(schema, embeddedSources)
+          ), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
           highlightSelectionMatches(),
@@ -304,11 +322,14 @@
   //   }
   // }
 
-  function updateAutocompleteSources(schema: { [table: string]: string[] }) {
+  function updateAutocompleteSources(
+    schema: { [table: string]: string[] },
+    embeddedSources
+  ) {
     if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema)
+          makeAutocompleteConfig(schema, embeddedSources)
         ),
       });
     }
@@ -330,19 +351,17 @@
 
   // reactive statements to dynamically update the editor when inputs change
   // $: updateEditorContents(content);
-  $: updateAutocompleteSources(schema);
+  $: updateAutocompleteSources(schema, embeddedSources);
   $: underlineSelection(selections || []);
 </script>
 
-<div
-  class="h-full"
-  use:listenToNodeResize
-  on:click={() => {
-    console.log(editor);
-  }}
->
-  <div bind:this={editorContainer} class="editor-container  h-full">
+<div class="h-full w-full overflow-x-auto" use:listenToNodeResize>
+  <div
+    bind:this={editorContainer}
+    class="editor-container  h-full w-full overflow-x-auto"
+  >
     <div
+      class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
       on:click={() => {
         /** give the editor focus no matter where we click */

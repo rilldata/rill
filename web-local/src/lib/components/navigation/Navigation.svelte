@@ -99,7 +99,7 @@
         >
           <!-- the pl-[.875rem] is a fix to move this new element over a pinch.-->
           <h1
-            class="grid grid-flow-col justify-start gap-x-3 p-4 pl-[.875rem] items-center content-center"
+            class="grid grid-flow-col justify-start gap-x-3 p-4 pl-[.75rem] items-center content-center"
           >
             {#if mounted}
               <a href="/">
@@ -142,7 +142,7 @@
 </div>
 
 <SurfaceControlButton
-  left="{($navigationWidth - 12 - 24) * (1 - $navVisibilityTween) +
+  left="{($navigationWidth - 12 - 20) * (1 - $navVisibilityTween) +
     12 * $navVisibilityTween}px"
   on:click={() => {
     //assetsVisible.set(!$assetsVisible);

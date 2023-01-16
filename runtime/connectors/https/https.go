@@ -70,6 +70,9 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
+	}
 
 	file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 	if err != nil {

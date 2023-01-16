@@ -236,7 +236,7 @@
           file
         )}
         <NavigationEntry
-          notExpandable={true}
+          expandable={false}
           name={label}
           href={`/dashboard/${file}`}
           open={$page.url.pathname === `/dashboard/${file}` ||
