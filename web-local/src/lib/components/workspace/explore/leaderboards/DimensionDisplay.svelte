@@ -17,6 +17,7 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
@@ -29,7 +30,6 @@
   import DimensionContainer from "../../../dimension/DimensionContainer.svelte";
   import DimensionHeader from "../../../dimension/DimensionHeader.svelte";
   import DimensionTable from "../../../dimension/DimensionTable.svelte";
-  import { hasDefinedTimeSeries } from "../utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -87,10 +87,8 @@
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
 
-  let hasTimeSeries;
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
-    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
-  }
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: if (
     sortByColumn &&

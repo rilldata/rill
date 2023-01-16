@@ -11,6 +11,7 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
@@ -34,7 +35,6 @@
   import LeaderboardList from "../../../leaderboard/LeaderboardList.svelte";
   import LeaderboardListItem from "../../../leaderboard/LeaderboardListItem.svelte";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
-  import { hasDefinedTimeSeries } from "../utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -93,11 +93,11 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  let hasTimeSeries;
-
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
-    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
-  }
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   function setLeaderboardValues(values) {
     dispatch("leaderboard-value", {

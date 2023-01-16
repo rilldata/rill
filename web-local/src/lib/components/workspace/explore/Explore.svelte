@@ -1,11 +1,9 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { hasDefinedTimeSeries } from "./utils";
+  import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
 
   $: instanceId = $runtimeStore.instanceId;
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import {
     MetricsExplorerEntity,
@@ -23,10 +21,8 @@
 
   let exploreContainerWidth;
 
-  let hasTimeSeries = true;
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
-    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
-  }
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;

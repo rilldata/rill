@@ -6,7 +6,10 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
@@ -21,7 +24,6 @@
     ShortHandSymbols,
   } from "../../../../util/humanize-numbers";
   import LeaderboardMeasureSelector from "../../../leaderboard/LeaderboardMeasureSelector.svelte";
-  import { hasDefinedTimeSeries } from "../utils";
   import Leaderboard from "./Leaderboard.svelte";
 
   export let metricViewName: string;
@@ -43,10 +45,11 @@
       (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
     );
 
-  let hasTimeSeries;
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
-    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
-  }
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: formatPreset =
     (activeMeasure?.format as NicelyFormattedTypes) ??

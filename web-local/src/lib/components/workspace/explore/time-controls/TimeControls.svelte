@@ -18,7 +18,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     V1GetTimeRangeSummaryResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type {
     TimeGrain,
     TimeRangeName,
@@ -30,7 +33,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { selectTimestampColumnFromSchema } from "../../../../svelte-query/column-selectors";
-  import { hasDefinedTimeSeries } from "../utils";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -52,13 +54,16 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   // query the `/meta` endpoint to get the all time range of the dataset
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
 
-  let hasTimeSeries;
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
   let modelQuery;
   let timestampColumns: Array<string>;
 
   $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
-    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
-
     modelQuery = useRuntimeServiceGetCatalogEntry(
       $runtimeStore.instanceId,
       $metaQuery?.data?.model
@@ -186,8 +191,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     if (timestampColumns?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     } else {
-      const sourceModelName = $metaQuery.data?.model;
-      goto(`/model/${sourceModelName}`);
+      const modelName = $metaQuery.data?.model;
+      goto(`/model/${modelName}`);
     }
   }
 </script>

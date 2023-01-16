@@ -17,7 +17,10 @@ The main feature-set component for dashboard filters
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -25,7 +28,7 @@ The main feature-set component for dashboard filters
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
-  import { getDisplayName, hasDefinedTimeSeries } from "../utils";
+  import { getDisplayName } from "../utils";
 
   export let metricViewName;
 
@@ -58,11 +61,12 @@ The main feature-set component for dashboard filters
   let searchText = "";
   let searchedValues = [];
   let activeDimensionName;
-  let hasTimeSeries;
 
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
-    hasTimeSeries = hasDefinedTimeSeries($metaQuery.data);
-  }
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: addNull = "null".includes(searchText);
 
