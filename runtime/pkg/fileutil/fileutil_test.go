@@ -1,6 +1,7 @@
 package fileutil
 
 import (
+	"os/user"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,33 @@ func TestGetFileName(t *testing.T) {
 		t.Run(tt.Path, func(t *testing.T) {
 			ext := Stem(tt.Path)
 			require.Equal(t, ext, tt.ExpectedName)
+		})
+	}
+}
+
+func TestExpandHome(t *testing.T) {
+	usr, err := user.Current()
+	require.NoError(t, err)
+	home := usr.HomeDir
+
+	variations := []struct {
+		Path         string
+		ExpectedPath string
+	}{
+		{"file.yaml", "file.yaml"},
+		{"./file.tar.gz", "./file.tar.gz"},
+		{"~", home},
+		{"~/", home},
+		{"~file.yaml", "~file.yaml"},
+		{"~/path/to/file.tar.gz", home + "/path/to/file.tar.gz"},
+		{"/path/to/file.tar.gz", "/path/to/file.tar.gz"},
+	}
+
+	for _, tt := range variations {
+		t.Run(tt.Path, func(t *testing.T) {
+			home, err := ExpandHome(tt.Path)
+			require.NoError(t, err)
+			require.Equal(t, tt.ExpectedPath, home)
 		})
 	}
 }

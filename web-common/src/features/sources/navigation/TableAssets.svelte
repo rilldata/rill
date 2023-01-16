@@ -1,7 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useEmbeddedSources,
+    useSourceNames,
+  } from "@rilldata/web-common/features/sources/selectors";
+  import {
+    useRuntimeServicePutFileAndReconcile,
+    V1CatalogEntry,
+  } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
@@ -15,12 +21,17 @@
   import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
+  import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
   $: sourceNames = useSourceNames($runtimeStore.instanceId);
   $: modelNames = useModelNames($runtimeStore.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
+
+  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  let embeddedSourceCatalogs: Array<V1CatalogEntry>;
+  $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 
   const queryClient = useQueryClient();
 
@@ -37,6 +48,7 @@
       queryClient,
       $runtimeStore.instanceId,
       $modelNames.data,
+      tableName,
       tableName,
       $createModelMutation
     );
@@ -56,8 +68,8 @@
   bind:show={showTables}
   contextButtonID={"add-table"}
   on:add={openShowAddSourceModal}
-  tooltipText="Add a new data source"
   toggleText="sources"
+  tooltipText="Add a new data source"
 >
   Sources
 </NavigationHeader>
@@ -65,7 +77,6 @@
 {#if showTables}
   <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
     {#if $sourceNames?.data}
-      <!-- TODO: fix the object property access back to t.id from t["id"] once svelte fixes it -->
       {#each $sourceNames.data as sourceName (sourceName)}
         <div
           animate:flip={{ duration: 200 }}
@@ -100,6 +111,7 @@
         </div>
       {/each}
     {/if}
+    <EmbeddedSourceNav />
   </div>
 {/if}
 

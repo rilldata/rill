@@ -65,8 +65,8 @@ func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, cat
 	})
 }
 
-func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
-	return []string{}
+func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
+	return []string{}, nil
 }
 
 func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {

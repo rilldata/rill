@@ -56,7 +56,10 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return err
 	}
 
-	path := conf.Path
+	path, err := fileutil.ExpandHome(conf.Path)
+	if err != nil {
+		return err
+	}
 	if !filepath.IsAbs(path) {
 		// If the path is relative, it's relative to the repo root
 		if env.RepoDriver != "file" || env.RepoDSN == "" {

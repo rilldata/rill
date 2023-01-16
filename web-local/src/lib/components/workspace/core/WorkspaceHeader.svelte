@@ -15,11 +15,13 @@
   export let onChangeCallback;
   export let titleInput;
   export let showStatus = true;
+  export let editable = true;
   export let showInspectorToggle = true;
   export let width: number = undefined;
 
   let titleInputElement;
   let editingTitle = false;
+
   let titleInputValue;
   let tooltipActive;
 
@@ -57,27 +59,33 @@
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"
-        class="grid grid-flow-col justify-start items-center gap-x-1"
+        class="w-full  overflow-x-hidden  grid grid-flow-col justify-start items-center gap-x-1"
       >
         <Tooltip
           distance={8}
           alignment="start"
           bind:active={tooltipActive}
-          suppress={editingTitle}
+          suppress={editingTitle || !editable}
         >
           <input
             autocomplete="off"
+            disabled={!editable}
             id="model-title-input"
+            class:text-overflow-ellipsis={!editable}
             bind:this={titleInputElement}
             on:focus={() => {
               editingTitle = true;
               titleInputValue = titleInput;
             }}
             on:input={(evt) => {
-              titleInputValue = evt.target.value;
-              editingTitle = true;
+              if (editable) {
+                titleInputValue = evt.target.value;
+                editingTitle = true;
+              }
             }}
-            class="bg-transparent border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
+            class="w-full text-overflow-ellipses whitespace-wrap bg-transparent border border-transparent border-2 {editable
+              ? 'hover:border-gray-400 cursor-pointer'
+              : ''} rounded pl-2 pr-2"
             class:font-bold={editingTitle === false}
             on:blur={() => {
               editingTitle = false;

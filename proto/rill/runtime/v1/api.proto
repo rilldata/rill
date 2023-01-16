@@ -433,9 +433,15 @@ message CatalogEntry {
     MetricsView metrics_view = 5;
   }
   string path = 6;
-  google.protobuf.Timestamp created_on = 7;
-  google.protobuf.Timestamp updated_on = 8;
-  google.protobuf.Timestamp refreshed_on = 9;
+  // Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
+  bool embedded = 7;
+  // Immediate parent entries in the DAG
+  repeated string parents = 8;
+  // Immediate child entries in the DAG
+  repeated string children = 9;
+  google.protobuf.Timestamp created_on = 10;
+  google.protobuf.Timestamp updated_on = 11;
+  google.protobuf.Timestamp refreshed_on = 12;
 }
 
 // Request message for RuntimeService.ListCatalogEntries

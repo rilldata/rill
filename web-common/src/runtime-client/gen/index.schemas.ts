@@ -670,10 +670,14 @@ export interface V1CategoricalSummary {
 }
 
 export interface V1CatalogEntry {
+  children?: string[];
   createdOn?: string;
+  /** Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact. */
+  embedded?: boolean;
   metricsView?: V1MetricsView;
   model?: V1Model;
   name?: string;
+  parents?: string[];
   path?: string;
   refreshedOn?: string;
   source?: V1Source;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     formatBigNumberPercentage,
@@ -17,7 +18,10 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
-  import { getTableReferences } from "../../utils/get-table-references";
+  import {
+    getMatchingCatalogReference,
+    getTableReferences,
+  } from "../../utils/get-table-references";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -25,8 +29,7 @@
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
-    modelName,
-    { query: { queryKey: `current-model-query-in-inspector-${modelName}` } }
+    modelName
   );
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
@@ -42,14 +45,21 @@
     sourceTableReferences = getTableReferences(model.sql);
   }
 
+  $: embeddedSources = useEmbeddedSources($runtimeStore.instanceId);
+
   // get the cardinalitie & table information.
   let cardinalityQueries = [];
   let sourceProfileColumns = [];
+
   $: if (sourceTableReferences?.length) {
     cardinalityQueries = sourceTableReferences.map((table) => {
       return useRuntimeServiceGetTableCardinality(
         $runtimeStore?.instanceId,
-        table.reference,
+        getMatchingCatalogReference(
+          table,
+          $embeddedSources?.data,
+          $fileArtifactsStore.entities
+        ),
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
@@ -57,7 +67,11 @@
     sourceProfileColumns = sourceTableReferences.map((table) => {
       return useRuntimeServiceProfileColumns(
         $runtimeStore?.instanceId,
-        table.reference,
+        getMatchingCatalogReference(
+          table,
+          $embeddedSources?.data,
+          $fileArtifactsStore.entities
+        ),
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
