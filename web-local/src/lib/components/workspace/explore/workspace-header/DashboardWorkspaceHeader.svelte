@@ -36,7 +36,7 @@
 >
   <div
     style:grid-column="title"
-    style:padding-left="{$navigationVisibilityTween * 24}px"
+    style:padding-left="{$navigationVisibilityTween * 20}px"
   >
     <div class="pl-4 font-bold" style:font-size="12px">
       {displayName || metricViewName}
@@ -44,7 +44,7 @@
     </div>
   </div>
   <div style:grid-column="view-controls">
-    {#if view === "model"}
+    {#if view !== "dashboard"}
       <ModelViewControls />
     {/if}
   </div>

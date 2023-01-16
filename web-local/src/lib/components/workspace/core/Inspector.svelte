@@ -18,6 +18,8 @@
   const visibilityTween = getContext(
     "rill:app:inspector-visibility-tween"
   ) as Writable<number>;
+
+  $: console.log($inspectorWidth, $visibilityTween);
 </script>
 
 <div

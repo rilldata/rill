@@ -239,8 +239,7 @@
           expandable={false}
           name={label}
           href={`/dashboard/${file}`}
-          open={$page.url.pathname === `/dashboard/${file}` ||
-            $page.url.pathname === `/dashboard/${file}/edit`}
+          open={$page.url.pathname.startsWith(`/dashboard/${file}`)}
         >
           <svelte:fragment slot="menu-items">
             {@const selectionError = MetricsSourceSelectionError(

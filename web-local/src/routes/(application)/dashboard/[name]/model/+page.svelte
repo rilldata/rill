@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { ModelWorkspace } from "@rilldata/web-common/features/models";
+  import ModelBody from "@rilldata/web-common/features/models/workspace/ModelBody.svelte";
+  import WorkspaceBody from "@rilldata/web-local/lib/components/workspace/core/WorkspaceBody.svelte";
 
   export let data;
 
@@ -12,7 +13,8 @@
   <title>Rill Developer | {modelName}</title>
 </svelte:head>
 
-{modelName}
-{metricViewName}
+<WorkspaceBody>
+  <ModelBody {modelName} />
+</WorkspaceBody>
 
-<ModelWorkspace {modelName} focusEditorOnMount={true} />
+<!-- <ModelWorkspace {modelName} focusEditorOnMount={true} /> -->

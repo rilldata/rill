@@ -17,7 +17,10 @@
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { ConnectedPreviewTable } from "@rilldata/web-local/lib/components/preview-table/index.js";
-  import { WorkspaceContainer } from "@rilldata/web-local/lib/components/workspace/index.js";
+  import {
+    Inspector,
+    WorkspaceContainer,
+  } from "@rilldata/web-local/lib/components/workspace/index.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
@@ -105,7 +108,6 @@
       <SourceWorkspaceHeader {sourceName} {path} {embedded} />
     </div>
     <div
-      slot="body"
       class="grid pb-3"
       style:grid-template-rows="max-content auto"
       style:height="100vh"
@@ -225,9 +227,10 @@
           {/if}
         </div>
       {/if}
+      <Inspector>
+        <SourceInspector {sourceName} />
+      </Inspector>
     </div>
-
-    <SourceInspector {sourceName} slot="inspector" />
   </WorkspaceContainer>
 {/key}
 

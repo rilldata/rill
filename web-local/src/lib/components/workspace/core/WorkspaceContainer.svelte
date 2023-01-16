@@ -2,7 +2,6 @@
   import {
     DEFAULT_INSPECTOR_WIDTH,
     DEFAULT_PREVIEW_TABLE_HEIGHT,
-    SIDE_PAD,
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
   } from "@rilldata/web-local/lib/application-config";
@@ -11,15 +10,18 @@
   import { getContext, setContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
-  import Inspector from "./Inspector.svelte";
 
   export let assetID;
   export let inspector = true;
+  /** separate out the view having an inspector from it being currently rendered
+   * from the user deciding to hide it
+   */
+  export let viewHasInspector = inspector;
   export let bgClass = "bg-gray-100";
   export let top = "var(--header-height)";
 
   const inspectorLayout = localStorageStore<LayoutElement>(assetID, {
-    value: inspector ? DEFAULT_INSPECTOR_WIDTH : 0,
+    value: viewHasInspector ? DEFAULT_INSPECTOR_WIDTH : 0,
     visible: true,
   });
   const inspectorWidth = tweened(
@@ -47,7 +49,7 @@
   setContext("rill:app:inspector-visibility-tween", visibilityTween);
 
   const outputLayout = localStorageStore<LayoutElement>(`${assetID}-output`, {
-    value: inspector ? DEFAULT_PREVIEW_TABLE_HEIGHT : 0,
+    value: viewHasInspector ? DEFAULT_PREVIEW_TABLE_HEIGHT : 0,
     visible: true,
   });
 
@@ -86,7 +88,6 @@
   ) as Writable<number>;
 
   let hasNoError = 1;
-  let hasInspector = true;
 </script>
 
 <div
@@ -95,8 +96,9 @@
   style:right="0px"
 >
   <slot name="header" />
+  <slot />
 </div>
-<div
+<!-- <div
   class="box-border fixed {bgClass}"
   style:top
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
@@ -108,11 +110,14 @@
   style:right="{hasInspector && hasNoError
     ? $inspectorWidth * $visibilityTween
     : 0}px"
->
+> -->
+
+<!-- <WorkspaceBody {top} {bgClass}>
   <slot name="body" />
-</div>
-{#if inspector}
+</WorkspaceBody> -->
+<!-- </div> -->
+<!-- {#if inspector}
   <Inspector>
     <slot name="inspector" />
   </Inspector>
-{/if}
+{/if} -->
