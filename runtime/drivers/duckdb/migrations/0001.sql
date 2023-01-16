@@ -3,7 +3,6 @@ CREATE TABLE rill.catalog (
 	type INTEGER NOT NULL,
 	object BLOB NOT NULL,
 	path TEXT NOT NULL,
-	embedded BOOL,
 	created_on TIMESTAMPTZ NOT NULL,
 	updated_on TIMESTAMPTZ NOT NULL,
 	refreshed_on TIMESTAMPTZ NOT NULL,
