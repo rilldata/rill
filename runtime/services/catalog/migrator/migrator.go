@@ -32,7 +32,7 @@ type EntityMigrator interface {
 	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalog *drivers.CatalogEntry) error
 	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *drivers.CatalogEntry) error
 	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error
-	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string
+	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry)
 	Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError
 	// IsEqual checks everything but the name
 	IsEqual(ctx context.Context, cat1 *drivers.CatalogEntry, cat2 *drivers.CatalogEntry) bool
@@ -75,11 +75,11 @@ func Delete(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Catalo
 	return migrator.Delete(ctx, olap, catalog)
 }
 
-func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
+func GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
-		return []string{}
+		return []string{}, nil
 	}
 	return migrator.GetDependencies(ctx, olap, catalog)
 }

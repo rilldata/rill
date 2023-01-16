@@ -46,9 +46,11 @@
   import { fade } from "svelte/transition";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
-  import { refreshSource } from "../refreshSource";
+  import { refreshAndReconcile, refreshSource } from "../refreshSource";
 
   export let sourceName: string;
+  export let path: string;
+  export let embedded = false;
 
   const queryClient = useQueryClient();
 
@@ -83,6 +85,7 @@
       runtimeInstanceId,
       $modelNames.data,
       sourceName,
+      embedded ? `"${path}"` : sourceName,
       $createModelMutation
     );
     navigationEvent.fireEvent(
@@ -170,18 +173,30 @@
 
   const onRefreshClick = async (tableName: string) => {
     try {
-      await refreshSource(
-        connector,
-        tableName,
-        runtimeInstanceId,
-        $refreshSourceMutation,
-        $createSource,
-        queryClient
-      );
-      // invalidate the data preview (async)
-      // TODO: use new runtime approach
-      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
-
+      if (embedded) {
+        await refreshAndReconcile(
+          tableName,
+          runtimeInstanceId,
+          $refreshSourceMutation,
+          queryClient,
+          source.properties.path,
+          path
+        );
+      } else {
+        await refreshSource(
+          connector,
+          tableName,
+          runtimeInstanceId,
+          $refreshSourceMutation,
+          $createSource,
+          queryClient,
+          source?.connector === "s3" ||
+            source?.connector === "gcs" ||
+            source?.connector === "https"
+            ? source?.properties?.path
+            : sourceName
+        );
+      }
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,
@@ -208,9 +223,10 @@
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
-    {...{ titleInput: sourceName, onChangeCallback }}
-    showStatus={false}
+    {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
+    editable={!embedded}
     let:width
+    showStatus={false}
   >
     <svelte:fragment slot="icon">
       <Source />
@@ -257,9 +273,9 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        <Tooltip location="left" distance={16}>
-          <Button type="secondary" on:click={handleCreateModelFromSource}>
-            <ResponsiveButtonText collapse={width < 800}>
+        <Tooltip distance={16} location="left">
+          <Button on:click={handleCreateModelFromSource} type="secondary">
+            <ResponsiveButtonText collapse={width < 1100}>
               Create Model
             </ResponsiveButtonText>
             <Model size="16px" />
@@ -268,26 +284,28 @@
             Model this source with SQL
           </TooltipContent>
         </Tooltip>
-        <Tooltip location="bottom" alignment="right" distance={16}>
-          <Button
-            type="primary"
-            disabled={!timestampColumns?.length}
-            on:click={() => handleCreateDashboardFromSource(sourceName)}
-          >
-            <ResponsiveButtonText collapse={width < 800}>
-              Create Dashboard
-            </ResponsiveButtonText>
+        {#if !embedded}
+          <Tooltip location="bottom" alignment="right" distance={16}>
+            <Button
+              type="primary"
+              disabled={!timestampColumns?.length}
+              on:click={() => handleCreateDashboardFromSource(sourceName)}
+            >
+              <ResponsiveButtonText collapse={width < 1100}>
+                Create Dashboard
+              </ResponsiveButtonText>
 
-            <Explore size="16px" />
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            {#if timestampColumns?.length}
-              Create a dashboard for this source
-            {:else}
-              This data source does not have a TIMESTAMP column
-            {/if}
-          </TooltipContent>
-        </Tooltip>
+              <Explore size="16px" />
+            </Button>
+            <TooltipContent slot="tooltip-content">
+              {#if timestampColumns?.length}
+                Create a dashboard for this source
+              {:else}
+                This data source does not have a TIMESTAMP column
+              {/if}
+            </TooltipContent>
+          </Tooltip>
+        {/if}
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>

@@ -1,19 +1,26 @@
 <script lang="ts">
-  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetFile,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
+    V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
+  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { getTableReferences } from "../../utils/get-table-references";
+  import EmbeddedSourceReferences from "./EmbeddedSourceReferences.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -28,7 +35,12 @@
   // refresh entry value only if the data has changed
   $: entry = $getModel?.data?.entry || entry;
 
-  $: references = getTableReferences(entry?.model?.sql);
+  $: getModelFile = useRuntimeServiceGetFile(
+    $runtimeStore?.instanceId,
+    getFilePathFromNameAndType(modelName, EntityType.Model)
+  );
+
+  $: references = getTableReferences($getModelFile?.data.blob ?? "");
   $: getAllSources = useRuntimeServiceListCatalogEntries(
     $runtimeStore?.instanceId,
     { type: "OBJECT_TYPE_SOURCE" }
@@ -37,12 +49,25 @@
   $: viableSources = derived(
     $getAllSources?.data?.entries
       ?.filter((entry) => {
-        return references.some((ref) => ref.reference === entry.name);
+        return references.some(
+          (ref) =>
+            ref.reference === entry.name ||
+            entry?.children?.includes(modelName.toLowerCase())
+        );
       })
       .map((entry) => {
-        return [entry, references.find((ref) => ref.reference === entry.name)];
+        return [
+          entry,
+          references.find(
+            (ref) =>
+              ref.reference === entry.name ||
+              entry?.children?.includes(modelName.toLowerCase())
+          ),
+        ];
       })
-      .map(([entry, reference]) => {
+      .map((arr) => {
+        const entry = arr[0] as V1CatalogEntry;
+        const reference = arr[1];
         return derived(
           [
             writable(entry),
@@ -63,6 +88,15 @@
       }),
     ($row) => $row
   );
+
+  $: viableEmbeddedSources = $viableSources?.filter((source) => {
+    return source?.embedded;
+  });
+
+  $: viableExplicitSources = $viableSources?.filter((source) => {
+    return !source?.embedded;
+  });
+
   let showColumns = true;
 
   // toggle state for inspector sections
@@ -102,35 +136,55 @@
           class="mt-1"
         >
           {#if viableSources && $viableSources}
-            {#each $viableSources as table (table.name)}
+            <EmbeddedSourceReferences
+              {references}
+              entries={viableEmbeddedSources}
+            />
+            {#each viableExplicitSources as source (source.name)}
               <WithModelResultTooltip {modelHasError}>
-                <div
-                  class="grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
+                <a
+                  href="/source/{source.name}"
+                  class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                   style:grid-template-columns="auto max-content"
-                  on:focus={focus(table)}
-                  on:mouseover={focus(table)}
+                  on:focus={focus(source)}
+                  on:mouseover={focus(source)}
                   on:mouseleave={blur}
                   on:blur={blur}
                   class:text-gray-500={modelHasError}
                 >
-                  <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-                    {table.name}
+                  <div class="truncate flex items-center gap-x-2">
+                    <div class="truncate">
+                      {source?.embedded
+                        ? source?.source?.properties?.path
+                        : source.name}
+                    </div>
                   </div>
 
                   <div class="text-gray-500">
-                    {#if table.totalRows}
-                      {`${formatInteger(table.totalRows)} rows` || ""}
+                    {#if source.totalRows}
+                      {`${formatCompactInteger(source.totalRows)} rows` || ""}
                     {/if}
                   </div>
-                </div>
+                </a>
 
-                <svelte:fragment slot="tooltip-title"
-                  >{table.name}</svelte:fragment
+                <svelte:fragment slot="tooltip-title">
+                  <div class="break-all">
+                    {source?.embedded
+                      ? source?.source?.properties?.path
+                      : source.name}
+                  </div></svelte:fragment
                 >
-                <svelte:fragment slot="tooltip-right">Source</svelte:fragment>
+                <svelte:fragment slot="tooltip-right">
+                  {#if source.source}
+                    {source.source.connector}
+                  {/if}
+                </svelte:fragment>
 
                 <svelte:fragment slot="tooltip-description">
-                  This source table is referenced in the model query
+                  <TooltipShortcutContainer>
+                    <div>Open in workspace</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
                 </svelte:fragment>
               </WithModelResultTooltip>
             {/each}

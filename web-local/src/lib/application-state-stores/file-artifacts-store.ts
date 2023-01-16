@@ -4,6 +4,8 @@ import { parseDocument } from "yaml";
 import type { MetricsConfig } from "./metrics-internal-store";
 
 export type FileArtifactsData = {
+  // name used for the file. will not always be dependent on the file
+  name?: string;
   errors?: Array<V1ReconcileError>;
   jsonRepresentation?: MetricsConfig | Record<string, never>;
 };
@@ -36,6 +38,12 @@ const createOrUpdateFileArtifact = (
 };
 
 const fileArtifactsEntitiesReducers = {
+  setName(path: string, name: string) {
+    createOrUpdateFileArtifact(path, (entityData) => {
+      entityData.name = name;
+    });
+  },
+
   setErrors(affectedPaths: Array<string>, errors: Array<V1ReconcileError>) {
     const errorsForPaths = new Map<string, Array<V1ReconcileError>>();
     affectedPaths.forEach((affectedPath) =>

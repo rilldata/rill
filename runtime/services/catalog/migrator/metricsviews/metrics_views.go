@@ -42,8 +42,8 @@ func (m *metricsViewMigrator) Delete(ctx context.Context, olap drivers.OLAPStore
 	return nil
 }
 
-func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []string {
-	return []string{catalog.GetMetricsView().Model}
+func (m *metricsViewMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
+	return []string{catalog.GetMetricsView().Model}, nil
 }
 
 func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {

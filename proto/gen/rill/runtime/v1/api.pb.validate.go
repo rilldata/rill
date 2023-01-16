@@ -2632,6 +2632,8 @@ func (m *CatalogEntry) validate(all bool) error {
 
 	// no validation rules for Path
 
+	// no validation rules for Embedded
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:

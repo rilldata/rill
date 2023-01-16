@@ -15,7 +15,9 @@
   export let name: string;
   export let href: string;
   export let open = false;
-  export let notExpandable = false;
+  export let expandable = true;
+  export let tooltipMaxWidth: string = undefined;
+  export let maxMenuWidth: string = undefined;
 
   const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
@@ -57,7 +59,7 @@
     style:height="24px"
     class:font-bold={open}
     class:bg-gray-200={open}
-    class="navigation-entry-title grid gap-x-1 items-center pl-4 pr-3 {!open
+    class="navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!open
       ? 'hover:bg-gray-100'
       : ''}"
     style:grid-template-columns="max-content auto max-content"
@@ -68,8 +70,8 @@
   >
     <!-- slot for navigation click -->
 
-    <div class="mr-1">
-      {#if !notExpandable}
+    <div>
+      {#if expandable}
         <ExpanderButton
           bind:isHovered={seeMoreHovered}
           rotated={showDetails}
@@ -78,18 +80,29 @@
           <CaretDownIcon size="14px" />
         </ExpanderButton>
       {:else}
-        <Spacer size="16px" />
+        <Spacer size="14px" />
       {/if}
     </div>
 
     <a
-      class="ui-copy  text-ellipsis overflow-hidden whitespace-nowrap"
+      class="ui-copy flex items-center gap-x-1 w-full text-ellipsis overflow-hidden whitespace-nowrap"
       {href}
       on:click={() => {
         if (open) onShowDetails();
       }}
     >
-      {name}
+      {#if $$slots["icon"]}
+        <div class="text-gray-400" style:width="1em" style:height="1em">
+          <slot name="icon" />
+        </div>
+      {/if}
+      <div class:truncate={!$$slots["name"]} class="w-full">
+        {#if $$slots["name"]}
+          <slot name="name" />
+        {:else}
+          {name}
+        {/if}
+      </div>
     </a>
 
     <!-- context menu -->
@@ -122,6 +135,7 @@
       </span>
       <Menu
         dark
+        maxWidth={maxMenuWidth}
         on:click-outside={toggleFloatingElement}
         on:escape={toggleFloatingElement}
         on:item-select={toggleFloatingElement}
@@ -134,7 +148,9 @@
   <!-- if tooltip content is present in a slot, render the tooltip -->
   <div slot="tooltip-content" class:hidden={!$$slots["tooltip-content"]}>
     {#if $$slots["tooltip-content"]}
-      <TooltipContent><slot name="tooltip-content" /></TooltipContent>
+      <TooltipContent maxWidth={tooltipMaxWidth}
+        ><slot name="tooltip-content" /></TooltipContent
+      >
     {/if}
   </div>
 </Tooltip>
