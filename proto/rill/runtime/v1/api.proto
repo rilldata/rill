@@ -296,14 +296,14 @@ message PingResponse {
 // just a single instance.
 message Instance {
   // Identifier (UUID)
-  string instance_id = 1 [(validate.rules).string.min_len = 1];
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // Driver to connect to for OLAP (options: duckdb, druid)
-  string olap_driver = 2;
+  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
   // DSN for connection to OLAP
   string olap_dsn = 3;
   // Driver for reading/editing code artifacts (options: file, metastore).
   // This enables virtualizing a file system in a cloud setting.
-  string repo_driver = 4;
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
   // DSN for connecting to repo
   string repo_dsn = 5;
   // If true, the runtime will store the instance's catalog in its OLAP store instead
@@ -325,7 +325,7 @@ message ListInstancesResponse {
 
 // Request message for RuntimeService.GetInstance
 message GetInstanceRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
 }
 
 // Response message for RuntimeService.GetInstance
@@ -336,10 +336,10 @@ message GetInstanceResponse {
 // Request message for RuntimeService.CreateInstance.
 // See message Instance for field descriptions.
 message CreateInstanceRequest {
-  string instance_id = 1;
-  string olap_driver = 2;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
   string olap_dsn = 3;
-  string repo_driver = 4;
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
   string repo_dsn = 5;
   bool embed_catalog = 6;
 }
@@ -351,7 +351,7 @@ message CreateInstanceResponse {
 
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
 }
 
 // Response message for RuntimeService.DeleteInstance
@@ -363,7 +363,7 @@ message DeleteInstanceResponse {}
 
 // Request message for RuntimeService.ListFiles
 message ListFilesRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string glob = 2;
 }
 
@@ -374,7 +374,7 @@ message ListFilesResponse {
 
 // Request message for RuntimeService.GetFile
 message GetFileRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string path = 2;
 }
 
@@ -386,7 +386,7 @@ message GetFileResponse {
 
 // Request message for RuntimeService.PutFile
 message PutFileRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string path = 2;
   string blob = 3;
   // Create indicates whether to create the file if it doesn't already exist
@@ -403,7 +403,7 @@ message PutFileResponse {
 
 // Request message for RuntimeService.DeleteFile
 message DeleteFileRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string path = 2;
 }
 
@@ -412,7 +412,7 @@ message DeleteFileResponse {}
 
 // Request message for RuntimeService.RenameFile
 message RenameFileRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string from_path = 2;
   string to_path = 3;
 }
@@ -441,7 +441,7 @@ message CatalogEntry {
 
 // Request message for RuntimeService.ListCatalogEntries
 message ListCatalogEntriesRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   ObjectType type = 2;
 }
 
@@ -452,7 +452,7 @@ message ListCatalogEntriesResponse {
 
 // Request message for RuntimeService.GetCatalogEntry
 message GetCatalogEntryRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string name = 2;
 }
 
@@ -463,7 +463,7 @@ message GetCatalogEntryResponse {
 
 // Request message for RuntimeService.TriggerRefresh
 message TriggerRefreshRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   string name = 2;
 }
 
@@ -472,7 +472,7 @@ message TriggerRefreshResponse {}
 
 // Request message for RuntimeService.TriggerSync
 message TriggerSyncRequest {
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
 }
 
 // Response message for RuntimeService.TriggerSync
@@ -490,7 +490,7 @@ message TriggerSyncResponse {
 // Request message for RuntimeService.Reconcile
 message ReconcileRequest {
   // Instance to reconcile
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // Changed paths provides a way to "hint" what files have changed in the repo, enabling
   // reconciliation to execute faster by not scanning all code artifacts for changes.
   repeated string changed_paths = 2;
@@ -559,7 +559,7 @@ message ReconcileError {
 
 message PutFileAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // Path to store the file at
   string path = 2;
   // Contents to save to the file
@@ -590,7 +590,7 @@ message PutFileAndReconcileResponse {
 
 message DeleteFileAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // Path to store the file at
   string path = 2;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
@@ -613,7 +613,7 @@ message DeleteFileAndReconcileResponse {
 
 message RenameFileAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // Current path of the file
   string from_path = 2;
   // New path of the file
@@ -638,7 +638,7 @@ message RenameFileAndReconcileResponse {
 
 message RefreshAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // Current path of the file
   string path = 2;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
@@ -666,7 +666,7 @@ message RefreshAndReconcileResponse {
 // Request message for RuntimeService.Query
 message QueryRequest {
   // Instance to query
-  string instance_id = 1;
+  string instance_id = 1 [(validate.rules).string.uuid = true];
   // SELECT statement
   string sql = 2;
   // Args to interpolate into the statement

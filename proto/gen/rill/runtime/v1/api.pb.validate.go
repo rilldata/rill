@@ -35,6 +35,9 @@ var (
 	_ = sort.Sort
 )
 
+// define the regex for a UUID once up-front
+var _api_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 // Validate checks the field values on PingRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -286,10 +289,11 @@ func (m *Instance) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetInstanceId()) < 10 {
-		err := InstanceValidationError{
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = InstanceValidationError{
 			field:  "InstanceId",
-			reason: "value length must be at least 10 runes",
+			reason: "value must be a valid UUID",
+			cause:  err,
 		}
 		if !all {
 			return err
@@ -297,11 +301,29 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for OlapDriver
+	if _, ok := _Instance_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
+		err := InstanceValidationError{
+			field:  "OlapDriver",
+			reason: "value must be in list [duckdb druid]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for OlapDsn
 
-	// no validation rules for RepoDriver
+	if _, ok := _Instance_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
+		err := InstanceValidationError{
+			field:  "RepoDriver",
+			reason: "value must be in list [file metastore]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for RepoDsn
 
@@ -309,6 +331,14 @@ func (m *Instance) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *Instance) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -383,6 +413,16 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = InstanceValidationError{}
+
+var _Instance_OlapDriver_InLookup = map[string]struct{}{
+	"duckdb": {},
+	"druid":  {},
+}
+
+var _Instance_RepoDriver_InLookup = map[string]struct{}{
+	"file":      {},
+	"metastore": {},
+}
 
 // Validate checks the field values on ListInstancesRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -650,10 +690,28 @@ func (m *GetInstanceRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = GetInstanceRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetInstanceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetInstanceRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -885,13 +943,41 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = CreateInstanceRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for OlapDriver
+	if _, ok := _CreateInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
+		err := CreateInstanceRequestValidationError{
+			field:  "OlapDriver",
+			reason: "value must be in list [duckdb druid]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for OlapDsn
 
-	// no validation rules for RepoDriver
+	if _, ok := _CreateInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
+		err := CreateInstanceRequestValidationError{
+			field:  "RepoDriver",
+			reason: "value must be in list [file metastore]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for RepoDsn
 
@@ -899,6 +985,14 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *CreateInstanceRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -976,6 +1070,16 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreateInstanceRequestValidationError{}
+
+var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
+	"duckdb": {},
+	"druid":  {},
+}
+
+var _CreateInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
+	"file":      {},
+	"metastore": {},
+}
 
 // Validate checks the field values on CreateInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1130,10 +1234,28 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = DeleteInstanceRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeleteInstanceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DeleteInstanceRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1336,12 +1458,30 @@ func (m *ListFilesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = ListFilesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Glob
 
 	if len(errors) > 0 {
 		return ListFilesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListFilesRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1542,12 +1682,30 @@ func (m *GetFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = GetFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Path
 
 	if len(errors) > 0 {
 		return GetFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetFileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1777,7 +1935,17 @@ func (m *PutFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = PutFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Path
 
@@ -1789,6 +1957,14 @@ func (m *PutFileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return PutFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *PutFileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1989,12 +2165,30 @@ func (m *DeleteFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = DeleteFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Path
 
 	if len(errors) > 0 {
 		return DeleteFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DeleteFileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2197,7 +2391,17 @@ func (m *RenameFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = RenameFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for FromPath
 
@@ -2205,6 +2409,14 @@ func (m *RenameFileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return RenameFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RenameFileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2725,12 +2937,30 @@ func (m *ListCatalogEntriesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = ListCatalogEntriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Type
 
 	if len(errors) > 0 {
 		return ListCatalogEntriesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ListCatalogEntriesRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2967,12 +3197,30 @@ func (m *GetCatalogEntryRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = GetCatalogEntryRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return GetCatalogEntryRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetCatalogEntryRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3204,12 +3452,30 @@ func (m *TriggerRefreshRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = TriggerRefreshRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return TriggerRefreshRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *TriggerRefreshRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3412,10 +3678,28 @@ func (m *TriggerSyncRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = TriggerSyncRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return TriggerSyncRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *TriggerSyncRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3626,7 +3910,17 @@ func (m *ReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = ReconcileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Dry
 
@@ -3634,6 +3928,14 @@ func (m *ReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *ReconcileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4032,7 +4334,17 @@ func (m *PutFileAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = PutFileAndReconcileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Path
 
@@ -4048,6 +4360,14 @@ func (m *PutFileAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return PutFileAndReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *PutFileAndReconcileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4285,7 +4605,17 @@ func (m *DeleteFileAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = DeleteFileAndReconcileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Path
 
@@ -4295,6 +4625,14 @@ func (m *DeleteFileAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return DeleteFileAndReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *DeleteFileAndReconcileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4533,7 +4871,17 @@ func (m *RenameFileAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = RenameFileAndReconcileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for FromPath
 
@@ -4545,6 +4893,14 @@ func (m *RenameFileAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return RenameFileAndReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RenameFileAndReconcileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4783,7 +5139,17 @@ func (m *RefreshAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = RefreshAndReconcileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Path
 
@@ -4793,6 +5159,14 @@ func (m *RefreshAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return RefreshAndReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RefreshAndReconcileRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -5030,7 +5404,17 @@ func (m *QueryRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if err := m._validateUuid(m.GetInstanceId()); err != nil {
+		err = QueryRequestValidationError{
+			field:  "InstanceId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Sql
 
@@ -5074,6 +5458,14 @@ func (m *QueryRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return QueryRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *QueryRequest) _validateUuid(uuid string) error {
+	if matched := _api_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
 	}
 
 	return nil
