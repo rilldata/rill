@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -276,6 +278,10 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 		defer rows.Close()
 		results, err := rowsToData(rows)
+		if err != nil {
+			return nil, err
+		}
+
 		return results, nil
 	}
 
@@ -320,13 +326,17 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	}
 	defer rows.Close()
 	aggs, err := rowsToData(rows)
+	if err != nil {
+		return nil, err
+	}
+
 	results := make([]*structpb.Struct, 0, len(aggs)*4)
 	for _, v := range aggs {
 		addStruct(v, &results, "min_t", "argmin_tv")
 		addStruct(v, &results, "argmin_vt", "min_v")
 		addStruct(v, &results, "argmax_vt", "max_v")
 		addStruct(v, &results, "max_t", "argmax_tv")
-		if v.Fields["argmin_vt"].GetStringValue() > v.Fields["argmax_vt"].GetStringValue() {
+		if v.Fields["argmin_vt"].GetNumberValue() > v.Fields["argmax_vt"].GetNumberValue() {
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
@@ -334,11 +344,17 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	return results, nil
 }
 
-func addStruct(v *structpb.Struct, results *[]*structpb.Struct, key string, value string) {
+func addStruct(v *structpb.Struct, results *[]*structpb.Struct, key, value string) {
 	s := &structpb.Struct{
 		Fields: make(map[string]*structpb.Value, 3),
 	}
-	s.Fields["ts"] = v.Fields[key]
+
+	ts, err := pbutil.ToValue(time.UnixMilli(int64(v.Fields[key].GetNumberValue())))
+	if err != nil {
+		panic(err)
+	}
+
+	s.Fields["ts"] = ts
 	s.Fields["count"] = v.Fields[value]
 	s.Fields["bin"] = v.Fields["bin"]
 	*results = append(*results, s)
