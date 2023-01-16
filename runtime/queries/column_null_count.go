@@ -68,6 +68,12 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			return err
 		}
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	q.Result = count
 	return nil
 }

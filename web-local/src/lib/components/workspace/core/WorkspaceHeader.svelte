@@ -5,7 +5,6 @@
   import type { Writable } from "svelte/store";
 
   import { IconButton } from "@rilldata/web-common/components/button";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -62,6 +61,7 @@
       >
         <Tooltip
           distance={8}
+          alignment="start"
           bind:active={tooltipActive}
           suppress={editingTitle}
         >
@@ -69,6 +69,10 @@
             autocomplete="off"
             id="model-title-input"
             bind:this={titleInputElement}
+            on:focus={() => {
+              editingTitle = true;
+              titleInputValue = titleInput;
+            }}
             on:input={(evt) => {
               titleInputValue = evt.target.value;
               editingTitle = true;
@@ -83,9 +87,7 @@
             on:change={onChangeCallback}
           />
           <TooltipContent slot="tooltip-content">
-            <div class="flex items-center gap-x-2">
-              <EditIcon size=".75em" />Edit
-            </div>
+            <div class="flex items-center gap-x-2">Edit</div>
           </TooltipContent>
         </Tooltip>
       </h1>

@@ -341,6 +341,12 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
 	return results, nil
 }
 
