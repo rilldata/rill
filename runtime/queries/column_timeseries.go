@@ -422,9 +422,3 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 
 	return measures
 }
-
-func sMap(k string, v float64) map[string]float64 {
-	m := make(map[string]float64, 1)
-	m[k] = v
-	return m
-}
