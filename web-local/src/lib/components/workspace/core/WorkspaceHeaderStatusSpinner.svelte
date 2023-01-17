@@ -4,7 +4,7 @@
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/lib/entity";
 
-  let applicationStatus = 0;
+  export let applicationStatus = 0;
   let asTimer;
   function debounceStatus(status: EntityStatus) {
     clearTimeout(asTimer);
@@ -14,7 +14,7 @@
   }
 
   // TODO
-  $: debounceStatus(EntityStatus.Idle);
+  $: debounceStatus(applicationStatus);
 
   const applicationStatusTooltipMap = {
     [EntityStatus.Idle]: "Idle",
@@ -27,10 +27,10 @@
   $: applicationStatusTooltip = applicationStatusTooltipMap[applicationStatus];
 </script>
 
-<div>
+<div class="mr-2">
   <div class="text-gray-400">
     <Tooltip alignment="center" distance={16} location="left">
-      <Spinner size="20px" status={applicationStatus || EntityStatus.Idle} />
+      <Spinner size="18px" status={applicationStatus || EntityStatus.Idle} />
       <TooltipContent slot="tooltip-content"
         >{applicationStatusTooltip}
       </TooltipContent>

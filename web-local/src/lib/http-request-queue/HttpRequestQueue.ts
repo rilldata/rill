@@ -15,6 +15,7 @@ import {
   fetchWrapper,
   FetchWrapperOptions,
 } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { appQueryStatusStore } from "../application-state-stores/application-store";
 
 export const UrlExtractorRegex =
   /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
@@ -43,6 +44,8 @@ export class HttpRequestQueue {
   public constructor(private readonly urlBase: string) {}
 
   public add(requestOptions: FetchWrapperOptions) {
+    appQueryStatusStore.set(true);
+
     const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
     // prepend after parsing to make parsing faster
     requestOptions.url = `${this.urlBase}${requestOptions.url}`;
@@ -131,6 +134,8 @@ export class HttpRequestQueue {
   }
 
   private async popEntries() {
+    appQueryStatusStore.set(!!this.nameHeap.peek()?.name);
+
     while (!this.nameHeap.empty() && this.activeCount < QueryQueueSize) {
       const topNameEntry = this.nameHeap.peek();
       const entry = topNameEntry.queryHeap.pop();

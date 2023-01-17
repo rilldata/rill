@@ -11,3 +11,6 @@ export type RuntimeState = {
 export const runtimeStore = writable<RuntimeState>({
   instanceId: null,
 });
+
+// Store to show application running status based on Query Queue
+export const appQueryStatusStore = writable<boolean>(false);

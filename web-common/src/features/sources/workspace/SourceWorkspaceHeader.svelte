@@ -19,7 +19,10 @@
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    appQueryStatusStore,
+    runtimeStore,
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
@@ -224,7 +227,7 @@
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
     editable={!embedded}
     let:width
-    showStatus={false}
+    appRunning={$appQueryStatusStore}
   >
     <svelte:fragment slot="icon">
       <Source />

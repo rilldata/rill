@@ -11,10 +11,11 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/lib/entity";
 
   export let onChangeCallback;
   export let titleInput;
-  export let showStatus = true;
+  export let appRunning = true;
   export let editable = true;
   export let showInspectorToggle = true;
   export let width: number = undefined;
@@ -41,6 +42,8 @@
       titleInputElement.blur();
     }
   }
+
+  $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
 
   $: inputSize =
     Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
@@ -101,7 +104,9 @@
       </h1>
     {/if}
   </div>
+
   <div class="flex items-center mr-4">
+    <WorkspaceHeaderStatusSpinner {applicationStatus} />
     <slot name="workspace-controls" {width} />
     {#if showInspectorToggle}
       <IconButton
@@ -124,11 +129,9 @@
         </svelte:fragment>
       </IconButton>
     {/if}
+
     <div class="pl-4">
       <slot name="cta" {width} />
     </div>
-    {#if showStatus}
-      <WorkspaceHeaderStatusSpinner />
-    {/if}
   </div>
 </header>
