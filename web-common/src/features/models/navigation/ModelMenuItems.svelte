@@ -128,18 +128,12 @@
 </script>
 
 <MenuItem
-  disabled={!schemaHasTimestampColumn(model?.schema)}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
-  <svelte:fragment slot="description">
-    {#if !schemaHasTimestampColumn(model?.schema)}
-      Requires a timestamp column
-    {/if}
-  </svelte:fragment>
 </MenuItem>
 <Divider />
 <MenuItem

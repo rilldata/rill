@@ -50,10 +50,10 @@
 
 <svelte:window on:keydown={onKeydown} />
 <header
-  use:listenToNodeResize
-  style:height="var(--header-height)"
   class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
+  style:height="var(--header-height)"
+  use:listenToNodeResize
 >
   <div style:padding-left="{$navigationVisibilityTween * 24}px">
     {#if titleInput !== undefined && titleInput !== null}

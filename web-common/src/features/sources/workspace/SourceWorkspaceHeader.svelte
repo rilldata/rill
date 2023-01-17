@@ -37,7 +37,6 @@
     useAllNames,
     useCreateDashboardFromSource,
   } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
@@ -73,8 +72,7 @@
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
-  $: timestampColumns = selectTimestampColumnFromSchema(source?.schema);
-
+  let connector: string;
   $: connector = $getSource.data?.entry?.source.connector as string;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -144,7 +142,7 @@
       e.target.value = sourceName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, sourceName, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -285,24 +283,18 @@
           </TooltipContent>
         </Tooltip>
         {#if !embedded}
-          <Tooltip location="bottom" alignment="right" distance={16}>
+          <Tooltip alignment="right" distance={16} location="bottom">
             <Button
-              type="primary"
-              disabled={!timestampColumns?.length}
               on:click={() => handleCreateDashboardFromSource(sourceName)}
+              type="primary"
             >
-              <ResponsiveButtonText collapse={width < 1100}>
+              <ResponsiveButtonText collapse={width < 800}>
                 Create Dashboard
               </ResponsiveButtonText>
-
               <Explore size="16px" />
             </Button>
             <TooltipContent slot="tooltip-content">
-              {#if timestampColumns?.length}
-                Create a dashboard for this source
-              {:else}
-                This data source does not have a TIMESTAMP column
-              {/if}
+              Create a dashboard for this source
             </TooltipContent>
           </Tooltip>
         {/if}

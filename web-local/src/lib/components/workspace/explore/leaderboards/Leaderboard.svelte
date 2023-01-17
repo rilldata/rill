@@ -11,6 +11,7 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
@@ -92,6 +93,12 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
   function setLeaderboardValues(values) {
     dispatch("leaderboard-value", {
       dimensionName,
@@ -115,24 +122,34 @@
     $metaQuery?.isSuccess &&
     !$metaQuery?.isRefetching
   ) {
+    let topListParams = {
+      dimensionName: dimensionName,
+      measureNames: [measure.name],
+      limit: "250",
+      offset: "0",
+      sort: [
+        {
+          name: measure.name,
+          ascending: false,
+        },
+      ],
+      filter: filterForDimension,
+    };
+
+    if (hasTimeSeries) {
+      topListParams = {
+        ...topListParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
+
     topListQuery = useRuntimeServiceMetricsViewToplist(
       $runtimeStore.instanceId,
       metricViewName,
-      {
-        dimensionName: dimensionName,
-        measureNames: [measure.name],
-        limit: "250",
-        offset: "0",
-        sort: [
-          {
-            name: measure.name,
-            ascending: false,
-          },
-        ],
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-        filter: filterForDimension,
-      }
+      topListParams
     );
   }
 

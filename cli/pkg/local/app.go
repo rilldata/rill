@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/version"
@@ -36,6 +35,14 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
+type LogFormat string
+
+// Default log formats for logger
+const (
+	LogFormatConsole = "console"
+	LogFormatJSON    = "json"
+)
+
 // Default instance config on local.
 const (
 	DefaultInstanceID = "default"
@@ -57,15 +64,29 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string) (*App, error) {
-	// Setup a friendly-looking colored logger
-	conf := zap.NewDevelopmentEncoderConfig()
-	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(conf),
-		zapcore.AddSync(colorable.NewColorableStdout()),
-		zapcore.DebugLevel,
-	))
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat) (*App, error) {
+	// Setup a friendly-looking colored/json logger
+	var logger *zap.Logger
+	var err error
+	switch logFormat {
+	case LogFormatJSON:
+		cfg := zap.NewProductionConfig()
+		cfg.DisableStacktrace = true
+		cfg.Level.SetLevel(zapcore.DebugLevel)
+		logger, err = cfg.Build()
+	case LogFormatConsole:
+		encCfg := zap.NewDevelopmentEncoderConfig()
+		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger = zap.New(zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encCfg),
+			zapcore.AddSync(os.Stdout),
+			zapcore.DebugLevel,
+		))
+	}
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Set logging level
 	lvl := zap.InfoLevel
@@ -441,4 +462,15 @@ func cors(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+func ParseLogFormat(format string) (LogFormat, bool) {
+	switch format {
+	case "json":
+		return LogFormatJSON, true
+	case "console":
+		return LogFormatConsole, true
+	default:
+		return "", false
+	}
 }

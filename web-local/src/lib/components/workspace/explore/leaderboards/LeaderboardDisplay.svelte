@@ -6,7 +6,10 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
@@ -42,6 +45,12 @@
       (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
     );
 
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
   $: formatPreset =
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
@@ -53,14 +62,20 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    if (hasTimeSeries) {
+      totalsQueryParams = {
+        ...totalsQueryParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       $runtimeStore.instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 

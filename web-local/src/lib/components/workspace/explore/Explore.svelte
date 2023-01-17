@@ -3,6 +3,7 @@
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { useMetaQuery } from "../../../svelte-query/dashboards";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
@@ -10,7 +11,8 @@
   import ExploreHeader from "./ExploreHeader.svelte";
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
-  import MetricsTimeSeriesCharts from "./time-series-charts/MetricsTimeSeriesCharts.svelte";
+  import MeasuresContainer from "./metrics-container/MeasuresContainer.svelte";
+  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
 
   export let metricViewName: string;
 
@@ -22,17 +24,30 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-  $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
-
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
   $: if ($metaQuery.data) {
+    if (!$metaQuery.data?.measures?.length) {
+      goto(`/dashboard/${metricViewName}/edit`);
+    }
     metricsExplorerStore.sync(metricViewName, $metaQuery.data);
   }
-
   $: if ($metaQuery.isError) {
     goto(`/dashboard/${metricViewName}/edit`);
   }
+
+  let exploreContainerWidth;
+
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
+  $: gridConfig = hasTimeSeries
+    ? "560px minmax(355px, auto)"
+    : "max-content minmax(355px, auto)";
 </script>
 
 <WorkspaceContainer
@@ -41,9 +56,19 @@
   bgClass="bg-white"
   inspector={false}
 >
-  <ExploreContainer slot="body">
+  <ExploreContainer bind:exploreContainerWidth {gridConfig} slot="body">
     <ExploreHeader {metricViewName} slot="header" />
-    <MetricsTimeSeriesCharts {metricViewName} slot="metrics" />
+
+    <svelte:fragment slot="metrics">
+      {#key metricViewName}
+        {#if hasTimeSeries}
+          <MetricsTimeSeriesCharts {metricViewName} />
+        {:else}
+          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+        {/if}
+      {/key}
+    </svelte:fragment>
+
     <svelte:fragment slot="leaderboards">
       {#if selectedDimensionName}
         <DimensionDisplay

@@ -1,4 +1,7 @@
-import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
+import {
+  useRuntimeServiceGetFile,
+  useRuntimeServiceListFiles,
+} from "@rilldata/web-common/runtime-client";
 
 export function useModelNames(instanceId: string) {
   return useRuntimeServiceListFiles(
@@ -20,4 +23,14 @@ export function useModelNames(instanceId: string) {
       },
     }
   );
+}
+
+export function useModelFileIsEmpty(instanceId, modelName) {
+  return useRuntimeServiceGetFile(instanceId, `/models/${modelName}.sql`, {
+    query: {
+      select(data) {
+        return data?.blob?.length === 0;
+      },
+    },
+  });
 }

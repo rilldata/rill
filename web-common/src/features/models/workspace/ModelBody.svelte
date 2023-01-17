@@ -34,7 +34,7 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { modelIsEmpty } from "../utils/model-is-empty";
+  import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
 
@@ -57,7 +57,7 @@
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
-  $: modelEmpty = modelIsEmpty(runtimeInstanceId, modelName);
+  $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
