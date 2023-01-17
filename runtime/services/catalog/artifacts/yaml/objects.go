@@ -23,7 +23,7 @@ type Source struct {
 	GlobMaxTotalSize      int64  `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
 	GlobMaxObjectsMatched int    `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed  int64  `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
-	GlobPageSize          int    `yaml:"glob.page_size,omitempty"`
+	GlobPageSize          int    `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
 }
 
 type MetricsView struct {
