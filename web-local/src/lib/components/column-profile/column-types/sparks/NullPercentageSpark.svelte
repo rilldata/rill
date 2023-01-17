@@ -9,6 +9,7 @@
   export let type: string;
   export let nullCount: number;
   export let totalRows: number;
+  export let isFetching: boolean;
 
   $: percentage = nullCount / totalRows;
 </script>
@@ -21,12 +22,16 @@
       color={DATA_TYPE_COLORS[type]?.bgClass}
       value={percentage || 0}
     >
-      <span
-        style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
-        class="ui-copy-number"
-        class:text-gray-300={nullCount === 0}
-        >{singleDigitPercentage(percentage)}</span
-      >
+      {#if isFetching}
+        <span class="ui-copy-number text-gray-300">..%</span>
+      {:else}
+        <span
+          style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
+          class="ui-copy-number"
+          class:text-gray-300={nullCount === 0}
+          >{singleDigitPercentage(percentage)}</span
+        >
+      {/if}
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">
       <svelte:fragment slot="title">

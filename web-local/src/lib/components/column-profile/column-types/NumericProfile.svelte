@@ -99,6 +99,7 @@
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
   <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
     slot="nullity"
     totalRows={$nulls?.totalRows}
