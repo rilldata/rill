@@ -41,6 +41,7 @@ const (
 	DefaultInstanceID = "default"
 	DefaultOLAPDriver = "duckdb"
 	DefaultOLAPDSN    = "stage.db"
+	StrictFlag        = false
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -205,7 +206,7 @@ func (a *App) InitProject(exampleName string) error {
 	return nil
 }
 
-func (a *App) Reconcile() error {
+func (a *App) Reconcile(strict bool) error {
 	a.Logger.Infof("Hydrating project '%s'", a.ProjectPath)
 	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
 	if err != nil {
@@ -213,7 +214,6 @@ func (a *App) Reconcile() error {
 	}
 	if a.Context.Err() != nil {
 		a.Logger.Errorf("Hydration canceled")
-		return nil
 	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
@@ -223,6 +223,8 @@ func (a *App) Reconcile() error {
 	}
 	if len(res.Errors) == 0 {
 		a.Logger.Infof("Hydration completed!")
+	} else if strict {
+		a.Logger.Fatalf("Hydration failed with errors:%v", res.Errors)
 	} else {
 		a.Logger.Infof("Hydration failed")
 	}
