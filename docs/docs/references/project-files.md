@@ -21,7 +21,8 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
   - _`local_file`_ — a locally available file.
 
 **`uri`**
- —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_
+ —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_.
+ Additionally Rill also supports glob patterns as part of URI including recursive searches for s3 and gcs.
   - _`s3://your-org/bucket/file.parquet`_ —  the s3 URI of your file
   - _`gs://your-org/bucket/file.parquet`_ —  the gsutil URI of your file
   - _`https://data.example.org/path/to/file.parquet`_ —  the web address of your file
@@ -33,6 +34,19 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 **`region`**
  — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
   - _`us-east-1`_ —  the cloud region identifer
+
+**`glob.max_total_size`**
+ — Appplicable if the URI is a glob pattern. The max allowed total size(in bytes) of all objects matching the glob pattern.
+  - default value is _`10737418240 (10GB)`_
+
+**`glob.max_objects_matched`**
+ — Appplicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern.
+  - default value is _`100`_
+
+**`glob.max_objects_listed`**
+ — Appplicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
+
+  - default value is _`10,000`_
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 
