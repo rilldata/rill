@@ -134,7 +134,7 @@ export class HttpRequestQueue {
   }
 
   private async popEntries() {
-    appQueryStatusStore.set(!!this.nameHeap.peek()?.name);
+    appQueryStatusStore.set(!!this.activeCount);
 
     while (!this.nameHeap.empty() && this.activeCount < QueryQueueSize) {
       const topNameEntry = this.nameHeap.peek();
