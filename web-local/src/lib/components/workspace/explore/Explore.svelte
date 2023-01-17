@@ -1,21 +1,19 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
-
-  $: instanceId = $runtimeStore.instanceId;
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../application-state-stores/explorer-stores";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
-  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
   import MeasuresContainer from "./metrics-container/MeasuresContainer.svelte";
-  import ExploreContainer from "./ExploreContainer.svelte";
+  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
 
   export let metricViewName: string;
 

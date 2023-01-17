@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
@@ -40,6 +40,7 @@
     modelName
   );
   $: model = $getModel.data?.entry?.model;
+  $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   const queryClient = useQueryClient();
@@ -102,13 +103,21 @@
 </script>
 
 <Tooltip alignment="right" distance={16} location="bottom">
-  <Button on:click={handleCreateDashboard} type="primary">
-    <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
-    <Explore size="14px" /></Button
+  <Button
+    disabled={!timestampColumns?.length}
+    on:click={handleCreateDashboard}
+    type="primary"
   >
+    <Add />
+    <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
+  </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
+    {:else if timestampColumns?.length}
+      Generate a dashboard based on your model
+    {:else}
+      Add a timestamp column to your model in order to generate a dashboard
     {/if}
   </TooltipContent>
 </Tooltip>

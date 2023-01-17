@@ -2,7 +2,8 @@
   import { goto } from "$app/navigation";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -10,7 +11,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
-  import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceListCatalogEntries,
+    useRuntimeServiceRenameFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
@@ -45,6 +49,20 @@
 
   let contextMenuOpen = false;
 
+  $: availableDashboards = useRuntimeServiceListCatalogEntries(
+    $runtimeStore.instanceId,
+    { type: "OBJECT_TYPE_METRICS_VIEW" },
+    {
+      query: {
+        select(data) {
+          return data?.entries?.filter(
+            (entry) => entry?.metricsView?.model === modelName
+          );
+        },
+      },
+    }
+  );
+
   const onExport = async (exportExtension: "csv" | "parquet") => {
     // TODO: how do we handle errors ?
     window.open(
@@ -65,7 +83,7 @@
       e.target.value = modelName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, modelName, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -96,8 +114,8 @@
 </script>
 
 <WorkspaceHeader
-  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   let:width
+  {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   showStatus={false}
 >
   <svelte:fragment slot="workspace-controls">
@@ -126,21 +144,23 @@
       >
         <!-- attach floating element right here-->
         <WithTogglableFloatingElement
-          alignment="start"
+          alignment="end"
           bind:active={contextMenuOpen}
-          distance={16}
+          distance={8}
           let:toggleFloatingElement
-          location="left"
+          location="bottom"
         >
           <Button
             disabled={modelHasError}
             on:click={toggleFloatingElement}
             type="secondary"
           >
+            <div style:margin-left="-4px">
+              <CaretDownIcon />
+            </div>
             <ResponsiveButtonText collapse={width < 800}>
-              Export Results
+              Export
             </ResponsiveButtonText>
-            <Export size="14px" />
           </Button>
           <Menu
             dark
@@ -173,11 +193,32 @@
           {/if}
         </TooltipContent>
       </Tooltip>
-      <CreateDashboardButton
-        collapse={width < 800}
-        hasError={modelHasError}
-        {modelName}
-      />
+
+      {#if $availableDashboards?.data?.length === 0}
+        <CreateDashboardButton
+          collapse={width < 800}
+          hasError={modelHasError}
+          {modelName}
+        />
+      {:else if $availableDashboards?.data?.length === 1}
+        <Button
+          on:click={() => {
+            goto(`/dashboard/${$availableDashboards.data[0].name}`);
+          }}
+        >
+          <div style:margin-left="-4px"><Forward /></div>
+          Go to Dashboard
+        </Button>
+      {:else}
+        <Button
+          on:click={() => {
+            goto(`/dashboard/${$availableDashboards.data[0].name}`);
+          }}
+        >
+          <div style:margin-left="-4px"><Forward /></div>
+          Go to Dashboard
+        </Button>
+      {/if}
     </PanelCTA>
   </svelte:fragment>
 </WorkspaceHeader>
