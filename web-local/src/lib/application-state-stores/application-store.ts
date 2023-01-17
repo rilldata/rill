@@ -7,7 +7,9 @@ import { writable } from "svelte/store";
 
 export type RuntimeState = {
   instanceId: string;
+  readOnly: boolean;
 };
 export const runtimeStore = writable<RuntimeState>({
   instanceId: null,
+  readOnly: undefined,
 });

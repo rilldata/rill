@@ -11,10 +11,13 @@ export async function load({ params, url }) {
   /** If ?focus, tell the page to focus the editor as soon as available */
   const focusEditor = url.searchParams.get("focus") === "";
   try {
-    const localConfig = await runtimeServiceGetConfig();
+    const config = await runtimeServiceGetConfig();
+    if (config.readonly) {
+      throw error(404, "Page not found");
+    }
 
     await runtimeServiceGetFile(
-      localConfig.instance_id,
+      config.instance_id,
       getFilePathFromNameAndType(params.name, EntityType.Model)
     );
 

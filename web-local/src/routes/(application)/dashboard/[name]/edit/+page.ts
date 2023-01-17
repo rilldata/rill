@@ -10,11 +10,14 @@ import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  const localConfig = await runtimeServiceGetConfig();
+  const config = await runtimeServiceGetConfig();
+  if (config.readonly) {
+    throw error(404, "Page not found");
+  }
 
   try {
     await runtimeServiceGetFile(
-      localConfig.instance_id,
+      config.instance_id,
       getFilePathFromNameAndType(params.name, EntityType.MetricsDefinition)
     );
   } catch (err) {
@@ -26,7 +29,7 @@ export async function load({ params }) {
   }
 
   try {
-    await runtimeServiceGetCatalogEntry(localConfig.instance_id, params.name);
+    await runtimeServiceGetCatalogEntry(config.instance_id, params.name);
 
     return {
       metricsDefName: params.name,
