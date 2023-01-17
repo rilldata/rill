@@ -492,6 +492,23 @@ func TestReconcileMetricsView(t *testing.T) {
 	// dropping the timestamp column gives a different error
 	require.Equal(t, metricsviews.TimestampNotFound, result.Errors[0].Message)
 
+	// remove timestamp all together
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+dimensions:
+- label: Publisher
+  property: publisher
+- label: Domain
+  property: domain
+measures:
+- expression: count(*)
+- expression: avg(bid_price)
+`))
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// no error if timestamp is not set
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
@@ -508,7 +525,6 @@ timeseries: timestamp
 timegrains:
 - 1 day
 - 1 month
-default_timegrain: ""
 dimensions:
 - label: Publisher
   property: publisher
@@ -578,8 +594,8 @@ measures:
 	require.NoError(t, err)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
-	require.Equal(t, metricsviews.MissingDimension, result.Errors[0].Message)
+	// no error if there are no dimensions
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
 }
 
 func TestInvalidFiles(t *testing.T) {

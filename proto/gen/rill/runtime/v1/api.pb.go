@@ -1527,9 +1527,9 @@ type CatalogEntry struct {
 	Path   string                `protobuf:"bytes,6,opt,name=path,proto3" json:"path,omitempty"`
 	// Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
 	Embedded bool `protobuf:"varint,7,opt,name=embedded,proto3" json:"embedded,omitempty"`
-	// Immediate parent entries in the dag
+	// Immediate parent entries in the DAG
 	Parents []string `protobuf:"bytes,8,rep,name=parents,proto3" json:"parents,omitempty"`
-	// Immediate child entries in the dag
+	// Immediate child entries in the DAG
 	Children    []string               `protobuf:"bytes,9,rep,name=children,proto3" json:"children,omitempty"`
 	CreatedOn   *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_on,json=createdOn,proto3" json:"created_on,omitempty"`
 	UpdatedOn   *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=updated_on,json=updatedOn,proto3" json:"updated_on,omitempty"`

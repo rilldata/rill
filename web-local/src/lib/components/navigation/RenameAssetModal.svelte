@@ -20,7 +20,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtimeStore } from "../../application-state-stores/application-store";
-  import type { EntityType } from "../../temp/entity";
+  import type { EntityType } from "@rilldata/web-common/lib/entity";
 
   export let closeModal: () => void;
   export let entityType: EntityType;

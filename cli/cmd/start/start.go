@@ -20,12 +20,18 @@ func StartCmd(ver version.Version) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var strict bool
+	var logFormat string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
+			if !ok {
+				return fmt.Errorf("invalid log format %q", logFormat)
+			}
+
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat)
 			if err != nil {
 				return err
 			}
@@ -64,6 +70,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", local.StrictFlag, "Sets the reconcile level to strict")
+	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 
 	return startCmd
 }

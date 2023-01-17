@@ -6,17 +6,33 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 - the dataset's full time range (so its end time can be used in relative time ranges)
 -->
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTimeRangeSummary,
+    V1GetTimeRangeSummaryResponse,
+  } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import type {
     TimeGrain,
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-local/lib/temp/time-control-types";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
+  import { selectTimestampColumnFromSchema } from "../../../../svelte-query/column-selectors";
   import {
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
@@ -26,11 +42,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
-  import {
-    useRuntimeServiceGetTimeRangeSummary,
-    V1GetTimeRangeSummaryResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
 
   export let metricViewName: string;
 
@@ -42,9 +53,40 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   // query the `/meta` endpoint to get the all time range of the dataset
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
-  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
+
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
+  let modelQuery;
+  let timestampColumns: Array<string>;
 
   $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+    modelQuery = useRuntimeServiceGetCatalogEntry(
+      $runtimeStore.instanceId,
+      $metaQuery?.data?.model
+    );
+  }
+
+  $: if ($modelQuery && $modelQuery.isSuccess && !$modelQuery.isRefetching) {
+    const model = $modelQuery.data?.entry?.model;
+    timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  } else {
+    timestampColumns = [];
+  }
+
+  $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";
+
+  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
+
+  $: if (
+    metaQuery &&
+    $metaQuery.isSuccess &&
+    !$metaQuery.isRefetching &&
+    hasTimeSeries
+  ) {
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
       $metaQuery.data.model,
@@ -54,6 +96,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   let allTimeRange;
   $: if (
+    hasTimeSeries &&
     timeRangeQuery &&
     $timeRangeQuery.isSuccess &&
     !$timeRangeQuery.isRefetching
@@ -143,18 +186,46 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     selectedTimeGrain,
     allTimeRange
   );
+
+  function noTimeseriesCTA() {
+    if (timestampColumns?.length) {
+      goto(`/dashboard/${metricViewName}/edit`);
+    } else {
+      const modelName = $metaQuery.data?.model;
+      goto(`/model/${modelName}`);
+    }
+  }
 </script>
 
 <div class="flex flex-row">
-  <TimeRangeNameSelector
-    {allTimeRange}
-    {metricViewName}
-    on:select-time-range-name={setSelectedTimeRangeName}
-    {selectedTimeRangeName}
-  />
-  <TimeGrainSelector
-    on:select-time-grain={setSelectedTimeGrain}
-    {selectableTimeGrains}
-    {selectedTimeGrain}
-  />
+  {#if !hasTimeSeries}
+    <Tooltip location="bottom" distance={8}>
+      <div
+        on:click={() => noTimeseriesCTA()}
+        class="px-3 py-2 flex flex-row items-center gap-x-3 cursor-pointer"
+      >
+        <span class="ui-copy-icon"><Calendar size="16px" /></span>
+        <span class="ui-copy-disabled">No time dimension specified</span>
+      </div>
+      <TooltipContent slot="tooltip-content" maxWidth="250px">
+        Add a time dimension to your {redirectToScreen} to enable time series plots.
+        <TooltipShortcutContainer>
+          <div class="capitalize">Edit {redirectToScreen}</div>
+          <Shortcut>Click</Shortcut>
+        </TooltipShortcutContainer>
+      </TooltipContent>
+    </Tooltip>
+  {:else}
+    <TimeRangeNameSelector
+      {allTimeRange}
+      {metricViewName}
+      on:select-time-range-name={setSelectedTimeRangeName}
+      {selectedTimeRangeName}
+    />
+    <TimeGrainSelector
+      on:select-time-grain={setSelectedTimeGrain}
+      {selectableTimeGrains}
+      {selectedTimeGrain}
+    />
+  {/if}
 </div>

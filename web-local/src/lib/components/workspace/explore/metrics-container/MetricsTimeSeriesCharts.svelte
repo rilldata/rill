@@ -54,15 +54,17 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    const totalsQueryParams = {
+      measureNames: selectedMeasureNames,
+      filter: metricsExplorer?.filters,
+      timeStart: metricsExplorer.selectedTimeRange?.start,
+      timeEnd: metricsExplorer.selectedTimeRange?.end,
+    };
+
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        filter: metricsExplorer?.filters,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 
@@ -165,15 +167,17 @@
       </div>
       <!-- top axis element -->
       <div />
-      <SimpleDataGraphic
-        height={32}
-        top={34}
-        bottom={0}
-        xMin={startValue}
-        xMax={endValue}
-      >
-        <Axis superlabel side="top" />
-      </SimpleDataGraphic>
+      {#if metricsExplorer?.selectedTimeRange}
+        <SimpleDataGraphic
+          height={32}
+          top={34}
+          bottom={0}
+          xMin={startValue}
+          xMax={endValue}
+        >
+          <Axis superlabel side="top" />
+        </SimpleDataGraphic>
+      {/if}
     </div>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
@@ -198,7 +202,7 @@
           </svelte:fragment>
         </MeasureBigNumber>
         <div class="time-series-body" style:height="125px">
-          {#if $timeSeriesQuery.isError}
+          {#if $timeSeriesQuery?.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData}
             <TimeSeriesBody

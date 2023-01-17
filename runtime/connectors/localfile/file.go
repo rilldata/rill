@@ -3,7 +3,6 @@ package localfile
 import (
 	"context"
 	"fmt"
-	"path"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -55,10 +54,6 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	err := mapstructure.Decode(props, &conf)
 	if err != nil {
 		return nil, err
-	}
-
-	if conf.Format == "" {
-		conf.Format = path.Ext(conf.Path)
 	}
 
 	return conf, nil

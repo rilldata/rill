@@ -11,6 +11,8 @@
 
   $: allModels = useModelNames($runtimeStore.instanceId);
   function updateMetricsDefinitionHandler(sourceModelName) {
+    // Reset timeseries as some models might not have a timeseries
+    $metricsInternalRep.updateMetricKey("timeseries", "");
     $metricsInternalRep.updateMetricKey("model", sourceModelName);
   }
 </script>
