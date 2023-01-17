@@ -31,7 +31,7 @@
       e.target.value = metricsDefName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -61,13 +61,13 @@
 
 <WorkspaceHeader
   {...{ titleInput, onChangeCallback }}
-  showStatus={false}
   showInspectorToggle={false}
+  showStatus={false}
 >
   <MetricsIcon slot="icon" />
   <MetricsDefinitionExploreMetricsButton
-    slot="cta"
     {metricsDefName}
     {metricsInternalRep}
+    slot="cta"
   />
 </WorkspaceHeader>

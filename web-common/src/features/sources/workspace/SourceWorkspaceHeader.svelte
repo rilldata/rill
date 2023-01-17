@@ -142,7 +142,7 @@
       e.target.value = sourceName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, sourceName, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -291,7 +291,6 @@
               <ResponsiveButtonText collapse={width < 800}>
                 Create Dashboard
               </ResponsiveButtonText>
-
               <Explore size="16px" />
             </Button>
             <TooltipContent slot="tooltip-content">

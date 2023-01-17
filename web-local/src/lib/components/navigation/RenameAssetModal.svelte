@@ -3,6 +3,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
+  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndReconcile,
@@ -20,7 +21,6 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { runtimeStore } from "../../application-state-stores/application-store";
-  import type { EntityType } from "@rilldata/web-common/lib/entity";
 
   export let closeModal: () => void;
   export let entityType: EntityType;
@@ -54,7 +54,9 @@
         .notOneOf([currentAssetName], `That's the current name!`),
     }),
     onSubmit: async (values) => {
-      if (isDuplicateName(values.newName, $allNamesQuery.data)) {
+      if (
+        isDuplicateName(values.newName, currentAssetName, $allNamesQuery.data)
+      ) {
         error = `Name ${values.newName} is already in use`;
         return;
       }
