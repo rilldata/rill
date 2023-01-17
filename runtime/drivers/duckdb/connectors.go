@@ -51,7 +51,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 		format = value.(string)
 	}
 
-	from, err := getSourceReader(filenames, delimiter, format)
+	from, err := sourceReader(filenames, delimiter, format)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	from, err := getSourceReader(localPaths, conf.CSVDelimiter, conf.Format)
+	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func getSourceReader(paths []string, csvDelimiter, format string) (string, error) {
+func sourceReader(paths []string, csvDelimiter, format string) (string, error) {
 	if format == "" {
 		format = fileutil.FullExt(paths[0])
 	}
@@ -113,9 +113,9 @@ func getSourceReader(paths []string, csvDelimiter, format string) (string, error
 	}
 }
 
-func sourceReaderWithDelimiter(paths []string, delimitter string) string {
-	if delimitter == "" {
+func sourceReaderWithDelimiter(paths []string, delimiter string) string {
+	if delimiter == "" {
 		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','"))
 	}
-	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", strings.Join(paths, "','"), delimitter)
+	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", strings.Join(paths, "','"), delimiter)
 }

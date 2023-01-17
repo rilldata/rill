@@ -77,19 +77,19 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	scheme, bucket, glob, err := globutil.ParseURL(conf.Path)
+	url, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
 
-	if scheme != "gs" {
-		return nil, fmt.Errorf("invalid gcs path %s, should start with gs://", conf.Path)
+	if url.Scheme != "gs" {
+		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
 	}
 
-	bucket = fmt.Sprintf("gs://%s", bucket)
+	bucket := fmt.Sprintf("gs://%s", url.Host)
 	bucketObj, err := blob.OpenBucket(ctx, bucket)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", bucket, err)
 	}
 	defer bucketObj.Close()
 
@@ -99,5 +99,5 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, bucket)
 }

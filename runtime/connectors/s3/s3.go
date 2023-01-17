@@ -86,13 +86,13 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	scheme, bucket, glob, err := globutil.ParseURL(conf.Path)
+	url, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
 
-	if scheme != "s3" {
-		return nil, fmt.Errorf("invalid s3 path %s, should start with s3://", conf.Path)
+	if url.Scheme != "s3" {
+		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
 
 	sess, err := getAwsSessionConfig(conf)
@@ -100,9 +100,9 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
 
-	bucketObj, err := s3blob.OpenBucket(ctx, sess, bucket, nil)
+	bucketObj, err := s3blob.OpenBucket(ctx, sess, url.Host, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
 	defer bucketObj.Close()
 
@@ -112,7 +112,7 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
 }
 
 func getAwsSessionConfig(conf *Config) (*session.Session, error) {

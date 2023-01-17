@@ -18,7 +18,6 @@ var filesData = map[string][]byte{
 }
 
 func TestFetchFileNames(t *testing.T) {
-
 	bucket, err := prepareBucket()
 	require.NoError(t, err)
 
@@ -92,10 +91,8 @@ func TestFetchFileNames(t *testing.T) {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != len(tt.want) {
-				t.Errorf("got %v wanted %v number of files", len(got), len(tt.want))
-				return
-			}
+
+			require.Equal(t, len(tt.want), len(got))
 			for _, path := range got {
 				data, _ := os.ReadFile(path)
 				strContent := string(data)
