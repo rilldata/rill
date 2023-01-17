@@ -82,6 +82,8 @@ func TestCancel(t *testing.T) {
 
 	n := 100
 	cancelIdx := 50
+	cancelCh := make(chan struct{})
+
 	results := make(chan int, n)
 	var g errgroup.Group
 
@@ -94,9 +96,16 @@ func TestCancel(t *testing.T) {
 				cctx, cancel := context.WithCancel(ctx)
 				ctx = cctx
 				go func() {
-					time.Sleep(time.Millisecond)
+					// ensure the queue fills up before cancelling the context
+					time.Sleep(100 * time.Millisecond)
 					cancel()
+					cancelCh <- struct{}{}
 				}()
+			}
+
+			if priority == cancelIdx {
+				// wait until context is cancelled
+				<-cancelCh
 			}
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{

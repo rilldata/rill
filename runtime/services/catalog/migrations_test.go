@@ -10,6 +10,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -30,6 +31,7 @@ import (
 const TestDataPath = "../../../web-local/test/data"
 
 var AdBidsCsvPath = filepath.Join(TestDataPath, "AdBids.csv")
+var AdBidsCsvGzPath = filepath.Join(TestDataPath, "AdBids.csv.gz")
 var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
 var BrokenCsvPath = filepath.Join(TestDataPath, "BrokenCSV.csv")
 
@@ -37,7 +39,6 @@ const AdBidsRepoPath = "/sources/AdBids.yaml"
 const AdBidsNewRepoPath = "/sources/AdBidsNew.yaml"
 const AdBidsModelRepoPath = "/models/AdBids_model.sql"
 const AdBidsSourceModelRepoPath = "/models/AdBids_source_model.sql"
-const AdBidsSourceModelRepoPath2 = "/models/AdBids_source_model2.sql"
 const AdBidsDashboardRepoPath = "/dashboards/AdBids_dashboard.yaml"
 
 var AdBidsAffectedPaths = []string{AdBidsRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
@@ -317,7 +318,8 @@ func TestInterdependentModelCycle(t *testing.T) {
 			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 
 			require.NoError(t, err)
-			require.Contains(t, result.Errors[0].Message, `encountered circular dependency between "adbids_source_model" and "adbids_model"`)
+			//just checking the deterministic part of the error message
+			require.Contains(t, result.Errors[0].Message, `encountered circular dependency`)
 			// order of execution can make a difference here.
 			// so checking for exact response is not worth it
 			// testutils.AssertMigration(t, result, 4, 1, 1, 0, AdBidsSourceAffectedPaths)
@@ -471,7 +473,7 @@ func TestModelWithMissingSource(t *testing.T) {
 	// update source with same content
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
-		// force update to test DAG
+		// force update to test dag
 		ForcedPaths: []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
@@ -594,10 +596,19 @@ path:
 	require.Contains(t, result.Errors[0].Message, "yaml: unmarshal errors")
 
 	testutils.CreateSource(t, s, "Ad-Bids", "AdBids.csv", "/sources/Ad-Bids.yaml")
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		ChangedPaths: []string{"/sources/Ad-Bids.yaml"},
+	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{"/sources/Ad-Bids.yaml"})
-	require.Equal(t, "/sources/Ad-Bids.yaml", result.Errors[0].FilePath)
+	testutils.AssertMigration(
+		t,
+		result,
+		1,
+		0,
+		0,
+		0,
+		[]string{"/sources/Ad-Bids.yaml"},
+	)
 	require.Equal(t, "invalid file name", result.Errors[0].Message)
 }
 

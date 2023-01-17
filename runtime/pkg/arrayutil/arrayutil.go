@@ -1,6 +1,6 @@
 package arrayutil
 
-func Dedupe[E string | int](array []E) []E {
+func Dedupe[E comparable](array []E) []E {
 	var deduped []E
 	dedupeMap := make(map[E]bool)
 
@@ -15,11 +15,20 @@ func Dedupe[E string | int](array []E) []E {
 	return deduped
 }
 
-func Contains[E string | int](array []E, c E) bool {
+func Contains[E comparable](array []E, c E) bool {
 	for _, e := range array {
 		if e == c {
 			return true
 		}
 	}
 	return false
+}
+
+func Delete[E comparable](array []E, c E) []E {
+	for i, e := range array {
+		if e == c {
+			return append(array[0:i], array[i+1:]...)
+		}
+	}
+	return array
 }

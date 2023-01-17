@@ -25,6 +25,8 @@
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceName: string;
+  export let embedded = false;
+  export let path: string = undefined;
 
   const switchToSource = async (name: string) => {
     if (!name) return;
@@ -78,7 +80,12 @@
         $runtimeStore?.instanceId,
         $refreshSourceMutation,
         $createSource,
-        queryClient
+        queryClient,
+        source?.type === "s3" ||
+          source?.type === "gcs" ||
+          source?.type === "https"
+          ? source?.properties?.path
+          : sourceName
       );
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         $runtimeStore?.instanceId,
@@ -95,7 +102,7 @@
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
     <div slot="header">
-      <SourceWorkspaceHeader {sourceName} />
+      <SourceWorkspaceHeader {sourceName} {path} {embedded} />
     </div>
     <div
       slot="body"
