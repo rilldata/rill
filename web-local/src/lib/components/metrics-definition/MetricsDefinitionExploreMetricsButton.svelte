@@ -32,12 +32,9 @@
     );
   };
 
-  $: if (
-    $metricsInternalRep.getMetricKey("model") === "" ||
-    $metricsInternalRep.getMetricKey("timeseries") === ""
-  ) {
+  $: if ($metricsInternalRep.getMetricKey("model") === "") {
     buttonDisabled = true;
-    buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
+    buttonStatus = "MISSING_MODEL";
   } else if (
     // check if all the measures have a valid expression
     measures?.filter((measure) => measure?.expression?.length)?.length === 0 ||
@@ -63,8 +60,8 @@
   </Button>
   <TooltipContent slot="tooltip-content">
     <div>
-      {#if buttonStatus === "MISSING_MODEL_OR_TIMESTAMP"}
-        Select a model and a timestamp column before exploring metrics
+      {#if buttonStatus === "MISSING_MODEL"}
+        Select a model before exploring metrics
       {:else if buttonStatus === "MISSING_MEASURES_OR_DIMENSIONS"}
         Add measures and dimensions before exploring metrics
       {:else}
