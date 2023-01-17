@@ -6,13 +6,16 @@
   import { isMac } from "@rilldata/web-local/lib/util/os-detection";
 
   export let sourceName;
+  export let connector;
 </script>
 
 <TooltipTitle>
-  <svelte:fragment slot="name">
+  <div slot="name" class="break-all">
     {sourceName}
+  </div>
+  <svelte:fragment slot="description">
+    {connector}
   </svelte:fragment>
-  <svelte:fragment slot="description" />
 </TooltipTitle>
 <TooltipShortcutContainer>
   <div>

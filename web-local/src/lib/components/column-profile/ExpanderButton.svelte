@@ -30,7 +30,7 @@
     class="
     hover:bg-gray-300
     transition-tranform 
-    text-gray-500
+    text-gray-400
     duration-100
     grid
     items-center
