@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/version"
@@ -40,8 +39,8 @@ type LogFormat string
 
 // Default log formats for logger
 const (
-	LogFormatColor = "color"
-	LogFormatJSON  = "json"
+	LogFormatConsole = "console"
+	LogFormatJSON    = "json"
 )
 
 // Default instance config on local.
@@ -71,12 +70,16 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 	var err error
 	switch logFormat {
 	case LogFormatJSON:
-		logger, err = zap.NewProduction()
-	case LogFormatColor:
-		conf := zap.NewProductionEncoderConfig()
-		conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		logger = zap.New(zapcore.NewCore(zapcore.NewConsoleEncoder(conf),
-			zapcore.AddSync(colorable.NewColorableStdout()),
+		cfg := zap.NewProductionConfig()
+		cfg.DisableStacktrace = true
+		cfg.Level.SetLevel(zapcore.DebugLevel)
+		logger, err = cfg.Build()
+	case LogFormatConsole:
+		encCfg := zap.NewDevelopmentEncoderConfig()
+		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger = zap.New(zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encCfg),
+			zapcore.AddSync(os.Stdout),
 			zapcore.DebugLevel,
 		))
 	}
@@ -463,8 +466,8 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	switch format {
 	case "json":
 		return LogFormatJSON, true
-	case "color":
-		return LogFormatColor, true
+	case "console":
+		return LogFormatConsole, true
 	default:
 		return "", false
 	}

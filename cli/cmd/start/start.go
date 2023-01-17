@@ -24,12 +24,12 @@ func StartCmd(ver version.Version) *cobra.Command {
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			loggerFormat, ok := local.ParseLogFormat(logFormat)
+			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
-				return fmt.Errorf("invalid log format, logformat: %s", logFormat)
+				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, loggerFormat)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat)
 			if err != nil {
 				return err
 			}
@@ -66,7 +66,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for gRPC")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	startCmd.Flags().StringVar(&logFormat, "log-format", "color", "Sets the log format to color/json")
+	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 
 	return startCmd
 }
