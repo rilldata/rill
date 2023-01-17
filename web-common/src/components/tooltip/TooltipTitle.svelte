@@ -1,5 +1,5 @@
 <div
-  class="grid gap-x-2 items-center pt-1 pb-1"
+  class="grid gap-x-2 items-center pt-1 pb-1 items-baseline"
   style="grid-template-columns: auto max-content"
   style:min-width="200px"
 >

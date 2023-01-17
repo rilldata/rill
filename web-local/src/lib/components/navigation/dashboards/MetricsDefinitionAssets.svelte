@@ -201,7 +201,7 @@
         dashboardName
       )}
       <NavigationEntry
-        notExpandable={true}
+        expandable={false}
         name={dashboardName}
         href={`/dashboard/${dashboardName}`}
         open={$page.url.pathname === `/dashboard/${dashboardName}` ||
