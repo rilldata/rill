@@ -1,5 +1,5 @@
 import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
-import { Readable, writable } from "svelte/store";
+import { derived, Readable, writable } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { MetricsConfig } from "./metrics-internal-store";
 
@@ -104,6 +104,13 @@ export const fileArtifactsStore: FileArtifactsStore = {
   subscribe,
   ...fileArtifactsEntitiesReducers,
 };
+
+export function getIsFileReconcilingStore(file: string) {
+  return derived(
+    fileArtifactsStore,
+    ($store) => $store.entities[file]?.isReconciling
+  );
+}
 
 function correctFilePath(filePath: string) {
   // TODO: why does affectedPaths not have the leading /

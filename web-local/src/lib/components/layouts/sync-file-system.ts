@@ -15,11 +15,16 @@ import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
 import type { RuntimeState } from "../../application-state-stores/application-store";
-import type { FileArtifactsStore } from "../../application-state-stores/file-artifacts-store";
+import {
+  FileArtifactsStore,
+  getIsFileReconcilingStore,
+} from "../../application-state-stores/file-artifacts-store";
+import { overlay } from "../../application-state-stores/overlay-store";
 import { invalidateAfterReconcile } from "../../svelte-query/invalidation";
 import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 1000;
+const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 2000;
 
 export function syncFileSystemPeriodically(
   queryClient: QueryClient,
@@ -118,4 +123,27 @@ async function waitForRuntimeInstanceId(runtimeStore: Writable<RuntimeState>) {
     runtimeInstanceId = get(runtimeStore).instanceId;
   }
   return runtimeInstanceId;
+}
+
+export function addReconcilingOverlay(pagePath: string) {
+  if (pagePath === "/") return;
+
+  const filePath = getFilePathFromPagePath(pagePath);
+  const isFileReconcilingStore = getIsFileReconcilingStore(filePath);
+
+  // we debounce the overlay so that it doesn't flash on the screen for a split second
+  let delayedOverlayTimeout: NodeJS.Timeout;
+
+  isFileReconcilingStore.subscribe((isFileReconciling) => {
+    if (isFileReconciling) {
+      delayedOverlayTimeout = setTimeout(() => {
+        overlay.set({
+          title: `Reconciling ${filePath}`,
+        });
+      }, RECONCILE_OVERLAY_DELAY_MILLISECONDS);
+    } else {
+      clearTimeout(delayedOverlayTimeout);
+      overlay.set(null);
+    }
+  });
 }

@@ -23,7 +23,10 @@
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
-  import { syncFileSystemPeriodically } from "./sync-file-system";
+  import {
+    addReconcilingOverlay,
+    syncFileSystemPeriodically,
+  } from "./sync-file-system";
 
   const queryClient = createQueryClient();
 
@@ -54,6 +57,7 @@
     page,
     fileArtifactsStore
   );
+  $: addReconcilingOverlay($page.url.pathname);
 
   let dbRunState = "disconnected";
   let runstateTimer;
