@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -30,10 +31,6 @@ func TestQuery(t *testing.T) {
 }
 
 func TestPriorityQueue(t *testing.T) {
-	if testing.Short() {
-		t.Skip("duckdb: skipping test in short mode")
-	}
-
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
@@ -79,16 +76,14 @@ func TestPriorityQueue(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("duckdb: skipping test in short mode")
-	}
-
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
 
 	n := 100
 	cancelIdx := 50
+	cancelCh := make(chan struct{})
+
 	results := make(chan int, n)
 	var g errgroup.Group
 
@@ -101,9 +96,16 @@ func TestCancel(t *testing.T) {
 				cctx, cancel := context.WithCancel(ctx)
 				ctx = cctx
 				go func() {
-					time.Sleep(time.Millisecond)
+					// ensure the queue fills up before cancelling the context
+					time.Sleep(100 * time.Millisecond)
 					cancel()
+					cancelCh <- struct{}{}
 				}()
+			}
+
+			if priority == cancelIdx {
+				// wait until context is cancelled
+				<-cancelCh
 			}
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -147,10 +149,6 @@ func TestCancel(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	if testing.Short() {
-		t.Skip("duckdb: skipping test in short mode")
-	}
-
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 
@@ -186,7 +184,7 @@ func TestClose(t *testing.T) {
 	})
 
 	err := g.Wait()
-	require.Equal(t, drivers.ErrClosed, err)
+	require.Equal(t, errors.New("sql: database is closed"), err)
 
 	x := <-results
 	require.Greater(t, x, 0)

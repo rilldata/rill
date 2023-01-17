@@ -5,7 +5,6 @@
   import type { Writable } from "svelte/store";
 
   import { IconButton } from "@rilldata/web-common/components/button";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -16,11 +15,13 @@
   export let onChangeCallback;
   export let titleInput;
   export let showStatus = true;
+  export let editable = true;
   export let showInspectorToggle = true;
   export let width: number = undefined;
 
   let titleInputElement;
   let editingTitle = false;
+
   let titleInputValue;
   let tooltipActive;
 
@@ -49,31 +50,42 @@
 
 <svelte:window on:keydown={onKeydown} />
 <header
-  use:listenToNodeResize
-  style:height="var(--header-height)"
   class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
+  style:height="var(--header-height)"
+  use:listenToNodeResize
 >
   <div style:padding-left="{$navigationVisibilityTween * 24}px">
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"
-        class="grid grid-flow-col justify-start items-center gap-x-1"
+        class="w-full  overflow-x-hidden  grid grid-flow-col justify-start items-center gap-x-1"
       >
         <Tooltip
           distance={8}
+          alignment="start"
           bind:active={tooltipActive}
-          suppress={editingTitle}
+          suppress={editingTitle || !editable}
         >
           <input
             autocomplete="off"
+            disabled={!editable}
             id="model-title-input"
+            class:text-overflow-ellipsis={!editable}
             bind:this={titleInputElement}
-            on:input={(evt) => {
-              titleInputValue = evt.target.value;
+            on:focus={() => {
               editingTitle = true;
+              titleInputValue = titleInput;
             }}
-            class="bg-transparent border border-transparent border-2 hover:border-gray-400 rounded pl-2 pr-2 cursor-pointer"
+            on:input={(evt) => {
+              if (editable) {
+                titleInputValue = evt.target.value;
+                editingTitle = true;
+              }
+            }}
+            class="w-full text-overflow-ellipses whitespace-wrap bg-transparent border border-transparent border-2 {editable
+              ? 'hover:border-gray-400 cursor-pointer'
+              : ''} rounded pl-2 pr-2"
             class:font-bold={editingTitle === false}
             on:blur={() => {
               editingTitle = false;
@@ -83,9 +95,7 @@
             on:change={onChangeCallback}
           />
           <TooltipContent slot="tooltip-content">
-            <div class="flex items-center gap-x-2">
-              <EditIcon size=".75em" />Edit
-            </div>
+            <div class="flex items-center gap-x-2">Edit</div>
           </TooltipContent>
         </Tooltip>
       </h1>

@@ -12,6 +12,8 @@ export function getMapFromArray<T>(
   keyGetter: (entity: T) => string | number
 ): Map<string | number, T> {
   const map = new Map();
-  array.forEach((entity) => map.set(keyGetter(entity), entity));
+  for (const entity of array) {
+    map.set(keyGetter(entity), entity);
+  }
   return map;
 }

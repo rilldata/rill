@@ -90,6 +90,11 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 		res.Entries = append(res.Entries, entry)
 	}
 
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	// Save result
 	q.Result = res
 	return nil

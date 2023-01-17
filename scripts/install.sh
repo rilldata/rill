@@ -17,7 +17,6 @@ initPlatform() {
     fi
 }
 
-
 # Create a temporary directory and setup deletion on script exit using the 'EXIT' signal
 initTmpDir() {
     TMP_DIR=$(mktemp -d)
@@ -25,18 +24,21 @@ initTmpDir() {
     cd $TMP_DIR
 }
 
-# Check for dependent commands
-checkCommand() {
-    if ! command -v $1 &> /dev/null
-    then
-        echo "'$1' command not be found. This scripts depends on this command. Please install and retry."
-        exit
+# Ensure that dependency is installed and executable, exit and print help message if not
+checkDependency() {
+    if ! [ -x "$(command -v $1)" ]; then
+        printf "'$1' could not be found, this script depends on it, please install and try again.\n"
+        exit 1
     fi
 }
 
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
     CDN="cdn.rilldata.com"
+    LATEST_URL="https://${CDN}/rill/latest.txt"
+    if [ "${VERSION}" == "latest" ]; then
+        VERSION=$(curl --silent ${LATEST_URL})
+    fi
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
@@ -50,7 +52,7 @@ downloadBinary() {
     shasum --algorithm 256 --ignore-missing --check checksums.txt
 
     printf "\nUnpacking rill_${PLATFORM}.zip\n"
-    unzip rill_${PLATFORM}.zip
+    unzip -q rill_${PLATFORM}.zip
 }
 
 # Install the binary and ask for elevated permissions if needed
@@ -75,12 +77,13 @@ testInstalledBinary() {
 # Parse input flag
 case $1 in
     --nightly) VERSION=nightly;;
+    --version) VERSION=${2:-latest};;
     *) VERSION=latest;;
 esac
 
-checkCommand shasum
-checkCommand curl
-checkCommand unzip
+checkDependency curl
+checkDependency shasum
+checkDependency unzip
 initPlatform
 initTmpDir
 downloadBinary

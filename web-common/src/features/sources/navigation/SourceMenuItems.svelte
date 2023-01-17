@@ -63,6 +63,9 @@
   );
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
+  $: embedded = $getSource?.data?.entry?.embedded;
+  $: path = source?.properties?.path;
+
   $: sourceFromYaml = useSourceFromYaml(
     $runtimeStore.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
@@ -91,14 +94,15 @@
     toggleMenu();
   };
 
-  const handleCreateModel = async (tableName: string) => {
+  const handleCreateModel = async () => {
     try {
       const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
         queryClient,
         runtimeInstanceId,
         $modelNames.data,
-        tableName,
+        sourceName,
+        embedded ? `"${path}"` : sourceName,
         $createFileMutation
       );
 
@@ -162,7 +166,6 @@
       // TODO: show the import source modal with fixed tableName
       return;
     }
-
     try {
       await refreshSource(
         connector,
@@ -170,7 +173,10 @@
         runtimeInstanceId,
         $refreshSourceMutation,
         $createEntityMutation,
-        queryClient
+        queryClient,
+        connector === "s3" || connector === "gcs" || connector === "https"
+          ? source?.properties?.path
+          : sourceName
       );
 
       // invalidate the data preview (async)
@@ -196,18 +202,12 @@
 </MenuItem>
 
 <MenuItem
-  disabled={!schemaHasTimestampColumn(source?.schema)}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
-  <svelte:fragment slot="description">
-    {#if !schemaHasTimestampColumn(source?.schema)}
-      Requires a timestamp column
-    {/if}
-  </svelte:fragment>
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "local_file"}

@@ -1,11 +1,24 @@
+# This workflow runs full or nightly releases.
+# Full releases are published to brew, CDN (for install script), and Github Releases.
+# A full release gets its version number from the Git tag that triggered it.
+# Nightly releases are only published to CDN and do not have a version. Their version number is "nightly".
+# Caching of the release artifacts are intentionally disabled at the bucket level by setting the Cache-Control header of the objects to 'no-store',
+# this is done because the files are cached at the CDN layer instead and multiple caching layers makes invalidating the cache difficult.
+# The CDN cache is explicitly invalidated as part of the release process, to prevent old versions from being accidentally served after the release is done.
 name: Release Rill CLI
 on:
-  workflow_dispatch:
+  # Trigger a full release on new Git tag
   push:
     tags:
       - "**"
+  # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
+  # Trigger a nightly release manually
+  workflow_dispatch:
+env:
+  # PUBLISH_NIGHTLY becomes a string with values 'true' or 'false'
+  PUBLISH_NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
 jobs:
   release:
     name: Release rill-developer
@@ -46,7 +59,7 @@ jobs:
 
       - name: Release Publish
         run: |-
-          if [[ ${{ github.event_name }} == "schedule" ]]; then
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             export NIGHTLY="--snapshot"
           fi
 
@@ -68,29 +81,58 @@ jobs:
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      - name: Upload install script to CDN
+      - name: Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
+          headers: |-
+            cache-control: no-store
+
+      - name: Create latest version file
+        if: env.PUBLISH_NIGHTLY == 'false'
+        run: |-
+          echo '${{ github.ref_name }}' >> latest.txt
+
+      - name: Upload latest version file to CDN bucket
+        if: env.PUBLISH_NIGHTLY == 'false'
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: latest.txt
+          destination: prod-cdn.rilldata.com/rill/
+          headers: |-
+            cache-control: no-store
 
       - name: Publish nightly docker image
-        if: github.event_name == 'schedule'
+        if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
           docker tag rilldata/rill:latest rilldata/rill:nightly
           docker push rilldata/rill:nightly
 
       - name: Prepare for nightly GCS upload
-        if: github.event_name == 'schedule'
+        if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
           mkdir nightly
           cp dist/*.zip nightly/
           cp dist/checksums.txt nightly/
 
-      - name: Upload nightly to CDN
-        if: github.event_name == 'schedule'
+      - name: Upload nightly to CDN bucket
+        if: env.PUBLISH_NIGHTLY == 'true'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: nightly/
           destination: prod-cdn.rilldata.com/rill/
+          headers: |-
+            cache-control: no-store
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: Explicitly invalidate the old artifacts from CDN cache
+        run: |-
+          gcloud compute url-maps invalidate-cdn-cache prod --path "/install.sh" --async
+          gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/latest.txt" --async
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/nightly/*" --async
+          fi

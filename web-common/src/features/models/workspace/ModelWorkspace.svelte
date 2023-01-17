@@ -7,6 +7,7 @@
   import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
 
   export let modelName: string;
+  export let focusEditorOnMount = false;
 
   const switchToModel = async (modelName: string) => {
     if (!modelName) return;
@@ -23,7 +24,7 @@
       <ModelWorkspaceHeader {modelName} />
     </div>
     <div slot="body">
-      <ModelBody {modelName} />
+      <ModelBody {modelName} {focusEditorOnMount} />
     </div>
     <ModelInspector {modelName} slot="inspector" />
   </WorkspaceContainer>

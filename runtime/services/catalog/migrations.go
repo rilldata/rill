@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,8 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 
 	// Load migrators
@@ -21,33 +18,6 @@ import (
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
-)
-
-type MigrationItem struct {
-	Name                   string
-	NormalizedName         string
-	Path                   string
-	CatalogInFile          *drivers.CatalogEntry
-	CatalogInStore         *drivers.CatalogEntry
-	Type                   int
-	FromName               string
-	FromPath               string
-	NormalizedDependencies []string
-	Error                  *runtimev1.ReconcileError
-}
-
-func (i *MigrationItem) renameFrom(from *MigrationItem) {
-	i.Type = MigrationRename
-	i.FromName = from.Name
-	i.FromPath = from.Path
-}
-
-const (
-	MigrationNoChange int = 0
-	MigrationCreate   int = 1
-	MigrationRename   int = 2
-	MigrationUpdate   int = 3
-	MigrationDelete   int = 4
 )
 
 type ReconcileConfig struct {
@@ -115,13 +85,15 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	result := NewReconcileResult()
 
 	// collect repos and create migration items
-	migrationMap, err := s.collectRepos(ctx, conf, result)
+	migrationMap, reconcileErrors, err := s.getMigrationMap(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
+	result.Errors = reconcileErrors
 
 	// order the items to have parents before children
-	migrations := s.collectMigrationItems(migrationMap)
+	migrations, reconcileErrors := s.collectMigrationItems(migrationMap)
+	result.Errors = append(result.Errors, reconcileErrors...)
 
 	err = s.runMigrationItems(ctx, conf, migrations, result)
 	if err != nil {
@@ -131,319 +103,19 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	if !conf.DryRun {
 		// TODO: changes to the file will not be picked up if done while running migration
 		s.LastMigration = time.Now()
+		s.hasMigrated = true
 	}
 	result.collectAffectedPaths()
 	return result, nil
 }
 
-// convert repo paths to MigrationItem
-
-func (s *Service) collectRepos(ctx context.Context, conf ReconcileConfig, result *ReconcileResult) (map[string]*MigrationItem, error) {
-	// TODO: if the repo folder is source controlled we should leverage it to find changes
-	// TODO: ListRecursive needs some kind of cache or optimisation
-	repoPaths := conf.ChangedPaths
-	changedPathsHint := len(conf.ChangedPaths) > 0
-	changedPathsMap := make(map[string]bool)
-	if changedPathsHint {
-		for _, changedPath := range conf.ChangedPaths {
-			changedPathsMap[changedPath] = true
-		}
-	} else {
-		var err error
-		repoPaths, err = s.Repo.ListRecursive(ctx, s.InstID, "{sources,models,dashboards}/*.{sql,yaml,yml}")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	forcedPathMap := make(map[string]bool)
-	for _, forcedPath := range conf.ForcedPaths {
-		forcedPathMap[forcedPath] = true
-	}
-
-	storeObjectsMap := make(map[string]*drivers.CatalogEntry)
-	storeObjectsConsumed := make(map[string]bool)
-	storeObjects := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeUnspecified)
-	for _, storeObject := range storeObjects {
-		storeObjectsMap[strings.ToLower(storeObject.Name)] = storeObject
-	}
-
-	migrationMap := make(map[string]*MigrationItem)
-	deletions := make(map[string]*MigrationItem)
-	additions := make(map[string]*MigrationItem)
-
-	for _, repoPath := range repoPaths {
-		item := s.getMigrationItem(ctx, repoPath, storeObjectsMap, forcedPathMap)
-		if item == nil {
-			continue
-		}
-
-		keepNew, errPath := s.isInvalidDuplicate(migrationMap, changedPathsHint, changedPathsMap, item)
-		if errPath != "" {
-			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_UNSPECIFIED,
-				Message:  "item with same name exists",
-				FilePath: errPath,
-			})
-		}
-		if !keepNew {
-			continue
-		}
-
-		add := true
-		switch item.Type {
-		case MigrationCreate:
-			// if item is created compare with deletions to look for renames
-			found := false
-			for _, deletion := range deletions {
-				if migrator.IsEqual(ctx, item.CatalogInFile, deletion.CatalogInStore) {
-					item.renameFrom(deletion)
-					delete(deletions, deletion.NormalizedName)
-					delete(migrationMap, deletion.NormalizedName)
-					found = true
-					break
-				}
-			}
-			if !found {
-				additions[item.NormalizedName] = item
-			}
-
-		case MigrationDelete:
-			found := false
-			// if item is deleted compare with additions to look for renames
-			for _, addition := range additions {
-				if item.CatalogInStore != nil && migrator.IsEqual(ctx, addition.CatalogInFile, item.CatalogInStore) {
-					addition.renameFrom(item)
-					delete(additions, addition.NormalizedName)
-					add = false
-					found = true
-					break
-				}
-			}
-			if !found {
-				deletions[item.NormalizedName] = item
-			}
-		}
-
-		if add {
-			migrationMap[item.NormalizedName] = item
-		}
-		storeObjectsConsumed[item.NormalizedName] = true
-
-		if !changedPathsHint {
-			continue
-		}
-		// go through the children only if forced paths is false
-		children := s.dag.GetChildren(item.NormalizedName)
-		for _, child := range children {
-			childPath, ok := s.NameToPath[child]
-			if !ok || (changedPathsHint && changedPathsMap[childPath]) {
-				// if there is no entry for name to path or already in forced path then ignore the child
-				continue
-			}
-
-			childItem := s.getMigrationItem(ctx, childPath, storeObjectsMap, forcedPathMap)
-			if childItem == nil {
-				continue
-			}
-			migrationMap[childItem.NormalizedName] = childItem
-		}
-	}
-
-	for _, storeObject := range storeObjectsMap {
-		lowerStoreName := strings.ToLower(storeObject.Name)
-		// ignore consumed store objects
-		if storeObjectsConsumed[lowerStoreName] ||
-			// ignore tables and unspecified objects
-			storeObject.Type == drivers.ObjectTypeTable || storeObject.Type == drivers.ObjectTypeUnspecified {
-			continue
-		}
-		// if repo paths were forced and the catalog was not in the paths then ignore
-		if _, ok := changedPathsMap[storeObject.Path]; changedPathsHint && !ok {
-			continue
-		}
-		found := false
-		// find any additions that match and mark it as a MigrationRename
-		for _, addition := range additions {
-			if migrator.IsEqual(ctx, addition.CatalogInFile, storeObject) {
-				addition.Type = MigrationRename
-				addition.FromName = storeObject.Name
-				addition.FromPath = storeObject.Path
-				delete(additions, addition.NormalizedName)
-				found = true
-				break
-			}
-		}
-		// if no matching item is found, add as a MigrationDelete
-		if !found {
-			migrationMap[lowerStoreName] = &MigrationItem{
-				Name:           storeObject.Name,
-				NormalizedName: lowerStoreName,
-				Type:           MigrationDelete,
-				Path:           storeObject.Path,
-				CatalogInStore: storeObject,
-			}
-		}
-	}
-
-	return migrationMap, nil
-}
-
-func (s *Service) getMigrationItem(
-	ctx context.Context,
-	repoPath string,
-	storeObjectsMap map[string]*drivers.CatalogEntry,
-	forcedPathMap map[string]bool,
-) *MigrationItem {
-	item := &MigrationItem{
-		Type: MigrationNoChange,
-		Path: repoPath,
-	}
-
-	forceChange := forcedPathMap[repoPath]
-
-	catalog, err := artifacts.Read(ctx, s.Repo, s.InstID, repoPath)
-	if err != nil {
-		if !errors.Is(err, artifacts.ErrFileRead) {
-			item.Error = &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_SYNTAX,
-				Message:  err.Error(),
-				FilePath: repoPath,
-			}
-		}
-		name, ok := s.PathToName[repoPath]
-		if ok {
-			item.Name = name
-		} else {
-			item.Name = fileutil.Stem(repoPath)
-		}
-
-		item.Type = MigrationDelete
-	} else {
-		item.Name = catalog.Name
-		item.CatalogInFile = catalog
-
-		item.NormalizedDependencies = migrator.GetDependencies(ctx, s.Olap, catalog)
-		// convert dependencies to lower case
-		for i, dep := range item.NormalizedDependencies {
-			item.NormalizedDependencies[i] = strings.ToLower(dep)
-		}
-		repoStat, _ := s.Repo.Stat(ctx, s.InstID, repoPath)
-		catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstID, s.Repo, catalog)
-		if repoStat.LastUpdated.After(catalogLastUpdated) {
-			item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
-		} else {
-			item.CatalogInFile.UpdatedOn = catalogLastUpdated
-			// if catalog has changed in anyway then always re-create/update
-			forceChange = true
-		}
-		if item.CatalogInFile.UpdatedOn.After(s.LastMigration) {
-			// assume creation until we see a catalog object
-			item.Type = MigrationCreate
-		}
-	}
-	item.NormalizedName = strings.ToLower(item.Name)
-
-	catalogInStore, ok := storeObjectsMap[item.NormalizedName]
-
-	if item.Type == MigrationNoChange && forcedPathMap[repoPath] {
-		if ok {
-			item.Type = MigrationUpdate
-		} else {
-			item.Type = MigrationCreate
-		}
-	}
-
-	if !ok {
-		if item.CatalogInFile == nil {
-			item.Type = MigrationNoChange
-			if errors.Is(err, artifacts.ErrFileRead) {
-				// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
-				return nil
-			}
-		}
-		return item
-	}
-	item.CatalogInStore = catalogInStore
-	if item.Name != catalogInStore.Name && item.CatalogInFile != nil {
-		// rename with same name different case
-		item.FromName = catalogInStore.Name
-		item.Type = MigrationRename
-	}
-
-	switch item.Type {
-	case MigrationCreate:
-		if migrator.IsEqual(ctx, item.CatalogInFile, item.CatalogInStore) && !forceChange {
-			// if the actual content has not changed, mark as MigrationNoChange
-			item.Type = MigrationNoChange
-		} else {
-			// else mark as MigrationUpdate
-			item.Type = MigrationUpdate
-		}
-
-	case MigrationNoChange:
-		// if item doesn't exist in olap, mark as create
-		// happens when the catalog table is modified directly
-		ok, _ := migrator.ExistsInOlap(ctx, s.Olap, item.CatalogInFile)
-		if !ok {
-			item.Type = MigrationCreate
-		}
-	}
-
-	return item
-}
-
-// isInvalidDuplicate checks if one of the existing or a new item is invalid duplicate.
-func (s *Service) isInvalidDuplicate(
-	migrationMap map[string]*MigrationItem,
-	changedPathsHint bool,
-	changedPathsMap map[string]bool,
-	item *MigrationItem,
-) (bool, string) {
-	errPath := ""
-
-	existing, ok := migrationMap[item.NormalizedName]
-	if ok {
-		keepNew := false
-		if existing.Name != item.Name {
-			// where it is a MigrationRename with different case
-			// keep the one marked as rename
-			if item.Type == MigrationRename {
-				keepNew = true
-			}
-		} else {
-			// if existing item was deleted
-			if existing.Type == MigrationDelete ||
-				// or if the existing has error whereas new one doest
-				(item.Error != nil && existing.Error != nil) ||
-				// or if the existing file was updated after new (this makes it so that the old one will be retained)
-				(item.Error == nil && item.CatalogInFile != nil && existing.CatalogInFile != nil &&
-					existing.CatalogInFile.UpdatedOn.After(item.CatalogInFile.UpdatedOn)) {
-				// replace the existing with new
-				keepNew = true
-				errPath = existing.Path
-			} else {
-				errPath = item.Path
-			}
-		}
-		return keepNew, errPath
-	}
-
-	if changedPathsHint {
-		if existingPath, ok := s.NameToPath[item.NormalizedName]; ok && existingPath != item.Path && !changedPathsMap[existingPath] {
-			return false, item.Path
-		}
-	}
-
-	return true, errPath
-}
-
 // collectMigrationItems collects all valid MigrationItem
-// It will order the items based on DAG with parents coming before children.
+// It will order the items based on dag with parents coming before children.
 func (s *Service) collectMigrationItems(
 	migrationMap map[string]*MigrationItem,
-) []*MigrationItem {
+) ([]*MigrationItem, []*runtimev1.ReconcileError) {
 	migrationItems := make([]*MigrationItem, 0)
+	reconcileErrors := make([]*runtimev1.ReconcileError, 0)
 	visited := make(map[string]int)
 	update := make(map[string]bool)
 
@@ -452,7 +124,14 @@ func (s *Service) collectMigrationItems(
 	// TODO: is there a better way to do this?
 	tempDag := dag.NewDAG()
 	for name, migration := range migrationMap {
-		tempDag.Add(name, migration.NormalizedDependencies)
+		_, err := tempDag.Add(name, migration.NormalizedDependencies)
+		if err != nil {
+			reconcileErrors = append(reconcileErrors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_SOURCE,
+				Message:  err.Error(),
+				FilePath: migration.Path,
+			})
+		}
 	}
 
 	for name, item := range migrationMap {
@@ -465,7 +144,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					item.Type = MigrationUpdate
 				}
-			} else if _, ok := s.PathToName[item.Path]; ok {
+			} else if _, ok := s.NameToPath[item.NormalizedName]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -475,22 +154,36 @@ func (s *Service) collectMigrationItems(
 		visited[name] = len(migrationItems)
 		migrationItems = append(migrationItems, item)
 
+		newChildren := tempDag.GetDeepChildren(name)
+
+		if item.NewCatalog != nil && item.NewCatalog.Embedded {
+			if len(newChildren) == 0 {
+				// if embedded item's children is empty then delete it
+				item.Type = MigrationDelete
+			} else if item.Type == MigrationReportUpdate {
+				// do not update children for embedded sources that didn't change
+				continue
+			}
+		}
+
 		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
-			tempDag.GetChildren(name),
-			s.dag.GetChildren(name)...,
+			s.dag.GetDeepChildren(name),
+			newChildren...,
 		))
 		if item.FromName != "" {
 			children = append(children, arrayutil.Dedupe(append(
-				tempDag.GetChildren(strings.ToLower(item.FromName)),
-				s.dag.GetChildren(strings.ToLower(item.FromName))...,
+				s.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
+				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
 			))...)
 		}
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
-				// if not already visited, mark the child as needing update
-				update[child] = true
+				if item.Type != MigrationNoChange {
+					// if not already visited, mark the child as needing update
+					update[child] = true
+				}
 				continue
 			}
 
@@ -506,6 +199,9 @@ func (s *Service) collectMigrationItems(
 			}
 
 			migrationItems = append(migrationItems, childItem)
+			if item.Type == MigrationNoChange {
+				continue
+			}
 			if childItem.Type == MigrationNoChange || childItem.Error != nil {
 				// if the child has no change then mark it as update or create based on presence of catalog in store
 				if childItem.CatalogInStore == nil {
@@ -526,8 +222,10 @@ func (s *Service) collectMigrationItems(
 		cleanedMigrationItems = append(cleanedMigrationItems, migration)
 	}
 
-	return cleanedMigrationItems
+	return cleanedMigrationItems, reconcileErrors
 }
+
+// TODO: test changing source make an invalid model valid. should propagate validity to metrics
 
 // runMigrationItems runs various actions from MigrationItem based on MigrationItem.Type.
 func (s *Service) runMigrationItems(
@@ -562,11 +260,9 @@ func (s *Service) runMigrationItems(
 			// only run the actual migration if in dry run
 			switch item.Type {
 			case MigrationNoChange:
-				if _, ok := s.PathToName[item.NormalizedName]; !ok {
-					// this is perhaps an init. so populate cache data
-					s.PathToName[item.Path] = item.NormalizedName
-					s.NameToPath[item.NormalizedName] = item.Path
-					s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+				recErr := s.addToDag(item)
+				if recErr != nil {
+					result.Errors = append(result.Errors, recErr)
 				}
 			case MigrationCreate:
 				err = s.createInStore(ctx, item)
@@ -577,6 +273,15 @@ func (s *Service) runMigrationItems(
 			case MigrationUpdate:
 				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
+			case MigrationReportUpdate:
+				// only report the update
+				// UI needs to know when dag changed. we use this for now to notify it
+				// TODO: have a better way to notify UI of DAG changes
+				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
+				recErr := s.addToDag(item)
+				if recErr != nil {
+					result.Errors = append(result.Errors, recErr)
+				}
 			case MigrationDelete:
 				err = s.deleteInStore(ctx, item)
 				result.DroppedObjects = append(result.DroppedObjects, item.CatalogInStore)
@@ -603,6 +308,14 @@ func (s *Service) runMigrationItems(
 					FilePath: item.Path,
 				})
 			}
+			_, err = s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+			if err != nil {
+				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+					Code:     runtimev1.ReconcileError_CODE_OLAP,
+					Message:  err.Error(),
+					FilePath: item.Path,
+				})
+			}
 			if item.CatalogInFile != nil {
 				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
 				if err != nil {
@@ -623,17 +336,16 @@ func (s *Service) runMigrationItems(
 	return nil
 }
 
-// TODO: should we remove from dag if validation fails?
-// TODO: store only valid metrics view
-
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
-	s.PathToName[item.Path] = item.NormalizedName
-	// add the item to DAG
-	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	// add the item to dag
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return err
+	}
 
 	// create in olap
-	err := s.wrapMigrator(item.CatalogInFile, func() error {
+	err = s.wrapMigrator(item.CatalogInFile, func() error {
 		return migrator.Create(ctx, s.Olap, s.Repo, item.CatalogInFile)
 	})
 	if err != nil {
@@ -656,18 +368,17 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
 	fromLowerName := strings.ToLower(item.FromName)
 	delete(s.NameToPath, fromLowerName)
-
 	s.NameToPath[item.NormalizedName] = item.Path
-	delete(s.PathToName, item.FromPath)
-
-	s.PathToName[item.Path] = item.NormalizedName
 
 	// delete old item and add new item to dag
 	s.dag.Delete(fromLowerName)
-	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return err
+	}
 
 	// rename the item in olap
-	err := migrator.Rename(ctx, s.Olap, item.FromName, item.CatalogInFile)
+	err = migrator.Rename(ctx, s.Olap, item.FromName, item.CatalogInFile)
 	if err != nil {
 		return err
 	}
@@ -688,16 +399,20 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
 	s.NameToPath[item.NormalizedName] = item.Path
-	s.PathToName[item.Path] = item.NormalizedName
-	// add the item to DAG with new dependencies
-	s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
-
-	// update in olap
-	err := s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
-	})
+	// add the item to dag with new dependencies
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
+	}
+
+	// update in olap
+	if item.Type == MigrationUpdate {
+		err = s.wrapMigrator(item.CatalogInFile, func() error {
+			return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+		})
+		if err != nil {
+			return err
+		}
 	}
 	// update the catalog object and update it in store
 	catalog, err := s.updateCatalogObject(ctx, item)
@@ -709,7 +424,6 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
 	delete(s.NameToPath, item.NormalizedName)
-	delete(s.PathToName, item.FromPath)
 
 	// delete item from dag
 	s.dag.Delete(item.NormalizedName)
@@ -725,10 +439,8 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
-	repoStat, err := s.Repo.Stat(ctx, s.InstID, item.Path)
-	if err != nil {
-		return nil, err
-	}
+	// stat will not succeed for embedded entries
+	repoStat, _ := s.Repo.Stat(ctx, s.InstID, item.Path)
 
 	// convert protobuf to database object
 	catalogEntry := item.CatalogInFile
@@ -736,10 +448,12 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 
 	// set the UpdatedOn as LastUpdated from the artifact file
 	// this will allow to not reprocess unchanged files
-	catalogEntry.UpdatedOn = repoStat.LastUpdated
+	if repoStat != nil {
+		catalogEntry.UpdatedOn = repoStat.LastUpdated
+	}
 	catalogEntry.RefreshedOn = time.Now()
 
-	err = migrator.SetSchema(ctx, s.Olap, catalogEntry)
+	err := migrator.SetSchema(ctx, s.Olap, catalogEntry)
 	if err != nil {
 		return nil, err
 	}
@@ -764,4 +478,21 @@ func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() er
 		}
 	}
 	return err
+}
+
+func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
+	if _, ok := s.NameToPath[item.NormalizedName]; ok {
+		return nil
+	}
+	// this is perhaps an init. so populate cache data
+	s.NameToPath[item.NormalizedName] = item.Path
+	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	if err != nil {
+		return &runtimev1.ReconcileError{
+			Code:     runtimev1.ReconcileError_CODE_SOURCE,
+			Message:  err.Error(),
+			FilePath: item.Path,
+		}
+	}
+	return nil
 }

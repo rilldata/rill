@@ -1,31 +1,45 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import {
+    embeddedSourcesError,
+    filterKnownEmbeddedSources,
+  } from "@rilldata/web-common/features/models/utils/embedded";
+  import {
+    getEmbeddedReferences,
+    Reference,
+  } from "@rilldata/web-common/features/models/utils/get-table-references";
+  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
+    V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
+  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
 
   export let modelName: string;
+  export let focusEditorOnMount = false;
 
   const queryClient = useQueryClient();
 
@@ -43,11 +57,22 @@
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
+  $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
+
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
 
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
+
+  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
+  $: embeddedSourceCatalogs = getMapFromArray(
+    $sourceCatalogsQuery?.data ?? [],
+    (entity) => entity.source.properties.path?.toLowerCase()
+  ) as Map<string, V1CatalogEntry>;
+
+  let embeddedSourceErrors: Array<string>;
 
   const outputLayout = getContext("rill:app:output-layout");
   const outputPosition = getContext("rill:app:output-height-tween");
@@ -73,41 +98,63 @@
 
   async function updateModelContent(content: string) {
     const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
+    let overlayShown = false;
+    let embeddedSources: Array<Reference> = [];
 
-    if (hasChanged) {
-      httpRequestQueue.removeByName(modelName);
-      // cancel all existing analytical queries currently running.
-      await queryClient.cancelQueries({
-        fetching: true,
-        predicate: (query) => {
-          return invalidationForProfileQueries(query.queryHash, modelName);
+    try {
+      if (hasChanged) {
+        embeddedSources = getEmbeddedReferences(sanitizeQuery(content));
+        const unknownEmbeddedSources = filterKnownEmbeddedSources(
+          embeddedSources,
+          embeddedSourceCatalogs
+        );
+        if (unknownEmbeddedSources.length > 0) {
+          overlay.set({
+            title: `Caching ${unknownEmbeddedSources.join(",")}`,
+          });
+          overlayShown = true;
+        }
+
+        httpRequestQueue.removeByName(modelName);
+        // cancel all existing analytical queries currently running.
+        await queryClient.cancelQueries({
+          fetching: true,
+          predicate: (query) => {
+            return invalidationForProfileQueries(query.queryHash, modelName);
+          },
+        });
+      }
+
+      // TODO: why is the response type not present?
+      const resp = (await $updateModel.mutateAsync({
+        data: {
+          instanceId: runtimeInstanceId,
+          path: modelPath,
+          blob: content,
         },
-      });
+      })) as V1PutFileAndReconcileResponse;
+
+      embeddedSourceErrors = embeddedSourcesError(resp.errors, embeddedSources);
+      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+      if (!resp.errors.length && hasChanged) {
+        sanitizedQuery = sanitizeQuery(content);
+      }
+      await invalidateAfterReconcile(
+        queryClient,
+        $runtimeStore.instanceId,
+        resp
+      );
+    } catch (err) {
+      console.error(err);
     }
 
-    // TODO: why is the response type not present?
-    const resp = (await $updateModel.mutateAsync({
-      data: {
-        instanceId: runtimeInstanceId,
-        path: modelPath,
-        blob: content,
-      },
-    })) as V1PutFileAndReconcileResponse;
-
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    if (!resp.errors.length && hasChanged) {
-      sanitizedQuery = sanitizeQuery(content);
+    if (overlayShown) {
+      overlay.set(null);
     }
-    return invalidateAfterReconcile(
-      queryClient,
-      $runtimeStore.instanceId,
-      resp
-    );
   }
-
   $: selections = $queryHighlight?.map((selection) => ({
-    from: selection.referenceIndex,
-    to: selection.referenceIndex + selection.reference.length,
+    from: selection?.referenceIndex,
+    to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 </script>
 
@@ -125,6 +172,7 @@
             {modelName}
             content={modelSql}
             {selections}
+            focusOnMount={focusEditorOnMount}
             on:write={(evt) => updateModelContent(evt.detail.content)}
           />
         {/key}
@@ -171,7 +219,9 @@
           "
           class="relative h-full"
         >
-          <ConnectedPreviewTable objectName={modelName} />
+          {#if !$modelEmpty?.data}
+            <ConnectedPreviewTable objectName={modelName} />
+          {/if}
         </div>
         <!--TODO {:else}-->
         <!--  <div-->
@@ -181,12 +231,18 @@
         <!--  </div>-->
         <!--{/if}-->
       </div>
-      {#if modelError}
+      {#if embeddedSourceErrors?.length || modelError}
         <div
           transition:slide={{ duration: 200 }}
           class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
         >
-          {modelError}
+          {#if embeddedSourceErrors?.length}
+            {#each embeddedSourceErrors as embeddedSourceError}
+              {embeddedSourceError}<br />
+            {/each}
+          {:else}
+            {modelError}
+          {/if}
         </div>
       {/if}
     </div>

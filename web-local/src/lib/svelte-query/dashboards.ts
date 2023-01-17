@@ -44,6 +44,11 @@ export const useMetaQuery = <T = V1MetricsView>(
   });
 };
 
+export const useModelHasTimeSeries = (
+  instanceId: string,
+  metricViewName: string
+) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+
 export const useMetaMeasure = (
   instanceId: string,
   metricViewName: string,

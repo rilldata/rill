@@ -10,6 +10,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
@@ -30,6 +31,7 @@ import (
 const TestDataPath = "../../../web-local/test/data"
 
 var AdBidsCsvPath = filepath.Join(TestDataPath, "AdBids.csv")
+var AdBidsCsvGzPath = filepath.Join(TestDataPath, "AdBids.csv.gz")
 var AdImpressionsCsvPath = filepath.Join(TestDataPath, "AdImpressions.tsv")
 var BrokenCsvPath = filepath.Join(TestDataPath, "BrokenCSV.csv")
 
@@ -294,6 +296,48 @@ func TestInterdependentModel(t *testing.T) {
 	}
 }
 
+func TestInterdependentModelCycle(t *testing.T) {
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+	}
+
+	AdBidsSourceAffectedPaths := []string{AdBidsSourceModelRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, _ := initBasicService(t)
+
+			testutils.CreateModel(t, s, "AdBids_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
+			// Adding source with circular dependencies
+			testutils.CreateModel(t, s, "AdBids_source_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids_model", AdBidsSourceModelRepoPath)
+			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+
+			require.NoError(t, err)
+			//just checking the deterministic part of the error message
+			require.Contains(t, result.Errors[0].Message, `encountered circular dependency`)
+			// order of execution can make a difference here.
+			// so checking for exact response is not worth it
+			// testutils.AssertMigration(t, result, 4, 1, 1, 0, AdBidsSourceAffectedPaths)
+			require.ElementsMatch(t, result.AffectedPaths, AdBidsSourceAffectedPaths)
+
+			// removing the circular dependencies by updating model
+			testutils.CreateModel(t, s, "AdBids_source_model",
+				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
+			result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+			require.NoError(t, err)
+			// based on previous run this can change as well
+			// testutils.AssertMigration(t, result, 0, 2, 1, 0, AdBidsSourceAffectedPaths)
+			require.Len(t, result.Errors, 0)
+			require.ElementsMatch(t, result.AffectedPaths, AdBidsSourceAffectedPaths)
+		})
+	}
+}
+
 func TestModelRename(t *testing.T) {
 	var AdBidsRenameModelRepoPath = "/models/AdBidsRename.sql"
 	var AdBidsRenameNewModelRepoPath = "/models/AdBidsRenameNew.sql"
@@ -429,7 +473,7 @@ func TestModelWithMissingSource(t *testing.T) {
 	// update source with same content
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
-		// force update to test DAG
+		// force update to test dag
 		ForcedPaths: []string{AdBidsRepoPath},
 	})
 	require.NoError(t, err)
@@ -448,6 +492,23 @@ func TestReconcileMetricsView(t *testing.T) {
 	// dropping the timestamp column gives a different error
 	require.Equal(t, metricsviews.TimestampNotFound, result.Errors[0].Message)
 
+	// remove timestamp all together
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+dimensions:
+- label: Publisher
+  property: publisher
+- label: Domain
+  property: domain
+measures:
+- expression: count(*)
+- expression: avg(bid_price)
+`))
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// no error if timestamp is not set
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+
 	testutils.CreateModel(t, s, "AdBids_model", "select id, timestamp, publisher from AdBids", AdBidsModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
@@ -464,7 +525,6 @@ timeseries: timestamp
 timegrains:
 - 1 day
 - 1 month
-default_timegrain: ""
 dimensions:
 - label: Publisher
   property: publisher
@@ -534,8 +594,8 @@ measures:
 	require.NoError(t, err)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
-	require.Equal(t, metricsviews.MissingDimension, result.Errors[0].Message)
+	// no error if there are no dimensions
+	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
 }
 
 func TestInvalidFiles(t *testing.T) {
@@ -552,10 +612,19 @@ path:
 	require.Contains(t, result.Errors[0].Message, "yaml: unmarshal errors")
 
 	testutils.CreateSource(t, s, "Ad-Bids", "AdBids.csv", "/sources/Ad-Bids.yaml")
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
+		ChangedPaths: []string{"/sources/Ad-Bids.yaml"},
+	})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{"/sources/Ad-Bids.yaml"})
-	require.Equal(t, "/sources/Ad-Bids.yaml", result.Errors[0].FilePath)
+	testutils.AssertMigration(
+		t,
+		result,
+		1,
+		0,
+		0,
+		0,
+		[]string{"/sources/Ad-Bids.yaml"},
+	)
 	require.Equal(t, "invalid file name", result.Errors[0].Message)
 }
 

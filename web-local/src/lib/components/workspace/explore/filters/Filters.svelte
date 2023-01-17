@@ -17,7 +17,10 @@ The main feature-set component for dashboard filters
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -59,35 +62,51 @@ The main feature-set component for dashboard filters
   let searchedValues = [];
   let activeDimensionName;
 
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
   $: addNull = "null".includes(searchText);
 
   $: if (activeDimensionName) {
     if (searchText == "") {
       searchedValues = [];
     } else {
+      let topListParams = {
+        dimensionName: activeDimensionName,
+        limit: "15",
+        offset: "0",
+        sort: [],
+        filter: {
+          include: [
+            {
+              name: activeDimensionName,
+              in: addNull ? [null] : [],
+              like: [`%${searchText}%`],
+            },
+          ],
+          exclude: [],
+        },
+      };
+
+      if (hasTimeSeries) {
+        topListParams = {
+          ...topListParams,
+          ...{
+            timeStart: metricsExplorer?.selectedTimeRange?.start,
+            timeEnd: metricsExplorer?.selectedTimeRange?.end,
+          },
+        };
+      }
+
       // Use topList API to fetch the dimension names
       // We prune the measure values and use the dimension labels for the filter
       topListQuery = useRuntimeServiceMetricsViewToplist(
         $runtimeStore.instanceId,
         metricViewName,
-        {
-          dimensionName: activeDimensionName,
-          limit: "15",
-          offset: "0",
-          sort: [],
-          timeStart: metricsExplorer?.selectedTimeRange?.start,
-          timeEnd: metricsExplorer?.selectedTimeRange?.end,
-          filter: {
-            include: [
-              {
-                name: activeDimensionName,
-                in: addNull ? [null] : [],
-                like: [`%${searchText}%`],
-              },
-            ],
-            exclude: [],
-          },
-        }
+        topListParams
       );
     }
   }

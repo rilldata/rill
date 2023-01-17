@@ -14,7 +14,7 @@
     {#key isFetching}
       <div
         class="absolute m-auto grid place-items-center"
-        transition:fade={{ duration: LIST_SLIDE_DURATION }}
+        transition:fade|local={{ duration: LIST_SLIDE_DURATION }}
         style:width="16px"
         style:height="16px"
       >

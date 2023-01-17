@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -104,4 +105,43 @@ func CopyEmbedDir(fs embed.FS, src, dst string) error {
 	}
 
 	return nil
+}
+
+// IsGlob reports whether path contains any of the magic characters
+// recognized by path.Match.
+func IsGlob(path string) bool {
+	for i := 0; i < len(path); i++ {
+		switch path[i] {
+		case '*', '?', '[', '\\', '{':
+			return true
+		}
+	}
+	return false
+}
+
+// ForceRemoveFiles deletes multiple files
+// ignores path errors if any
+func ForceRemoveFiles(paths []string) {
+	for _, path := range paths {
+		_ = os.Remove(path)
+	}
+}
+
+func ExpandHome(path string) (string, error) {
+	if path == "" || path[0] != '~' {
+		return path, nil
+	}
+	if len(path) > 1 && path[1] != '/' {
+		return path, nil
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	if usr.HomeDir == "" {
+		return "", fmt.Errorf("cannot expand '~' in path %q because the current user doesn't have a home directory", path)
+	}
+
+	return filepath.Join(usr.HomeDir, path[1:]), nil
 }

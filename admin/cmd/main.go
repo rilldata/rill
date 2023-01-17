@@ -7,12 +7,12 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-
 	"github.com/rilldata/rill/admin/database"
-	_ "github.com/rilldata/rill/admin/database/postgres"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"go.uber.org/zap"
+
+	_ "github.com/rilldata/rill/admin/database/postgres"
 )
 
 type Config struct {

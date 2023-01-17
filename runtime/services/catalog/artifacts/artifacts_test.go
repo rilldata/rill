@@ -57,8 +57,8 @@ csv.delimiter: '|'
 					Name:      "S3Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":       "s3://bucket/path/file.csv",
-						"aws.region": "us-east-2",
+						"path":   "s3://bucket/path/file.csv",
+						"region": "us-east-2",
 					}),
 				},
 			},
