@@ -76,6 +76,12 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 			if !changedPathsHint {
 				continue
 			}
+
+			if item.Type == MigrationNoChange && item.CatalogInStore == nil && changedPathsMap[repoPath] {
+				// new file added adhoc
+				item.Type = MigrationCreate
+			}
+
 			// go through the children only if forced paths is false
 			children := s.dag.GetDeepChildren(item.NormalizedName)
 			for _, child := range children {
