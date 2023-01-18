@@ -155,7 +155,10 @@
             on:click={toggleFloatingElement}
             type="secondary"
           >
-            <div style:margin-left="-4px">
+            <div
+              style:margin-left="-4px"
+              style:margin-right={width < 800 ? "-4px" : undefined}
+            >
               <CaretDownIcon />
             </div>
             <ResponsiveButtonText collapse={width < 800}>
@@ -206,18 +209,46 @@
             goto(`/dashboard/${$availableDashboards.data[0].name}`);
           }}
         >
-          <div style:margin-left="-4px"><Forward /></div>
-          Go to Dashboard
+          <div
+            style:margin-left="-4px"
+            style:margin-right={width < 800 ? "-4px" : undefined}
+          >
+            <Forward />
+          </div>
+          <ResponsiveButtonText collapse={width < 800}>
+            Go to Dashboard
+          </ResponsiveButtonText>
         </Button>
       {:else}
-        <Button
-          on:click={() => {
-            goto(`/dashboard/${$availableDashboards.data[0].name}`);
-          }}
+        <WithTogglableFloatingElement
+          let:toggleFloatingElement
+          distance={8}
+          alignment="end"
         >
-          <div style:margin-left="-4px"><Forward /></div>
-          Go to Dashboard
-        </Button>
+          <Button on:click={toggleFloatingElement}>
+            <div style:margin-left="-4px"><Forward /></div>
+            <ResponsiveButtonText collapse={width < 800}>
+              Go to Dashboard
+            </ResponsiveButtonText>
+          </Button>
+          <Menu
+            dark
+            slot="floating-element"
+            on:escape={toggleFloatingElement}
+            on:click-outside={toggleFloatingElement}
+          >
+            {#each $availableDashboards?.data as dashboard}
+              <MenuItem
+                on:select={() => {
+                  goto(`/dashboard/${dashboard.name}`);
+                  toggleFloatingElement();
+                }}
+              >
+                {dashboard.name}
+              </MenuItem>
+            {/each}
+          </Menu>
+        </WithTogglableFloatingElement>
       {/if}
     </PanelCTA>
   </svelte:fragment>

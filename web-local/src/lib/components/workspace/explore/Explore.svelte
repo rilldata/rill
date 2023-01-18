@@ -19,6 +19,8 @@
 
   let exploreContainerWidth;
 
+  $: instanceId = $runtimeStore?.instanceId;
+
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
