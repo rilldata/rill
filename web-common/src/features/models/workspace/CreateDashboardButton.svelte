@@ -117,10 +117,6 @@
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
-    {:else if timestampColumns?.length}
-      Generate a dashboard based on your model
-    {:else}
-      Add a timestamp column to your model in order to generate a dashboard
     {/if}
   </TooltipContent>
 </Tooltip>
