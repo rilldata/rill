@@ -18,12 +18,11 @@
         style:width="16px"
         style:height="16px"
       >
-        <svelte:component
-          this={isFetching ? Spinner : DataTypeIcon}
-          status={EntityStatus.Running}
-          {type}
-          bg="rgba(0,0,0,.2)"
-        />
+        {#if isFetching}
+          <Spinner status={EntityStatus.Running} bg="rgba(0,0,0,.2)" />
+        {:else}
+          <DataTypeIcon {type} />
+        {/if}
       </div>
     {/key}
   </div>

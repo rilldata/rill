@@ -11,7 +11,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    runtimeStore,
+    appQueryStatusStore,
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
@@ -98,7 +101,7 @@
 <WorkspaceHeader
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   let:width
-  showStatus={false}
+  appRunning={$appQueryStatusStore}
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
