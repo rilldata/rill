@@ -4,7 +4,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import WorkspaceContainer from "@rilldata/web-local/lib/components/workspace/core/WorkspaceContainer.svelte";
-
+  import WorkspaceBody from "@rilldata/web-local/lib/components/workspace/core/WorkspaceBody.svelte";
   const steps = [
     {
       heading: "Import your data source",
@@ -34,25 +34,27 @@
 </script>
 
 <WorkspaceContainer top="0px" assetID="onboarding" inspector={false}>
-  <div class="mt-10 p-2 place-content-center h-screen" slot="body">
-    <div class="text-center">
-      <div class="font-bold">Getting started</div>
-      <p>Building data intuition at every step of analysis</p>
-    </div>
-    <div class="p-5 pt-2">
-      {#each steps as step (step.heading)}
-        <div
-          class="flex items-center p-6 mt-3 bg-gray-50 rounded-lg border border-gray-200"
-        >
-          <div>
-            <svelte:component this={step.icon} color="grey" size="3em" />
+  <WorkspaceBody bgClass="bg-gray-100">
+    <div class="mt-10 p-2 place-content-center h-screen">
+      <div class="text-center">
+        <div class="font-bold">Getting started</div>
+        <p>Building data intuition at every step of analysis</p>
+      </div>
+      <div class="p-5 pt-2">
+        {#each steps as step (step.heading)}
+          <div
+            class="flex items-center p-6 mt-3 bg-gray-50 rounded-lg border border-gray-200"
+          >
+            <div>
+              <svelte:component this={step.icon} color="grey" size="3em" />
+            </div>
+            <div class="ml-5">
+              <h5 class="font-bold">{step.heading}</h5>
+              <p>{step.description}</p>
+            </div>
           </div>
-          <div class="ml-5">
-            <h5 class="font-bold">{step.heading}</h5>
-            <p>{step.description}</p>
-          </div>
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
-  </div>
+  </WorkspaceBody>
 </WorkspaceContainer>
