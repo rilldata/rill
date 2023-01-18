@@ -178,6 +178,8 @@
     );
     return entities[dashboardPath];
   };
+
+  $: canAddDashboard = $runtimeStore.readOnly === false;
 </script>
 
 <NavigationHeader
@@ -185,6 +187,7 @@
   on:add={dispatchAddEmptyMetricsDef}
   tooltipText="Create a new dashboard"
   toggleText="dashboards"
+  canAddAsset={canAddDashboard}
 >
   Dashboards
 </NavigationHeader>
