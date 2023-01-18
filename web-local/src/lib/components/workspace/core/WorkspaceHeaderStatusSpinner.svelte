@@ -10,7 +10,7 @@
     clearTimeout(asTimer);
     asTimer = setTimeout(() => {
       applicationStatus = status;
-    }, 100);
+    }, 500);
   }
 
   // TODO
