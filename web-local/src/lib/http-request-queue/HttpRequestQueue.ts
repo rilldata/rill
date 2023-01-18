@@ -150,7 +150,7 @@ export class HttpRequestQueue {
         this.nameHeap.pop();
       }
     }
-    appQueryStatusStore.set(!!this.activeCount);
+    appQueryStatusStore.set(this.activeCount > 0);
   }
 
   private getNameEntry(name: string): RequestQueueNameEntry {
@@ -175,7 +175,7 @@ export class HttpRequestQueue {
       entry.reject(err);
     }
     this.activeCount--;
-    appQueryStatusStore.set(!!this.activeCount);
+    appQueryStatusStore.set(this.activeCount > 0);
     return this.popEntries();
   }
 
