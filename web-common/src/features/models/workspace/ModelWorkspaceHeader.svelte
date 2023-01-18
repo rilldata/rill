@@ -1,6 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import {
+    Button,
+    IconButton,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
@@ -135,6 +139,8 @@
     </IconButton>
   </svelte:fragment>
   <svelte:fragment slot="cta">
+    {@const collapse = width < 800}
+
     <PanelCTA side="right">
       <Tooltip
         alignment="middle"
@@ -155,15 +161,11 @@
             on:click={toggleFloatingElement}
             type="secondary"
           >
-            <div
-              style:margin-left="-4px"
-              style:margin-right={width < 800 ? "-4px" : undefined}
+            <IconSpaceFixer pullLeft pullRight={collapse}
+              ><CaretDownIcon /></IconSpaceFixer
             >
-              <CaretDownIcon />
-            </div>
-            <ResponsiveButtonText collapse={width < 800}>
-              Export
-            </ResponsiveButtonText>
+
+            <ResponsiveButtonText {collapse}>Export</ResponsiveButtonText>
           </Button>
           <Menu
             dark
@@ -209,13 +211,10 @@
             goto(`/dashboard/${$availableDashboards.data[0].name}`);
           }}
         >
-          <div
-            style:margin-left="-4px"
-            style:margin-right={width < 800 ? "-4px" : undefined}
-          >
+          <IconSpaceFixer pullLeft pullRight={collapse}>
             <Forward />
-          </div>
-          <ResponsiveButtonText collapse={width < 800}>
+          </IconSpaceFixer>
+          <ResponsiveButtonText {collapse}>
             Go to Dashboard
           </ResponsiveButtonText>
         </Button>
@@ -226,8 +225,10 @@
           alignment="end"
         >
           <Button on:click={toggleFloatingElement}>
-            <div style:margin-left="-4px"><Forward /></div>
-            <ResponsiveButtonText collapse={width < 800}>
+            <IconSpaceFixer pullLeft pullRight={collapse}>
+              <Forward /></IconSpaceFixer
+            >
+            <ResponsiveButtonText {collapse}>
               Go to Dashboard
             </ResponsiveButtonText>
           </Button>
