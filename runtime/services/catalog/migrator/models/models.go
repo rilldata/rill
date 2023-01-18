@@ -38,7 +38,7 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		err := olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, tempName),
+			Query:    fmt.Sprintf("ALTER VIEW %q RENAME TO %q", from, tempName),
 			Priority: 100,
 		})
 		if err != nil {
@@ -48,14 +48,14 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, catalogObj.Name),
+		Query:    fmt.Sprintf("ALTER VIEW %q RENAME TO %q", from, catalogObj.Name),
 		Priority: 100,
 	})
 }
 
 func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", catalogObj.Name),
+		Query:    fmt.Sprintf("DROP VIEW IF EXISTS %q", catalogObj.Name),
 		Priority: 100,
 	})
 }
