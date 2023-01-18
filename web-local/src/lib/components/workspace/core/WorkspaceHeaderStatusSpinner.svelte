@@ -27,9 +27,9 @@
   $: applicationStatusTooltip = applicationStatusTooltipMap[applicationStatus];
 </script>
 
-<div class="mr-2">
+<div>
   <div class="text-gray-400">
-    <Tooltip alignment="center" distance={16} location="left">
+    <Tooltip alignment="center" distance={8} location="bottom">
       <Spinner size="18px" status={applicationStatus || EntityStatus.Idle} />
       <TooltipContent slot="tooltip-content"
         >{applicationStatusTooltip}

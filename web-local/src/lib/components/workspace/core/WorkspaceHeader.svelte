@@ -106,7 +106,6 @@
   </div>
 
   <div class="flex items-center mr-4">
-    <WorkspaceHeaderStatusSpinner {applicationStatus} />
     <slot name="workspace-controls" {width} />
     {#if showInspectorToggle}
       <IconButton
@@ -132,6 +131,9 @@
 
     <div class="pl-4">
       <slot name="cta" {width} />
+    </div>
+    <div class="ml-2">
+      <WorkspaceHeaderStatusSpinner {applicationStatus} />
     </div>
   </div>
 </header>
