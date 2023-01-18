@@ -91,44 +91,54 @@
 {#if availableDashboards?.length === 0}
   <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
 {:else if availableDashboards?.length === 1}
-  <Button
-    on:click={() => {
-      goto(`/dashboard/${availableDashboards[0].name}`);
-    }}
-  >
-    <IconSpaceFixer pullLeft pullRight={collapse}>
-      <Forward />
-    </IconSpaceFixer>
-    <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
-  </Button>
-{:else}
-  <WithTogglableFloatingElement
-    let:toggleFloatingElement
-    distance={8}
-    alignment="end"
-  >
-    <Button on:click={toggleFloatingElement}>
+  <Tooltip distance={8} alignment="end">
+    <Button
+      on:click={() => {
+        goto(`/dashboard/${availableDashboards[0].name}`);
+      }}
+    >
       <IconSpaceFixer pullLeft pullRight={collapse}>
-        <Forward /></IconSpaceFixer
-      >
+        <Forward />
+      </IconSpaceFixer>
       <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
     </Button>
-    <Menu
-      dark
-      slot="floating-element"
-      on:escape={toggleFloatingElement}
-      on:click-outside={toggleFloatingElement}
+    <TooltipContent slot="tooltip-content">
+      Go to the dashboard associated with this model
+    </TooltipContent>
+  </Tooltip>
+{:else}
+  <Tooltip distance={8} alignment="end">
+    <WithTogglableFloatingElement
+      let:toggleFloatingElement
+      distance={8}
+      alignment="end"
     >
-      {#each availableDashboards as dashboard}
-        <MenuItem
-          on:select={() => {
-            goto(`/dashboard/${dashboard.name}`);
-            toggleFloatingElement();
-          }}
+      <Button on:click={toggleFloatingElement}>
+        <IconSpaceFixer pullLeft pullRight={collapse}>
+          <Forward /></IconSpaceFixer
         >
-          {dashboard.name}
-        </MenuItem>
-      {/each}
-    </Menu>
-  </WithTogglableFloatingElement>
+        <ResponsiveButtonText {collapse}>Go to Dashboard</ResponsiveButtonText>
+      </Button>
+      <Menu
+        dark
+        slot="floating-element"
+        on:escape={toggleFloatingElement}
+        on:click-outside={toggleFloatingElement}
+      >
+        {#each availableDashboards as dashboard}
+          <MenuItem
+            on:select={() => {
+              goto(`/dashboard/${dashboard.name}`);
+              toggleFloatingElement();
+            }}
+          >
+            {dashboard.name}
+          </MenuItem>
+        {/each}
+      </Menu>
+    </WithTogglableFloatingElement>
+    <TooltipContent slot="tooltip-content">
+      Go to one of {availableDashboards.length} dashboards associated with this model
+    </TooltipContent>
+  </Tooltip>
 {/if}

@@ -103,7 +103,7 @@
   }
 </script>
 
-<Tooltip alignment="right" distance={16} location="bottom">
+<Tooltip alignment="right" distance={8} location="bottom">
   <Button
     disabled={!timestampColumns?.length}
     on:click={handleCreateDashboard}
