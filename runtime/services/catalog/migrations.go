@@ -82,6 +82,9 @@ type ArtifactError struct {
 // TODO: support loading existing projects
 
 func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	result := NewReconcileResult()
 
 	// collect repos and create migration items

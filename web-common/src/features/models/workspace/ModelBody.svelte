@@ -9,6 +9,7 @@
     getEmbeddedReferences,
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
+  import { Throttler } from "@rilldata/web-common/features/models/utils/Throttler";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
@@ -30,6 +31,7 @@
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
+  import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -112,6 +114,7 @@
           overlay.set({
             title: `Caching ${unknownEmbeddedSources.join(",")}`,
           });
+          await asyncWait(10);
           overlayShown = true;
         }
 
@@ -152,6 +155,7 @@
       overlay.set(null);
     }
   }
+  const updateModelThrottler = new Throttler(updateModelContent);
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
@@ -173,7 +177,8 @@
             content={modelSql}
             {selections}
             focusOnMount={focusEditorOnMount}
-            on:write={(evt) => updateModelContent(evt.detail.content)}
+            on:write={(evt) =>
+              updateModelThrottler.throttle(modelName, [evt.detail.content])}
           />
         {/key}
       </div>
