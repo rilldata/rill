@@ -44,8 +44,6 @@ export class HttpRequestQueue {
   public constructor(private readonly urlBase: string) {}
 
   public add(requestOptions: FetchWrapperOptions) {
-    appQueryStatusStore.set(true);
-
     const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
     // prepend after parsing to make parsing faster
     requestOptions.url = `${this.urlBase}${requestOptions.url}`;
