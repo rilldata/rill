@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -108,7 +109,9 @@
     on:click={handleCreateDashboard}
     type="primary"
   >
-    <Add />
+    <IconSpaceFixer pullLeft pullRight={collapse}>
+      <Add />
+    </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
   </Button>
   <TooltipContent slot="tooltip-content">
