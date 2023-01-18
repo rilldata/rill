@@ -34,7 +34,11 @@ export async function load({ params }) {
       metricViewName: params.name,
     };
   } catch (err) {
-    // If the catalog entry doesn't exist, the dashboard config is invalid, so we redirect to the dashboard editor
+    // When the catalog entry doesn't exist, the dashboard config is invalid
+    if (config.readonly) {
+      throw error(400, "Invalid dashboard");
+    }
+
     throw redirect(307, `/dashboard/${params.name}/edit`);
   }
 }
