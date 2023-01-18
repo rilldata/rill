@@ -69,7 +69,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	startCmd.Flags().BoolVar(&strict, "strict", local.StrictFlag, "Sets the reconcile level to strict")
+	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 
 	return startCmd

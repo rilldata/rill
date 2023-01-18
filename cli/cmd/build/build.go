@@ -28,7 +28,7 @@ func BuildCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("not a valid Rill project")
 			}
 
-			err = app.Reconcile(local.StrictFlag)
+			err = app.Reconcile(true)
 			if err != nil {
 				return fmt.Errorf("reconcile project: %w", err)
 			}

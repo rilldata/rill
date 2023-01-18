@@ -48,7 +48,6 @@ const (
 	DefaultInstanceID = "default"
 	DefaultOLAPDriver = "duckdb"
 	DefaultOLAPDSN    = "stage.db"
-	StrictFlag        = false
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -245,7 +244,7 @@ func (a *App) Reconcile(strict bool) error {
 	if len(res.Errors) == 0 {
 		a.Logger.Infof("Hydration completed!")
 	} else if strict {
-		a.Logger.Fatalf("Hydration failed with errors:%v", res.Errors)
+		a.Logger.Fatalf("Hydration failed")
 	} else {
 		a.Logger.Infof("Hydration failed")
 	}
