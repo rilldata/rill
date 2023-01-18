@@ -24,6 +24,7 @@
       : $page.url.pathname === dashboardLink
       ? "dashboard"
       : "dashboard";
+  $: console.log(view);
 </script>
 
 <header
