@@ -23,7 +23,7 @@
   import { parseDocument } from "yaml";
   import SourceInspector from "./SourceInspector.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
-
+  import Inspector from "@rilldata/web-local/lib/components/workspace/core/Inspector.svelte";
   export let sourceName: string;
   export let embedded = false;
   export let path: string = undefined;
@@ -227,7 +227,9 @@
       {/if}
     </div>
 
-    <SourceInspector {sourceName} slot="inspector" />
+    <Inspector>
+      <SourceInspector {sourceName} />
+    </Inspector>
   </WorkspaceContainer>
 {/key}
 

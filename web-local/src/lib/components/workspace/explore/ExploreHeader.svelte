@@ -1,9 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
-  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -61,28 +57,7 @@
   <!-- top row
     title and call to action
   -->
-  <div
-    style:height="var(--header-height)"
-    class="flex items-center justify-between w-full pl-1 pr-4"
-  >
-    <!-- title element -->
-    <h1 style:line-height="1.1" style:margin-top="-1px">
-      <div class="pl-4" style:font-family="InterDisplay" style:font-size="20px">
-        {displayName || metricViewName}
-      </div>
-    </h1>
-    <!-- top right CTAs -->
-    <div style="flex-shrink: 0;">
-      <Tooltip distance={8}>
-        <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
-          Edit Metrics <MetricsIcon size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Edit this dashboard's metrics & settings
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  </div>
+
   <!-- bottom row -->
   <div class="px-2 pt-1">
     <TimeControls {metricViewName} />

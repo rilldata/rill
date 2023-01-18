@@ -1,0 +1,35 @@
+<script lang="ts">
+  import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+
+  export let bgClass: string = "";
+  export let top: string = undefined;
+
+  const navigationWidth = getContext(
+    "rill:app:navigation-width-tween"
+  ) as Writable<number>;
+
+  const navVisibilityTween = getContext(
+    "rill:app:navigation-visibility-tween"
+  ) as Writable<number>;
+
+  const visibilityTween = getContext(
+    "rill:app:inspector-visibility-tween"
+  ) as Writable<number>;
+
+  const inspectorWidth = getContext(
+    "rill:app:inspector-width-tween"
+  ) as Writable<number>;
+</script>
+
+<div
+  class="box-border fixed {bgClass}"
+  style:top
+  style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
+  style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
+  style:padding-right="{(1 - $visibilityTween) * SIDE_PAD}px"
+  style:right="{$inspectorWidth * $visibilityTween}px"
+>
+  <slot />
+</div>

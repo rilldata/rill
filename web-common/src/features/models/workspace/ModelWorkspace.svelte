@@ -1,7 +1,10 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+
   import WorkspaceContainer from "@rilldata/web-local/lib/components/workspace/core/WorkspaceContainer.svelte";
+  import WorkspaceBody from "@rilldata/web-local/lib/components/workspace/core/WorkspaceBody.svelte";
+  import Inspector from "@rilldata/web-local/lib/components/workspace/core/Inspector.svelte";
   import ModelInspector from "./inspector/ModelInspector.svelte";
   import ModelBody from "./ModelBody.svelte";
   import ModelWorkspaceHeader from "./ModelWorkspaceHeader.svelte";
@@ -23,9 +26,12 @@
     <div slot="header">
       <ModelWorkspaceHeader {modelName} />
     </div>
-    <div slot="body">
+
+    <WorkspaceBody>
       <ModelBody {modelName} {focusEditorOnMount} />
-    </div>
-    <ModelInspector {modelName} slot="inspector" />
+    </WorkspaceBody>
+    <Inspector>
+      <ModelInspector {modelName} />
+    </Inspector>
   </WorkspaceContainer>
 {/key}

@@ -1,26 +1,24 @@
 <script lang="ts">
   import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
-
-  $: instanceId = $runtimeStore.instanceId;
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../application-state-stores/explorer-stores";
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
-  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
   import MeasuresContainer from "./metrics-container/MeasuresContainer.svelte";
-  import ExploreContainer from "./ExploreContainer.svelte";
+  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
 
   export let metricViewName: string;
 
   let exploreContainerWidth;
 
+  $: instanceId = $runtimeStore.instanceId;
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
@@ -41,34 +39,34 @@
     : "max-content minmax(355px, auto)";
 </script>
 
-<WorkspaceContainer
+<!-- <WorkspaceContainer
   top="0px"
   assetID={metricViewName}
   bgClass="bg-white"
   inspector={false}
->
-  <ExploreContainer bind:exploreContainerWidth {gridConfig} slot="body">
-    <ExploreHeader {metricViewName} slot="header" />
+> -->
+<ExploreContainer bind:exploreContainerWidth {gridConfig} slot="body">
+  <ExploreHeader {metricViewName} slot="header" />
 
-    <svelte:fragment slot="metrics">
-      {#key metricViewName}
-        {#if hasTimeSeries}
-          <MetricsTimeSeriesCharts {metricViewName} />
-        {:else}
-          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-        {/if}
-      {/key}
-    </svelte:fragment>
-
-    <svelte:fragment slot="leaderboards">
-      {#if selectedDimensionName}
-        <DimensionDisplay
-          {metricViewName}
-          dimensionName={selectedDimensionName}
-        />
+  <svelte:fragment slot="metrics">
+    {#key metricViewName}
+      {#if hasTimeSeries}
+        <MetricsTimeSeriesCharts {metricViewName} />
       {:else}
-        <LeaderboardDisplay {metricViewName} />
+        <MeasuresContainer {exploreContainerWidth} {metricViewName} />
       {/if}
-    </svelte:fragment>
-  </ExploreContainer>
-</WorkspaceContainer>
+    {/key}
+  </svelte:fragment>
+
+  <svelte:fragment slot="leaderboards">
+    {#if selectedDimensionName}
+      <DimensionDisplay
+        {metricViewName}
+        dimensionName={selectedDimensionName}
+      />
+    {:else}
+      <LeaderboardDisplay {metricViewName} />
+    {/if}
+  </svelte:fragment>
+</ExploreContainer>
+<!-- </WorkspaceContainer> -->
