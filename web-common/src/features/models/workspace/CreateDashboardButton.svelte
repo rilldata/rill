@@ -25,7 +25,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
@@ -41,7 +40,6 @@
     modelName
   );
   $: model = $getModel.data?.entry?.model;
-  $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   const queryClient = useQueryClient();
@@ -104,11 +102,7 @@
 </script>
 
 <Tooltip alignment="right" distance={8} location="bottom">
-  <Button
-    disabled={!timestampColumns?.length}
-    on:click={handleCreateDashboard}
-    type="primary"
-  >
+  <Button on:click={handleCreateDashboard} type="primary">
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />
     </IconSpaceFixer>
@@ -117,6 +111,8 @@
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
+    {:else}
+      Create a dashboard from this model
     {/if}
   </TooltipContent>
 </Tooltip>
