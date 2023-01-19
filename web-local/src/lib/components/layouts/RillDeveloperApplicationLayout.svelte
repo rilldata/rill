@@ -32,23 +32,23 @@
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
-
   onMount(async () => {
-    const localConfig = await runtimeServiceGetConfig();
+    const config = await runtimeServiceGetConfig();
 
     runtimeStore.set({
-      instanceId: localConfig.instance_id,
+      instanceId: config.instance_id,
+      readOnly: config.readonly,
     });
 
     appBuildMetaStore.set({
-      version: localConfig.version,
-      commitHash: localConfig.build_commit,
+      version: config.version,
+      commitHash: config.build_commit,
     });
 
-    const res = await getArtifactErrors(localConfig.instance_id);
+    const res = await getArtifactErrors(config.instance_id);
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
-    return initMetrics(localConfig);
+    return initMetrics(config);
   });
 
   syncFileSystemPeriodically(

@@ -47,6 +47,8 @@
   );
 
   $: yaml = parseDocument($thing?.data?.blob || "{}")?.toJS();
+
+  $: isModelerEnabled = $runtimeStore.readOnly === false;
 </script>
 
 <div
@@ -132,8 +134,10 @@
             </Tooltip>
           </h1>
         </header>
-        <TableAssets />
-        <ModelAssets />
+        {#if isModelerEnabled}
+          <TableAssets />
+          <ModelAssets />
+        {/if}
         <MetricsDefinitionAssets />
       </div>
       <Footer />
