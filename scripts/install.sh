@@ -55,16 +55,12 @@ downloadBinary() {
     unzip -q rill_${PLATFORM}.zip
 }
 
-# Install the binary and ask for elevated permissions if needed
+# Ask for elevated permissions to install the binary
 installBinary() {
     INSTALL_DIR="/usr/local/bin"
-    if [ -w "${INSTALL_DIR}" ]; then
-        printf "\nInstalling the Rill binary to: ${INSTALL_DIR}/rill\n"
-        install rill "${INSTALL_DIR}/"
-    else
-        printf "\nElevated permissions required to install the Rill binary to: ${INSTALL_DIR}/rill\n"
-        sudo install rill "${INSTALL_DIR}/"
-    fi
+    printf "\nElevated permissions required to install the Rill binary to: ${INSTALL_DIR}/rill\n"
+    sudo install -d ${INSTALL_DIR}
+    sudo install rill "${INSTALL_DIR}/"
 }
 
 # Run the installed binary and print the version

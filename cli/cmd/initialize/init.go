@@ -69,7 +69,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("init project: %w", err)
 			}
 
-			err = app.Reconcile()
+			err = app.Reconcile(false)
 			if err != nil {
 				return fmt.Errorf("reconcile project: %w", err)
 			}

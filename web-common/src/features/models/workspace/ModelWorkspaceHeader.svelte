@@ -6,7 +6,10 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    runtimeStore,
+    appQueryStatusStore,
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
@@ -90,7 +93,7 @@
 <WorkspaceHeader
   let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-  showStatus={false}
+  appRunning={$appQueryStatusStore}
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
