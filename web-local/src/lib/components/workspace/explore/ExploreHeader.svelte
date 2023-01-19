@@ -51,6 +51,8 @@
       MetricsEventScreenName.MetricsDefinition
     );
   };
+
+  $: isEditableDashboard = $runtimeStore.readOnly === false;
 </script>
 
 <section
@@ -72,16 +74,18 @@
       </div>
     </h1>
     <!-- top right CTAs -->
-    <div style="flex-shrink: 0;">
-      <Tooltip distance={8}>
-        <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
-          Edit Metrics <MetricsIcon size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Edit this dashboard's metrics & settings
-        </TooltipContent>
-      </Tooltip>
-    </div>
+    {#if isEditableDashboard}
+      <div style="flex-shrink: 0;">
+        <Tooltip distance={8}>
+          <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+            Edit Metrics <MetricsIcon size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Edit this dashboard's metrics & settings
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    {/if}
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">
