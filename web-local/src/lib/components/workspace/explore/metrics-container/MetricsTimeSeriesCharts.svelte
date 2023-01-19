@@ -22,7 +22,6 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
-  import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
   import {
     formatDateByInterval,
     addGrains,
