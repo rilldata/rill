@@ -68,6 +68,9 @@
     sourceName
   );
 
+  let headerWidth;
+  $: isHeaderWidthSmall = headerWidth < 800;
+
   let entry: V1CatalogEntry;
   let source: V1Source;
   $: entry = $getSource?.data?.entry;
@@ -229,7 +232,7 @@
   <WorkspaceHeader
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
     editable={!embedded}
-    let:width
+    width={headerWidth}
     showStatus={false}
   >
     <svelte:fragment slot="icon">
@@ -279,10 +282,10 @@
       <PanelCTA side="right">
         <Tooltip distance={16} location="left">
           <Button on:click={handleCreateModelFromSource} type="secondary">
-            <IconSpaceFixer pullLeft pullRight={width < 800}
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
               ><Model size="12px" /></IconSpaceFixer
             >
-            <ResponsiveButtonText collapse={width < 800}>
+            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
               Create Model
             </ResponsiveButtonText>
           </Button>
@@ -296,11 +299,11 @@
               on:click={() => handleCreateDashboardFromSource(sourceName)}
               type="primary"
             >
-              <IconSpaceFixer pullLeft pullRight={width < 800}
+              <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
                 ><Add /></IconSpaceFixer
               >
 
-              <ResponsiveButtonText collapse={width < 800}>
+              <ResponsiveButtonText collapse={isHeaderWidthSmall}>
                 Create Dashboard
               </ResponsiveButtonText>
             </Button>

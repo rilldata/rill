@@ -5,10 +5,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
-  import {
-    useRuntimeServiceListCatalogEntries,
-    useRuntimeServiceRenameFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
@@ -18,6 +15,7 @@
     renameFileArtifact,
     useAllNames,
   } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useGetDashboardsForModel } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     getFilePathFromNameAndType,
     getRouteFromName,
@@ -41,18 +39,9 @@
 
   let contextMenuOpen = false;
 
-  $: availableDashboards = useRuntimeServiceListCatalogEntries(
-    $runtimeStore.instanceId,
-    { type: "OBJECT_TYPE_METRICS_VIEW" },
-    {
-      query: {
-        select(data) {
-          return data?.entries?.filter(
-            (entry) => entry?.metricsView?.model === modelName
-          );
-        },
-      },
-    }
+  $: availableDashboards = useGetDashboardsForModel(
+    runtimeInstanceId,
+    modelName
   );
 
   function formatModelName(str) {
