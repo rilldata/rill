@@ -24,7 +24,7 @@ import { invalidateAfterReconcile } from "../../svelte-query/invalidation";
 import { getFilePathFromPagePath } from "../../util/entity-mappers";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 1000;
-const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 2000;
+const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;
 
 export function syncFileSystemPeriodically(
   queryClient: QueryClient,
