@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/memblob"
@@ -81,6 +82,68 @@ func TestFetchFileNames(t *testing.T) {
 			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsListed: 1}, "2020/**", "mem://"},
 			want:    nil,
 			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FetchFileNames(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			require.Equal(t, len(tt.want), len(got))
+			for _, path := range got {
+				data, _ := os.ReadFile(path)
+				strContent := string(data)
+				if _, ok := tt.want[strContent]; !ok {
+					t.Errorf("file with data %v not part of glob", strContent)
+					return
+				}
+			}
+		})
+	}
+}
+
+func TestFetchFileNamesLimits(t *testing.T) {
+	bucket, err := prepareBucket()
+	require.NoError(t, err)
+
+	type args struct {
+		ctx         context.Context
+		bucket      *blob.Bucket
+		config      FetchConfigs
+		globPattern string
+		bucketPath  string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]struct{}
+		wantErr bool
+	}{
+		{
+			name: "listing head limits",
+			args: args{context.Background(),
+				bucket,
+				FetchConfigs{Extract: &yaml.SourceExtract{Partitions: &yaml.SourceExtractOptions{Strategy: "head", Size: "2"}}},
+				"2020/**",
+				"mem://",
+			},
+			want:    map[string]struct{}{"hello": {}, "world": {}},
+			wantErr: false,
+		},
+		{
+			name: "listing tail limits",
+			args: args{context.Background(),
+				bucket,
+				FetchConfigs{Extract: &yaml.SourceExtract{Partitions: &yaml.SourceExtractOptions{Strategy: "tail", Size: "2"}}},
+				"2020/**",
+				"mem://",
+			},
+			want:    map[string]struct{}{"test": {}, "writing": {}},
+			wantErr: false,
 		},
 	}
 

@@ -3,24 +3,144 @@ package blob
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
+	"github.com/rilldata/rill/runtime/pkg/container"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"gocloud.dev/blob"
 )
+
+type Strategy string
+
+const (
+	TAIL Strategy = "tail"
+	HEAD Strategy = "head"
+	NONE Strategy = "none"
+)
+
+type ExtractOptions struct {
+	Strategy Strategy
+	Size     int64
+}
+
+type ExtractConfigs struct {
+	Row       ExtractOptions
+	Partition ExtractOptions
+}
+
+func NewExtractConfigs(input *yaml.SourceExtract) (*ExtractConfigs, error) {
+	config := &ExtractConfigs{
+		Row:       ExtractOptions{Strategy: NONE},
+		Partition: ExtractOptions{Strategy: NONE},
+	}
+
+	// parse partition
+	if input.Partitions != nil {
+		// parse strategy
+		strategy, err := parseStrategy(input.Partitions.Strategy)
+		if err != nil {
+			return nil, err
+		}
+
+		config.Partition.Strategy = strategy
+
+		// parse size
+		size, err := strconv.ParseInt(input.Partitions.Size, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
+		}
+
+		config.Partition.Size = size
+	}
+
+	// parse rows
+	if input.Rows != nil {
+		// parse strategy
+		strategy, err := parseStrategy(input.Rows.Strategy)
+		if err != nil {
+			return nil, err
+		}
+
+		config.Row.Strategy = strategy
+
+		// parse size
+		size, err := getBytes(input.Rows.Size)
+		if err != nil {
+			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
+		}
+
+		config.Row.Size = size
+	}
+
+	return config, nil
+}
+
+func parseStrategy(s string) (Strategy, error) {
+	switch strings.ToLower(s) {
+	case "tail":
+		return TAIL, nil
+	case "head":
+		return HEAD, nil
+	default:
+		return "", fmt.Errorf("invalid extract strategy %q", s)
+	}
+}
+
+func getBytes(size string) (int64, error) {
+	var s datasize.ByteSize
+	if err := s.UnmarshalText([]byte(size)); err != nil {
+		return 0, err
+	}
+
+	return int64(s.Bytes()), nil
+}
 
 type FetchConfigs struct {
 	GlobMaxTotalSize      int64
 	GlobMaxObjectsMatched int
 	GlobMaxObjectsListed  int64
 	GlobPageSize          int
+	Extract               *ExtractConfigs
+}
+
+func ContainerForParitionStrategy(option ExtractOptions) (container.Container, error) {
+	switch option.Strategy {
+	case TAIL:
+		return container.NewTailContainer(int(option.Size))
+	case HEAD:
+		return container.NewBoundedContainer(int(option.Size))
+	default:
+		// No option selected
+		return container.NewUnboundedContainer()
+	}
+}
+
+func WithinSize(option ExtractOptions, size int64) bool {
+	switch option.Strategy {
+	case TAIL:
+		return true
+	case HEAD:
+		return size < option.Size
+	default:
+		// No option selected
+		return true
+	}
 }
 
 // downloads file to local paths
 // todo :: return blob handler as iterator
 func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, globPattern, bucketPath string) ([]string, error) {
 	validateConfigs(&config)
+	c, err := ContainerForParitionStrategy(config.Extract.Partition)
+	if err != nil {
+		return nil, err
+	}
+
 	prefix, glob := doublestar.SplitPattern(globPattern)
 
 	handler := &BlobHandler{
@@ -53,38 +173,52 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 		listOptions.Prefix = prefix
 	}
 
-	var size, fetched int64
-	var matchCount int
-	var fileNames []string
+	var (
+		size, fetched int64
+		matchCount    int
+	)
 
+	containerFull := false
 	token := blob.FirstPageToken
-	for token != nil {
+	for token != nil && !containerFull {
 		objs, nextToken, err := bucket.ListPage(ctx, token, config.GlobPageSize, listOptions)
 		if err != nil {
 			return nil, err
 		}
-		token = nextToken
 
+		token = nextToken
+		fetched += int64(len(objs))
 		for _, obj := range objs {
 			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
-				fileNames = append(fileNames, obj.Key)
+				if !c.Add(obj) && WithinSize(config.Extract.Row, size) {
+					// don't add more items
+					containerFull = true
+					break
+				}
 			}
 		}
-
-		fetched += int64(len(objs))
-
 		if err := validateLimits(size, matchCount, fetched, config); err != nil {
 			return nil, err
 		}
 	}
 
-	if len(fileNames) == 0 {
+	items := c.Items()
+	if len(items) == 0 {
 		return nil, fmt.Errorf("no files found for glob pattern %q", globPattern)
 	}
 
-	handler.FileNames = fileNames
+	size = 0
+	for _, val := range items {
+		obj := val.(*blob.ListObject)
+		handler.FileNames = append(handler.FileNames, obj.Key)
+		size += obj.Size
+		if size > config.Extract.Row.Size {
+			break
+		}
+	}
+
 	if err := handler.DownloadAll(ctx); err != nil {
 		return nil, err
 	}

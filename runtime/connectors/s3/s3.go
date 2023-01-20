@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"gocloud.dev/blob/s3blob"
 )
 
@@ -52,12 +53,13 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path                  string `mapstructure:"path"`
-	AWSRegion             string `mapstructure:"region"`
-	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	Path                  string              `mapstructure:"path"`
+	AWSRegion             string              `mapstructure:"region"`
+	GlobMaxTotalSize      int64               `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int                 `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64               `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int                 `mapstructure:"glob.page_size"`
+	SourceExtract         *yaml.SourceExtract `mapstructure:"source.extract"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -106,11 +108,18 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	}
 	defer bucketObj.Close()
 
+	// prepare fetch configs
+	extractConfig, err := rillblob.NewExtractConfigs(conf.SourceExtract)
+	if err != nil {
+		return nil, err
+	}
+
 	fetchConfigs := rillblob.FetchConfigs{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
+		Extract:               extractConfig,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
 }

@@ -16,14 +16,26 @@ import (
  */
 type Source struct {
 	Type                  string
-	Path                  string `yaml:"path,omitempty"`
-	CsvDelimiter          string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
-	URI                   string `yaml:"uri,omitempty"`
-	Region                string `yaml:"region,omitempty" mapstructure:"region,omitempty"`
-	GlobMaxTotalSize      int64  `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
-	GlobMaxObjectsMatched int    `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
-	GlobMaxObjectsListed  int64  `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
-	GlobPageSize          int    `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
+	Path                  string         `yaml:"path,omitempty"`
+	CsvDelimiter          string         `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
+	URI                   string         `yaml:"uri,omitempty"`
+	Region                string         `yaml:"region,omitempty" mapstructure:"region,omitempty"`
+	GlobMaxTotalSize      int64          `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
+	GlobMaxObjectsMatched int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
+	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
+	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
+	SourceExtract         *SourceExtract `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
+}
+
+// todo :: better name ??
+type SourceExtract struct {
+	Rows       *SourceExtractOptions `yaml:"rows,omitempty" mapstructure:"rows,omitempty" json:"rows,omitempty"`
+	Partitions *SourceExtractOptions `yaml:"partitions,omitempty" mapstructure:"partitions,omitempty" json:"partitions,omitempty"`
+}
+
+type SourceExtractOptions struct {
+	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty" json:"strategy,omitempty"`
+	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty" json:"size,omitempty"`
 }
 
 type MetricsView struct {
@@ -110,6 +122,16 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.GlobPageSize != 0 {
 		props["glob.page_size"] = source.GlobPageSize
 	}
+
+	if source.SourceExtract != nil {
+		result := map[string]interface{}{}
+		err := mapstructure.Decode(source.SourceExtract, &result)
+		if err != nil {
+			return nil, err
+		}
+		props["source.extract"] = result
+	}
+
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {
 		return nil, err
