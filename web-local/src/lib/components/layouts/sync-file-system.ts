@@ -138,7 +138,7 @@ export function addReconcilingOverlay(pagePath: string) {
     if (isFileReconciling) {
       delayedOverlayTimeout = setTimeout(() => {
         overlay.set({
-          title: `Reconciling ${filePath}`,
+          title: `Reconciling project`,
         });
       }, RECONCILE_OVERLAY_DELAY_MILLISECONDS);
     } else {
