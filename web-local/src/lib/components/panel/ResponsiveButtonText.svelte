@@ -5,7 +5,6 @@ horizontal slide animation
 -->
 <script lang="ts">
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-
   export let collapse = false;
 </script>
 
