@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -14,8 +16,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
   import {

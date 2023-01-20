@@ -9,8 +9,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";

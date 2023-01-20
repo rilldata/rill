@@ -1,18 +1,18 @@
 <script lang="ts">
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     useRuntimeServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let metricViewName;
   export let exploreContainerWidth;

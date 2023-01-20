@@ -3,8 +3,8 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceMetricsViewTimeSeries,
@@ -23,8 +23,8 @@
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
   import {
-    formatDateByInterval,
     addGrains,
+    formatDateByInterval,
   } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";

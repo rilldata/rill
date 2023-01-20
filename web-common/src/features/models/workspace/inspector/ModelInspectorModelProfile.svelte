@@ -1,7 +1,8 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
@@ -15,7 +16,6 @@
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";

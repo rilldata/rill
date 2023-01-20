@@ -13,7 +13,8 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -28,7 +29,6 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
@@ -39,18 +39,16 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-    useCreateDashboardFromSource,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useCreateDashboardFromSource } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
+  import { renameFileArtifact } from "../../entity-management/actions";
+  import { getRouteFromName } from "../../entity-management/entity-mappers";
+  import { getName } from "../../entity-management/incrementName";
+  import { useAllNames } from "../../entity-management/selectors";
+  import { isDuplicateName } from "../../entity-management/utils";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";

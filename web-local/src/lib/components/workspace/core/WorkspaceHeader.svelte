@@ -9,9 +9,9 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
 
   export let onChangeCallback;
   export let titleInput;

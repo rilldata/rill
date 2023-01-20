@@ -1,4 +1,4 @@
-import { EntityType } from "@rilldata/web-common/lib/entity";
+import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
 
 export interface CommonFields {
   app_name: string;

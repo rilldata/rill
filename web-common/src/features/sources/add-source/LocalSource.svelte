@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import {
     openFileUploadDialog,
     uploadTableFiles,
@@ -14,11 +15,10 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { EntityType } from "../../../lib/entity";
+  import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";

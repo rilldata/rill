@@ -4,6 +4,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     ConnectorProperty,
@@ -16,13 +17,12 @@
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
-  import { EntityType } from "../../../lib/entity";
+  import { deleteFileArtifact } from "../../entity-management/actions";
   import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";

@@ -5,14 +5,15 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import {
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
@@ -27,9 +28,8 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getName } from "../../entity-management/incrementName";
 
   export let modelName: string;
   export let hasError = false;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
