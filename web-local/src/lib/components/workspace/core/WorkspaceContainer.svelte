@@ -30,6 +30,20 @@
       duration: 50,
     }
   );
+
+  /** update the inspector layout if the viewHasInspector flag changes. */
+  // $: {
+  //   inspectorLayout.update((value) => {
+  //     value.visible = viewHasInspector;
+  //     console.log(
+  //       "setting inspectorLayout since viewHasInspector has changed.",
+  //       viewHasInspector
+  //     );
+  //     return value;
+  //   });
+  //   visibilityTween.set(viewHasInspector ? 1 : 0, { duration: 0 });
+  // }
+
   inspectorLayout.subscribe((state) => {
     inspectorWidth.set(state.value);
   });

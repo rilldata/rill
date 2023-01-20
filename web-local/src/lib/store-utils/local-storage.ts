@@ -21,17 +21,17 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
     subscribe,
     set(value: T) {
       setStore(value);
-      localStorage.setItem(itemKey, JSON.stringify(value));
+      if (browser) localStorage.setItem(itemKey, JSON.stringify(value));
     },
     update(f) {
       updateStore((state) => {
         f(state);
-        localStorage.setItem(itemKey, JSON.stringify(state));
+        if (browser) localStorage.setItem(itemKey, JSON.stringify(state));
         return state;
       });
     },
     reset() {
-      localStorage.setItem(itemKey, JSON.stringify(defaultValue));
+      if (browser) localStorage.setItem(itemKey, JSON.stringify(defaultValue));
     },
   };
 }

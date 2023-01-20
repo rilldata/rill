@@ -6,8 +6,12 @@
   import ToggleButton from "./ToggleButton.svelte";
   import ToggleButtonGroup from "./ToggleButtonGroup.svelte";
   import WorkspaceViewControls from "./WorkspaceViewControls.svelte";
+
   export let metricViewName;
   export let displayName = "hmm";
+  export let showModelToggle = true;
+  export let showDashboardToggle = true;
+
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
@@ -24,7 +28,6 @@
       : $page.url.pathname === dashboardLink
       ? "dashboard"
       : "dashboard";
-  $: console.log(view);
 </script>
 
 <header
@@ -43,13 +46,17 @@
   </div>
   <div style:grid-column="view-controls">
     {#if view !== "dashboard"}
-      <WorkspaceViewControls />
+      <WorkspaceViewControls {view} />
     {/if}
   </div>
   <!-- top right CTAs -->
   <div style:grid-column="asset-controls" style="flex-shrink: 0;">
     <ToggleButtonGroup>
       <ToggleButton
+        tooltip={showModelToggle
+          ? "Edit the model"
+          : "Add a valid model to the config"}
+        disabled={!showModelToggle}
         active={view === "model"}
         on:click={() => {
           view = "model";
@@ -62,6 +69,7 @@
         class:bg-gray-200={view === "dashboard"}
       />
       <ToggleButton
+        tooltip={"Edit the config"}
         active={view === "config"}
         on:click={() => {
           view = "config";
@@ -74,12 +82,18 @@
         class:bg-gray-200={view === "model"}
       />
       <ToggleButton
+        tooltip={showDashboardToggle
+          ? "View the dashboard"
+          : "Fix the config to view the dashboard"}
+        disabled={!showDashboardToggle}
         active={view === "dashboard"}
         on:click={() => {
           view = "dashboard";
           goto(dashboardLink);
-        }}>Dashboard</ToggleButton
+        }}
       >
+        Dashboard
+      </ToggleButton>
     </ToggleButtonGroup>
   </div>
 </header>

@@ -6,14 +6,14 @@
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
 
   export let modelName: string;
-
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
   $: emptyModel = useModelFileIsEmpty($runtimeStore?.instanceId, modelName);
+  $: console.log($emptyModel);
 </script>
 
-{#if !$emptyModel?.data}
+{#if !$emptyModel?.data && modelName?.length > 0}
   <div>
     {#key modelName}
       <div use:listenToNodeResize>
@@ -28,6 +28,7 @@
   </div>
 {:else}
   <div class="px-4 py-24 italic ui-copy-disabled text-center">
-    Model is empty.
+    {#if modelName?.length === 0}Select a model to get started.{:else}Model is
+      empty.{/if}
   </div>
 {/if}
