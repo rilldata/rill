@@ -3,7 +3,7 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {

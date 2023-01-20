@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useEmbeddedSources,
     useSourceNames,

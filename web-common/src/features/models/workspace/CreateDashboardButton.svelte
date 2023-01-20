@@ -5,9 +5,9 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,

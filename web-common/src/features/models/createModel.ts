@@ -1,6 +1,6 @@
 import { goto } from "$app/navigation";
-import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";

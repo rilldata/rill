@@ -1,8 +1,8 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import type { EntityType } from "@rilldata/web-common/features/entity-management/entity";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { getNextEntityName } from "@rilldata/web-common/features/entity-management/getNextEntityId";
+import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1DeleteFileAndReconcileResponse,
   V1RenameFileAndReconcileResponse,

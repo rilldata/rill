@@ -4,8 +4,8 @@
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import {
     appQueryStatusStore,

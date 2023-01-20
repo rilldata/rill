@@ -3,8 +3,8 @@
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/utils";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import {

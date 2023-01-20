@@ -3,7 +3,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import type { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndReconcile,

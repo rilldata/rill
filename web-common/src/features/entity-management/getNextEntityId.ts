@@ -1,4 +1,4 @@
-import type { EntityRecord } from "@rilldata/web-common/features/entity-management/entity";
+import type { EntityRecord } from "@rilldata/web-common/features/entity-management/types";
 
 export function getNextEntityId(
   entities: Array<EntityRecord>,

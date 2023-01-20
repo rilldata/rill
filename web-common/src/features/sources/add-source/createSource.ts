@@ -1,8 +1,8 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
 import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import type {
   V1PutFileAndReconcileResponse,
   V1ReconcileError,

@@ -1,8 +1,8 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,

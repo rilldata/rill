@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     useRuntimeServiceMetricsViewTotals,

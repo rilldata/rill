@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,

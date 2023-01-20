@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     openFileUploadDialog,
     uploadTableFiles,

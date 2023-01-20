@@ -1,5 +1,5 @@
-import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
 import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   runtimeServiceGetCatalogEntry,
   runtimeServiceGetFile,

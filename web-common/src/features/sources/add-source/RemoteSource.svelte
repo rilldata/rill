@@ -4,7 +4,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     ConnectorProperty,

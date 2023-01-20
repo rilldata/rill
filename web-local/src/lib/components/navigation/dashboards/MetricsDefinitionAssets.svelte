@@ -8,13 +8,13 @@
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifactsData,
     fileArtifactsStore,
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getName } from "@rilldata/web-common/features/entity-management/incrementName";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,

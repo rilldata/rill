@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/entity";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";

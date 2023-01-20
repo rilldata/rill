@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/entity";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
