@@ -14,14 +14,14 @@ import {
 import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
-import type { RuntimeState } from "../../application-state-stores/application-store";
+import type { RuntimeState } from "../../../../web-local/src/lib/application-state-stores/application-store";
+import { overlay } from "../../../../web-local/src/lib/application-state-stores/overlay-store";
+import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";
+import { getFilePathFromPagePath } from "./entity-mappers";
 import {
   FileArtifactsStore,
   getIsFileReconcilingStore,
-} from "../../application-state-stores/file-artifacts-store";
-import { overlay } from "../../application-state-stores/overlay-store";
-import { invalidateAfterReconcile } from "../../svelte-query/invalidation";
-import { getFilePathFromPagePath } from "../../util/entity-mappers";
+} from "./file-artifacts-store";
 
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 1000;
 const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;

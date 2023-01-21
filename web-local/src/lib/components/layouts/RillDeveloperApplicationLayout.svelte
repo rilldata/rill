@@ -2,6 +2,10 @@
   import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import {
+    addReconcilingOverlay,
+    syncFileSystemPeriodically,
+  } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
@@ -23,10 +27,6 @@
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
-  import {
-    addReconcilingOverlay,
-    syncFileSystemPeriodically,
-  } from "./sync-file-system";
 
   const queryClient = createQueryClient();
 
