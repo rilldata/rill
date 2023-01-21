@@ -4,7 +4,7 @@
   export let message: string;
 </script>
 
-<div class="w-full">
+<div class="max-w-2xl">
   <div
     class="mb-2 p-2 flex bg-red-100 border-red-300 border-2 rounded text-red-800"
   >

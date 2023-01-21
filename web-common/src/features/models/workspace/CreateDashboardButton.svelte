@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityType } from "@rilldata/web-common/lib/entity";
@@ -24,7 +25,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
@@ -101,14 +101,18 @@
   }
 </script>
 
-<Tooltip alignment="right" distance={16} location="bottom">
+<Tooltip alignment="right" distance={8} location="bottom">
   <Button on:click={handleCreateDashboard} type="primary">
+    <IconSpaceFixer pullLeft pullRight={collapse}>
+      <Add />
+    </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
-    <Explore size="14px" /></Button
-  >
+  </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
+    {:else}
+      Create a dashboard from this model
     {/if}
   </TooltipContent>
 </Tooltip>

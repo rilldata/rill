@@ -1,7 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import {
+    Button,
+    IconButton,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
@@ -16,6 +20,7 @@
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRefreshAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
+    V1CatalogEntry,
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -49,7 +54,6 @@
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";
-
   export let sourceName: string;
   export let path: string;
   export let embedded = false;
@@ -67,8 +71,13 @@
     sourceName
   );
 
+  let headerWidth;
+  $: isHeaderWidthSmall = headerWidth < 800;
+
+  let entry: V1CatalogEntry;
   let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
+  $: entry = $getSource?.data?.entry;
+  $: source = entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
   $: dashboardNames = useDashboardNames(runtimeInstanceId);
@@ -226,6 +235,7 @@
   <WorkspaceHeader
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
     editable={!embedded}
+    width={headerWidth}
     let:width
     appRunning={$appQueryStatusStore}
   >
@@ -276,10 +286,12 @@
       <PanelCTA side="right">
         <Tooltip distance={16} location="left">
           <Button on:click={handleCreateModelFromSource} type="secondary">
-            <ResponsiveButtonText collapse={width < 1100}>
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
+              ><Model size="12px" /></IconSpaceFixer
+            >
+            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
               Create Model
             </ResponsiveButtonText>
-            <Model size="16px" />
           </Button>
           <TooltipContent slot="tooltip-content">
             Model this source with SQL
@@ -291,10 +303,13 @@
               on:click={() => handleCreateDashboardFromSource(sourceName)}
               type="primary"
             >
-              <ResponsiveButtonText collapse={width < 800}>
+              <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
+                ><Add /></IconSpaceFixer
+              >
+
+              <ResponsiveButtonText collapse={isHeaderWidthSmall}>
                 Create Dashboard
               </ResponsiveButtonText>
-              <Explore size="16px" />
             </Button>
             <TooltipContent slot="tooltip-content">
               Create a dashboard for this source

@@ -22,7 +22,6 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
-  import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
   import {
     formatDateByInterval,
     addGrains,
@@ -207,8 +206,7 @@
           {:else if formattedData}
             <TimeSeriesBody
               bind:mouseoverValue
-              formatPreset={NicelyFormattedTypes[measure?.format] ||
-                NicelyFormattedTypes.HUMANIZE}
+              formatPreset={measure?.format}
               data={formattedData}
               accessor={measure.name}
               mouseover={point}
