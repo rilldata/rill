@@ -268,12 +268,21 @@ func (s *Service) runMigrationItems(
 					result.Errors = append(result.Errors, recErr)
 				}
 			case MigrationCreate:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.createInStore(ctx, item)
 				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)
 			case MigrationRename:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.renameInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationUpdate:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationReportUpdate:

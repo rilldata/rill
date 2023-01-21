@@ -1,12 +1,11 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../../../application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
+  import { useMetaQuery } from "../../../svelte-query/dashboards";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
   import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
@@ -17,13 +16,6 @@
 
   export let metricViewName: string;
 
-  let exploreContainerWidth;
-
-  $: instanceId = $runtimeStore?.instanceId;
-
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
-  $: hasTimeSeries = $metricTimeSeries.data;
-
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
 
@@ -32,9 +24,26 @@
 
   $: switchToMetrics(metricViewName);
 
-  let metricsExplorer: MetricsExplorerEntity;
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: if ($metaQuery.data) {
+    if (!$metaQuery.data?.measures?.length) {
+      goto(`/dashboard/${metricViewName}/edit`);
+    }
+    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
+  }
+  $: if ($metaQuery.isError) {
+    goto(`/dashboard/${metricViewName}/edit`);
+  }
+
+  let exploreContainerWidth;
+
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: gridConfig = hasTimeSeries
     ? "560px minmax(355px, auto)"

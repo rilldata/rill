@@ -6,9 +6,11 @@
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
+  $: displayName = $metricsInternalRep.getMetricKey("display_name");
+
   const { form, handleSubmit } = createForm({
     initialValues: {
-      newDisplayName: $metricsInternalRep.getMetricKey("display_name") || "",
+      newDisplayName: displayName || "",
     },
     onSubmit: async (values) => {
       try {
@@ -30,6 +32,13 @@
       (event.target as HTMLInputElement).blur();
     }
   }
+
+  function updateFormWithNewDisplayName(displayName: string) {
+    $form.newDisplayName = displayName;
+  }
+
+  // This kicks in when the user changes the display name via code artifact
+  $: updateFormWithNewDisplayName(displayName);
 </script>
 
 <div class="flex items-center mb-3">
