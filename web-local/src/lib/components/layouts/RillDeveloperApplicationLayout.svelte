@@ -97,6 +97,7 @@
       >
         <div slot="title">
           <span class="font-bold">{$overlay?.title}</span>
+          <div>{$overlay?.message}</div>
         </div>
       </BlockingOverlayContainer>
     {/if}

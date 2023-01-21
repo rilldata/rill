@@ -138,7 +138,8 @@ export function addReconcilingOverlay(pagePath: string) {
     if (isFileReconciling) {
       delayedOverlayTimeout = setTimeout(() => {
         overlay.set({
-          title: `Reconciling project`,
+          title: `Loading`,
+          message: `Rill is validating your assets and ingesting new sources — this could take a moment`,
         });
       }, RECONCILE_OVERLAY_DELAY_MILLISECONDS);
     } else {
