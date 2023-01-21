@@ -38,7 +38,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { getName } from "../../entity-management/incrementName";
+  import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";

@@ -13,7 +13,7 @@
     FileArtifactsData,
     fileArtifactsStore,
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-  import { getName } from "@rilldata/web-common/features/entity-management/incrementName";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     runtimeServiceGetFile,

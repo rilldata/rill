@@ -29,7 +29,7 @@
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getName } from "../../entity-management/incrementName";
+  import { getName } from "../../entity-management/name-utils";
 
   export let modelName: string;
   export let hasError = false;

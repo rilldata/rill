@@ -46,9 +46,8 @@
   import { fade } from "svelte/transition";
   import { renameFileArtifact } from "../../entity-management/actions";
   import { getRouteFromName } from "../../entity-management/entity-mappers";
-  import { getName } from "../../entity-management/incrementName";
+  import { getName, isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
-  import { isDuplicateName } from "../../entity-management/utils";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";

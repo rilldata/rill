@@ -1,4 +1,4 @@
-import { getName } from "@rilldata/web-common/features/entity-management/incrementName";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { createModel } from "@rilldata/web-common/features/models/createModel";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import { notifications } from "../../components/notifications";

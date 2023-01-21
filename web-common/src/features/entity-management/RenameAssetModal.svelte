@@ -14,8 +14,8 @@
   import { runtimeStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
+  import { isDuplicateName } from "./name-utils";
   import { useAllNames } from "./selectors";
-  import { isDuplicateName } from "./utils";
 
   export let closeModal: () => void;
   export let entityType: EntityType;

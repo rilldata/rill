@@ -1,8 +1,5 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-import { getNextEntityName } from "@rilldata/web-common/features/entity-management/getNextEntityId";
-import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1DeleteFileAndReconcileResponse,
   V1RenameFileAndReconcileResponse,
@@ -19,6 +16,9 @@ import {
   getLabel,
   getRouteFromName,
 } from "./entity-mappers";
+import { fileArtifactsStore } from "./file-artifacts-store";
+import { getNextEntityName } from "./name-utils";
+import type { EntityType } from "./types";
 
 export async function renameFileArtifact(
   queryClient: QueryClient,

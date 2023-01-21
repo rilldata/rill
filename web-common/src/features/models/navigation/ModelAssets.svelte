@@ -10,7 +10,7 @@
   import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { getName } from "../../entity-management/incrementName";
+  import { getName } from "../../entity-management/name-utils";
   import { createModel } from "../createModel";
   import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";

@@ -21,8 +21,8 @@
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
+  import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
-  import { isDuplicateName } from "../../entity-management/utils";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
