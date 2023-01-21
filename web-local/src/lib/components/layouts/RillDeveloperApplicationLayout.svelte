@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
@@ -22,6 +23,10 @@
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
+  import {
+    addReconcilingOverlay,
+    syncFileSystemPeriodically,
+  } from "./sync-file-system";
 
   const queryClient = createQueryClient();
 
@@ -46,6 +51,14 @@
     return initMetrics(config);
   });
 
+  syncFileSystemPeriodically(
+    queryClient,
+    runtimeStore,
+    page,
+    fileArtifactsStore
+  );
+  $: addReconcilingOverlay($page.url.pathname);
+
   let dbRunState = "disconnected";
   let runstateTimer;
 
@@ -55,8 +68,6 @@
       dbRunState = state;
     }, 500);
   }
-
-  // FROM OLD INDEX.SVELTE
 
   let showDropOverlay = false;
 
@@ -86,6 +97,7 @@
       >
         <div slot="title">
           <span class="font-bold">{$overlay?.title}</span>
+          <div>{$overlay?.message}</div>
         </div>
       </BlockingOverlayContainer>
     {/if}

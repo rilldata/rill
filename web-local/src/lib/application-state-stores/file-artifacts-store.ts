@@ -1,5 +1,5 @@
 import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
-import { Readable, writable } from "svelte/store";
+import { derived, Readable, writable } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { MetricsConfig } from "./metrics-internal-store";
 
@@ -8,6 +8,7 @@ export type FileArtifactsData = {
   name?: string;
   errors?: Array<V1ReconcileError>;
   jsonRepresentation?: MetricsConfig | Record<string, never>;
+  isReconciling?: boolean;
 };
 
 /**
@@ -26,10 +27,11 @@ const createOrUpdateFileArtifact = (
   callback: (entityData: FileArtifactsData) => void
 ) => {
   update((state) => {
-    if (!state[path]) {
+    if (!state.entities[path]) {
       state.entities[path] = {
         errors: [],
         jsonRepresentation: {},
+        isReconciling: false,
       };
     }
     callback(state.entities[path]);
@@ -84,13 +86,31 @@ const fileArtifactsEntitiesReducers = {
       }
     );
   },
+
+  setIsReconciling(affectedPath: string, isReconciling: boolean) {
+    createOrUpdateFileArtifact(
+      affectedPath,
+      (entityData: FileArtifactsData) => {
+        entityData.isReconciling = isReconciling;
+      }
+    );
+  },
 };
 
-export const fileArtifactsStore: Readable<FileArtifactsState> &
-  typeof fileArtifactsEntitiesReducers = {
+export type FileArtifactsStore = Readable<FileArtifactsState> &
+  typeof fileArtifactsEntitiesReducers;
+
+export const fileArtifactsStore: FileArtifactsStore = {
   subscribe,
   ...fileArtifactsEntitiesReducers,
 };
+
+export function getIsFileReconcilingStore(file: string) {
+  return derived(
+    fileArtifactsStore,
+    ($store) => $store.entities[file]?.isReconciling
+  );
+}
 
 function correctFilePath(filePath: string) {
   // TODO: why does affectedPaths not have the leading /
