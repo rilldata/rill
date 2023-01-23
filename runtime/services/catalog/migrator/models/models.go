@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -20,25 +19,83 @@ func init() {
 type modelMigrator struct{}
 
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
+	sql := catalogObj.GetModel().Sql
+	materialize := catalogObj.GetModel().Materialize
+	materializeType, err := getMaterializeType(materialize)
+	if err != nil {
+		return err
+	}
 	return olap.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
-			"CREATE OR REPLACE VIEW %s AS (%s)",
+			"CREATE OR REPLACE %s %s AS (%s)",
+			materializeType,
 			catalogObj.Name,
-			catalogObj.GetModel().Sql,
+			sql,
 		),
 		Priority: 100,
 	})
 }
 
-func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
-	return m.Create(ctx, olap, repo, catalogObj)
+func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj *drivers.CatalogEntry, newCatalogObj *drivers.CatalogEntry) error {
+	if oldCatalogObj.Name != newCatalogObj.Name {
+		// should not happen but just to be sure
+		return errors.New("update is called but model name has changed")
+	}
+	oldModel := oldCatalogObj.GetModel()
+	newModel := newCatalogObj.GetModel()
+	// currently we are treating Model_MATERIALIZE_TRUE and Model_MATERIALIZE_INFERRED the same as both are TABLEs
+	// and Model_MATERIALIZE_FALSE and Model_MATERIALIZE_UNSPECIFIED the same as both are VIEWs
+	oldMaterializeType, err := getMaterializeType(oldModel.Materialize)
+	if err != nil {
+		return err
+	}
+	newMaterializeType, err := getMaterializeType(newModel.Materialize)
+	if err != nil {
+		return err
+	}
+	// check if sql and materialize type are same and if so, do nothing
+	// this includes the cases where materialize is changed from true to inferred or false to unspecified and vice versa
+	if oldModel.Sql == newModel.Sql && oldMaterializeType == newMaterializeType {
+		return nil
+	}
+	// if sql is changed and materialize type is the same then just update the sql
+	if oldModel.Sql != newModel.Sql && oldMaterializeType == newMaterializeType {
+		return m.Create(ctx, olap, repo, newCatalogObj)
+	}
+	// else drop the old type and create new materialized type using new sql
+	err = m.Delete(ctx, olap, oldCatalogObj)
+	if err != nil {
+		return err
+	}
+	return m.Create(ctx, olap, repo, newCatalogObj)
+}
+
+func getMaterializeType(materialize runtimev1.Model_Materialize) (string, error) {
+	materializeType := ""
+	switch materialize {
+	case runtimev1.Model_MATERIALIZE_TRUE:
+		materializeType = "TABLE"
+	case runtimev1.Model_MATERIALIZE_INFERRED:
+		materializeType = "TABLE"
+	case runtimev1.Model_MATERIALIZE_FALSE:
+		materializeType = "VIEW"
+	case runtimev1.Model_MATERIALIZE_UNSPECIFIED:
+		materializeType = "VIEW"
+	default:
+		return materializeType, errors.New("invalid materialize type")
+	}
+	return materializeType, nil
 }
 
 func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
+	materializeType, err := getMaterializeType(catalogObj.GetModel().Materialize)
+	if err != nil {
+		return err
+	}
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		err := olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, tempName),
+			Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", materializeType, from, tempName),
 			Priority: 100,
 		})
 		if err != nil {
@@ -48,21 +105,24 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER VIEW %s RENAME TO %s", from, catalogObj.Name),
+		Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", materializeType, from, catalogObj.Name),
 		Priority: 100,
 	})
 }
 
 func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
+	materializeType, err := getMaterializeType(catalogObj.GetModel().Materialize)
+	if err != nil {
+		return err
+	}
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", catalogObj.Name),
+		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", materializeType, catalogObj.Name),
 		Priority: 100,
 	})
 }
 
 func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
 	model := catalog.GetModel()
-	model.Sql = sanitizeQuery(model.Sql)
 	dependencies := ExtractTableNames(model.Sql)
 
 	embeddedSourcesMap := make(map[string]*drivers.CatalogEntry)
@@ -96,8 +156,12 @@ func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPSt
 }
 
 func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
+	model := catalog.GetModel()
+	if model.Materialize == runtimev1.Model_MATERIALIZE_INVALID {
+		return migrator.CreateValidationError(catalog.Path, "Invalid materialize type")
+	}
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:    catalog.GetModel().Sql,
+		Query:    model.Sql,
 		Priority: 100,
 		DryRun:   true,
 	})
@@ -108,7 +172,7 @@ func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, ca
 }
 
 func (m *modelMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
-	return cat1.GetModel().Dialect == cat2.GetModel().Dialect && strings.EqualFold(cat1.GetModel().Sql, cat2.GetModel().Sql)
+	return cat1.GetModel().Dialect == cat2.GetModel().Dialect && strings.EqualFold(cat1.GetModel().Sql, cat2.GetModel().Sql) && cat1.GetModel().Materialize == cat2.GetModel().Materialize
 }
 
 func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -119,25 +183,4 @@ func (m *modelMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore
 		return false, err
 	}
 	return true, nil
-}
-
-var (
-	QueryCommentRegex     = regexp.MustCompile(`(?m)--.*$`)
-	MultipleSpacesRegex   = regexp.MustCompile(`\s\s+`)
-	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
-)
-
-// TODO: use this while extracting source names to get case insensitive dag
-// TODO: should this be used to store the sql in catalog?
-func sanitizeQuery(query string) string {
-	// remove all comments
-	query = QueryCommentRegex.ReplaceAllString(query, " ")
-	// new line => space
-	query = strings.ReplaceAll(query, "\n", " ")
-	// multiple spaces => single space
-	query = MultipleSpacesRegex.ReplaceAllString(query, " ")
-	// remove all spaces after a comma
-	query = SpacesAfterCommaRegex.ReplaceAllString(query, ",")
-	query = strings.ReplaceAll(query, ";", "")
-	return strings.TrimSpace(query)
 }
