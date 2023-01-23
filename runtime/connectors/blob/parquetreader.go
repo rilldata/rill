@@ -6,31 +6,69 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync/atomic"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
 	"github.com/apache/arrow/go/v11/arrow/memory"
 	"github.com/apache/arrow/go/v11/parquet"
+	"github.com/apache/arrow/go/v11/parquet/compress"
 	"github.com/apache/arrow/go/v11/parquet/file"
 	"github.com/apache/arrow/go/v11/parquet/pqarrow"
 	"gocloud.dev/blob"
 )
 
 type parquetReader struct {
-	ctx    context.Context
-	bucket *blob.Bucket
-	index  int64
-	obj    *blob.ListObject
-	call   *int32
+	ctx            context.Context
+	bucket         *blob.Bucket
+	index          int64
+	obj            *blob.ListObject
+	call           int32
+	debugMode      bool
+	buffer         []byte
+	bufStartOffset int64
+	bufEndOffset   int64
+	cached         int
+}
+
+func (f *parquetReader) WithinBuffer(start, end int64) bool {
+	return f.bufStartOffset <= start && f.bufEndOffset > end
+}
+
+func (f *parquetReader) ReadInBuffer(start int64) error {
+	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, start, int64(len(f.buffer)), nil)
+	if err != nil {
+		return err
+	}
+
+	defer reader.Close()
+
+	bytes, err := reader.Read(f.buffer)
+	if err != nil {
+		return err
+	}
+
+	f.bufStartOffset = start
+	f.bufEndOffset = start + int64(bytes)
+	return nil
 }
 
 // todo :: add buffer for caching
 func (f *parquetReader) ReadAt(p []byte, off int64) (n int, err error) {
 	fmt.Printf("reading %v bytes at offset %v\n", len(p), off)
 
+	end := off + int64(len(p))
+	if len(p) <= len(f.buffer) {
+		if !f.WithinBuffer(off, end) {
+			if err := f.ReadInBuffer(off); err != nil {
+				return 0, err
+			}
+		} else {
+			f.cached++
+		}
+		return copy(p, f.buffer), nil
+	}
+
 	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, off, int64(len(p)), nil)
-	// reader, err := f.bucket.NewReader(f.ctx, f.fileName, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +79,7 @@ func (f *parquetReader) ReadAt(p []byte, off int64) (n int, err error) {
 		return n, readErr
 	}
 
-	atomic.AddInt32(f.call, 1)
+	f.call++
 	return read, nil
 }
 
@@ -56,9 +94,10 @@ func (f *parquetReader) Size() int64 {
 }
 
 func (f *parquetReader) Close() error {
-	fmt.Printf("made %v calls\n", *f.call)
+	if f.debugMode {
+		fmt.Printf("made %v calls cached calls %v\n", f.call, f.cached)
+	}
 	return nil
-	// return f.bucket.Close()
 }
 
 func (f *parquetReader) Seek(offset int64, whence int) (int64, error) {
@@ -81,13 +120,14 @@ func (f *parquetReader) Seek(offset int64, whence int) (int64, error) {
 	return abs, nil
 }
 
-func NewParquetReader(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject) *parquetReader {
+func newParquetReader(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject) *parquetReader {
 	return &parquetReader{
-		ctx:    ctx,
-		bucket: bucket,
-		index:  0,
-		obj:    obj,
-		call:   new(int32),
+		ctx:       ctx,
+		bucket:    bucket,
+		index:     0,
+		obj:       obj,
+		debugMode: true,
+		buffer:    make([]byte, 1024*1024), // 1MB buffer
 	}
 }
 
@@ -130,7 +170,7 @@ func estimate(reader *file.Reader, option ExtractOptions) ([]int, int64) {
 		if cumSize+rowGroupSize > option.Size {
 			// taking entire crosses allowed size
 			perRowSize := rowGroupSize / rowCount
-			rows += int64((option.Size - cumSize) / perRowSize)
+			rows += (option.Size - cumSize) / perRowSize
 			return result, rows
 		}
 		rows += rowCount
@@ -138,9 +178,9 @@ func estimate(reader *file.Reader, option ExtractOptions) ([]int, int64) {
 	return result, rows
 }
 
-func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractOptions) (string, error) {
+func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractOptions, fw *os.File) error {
 	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
-	reader := NewParquetReader(ctx, bucket, obj)
+	reader := newParquetReader(ctx, bucket, obj)
 
 	props := parquet.NewReaderProperties(mem)
 	props.BufferedStreamEnabled = true
@@ -148,7 +188,7 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 
 	pf, err := file.NewParquetReader(reader, file.WithReadProps(props))
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer pf.Close()
 
@@ -157,10 +197,10 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 	// since we have already enabled BufferedStreamEnabled for reading parquet keeping it low shouldn't make extra network calls
 	// whereas keeping it high can potentially load multiple groups(make multiple network calls)
 	// keeping it 1 for simplicty
-	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: 1, Parallel: true}
+	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: 1, Parallel: false}
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	numRowGroups := pf.NumRowGroups()
@@ -171,15 +211,15 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 	rowIndices, rowLimit := estimate(pf, option)
 
 	r, err := fileReader.GetRecordReader(ctx, getArray(pf.RowGroup(0).NumColumns(), false), rowIndices)
-	if err == nil {
-		return "", err
+	if err != nil {
+		return err
 	}
 
 	records := make([]arrow.Record, rowLimit)
 	for i := int64(0); i < rowLimit; i++ {
 		rec, err := r.Read()
 		if err != nil {
-			return "", err
+			return err
 		}
 
 		// need to explicitly retain, else memory is reclaimed
@@ -194,23 +234,18 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 
 	schema, err := fileReader.Schema()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	table := array.NewTableFromRecords(schema, records)
 	defer table.Release()
 
-	// println(table.NumRows())
-	fileName := "out.parquet"
-	file, err := os.Create(fileName)
-	if err != nil {
-		return "", err
-	}
-
-	defer file.Close()
-
-	if err := pqarrow.WriteTable(table, file, table.NumRows(), nil, pqarrow.NewArrowWriterProperties(pqarrow.WithAllocator(mem))); err != nil {
-		return "", err
-	}
-	return fileName, nil
+	wp := parquet.NewWriterProperties(parquet.WithVersion(parquet.V1_0), parquet.WithCompression(compress.Codecs.Snappy))
+	return pqarrow.WriteTable(
+		table,
+		fw,
+		table.NumRows(),
+		wp,
+		pqarrow.NewArrowWriterProperties(pqarrow.WithAllocator(mem)),
+	)
 }

@@ -32,7 +32,7 @@ func (b *BlobHandler) DownloadObject(ctx context.Context, objpath string) (strin
 	}
 	defer rc.Close()
 	objName := filepath.Base(objpath)
-	return fileutil.CopyToTempFile(rc, fileutil.Stem(objName), fileutil.FullExt(objName))
+	return fileutil.CopyToTempFile(rc, "", fileutil.Stem(objName), fileutil.FullExt(objName))
 }
 
 // object path is relative to bucket

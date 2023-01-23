@@ -37,9 +37,9 @@ func Stem(path string) string {
 
 // CopyToTempFile pipes a reader to a temporary file. The caller must delete
 // the temporary file when it's no longer needed.
-func CopyToTempFile(r io.Reader, name, ext string) (string, error) {
+func CopyToTempFile(r io.Reader, dir, name, ext string) (string, error) {
 	// The * in the pattern will be replaced by a random string
-	f, err := os.CreateTemp("", fmt.Sprintf("%s*%s", name, ext))
+	f, err := os.CreateTemp(dir, fmt.Sprintf("%s*%s", name, ext))
 	if err != nil {
 		return "", fmt.Errorf("os.Create: %w", err)
 	}
@@ -144,4 +144,21 @@ func ExpandHome(path string) (string, error) {
 	}
 
 	return filepath.Join(usr.HomeDir, path[1:]), nil
+}
+
+// CreateTemp creates all directory required to create objPath with dir as parent directory
+// opens the file represented by objPath for reading and writing, and returns the resulting file.
+// It is the caller's responsibility to remove the file when it is no longer needed.
+func TempFile(dir, objPath string) (*os.File, error) {
+	if dir == "" {
+		dir = os.TempDir()
+	}
+
+	fullDir := filepath.Join(dir, filepath.Dir(objPath))
+	if err := os.MkdirAll(fullDir, 0o750); err != nil {
+		return nil, err
+	}
+
+	objName := filepath.Base(objPath)
+	return os.CreateTemp(fullDir, fmt.Sprintf("%s*%s", Stem(objName), FullExt(objName)))
 }

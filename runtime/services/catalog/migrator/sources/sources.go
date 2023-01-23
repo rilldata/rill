@@ -25,6 +25,7 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 		Name:       apiSource.Name,
 		Connector:  apiSource.Connector,
 		Properties: apiSource.Properties.AsMap(),
+		Policy:     apiSource.GetPolicy(),
 	}
 
 	env := &connectors.Env{
@@ -76,6 +77,9 @@ func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, c
 
 func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
 	if cat1.GetSource().Connector != cat2.GetSource().Connector {
+		return false
+	}
+	if cat1.GetSource().GetPolicy() != cat2.GetSource().GetPolicy() {
 		return false
 	}
 	s1 := &connectors.Source{

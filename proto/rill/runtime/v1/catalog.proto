@@ -36,6 +36,21 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
+  //Sample policy 
+  message ExtractPolicy {
+    // extract configs
+    message ExtractConfig {
+      // strategy of the policy
+      string strategy = 1; 
+      // size
+      string size = 2;
+    }
+    // Row policy to select rows
+    ExtractConfig row = 1;
+    ExtractConfig partition = 2;
+  }
+  // extraction policy for the source
+  ExtractPolicy policy = 6;
 }
 
 // Model is the internal representation of a model definition

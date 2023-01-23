@@ -2,10 +2,10 @@ package blob
 
 import (
 	"context"
+	"math"
 	"os"
 	"testing"
 
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/memblob"
@@ -22,6 +22,8 @@ func TestFetchFileNames(t *testing.T) {
 	bucket, err := prepareBucket()
 	require.NoError(t, err)
 
+	extractConfigs, err := NewExtractConfigs(nil)
+	require.NoError(t, err)
 	type args struct {
 		ctx         context.Context
 		bucket      *blob.Bucket
@@ -37,49 +39,49 @@ func TestFetchFileNames(t *testing.T) {
 	}{
 		{
 			name:    "single file found",
-			args:    args{context.Background(), bucket, FetchConfigs{}, "2020/01/01/aata.txt", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/01/01/aata.txt", "mem://"},
 			want:    map[string]struct{}{"hello": {}},
 			wantErr: false,
 		},
 		{
 			name:    "single file absent",
-			args:    args{context.Background(), bucket, FetchConfigs{}, "2020/01/01/eata.txt", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/01/01/eata.txt", "mem://"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "recursive glob",
-			args:    args{context.Background(), bucket, FetchConfigs{}, "2020/**/*.txt", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/**/*.txt", "mem://"},
 			want:    map[string]struct{}{"hello": {}, "world": {}, "writing": {}, "test": {}},
 			wantErr: false,
 		},
 		{
 			name:    "non recursive glob",
-			args:    args{context.Background(), bucket, FetchConfigs{}, "2020/0?/0[1-3]/{a,b}ata.txt", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/0?/0[1-3]/{a,b}ata.txt", "mem://"},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
 		},
 		{
 			name:    "glob absent",
-			args:    args{context.Background(), bucket, FetchConfigs{}, "2020/**/*.csv", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/**/*.csv", "mem://"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "total size limit",
-			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxTotalSize: 1}, "2020/**", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxTotalSize: 1, Extract: extractConfigs}, "2020/**", "mem://"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "max match limit",
-			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsMatched: 1}, "2020/**", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsMatched: 1, Extract: extractConfigs}, "2020/**", "mem://"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "max list limit",
-			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsListed: 1}, "2020/**", "mem://"},
+			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsListed: 1, Extract: extractConfigs}, "2020/**", "mem://"},
 			want:    nil,
 			wantErr: true,
 		},
@@ -106,7 +108,7 @@ func TestFetchFileNames(t *testing.T) {
 	}
 }
 
-func TestFetchFileNamesLimits(t *testing.T) {
+func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 	bucket, err := prepareBucket()
 	require.NoError(t, err)
 
@@ -127,7 +129,7 @@ func TestFetchFileNamesLimits(t *testing.T) {
 			name: "listing head limits",
 			args: args{context.Background(),
 				bucket,
-				FetchConfigs{Extract: &yaml.SourceExtract{Partitions: &yaml.SourceExtractOptions{Strategy: "head", Size: "2"}}},
+				FetchConfigs{Extract: &ExtractConfigs{Partition: ExtractOptions{Strategy: "head", Size: 2}, Row: ExtractOptions{Strategy: NONE, Size: math.MaxInt64}}},
 				"2020/**",
 				"mem://",
 			},
@@ -138,7 +140,7 @@ func TestFetchFileNamesLimits(t *testing.T) {
 			name: "listing tail limits",
 			args: args{context.Background(),
 				bucket,
-				FetchConfigs{Extract: &yaml.SourceExtract{Partitions: &yaml.SourceExtractOptions{Strategy: "tail", Size: "2"}}},
+				FetchConfigs{Extract: &ExtractConfigs{Partition: ExtractOptions{Strategy: "tail", Size: 2}, Row: ExtractOptions{Strategy: NONE, Size: math.MaxInt64}}},
 				"2020/**",
 				"mem://",
 			},

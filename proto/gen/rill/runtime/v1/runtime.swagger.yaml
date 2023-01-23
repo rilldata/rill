@@ -1210,6 +1210,16 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
+  ExtractPolicyExtractConfig:
+    type: object
+    properties:
+      size:
+        type: string
+        title: size
+      strategy:
+        type: string
+        title: strategy of the policy
+    title: extract configs
   GenerateTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -1306,6 +1316,15 @@ definitions:
         type: integer
         format: int64
     title: CharLocation is a line and column in a code artifact
+  SourceExtractPolicy:
+    type: object
+    properties:
+      partition:
+        $ref: '#/definitions/ExtractPolicyExtractConfig'
+      row:
+        $ref: '#/definitions/ExtractPolicyExtractConfig'
+        title: Row policy to select rows
+    title: Sample policy
   StructTypeField:
     type: object
     properties:
@@ -2109,6 +2128,9 @@ definitions:
       name:
         type: string
         title: Name of the source
+      policy:
+        $ref: '#/definitions/SourceExtractPolicy'
+        title: extraction policy for the source
       properties:
         type: object
         title: Connector properties assigned in the source

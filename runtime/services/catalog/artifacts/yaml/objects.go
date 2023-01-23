@@ -24,16 +24,15 @@ type Source struct {
 	GlobMaxObjectsMatched int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
-	SourceExtract         *SourceExtract `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
+	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
 }
 
-// todo :: better name ??
-type SourceExtract struct {
-	Rows       *SourceExtractOptions `yaml:"rows,omitempty" mapstructure:"rows,omitempty" json:"rows,omitempty"`
-	Partitions *SourceExtractOptions `yaml:"partitions,omitempty" mapstructure:"partitions,omitempty" json:"partitions,omitempty"`
+type ExtractPolicy struct {
+	Row       *ExtractOptions `yaml:"rows,omitempty" mapstructure:"rows,omitempty" json:"rows,omitempty"`
+	Partition *ExtractOptions `yaml:"partitions,omitempty" mapstructure:"partitions,omitempty" json:"partitions,omitempty"`
 }
 
-type SourceExtractOptions struct {
+type ExtractOptions struct {
 	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty" json:"strategy,omitempty"`
 	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty" json:"size,omitempty"`
 }
@@ -81,7 +80,27 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 		source.Path = ""
 	}
 
+	if extract, err := toExtractArtifact(catalog.GetSource().GetPolicy()); err != nil {
+		return nil, err
+	} else {
+		source.ExtractPolicy = extract
+	}
+
 	return source, nil
+}
+
+func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy, error) {
+	if extract == nil {
+		return nil, nil
+	}
+
+	sourceExtract := &ExtractPolicy{}
+	err := copier.Copy(sourceExtract, extract)
+	if err != nil {
+		return nil, err
+	}
+
+	return sourceExtract, nil
 }
 
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
@@ -123,16 +142,12 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["glob.page_size"] = source.GlobPageSize
 	}
 
-	if source.SourceExtract != nil {
-		result := map[string]interface{}{}
-		err := mapstructure.Decode(source.SourceExtract, &result)
-		if err != nil {
-			return nil, err
-		}
-		props["source.extract"] = result
+	propsPB, err := structpb.NewStruct(props)
+	if err != nil {
+		return nil, err
 	}
 
-	propsPB, err := structpb.NewStruct(props)
+	extract, err := fromExtractArtifact(source.ExtractPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +161,23 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 			Name:       name,
 			Connector:  source.Type,
 			Properties: propsPB,
+			Policy:     extract,
 		},
 	}, nil
+}
+
+func fromExtractArtifact(sourceExtract *ExtractPolicy) (*runtimev1.Source_ExtractPolicy, error) {
+	if sourceExtract == nil {
+		return nil, nil
+	}
+
+	extractPolicy := &runtimev1.Source_ExtractPolicy{}
+	err := copier.Copy(extractPolicy, sourceExtract)
+	if err != nil {
+		return nil, err
+	}
+
+	return extractPolicy, nil
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {

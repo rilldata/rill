@@ -50,7 +50,7 @@ type Config struct {
 	GlobMaxObjectsMatched int                 `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64               `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int                 `mapstructure:"glob.page_size"`
-	SourceExtract         *yaml.SourceExtract `mapstructure:"source.extract"`
+	SourceExtract         *yaml.ExtractPolicy `mapstructure:"source.extract"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -95,12 +95,18 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	}
 	defer bucketObj.Close()
 
+	// prepare fetch configs
+	extractConfig, err := rillblob.NewExtractConfigs(source.Policy)
+	if err != nil {
+		return nil, err
+	}
+
 	fetchConfigs := rillblob.FetchConfigs{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
-		Extract:               conf.SourceExtract,
+		Extract:               extractConfig,
 	}
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, bucket)
 }

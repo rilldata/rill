@@ -266,6 +266,7 @@ export type V1SourceProperties = { [key: string]: any };
 export interface V1Source {
   connector?: string;
   name?: string;
+  policy?: SourceExtractPolicy;
   properties?: V1SourceProperties;
   schema?: V1StructType;
 }
@@ -508,11 +509,6 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
 export interface V1ListFilesResponse {
   paths?: string[];
 }
@@ -544,6 +540,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1GetTopKResponse {
@@ -740,6 +741,11 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
+export interface SourceExtractPolicy {
+  partition?: ExtractPolicyExtractConfig;
+  row?: ExtractPolicyExtractConfig;
+}
+
 export interface ReconcileErrorCharLocation {
   column?: number;
   line?: number;
@@ -792,6 +798,11 @@ export interface GenerateTimeSeriesRequestBasicMeasure {
   expression?: string;
   id?: string;
   sqlName?: string;
+}
+
+export interface ExtractPolicyExtractConfig {
+  size?: string;
+  strategy?: string;
 }
 
 export type ConnectorPropertyType =

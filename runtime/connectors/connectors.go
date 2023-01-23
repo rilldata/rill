@@ -3,6 +3,8 @@ package connectors
 import (
 	"context"
 	"fmt"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -81,10 +83,10 @@ type Env struct {
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).
 type Source struct {
-	Name         string
-	Connector    string
-	SamplePolicy *SamplePolicy
-	Properties   map[string]any
+	Name       string
+	Connector  string
+	Policy     *runtimev1.Source_ExtractPolicy
+	Properties map[string]any
 }
 
 // SamplePolicy tells the connector to only ingest a sample of data from the source.

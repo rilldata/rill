@@ -3,16 +3,20 @@ package blob
 import (
 	"context"
 	"fmt"
+	"io"
+	"math"
+	"os"
 	"strconv"
 	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/container"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"gocloud.dev/blob"
+	"golang.org/x/sync/errgroup"
 )
 
 type Strategy string
@@ -33,16 +37,20 @@ type ExtractConfigs struct {
 	Partition ExtractOptions
 }
 
-func NewExtractConfigs(input *yaml.SourceExtract) (*ExtractConfigs, error) {
+func NewExtractConfigs(input *runtimev1.Source_ExtractPolicy) (*ExtractConfigs, error) {
 	config := &ExtractConfigs{
-		Row:       ExtractOptions{Strategy: NONE},
+		Row:       ExtractOptions{Strategy: NONE, Size: math.MaxInt64},
 		Partition: ExtractOptions{Strategy: NONE},
 	}
 
+	if input == nil {
+		return config, nil
+	}
+
 	// parse partition
-	if input.Partitions != nil {
+	if input.Partition != nil {
 		// parse strategy
-		strategy, err := parseStrategy(input.Partitions.Strategy)
+		strategy, err := parseStrategy(input.Partition.Strategy)
 		if err != nil {
 			return nil, err
 		}
@@ -50,18 +58,21 @@ func NewExtractConfigs(input *yaml.SourceExtract) (*ExtractConfigs, error) {
 		config.Partition.Strategy = strategy
 
 		// parse size
-		size, err := strconv.ParseInt(input.Partitions.Size, 10, 64)
+		size, err := strconv.ParseInt(input.Partition.Size, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
+		}
+		if size <= 0 {
+			return nil, fmt.Errorf("invalid size %q", size)
 		}
 
 		config.Partition.Size = size
 	}
 
 	// parse rows
-	if input.Rows != nil {
+	if input.Row != nil {
 		// parse strategy
-		strategy, err := parseStrategy(input.Rows.Strategy)
+		strategy, err := parseStrategy(input.Row.Strategy)
 		if err != nil {
 			return nil, err
 		}
@@ -69,9 +80,13 @@ func NewExtractConfigs(input *yaml.SourceExtract) (*ExtractConfigs, error) {
 		config.Row.Strategy = strategy
 
 		// parse size
-		size, err := getBytes(input.Rows.Size)
+		// todo :: add support for number of rows
+		size, err := getBytes(input.Row.Size)
 		if err != nil {
 			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
+		}
+		if size <= 0 {
+			return nil, fmt.Errorf("invalid size %q", size)
 		}
 
 		config.Row.Size = size
@@ -120,7 +135,7 @@ func ContainerForParitionStrategy(option ExtractOptions) (container.Container, e
 	}
 }
 
-func WithinSize(option ExtractOptions, size int64) bool {
+func withinSize(option ExtractOptions, size int64) bool {
 	switch option.Strategy {
 	case TAIL:
 		return true
@@ -176,9 +191,9 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 	var (
 		size, fetched int64
 		matchCount    int
+		containerFull bool
 	)
 
-	containerFull := false
 	token := blob.FirstPageToken
 	for token != nil && !containerFull {
 		objs, nextToken, err := bucket.ListPage(ctx, token, config.GlobPageSize, listOptions)
@@ -192,7 +207,7 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
-				if !c.Add(obj) && WithinSize(config.Extract.Row, size) {
+				if !c.Add(obj) && withinSize(config.Extract.Row, size) {
 					// don't add more items
 					containerFull = true
 					break
@@ -210,19 +225,82 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 	}
 
 	size = 0
+	applicableItems := make([]*blob.ListObject, 0)
 	for _, val := range items {
 		obj := val.(*blob.ListObject)
-		handler.FileNames = append(handler.FileNames, obj.Key)
+		applicableItems = append(applicableItems, obj)
 		size += obj.Size
 		if size > config.Extract.Row.Size {
 			break
 		}
 	}
 
-	if err := handler.DownloadAll(ctx); err != nil {
+	return DownloadAll(ctx, bucket, &config.Extract.Row, applicableItems)
+}
+
+// object path is relative to bucket
+func DownloadAll(ctx context.Context, bucket *blob.Bucket, options *ExtractOptions, items []*blob.ListObject) ([]string, error) {
+	totalSize := int64(0)
+	for _, item := range items {
+		totalSize += item.Size
+	}
+
+	tempDir, err := os.MkdirTemp(os.TempDir(), "blob*ingestion")
+	if err != nil {
 		return nil, err
 	}
-	return handler.LocalPaths, nil
+	localPaths := make([]string, len(items))
+
+	g, grpCtx := errgroup.WithContext(ctx)
+	g.SetLimit(concurrentBlobDownloadLimit)
+	for i, item := range items {
+		obj := item
+		index := i
+		g.Go(func() error {
+			file, err := fileutil.TempFile(tempDir, obj.Key)
+			if err != nil {
+				return err
+			}
+
+			localPaths[index] = file.Name()
+			fmt.Println(file.Name())
+			defer file.Close()
+			if index == len(items)-1 && totalSize > options.Size {
+				sizeReqd := options.Size - (totalSize - obj.Size)
+				// download partial file
+				err = Download(grpCtx, bucket, obj, ExtractOptions{Size: sizeReqd, Strategy: options.Strategy}, file)
+			} else {
+				// download full file
+				err = downloadObject(grpCtx, bucket, obj.Key, file)
+			}
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		// one of the download failed
+		// remove the files
+		fileutil.ForceRemoveFiles(localPaths)
+		// remove the empty temp directory
+		os.Remove(tempDir)
+		return nil, err
+	}
+
+	return localPaths, nil
+}
+
+func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, file *os.File) error {
+	rc, err := bucket.NewReader(ctx, objpath, nil)
+	if err != nil {
+		return fmt.Errorf("Object(%q).NewReader: %w", objpath, err)
+	}
+	defer rc.Close()
+
+	_, err = io.Copy(file, rc)
+	return err
 }
 
 func validateLimits(size int64, matchCount int, fetched int64, config FetchConfigs) error {
