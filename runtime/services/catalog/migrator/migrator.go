@@ -48,7 +48,7 @@ func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore,
 	return migrator.Create(ctx, olap, repo, catalog)
 }
 
-func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalog *drivers.CatalogEntry, newCatalog *drivers.CatalogEntry) error {
+func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalog, newCatalog *drivers.CatalogEntry) error {
 	migrator, ok := getMigrator(newCatalog)
 	if !ok {
 		// no error here. not all migrators are needed

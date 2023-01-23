@@ -28,12 +28,12 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string) (*dri
 	name := fileutil.Stem(filePath)
 	// extract materialize option before sanitizing query as it will remove that comment
 	materialize := parseMaterializationInfo(blob)
-	sanitizedSql := sanitizeQuery(blob)
+	sanitizedSQL := sanitizeQuery(blob)
 	return &drivers.CatalogEntry{
 		Type: drivers.ObjectTypeModel,
 		Object: &runtimev1.Model{
 			Name:        name,
-			Sql:         sanitizedSql,
+			Sql:         sanitizedSQL,
 			Dialect:     runtimev1.Model_DIALECT_DUCKDB,
 			Materialize: materialize,
 		},

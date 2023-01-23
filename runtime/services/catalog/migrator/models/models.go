@@ -36,7 +36,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 	})
 }
 
-func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj *drivers.CatalogEntry, newCatalogObj *drivers.CatalogEntry) error {
+func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	if oldCatalogObj.Name != newCatalogObj.Name {
 		// should not happen but just to be sure
 		return errors.New("update is called but model name has changed")

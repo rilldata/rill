@@ -35,7 +35,7 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj *drivers.CatalogEntry, newCatalogObj *drivers.CatalogEntry) error {
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	return m.Create(ctx, olap, repo, newCatalogObj)
 }
 
