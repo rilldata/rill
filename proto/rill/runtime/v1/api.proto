@@ -296,7 +296,7 @@ message PingResponse {
 // just a single instance.
 message Instance {
   // Identifier (UUID)
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // Driver to connect to for OLAP (options: duckdb, druid)
   string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
   // DSN for connection to OLAP
@@ -325,7 +325,7 @@ message ListInstancesResponse {
 
 // Request message for RuntimeService.GetInstance
 message GetInstanceRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
 }
 
 // Response message for RuntimeService.GetInstance
@@ -336,7 +336,7 @@ message GetInstanceResponse {
 // Request message for RuntimeService.CreateInstance.
 // See message Instance for field descriptions.
 message CreateInstanceRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
   string olap_dsn = 3;
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
@@ -351,7 +351,7 @@ message CreateInstanceResponse {
 
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
 }
 
 // Response message for RuntimeService.DeleteInstance
@@ -363,7 +363,7 @@ message DeleteInstanceResponse {}
 
 // Request message for RuntimeService.ListFiles
 message ListFilesRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string glob = 2;
 }
 
@@ -374,7 +374,7 @@ message ListFilesResponse {
 
 // Request message for RuntimeService.GetFile
 message GetFileRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string path = 2;
 }
 
@@ -386,7 +386,7 @@ message GetFileResponse {
 
 // Request message for RuntimeService.PutFile
 message PutFileRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string path = 2;
   string blob = 3;
   // Create indicates whether to create the file if it doesn't already exist
@@ -403,7 +403,7 @@ message PutFileResponse {
 
 // Request message for RuntimeService.DeleteFile
 message DeleteFileRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string path = 2;
 }
 
@@ -412,7 +412,7 @@ message DeleteFileResponse {}
 
 // Request message for RuntimeService.RenameFile
 message RenameFileRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string from_path = 2;
   string to_path = 3;
 }
@@ -447,8 +447,8 @@ message CatalogEntry {
 
 // Request message for RuntimeService.ListCatalogEntries
 message ListCatalogEntriesRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
-  ObjectType type = 2 [(validate.rules).enum.defined_only = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
+  ObjectType type = 2;
 }
 
 // Response message for RuntimeService.ListCatalogEntries
@@ -458,7 +458,7 @@ message ListCatalogEntriesResponse {
 
 // Request message for RuntimeService.GetCatalogEntry
 message GetCatalogEntryRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string name = 2;
 }
 
@@ -469,7 +469,7 @@ message GetCatalogEntryResponse {
 
 // Request message for RuntimeService.TriggerRefresh
 message TriggerRefreshRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   string name = 2;
 }
 
@@ -478,7 +478,7 @@ message TriggerRefreshResponse {}
 
 // Request message for RuntimeService.TriggerSync
 message TriggerSyncRequest {
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
 }
 
 // Response message for RuntimeService.TriggerSync
@@ -496,7 +496,7 @@ message TriggerSyncResponse {
 // Request message for RuntimeService.Reconcile
 message ReconcileRequest {
   // Instance to reconcile
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // Changed paths provides a way to "hint" what files have changed in the repo, enabling
   // reconciliation to execute faster by not scanning all code artifacts for changes.
   repeated string changed_paths = 2;
@@ -565,7 +565,7 @@ message ReconcileError {
 
 message PutFileAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // Path to store the file at
   string path = 2;
   // Contents to save to the file
@@ -596,7 +596,7 @@ message PutFileAndReconcileResponse {
 
 message DeleteFileAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // Path to store the file at
   string path = 2;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
@@ -619,7 +619,7 @@ message DeleteFileAndReconcileResponse {
 
 message RenameFileAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // Current path of the file
   string from_path = 2;
   // New path of the file
@@ -644,7 +644,7 @@ message RenameFileAndReconcileResponse {
 
 message RefreshAndReconcileRequest {
   // Instance to store file in and reconcile
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // Current path of the file
   string path = 2;
   // If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
@@ -672,7 +672,7 @@ message RefreshAndReconcileResponse {
 // Request message for RuntimeService.Query
 message QueryRequest {
   // Instance to query
-  string instance_id = 1 [(validate.rules).string.uuid = true];
+  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$"}];
   // SELECT statement
   string sql = 2;
   // Args to interpolate into the statement

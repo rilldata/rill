@@ -35,9 +35,6 @@ var (
 	_ = sort.Sort
 )
 
-// define the regex for a UUID once up-front
-var _api_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
 // Validate checks the field values on PingRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -289,16 +286,19 @@ func (m *Instance) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = InstanceValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_Instance_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := InstanceValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	if _, ok := _Instance_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
@@ -331,14 +331,6 @@ func (m *Instance) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *Instance) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -413,6 +405,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = InstanceValidationError{}
+
+var _Instance_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 var _Instance_OlapDriver_InLookup = map[string]struct{}{
 	"duckdb": {},
@@ -699,28 +693,23 @@ func (m *GetInstanceRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = GetInstanceRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_GetInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := GetInstanceRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	if len(errors) > 0 {
 		return GetInstanceRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *GetInstanceRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -798,6 +787,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetInstanceRequestValidationError{}
+
+var _GetInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on GetInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -952,16 +943,19 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = CreateInstanceRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_CreateInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := CreateInstanceRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	if _, ok := _CreateInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
@@ -994,14 +988,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *CreateInstanceRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1079,6 +1065,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreateInstanceRequestValidationError{}
+
+var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
 	"duckdb": {},
@@ -1243,28 +1231,23 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = DeleteInstanceRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_DeleteInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := DeleteInstanceRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	if len(errors) > 0 {
 		return DeleteInstanceRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *DeleteInstanceRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1342,6 +1325,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteInstanceRequestValidationError{}
+
+var _DeleteInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on DeleteInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1467,30 +1452,25 @@ func (m *ListFilesRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = ListFilesRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_ListFilesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := ListFilesRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Glob
 
 	if len(errors) > 0 {
 		return ListFilesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *ListFilesRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1566,6 +1546,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListFilesRequestValidationError{}
+
+var _ListFilesRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on ListFilesResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -1691,30 +1673,25 @@ func (m *GetFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = GetFileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_GetFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := GetFileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Path
 
 	if len(errors) > 0 {
 		return GetFileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *GetFileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -1790,6 +1767,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetFileRequestValidationError{}
+
+var _GetFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on GetFileResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -1944,16 +1923,19 @@ func (m *PutFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = PutFileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_PutFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := PutFileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Path
@@ -1966,14 +1948,6 @@ func (m *PutFileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return PutFileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *PutFileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2049,6 +2023,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PutFileRequestValidationError{}
+
+var _PutFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on PutFileResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -2174,30 +2150,25 @@ func (m *DeleteFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = DeleteFileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_DeleteFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := DeleteFileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Path
 
 	if len(errors) > 0 {
 		return DeleteFileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *DeleteFileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2275,6 +2246,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteFileRequestValidationError{}
+
+var _DeleteFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on DeleteFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2400,16 +2373,19 @@ func (m *RenameFileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = RenameFileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_RenameFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := RenameFileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for FromPath
@@ -2418,14 +2394,6 @@ func (m *RenameFileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return RenameFileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *RenameFileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -2503,6 +2471,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RenameFileRequestValidationError{}
+
+var _RenameFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on RenameFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2948,39 +2918,25 @@ func (m *ListCatalogEntriesRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = ListCatalogEntriesRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_ListCatalogEntriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := ListCatalogEntriesRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
-	if _, ok := ObjectType_name[int32(m.GetType())]; !ok {
-		err := ListCatalogEntriesRequestValidationError{
-			field:  "Type",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Type
 
 	if len(errors) > 0 {
 		return ListCatalogEntriesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *ListCatalogEntriesRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3058,6 +3014,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListCatalogEntriesRequestValidationError{}
+
+var _ListCatalogEntriesRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on ListCatalogEntriesResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -3217,30 +3175,25 @@ func (m *GetCatalogEntryRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = GetCatalogEntryRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_GetCatalogEntryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := GetCatalogEntryRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return GetCatalogEntryRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *GetCatalogEntryRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3318,6 +3271,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCatalogEntryRequestValidationError{}
+
+var _GetCatalogEntryRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on GetCatalogEntryResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3472,30 +3427,25 @@ func (m *TriggerRefreshRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = TriggerRefreshRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_TriggerRefreshRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := TriggerRefreshRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return TriggerRefreshRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *TriggerRefreshRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3573,6 +3523,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TriggerRefreshRequestValidationError{}
+
+var _TriggerRefreshRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on TriggerRefreshResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3698,28 +3650,23 @@ func (m *TriggerSyncRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = TriggerSyncRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_TriggerSyncRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := TriggerSyncRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	if len(errors) > 0 {
 		return TriggerSyncRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *TriggerSyncRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -3797,6 +3744,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TriggerSyncRequestValidationError{}
+
+var _TriggerSyncRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on TriggerSyncResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3930,16 +3879,19 @@ func (m *ReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = ReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_ReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := ReconcileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Dry
@@ -3948,14 +3900,6 @@ func (m *ReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return ReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *ReconcileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4031,6 +3975,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ReconcileRequestValidationError{}
+
+var _ReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on ReconcileResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -4363,16 +4309,19 @@ func (m *PutFileAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = PutFileAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_PutFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := PutFileAndReconcileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Path
@@ -4389,14 +4338,6 @@ func (m *PutFileAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return PutFileAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *PutFileAndReconcileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4474,6 +4415,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PutFileAndReconcileRequestValidationError{}
+
+var _PutFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on PutFileAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -4634,16 +4577,19 @@ func (m *DeleteFileAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = DeleteFileAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_DeleteFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := DeleteFileAndReconcileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Path
@@ -4654,14 +4600,6 @@ func (m *DeleteFileAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return DeleteFileAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *DeleteFileAndReconcileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -4740,6 +4678,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteFileAndReconcileRequestValidationError{}
+
+var _DeleteFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on DeleteFileAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -4900,16 +4840,19 @@ func (m *RenameFileAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = RenameFileAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_RenameFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := RenameFileAndReconcileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for FromPath
@@ -4922,14 +4865,6 @@ func (m *RenameFileAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return RenameFileAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *RenameFileAndReconcileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -5008,6 +4943,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RenameFileAndReconcileRequestValidationError{}
+
+var _RenameFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on RenameFileAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -5168,16 +5105,19 @@ func (m *RefreshAndReconcileRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = RefreshAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_RefreshAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := RefreshAndReconcileRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Path
@@ -5188,14 +5128,6 @@ func (m *RefreshAndReconcileRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return RefreshAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *RefreshAndReconcileRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -5273,6 +5205,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RefreshAndReconcileRequestValidationError{}
+
+var _RefreshAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on RefreshAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -5433,16 +5367,19 @@ func (m *QueryRequest) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetInstanceId()); err != nil {
-		err = QueryRequestValidationError{
-			field:  "InstanceId",
-			reason: "value must be a valid UUID",
-			cause:  err,
+	if m.GetInstanceId() != "" {
+
+		if !_QueryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+			err := QueryRequestValidationError{
+				field:  "InstanceId",
+				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Sql
@@ -5487,14 +5424,6 @@ func (m *QueryRequest) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return QueryRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *QueryRequest) _validateUuid(uuid string) error {
-	if matched := _api_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -5569,6 +5498,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = QueryRequestValidationError{}
+
+var _QueryRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
 
 // Validate checks the field values on QueryResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

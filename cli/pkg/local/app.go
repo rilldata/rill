@@ -38,7 +38,7 @@ import (
 
 // Default instance config on local.
 const (
-	DefaultInstanceID = "123e4567-e89b-12d3-a456-426614174000"
+	DefaultInstanceID = "default"
 	DefaultOLAPDriver = "duckdb"
 	DefaultOLAPDSN    = "stage.db"
 )
