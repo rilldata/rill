@@ -113,9 +113,6 @@
             <div>
               {timeRange.name}
             </div>
-            <div slot="right" let:hovered class:opacity-0={!hovered}>
-              {prettyFormatTimeRange(timeRange)}
-            </div>
           </MenuItem>
         {/each}
       </Menu>
