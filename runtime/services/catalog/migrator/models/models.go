@@ -22,7 +22,7 @@ type modelMigrator struct{}
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
 	return olap.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
-			"CREATE OR REPLACE VIEW %s AS (%s)",
+			"CREATE OR REPLACE VIEW %q AS (%s)",
 			catalogObj.Name,
 			catalogObj.GetModel().Sql,
 		),
