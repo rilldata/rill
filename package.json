@@ -12,7 +12,7 @@
   "scripts": {
     "build": "npm run build -w web-local",
     "dev": "sh -c 'npm run dev-runtime & npm run dev-web & wait'",
-    "dev-web": "npm run dev -w web-local",
+    "dev-web": "npm run dev -w web-local & npm run check:watch -w web-local",
     "dev-runtime": "go run cli/main.go start --no-ui --project dev-project",
     "clean": "rm -rf dev-project",
     "test": "npm run test -w web-local"

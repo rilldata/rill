@@ -7,7 +7,7 @@
     "build": "vite build",
     "install-and-build": "npm install && npm run build",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
+    "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch --output human --threshold warning",
     "lint": "eslint --ignore-path .gitignore .",
     "format": "prettier --ignore-path .gitignore --write --plugin-search-dir=. .",
     "test": "npm run test:backend && npm run test:ui",
