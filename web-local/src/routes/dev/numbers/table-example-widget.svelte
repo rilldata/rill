@@ -16,14 +16,14 @@
   let minimumSignificantDigits = 3;
   let maximumSignificantDigits = 5;
   let onlyUseLargestMagnitude = false;
-  let usePlainNumsForThousands = false;
+  let usePlainNumsForThousands = true;
   let usePlainNumsForThousandsOneDecimal = false;
   let usePlainNumForThousandths = true;
   let usePlainNumForThousandthsPadZeros = false;
 
   let truncateThousandths = true;
   let truncateTinyOrdersIfBigOrderExists = true;
-  let zeroHandling = "noSpecial";
+  let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
 
   let selectedFormatter = formatterFactories[defaultFormatterIndex];
   let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
