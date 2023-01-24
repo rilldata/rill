@@ -49,6 +49,12 @@ export const numberLists = [
     desc: "t-dist to the 5th, 2 digits precision",
     sample: range.map((x) => +(tDist(1) ** 5).toPrecision(2)),
   },
+  {
+    desc: "negative power law-ish, zero inflated",
+    sample: range
+      .map((x) => -(10 ** uniform(-3, 6)))
+      .map((x) => (randu() < 0.3 ? 0 : x)),
+  },
 
   {
     desc: "uniform(0,1)",
@@ -69,7 +75,7 @@ export const numberLists = [
   },
 
   {
-    desc: "power law-ish (uniform over magnitudes (e-12, e12))",
+    desc: "power law-ish (uniform over magnitudes (e-15, e12))",
     sample: range.map((x) => 10 ** uniform(-15, 12)),
   },
 
@@ -79,8 +85,8 @@ export const numberLists = [
   },
 
   {
-    desc: "uniform(-300,700)",
-    sample: range.map((x) => uniform(-300, 1000)),
+    desc: "uniform(-1000,1000)",
+    sample: range.map((x) => uniform(-1000, 1000)),
   },
   {
     desc: "uniform(-300,700) with O(1e7) outlier",
