@@ -11,10 +11,11 @@
   export let totalRows: number;
   export let isFetching: boolean;
 
-  $: percentage = nullCount / totalRows;
+  let percentage;
+  $: if (!isFetching) percentage = nullCount / totalRows;
 </script>
 
-{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage)}
+{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage) && percentage <= 1}
   <Tooltip location="right" alignment="center" distance={8}>
     <BarAndLabel
       compact
@@ -22,16 +23,12 @@
       color={DATA_TYPE_COLORS[type]?.bgClass}
       value={percentage || 0}
     >
-      {#if isFetching}
-        <span class="ui-copy-number text-gray-300">..%</span>
-      {:else}
-        <span
-          style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
-          class="ui-copy-number"
-          class:text-gray-300={nullCount === 0}
-          >{singleDigitPercentage(percentage)}</span
-        >
-      {/if}
+      <span
+        style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
+        class="ui-copy-number"
+        class:text-gray-300={nullCount === 0}
+        >{singleDigitPercentage(percentage)}</span
+      >
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">
       <svelte:fragment slot="title">
