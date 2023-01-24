@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -95,7 +96,7 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
 
-	sess, err := getAwsSessionConfig(conf)
+	sess, err := getAwsSessionConfig(ctx, conf, url.Host)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
@@ -115,13 +116,26 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
 }
 
-func getAwsSessionConfig(conf *Config) (*session.Session, error) {
+func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
 			Region: aws.String(conf.AWSRegion),
 		})
 	}
-	return session.NewSessionWithOptions(session.Options{
+	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	reg, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
+	if err != nil {
+		return nil, err
+	}
+	if reg != "" {
+		sess.Config.Region = aws.String(reg)
+	}
+
+	return sess, nil
 }
