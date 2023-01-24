@@ -21,10 +21,7 @@ type modelMigrator struct{}
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
 	sql := catalogObj.GetModel().Sql
 	materialize := catalogObj.GetModel().Materialize
-	materializeType, err := getMaterializeType(materialize)
-	if err != nil {
-		return err
-	}
+	materializeType := getMaterializeType(materialize)
 	return olap.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
 			"CREATE OR REPLACE %s %s AS (%s)",
@@ -43,16 +40,8 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 	}
 	oldModel := oldCatalogObj.GetModel()
 	newModel := newCatalogObj.GetModel()
-	// currently we are treating Model_MATERIALIZE_TRUE and Model_MATERIALIZE_INFERRED the same as both are TABLEs
-	// and Model_MATERIALIZE_FALSE and Model_MATERIALIZE_UNSPECIFIED the same as both are VIEWs
-	oldMaterializeType, err := getMaterializeType(oldModel.Materialize)
-	if err != nil {
-		return err
-	}
-	newMaterializeType, err := getMaterializeType(newModel.Materialize)
-	if err != nil {
-		return err
-	}
+	oldMaterializeType := getMaterializeType(oldModel.Materialize)
+	newMaterializeType := getMaterializeType(newModel.Materialize)
 	// check if sql and materialize type are same and if so, do nothing
 	// this includes the cases where materialize is changed from true to inferred or false to unspecified and vice versa
 	if oldModel.Sql == newModel.Sql && oldMaterializeType == newMaterializeType {
@@ -63,35 +52,22 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 		return m.Create(ctx, olap, repo, newCatalogObj)
 	}
 	// else drop the old type and create new materialized type using new sql
-	err = m.Delete(ctx, olap, oldCatalogObj)
+	err := m.Delete(ctx, olap, oldCatalogObj)
 	if err != nil {
 		return err
 	}
 	return m.Create(ctx, olap, repo, newCatalogObj)
 }
 
-func getMaterializeType(materialize runtimev1.Model_Materialize) (string, error) {
-	materializeType := ""
-	switch materialize {
-	case runtimev1.Model_MATERIALIZE_TRUE:
-		materializeType = "TABLE"
-	case runtimev1.Model_MATERIALIZE_INFERRED:
-		materializeType = "TABLE"
-	case runtimev1.Model_MATERIALIZE_FALSE:
-		materializeType = "VIEW"
-	case runtimev1.Model_MATERIALIZE_UNSPECIFIED:
-		materializeType = "VIEW"
-	default:
-		return materializeType, errors.New("invalid materialize type")
+func getMaterializeType(materialize bool) string {
+	if materialize {
+		return "TABLE"
 	}
-	return materializeType, nil
+	return "VIEW"
 }
 
 func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
-	materializeType, err := getMaterializeType(catalogObj.GetModel().Materialize)
-	if err != nil {
-		return err
-	}
+	materializeType := getMaterializeType(catalogObj.GetModel().Materialize)
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		err := olap.Exec(ctx, &drivers.Statement{
@@ -111,10 +87,7 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 }
 
 func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
-	materializeType, err := getMaterializeType(catalogObj.GetModel().Materialize)
-	if err != nil {
-		return err
-	}
+	materializeType := getMaterializeType(catalogObj.GetModel().Materialize)
 	return olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", materializeType, catalogObj.Name),
 		Priority: 100,
@@ -157,9 +130,6 @@ func (m *modelMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPSt
 
 func (m *modelMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) []*runtimev1.ReconcileError {
 	model := catalog.GetModel()
-	if model.Materialize == runtimev1.Model_MATERIALIZE_INVALID {
-		return migrator.CreateValidationError(catalog.Path, "Invalid materialize type")
-	}
 	err := olap.Exec(ctx, &drivers.Statement{
 		Query:    model.Sql,
 		Priority: 100,

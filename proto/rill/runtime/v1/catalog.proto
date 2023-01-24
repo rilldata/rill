@@ -45,19 +45,6 @@ message Model {
     DIALECT_UNSPECIFIED = 0;
     DIALECT_DUCKDB = 1;
   }
-  // Materialization values for models, specified using @materialize: tag in the comment
-  enum Materialize {
-    // When tag is not specified
-    MATERIALIZE_UNSPECIFIED = 0;
-    // If its true
-    MATERIALIZE_TRUE = 1;
-    // If its false
-    MATERIALIZE_FALSE = 2;
-    // When its not specified by the user but we infer it and set this value
-    MATERIALIZE_INFERRED = 3;
-    // When tag is specified but value is either empty or invalid
-    MATERIALIZE_INVALID = 4;
-  }
   // Name of the model
   string name = 1;
   // SQL is a SELECT statement representing the model
@@ -67,7 +54,7 @@ message Model {
   // Detected schema of the model
   StructType schema = 4;
   // To materialize model or not
-  Materialize materialize = 5;
+  bool materialize = 5;
 }
 
 // Metrics view is the internal representation of a metrics view definition

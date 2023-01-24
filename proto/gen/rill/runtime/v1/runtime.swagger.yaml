@@ -1264,22 +1264,6 @@ definitions:
       - DIALECT_DUCKDB
     default: DIALECT_UNSPECIFIED
     title: Dialects supported for models
-  ModelMaterialize:
-    type: string
-    enum:
-      - MATERIALIZE_UNSPECIFIED
-      - MATERIALIZE_TRUE
-      - MATERIALIZE_FALSE
-      - MATERIALIZE_INFERRED
-      - MATERIALIZE_INVALID
-    default: MATERIALIZE_UNSPECIFIED
-    description: |-
-      - MATERIALIZE_UNSPECIFIED: When tag is not specified
-       - MATERIALIZE_TRUE: If its true
-       - MATERIALIZE_FALSE: If its false
-       - MATERIALIZE_INFERRED: When its not specified by the user but we infer it and set this value
-       - MATERIALIZE_INVALID: When tag is specified but value is either empty or invalid
-    title: 'Materialization values for models, specified using @materialize: tag in the comment'
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -1804,7 +1788,7 @@ definitions:
         $ref: '#/definitions/ModelDialect'
         title: Dialect of the SQL statement
       materialize:
-        $ref: '#/definitions/ModelMaterialize'
+        type: boolean
         title: To materialize model or not
       name:
         type: string

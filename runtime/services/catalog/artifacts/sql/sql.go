@@ -28,6 +28,9 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string) (*dri
 	name := fileutil.Stem(filePath)
 	// extract materialize option before sanitizing query as it will remove that comment
 	materialize := parseMaterializationInfo(blob)
+	if materialize == MaterializeInvalid {
+		return nil, errors.New("invalid materialize type")
+	}
 	sanitizedSQL := sanitizeQuery(blob)
 	return &drivers.CatalogEntry{
 		Type: drivers.ObjectTypeModel,
@@ -35,7 +38,7 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string) (*dri
 			Name:        name,
 			Sql:         sanitizedSQL,
 			Dialect:     runtimev1.Model_DIALECT_DUCKDB,
-			Materialize: materialize,
+			Materialize: materialize.Materialize(),
 		},
 		Name: name,
 		Path: filePath,
@@ -53,7 +56,7 @@ var (
 	QueryCommentRegex     = regexp.MustCompile(`(?m)--.*$`)
 	MultipleSpacesRegex   = regexp.MustCompile(`\s\s+`)
 	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
-	MaterializedRegex     = regexp.MustCompile(`--\s*@materialize[ |\t]?:[ |\t]*([a-zA-Z]*)\s+`)
+	MaterializedRegex     = regexp.MustCompile(`(?m)^[ \t]*--[ \t]?@materialize[ \t]?:[ \t]*([a-zA-Z]*)\s+`)
 )
 
 // TODO: use this while extracting source names to get case insensitive dag
@@ -71,19 +74,46 @@ func sanitizeQuery(query string) string {
 	return strings.TrimSpace(query)
 }
 
-func parseMaterializationInfo(query string) runtimev1.Model_Materialize {
+// MaterializationInfo Materialization values for models, specified using @materialize: tag in the comment
+type MaterializationInfo int64
+
+const (
+	// MaterializeUnspecified When tag is not specified
+	MaterializeUnspecified MaterializationInfo = iota
+	// MaterializeTrue When tag is specified as true
+	MaterializeTrue
+	// MaterializeFalse When tag is specified as false
+	MaterializeFalse
+	// MaterializeInferred When it is not specified by the user, but we infer it and set this value
+	MaterializeInferred
+	// MaterializeInvalid When tag is specified but value is either empty or invalid
+	MaterializeInvalid
+)
+
+func (m MaterializationInfo) Materialize() bool {
+	switch m {
+	case MaterializeTrue:
+		return true
+	case MaterializeInferred:
+		return true
+	default:
+		return false
+	}
+}
+
+func parseMaterializationInfo(query string) MaterializationInfo {
 	matched := MaterializedRegex.FindStringSubmatch(query)
 	if len(matched) == 0 {
-		return runtimev1.Model_MATERIALIZE_UNSPECIFIED
+		return MaterializeUnspecified
 	}
 	switch strings.ToLower(matched[1]) {
 	case "true":
-		return runtimev1.Model_MATERIALIZE_TRUE
+		return MaterializeTrue
 	case "false":
-		return runtimev1.Model_MATERIALIZE_FALSE
+		return MaterializeFalse
 	case "inferred":
-		return runtimev1.Model_MATERIALIZE_INFERRED
+		return MaterializeInferred
 	default:
-		return runtimev1.Model_MATERIALIZE_INVALID
+		return MaterializeInvalid
 	}
 }

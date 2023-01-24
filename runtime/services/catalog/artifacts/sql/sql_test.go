@@ -1,7 +1,6 @@
 package sql
 
 import (
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -92,7 +91,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 	sanitizeTests := []struct {
 		title  string
 		input  string
-		output runtimev1.Model_Materialize
+		output MaterializationInfo
 	}{
 		{
 			"materialize true",
@@ -101,7 +100,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			SELECT * from         whatever;
 			-- another extraneous comment.
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"materialize inferred",
@@ -109,7 +108,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: inferred 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INFERRED,
+			MaterializeInferred,
 		},
 		{
 			"materialize false",
@@ -117,7 +116,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: false 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_FALSE,
+			MaterializeFalse,
 		},
 		{
 			"materialize invalid value",
@@ -125,7 +124,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: random 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INVALID,
+			MaterializeInvalid,
 		},
 		{
 			"parse invalid value",
@@ -133,7 +132,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: tru 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INVALID,
+			MaterializeInvalid,
 		},
 		{
 			"parse invalid value",
@@ -141,7 +140,49 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize:  
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INVALID,
+			MaterializeInvalid,
+		},
+		{
+			"parse spaces before",
+			`
+			  	-- @materialize: true  
+			SELECT * from whatever;
+			`,
+			MaterializeTrue,
+		},
+		{
+			"parse multiple tags, use first",
+			`
+			  	-- @materialize: true -- @materialize: false
+			SELECT * from whatever;
+			`,
+			MaterializeTrue,
+		},
+		{
+			"parse multiple tags, use first",
+			`
+			  	-- @materialize: t -- @materialize: false
+			SELECT * from whatever;
+			`,
+			MaterializeInvalid,
+		},
+		{
+			"parse multiple tags, use first",
+			`
+			-- @materialize: 
+			-- @materialize: false
+			SELECT * from whatever;
+			`,
+			MaterializeInvalid,
+		},
+		{
+			"parse multiple tags, use first",
+			`
+			-- @materialize
+			-- @materialize: inferred
+			SELECT * from whatever;
+			`,
+			MaterializeInferred,
 		},
 		{
 			"parse mix cap values",
@@ -149,7 +190,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: TruE 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"parse surrounding comments",
@@ -158,7 +199,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: inferred -- another comment
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INFERRED,
+			MaterializeInferred,
 		},
 		{
 			"parse single space before colon",
@@ -166,7 +207,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize : true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"parse single tab before colon",
@@ -174,7 +215,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize	: true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"parse single tab after and before colon",
@@ -182,7 +223,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize	:	true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"parse multiple tab after colon",
@@ -190,7 +231,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize:		true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"parse mix of tabs and space after colon",
@@ -198,7 +239,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize:		 true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"parse extra spaces after colon",
@@ -206,7 +247,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize	:  true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"fail parsing extra spaces before colon",
@@ -214,7 +255,34 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize  : true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_UNSPECIFIED,
+			MaterializeUnspecified,
+		},
+		{
+			"fail parsing tag on new line",
+			`
+			-- 
+			@materialize: true 
+			SELECT * from whatever;
+			`,
+			MaterializeUnspecified,
+		},
+		{
+			"fail parsing value on new line as comment",
+			`
+			-- @materialize 
+			-- :true
+			SELECT * from whatever;
+			`,
+			MaterializeUnspecified,
+		},
+		{
+			"fail parsing value on new line",
+			`
+			-- @materialize
+			:true
+			SELECT * from whatever;
+			`,
+			MaterializeUnspecified,
 		},
 		{
 			"fail parsing mix of space and tab before colon",
@@ -222,7 +290,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize	 : true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_UNSPECIFIED,
+			MaterializeUnspecified,
 		},
 		{
 			"fail parsing materialize caps keyword",
@@ -230,7 +298,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @Materialize: true 
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_UNSPECIFIED,
+			MaterializeUnspecified,
 		},
 		{
 			"parse materialize caps value",
@@ -238,7 +306,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @materialize: True
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_TRUE,
+			MaterializeTrue,
 		},
 		{
 			"fail parsing new line value",
@@ -247,7 +315,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			true
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INVALID,
+			MaterializeInvalid,
 		},
 		{
 			"fail parsing new line value with comment",
@@ -256,7 +324,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- true
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_INVALID,
+			MaterializeInvalid,
 		},
 		{
 			"parse incomplete comment",
@@ -264,12 +332,12 @@ func Test_parseMaterializationInfo(t *testing.T) {
 			-- @material
 			SELECT * from whatever;
 			`,
-			runtimev1.Model_MATERIALIZE_UNSPECIFIED,
+			MaterializeUnspecified,
 		},
 		{
 			"parse materialize comment not present",
 			"SELECT * from whatever;",
-			runtimev1.Model_MATERIALIZE_UNSPECIFIED,
+			MaterializeUnspecified,
 		},
 	}
 

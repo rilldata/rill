@@ -448,7 +448,7 @@ export interface V1NumericSummary {
 
 export interface V1Model {
   dialect?: ModelDialect;
-  materialize?: ModelMaterialize;
+  materialize?: boolean;
   name?: string;
   schema?: V1StructType;
   sql?: string;
@@ -760,25 +760,6 @@ export interface NumericHistogramBinsBin {
   high?: number;
   low?: number;
 }
-
-/**
- * - MATERIALIZE_UNSPECIFIED: When tag is not specified
- - MATERIALIZE_TRUE: If its true
- - MATERIALIZE_FALSE: If its false
- - MATERIALIZE_INFERRED: When its not specified by the user but we infer it and set this value
- - MATERIALIZE_INVALID: When tag is specified but value is either empty or invalid
- */
-export type ModelMaterialize =
-  typeof ModelMaterialize[keyof typeof ModelMaterialize];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ModelMaterialize = {
-  MATERIALIZE_UNSPECIFIED: "MATERIALIZE_UNSPECIFIED",
-  MATERIALIZE_TRUE: "MATERIALIZE_TRUE",
-  MATERIALIZE_FALSE: "MATERIALIZE_FALSE",
-  MATERIALIZE_INFERRED: "MATERIALIZE_INFERRED",
-  MATERIALIZE_INVALID: "MATERIALIZE_INVALID",
-} as const;
 
 export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
 
