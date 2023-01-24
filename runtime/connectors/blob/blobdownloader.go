@@ -19,6 +19,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// increasing this limit can increase speed ingestion
+// but may increase bottleneck at duckdb or network/db IO
+// set without any benchamarks
+const concurrentBlobDownloadLimit = 8
+
 type Strategy string
 
 const (
@@ -260,6 +265,8 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 			if index == len(iter.objectPaths)-1 && iter.lastObjectSize > int64(0) {
 				// download partial file
 				// todo :: add csv
+				// todo :: parquet reader seems to be making too many calls for small files
+				// check if for smaller size we can download entire file
 				err = Download(grpCtx, iter.bucket, obj, ExtractConfig{Size: iter.lastObjectSize, Strategy: iter.rowExtractConfig.Strategy}, file)
 			} else {
 				// download full file
