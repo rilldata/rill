@@ -34,7 +34,7 @@ const shortScaleSuffixIfAvailable = (x: number): string => {
 const formatNumWithOrderOfMag = (
   x: number,
   newOrder: number,
-  options = { minimumFractionDigits: 3 }
+  options = { minimumFractionDigits: 3, maximumFractionDigits: 3 }
 ): NumberStringParts => {
   const [int, frac] = Intl.NumberFormat("en-US", options)
     .format(x / 10 ** newOrder)
@@ -167,6 +167,8 @@ export const humanized2FormatterFactory: FormatterFactory = (
   sample: number[],
   options
 ) => {
+  let range = { max: Math.max(...sample), min: Math.min(...sample) };
+
   const engFmt = new Intl.NumberFormat("en-US", {
     notation: "engineering",
     minimumFractionDigits: 3,
@@ -227,6 +229,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
       rawStr: rawStrings[i],
       splitStr: splitStrs[i],
       spacing,
+      range,
     };
   };
 };
