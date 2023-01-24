@@ -55,7 +55,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 	if err != nil {
 		return err
 	}
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s);", source.Name, from)
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
@@ -92,7 +92,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
