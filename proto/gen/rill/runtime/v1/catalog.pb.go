@@ -468,7 +468,7 @@ func (x *MetricsView) GetDescription() string {
 	return ""
 }
 
-//Sample policy
+// Extract policy for glob connectors
 type Source_ExtractPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

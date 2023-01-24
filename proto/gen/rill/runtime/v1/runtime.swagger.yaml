@@ -1324,7 +1324,7 @@ definitions:
       row:
         $ref: '#/definitions/ExtractPolicyExtractConfig'
         title: Row policy to select rows
-    title: Sample policy
+    title: Extract policy for glob connectors
   StructTypeField:
     type: object
     properties:

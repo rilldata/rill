@@ -4,8 +4,10 @@ import (
 	"context"
 	"math"
 	"os"
+	"reflect"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
@@ -200,4 +202,62 @@ func prepareBucket() (*blob.Bucket, error) {
 		}
 	}
 	return bucket, nil
+}
+
+func TestNewExtractConfigs(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   *runtimev1.Source_ExtractPolicy
+		want    *ExtractPolicy
+		wantErr bool
+	}{
+		{
+			name:    "nil input",
+			input:   nil,
+			want:    &ExtractPolicy{Partition: ExtractConfig{Strategy: NONE}, Row: ExtractConfig{Strategy: NONE}},
+			wantErr: false,
+		},
+		{
+			name:    "parse row",
+			input:   &runtimev1.Source_ExtractPolicy{Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23 KB"}},
+			want:    &ExtractPolicy{Partition: ExtractConfig{Strategy: NONE}, Row: ExtractConfig{Strategy: TAIL, Size: 23552}},
+			wantErr: false,
+		},
+		{
+			name:    "parse partition",
+			input:   &runtimev1.Source_ExtractPolicy{Partition: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "head", Size: "23"}},
+			want:    &ExtractPolicy{Partition: ExtractConfig{Strategy: HEAD, Size: 23}, Row: ExtractConfig{Strategy: NONE}},
+			wantErr: false,
+		},
+		{
+			name:    "parse both",
+			input:   &runtimev1.Source_ExtractPolicy{Partition: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23"}, Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "512 B"}},
+			want:    &ExtractPolicy{Partition: ExtractConfig{Strategy: TAIL, Size: 23}, Row: ExtractConfig{Strategy: TAIL, Size: 512}},
+			wantErr: false,
+		},
+		{
+			name:    "more examples",
+			input:   &runtimev1.Source_ExtractPolicy{Partition: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23"}, Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23 gb"}},
+			want:    &ExtractPolicy{Partition: ExtractConfig{Strategy: TAIL, Size: 23}, Row: ExtractConfig{Strategy: TAIL, Size: 23 * 1024 * 1024 * 1024}},
+			wantErr: false,
+		},
+		{
+			name:    "invalid",
+			input:   &runtimev1.Source_ExtractPolicy{Partition: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23"}, Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23%"}},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewExtractConfigs(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewExtractConfigs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewExtractConfigs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
