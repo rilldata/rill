@@ -205,15 +205,6 @@ export const formatterFactories: NamedFormatterFactory[] = [
   { desc: "humanized 2", fn: humanized2FormatterFactory },
 
   {
-    desc: "humanized 2, truncate small magnitudes",
-    fn: (sample, options) =>
-      humanized2FormatterFactory(sample, {
-        ...options,
-        useLargestMagnitudeOnly: true,
-      }),
-  },
-
-  {
     desc: "scientific",
     fn: IntlFormatterFactoryWithBaseOptions({
       notation: "scientific",
