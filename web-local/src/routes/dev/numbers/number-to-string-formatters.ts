@@ -30,11 +30,17 @@ export type NumberStringParts = {
   suffix: string;
 };
 
+export type NumericRange = {
+  min: number;
+  max: number;
+};
+
 export type RichFormatNumber = {
   number: number;
   rawStr: string;
   splitStr: NumberStringParts;
   spacing: FormatterSpacingMeta;
+  range: NumericRange;
 };
 
 export type FormatterFactory = (sample: number[], options) => NumberFormatter;
@@ -43,6 +49,8 @@ let humanizeGroupValuesFormatterFactory: FormatterFactory = (
   sample: number[],
   _options
 ) => {
+  let range = { max: Math.max(...sample), min: Math.min(...sample) };
+
   let humanized = humanizeGroupValues(
     sample.map((x) => ({ value: x })),
     NicelyFormattedTypes.HUMANIZE,
@@ -61,11 +69,14 @@ let humanizeGroupValuesFormatterFactory: FormatterFactory = (
       rawStr: rawStrings[i],
       splitStr: splitStrs[i],
       spacing,
+      range,
     };
   };
 };
 
 let rawStrFormatterFactory: FormatterFactory = (sample: number[], _options) => {
+  let range = { max: Math.max(...sample), min: Math.min(...sample) };
+
   let rawStrings = sample.map((x) => x.toString());
   let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
@@ -79,6 +90,7 @@ let rawStrFormatterFactory: FormatterFactory = (sample: number[], _options) => {
       rawStr: rawStrings[i],
       splitStr: splitStrs[i],
       spacing,
+      range,
     };
   };
 };
@@ -107,6 +119,8 @@ let rawStrFormatterFactory: FormatterFactory = (sample: number[], _options) => {
 
 let IntlFormatterFactoryWithBaseOptions =
   (baseOptions) => (sample: number[], options) => {
+    let range = { max: Math.max(...sample), min: Math.min(...sample) };
+
     let intlFormatter = new Intl.NumberFormat("en-US", {
       ...baseOptions,
       ...options,
@@ -125,12 +139,15 @@ let IntlFormatterFactoryWithBaseOptions =
         rawStr: rawStrings[i],
         splitStr: splitStrs[i],
         spacing,
+        range,
       };
     };
   };
 
 let formatterFactoryFromStringifier =
   (stringifier: (number) => string) => (sample: number[], options) => {
+    let range = { max: Math.max(...sample), min: Math.min(...sample) };
+
     let rawStrings = sample.map(stringifier);
     let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
@@ -144,6 +161,7 @@ let formatterFactoryFromStringifier =
         rawStr: rawStrings[i],
         splitStr: splitStrs[i],
         spacing,
+        range,
       };
     };
   };
@@ -151,6 +169,8 @@ let formatterFactoryFromStringifier =
 let formatterFactoryFromStringifierWithOptions =
   (stringifierWithOptions: (options) => (number) => string) =>
   (sample: number[], options) => {
+    let range = { max: Math.max(...sample), min: Math.min(...sample) };
+
     let rawStrings = sample.map(stringifierWithOptions(options));
     let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
@@ -164,6 +184,7 @@ let formatterFactoryFromStringifierWithOptions =
         rawStr: rawStrings[i],
         splitStr: splitStrs[i],
         spacing,
+        range,
       };
     };
   };
