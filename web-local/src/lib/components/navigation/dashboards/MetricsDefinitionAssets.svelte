@@ -7,7 +7,14 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    FileArtifactsData,
+    fileArtifactsStore,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
@@ -16,10 +23,6 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    FileArtifactsData,
-    fileArtifactsStore,
-  } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store.js";
   import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -27,19 +30,16 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { SourceModelValidationStatus } from "@rilldata/web-local/lib/temp/metrics.js";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
+  import RenameAssetModal from "../../../../../../web-common/src/features/entity-management/RenameAssetModal.svelte";
   import { navigationEvent } from "../../../metrics/initMetrics";
   import NavigationEntry from "../NavigationEntry.svelte";
   import NavigationHeader from "../NavigationHeader.svelte";
-  import RenameAssetModal from "../RenameAssetModal.svelte";
 
   $: instanceId = $runtimeStore.instanceId;
 

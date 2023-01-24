@@ -1,4 +1,4 @@
-import { EntityType } from "@rilldata/web-common/lib/entity";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 
 export function getFilePathFromPagePath(path: string): string {
   const pathSplits = path.split("/");

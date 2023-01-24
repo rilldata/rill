@@ -4,7 +4,9 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
@@ -14,7 +16,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import {
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
@@ -27,14 +28,12 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
+  import { deleteFileArtifact } from "../../entity-management/actions";
+  import { getName } from "../../entity-management/name-utils";
   import { useModelNames } from "../selectors";
 
   export let modelName: string;

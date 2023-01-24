@@ -3,24 +3,19 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceRenameFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
-  import {
-    getLabel,
-    getRouteFromName,
-  } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { runtimeStore } from "../../application-state-stores/application-store";
+  import { runtimeStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
+  import { renameFileArtifact } from "./actions";
+  import { getLabel, getRouteFromName } from "./entity-mappers";
+  import { isDuplicateName } from "./name-utils";
+  import { useAllNames } from "./selectors";
 
   export let closeModal: () => void;
   export let entityType: EntityType;

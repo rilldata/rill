@@ -1,6 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import {
+    addReconcilingOverlay,
+    syncFileSystemPeriodically,
+  } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
@@ -9,24 +14,19 @@
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
+  import { getArtifactErrors } from "../../../../../web-common/src/features/entity-management/getArtifactErrors";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import type { ApplicationBuildMetadata } from "../../application-state-stores/build-metadata";
-  import { fileArtifactsStore } from "../../application-state-stores/file-artifacts-store";
   import {
     importOverlayVisible,
     overlay,
     quickStartDashboardOverlay,
   } from "../../application-state-stores/overlay-store";
   import { initMetrics } from "../../metrics/initMetrics";
-  import { getArtifactErrors } from "../../svelte-query/getArtifactErrors";
   import { createQueryClient } from "../../svelte-query/globalQueryClient";
   import PreparingImport from "../overlay/PreparingImport.svelte";
   import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
   import BasicLayout from "./BasicLayout.svelte";
-  import {
-    addReconcilingOverlay,
-    syncFileSystemPeriodically,
-  } from "./sync-file-system";
 
   const queryClient = createQueryClient();
 

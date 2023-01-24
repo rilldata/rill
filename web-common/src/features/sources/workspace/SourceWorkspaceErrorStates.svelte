@@ -3,7 +3,6 @@
   import { Callout } from "@rilldata/web-common/components/callout";
   import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/add-source/errors.js";
   import { refreshSource } from "@rilldata/web-common/features/sources/refreshSource";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetFile,
@@ -12,11 +11,12 @@
     useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
+  import { EntityType } from "../../entity-management/types";
 
   export let sourceName: string;
 

@@ -1,5 +1,5 @@
+import type { FileArtifactsData } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
-import type { FileArtifactsData } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
 
 export interface Reference {
   reference: string;

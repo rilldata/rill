@@ -23,3 +23,24 @@ export function getName(name: string, others: string[]) {
 
   return result;
 }
+
+export function getNextEntityName(
+  entityNames: Array<string>,
+  entityName: string
+): string {
+  const idx = entityNames.indexOf(entityName);
+  if (idx <= 0) {
+    return entityNames[idx + 1];
+  } else {
+    return entityNames[idx - 1];
+  }
+}
+
+export function isDuplicateName(
+  name: string,
+  fromName: string,
+  names: Array<string>
+) {
+  if (name.toLowerCase() === fromName.toLowerCase()) return false;
+  return names.findIndex((n) => n.toLowerCase() === name.toLowerCase()) >= 0;
+}
