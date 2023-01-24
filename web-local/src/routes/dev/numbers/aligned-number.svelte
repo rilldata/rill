@@ -10,6 +10,9 @@
   export let negativeColor = "#f5999977";
   export let positiveColor = "#ececec";
 
+  export let showBaseline = false;
+  export let baselineColor = "#eeeeee";
+
   $: whole = richNum.splitStr.int;
   $: frac = richNum.splitStr.frac;
   $: suffix = richNum.splitStr.suffix;
@@ -145,7 +148,7 @@
     position: relative;
     top: 0px;
     height: 100%;
-    z-index: 5;
+    /* z-index: 5; */
   }
 
   div.number-container {
@@ -156,7 +159,7 @@
     white-space: nowrap;
     overflow: hidden;
     position: relative;
-    z-index: 10;
+    /* z-index: 10; */
     /* outline: 1px solid black; */
   }
 

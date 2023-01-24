@@ -1,7 +1,9 @@
 <script lang="ts">
   import { number } from "yup/lib/locale";
   import AlignedNumber from "./aligned-number.svelte";
-
+  import ColorPicker from "svelte-awesome-color-picker";
+  // import { HsvPicker } from "svelte-color-picker";
+  // import {  } from "svelte";
   import { numberLists } from "./number-samples";
   import {
     formatterFactories,
@@ -26,6 +28,12 @@
   let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
 
   let showBars = true;
+
+  let negativeColor = "#ff000041";
+  let positiveColor = "#0000001b";
+
+  let showBaseline = true;
+  let baselineColor = "#eeeeee";
 
   let selectedFormatter = formatterFactories[defaultFormatterIndex];
   let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
@@ -56,6 +64,9 @@
 
   let numberInputType;
   let magnitudeStrategy = "largest";
+
+  const blue100 = "#dbeafe";
+  const grey100 = "#f5f5f5";
 </script>
 
 <div>
@@ -264,26 +275,7 @@
           </label>
         </div>
       </div>
-
-      <!-- <div class="option-box">
-        <label>
-          <input
-            type="radio"
-            bind:group={magnitudeStrategy}
-            name="outliers"
-            value={"outliers"}
-          />
-          allow a limited number of magnitudes (for outliers) NOT YET IMPLEMENTED
-        </label>
-      </div> -->
     </form>
-
-    <!-- <div class="option-box">
-      <label>
-        <input type="checkbox" bind:checked={onlyUseLargestMagnitude} />
-        only use largest magnitude
-      </label>
-    </div> -->
   </div>
   <div style="padding-left: 40px;">
     <div class="option-box">
@@ -291,6 +283,38 @@
         <input type="checkbox" bind:checked={showBars} />
         show background bars
       </label>
+      <div class="option-box">
+        <ColorPicker bind:hex={negativeColor} label="color for negative bars" />
+        <ColorPicker bind:hex={positiveColor} label="color for positive bars" />
+        set positive bar color
+        <button on:click={() => (positiveColor = blue100)}
+          >blue-100 (like `main`)</button
+        >
+        &nbsp;
+        <button on:click={() => (positiveColor = grey100)}>grey-100</button>
+        &nbsp;
+        <button on:click={() => (positiveColor = "#eeeeee")}>grey-200</button>
+      </div>
+      <div class="option-box">
+        <label>
+          <input type="checkbox" bind:checked={showBaseline} />
+          show baseline
+        </label>
+        <div class="option-box">
+          <ColorPicker
+            bind:hex={baselineColor}
+            label="color for negative bars"
+          />
+          <!-- set positive bar color
+          <button on:click={() => (positiveColor = blue100)}
+            >blue-100 (like `main`)</button
+          >
+          &nbsp;
+          <button on:click={() => (positiveColor = grey100)}>grey-100</button>
+          &nbsp;
+          <button on:click={() => (positiveColor = "#eeeeee")}>grey-200</button> -->
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -315,6 +339,10 @@
               {lowerCaseEForEng}
               {zeroHandling}
               {showBars}
+              {negativeColor}
+              {positiveColor}
+              {showBaseline}
+              {baselineColor}
             />
           </div>
         </td>
@@ -370,5 +398,12 @@
     width: 40px;
     padding-left: 6px;
     outline: solid black 1px;
+  }
+
+  button {
+    outline: 1px solid #ddd;
+    background-color: #f2f2f2;
+    padding: 3px;
+    border-radius: 5px;
   }
 </style>
