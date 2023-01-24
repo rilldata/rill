@@ -27,7 +27,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFiles(ctx context.Context, env *Env, source *Source) ([]string, error)
+	ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (Iterator, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -97,6 +97,12 @@ type SamplePolicy struct {
 	Limit    int
 }
 
+type Iterator interface {
+	Close() error
+	NextBatch(ctx context.Context, n int) ([]string, error)
+	HasNext() bool
+}
+
 // Validate checks the source's properties against its connector's spec.
 func (s *Source) Validate() error {
 	connector, ok := Connectors[s.Connector]
@@ -121,12 +127,12 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFiles(ctx context.Context, env *Env, source *Source) ([]string, error) {
+func ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (Iterator, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-	return connector.ConsumeAsFiles(ctx, env, source)
+	return connector.ConsumeAsIterator(ctx, env, source)
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

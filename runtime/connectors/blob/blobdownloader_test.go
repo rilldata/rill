@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/memblob"
@@ -89,14 +90,23 @@ func TestFetchFileNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FetchFileNames(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
 				return
 			}
 
-			require.Equal(t, len(tt.want), len(got))
-			for _, path := range got {
+			paths := make([]string, 0)
+			defer fileutil.ForceRemoveFiles(paths)
+			for it.HasNext() {
+				next, err := it.NextBatch(tt.args.ctx, 1)
+				require.NoError(t, err)
+				paths = append(paths, next...)
+			}
+			require.Equal(t, len(tt.want), len(paths))
+			for _, path := range paths {
 				data, _ := os.ReadFile(path)
 				strContent := string(data)
 				if _, ok := tt.want[strContent]; !ok {
@@ -129,7 +139,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			name: "listing head limits",
 			args: args{context.Background(),
 				bucket,
-				FetchConfigs{Extract: &ExtractConfigs{Partition: ExtractOptions{Strategy: "head", Size: 2}, Row: ExtractOptions{Strategy: NONE, Size: math.MaxInt64}}},
+				FetchConfigs{Extract: &ExtractPolicy{Partition: ExtractConfig{Strategy: "head", Size: 2}, Row: ExtractConfig{Strategy: NONE, Size: math.MaxInt64}}},
 				"2020/**",
 				"mem://",
 			},
@@ -140,7 +150,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			name: "listing tail limits",
 			args: args{context.Background(),
 				bucket,
-				FetchConfigs{Extract: &ExtractConfigs{Partition: ExtractOptions{Strategy: "tail", Size: 2}, Row: ExtractOptions{Strategy: NONE, Size: math.MaxInt64}}},
+				FetchConfigs{Extract: &ExtractPolicy{Partition: ExtractConfig{Strategy: "tail", Size: 2}, Row: ExtractConfig{Strategy: NONE, Size: math.MaxInt64}}},
 				"2020/**",
 				"mem://",
 			},
@@ -151,14 +161,22 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FetchFileNames(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			require.Equal(t, len(tt.want), len(got))
-			for _, path := range got {
+			paths := make([]string, 0)
+			defer fileutil.ForceRemoveFiles(paths)
+			for it.HasNext() {
+				next, err := it.NextBatch(tt.args.ctx, 1)
+				require.NoError(t, err)
+				paths = append(paths, next...)
+			}
+
+			require.Equal(t, len(tt.want), len(paths))
+			for _, path := range paths {
 				data, _ := os.ReadFile(path)
 				strContent := string(data)
 				if _, ok := tt.want[strContent]; !ok {

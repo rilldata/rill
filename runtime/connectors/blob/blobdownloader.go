@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/container"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"gocloud.dev/blob"
@@ -27,20 +27,28 @@ const (
 	NONE Strategy = "none"
 )
 
-type ExtractOptions struct {
+type ExtractConfig struct {
 	Strategy Strategy
 	Size     int64
 }
 
-type ExtractConfigs struct {
-	Row       ExtractOptions
-	Partition ExtractOptions
+type ExtractPolicy struct {
+	Row       ExtractConfig
+	Partition ExtractConfig
 }
 
-func NewExtractConfigs(input *runtimev1.Source_ExtractPolicy) (*ExtractConfigs, error) {
-	config := &ExtractConfigs{
-		Row:       ExtractOptions{Strategy: NONE, Size: math.MaxInt64},
-		Partition: ExtractOptions{Strategy: NONE},
+type BlobIterator struct {
+	bucket           *blob.Bucket
+	objectPaths      []*blob.ListObject // object path in cloud storage
+	index            int
+	rowExtractConfig *ExtractConfig
+	lastObjectSize   int64
+}
+
+func NewExtractConfigs(input *runtimev1.Source_ExtractPolicy) (*ExtractPolicy, error) {
+	config := &ExtractPolicy{
+		Row:       ExtractConfig{Strategy: NONE},
+		Partition: ExtractConfig{Strategy: NONE},
 	}
 
 	if input == nil {
@@ -120,10 +128,10 @@ type FetchConfigs struct {
 	GlobMaxObjectsMatched int
 	GlobMaxObjectsListed  int64
 	GlobPageSize          int
-	Extract               *ExtractConfigs
+	Extract               *ExtractPolicy
 }
 
-func ContainerForParitionStrategy(option ExtractOptions) (container.Container, error) {
+func ContainerForParitionStrategy(option ExtractConfig) (container.Container, error) {
 	switch option.Strategy {
 	case TAIL:
 		return container.NewTailContainer(int(option.Size))
@@ -135,7 +143,7 @@ func ContainerForParitionStrategy(option ExtractOptions) (container.Container, e
 	}
 }
 
-func withinSize(option ExtractOptions, size int64) bool {
+func withinSize(option ExtractConfig, size int64) bool {
 	switch option.Strategy {
 	case TAIL:
 		return true
@@ -148,44 +156,11 @@ func withinSize(option ExtractOptions, size int64) bool {
 }
 
 // downloads file to local paths
-// todo :: return blob handler as iterator
-func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, globPattern, bucketPath string) ([]string, error) {
+func NewIterator(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, globPattern, bucketPath string) (connectors.Iterator, error) {
 	validateConfigs(&config)
-	c, err := ContainerForParitionStrategy(config.Extract.Partition)
-	if err != nil {
-		return nil, err
-	}
-
-	prefix, glob := doublestar.SplitPattern(globPattern)
-
-	handler := &BlobHandler{
-		prefix: prefix,
-		bucket: bucket,
-		path:   bucketPath,
-	}
-
-	if !fileutil.IsGlob(glob) {
-		// glob represent plain object
-		handler.FileNames = []string{globPattern}
-		err := handler.DownloadAll(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return handler.LocalPaths, nil
-	}
-
-	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
-		// Access storage.Query via q here.
-		var q *storage.Query
-		if as(&q) {
-			// we only need name and size, adding only required attributes to reduce data fetched
-			_ = q.SetAttrSelection([]string{"Name", "Size"})
-		}
-		return nil
-	}}
-
-	if prefix != "." {
-		listOptions.Prefix = prefix
+	iterator := &BlobIterator{
+		bucket:           bucket,
+		rowExtractConfig: &config.Extract.Row,
 	}
 
 	var (
@@ -193,10 +168,14 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 		matchCount    int
 		containerFull bool
 	)
+	c, err := ContainerForParitionStrategy(config.Extract.Partition)
+	if err != nil {
+		return nil, err
+	}
 
 	token := blob.FirstPageToken
 	for token != nil && !containerFull {
-		objs, nextToken, err := bucket.ListPage(ctx, token, config.GlobPageSize, listOptions)
+		objs, nextToken, err := bucket.ListPage(ctx, token, config.GlobPageSize, listOptions(globPattern))
 		if err != nil {
 			return nil, err
 		}
@@ -207,6 +186,8 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
+				// container stops consuming once parition strategy limits are crossed
+				// withinSize keeps track of whether size of files matched so far are within row size limits
 				if !c.Add(obj) && withinSize(config.Extract.Row, size) {
 					// don't add more items
 					containerFull = true
@@ -215,6 +196,7 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 			}
 		}
 		if err := validateLimits(size, matchCount, fetched, config); err != nil {
+			iterator.Close()
 			return nil, err
 		}
 	}
@@ -225,53 +207,63 @@ func FetchFileNames(ctx context.Context, bucket *blob.Bucket, config FetchConfig
 	}
 
 	size = 0
-	applicableItems := make([]*blob.ListObject, 0)
 	for _, val := range items {
 		obj := val.(*blob.ListObject)
-		applicableItems = append(applicableItems, obj)
-		size += obj.Size
-		if size > config.Extract.Row.Size {
+		iterator.objectPaths = append(iterator.objectPaths, obj)
+		if config.Extract.Row.Strategy != NONE && size+obj.Size > config.Extract.Row.Size {
+			iterator.lastObjectSize = config.Extract.Row.Size - size
 			break
 		}
+		size += obj.Size
 	}
-
-	return DownloadAll(ctx, bucket, &config.Extract.Row, applicableItems)
+	return iterator, nil
 }
 
-// object path is relative to bucket
-func DownloadAll(ctx context.Context, bucket *blob.Bucket, options *ExtractOptions, items []*blob.ListObject) ([]string, error) {
-	totalSize := int64(0)
-	for _, item := range items {
-		totalSize += item.Size
+func (iter *BlobIterator) Close() error {
+	return iter.bucket.Close()
+}
+
+func (iter *BlobIterator) HasNext() bool {
+	return iter.index < len(iter.objectPaths)
+}
+
+// NextBatch downloads next n files and copies to local directory
+// Callers responsibility to delete files once done
+// Thread unsafe
+func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error) {
+	if !iter.HasNext() {
+		return nil, io.EOF
 	}
 
-	tempDir, err := os.MkdirTemp(os.TempDir(), "blob*ingestion")
-	if err != nil {
-		return nil, err
+	start := iter.index
+	end := iter.index + n
+	if end > len(iter.objectPaths) {
+		end = len(iter.objectPaths)
 	}
-	localPaths := make([]string, len(items))
+	iter.index = end
 
+	localPaths := make([]string, n)
 	g, grpCtx := errgroup.WithContext(ctx)
 	g.SetLimit(concurrentBlobDownloadLimit)
-	for i, item := range items {
+	for i, item := range iter.objectPaths[start:end] {
 		obj := item
-		index := i
+		index := start + i // with repect to object slices
 		g.Go(func() error {
-			file, err := fileutil.TempFile(tempDir, obj.Key)
+			file, err := fileutil.TempFile(os.TempDir(), obj.Key)
 			if err != nil {
 				return err
 			}
 
-			localPaths[index] = file.Name()
-			fmt.Println(file.Name())
 			defer file.Close()
-			if index == len(items)-1 && totalSize > options.Size {
-				sizeReqd := options.Size - (totalSize - obj.Size)
+			localPaths[index-start] = file.Name()
+			fmt.Println(file.Name())
+			if index == len(iter.objectPaths)-1 && iter.lastObjectSize > int64(0) {
 				// download partial file
-				err = Download(grpCtx, bucket, obj, ExtractOptions{Size: sizeReqd, Strategy: options.Strategy}, file)
+				// todo :: add csv
+				err = Download(grpCtx, iter.bucket, obj, ExtractConfig{Size: iter.lastObjectSize, Strategy: iter.rowExtractConfig.Strategy}, file)
 			} else {
 				// download full file
-				err = downloadObject(grpCtx, bucket, obj.Key, file)
+				err = downloadObject(grpCtx, iter.bucket, obj.Key, file)
 			}
 			if err != nil {
 				return err
@@ -281,15 +273,33 @@ func DownloadAll(ctx context.Context, bucket *blob.Bucket, options *ExtractOptio
 	}
 
 	if err := g.Wait(); err != nil {
-		// one of the download failed
-		// remove the files
-		fileutil.ForceRemoveFiles(localPaths)
-		// remove the empty temp directory
-		os.Remove(tempDir)
 		return nil, err
 	}
 
 	return localPaths, nil
+}
+
+// listOptions for page listing api
+func listOptions(globPattern string) *blob.ListOptions {
+	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
+		// Access storage.Query via q here.
+		var q *storage.Query
+		if as(&q) {
+			// we only need name and size, adding only required attributes to reduce data fetched
+			_ = q.SetAttrSelection([]string{"Name", "Size"})
+		}
+		return nil
+	}}
+
+	prefix, glob := doublestar.SplitPattern(globPattern)
+	if !fileutil.IsGlob(glob) {
+		// single file
+		listOptions.Prefix = globPattern
+	} else if prefix != "." {
+		listOptions.Prefix = prefix
+	}
+
+	return listOptions
 }
 
 func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, file *os.File) error {

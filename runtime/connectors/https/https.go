@@ -3,8 +3,10 @@ package https
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -49,7 +51,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.Iterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -78,7 +80,28 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	if err != nil {
 		return nil, err
 	}
-	return []string{file}, nil
+	return &httpIterator{file: file}, nil
+}
+
+type httpIterator struct {
+	file  string
+	index int
+}
+
+func (h *httpIterator) Close() error {
+	return os.Remove(h.file)
+}
+
+func (h *httpIterator) NextBatch(ctx context.Context, n int) ([]string, error) {
+	if !h.HasNext() {
+		return nil, io.EOF
+	}
+
+	return []string{h.file}, nil
+}
+
+func (h *httpIterator) HasNext() bool {
+	return h.index == 0
 }
 
 func urlExtension(path string) (string, error) {

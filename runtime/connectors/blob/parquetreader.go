@@ -17,17 +17,23 @@ import (
 	"gocloud.dev/blob"
 )
 
+var batchSize = int64(100)
+
 type parquetReader struct {
-	ctx            context.Context
-	bucket         *blob.Bucket
-	index          int64
-	obj            *blob.ListObject
-	call           int32
-	debugMode      bool
+	ctx    context.Context
+	bucket *blob.Bucket
+	index  int64
+	obj    *blob.ListObject
+
+	// buffer for caching
 	buffer         []byte
 	bufStartOffset int64
 	bufEndOffset   int64
-	cached         int
+
+	// debug data
+	debugMode bool
+	cached    int
+	call      int
 }
 
 func (f *parquetReader) WithinBuffer(start, end int64) bool {
@@ -35,16 +41,21 @@ func (f *parquetReader) WithinBuffer(start, end int64) bool {
 }
 
 func (f *parquetReader) ReadInBuffer(start int64) error {
-	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, start, int64(len(f.buffer)), nil)
+	length := int64(len(f.buffer))
+	if start+length >= f.obj.Size {
+		// limit end offset to object size
+		length = f.obj.Size - start
+	}
+	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, start, length, nil)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	defer reader.Close()
 
 	bytes, err := reader.Read(f.buffer)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	f.bufStartOffset = start
@@ -53,34 +64,29 @@ func (f *parquetReader) ReadInBuffer(start int64) error {
 }
 
 // todo :: add buffer for caching
-func (f *parquetReader) ReadAt(p []byte, off int64) (n int, err error) {
+func (f *parquetReader) ReadAt(p []byte, off int64) (int, error) {
 	fmt.Printf("reading %v bytes at offset %v\n", len(p), off)
+	f.call++
 
-	end := off + int64(len(p))
-	if len(p) <= len(f.buffer) {
-		if !f.WithinBuffer(off, end) {
-			if err := f.ReadInBuffer(off); err != nil {
-				return 0, err
-			}
-		} else {
-			f.cached++
-		}
-		return copy(p, f.buffer), nil
-	}
+	// end := off + int64(len(p))
+	// if len(p) <= len(f.buffer) {
+	// 	if !f.WithinBuffer(off, end) {
+	// 		if err := f.ReadInBuffer(off); err != nil {
+	// 			panic(err)
+	// 		}
+	// 	} else {
+	// 		f.cached++
+	// 	}
+	// 	return copy(p, f.buffer), nil
+	// }
 
 	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, off, int64(len(p)), nil)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 	defer reader.Close()
 
-	read, readErr := reader.Read(p)
-	if readErr != nil {
-		return n, readErr
-	}
-
-	f.call++
-	return read, nil
+	return reader.Read(p)
 }
 
 func (f *parquetReader) Read(p []byte) (int, error) {
@@ -124,21 +130,13 @@ func newParquetReader(ctx context.Context, bucket *blob.Bucket, obj *blob.ListOb
 	return &parquetReader{
 		ctx:       ctx,
 		bucket:    bucket,
-		index:     0,
 		obj:       obj,
 		debugMode: true,
 		buffer:    make([]byte, 1024*1024), // 1MB buffer
 	}
 }
 
-func panicIfError(err error) {
-	if err != nil {
-		fmt.Printf("err %v\n", err)
-		panic(err)
-	}
-}
-
-func reverse(s []int) {
+func Reverse(s []int) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
@@ -151,12 +149,12 @@ func getArray(size int, rev bool) []int {
 	}
 
 	if rev {
-		reverse(result)
+		Reverse(result)
 	}
 	return result
 }
 
-func estimate(reader *file.Reader, option ExtractOptions) ([]int, int64) {
+func estimate(reader *file.Reader, option ExtractConfig) ([]int, int64) {
 	rowIndexes := getArray(reader.NumRowGroups(), option.Strategy == TAIL)
 
 	result := make([]int, 0)
@@ -168,7 +166,7 @@ func estimate(reader *file.Reader, option ExtractOptions) ([]int, int64) {
 		rowCount := rowGroup.NumRows()
 
 		if cumSize+rowGroupSize > option.Size {
-			// taking entire crosses allowed size
+			// taking entire rowgroup crosses allowed size
 			perRowSize := rowGroupSize / rowCount
 			rows += (option.Size - cumSize) / perRowSize
 			return result, rows
@@ -178,13 +176,12 @@ func estimate(reader *file.Reader, option ExtractOptions) ([]int, int64) {
 	return result, rows
 }
 
-func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractOptions, fw *os.File) error {
+func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractConfig, fw *os.File) error {
 	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
 	reader := newParquetReader(ctx, bucket, obj)
 
 	props := parquet.NewReaderProperties(mem)
 	props.BufferedStreamEnabled = true
-	props.BufferSize = 1024 * 1024
 
 	pf, err := file.NewParquetReader(reader, file.WithReadProps(props))
 	if err != nil {
@@ -194,10 +191,10 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 
 	// not 100% sure what is optimum BatchSize
 	// from the code comments it seems like number of consecutive items in a column fetched in one shot across loading multiple row groups if required
-	// since we have already enabled BufferedStreamEnabled for reading parquet keeping it low shouldn't make extra network calls
+	// since we have already enabled BufferedStreamEnabled for reading parquet, keeping it low shouldn't make extra network calls
 	// whereas keeping it high can potentially load multiple groups(make multiple network calls)
 	// keeping it 1 for simplicty
-	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: 1, Parallel: false}
+	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: batchSize, Parallel: false}
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
 		return err
@@ -205,7 +202,7 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 
 	numRowGroups := pf.NumRowGroups()
 	if numRowGroups == 0 {
-		panicIfError(fmt.Errorf("invalid parquet"))
+		return fmt.Errorf("invalid parquet")
 	}
 
 	rowIndices, rowLimit := estimate(pf, option)
@@ -215,8 +212,9 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 		return err
 	}
 
-	records := make([]arrow.Record, rowLimit)
-	for i := int64(0); i < rowLimit; i++ {
+	records := make([]arrow.Record, rowLimit/batchSize)
+	for i := 0; i < len(records); i++ {
+		// one read fetch batchsize number of rows in one call
 		rec, err := r.Read()
 		if err != nil {
 			return err
@@ -240,7 +238,12 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 	table := array.NewTableFromRecords(schema, records)
 	defer table.Release()
 
-	wp := parquet.NewWriterProperties(parquet.WithVersion(parquet.V1_0), parquet.WithCompression(compress.Codecs.Snappy))
+	// duck db requires root Repetitions to be required
+	// keeping compressions as uncompressed since file will be immediately consumed and deleted
+	wp := parquet.NewWriterProperties(
+		parquet.WithRootRepetition(parquet.Repetitions.Required),
+		parquet.WithCompression(compress.Codecs.Uncompressed),
+		parquet.WithAllocator(mem))
 	return pqarrow.WriteTable(
 		table,
 		fw,

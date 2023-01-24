@@ -82,7 +82,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.Iterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -106,7 +106,6 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
-	defer bucketObj.Close()
 
 	// prepare fetch configs
 	extractConfig, err := rillblob.NewExtractConfigs(source.Policy)
@@ -121,7 +120,7 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		GlobPageSize:          conf.GlobPageSize,
 		Extract:               extractConfig,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
+	return rillblob.NewIterator(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
 }
 
 func getAwsSessionConfig(conf *Config) (*session.Session, error) {

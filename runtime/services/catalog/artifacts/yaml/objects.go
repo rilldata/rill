@@ -24,15 +24,16 @@ type Source struct {
 	GlobMaxObjectsMatched int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
-	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
+	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
+	Policy                *ExtractPolicy `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
 }
 
 type ExtractPolicy struct {
-	Row       *ExtractOptions `yaml:"rows,omitempty" mapstructure:"rows,omitempty" json:"rows,omitempty"`
-	Partition *ExtractOptions `yaml:"partitions,omitempty" mapstructure:"partitions,omitempty" json:"partitions,omitempty"`
+	Row       *ExtractConfig `yaml:"rows,omitempty" mapstructure:"rows,omitempty" json:"rows,omitempty"`
+	Partition *ExtractConfig `yaml:"partitions,omitempty" mapstructure:"partitions,omitempty" json:"partitions,omitempty"`
 }
 
-type ExtractOptions struct {
+type ExtractConfig struct {
 	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty" json:"strategy,omitempty"`
 	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty" json:"size,omitempty"`
 }
@@ -80,12 +81,12 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 		source.Path = ""
 	}
 
-	if extract, err := toExtractArtifact(catalog.GetSource().GetPolicy()); err != nil {
+	extract, err := toExtractArtifact(catalog.GetSource().GetPolicy())
+	if err != nil {
 		return nil, err
-	} else {
-		source.ExtractPolicy = extract
 	}
 
+	source.Policy = extract
 	return source, nil
 }
 
@@ -142,12 +143,16 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["glob.page_size"] = source.GlobPageSize
 	}
 
+	if source.HivePartition != nil {
+		props["hive_partitioning"] = *source.HivePartition
+	}
+
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {
 		return nil, err
 	}
 
-	extract, err := fromExtractArtifact(source.ExtractPolicy)
+	extract, err := fromExtractArtifact(source.Policy)
 	if err != nil {
 		return nil, err
 	}
