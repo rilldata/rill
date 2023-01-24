@@ -1,5 +1,6 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     useRuntimeServiceGetDescriptiveStatistics,
     useRuntimeServiceGetRugHistogram,
@@ -104,7 +105,11 @@
     totalRows={$nulls?.totalRows}
     {type}
   />
-  <div class="pl-10 pr-4 py-4" slot="details">
+  <div
+    class="pl-10 pr-4 py-4"
+    slot="details"
+    class:hidden={INTERVALS.has(type)}
+  >
     <NumericPlot
       data={$numericHistogram.data}
       rug={$rug?.data}
