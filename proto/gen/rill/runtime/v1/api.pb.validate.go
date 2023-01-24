@@ -291,7 +291,7 @@ func (m *Instance) validate(all bool) error {
 		if !_Instance_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := InstanceValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -406,7 +406,7 @@ var _ interface {
 	ErrorName() string
 } = InstanceValidationError{}
 
-var _Instance_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _Instance_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 var _Instance_OlapDriver_InLookup = map[string]struct{}{
 	"duckdb": {},
@@ -698,7 +698,7 @@ func (m *GetInstanceRequest) validate(all bool) error {
 		if !_GetInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := GetInstanceRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -788,7 +788,7 @@ var _ interface {
 	ErrorName() string
 } = GetInstanceRequestValidationError{}
 
-var _GetInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _GetInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on GetInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -948,7 +948,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 		if !_CreateInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := CreateInstanceRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -1066,7 +1066,7 @@ var _ interface {
 	ErrorName() string
 } = CreateInstanceRequestValidationError{}
 
-var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
 	"duckdb": {},
@@ -1236,7 +1236,7 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 		if !_DeleteInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := DeleteInstanceRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -1326,7 +1326,7 @@ var _ interface {
 	ErrorName() string
 } = DeleteInstanceRequestValidationError{}
 
-var _DeleteInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _DeleteInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on DeleteInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1457,7 +1457,7 @@ func (m *ListFilesRequest) validate(all bool) error {
 		if !_ListFilesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := ListFilesRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -1547,7 +1547,7 @@ var _ interface {
 	ErrorName() string
 } = ListFilesRequestValidationError{}
 
-var _ListFilesRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _ListFilesRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on ListFilesResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -1678,7 +1678,7 @@ func (m *GetFileRequest) validate(all bool) error {
 		if !_GetFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := GetFileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -1768,7 +1768,7 @@ var _ interface {
 	ErrorName() string
 } = GetFileRequestValidationError{}
 
-var _GetFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _GetFileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on GetFileResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -1928,7 +1928,7 @@ func (m *PutFileRequest) validate(all bool) error {
 		if !_PutFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := PutFileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -2024,7 +2024,7 @@ var _ interface {
 	ErrorName() string
 } = PutFileRequestValidationError{}
 
-var _PutFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _PutFileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on PutFileResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -2155,7 +2155,7 @@ func (m *DeleteFileRequest) validate(all bool) error {
 		if !_DeleteFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := DeleteFileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -2247,7 +2247,7 @@ var _ interface {
 	ErrorName() string
 } = DeleteFileRequestValidationError{}
 
-var _DeleteFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _DeleteFileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on DeleteFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2378,7 +2378,7 @@ func (m *RenameFileRequest) validate(all bool) error {
 		if !_RenameFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := RenameFileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -2472,7 +2472,7 @@ var _ interface {
 	ErrorName() string
 } = RenameFileRequestValidationError{}
 
-var _RenameFileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _RenameFileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on RenameFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2691,9 +2691,18 @@ func (m *CatalogEntry) validate(all bool) error {
 		}
 	}
 
-	switch m.Object.(type) {
-
+	switch v := m.Object.(type) {
 	case *CatalogEntry_Table:
+		if v == nil {
+			err := CatalogEntryValidationError{
+				field:  "Object",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetTable()).(type) {
@@ -2725,6 +2734,16 @@ func (m *CatalogEntry) validate(all bool) error {
 		}
 
 	case *CatalogEntry_Source:
+		if v == nil {
+			err := CatalogEntryValidationError{
+				field:  "Object",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetSource()).(type) {
@@ -2756,6 +2775,16 @@ func (m *CatalogEntry) validate(all bool) error {
 		}
 
 	case *CatalogEntry_Model:
+		if v == nil {
+			err := CatalogEntryValidationError{
+				field:  "Object",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetModel()).(type) {
@@ -2787,6 +2816,16 @@ func (m *CatalogEntry) validate(all bool) error {
 		}
 
 	case *CatalogEntry_MetricsView:
+		if v == nil {
+			err := CatalogEntryValidationError{
+				field:  "Object",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetMetricsView()).(type) {
@@ -2817,6 +2856,8 @@ func (m *CatalogEntry) validate(all bool) error {
 			}
 		}
 
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {
@@ -2923,7 +2964,7 @@ func (m *ListCatalogEntriesRequest) validate(all bool) error {
 		if !_ListCatalogEntriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := ListCatalogEntriesRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -3015,7 +3056,7 @@ var _ interface {
 	ErrorName() string
 } = ListCatalogEntriesRequestValidationError{}
 
-var _ListCatalogEntriesRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _ListCatalogEntriesRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on ListCatalogEntriesResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -3180,7 +3221,7 @@ func (m *GetCatalogEntryRequest) validate(all bool) error {
 		if !_GetCatalogEntryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := GetCatalogEntryRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -3272,7 +3313,7 @@ var _ interface {
 	ErrorName() string
 } = GetCatalogEntryRequestValidationError{}
 
-var _GetCatalogEntryRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _GetCatalogEntryRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on GetCatalogEntryResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3432,7 +3473,7 @@ func (m *TriggerRefreshRequest) validate(all bool) error {
 		if !_TriggerRefreshRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := TriggerRefreshRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -3524,7 +3565,7 @@ var _ interface {
 	ErrorName() string
 } = TriggerRefreshRequestValidationError{}
 
-var _TriggerRefreshRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _TriggerRefreshRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on TriggerRefreshResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3655,7 +3696,7 @@ func (m *TriggerSyncRequest) validate(all bool) error {
 		if !_TriggerSyncRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := TriggerSyncRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -3745,7 +3786,7 @@ var _ interface {
 	ErrorName() string
 } = TriggerSyncRequestValidationError{}
 
-var _TriggerSyncRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _TriggerSyncRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on TriggerSyncResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3884,7 +3925,7 @@ func (m *ReconcileRequest) validate(all bool) error {
 		if !_ReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := ReconcileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -3976,7 +4017,7 @@ var _ interface {
 	ErrorName() string
 } = ReconcileRequestValidationError{}
 
-var _ReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _ReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on ReconcileResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -4314,7 +4355,7 @@ func (m *PutFileAndReconcileRequest) validate(all bool) error {
 		if !_PutFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := PutFileAndReconcileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -4416,7 +4457,7 @@ var _ interface {
 	ErrorName() string
 } = PutFileAndReconcileRequestValidationError{}
 
-var _PutFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _PutFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on PutFileAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -4582,7 +4623,7 @@ func (m *DeleteFileAndReconcileRequest) validate(all bool) error {
 		if !_DeleteFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := DeleteFileAndReconcileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -4679,7 +4720,7 @@ var _ interface {
 	ErrorName() string
 } = DeleteFileAndReconcileRequestValidationError{}
 
-var _DeleteFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _DeleteFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on DeleteFileAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -4845,7 +4886,7 @@ func (m *RenameFileAndReconcileRequest) validate(all bool) error {
 		if !_RenameFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := RenameFileAndReconcileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -4944,7 +4985,7 @@ var _ interface {
 	ErrorName() string
 } = RenameFileAndReconcileRequestValidationError{}
 
-var _RenameFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _RenameFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on RenameFileAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -5110,7 +5151,7 @@ func (m *RefreshAndReconcileRequest) validate(all bool) error {
 		if !_RefreshAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := RefreshAndReconcileRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -5206,7 +5247,7 @@ var _ interface {
 	ErrorName() string
 } = RefreshAndReconcileRequestValidationError{}
 
-var _RefreshAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _RefreshAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on RefreshAndReconcileResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -5372,7 +5413,7 @@ func (m *QueryRequest) validate(all bool) error {
 		if !_QueryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
 			err := QueryRequestValidationError{
 				field:  "InstanceId",
-				reason: "value does not match regex pattern \"^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$\"",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9-_]+$\"",
 			}
 			if !all {
 				return err
@@ -5499,7 +5540,7 @@ var _ interface {
 	ErrorName() string
 } = QueryRequestValidationError{}
 
-var _QueryRequest_InstanceId_Pattern = regexp.MustCompile("^[^[0-9]A-Za-z]+( [^[0-9]A-Za-z]+)*$")
+var _QueryRequest_InstanceId_Pattern = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Validate checks the field values on QueryResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -7476,9 +7517,18 @@ func (m *ProfileColumnSummary) validate(all bool) error {
 
 	var errors []error
 
-	switch m.Case.(type) {
-
+	switch v := m.Case.(type) {
 	case *ProfileColumnSummary_CategoricalSummary:
+		if v == nil {
+			err := ProfileColumnSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetCategoricalSummary()).(type) {
@@ -7510,6 +7560,16 @@ func (m *ProfileColumnSummary) validate(all bool) error {
 		}
 
 	case *ProfileColumnSummary_NumericSummary:
+		if v == nil {
+			err := ProfileColumnSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetNumericSummary()).(type) {
@@ -7541,6 +7601,16 @@ func (m *ProfileColumnSummary) validate(all bool) error {
 		}
 
 	case *ProfileColumnSummary_TimeRangeSummary:
+		if v == nil {
+			err := ProfileColumnSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetTimeRangeSummary()).(type) {
@@ -7571,6 +7641,8 @@ func (m *ProfileColumnSummary) validate(all bool) error {
 			}
 		}
 
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {
@@ -7675,9 +7747,18 @@ func (m *CategoricalSummary) validate(all bool) error {
 
 	var errors []error
 
-	switch m.Case.(type) {
-
+	switch v := m.Case.(type) {
 	case *CategoricalSummary_TopK:
+		if v == nil {
+			err := CategoricalSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetTopK()).(type) {
@@ -7709,8 +7790,19 @@ func (m *CategoricalSummary) validate(all bool) error {
 		}
 
 	case *CategoricalSummary_Cardinality:
+		if v == nil {
+			err := CategoricalSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 		// no validation rules for Cardinality
-
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {
@@ -8076,9 +8168,18 @@ func (m *NumericSummary) validate(all bool) error {
 
 	var errors []error
 
-	switch m.Case.(type) {
-
+	switch v := m.Case.(type) {
 	case *NumericSummary_NumericHistogramBins:
+		if v == nil {
+			err := NumericSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetNumericHistogramBins()).(type) {
@@ -8110,6 +8211,16 @@ func (m *NumericSummary) validate(all bool) error {
 		}
 
 	case *NumericSummary_NumericStatistics:
+		if v == nil {
+			err := NumericSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetNumericStatistics()).(type) {
@@ -8141,6 +8252,16 @@ func (m *NumericSummary) validate(all bool) error {
 		}
 
 	case *NumericSummary_NumericOutliers:
+		if v == nil {
+			err := NumericSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetNumericOutliers()).(type) {
@@ -8171,6 +8292,8 @@ func (m *NumericSummary) validate(all bool) error {
 			}
 		}
 
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {
