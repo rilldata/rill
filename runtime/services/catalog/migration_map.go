@@ -132,20 +132,12 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 		// if no matching item is found, add as a MigrationDelete
 		if !found {
 			migrationMap[normalisedStoreName] = s.newDeleteMigrationItem(storeEntry)
-			parents := s.dag.GetParents(normalisedStoreName)
-			for _, parent := range parents {
-				_, migrating := migrationMap[parent]
-				if migrating {
-					continue
-				}
-				parentEntry, ok := storeObjectsMap[parent]
-				if !ok || !parentEntry.Embedded {
-					// only add embedded entries for now
-					continue
-				}
-				migrationMap[parent] = s.newEmbeddedMigrationItem(parentEntry, MigrationReportUpdate)
-			}
+			s.checkDeletionForEmbeddedSources(normalisedStoreName, migrationMap, storeObjectsMap)
 		}
+	}
+
+	for _, deletion := range deletions {
+		s.checkDeletionForEmbeddedSources(deletion.NormalizedName, migrationMap, storeObjectsMap)
 	}
 
 	return migrationMap, reconcileErrors, nil
@@ -247,4 +239,24 @@ func (s *Service) lookForRenames(
 	}
 
 	return add
+}
+
+func (s *Service) checkDeletionForEmbeddedSources(
+	normalisedName string,
+	migrationMap map[string]*MigrationItem,
+	storeObjectsMap map[string]*drivers.CatalogEntry,
+) {
+	parents := s.dag.GetParents(normalisedName)
+	for _, parent := range parents {
+		_, migrating := migrationMap[parent]
+		if migrating {
+			continue
+		}
+		parentEntry, ok := storeObjectsMap[parent]
+		if !ok || !parentEntry.Embedded {
+			// only add embedded entries for now
+			continue
+		}
+		migrationMap[parent] = s.newEmbeddedMigrationItem(parentEntry, MigrationReportUpdate)
+	}
 }
