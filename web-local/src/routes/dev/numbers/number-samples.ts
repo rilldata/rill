@@ -69,8 +69,13 @@ export const numberLists = [
   },
 
   {
-    desc: "uniform(0,1e-14)",
-    sample: range.map((x) => randu() * 1e-14),
+    desc: "power law-ish (uniform over magnitudes (e-12, e12))",
+    sample: range.map((x) => 10 ** uniform(-15, 12)),
+  },
+
+  {
+    desc: "uniform over magnitudes (e-15, e-12)",
+    sample: range.map((x) => 10 ** uniform(-15, -12)),
   },
 
   {
