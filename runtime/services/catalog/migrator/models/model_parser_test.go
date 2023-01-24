@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -232,38 +231,4 @@ func Test_extractJoins(t *testing.T) {
 			require.ElementsMatch(t, ExtractTableNames(tt.query), tt.tables)
 		})
 	}
-}
-
-func TestParquet(t *testing.T) {
-	// t.Parallel()
-	/*	conn := prepareConn(t)
-		olap, _ := conn.OLAPStore()
-		rows, err := olap.Execute(context.Background(), &drivers.Statement{
-			Query:    "SELECT count(*) FROM read_parquet('/Users/rakeshrilldata/Downloads/par/temp/newfile234.parquet')",
-			// Args:     []any{1},
-			Priority: 1,
-		})
-
-		fmt.Println(err)
-		fmt.Println(rows)
-
-		var x int
-		rows.Next()
-		rows.Scan(&x)
-		fmt.Println(x)*/
-
-	db, err := sql.Open("duckdb", "")
-	require.NoError(t, err)
-	defer db.Close()
-
-	_, err = db.Exec("INSTALL 'parquet'")
-	require.NoError(t, err)
-	_, err = db.Exec("LOAD 'parquet'")
-	require.NoError(t, err)
-
-	res, err1 := db.Exec("SELECT * FROM read_parquet('/Users/parag/Downloads/part0.snappy.parquet')")
-	fmt.Println(err1)
-
-	fmt.Println(res.RowsAffected())
-
 }
