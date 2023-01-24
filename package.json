@@ -26,5 +26,8 @@
       "package.json",
       "web-local/package.json"
     ]
+  },
+  "dependencies": {
+    "@stdlib/stdlib": "^0.0.96"
   }
 }
