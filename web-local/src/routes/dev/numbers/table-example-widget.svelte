@@ -25,6 +25,8 @@
   let truncateTinyOrdersIfBigOrderExists = true;
   let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
 
+  let showBars = true;
+
   let selectedFormatter = formatterFactories[defaultFormatterIndex];
   let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
 
@@ -283,6 +285,14 @@
       </label>
     </div> -->
   </div>
+  <div style="padding-left: 40px;">
+    <div class="option-box">
+      <label>
+        <input type="checkbox" bind:checked={showBars} />
+        show background bars
+      </label>
+    </div>
+  </div>
 </div>
 
 <table class="ui-copy-number fixed-width-cols">
@@ -304,6 +314,7 @@
               {alignDecimalPoints}
               {lowerCaseEForEng}
               {zeroHandling}
+              {showBars}
             />
           </div>
         </td>
@@ -322,7 +333,7 @@
   }
   td.table-body {
     /* text-align: right; */
-    padding-left: 30px;
+    padding: 0 0 0 0;
     white-space: nowrap;
   }
 
