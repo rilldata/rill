@@ -95,6 +95,8 @@
     "immer": "^9.0.12",
     "module-alias": "^2.2.2",
     "svelte": "^3.48.0",
+    "svelte-awesome-color-picker": "^2.3.0",
+    "svelte-color-picker": "^1.0.7",
     "svelte-forms-lib": "^2.0.1",
     "yup": "^0.32.11"
   }
