@@ -14,6 +14,7 @@
   export let zeroHandling: "noSpecial" | "exactZero" | "zeroDot" = "noSpecial";
   export let negativeColor = "#f5999977";
   export let positiveColor = "#ececec";
+  export let barBackgroundColor = "#ffffff";
 
   export let showBaseline = false;
   export let baselineColor = "#eeeeee";
@@ -69,22 +70,17 @@
       {negativeColor}
       {showBaseline}
       {baselineColor}
+      {barBackgroundColor}
     />
   {/if}
-  {#if !alignDecimalPoints}
-    <div
-      on:click={logProps}
-      class="number-container"
-      style="width: {containerWidth}px;"
-    >
+  <div
+    on:click={logProps}
+    class="number-container"
+    style="width: {containerWidth}px;"
+  >
+    {#if !alignDecimalPoints}
       {int}{decimalPoint}{frac}{suffixFinal}
-    </div>
-  {:else}
-    <div
-      on:click={logProps}
-      class="number-container"
-      style="width: {containerWidth}px;"
-    >
+    {:else}
       <div class="number-whole" style="width: {intPx}px;">
         {int}
       </div>
@@ -104,28 +100,13 @@
           {decimalPoint}{frac}{suffixFinal}
         </div>
       {/if}
-    </div>
-  {/if}
+    {/if}
+  </div>
 </div>
 
 <style>
   div.number-and-bar-container {
     position: relative;
-  }
-
-  div.number-bar {
-    position: relative;
-    top: 0px;
-    height: 100%;
-    /* z-index: 5; */
-  }
-
-  div.baseline {
-    position: relative;
-    top: 0px;
-    height: 100%;
-    width: 1px;
-    /* z-index: 5; */
   }
 
   div.number-container {
@@ -136,8 +117,6 @@
     white-space: nowrap;
     overflow: hidden;
     position: relative;
-    /* z-index: 10; */
-    /* outline: 1px solid black; */
   }
 
   div.number-whole {

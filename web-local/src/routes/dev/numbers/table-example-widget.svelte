@@ -37,6 +37,7 @@
 
   let negativeColor = "#ffbebe";
   let positiveColor = "#eaeaea";
+  let barBackgroundColor = "#ffffff";
 
   let showBaseline = true;
   let baselineColor = "#eeeeee";
@@ -372,6 +373,11 @@
       <div class="option-box">
         <ColorPicker bind:hex={negativeColor} label="negative bar color" />
         <ColorPicker bind:hex={positiveColor} label="positive bar color" />
+
+        <ColorPicker
+          bind:hex={barBackgroundColor}
+          label="bar background color"
+        />
         set positive bar color
         <button on:click={() => (positiveColor = blue100)}
           >blue-100 (like `main`)</button
@@ -427,6 +433,7 @@
                   {showBars}
                   {negativeColor}
                   {positiveColor}
+                  {barBackgroundColor}
                   {showBaseline}
                   {baselineColor}
                   {suffixPadding}
