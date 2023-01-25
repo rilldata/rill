@@ -56,7 +56,7 @@ var (
 	QueryCommentRegex     = regexp.MustCompile(`(?m)--.*$`)
 	MultipleSpacesRegex   = regexp.MustCompile(`\s\s+`)
 	SpacesAfterCommaRegex = regexp.MustCompile(`,\s+`)
-	MaterializedRegex     = regexp.MustCompile(`(?m)^[ \t]*--[ \t]?@materialize[ \t]?:[ \t]*([a-zA-Z]*)\s+`)
+	MaterializedRegex     = regexp.MustCompile(`(?m)^--[ \t]*@materialize[ \t]?:[ \t]*([a-zA-Z]*)\s+`)
 )
 
 // TODO: use this while extracting source names to get case insensitive dag

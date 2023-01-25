@@ -96,56 +96,64 @@ func Test_parseMaterializationInfo(t *testing.T) {
 		{
 			"materialize true",
 			`
-			-- @materialize: true 
-			SELECT * from         whatever;
-			-- another extraneous comment.
+-- @materialize: true 
+SELECT * from         whatever;
+-- another extraneous comment.
 			`,
 			MaterializeTrue,
 		},
 		{
 			"materialize inferred",
 			`
-			-- @materialize: inferred 
-			SELECT * from whatever;
+-- @materialize: inferred 
+SELECT * from whatever;
 			`,
 			MaterializeInferred,
 		},
 		{
 			"materialize false",
 			`
-			-- @materialize: false 
-			SELECT * from whatever;
+-- @materialize: false 
+SELECT * from whatever;
 			`,
 			MaterializeFalse,
 		},
 		{
 			"materialize invalid value",
 			`
-			-- @materialize: random 
-			SELECT * from whatever;
+-- @materialize: random 
+SELECT * from whatever;
 			`,
 			MaterializeInvalid,
 		},
 		{
 			"parse invalid value",
 			`
-			-- @materialize: tru 
-			SELECT * from whatever;
+-- @materialize: tru 
+SELECT * from whatever;
 			`,
 			MaterializeInvalid,
 		},
 		{
 			"parse invalid value",
 			`
-			-- @materialize:  
-			SELECT * from whatever;
+-- @materialize:  
+SELECT * from whatever;
 			`,
 			MaterializeInvalid,
 		},
 		{
-			"parse spaces before",
+			"fail spaces before",
 			`
-			  	-- @materialize: true  
+			-- @materialize: true  
+			SELECT * from whatever;
+			`,
+			MaterializeUnspecified,
+		},
+		{
+			"parse multiple tags, use first",
+			`
+-- @materialize: true -- @materialize: false
 			SELECT * from whatever;
 			`,
 			MaterializeTrue,
@@ -153,15 +161,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 		{
 			"parse multiple tags, use first",
 			`
-			  	-- @materialize: true -- @materialize: false
-			SELECT * from whatever;
-			`,
-			MaterializeTrue,
-		},
-		{
-			"parse multiple tags, use first",
-			`
-			  	-- @materialize: t -- @materialize: false
+-- @materialize: t -- @materialize: false
 			SELECT * from whatever;
 			`,
 			MaterializeInvalid,
@@ -169,17 +169,17 @@ func Test_parseMaterializationInfo(t *testing.T) {
 		{
 			"parse multiple tags, use first",
 			`
-			-- @materialize: 
-			-- @materialize: false
-			SELECT * from whatever;
+-- @materialize: 
+-- @materialize: false
+SELECT * from whatever;
 			`,
 			MaterializeInvalid,
 		},
 		{
-			"parse multiple tags, use first",
+			"ignore invalid tag",
 			`
-			-- @materialize
-			-- @materialize: inferred
+-- @materialize
+-- @materialize: inferred
 			SELECT * from whatever;
 			`,
 			MaterializeInferred,
@@ -187,7 +187,7 @@ func Test_parseMaterializationInfo(t *testing.T) {
 		{
 			"parse mix cap values",
 			`
-			-- @materialize: TruE 
+-- @materialize: TruE 
 			SELECT * from whatever;
 			`,
 			MaterializeTrue,
@@ -195,142 +195,142 @@ func Test_parseMaterializationInfo(t *testing.T) {
 		{
 			"parse surrounding comments",
 			`
-			-- some comment.
-			-- @materialize: inferred -- another comment
-			SELECT * from whatever;
+-- some comment.
+-- @materialize: inferred -- another comment
+SELECT * from whatever;
 			`,
 			MaterializeInferred,
 		},
 		{
 			"parse single space before colon",
 			`
-			-- @materialize : true 
-			SELECT * from whatever;
+-- @materialize : true 
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"parse single tab before colon",
 			`
-			-- @materialize	: true 
-			SELECT * from whatever;
+-- @materialize	: true 
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"parse single tab after and before colon",
 			`
-			-- @materialize	:	true 
-			SELECT * from whatever;
+-- @materialize	:	true 
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"parse multiple tab after colon",
 			`
-			-- @materialize:		true 
-			SELECT * from whatever;
+-- @materialize:		true 
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"parse mix of tabs and space after colon",
 			`
-			-- @materialize:		 true 
-			SELECT * from whatever;
+-- @materialize:		 true 
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"parse extra spaces after colon",
 			`
-			-- @materialize	:  true 
-			SELECT * from whatever;
+-- @materialize	:  true 
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"fail parsing extra spaces before colon",
 			`
-			-- @materialize  : true 
-			SELECT * from whatever;
+-- @materialize  : true 
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
 		{
 			"fail parsing tag on new line",
 			`
-			-- 
-			@materialize: true 
-			SELECT * from whatever;
+-- 
+@materialize: true 
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
 		{
 			"fail parsing value on new line as comment",
 			`
-			-- @materialize 
-			-- :true
-			SELECT * from whatever;
+-- @materialize 
+-- :true
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
 		{
 			"fail parsing value on new line",
 			`
-			-- @materialize
-			:true
-			SELECT * from whatever;
+-- @materialize
+:true
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
 		{
 			"fail parsing mix of space and tab before colon",
 			`
-			-- @materialize	 : true 
-			SELECT * from whatever;
+-- @materialize	 : true 
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
 		{
 			"fail parsing materialize caps keyword",
 			`
-			-- @Materialize: true 
-			SELECT * from whatever;
+-- @Materialize: true 
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
 		{
 			"parse materialize caps value",
 			`
-			-- @materialize: True
-			SELECT * from whatever;
+-- @materialize: True
+SELECT * from whatever;
 			`,
 			MaterializeTrue,
 		},
 		{
 			"fail parsing new line value",
 			`
-			-- @materialize: 
-			true
-			SELECT * from whatever;
+-- @materialize: 
+true
+SELECT * from whatever;
 			`,
 			MaterializeInvalid,
 		},
 		{
 			"fail parsing new line value with comment",
 			`
-			-- @materialize: 
-			-- true
-			SELECT * from whatever;
+-- @materialize: 
+-- true
+SELECT * from whatever;
 			`,
 			MaterializeInvalid,
 		},
 		{
 			"parse incomplete comment",
 			`
-			-- @material
-			SELECT * from whatever;
+-- @material
+SELECT * from whatever;
 			`,
 			MaterializeUnspecified,
 		},
