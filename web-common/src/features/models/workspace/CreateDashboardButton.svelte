@@ -29,7 +29,7 @@
   import {
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
-  } from "../../metrics/metrics-internal-store";
+  } from "../../metrics-layer/metrics-internal-store";
 
   export let modelName: string;
   export let hasError = false;

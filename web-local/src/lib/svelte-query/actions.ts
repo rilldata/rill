@@ -14,7 +14,7 @@ import {
 import {
   addQuickMetricsToDashboardYAML,
   initBlankDashboardYAML,
-} from "../../../../web-common/src/features/metrics/metrics-internal-store";
+} from "../../../../web-common/src/features/metrics-layer/metrics-internal-store";
 
 export interface CreateDashboardFromSourceRequest {
   instanceId: string;

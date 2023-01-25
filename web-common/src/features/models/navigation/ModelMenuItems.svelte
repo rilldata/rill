@@ -33,7 +33,7 @@
   import {
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
-  } from "../../metrics/metrics-internal-store";
+  } from "../../metrics-layer/metrics-internal-store";
   import { useModelNames } from "../selectors";
 
   export let modelName: string;

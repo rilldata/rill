@@ -3,7 +3,7 @@
   import AlertTriangle from "@rilldata/web-common/components/icons/AlertTriangle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { ValidationState } from "@rilldata/web-common/features/metrics/errors";
+  import { ValidationState } from "@rilldata/web-common/features/metrics-layer/errors";
   import type { EntityRecord } from "@rilldata/web-local/lib/temp/entity";
   import type {
     CellConfigInput,

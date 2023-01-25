@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { MetricsWorkspace } from "@rilldata/web-common/features/metrics";
+  import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-layer";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
