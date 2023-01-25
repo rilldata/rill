@@ -1,10 +1,7 @@
 import random from "@stdlib/random/base";
+import shuffle from "@stdlib/random/shuffle";
 
-const N = 22;
-// const rand = random.randu.factory({ seed: 128 });
-// for (let i = 0; i < 100; i++) {
-//   console.log(rand());
-// }
+const N = 20;
 
 const range = new Array(N).fill(0).map((_, i) => i);
 
@@ -13,13 +10,17 @@ const randu = random.randu.factory({ seed: 1228 });
 const uniform = random.uniform.factory({ seed: 1228 });
 
 const randDiscrete = random.discreteUniform.factory({ seed: 1228 });
-// for (let i = 0; i < 100; i++) {
-//   console.log(t(1) ** 5);
-// }
 
-console.log(range.map((x) => tDist(1) ** 5));
+var shuffler = shuffle.factory({
+  seed: 239,
+});
 
-export const numberLists = [
+type NumericSample = {
+  desc: string;
+  sample: number[];
+};
+
+export const numberLists: NumericSample[] = [
   {
     desc: "pathological for humanizer",
     sample: [
@@ -28,7 +29,7 @@ export const numberLists = [
       12.94930626255, -0.07578137641, -22.59459041752, -0, 477.50966127074,
       0.00000000580283174, -0.0000000335513, -154.64489886467, 0,
       -27.2133474649, -0.02432294641, -0.000000000039737053,
-    ],
+    ].slice(0, N),
   },
   {
     desc: "t dist",
@@ -50,21 +51,36 @@ export const numberLists = [
     sample: range.map((x) => +(tDist(1) ** 5).toPrecision(2)),
   },
   {
-    desc: "negative power law-ish, zero inflated",
+    desc: "all negative, power law-ish, zero inflated",
     sample: range
       .map((x) => -(10 ** uniform(-3, 6)))
       .map((x) => (randu() < 0.3 ? 0 : x)),
   },
 
   {
-    desc: "uniform(0,1)",
+    desc: "pos & neg, power law-ish, zero inflated",
+    sample: range
+      .map((x) => (randu() < 0.4 ? -1 : 1) * 10 ** uniform(-3, 6))
+      .map((x) => (randu() < 0.3 ? 0 : x)),
+  },
+
+  {
+    desc: "pos & neg, power law-ish, zero inflated 2",
+    sample: shuffler(
+      range.map((i) => (i % 2 === 0 ? -1 : 1) * randu() * 10 ** (i * 0.6 - 3))
+    ),
+    // .map((x) => (randu() < 0.3 ? 0 : x)),
+  },
+
+  {
+    desc: "uniform (0,1)",
     sample: range.map((x) => randu()),
   },
 
   {
     desc: "in (0,1), ragged, with exact zeros",
     sample: range
-      .map((x) => randu() * 1.1 - 0.2)
+      .map(() => randu() * 1.1 - 0.2)
       .map((x) => (x > 0 ? x : 0))
       .map((x) => +x.toPrecision(randDiscrete(1, 5))),
   },
@@ -85,11 +101,11 @@ export const numberLists = [
   },
 
   {
-    desc: "uniform(-1000,1000)",
+    desc: "uniform (-1000, 1000)",
     sample: range.map((x) => uniform(-1000, 1000)),
   },
   {
-    desc: "uniform(-300,700) with O(1e7) outlier",
+    desc: "uniform (-300,700) with O(1e7) outlier",
     sample: range.map((x, i) =>
       i === 7 ? randu() * 1e7 : uniform(-300, 1000)
     ),

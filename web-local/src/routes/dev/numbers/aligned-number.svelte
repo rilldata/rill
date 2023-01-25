@@ -81,6 +81,8 @@
   $: barLeftPct = pctWithinExtents(barLeft, validMin, validMax);
   $: barWidthPct = pctWithinExtents(barRight, validMin, validMax) - barLeftPct;
   $: barColor = richNum.number < 0 ? negativeColor : positiveColor;
+
+  $: baselineLeftPct = pctWithinExtents(0, validMin, validMax);
 </script>
 
 {#if !alignDecimalPoints}
@@ -102,6 +104,14 @@
           style="left:{barLeftPct}%; width: {barWidthPct}%; background-color:{barColor};"
         />
       </div>
+      {#if showBaseline}
+        <div class="bar-container" style="width: {containerWidth};">
+          <div
+            class="baseline"
+            style="left:{baselineLeftPct}%; background-color:{baselineColor};"
+          />
+        </div>
+      {/if}
     {/if}
 
     <div
@@ -148,6 +158,14 @@
     position: relative;
     top: 0px;
     height: 100%;
+    /* z-index: 5; */
+  }
+
+  div.baseline {
+    position: relative;
+    top: 0px;
+    height: 100%;
+    width: 1px;
     /* z-index: 5; */
   }
 
