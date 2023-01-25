@@ -1,6 +1,7 @@
 import {
   useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceListFiles,
+  useRuntimeServiceListCatalogEntries,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
@@ -89,4 +90,23 @@ export const getFilterForDimension = (
         in: dimensionValues.in,
       })),
   };
+};
+
+export const useGetDashboardsForModel = (
+  instanceId: string,
+  modelName: string
+) => {
+  return useRuntimeServiceListCatalogEntries(
+    instanceId,
+    { type: "OBJECT_TYPE_METRICS_VIEW" },
+    {
+      query: {
+        select(data) {
+          return data?.entries?.filter(
+            (entry) => entry?.metricsView?.model === modelName
+          );
+        },
+      },
+    }
+  );
 };

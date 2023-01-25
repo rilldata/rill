@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     embeddedSourcesError,
     filterKnownEmbeddedSources,
@@ -10,7 +13,6 @@
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -20,7 +22,6 @@
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import { drag } from "@rilldata/web-local/lib/drag";
@@ -29,7 +30,6 @@
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";

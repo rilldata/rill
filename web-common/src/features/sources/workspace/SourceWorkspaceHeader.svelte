@@ -1,7 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import {
+    Button,
+    IconButton,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
@@ -9,13 +13,15 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRefreshAndReconcile,
     useRuntimeServiceRenameFileAndReconcile,
+    V1CatalogEntry,
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -23,7 +29,6 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
@@ -34,22 +39,18 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-    useCreateDashboardFromSource,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
+  import { useCreateDashboardFromSource } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
+  import { renameFileArtifact } from "../../entity-management/actions";
+  import { getRouteFromName } from "../../entity-management/entity-mappers";
+  import { getName, isDuplicateName } from "../../entity-management/name-utils";
+  import { useAllNames } from "../../entity-management/selectors";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";
-
   export let sourceName: string;
   export let path: string;
   export let embedded = false;
@@ -67,8 +68,13 @@
     sourceName
   );
 
+  let headerWidth;
+  $: isHeaderWidthSmall = headerWidth < 800;
+
+  let entry: V1CatalogEntry;
   let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
+  $: entry = $getSource?.data?.entry;
+  $: source = entry?.source;
 
   $: modelNames = useModelNames(runtimeInstanceId);
   $: dashboardNames = useDashboardNames(runtimeInstanceId);
@@ -226,6 +232,7 @@
   <WorkspaceHeader
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
     editable={!embedded}
+    width={headerWidth}
     let:width
     appRunning={$appQueryStatusStore}
   >
@@ -276,10 +283,12 @@
       <PanelCTA side="right">
         <Tooltip distance={16} location="left">
           <Button on:click={handleCreateModelFromSource} type="secondary">
-            <ResponsiveButtonText collapse={width < 1100}>
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
+              ><Model size="12px" /></IconSpaceFixer
+            >
+            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
               Create Model
             </ResponsiveButtonText>
-            <Model size="16px" />
           </Button>
           <TooltipContent slot="tooltip-content">
             Model this source with SQL
@@ -291,10 +300,13 @@
               on:click={() => handleCreateDashboardFromSource(sourceName)}
               type="primary"
             >
-              <ResponsiveButtonText collapse={width < 800}>
+              <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
+                ><Add /></IconSpaceFixer
+              >
+
+              <ResponsiveButtonText collapse={isHeaderWidthSmall}>
                 Create Dashboard
               </ResponsiveButtonText>
-              <Explore size="16px" />
             </Button>
             <TooltipContent slot="tooltip-content">
               Create a dashboard for this source

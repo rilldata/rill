@@ -1,28 +1,20 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { goto } from "$app/navigation";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useModelHasTimeSeries } from "@rilldata/web-local/lib/svelte-query/dashboards";
-
-  $: instanceId = $runtimeStore.instanceId;
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../../../application-state-stores/explorer-stores";
+  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
+  import { useMetaQuery } from "../../../svelte-query/dashboards";
   import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
+  import ExploreContainer from "./ExploreContainer.svelte";
   import ExploreHeader from "./ExploreHeader.svelte";
   import DimensionDisplay from "./leaderboards/DimensionDisplay.svelte";
   import LeaderboardDisplay from "./leaderboards/LeaderboardDisplay.svelte";
-  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
   import MeasuresContainer from "./metrics-container/MeasuresContainer.svelte";
-  import ExploreContainer from "./ExploreContainer.svelte";
+  import MetricsTimeSeriesCharts from "./metrics-container/MetricsTimeSeriesCharts.svelte";
 
   export let metricViewName: string;
-
-  let exploreContainerWidth;
-
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
@@ -32,9 +24,26 @@
 
   $: switchToMetrics(metricViewName);
 
-  let metricsExplorer: MetricsExplorerEntity;
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: if ($metaQuery.data) {
+    if (!$metaQuery.data?.measures?.length) {
+      goto(`/dashboard/${metricViewName}/edit`);
+    }
+    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
+  }
+  $: if ($metaQuery.isError) {
+    goto(`/dashboard/${metricViewName}/edit`);
+  }
+
+  let exploreContainerWidth;
+
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   $: gridConfig = hasTimeSeries
     ? "560px minmax(355px, auto)"

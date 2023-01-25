@@ -82,6 +82,9 @@ type ArtifactError struct {
 // TODO: support loading existing projects
 
 func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	result := NewReconcileResult()
 
 	// collect repos and create migration items
@@ -265,12 +268,21 @@ func (s *Service) runMigrationItems(
 					result.Errors = append(result.Errors, recErr)
 				}
 			case MigrationCreate:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.createInStore(ctx, item)
 				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)
 			case MigrationRename:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.renameInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationUpdate:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationReportUpdate:
