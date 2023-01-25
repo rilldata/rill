@@ -1,7 +1,7 @@
 import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
 import { derived, Readable, writable } from "svelte/store";
 import { parseDocument } from "yaml";
-import type { MetricsConfig } from "../metrics-layer/metrics-internal-store";
+import type { MetricsConfig } from "../metrics-views/metrics-internal-store";
 
 export type FileArtifactsData = {
   // name used for the file. will not always be dependent on the file

@@ -15,8 +15,8 @@
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-layer/errors.js";
-  import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-layer/metrics-internal-store";
+  import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
+  import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
