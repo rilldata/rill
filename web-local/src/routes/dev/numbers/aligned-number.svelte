@@ -61,54 +61,37 @@
   };
 </script>
 
-<div class="number-and-bar-container">
-  {#if showBars}
-    <RichNumberBipolarBar
-      {richNum}
-      {containerWidth}
-      {positiveColor}
-      {negativeColor}
-      {showBaseline}
-      {baselineColor}
-      {barBackgroundColor}
-    />
-  {/if}
-  <div
-    on:click={logProps}
-    class="number-container"
-    style="width: {containerWidth}px;"
-  >
-    {#if !alignDecimalPoints}
-      {int}{decimalPoint}{frac}{suffixFinal}
-    {:else}
-      <div class="number-whole" style="width: {intPx}px;">
-        {int}
+<div
+  on:click={logProps}
+  class="number-container"
+  style="width: {containerWidth}px;"
+>
+  {#if !alignDecimalPoints}
+    {int}{decimalPoint}{frac}{suffixFinal}
+  {:else}
+    <div class="number-whole" style="width: {intPx}px;">
+      {int}
+    </div>
+    {#if alignSuffix}
+      <div class="number-frac" style="width: {dotPx + fracPx}px;">
+        {decimalPoint}{frac}
       </div>
-      {#if alignSuffix}
-        <div class="number-frac" style="width: {dotPx + fracPx}px;">
-          {decimalPoint}{frac}
-        </div>
 
-        <div
-          class="number-suff"
-          style="width: {suffixPx}px; padding-left: {suffixPadFinal}px"
-        >
-          {suffixFinal}
-        </div>
-      {:else}
-        <div class="number-frac-and-suff" style="width: {fracAndSuffixWidth};">
-          {decimalPoint}{frac}{suffixFinal}
-        </div>
-      {/if}
+      <div
+        class="number-suff"
+        style="width: {suffixPx}px; padding-left: {suffixPadFinal}px"
+      >
+        {suffixFinal}
+      </div>
+    {:else}
+      <div class="number-frac-and-suff" style="width: {fracAndSuffixWidth};">
+        {decimalPoint}{frac}{suffixFinal}
+      </div>
     {/if}
-  </div>
+  {/if}
 </div>
 
 <style>
-  div.number-and-bar-container {
-    position: relative;
-  }
-
   div.number-container {
     display: flex;
     flex-direction: row;
@@ -132,15 +115,5 @@
 
   div.number-frac-and-suff {
     text-align: left;
-  }
-
-  div.bar-container {
-    display: block;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    /* background-color: rgba(255, 0, 225, 0.29); */
-    top: 0px;
-    left: 0px;
   }
 </style>
