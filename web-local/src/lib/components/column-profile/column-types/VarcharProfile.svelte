@@ -73,6 +73,7 @@
     totalRows={$columnCardinality?.totalRows}
   />
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
     slot="nullity"
     totalRows={$nulls?.totalRows}
