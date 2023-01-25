@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -13,7 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+func (c *connection) Ingest(mainCtx context.Context, env *connectors.Env, source *connectors.Source) error {
 	err := source.Validate()
 	if err != nil {
 		return err
@@ -24,6 +25,13 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	// case "local_file":
 	// 	return c.ingestFile(ctx, env, source)
 	// }
+
+	timeOut := 300 * time.Second // revise default
+	if value, ok := source.Properties["timeout"]; ok {
+		timeOut = time.Duration(int(value.(float64))) * time.Second
+	}
+	ctx, cancel := context.WithTimeout(mainCtx, timeOut)
+	defer cancel()
 
 	if source.Connector == "local_file" {
 		return c.ingestLocalFiles(ctx, env, source)
@@ -42,12 +50,15 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 			return err
 		}
 
-		if err := c.ingestFiles(ctx, source, files, appendToTable); err != nil {
-			fileutil.ForceRemoveFiles(files)
+		ingestBatch := func() error {
+			defer fileutil.ForceRemoveFiles(files)
+			return c.ingestFiles(ctx, source, files, appendToTable)
+		}
+
+		if err := ingestBatch(); err != nil {
 			return err
 		}
 
-		fileutil.ForceRemoveFiles(files)
 		appendToTable = true
 	}
 	return nil

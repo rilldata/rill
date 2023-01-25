@@ -341,6 +341,7 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 	}
 
 	if err := g.Wait(); err != nil {
+		fileutil.ForceRemoveFiles(localPaths)
 		return nil, err
 	}
 

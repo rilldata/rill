@@ -25,6 +25,7 @@ type Source struct {
 	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
 	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
+	Timeout               int            `yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
 	Policy                *ExtractPolicy `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
 }
 
@@ -145,6 +146,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.HivePartition != nil {
 		props["hive_partitioning"] = *source.HivePartition
+	}
+
+	if source.Timeout != 0 {
+		props["timeout"] = source.Timeout
 	}
 
 	propsPB, err := structpb.NewStruct(props)
