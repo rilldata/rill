@@ -26,7 +26,8 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 	channel := make(chan error, 1)
 	go func() {
-		err := c.ingestWithoutTimeout(cancellableCtx, env, source) //relies on duck db query cancellation to cancel the ingestion 
+		// relies on duck db query cancellation to cancel the ingestion
+		err := c.ingestWithoutTimeout(cancellableCtx, env, source)
 		channel <- err
 	}()
 

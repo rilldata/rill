@@ -48,7 +48,7 @@ func (f *blobObjectReader) ReadAt(p []byte, off int64) (int, error) {
 
 	n, err := io.ReadFull(reader, p)
 	if err != nil {
-		return 0, err
+		return n, err
 	}
 	if f.debugMode {
 		atomic.AddInt64(&f.bytes, int64(n))
