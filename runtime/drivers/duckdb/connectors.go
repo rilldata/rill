@@ -14,7 +14,32 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-func (c *connection) Ingest(mainCtx context.Context, env *connectors.Env, source *connectors.Source) error {
+// Ingest data from a source with a timeout
+func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+	cancellableCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	timeout := 30
+	if value, ok := source.Properties["timeout"]; ok {
+		timeout = int(value.(float64))
+	}
+
+	channel := make(chan error, 1)
+	go func() {
+		err := c.ingestWithoutTimeout(cancellableCtx, env, source) //relies on duck db query cancellation to cancel the ingestion 
+		channel <- err
+	}()
+
+	select {
+	case result := <-channel:
+		return result
+
+	case <-time.After(time.Duration(timeout) * time.Second):
+		return context.DeadlineExceeded
+	}
+}
+
+func (c *connection) ingestWithoutTimeout(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	err := source.Validate()
 	if err != nil {
 		return err
@@ -25,14 +50,6 @@ func (c *connection) Ingest(mainCtx context.Context, env *connectors.Env, source
 	// case "local_file":
 	// 	return c.ingestFile(ctx, env, source)
 	// }
-
-	timeOut := 300 * time.Second // revise default
-	if value, ok := source.Properties["timeout"]; ok {
-		timeOut = time.Duration(int(value.(float64))) * time.Second
-	}
-	ctx, cancel := context.WithTimeout(mainCtx, timeOut)
-	defer cancel()
-
 	if source.Connector == "local_file" {
 		return c.ingestLocalFiles(ctx, env, source)
 	}
