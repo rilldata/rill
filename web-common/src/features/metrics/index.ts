@@ -1,1 +1,1 @@
-export { default as MetricsWorkspace } from "./MetricsWorkspace.svelte";
+export { default as MetricsWorkspace } from "./workspace/MetricsWorkspace.svelte";

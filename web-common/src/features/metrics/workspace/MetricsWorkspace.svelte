@@ -17,9 +17,9 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { initDimensionColumns } from "./DimensionColumns";
-  import { initMeasuresColumns } from "./MeasuresColumns";
-  import { createInternalRepresentation } from "./metrics-internal-store";
+  import { initDimensionColumns } from "../DimensionColumns";
+  import { initMeasuresColumns } from "../MeasuresColumns";
+  import { createInternalRepresentation } from "../metrics-internal-store";
   import MetricsDisplayNameInput from "./MetricsDisplayNameInput.svelte";
   import MetricsEntityTable from "./MetricsEntityTable.svelte";
   import MetricsGenerateButton from "./MetricsGenerateButton.svelte";
