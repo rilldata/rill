@@ -284,8 +284,8 @@
         show background bars
       </label>
       <div class="option-box">
-        <ColorPicker bind:hex={negativeColor} label="color for negative bars" />
-        <ColorPicker bind:hex={positiveColor} label="color for positive bars" />
+        <ColorPicker bind:hex={negativeColor} label="negative bar color" />
+        <ColorPicker bind:hex={positiveColor} label="positive bar color" />
         set positive bar color
         <button on:click={() => (positiveColor = blue100)}
           >blue-100 (like `main`)</button
@@ -301,10 +301,7 @@
           show baseline
         </label>
         <div class="option-box">
-          <ColorPicker
-            bind:hex={baselineColor}
-            label="color for negative bars"
-          />
+          <ColorPicker bind:hex={baselineColor} label="baseline color" />
           <!-- set positive bar color
           <button on:click={() => (positiveColor = blue100)}
             >blue-100 (like `main`)</button
@@ -319,39 +316,46 @@
   </div>
 </div>
 
-<table class="ui-copy-number fixed-width-cols">
-  <thead>
-    {#each numberLists as { desc, sample }, _i}
-      <td>{desc}</td>
-    {/each}
-  </thead>
-  {#each numberLists[0].sample as _, i}
-    <tr>
-      {#each numberLists as { desc, sample }}
-        {@const richNum = selectedFormatterForSamples[desc](sample[i])}
-
-        <td class="table-body" title={sample[i].toString()}>
-          <div class="align-content-right">
-            <AlignedNumber
-              {richNum}
-              alignSuffix={alignSuffixes}
-              {alignDecimalPoints}
-              {lowerCaseEForEng}
-              {zeroHandling}
-              {showBars}
-              {negativeColor}
-              {positiveColor}
-              {showBaseline}
-              {baselineColor}
-            />
-          </div>
-        </td>
+<div class="table-container">
+  <table class="ui-copy-number fixed-width-cols">
+    <thead>
+      {#each numberLists as { desc, sample }, _i}
+        <td>{desc}</td>
       {/each}
-    </tr>
-  {/each}
-</table>
+    </thead>
+    {#each numberLists[0].sample as _, i}
+      <tr>
+        {#each numberLists as { desc, sample }}
+          {@const richNum = selectedFormatterForSamples[desc](sample[i])}
+
+          <td class="table-body" title={sample[i].toString()}>
+            <div class="align-content-right">
+              <AlignedNumber
+                {richNum}
+                alignSuffix={alignSuffixes}
+                {alignDecimalPoints}
+                {lowerCaseEForEng}
+                {zeroHandling}
+                {showBars}
+                {negativeColor}
+                {positiveColor}
+                {showBaseline}
+                {baselineColor}
+              />
+            </div>
+          </td>
+        {/each}
+      </tr>
+    {/each}
+  </table>
+</div>
 
 <style>
+  div.table-container {
+    width: 100%;
+    overflow-x: scroll;
+  }
+
   thead td {
     text-align: right;
     padding-left: 20px;
@@ -383,6 +387,7 @@
 
   table.fixed-width-cols td {
     width: 120px;
+    min-width: 120px;
   }
 
   .option-box {
