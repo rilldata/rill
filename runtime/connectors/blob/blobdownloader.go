@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/pkg/container"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/errgroup"
@@ -23,6 +23,8 @@ import (
 // but may increase bottleneck at duckdb or network/db IO
 // set without any benchamarks
 const concurrentBlobDownloadLimit = 8
+
+var partialDownloadExtensions = map[string]bool{".parquet": true, ".csv": true, ".tsv": true, ".txt": true}
 
 type Strategy string
 
@@ -38,40 +40,38 @@ type ExtractConfig struct {
 }
 
 type ExtractPolicy struct {
-	Row       ExtractConfig
-	Partition ExtractConfig
+	Row  ExtractConfig
+	File ExtractConfig
 }
 
 type BlobIterator struct {
-	bucket           *blob.Bucket
-	objectPaths      []*blob.ListObject // object path in cloud storage
-	index            int
-	rowExtractConfig *ExtractConfig
-	lastObjectSize   int64
+	bucket  *blob.Bucket
+	objects []*blobObject
+	index   int
 }
 
 func NewExtractConfigs(input *runtimev1.Source_ExtractPolicy) (*ExtractPolicy, error) {
 	config := &ExtractPolicy{
-		Row:       ExtractConfig{Strategy: NONE},
-		Partition: ExtractConfig{Strategy: NONE},
+		Row:  ExtractConfig{Strategy: NONE},
+		File: ExtractConfig{Strategy: NONE},
 	}
 
 	if input == nil {
 		return config, nil
 	}
 
-	// parse partition
-	if input.Partition != nil {
+	// parse file
+	if input.File != nil {
 		// parse strategy
-		strategy, err := parseStrategy(input.Partition.Strategy)
+		strategy, err := parseStrategy(input.File.Strategy)
 		if err != nil {
 			return nil, err
 		}
 
-		config.Partition.Strategy = strategy
+		config.File.Strategy = strategy
 
 		// parse size
-		size, err := strconv.ParseInt(input.Partition.Size, 10, 64)
+		size, err := strconv.ParseInt(input.File.Size, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
 		}
@@ -79,7 +79,7 @@ func NewExtractConfigs(input *runtimev1.Source_ExtractPolicy) (*ExtractPolicy, e
 			return nil, fmt.Errorf("invalid size %q", size)
 		}
 
-		config.Partition.Size = size
+		config.File.Size = size
 	}
 
 	// parse rows
@@ -136,50 +136,117 @@ type FetchConfigs struct {
 	Extract               *ExtractPolicy
 }
 
-func ContainerForParitionStrategy(option ExtractConfig) (container.Container, error) {
-	switch option.Strategy {
+// container encapsulates all extract policy
+type container struct {
+	policy *ExtractPolicy
+	items  *list.List
+	size   int64
+}
+
+func (s *container) Add(item *blob.ListObject) bool {
+	if s.IsFull() {
+		return false
+	}
+
+	s.size += item.Size
+	switch s.policy.File.Strategy {
 	case TAIL:
-		return container.NewTailContainer(int(option.Size))
+		// keep latest item at front
+		s.items.PushFront(item)
+		if s.items.Len() > int(s.policy.File.Size) {
+			// remove oldest item
+			s.items.Remove(s.items.Back())
+		}
 	case HEAD:
-		return container.NewBoundedContainer(int(option.Size))
+		s.items.PushBack(item)
 	default:
-		// No option selected
-		return container.NewUnboundedContainer()
+		s.items.PushBack(item)
+	}
+	return true
+}
+
+func (s *container) hasCapacity() bool {
+	switch s.policy.File.Strategy {
+	case TAIL:
+		return true
+	case HEAD:
+		return s.items.Len() < int(s.policy.File.Size)
+	default:
+		return true
 	}
 }
 
-func withinSize(option ExtractConfig, size int64) bool {
-	switch option.Strategy {
-	case TAIL:
-		return true
-	case HEAD:
-		return size < option.Size
-	default:
-		// No option selected
-		return true
+func (s *container) IsFull() bool {
+	if s.policy.File.Strategy != NONE {
+		// file strategy present, row policy is per file
+		// only need to limit number of files by file strategy
+		return !s.hasCapacity()
 	}
+
+	if s.policy.Row.Strategy != NONE {
+		// file policy absent
+		// row policy present, limit size across all files
+		return s.size > s.policy.Row.Size
+	}
+
+	// no policy
+	return false
+}
+
+func (s *container) Items() []*blobObject {
+	result := make([]*blobObject, s.items.Len())
+
+	var cumSize int64
+	for front, i := s.items.Front(), 0; front != nil; front, i = s.items.Front(), i+1 {
+		item := s.items.Remove(front)
+		obj := &blobObject{obj: item.(*blob.ListObject), full: true, stratety: NONE}
+		if s.policy.File.Strategy != NONE {
+			// file strategy present
+			if s.policy.Row.Strategy != NONE {
+				// row policy is per file
+				obj.full = false
+				obj.size = s.policy.Row.Size
+				obj.stratety = s.policy.Row.Strategy
+			}
+		} else {
+			if s.policy.Row.Strategy != NONE {
+				// file strategy absent row policy is global
+				if i == len(result)-1 {
+					obj.full = false
+					obj.size = s.policy.Row.Size - cumSize
+					obj.stratety = s.policy.Row.Strategy
+				}
+				cumSize += obj.size
+			}
+		}
+		result[i] = obj
+	}
+	return result
+}
+
+type blobObject struct {
+	obj      *blob.ListObject
+	full     bool
+	size     int64
+	stratety Strategy
+}
+
+func newContainer(policy *ExtractPolicy) *container {
+	return &container{policy: policy, items: list.New()}
 }
 
 // downloads file to local paths
 func NewIterator(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, globPattern, bucketPath string) (connectors.Iterator, error) {
 	validateConfigs(&config)
-	iterator := &BlobIterator{
-		bucket:           bucket,
-		rowExtractConfig: &config.Extract.Row,
-	}
 
 	var (
 		size, fetched int64
 		matchCount    int
-		containerFull bool
 	)
-	c, err := ContainerForParitionStrategy(config.Extract.Partition)
-	if err != nil {
-		return nil, err
-	}
+	c := newContainer(config.Extract)
 
 	token := blob.FirstPageToken
-	for token != nil && !containerFull {
+	for token != nil && !c.IsFull() {
 		objs, nextToken, err := bucket.ListPage(ctx, token, config.GlobPageSize, listOptions(globPattern))
 		if err != nil {
 			return nil, err
@@ -191,17 +258,11 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, 
 			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
-				// container stops consuming once parition strategy limits are crossed
-				// withinSize keeps track of whether size of files matched so far are within row size limits
-				if !c.Add(obj) && withinSize(config.Extract.Row, size) {
-					// don't add more items
-					containerFull = true
-					break
-				}
+				c.Add(obj)
 			}
 		}
 		if err := validateLimits(size, matchCount, fetched, config); err != nil {
-			iterator.Close()
+			bucket.Close()
 			return nil, err
 		}
 	}
@@ -211,17 +272,7 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, 
 		return nil, fmt.Errorf("no files found for glob pattern %q", globPattern)
 	}
 
-	size = 0
-	for _, val := range items {
-		obj := val.(*blob.ListObject)
-		iterator.objectPaths = append(iterator.objectPaths, obj)
-		if config.Extract.Row.Strategy != NONE && size+obj.Size > config.Extract.Row.Size {
-			iterator.lastObjectSize = config.Extract.Row.Size - size
-			break
-		}
-		size += obj.Size
-	}
-	return iterator, nil
+	return &BlobIterator{bucket: bucket, objects: items}, nil
 }
 
 func (iter *BlobIterator) Close() error {
@@ -229,7 +280,7 @@ func (iter *BlobIterator) Close() error {
 }
 
 func (iter *BlobIterator) HasNext() bool {
-	return iter.index < len(iter.objectPaths)
+	return iter.index < len(iter.objects)
 }
 
 // NextBatch downloads next n files and copies to local directory
@@ -242,19 +293,19 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 
 	start := iter.index
 	end := iter.index + n
-	if end > len(iter.objectPaths) {
-		end = len(iter.objectPaths)
+	if end > len(iter.objects) {
+		end = len(iter.objects)
 	}
 	iter.index = end
 
 	localPaths := make([]string, n)
 	g, grpCtx := errgroup.WithContext(ctx)
 	g.SetLimit(concurrentBlobDownloadLimit)
-	for i, item := range iter.objectPaths[start:end] {
+	for i, item := range iter.objects[start:end] {
 		obj := item
-		index := start + i // with repect to object slices
+		index := start + i // with repect to object slice
 		g.Go(func() error {
-			file, err := fileutil.TempFile(os.TempDir(), obj.Key)
+			file, err := fileutil.TempFile(os.TempDir(), obj.obj.Key)
 			if err != nil {
 				return err
 			}
@@ -262,15 +313,13 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 			defer file.Close()
 			localPaths[index-start] = file.Name()
 			fmt.Println(file.Name())
-			if index == len(iter.objectPaths)-1 && iter.lastObjectSize > int64(0) {
-				// download partial file
-				// todo :: add csv
-				// todo :: parquet reader seems to be making too many calls for small files
-				// check if for smaller size we can download entire file
-				err = Download(grpCtx, iter.bucket, obj, ExtractConfig{Size: iter.lastObjectSize, Strategy: iter.rowExtractConfig.Strategy}, file)
-			} else {
+			if obj.full || !isPartialDownloadSupported(obj.obj.Key) {
 				// download full file
-				err = downloadObject(grpCtx, iter.bucket, obj.Key, file)
+				err = downloadObject(grpCtx, iter.bucket, obj.obj.Key, file)
+			} else {
+				// download partial file
+				// check if, for smaller size we can download entire file
+				err = Download(grpCtx, iter.bucket, obj.obj, ExtractConfig{Size: obj.size, Strategy: obj.stratety}, file)
 			}
 			if err != nil {
 				return err
@@ -284,6 +333,12 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 	}
 
 	return localPaths, nil
+}
+
+func isPartialDownloadSupported(name string) bool {
+	ext := fileutil.FullExt(name)
+	// zipped csv, tsv files are not supported
+	return partialDownloadExtensions[ext]
 }
 
 // listOptions for page listing api

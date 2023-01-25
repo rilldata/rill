@@ -742,7 +742,7 @@ export interface StructTypeField {
 }
 
 export interface SourceExtractPolicy {
-  partition?: ExtractPolicyExtractConfig;
+  file?: ExtractPolicyExtractConfig;
   row?: ExtractPolicyExtractConfig;
 }
 

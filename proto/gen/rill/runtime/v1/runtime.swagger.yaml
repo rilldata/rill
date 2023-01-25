@@ -1319,8 +1319,9 @@ definitions:
   SourceExtractPolicy:
     type: object
     properties:
-      partition:
+      file:
         $ref: '#/definitions/ExtractPolicyExtractConfig'
+        title: File policy to select files
       row:
         $ref: '#/definitions/ExtractPolicyExtractConfig'
         title: Row policy to select rows

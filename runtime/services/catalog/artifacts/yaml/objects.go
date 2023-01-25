@@ -29,13 +29,13 @@ type Source struct {
 }
 
 type ExtractPolicy struct {
-	Row       *ExtractConfig `yaml:"rows,omitempty" mapstructure:"rows,omitempty" json:"rows,omitempty"`
-	Partition *ExtractConfig `yaml:"partitions,omitempty" mapstructure:"partitions,omitempty" json:"partitions,omitempty"`
+	Row  *ExtractConfig `yaml:"rows,omitempty" mapstructure:"rows,omitempty"`
+	File *ExtractConfig `yaml:"files,omitempty" mapstructure:"files,omitempty"`
 }
 
 type ExtractConfig struct {
-	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty" json:"strategy,omitempty"`
-	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty" json:"size,omitempty"`
+	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty"`
+	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty"`
 }
 
 type MetricsView struct {

@@ -47,7 +47,8 @@ message Source {
     }
     // Row policy to select rows
     ExtractConfig row = 1;
-    ExtractConfig partition = 2;
+    // File policy to select files
+    ExtractConfig file = 2;
   }
   // extraction policy for the source
   ExtractPolicy policy = 6;

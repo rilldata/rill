@@ -17,68 +17,26 @@ import (
 	"gocloud.dev/blob"
 )
 
-var batchSize = int64(100)
+var batchSize = int64(1000)
 
-type parquetReader struct {
+type blobObjectReader struct {
 	ctx    context.Context
 	bucket *blob.Bucket
 	index  int64
 	obj    *blob.ListObject
 
-	// buffer for caching
-	buffer         []byte
-	bufStartOffset int64
-	bufEndOffset   int64
-
 	// debug data
 	debugMode bool
-	cached    int
 	call      int
-}
-
-func (f *parquetReader) WithinBuffer(start, end int64) bool {
-	return f.bufStartOffset <= start && f.bufEndOffset > end
-}
-
-func (f *parquetReader) ReadInBuffer(start int64) error {
-	length := int64(len(f.buffer))
-	if start+length >= f.obj.Size {
-		// limit end offset to object size
-		length = f.obj.Size - start
-	}
-	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, start, length, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	defer reader.Close()
-
-	bytes, err := reader.Read(f.buffer)
-	if err != nil {
-		panic(err)
-	}
-
-	f.bufStartOffset = start
-	f.bufEndOffset = start + int64(bytes)
-	return nil
+	bytes     int64
 }
 
 // todo :: add buffer for caching
-func (f *parquetReader) ReadAt(p []byte, off int64) (int, error) {
-	fmt.Printf("reading %v bytes at offset %v\n", len(p), off)
-	f.call++
-
-	// end := off + int64(len(p))
-	// if len(p) <= len(f.buffer) {
-	// 	if !f.WithinBuffer(off, end) {
-	// 		if err := f.ReadInBuffer(off); err != nil {
-	// 			panic(err)
-	// 		}
-	// 	} else {
-	// 		f.cached++
-	// 	}
-	// 	return copy(p, f.buffer), nil
-	// }
+func (f *blobObjectReader) ReadAt(p []byte, off int64) (int, error) {
+	if f.debugMode {
+		fmt.Printf("reading %v bytes at offset %v\n", len(p), off)
+		f.call++
+	}
 
 	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, off, int64(len(p)), nil)
 	if err != nil {
@@ -86,27 +44,34 @@ func (f *parquetReader) ReadAt(p []byte, off int64) (int, error) {
 	}
 	defer reader.Close()
 
-	return reader.Read(p)
+	n, err := io.ReadFull(reader, p)
+	if err != nil {
+		return 0, err
+	}
+	if f.debugMode {
+		f.bytes += int64(len(p))
+	}
+	return n, nil
 }
 
-func (f *parquetReader) Read(p []byte) (int, error) {
+func (f *blobObjectReader) Read(p []byte) (int, error) {
 	n, err := f.ReadAt(p, f.index)
 	f.index += int64(n)
 	return n, err
 }
 
-func (f *parquetReader) Size() int64 {
+func (f *blobObjectReader) Size() int64 {
 	return f.obj.Size
 }
 
-func (f *parquetReader) Close() error {
+func (f *blobObjectReader) Close() error {
 	if f.debugMode {
-		fmt.Printf("made %v calls cached calls %v\n", f.call, f.cached)
+		fmt.Printf("made %v calls data fetched %v \n", f.call, f.bytes)
 	}
 	return nil
 }
 
-func (f *parquetReader) Seek(offset int64, whence int) (int64, error) {
+func (f *blobObjectReader) Seek(offset int64, whence int) (int64, error) {
 	var abs int64
 	switch whence {
 	case io.SeekStart:
@@ -126,13 +91,12 @@ func (f *parquetReader) Seek(offset int64, whence int) (int64, error) {
 	return abs, nil
 }
 
-func newParquetReader(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject) *parquetReader {
-	return &parquetReader{
+func newBlobObjectReader(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject) *blobObjectReader {
+	return &blobObjectReader{
 		ctx:       ctx,
 		bucket:    bucket,
 		obj:       obj,
 		debugMode: true,
-		buffer:    make([]byte, 1024*1024), // 1MB buffer
 	}
 }
 
@@ -178,7 +142,7 @@ func estimate(reader *file.Reader, option ExtractConfig) ([]int, int64) {
 
 func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractConfig, fw *os.File) error {
 	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
-	reader := newParquetReader(ctx, bucket, obj)
+	reader := newBlobObjectReader(ctx, bucket, obj)
 
 	props := parquet.NewReaderProperties(mem)
 	props.BufferedStreamEnabled = true
@@ -189,11 +153,6 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 	}
 	defer pf.Close()
 
-	// not 100% sure what is optimum BatchSize
-	// from the code comments it seems like number of consecutive items in a column fetched in one shot across loading multiple row groups if required
-	// since we have already enabled BufferedStreamEnabled for reading parquet, keeping it low shouldn't make extra network calls
-	// whereas keeping it high can potentially load multiple groups(make multiple network calls)
-	// keeping it 1 for simplicty
 	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: batchSize, Parallel: false}
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
@@ -212,6 +171,7 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 		return err
 	}
 
+	// one record has batchsize rows
 	records := make([]arrow.Record, rowLimit/batchSize)
 	for i := 0; i < len(records); i++ {
 		// one read fetch batchsize number of rows in one call
