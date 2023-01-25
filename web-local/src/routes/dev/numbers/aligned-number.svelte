@@ -3,6 +3,8 @@
 
   export let richNum: RichFormatNumber;
   export let alignSuffix = false;
+  export let suffixPadding = 0;
+
   export let lowerCaseEForEng = false;
   export let alignDecimalPoints = false;
   export let showBars = false;
@@ -13,20 +15,17 @@
   export let showBaseline = false;
   export let baselineColor = "#eeeeee";
 
-  $: whole = richNum.splitStr.int;
+  // export let numFormattingWidthLookup: { [key: string]: number };
+
+  $: int = richNum.splitStr.int;
   $: frac = richNum.splitStr.frac;
   $: suffix = richNum.splitStr.suffix;
 
-  $: wholeChars = richNum.spacing.maxWholeDigits;
-  $: fracChars = richNum.spacing.maxFracDigits;
-  $: suffixChars = richNum.spacing.maxSuffixChars;
+  // $: intChars = richNum.spacing.maxWholeDigits;
+  // $: fracChars = richNum.spacing.maxFracDigits;
+  // $: suffixChars = richNum.spacing.maxSuffixChars;
 
-  // IMPORTANT: add a bit of width to the containers for the decimal point
-  const DECIMAL_POINT_WIDTH = 0.6;
-  // IMPORTANT: add a bit of width to the int part to ensure decimal alignment
-  const EXTRA_INT_WIDTH = 0.5;
-  // a bit of padding between the suffix and the number
-  const SUFFIX_PADDING = 0.2;
+  // FINALIZE CHARACTERS TO BE DISPLAYED
   let suffixFinal;
   $: {
     // console.log({ lowerCaseEForEng });
@@ -34,18 +33,7 @@
     if (lowerCaseEForEng) suffixFinal = suffixFinal.replace("E", "e");
   }
 
-  $: containerWidth = `calc(${wholeChars + EXTRA_INT_WIDTH}ch + ${
-    fracChars + DECIMAL_POINT_WIDTH
-  }ch + ${suffixChars + SUFFIX_PADDING}em)`;
-
-  $: fracAndSuffixWidth = alignSuffix
-    ? ""
-    : `calc( ${fracChars + DECIMAL_POINT_WIDTH}ch + ${
-        suffixChars + SUFFIX_PADDING
-      }em)`;
-
   let decimalPoint: "" | ".";
-
   $: {
     decimalPoint = frac !== "" ? "." : "";
     if (richNum.number === 0) {
@@ -59,9 +47,35 @@
     }
   }
 
+  $: suffixPadFinal = richNum.maxPxWidth.suffix > 0 ? suffixPadding : 0;
+
+  $: intPx = richNum.maxPxWidth.int;
+  $: dotPx = richNum.maxPxWidth.dot;
+  $: fracPx = richNum.maxPxWidth.frac;
+  $: suffixPx = richNum.maxPxWidth.suffix + suffixPadFinal;
+
+  // IMPORTANT: add a bit of width to the containers for the decimal point
+  const DECIMAL_POINT_WIDTH = 0.6;
+  // IMPORTANT: add a bit of width to the int part to ensure decimal alignment
+  const EXTRA_INT_WIDTH = 0.5;
+  // a bit of padding between the suffix and the number
+  const SUFFIX_PADDING = 0.2;
+
+  $: containerWidth = `${intPx + dotPx + fracPx + suffixPx}px`;
+
+  $: fracAndSuffixWidth = `${dotPx + fracPx + suffixPx}px`;
+
   $: logProps = () => {
     console.log({ ...richNum, lowerCaseEForEng });
   };
+
+  // $: console.log({ numberAlignmentStore, containerWidth, fracAndSuffixWidth });
+  // $: console.log({
+  //   intPx,
+  //   dotPx,
+  //   fracPx,
+  //   suffixPx,
+  // });
 
   // if any number is negative, include negative bars;
   // otherwise all bars range from [0, max]
@@ -85,58 +99,48 @@
   $: baselineLeftPct = pctWithinExtents(0, validMin, validMax);
 </script>
 
-{#if !alignDecimalPoints}
-  <div class="number-and-bar-container">
-    <div
-      on:click={logProps}
-      class="number-container"
-      style="width: {containerWidth};"
-    >
-      {whole}{decimalPoint}{frac}{suffixFinal}
+<div class="number-and-bar-container">
+  {#if showBars}
+    <div class="bar-container" style="width: {containerWidth};">
+      <div
+        class="number-bar"
+        style="left:{barLeftPct}%; width: {barWidthPct}%; background-color:{barColor};"
+      />
     </div>
-  </div>
-{:else}
-  <div class="number-and-bar-container">
-    {#if showBars}
+    {#if showBaseline}
       <div class="bar-container" style="width: {containerWidth};">
         <div
-          class="number-bar"
-          style="left:{barLeftPct}%; width: {barWidthPct}%; background-color:{barColor};"
+          class="baseline"
+          style="left:{baselineLeftPct}%; background-color:{baselineColor};"
         />
       </div>
-      {#if showBaseline}
-        <div class="bar-container" style="width: {containerWidth};">
-          <div
-            class="baseline"
-            style="left:{baselineLeftPct}%; background-color:{baselineColor};"
-          />
-        </div>
-      {/if}
     {/if}
-
+  {/if}
+  {#if !alignDecimalPoints}
     <div
       on:click={logProps}
       class="number-container"
       style="width: {containerWidth};"
     >
-      <div
-        class="number-whole"
-        style="width: {wholeChars + EXTRA_INT_WIDTH}ch;"
-      >
-        {whole}
+      {int}{decimalPoint}{frac}{suffixFinal}
+    </div>
+  {:else}
+    <div
+      on:click={logProps}
+      class="number-container"
+      style="width: {containerWidth};"
+    >
+      <div class="number-whole" style="width: {intPx}px;">
+        {int}
       </div>
       {#if alignSuffix}
-        <div
-          class="number-frac"
-          style="width: {fracChars + DECIMAL_POINT_WIDTH}ch;"
-        >
+        <div class="number-frac" style="width: {dotPx + fracPx}px;">
           {decimalPoint}{frac}
         </div>
 
         <div
           class="number-suff"
-          style="width: {suffixChars +
-            SUFFIX_PADDING}em; padding-left: {SUFFIX_PADDING}em;"
+          style="width: {suffixPx}px; padding-left: {suffixPadFinal}px"
         >
           {suffixFinal}
         </div>
@@ -146,8 +150,8 @@
         </div>
       {/if}
     </div>
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style>
   div.number-and-bar-container {

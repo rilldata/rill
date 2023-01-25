@@ -1,5 +1,6 @@
 import random from "@stdlib/random/base";
 import shuffle from "@stdlib/random/shuffle";
+// import { number } from "@stdlib/stdlib/docs/types";
 
 const N = 20;
 
@@ -10,10 +11,11 @@ const randu = random.randu.factory({ seed: 1228 });
 const uniform = random.uniform.factory({ seed: 1228 });
 
 const randDiscrete = random.discreteUniform.factory({ seed: 1228 });
+type shuffleFn = (x: number[]) => number[];
 
-var shuffler = shuffle.factory({
+const shuffler = shuffle.factory({
   seed: 239,
-});
+}) as shuffleFn;
 
 type NumericSample = {
   desc: string;

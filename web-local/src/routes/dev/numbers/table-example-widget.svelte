@@ -8,15 +8,21 @@
   import {
     formatterFactories,
     NumberFormatter,
+    NumPartPxWidthLookupFn,
     RichFormatNumber,
   } from "./number-to-string-formatters";
+  import { onMount } from "svelte";
+  import { writable } from "svelte/store";
 
   export let defaultFormatterIndex = 1;
   let alignDecimalPoints = true;
   let alignSuffixes = true;
+  let suffixPadding = 3;
+
   let lowerCaseEForEng = true;
   let minimumSignificantDigits = 3;
   let maximumSignificantDigits = 5;
+
   let onlyUseLargestMagnitude = false;
   let usePlainNumsForThousands = true;
   let usePlainNumsForThousandsOneDecimal = false;
@@ -54,20 +60,90 @@
     zeroHandling,
   };
 
-  $: {
-    selectedFormatterForSamples = Object.fromEntries(
-      numberLists.map((nl) => {
-        return [nl.desc, selectedFormatter.fn(nl.sample, formatterOptions)];
-      })
-    );
-  }
-
   let numberInputType;
   let magnitudeStrategy = "largest";
 
   const blue100 = "#dbeafe";
   const grey100 = "#f5f5f5";
+
+  // const numberAlignmentStores = numberLists.map(() =>
+  //   writable({ int: 0, dot: 0, frac: 0, suffix: 0 })
+  // );
+
+  let numFormattingWidthLookupKeys = [
+    ".",
+    "-",
+    "$",
+    "%",
+    "k",
+    "M",
+    "B",
+    "T",
+    "Q",
+  ];
+  for (let i = -79; i < 308; i++) {
+    numFormattingWidthLookupKeys.push("e" + i);
+    numFormattingWidthLookupKeys.push("E" + i);
+  }
+  for (let i = 0; i < 20; i++) {
+    let thisManyZerosString = "0".repeat(i);
+    numFormattingWidthLookupKeys.push(thisManyZerosString);
+  }
+  let numFormattingWidthLookup: { [key: string]: number } = {};
+
+  let charMeasuringDiv: HTMLDivElement;
+
+  let pxWidthLookupFn: NumPartPxWidthLookupFn;
+
+  onMount(() => {
+    console.time("charMeasuringDiv");
+    numFormattingWidthLookupKeys.forEach((str) => {
+      charMeasuringDiv.innerHTML = str;
+      let rect = charMeasuringDiv.getBoundingClientRect();
+      // console.log(str, cw);
+      numFormattingWidthLookup[str] = rect.right - rect.left;
+    });
+
+    console.timeEnd("charMeasuringDiv");
+
+    pxWidthLookupFn = (str: string, isNumStr: boolean) => {
+      let out = 0;
+      if (isNumStr) {
+        let len = str.length;
+        if (str !== "" && str[0] === "-") {
+          out =
+            numFormattingWidthLookup["-"] +
+            numFormattingWidthLookup["0".repeat(len - 1)];
+        } else {
+          out = numFormattingWidthLookup["0".repeat(len)];
+        }
+      } else {
+        out = numFormattingWidthLookup[str];
+      }
+      return isNaN(out) ? 0 : out;
+    };
+  });
+  // console.log({ numFormattingWidthLookup });
+
+  $: {
+    if (pxWidthLookupFn !== undefined) {
+      window.pxWidthLookupFn = pxWidthLookupFn;
+
+      selectedFormatterForSamples = Object.fromEntries(
+        numberLists.map((nl) => {
+          return [
+            nl.desc,
+            selectedFormatter.fn(nl.sample, pxWidthLookupFn, formatterOptions),
+          ];
+        })
+      );
+    }
+  }
 </script>
+
+<div class="outer">
+  <div class="inner ui-copy-number" bind:this={charMeasuringDiv}>CONTENT</div>
+</div>
 
 <div>
   <form>
@@ -138,6 +214,16 @@
         <input type="checkbox" bind:checked={alignSuffixes} />
         align suffixes (requires "aligns decimal points")
       </label>
+      <div>
+        <label>
+          suffix padding:
+          <input
+            class="number-input"
+            type="number"
+            bind:value={suffixPadding}
+          />
+        </label>
+      </div>
     </div>
     <div>
       <label>
@@ -316,39 +402,42 @@
   </div>
 </div>
 
-<div class="table-container">
-  <table class="ui-copy-number fixed-width-cols">
-    <thead>
-      {#each numberLists as { desc, sample }, _i}
-        <td>{desc}</td>
-      {/each}
-    </thead>
-    {#each numberLists[0].sample as _, i}
-      <tr>
-        {#each numberLists as { desc, sample }}
-          {@const richNum = selectedFormatterForSamples[desc](sample[i])}
-
-          <td class="table-body" title={sample[i].toString()}>
-            <div class="align-content-right">
-              <AlignedNumber
-                {richNum}
-                alignSuffix={alignSuffixes}
-                {alignDecimalPoints}
-                {lowerCaseEForEng}
-                {zeroHandling}
-                {showBars}
-                {negativeColor}
-                {positiveColor}
-                {showBaseline}
-                {baselineColor}
-              />
-            </div>
-          </td>
+{#if selectedFormatterForSamples !== undefined}
+  <div class="table-container">
+    <table class="ui-copy-number fixed-width-cols">
+      <thead>
+        {#each numberLists as { desc, sample }, _i}
+          <td>{desc}</td>
         {/each}
-      </tr>
-    {/each}
-  </table>
-</div>
+      </thead>
+      {#each numberLists[0].sample as _, i}
+        <tr>
+          {#each numberLists as { desc, sample }, j}
+            {@const richNum = selectedFormatterForSamples[desc](sample[i])}
+
+            <td class="table-body" title={sample[i].toString()}>
+              <div class="align-content-right">
+                <AlignedNumber
+                  {richNum}
+                  alignSuffix={alignSuffixes}
+                  {alignDecimalPoints}
+                  {lowerCaseEForEng}
+                  {zeroHandling}
+                  {showBars}
+                  {negativeColor}
+                  {positiveColor}
+                  {showBaseline}
+                  {baselineColor}
+                  {suffixPadding}
+                />
+              </div>
+            </td>
+          {/each}
+        </tr>
+      {/each}
+    </table>
+  </div>
+{/if}
 
 <style>
   div.table-container {
@@ -410,5 +499,16 @@
     background-color: #f2f2f2;
     padding: 3px;
     border-radius: 5px;
+  }
+
+  .outer {
+    overflow: hidden;
+    position: relative;
+  }
+  .inner {
+    position: absolute;
+    right: -50px;
+    top: 50px;
+    width: fit-content;
   }
 </style>
