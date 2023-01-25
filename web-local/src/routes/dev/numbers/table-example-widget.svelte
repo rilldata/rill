@@ -13,6 +13,8 @@
   } from "./number-to-string-formatters";
   import { onMount } from "svelte";
   import { writable } from "svelte/store";
+  import LayeredContainer from "./layered-container.svelte";
+  import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
 
   export let defaultFormatterIndex = 1;
   let alignDecimalPoints = true;
@@ -423,21 +425,37 @@
 
             <td class="table-body" title={sample[i].toString()}>
               <div class="align-content-right">
-                <AlignedNumber
-                  containerWidth={100}
-                  {richNum}
-                  alignSuffix={alignSuffixes}
-                  {alignDecimalPoints}
-                  {lowerCaseEForEng}
-                  {zeroHandling}
-                  {showBars}
-                  {negativeColor}
-                  {positiveColor}
-                  {barBackgroundColor}
-                  {showBaseline}
-                  {baselineColor}
-                  {suffixPadding}
-                />
+                <LayeredContainer containerWidth={100}>
+                  <AlignedNumber
+                    slot="foreground"
+                    containerWidth={100}
+                    {richNum}
+                    alignSuffix={alignSuffixes}
+                    {alignDecimalPoints}
+                    {lowerCaseEForEng}
+                    {zeroHandling}
+                    {showBars}
+                    {negativeColor}
+                    {positiveColor}
+                    {barBackgroundColor}
+                    {showBaseline}
+                    {baselineColor}
+                    {suffixPadding}
+                  />
+                  <div slot="background">
+                    {#if showBars}
+                      <RichNumberBipolarBar
+                        containerWidth={100}
+                        {richNum}
+                        {positiveColor}
+                        {negativeColor}
+                        {showBaseline}
+                        {baselineColor}
+                        {barBackgroundColor}
+                      />
+                    {/if}
+                  </div>
+                </LayeredContainer>
               </div>
             </td>
           {/each}
