@@ -37,7 +37,7 @@
 
   let showBars = true;
   let barPosition: "left" | "behind" | "right" = "behind";
-  let barContainerWidth = 100;
+  let barContainerWidth = 81;
   let barOffset = 10;
 
   let negativeColor = "#ffbebe";
@@ -52,8 +52,10 @@
 
   let tableGutterWidth = 30;
 
+  $: worstCaseStringWidth = 79 + suffixPadding;
   $: layerContainerWidth =
-    barPosition === "behind" ? 100 : 100 + barContainerWidth + barOffset;
+    worstCaseStringWidth +
+    (barPosition === "behind" ? 0 : barContainerWidth + barOffset);
 
   $: usePlainNumForThousandthsPadZeros =
     usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
@@ -495,7 +497,7 @@
                 >
                   <AlignedNumber
                     slot="foreground"
-                    containerWidth={100}
+                    containerWidth={79 + suffixPadding}
                     {richNum}
                     alignSuffix={alignSuffixes}
                     {alignDecimalPoints}
