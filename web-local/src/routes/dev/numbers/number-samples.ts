@@ -44,8 +44,8 @@ export const numberLists: NumericSample[] = [
   },
 
   {
-    desc: "(t-dist)^8 (all positive)",
-    sample: range.map((x) => tDist(1) ** 8),
+    desc: "(t-dist)^8 (all positive, with exact zeros)",
+    sample: range.map((x) => tDist(1) ** 8).map((x) => (x < 0.01 ? 0 : x)),
   },
 
   {
