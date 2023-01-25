@@ -9,6 +9,7 @@
 
   export let showBaseline = false;
   export let baselineColor = "#eeeeee";
+  export let barBackgroundColor = "#ffffff";
 
   // if all the value are positive, the min for the range is 0
   $: validMin = Math.min(richNum.range.min, 0);
@@ -28,7 +29,10 @@
   $: baselineLeftPct = pctWithinExtents(0, validMin, validMax);
 </script>
 
-<div class="bar-container" style="width: {containerWidth}px;">
+<div
+  class="bar-container"
+  style="width: {containerWidth}px; background-color:{barBackgroundColor}"
+>
   <div
     class="number-bar"
     style="left:{barLeftPct}%; width: {barWidthPct}%; background-color:{barColor};"
