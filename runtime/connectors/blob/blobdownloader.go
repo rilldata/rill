@@ -24,7 +24,7 @@ import (
 // set without any benchamarks
 const concurrentBlobDownloadLimit = 8
 
-var partialDownloadExtensions = map[string]bool{".parquet": true, ".csv": true, ".tsv": true, ".txt": true}
+var partialDownloadExtensions = map[string]bool{".parquet": true, ".csv": true, ".tsv": true, ".txt": true, ".parquet.gz": true}
 
 type Strategy string
 

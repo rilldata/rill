@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync/atomic"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
@@ -14,6 +15,7 @@ import (
 	"github.com/apache/arrow/go/v11/parquet/compress"
 	"github.com/apache/arrow/go/v11/parquet/file"
 	"github.com/apache/arrow/go/v11/parquet/pqarrow"
+	"github.com/c2h5oh/datasize"
 	"gocloud.dev/blob"
 )
 
@@ -27,7 +29,7 @@ type blobObjectReader struct {
 
 	// debug data
 	debugMode bool
-	call      int
+	call      int64
 	bytes     int64
 }
 
@@ -35,7 +37,7 @@ type blobObjectReader struct {
 func (f *blobObjectReader) ReadAt(p []byte, off int64) (int, error) {
 	if f.debugMode {
 		fmt.Printf("reading %v bytes at offset %v\n", len(p), off)
-		f.call++
+		atomic.AddInt64(&f.call, 1)
 	}
 
 	reader, err := f.bucket.NewRangeReader(f.ctx, f.obj.Key, off, int64(len(p)), nil)
@@ -49,7 +51,7 @@ func (f *blobObjectReader) ReadAt(p []byte, off int64) (int, error) {
 		return 0, err
 	}
 	if f.debugMode {
-		f.bytes += int64(len(p))
+		atomic.AddInt64(&f.bytes, int64(n))
 	}
 	return n, nil
 }
@@ -66,7 +68,8 @@ func (f *blobObjectReader) Size() int64 {
 
 func (f *blobObjectReader) Close() error {
 	if f.debugMode {
-		fmt.Printf("made %v calls data fetched %v \n", f.call, f.bytes)
+		bytes := datasize.ByteSize(f.bytes)
+		fmt.Printf("made %v calls data fetched %v \n", f.call, bytes.HumanReadable())
 	}
 	return nil
 }
@@ -153,7 +156,7 @@ func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, op
 	}
 	defer pf.Close()
 
-	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: batchSize, Parallel: false}
+	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: batchSize, Parallel: true}
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
 		return err
