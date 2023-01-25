@@ -12,6 +12,7 @@
 
   const dispatch = createEventDispatcher();
 
+  let showLocalFileDetailedOptions;
   let selectedConnector: V1Connector;
 
   const TAB_ORDER = ["gcs", "s3", "https", "local_file"];
@@ -66,13 +67,16 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https"}
+    {#if selectedConnector?.name === "local_file" && !showLocalFileDetailedOptions}
+      <LocalSource
+        bind:showDetailedOptions={showLocalFileDetailedOptions}
+        on:close
+      />
+    {/if}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || showLocalFileDetailedOptions}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />
       {/key}
-    {/if}
-    {#if selectedConnector?.name === "local_file"}
-      <LocalSource on:close />
     {/if}
   </div>
 </Dialog>
