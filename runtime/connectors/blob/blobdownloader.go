@@ -24,7 +24,8 @@ import (
 // set without any benchamarks
 const concurrentBlobDownloadLimit = 8
 
-var partialDownloadExtensions = map[string]bool{".parquet": true, ".csv": true, ".tsv": true, ".txt": true, ".parquet.gz": true}
+// map of supoprted extensions for partial downloads vs readers
+var partialDownloadReaders = map[string]string{".parquet": "parquet", ".csv": "csv", ".tsv": "csv", ".txt": "csv", ".parquet.gz": "parquet"}
 
 type Strategy string
 
@@ -258,7 +259,9 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, config FetchConfigs, 
 			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
-				c.Add(obj)
+				if !c.Add(obj) {
+					break
+				}
 			}
 		}
 		if err := validateLimits(size, matchCount, fetched, config); err != nil {
@@ -312,14 +315,23 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 
 			defer file.Close()
 			localPaths[index-start] = file.Name()
-			fmt.Println(file.Name())
-			if obj.full || !isPartialDownloadSupported(obj.obj.Key) {
+			ext := fileutil.FullExt(obj.obj.Key)
+			partialReader, isPartialDownloadSupported := partialDownloadReaders[ext]
+			if obj.full || !isPartialDownloadSupported {
 				// download full file
 				err = downloadObject(grpCtx, iter.bucket, obj.obj.Key, file)
 			} else {
 				// download partial file
 				// check if, for smaller size we can download entire file
-				err = Download(grpCtx, iter.bucket, obj.obj, ExtractConfig{Size: obj.size, Strategy: obj.stratety}, file)
+				switch partialReader {
+				case "parquet":
+					err = DownloadParquet(grpCtx, iter.bucket, obj.obj, ExtractConfig{Size: obj.size, Strategy: obj.stratety}, file)
+				case "csv":
+					err = DownloadCSV(grpCtx, iter.bucket, obj.obj, ExtractConfig{Size: obj.size, Strategy: obj.stratety}, file)
+				default:
+					// should not reach here
+					err = fmt.Errorf("partial download not supported for extension %q", ext)
+				}
 			}
 			if err != nil {
 				return err
@@ -333,12 +345,6 @@ func (iter *BlobIterator) NextBatch(ctx context.Context, n int) ([]string, error
 	}
 
 	return localPaths, nil
-}
-
-func isPartialDownloadSupported(name string) bool {
-	ext := fileutil.FullExt(name)
-	// zipped csv, tsv files are not supported
-	return partialDownloadExtensions[ext]
 }
 
 // listOptions for page listing api

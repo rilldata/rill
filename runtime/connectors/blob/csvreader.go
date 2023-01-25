@@ -35,7 +35,7 @@ func getHeader(r *blobObjectReader) (string, error) {
 }
 
 // todo :: check if string conversions can be avoided
-func DownloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *ExtractConfig, fw *os.File) error {
+func DownloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractConfig, fw *os.File) error {
 	reader := newBlobObjectReader(ctx, bucket, obj)
 	header, err := getHeader(reader)
 	if err != nil {

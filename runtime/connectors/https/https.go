@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -89,14 +88,14 @@ type httpIterator struct {
 }
 
 func (h *httpIterator) Close() error {
-	return os.Remove(h.file)
+	return nil
 }
 
 func (h *httpIterator) NextBatch(ctx context.Context, n int) ([]string, error) {
 	if !h.HasNext() {
 		return nil, io.EOF
 	}
-
+	h.index++
 	return []string{h.file}, nil
 }
 

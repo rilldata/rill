@@ -143,7 +143,7 @@ func estimate(reader *file.Reader, option ExtractConfig) ([]int, int64) {
 	return result, rows
 }
 
-func Download(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractConfig, fw *os.File) error {
+func DownloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractConfig, fw *os.File) error {
 	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
 	reader := newBlobObjectReader(ctx, bucket, obj)
 
