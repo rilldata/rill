@@ -36,6 +36,9 @@
   let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
 
   let showBars = true;
+  let barPosition: "left" | "behind" | "right" = "behind";
+  let barContainerWidth = 100;
+  let barOffset = 10;
 
   let negativeColor = "#ffbebe";
   let positiveColor = "#eaeaea";
@@ -46,6 +49,11 @@
 
   let selectedFormatter = formatterFactories[defaultFormatterIndex];
   let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
+
+  let tableGutterWidth = 30;
+
+  $: layerContainerWidth =
+    barPosition === "behind" ? 100 : 100 + barContainerWidth + barOffset;
 
   $: usePlainNumForThousandthsPadZeros =
     usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
@@ -366,12 +374,58 @@
       </div>
     </form>
   </div>
-  <div style="padding-left: 40px;">
+  <div style="padding-left: 10px;">
+    bar options
+
     <div class="option-box">
       <label>
         <input type="checkbox" bind:checked={showBars} />
         show bars
       </label>
+      <div class="option-box">
+        <form>
+          <label>
+            <input
+              type="radio"
+              bind:group={barPosition}
+              name="left"
+              value={"left"}
+            />
+            left
+          </label>
+          <label>
+            <input
+              type="radio"
+              bind:group={barPosition}
+              name="behind"
+              value={"behind"}
+            />
+            behind numbers
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              bind:group={barPosition}
+              name="right"
+              value={"right"}
+            />
+            right
+          </label>
+        </form>
+      </div>
+      <div class="option-box">
+        bar container width
+        <input type="range" min="10" max="100" bind:value={barContainerWidth} />
+        {barContainerWidth}px
+      </div>
+
+      <div class="option-box">
+        bar offset (if left or right)
+        <input type="range" min="0" max="100" bind:value={barOffset} />
+        {barOffset}px
+      </div>
+
       <div class="option-box">
         <ColorPicker bind:hex={negativeColor} label="negative bar color" />
         <ColorPicker bind:hex={positiveColor} label="positive bar color" />
@@ -396,16 +450,17 @@
         </label>
         <div class="option-box">
           <ColorPicker bind:hex={baselineColor} label="baseline color" />
-          <!-- set positive bar color
-          <button on:click={() => (positiveColor = blue100)}
-            >blue-100 (like `main`)</button
-          >
-          &nbsp;
-          <button on:click={() => (positiveColor = grey100)}>grey-100</button>
-          &nbsp;
-          <button on:click={() => (positiveColor = "#eeeeee")}>grey-200</button> -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <div style="padding-left: 40px;">
+    table options
+    <div class="option-box">
+      table gutter width
+      <input type="range" min="10" max="100" bind:value={tableGutterWidth} />
+      {tableGutterWidth}px
     </div>
   </div>
 </div>
@@ -415,7 +470,11 @@
     <table class="ui-copy-number fixed-width-cols">
       <thead>
         {#each numberLists as { desc, sample }, _i}
-          <td>{desc}</td>
+          <td
+            style="padding-left: {tableGutterWidth}px; width: {layerContainerWidth}px; min-width: {layerContainerWidth}px; padding-bottom: 0px;"
+          >
+            <div class="column-title">{desc}</div></td
+          >
         {/each}
       </thead>
       {#each numberLists[0].sample as _, i}
@@ -423,9 +482,17 @@
           {#each numberLists as { desc, sample }, j}
             {@const richNum = selectedFormatterForSamples[desc](sample[i])}
 
-            <td class="table-body" title={sample[i].toString()}>
+            <td
+              style="padding-left: {tableGutterWidth}px; width: {layerContainerWidth}px; min-width: {layerContainerWidth}px;"
+              class="table-body"
+              title={sample[i].toString()}
+            >
               <div class="align-content-right">
-                <LayeredContainer containerWidth={100}>
+                <LayeredContainer
+                  containerWidth={layerContainerWidth}
+                  {barPosition}
+                  {barOffset}
+                >
                   <AlignedNumber
                     slot="foreground"
                     containerWidth={100}
@@ -434,18 +501,12 @@
                     {alignDecimalPoints}
                     {lowerCaseEForEng}
                     {zeroHandling}
-                    {showBars}
-                    {negativeColor}
-                    {positiveColor}
-                    {barBackgroundColor}
-                    {showBaseline}
-                    {baselineColor}
                     {suffixPadding}
                   />
-                  <div slot="background">
+                  <div slot="background" style="width: {barContainerWidth}px;">
                     {#if showBars}
                       <RichNumberBipolarBar
-                        containerWidth={100}
+                        containerWidth={barContainerWidth}
                         {richNum}
                         {positiveColor}
                         {negativeColor}
@@ -473,11 +534,21 @@
 
   thead td {
     text-align: right;
-    padding-left: 20px;
+    /* padding-left: 20px; */
+    /* padding-bottom: 3px; */
+    vertical-align: bottom;
+
+    /* border-bottom: 1px solid rgb(210, 208, 208); */
+  }
+
+  thead td div.column-title {
+    /* text-align: right; */
+    /* padding-left: 20px; */
     padding-bottom: 3px;
 
     border-bottom: 1px solid rgb(210, 208, 208);
   }
+
   td.table-body {
     /* text-align: right; */
     padding: 0 0 0 0;
@@ -500,10 +571,10 @@
     margin-bottom: 20px;
   }
 
-  table.fixed-width-cols td {
+  /* table.fixed-width-cols td {
     width: 120px;
     min-width: 120px;
-  }
+  } */
 
   .option-box {
     padding-left: 30px;
