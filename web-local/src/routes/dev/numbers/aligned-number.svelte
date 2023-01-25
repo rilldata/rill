@@ -2,7 +2,7 @@
   import type { RichFormatNumber } from "./number-to-string-formatters";
   import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
 
-  export let containerWidth = 100;
+  export let containerWidth = 81;
 
   export let richNum: RichFormatNumber;
   export let alignSuffix = false;
