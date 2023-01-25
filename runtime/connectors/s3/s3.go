@@ -30,7 +30,7 @@ var spec = connectors.Spec{
 			Placeholder: "s3://bucket-name/path/to/file.csv",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
-			Hint:        "Note that glob patterns aren't yet supported",
+			Hint:        "Note that you can also use glob patterns",
 		},
 		{
 			Key:         "region",
