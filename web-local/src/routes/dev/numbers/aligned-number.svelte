@@ -10,14 +10,7 @@
 
   export let lowerCaseEForEng = false;
   export let alignDecimalPoints = false;
-  export let showBars = false;
   export let zeroHandling: "noSpecial" | "exactZero" | "zeroDot" = "noSpecial";
-  export let negativeColor = "#f5999977";
-  export let positiveColor = "#ececec";
-  export let barBackgroundColor = "#ffffff";
-
-  export let showBaseline = false;
-  export let baselineColor = "#eeeeee";
 
   $: int = richNum.splitStr.int;
   $: frac = richNum.splitStr.frac;
