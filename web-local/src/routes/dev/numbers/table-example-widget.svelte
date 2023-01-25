@@ -17,7 +17,7 @@
   export let defaultFormatterIndex = 1;
   let alignDecimalPoints = true;
   let alignSuffixes = true;
-  let suffixPadding = 3;
+  let suffixPadding = 2;
 
   let lowerCaseEForEng = true;
   let minimumSignificantDigits = 3;
