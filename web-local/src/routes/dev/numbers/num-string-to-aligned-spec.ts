@@ -1,10 +1,15 @@
 // import type { NumToRawStringFnFactory } from "./number-to-string-formatters";
 
-import type { NumberStringParts } from "./number-to-string-formatters";
+import type {
+  FormatterMaxPxWidths,
+  NumberStringParts,
+  NumPartPxWidthLookupFn,
+} from "./number-to-string-formatters";
 
-export function splitNumStr(numStr: string) {
+export function splitNumStr(numStr: string): NumberStringParts {
   let nonNumReMatch = numStr.match(/[a-zA-z ]/);
   let int = "";
+  let dot: "" | "." = numStr.includes(".") ? "." : "";
   let frac = "";
   let suffix = "";
   if (nonNumReMatch) {
@@ -25,7 +30,7 @@ export function splitNumStr(numStr: string) {
   if (suffix === undefined) {
     console.log({ numStr, int, frac, suffix });
   }
-  return { int, frac, suffix };
+  return { int, dot, frac, suffix };
 }
 
 // type AlignedNumberSpec = {
@@ -75,6 +80,24 @@ export const getSpacingMetadataForSplitStrings = (
 
 export const getSpacingMetadataForRawStrings = (numericStrings: string[]) => {
   return getSpacingMetadataForSplitStrings(numericStrings.map(splitNumStr));
+};
+
+export const getMaxPxWidthsForSplitsStrings = (
+  numStrParts: NumberStringParts[],
+  pxWidthLookup: NumPartPxWidthLookupFn
+): FormatterMaxPxWidths => {
+  let maxPxWidths = { int: 0, dot: 0, frac: 0, suffix: 0 };
+  const max = Math.max;
+  numStrParts.forEach((richNum) => {
+    maxPxWidths.int = max(pxWidthLookup(richNum.int, true), maxPxWidths.int);
+    maxPxWidths.dot = max(pxWidthLookup(richNum.dot, false), maxPxWidths.dot);
+    maxPxWidths.frac = max(pxWidthLookup(richNum.frac, true), maxPxWidths.frac);
+    maxPxWidths.suffix = max(
+      pxWidthLookup(richNum.suffix, false),
+      maxPxWidths.suffix
+    );
+  });
+  return maxPxWidths;
 };
 
 // export const numStrToAlignedNumSpec = (

@@ -8,11 +8,13 @@ import {
   splitNumStr,
   getSpacingMetadataForRawStrings,
   getSpacingMetadataForSplitStrings,
+  getMaxPxWidthsForSplitsStrings,
 } from "./num-string-to-aligned-spec";
 import type {
   FormatterFactory,
   FormatterSpacingMeta,
   NumberStringParts,
+  NumPartPxWidthLookupFn,
 } from "./number-to-string-formatters";
 
 const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
@@ -39,7 +41,8 @@ const formatNumWithOrderOfMag = (
   const [int, frac] = Intl.NumberFormat("en-US", options)
     .format(x / 10 ** newOrder)
     .split(".");
-  const splitStr = { int, frac, suffix: "E" + newOrder };
+  const dot: "." = ".";
+  const splitStr = { int, dot, frac, suffix: "E" + newOrder };
 
   return splitStr;
 };
@@ -70,7 +73,7 @@ const thousandthsNumAsDecimalNumParts = (
 
   const [int, frac] = formatter.format(x).split(".");
 
-  return { int, frac, suffix: "" };
+  return { int, dot: ".", frac, suffix: "" };
 };
 
 const splitStrsForMagStratLargest = (
@@ -165,6 +168,7 @@ const splitStrsForMagStratUnlimited = (
 
 export const humanized2FormatterFactory: FormatterFactory = (
   sample: number[],
+  pxWidthLookup: NumPartPxWidthLookupFn,
   options
 ) => {
   let range = { max: Math.max(...sample), min: Math.min(...sample) };
@@ -221,6 +225,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
 
   let spacing: FormatterSpacingMeta =
     getSpacingMetadataForSplitStrings(splitStrs);
+  const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
   return (x: number) => {
     let i = sample.findIndex((h) => h === x);
@@ -230,6 +235,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
       splitStr: splitStrs[i],
       spacing,
       range,
+      maxPxWidth,
     };
   };
 };
