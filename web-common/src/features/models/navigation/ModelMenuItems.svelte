@@ -16,10 +16,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    addQuickMetricsToDashboardYAML,
-    initBlankDashboardYAML,
-  } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -34,6 +30,10 @@
   import { createEventDispatcher } from "svelte";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "../../metrics/metrics-internal-store";
   import { useModelNames } from "../selectors";
 
   export let modelName: string;

@@ -2,7 +2,7 @@
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { Readable } from "svelte/store";
-  import type { MetricsInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
+  import type { MetricsInternalRepresentation } from "./metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 

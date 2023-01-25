@@ -2,7 +2,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { createForm } from "svelte-forms-lib";
   import type { Readable } from "svelte/store";
-  import type { MetricsInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
+  import type { MetricsInternalRepresentation } from "./metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 

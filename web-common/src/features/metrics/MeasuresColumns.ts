@@ -1,11 +1,11 @@
-import type { MeasureEntity } from "../../application-state-stores/metrics-internal-store";
-import { ValidationState } from "../../temp/metrics";
-import { nicelyFormattedTypesSelectorOptions } from "../../util/humanize-numbers";
 import {
   CellConfigInput,
   CellConfigSelector,
   ColumnConfig,
-} from "../table-editable/ColumnConfig";
+} from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
+import { nicelyFormattedTypesSelectorOptions } from "@rilldata/web-local/lib/util/humanize-numbers";
+import { ValidationState } from "./errors";
+import type { MeasureEntity } from "./metrics-internal-store";
 
 export const initMeasuresColumns = (
   inputChangeHandler,
