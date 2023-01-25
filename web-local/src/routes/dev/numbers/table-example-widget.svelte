@@ -35,8 +35,8 @@
 
   let showBars = true;
 
-  let negativeColor = "#ff000041";
-  let positiveColor = "#0000001b";
+  let negativeColor = "#ffbebe";
+  let positiveColor = "#eaeaea";
 
   let showBaseline = true;
   let baselineColor = "#eeeeee";
@@ -127,7 +127,7 @@
 
   $: {
     if (pxWidthLookupFn !== undefined) {
-      window.pxWidthLookupFn = pxWidthLookupFn;
+      // window.pxWidthLookupFn = pxWidthLookupFn;
 
       selectedFormatterForSamples = Object.fromEntries(
         numberLists.map((nl) => {
@@ -367,7 +367,7 @@
     <div class="option-box">
       <label>
         <input type="checkbox" bind:checked={showBars} />
-        show background bars
+        show bars
       </label>
       <div class="option-box">
         <ColorPicker bind:hex={negativeColor} label="negative bar color" />
@@ -418,6 +418,7 @@
             <td class="table-body" title={sample[i].toString()}>
               <div class="align-content-right">
                 <AlignedNumber
+                  containerWidth={100}
                   {richNum}
                   alignSuffix={alignSuffixes}
                   {alignDecimalPoints}

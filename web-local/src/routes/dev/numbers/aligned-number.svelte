@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { RichFormatNumber } from "./number-to-string-formatters";
 
+  export let containerWidth = 100;
+
   export let richNum: RichFormatNumber;
   export let alignSuffix = false;
   export let suffixPadding = 0;
@@ -54,32 +56,13 @@
   $: fracPx = richNum.maxPxWidth.frac;
   $: suffixPx = richNum.maxPxWidth.suffix + suffixPadFinal;
 
-  // IMPORTANT: add a bit of width to the containers for the decimal point
-  const DECIMAL_POINT_WIDTH = 0.6;
-  // IMPORTANT: add a bit of width to the int part to ensure decimal alignment
-  const EXTRA_INT_WIDTH = 0.5;
-  // a bit of padding between the suffix and the number
-  const SUFFIX_PADDING = 0.2;
-
-  $: containerWidth = `${intPx + dotPx + fracPx + suffixPx}px`;
+  // $: containerWidth = `${intPx + dotPx + fracPx + suffixPx}px`;
 
   $: fracAndSuffixWidth = `${dotPx + fracPx + suffixPx}px`;
 
   $: logProps = () => {
     console.log({ ...richNum, lowerCaseEForEng });
   };
-
-  // $: console.log({ numberAlignmentStore, containerWidth, fracAndSuffixWidth });
-  // $: console.log({
-  //   intPx,
-  //   dotPx,
-  //   fracPx,
-  //   suffixPx,
-  // });
-
-  // if any number is negative, include negative bars;
-  // otherwise all bars range from [0, max]
-  // $: rangeWidth = richNum.range.max - Math.min(richNum.range.min, 0);
 
   // if all the value are positive, the min for the range is 0
   $: validMin = Math.min(richNum.range.min, 0);
@@ -101,14 +84,14 @@
 
 <div class="number-and-bar-container">
   {#if showBars}
-    <div class="bar-container" style="width: {containerWidth};">
+    <div class="bar-container" style="width: {containerWidth}px;">
       <div
         class="number-bar"
         style="left:{barLeftPct}%; width: {barWidthPct}%; background-color:{barColor};"
       />
     </div>
     {#if showBaseline}
-      <div class="bar-container" style="width: {containerWidth};">
+      <div class="bar-container" style="width: {containerWidth}px;">
         <div
           class="baseline"
           style="left:{baselineLeftPct}%; background-color:{baselineColor};"
@@ -120,7 +103,7 @@
     <div
       on:click={logProps}
       class="number-container"
-      style="width: {containerWidth};"
+      style="width: {containerWidth}px;"
     >
       {int}{decimalPoint}{frac}{suffixFinal}
     </div>
@@ -128,7 +111,7 @@
     <div
       on:click={logProps}
       class="number-container"
-      style="width: {containerWidth};"
+      style="width: {containerWidth}px;"
     >
       <div class="number-whole" style="width: {intPx}px;">
         {int}
