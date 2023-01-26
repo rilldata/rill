@@ -130,7 +130,7 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 	}
 
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s",
+		"SELECT %s FROM %q WHERE %s",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,

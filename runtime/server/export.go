@@ -42,7 +42,7 @@ func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParam
 		return
 	}
 	err = olap.Exec(req.Context(), &drivers.Statement{
-		Query: fmt.Sprintf("COPY (SELECT * FROM %s) TO '%s' (%s)", pathParams["table_name"], filePath, exportString),
+		Query: fmt.Sprintf("COPY (SELECT * FROM %q) TO '%s' (%s)", pathParams["table_name"], filePath, exportString),
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

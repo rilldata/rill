@@ -24,7 +24,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 	materializeType := getMaterializeType(materialize)
 	return olap.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
-			"CREATE OR REPLACE %s %s AS (%s)",
+			"CREATE OR REPLACE %s %q AS (%s)",
 			materializeType,
 			catalogObj.Name,
 			sql,
@@ -71,7 +71,7 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		err := olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", materializeType, from, tempName),
+			Query:    fmt.Sprintf("ALTER %s %q RENAME TO %q", materializeType, from, tempName),
 			Priority: 100,
 		})
 		if err != nil {
@@ -81,7 +81,7 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", materializeType, from, catalogObj.Name),
+		Query:    fmt.Sprintf("ALTER %s %q RENAME TO %q", materializeType, from, catalogObj.Name),
 		Priority: 100,
 	})
 }
@@ -89,7 +89,7 @@ func (m *modelMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from
 func (m *modelMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
 	materializeType := getMaterializeType(catalogObj.GetModel().Materialize)
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", materializeType, catalogObj.Name),
+		Query:    fmt.Sprintf("DROP %s IF EXISTS %q", materializeType, catalogObj.Name),
 		Priority: 100,
 	})
 }
