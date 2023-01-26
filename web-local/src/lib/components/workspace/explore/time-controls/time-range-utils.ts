@@ -431,19 +431,19 @@ export const toV1TimeGrain = (timeGrain: TimeGrain): V1TimeGrain => {
     case TimeGrain.OneMinute:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
     case TimeGrain.OneHour:
-      return V1TimeGrain.TIME_GRAIN_HOUR 
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     case TimeGrain.OneDay:
-      return V1TimeGrain.TIME_GRAIN_DAY
+      return V1TimeGrain.TIME_GRAIN_DAY;
     case TimeGrain.OneWeek:
-      return V1TimeGrain.TIME_GRAIN_WEEK
+      return V1TimeGrain.TIME_GRAIN_WEEK;
     case TimeGrain.OneMonth:
-      return V1TimeGrain.TIME_GRAIN_MONTH
+      return V1TimeGrain.TIME_GRAIN_MONTH;
     case TimeGrain.OneYear:
-      return V1TimeGrain.TIME_GRAIN_YEAR
+      return V1TimeGrain.TIME_GRAIN_YEAR;
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }
-}
+};
 
 const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   if (!date) return new Date();

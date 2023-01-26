@@ -88,7 +88,9 @@
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: toV1TimeGrain(metricsExplorer.selectedTimeRange?.interval),
+        timeGranularity: toV1TimeGrain(
+          metricsExplorer.selectedTimeRange?.interval
+        ),
       }
     );
   }
@@ -115,7 +117,7 @@
       // the individual segments. Alternatively, writing a custom array interpolator could help quite
       // a bit; null values within the interpolator could tween from 0 or from a contiguous point.
       .map((di) => {
-        di = {ts: di.ts, bin: di.bin, ...di.records}
+        di = { ts: di.ts, bin: di.bin, ...di.records };
         // set nulls to 0, as per the FIXME comment above.
         Object.keys(di).forEach((k) => {
           di[k] = di[k] === null ? 0 : di[k];
