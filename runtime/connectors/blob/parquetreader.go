@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"container/list"
 	"context"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"gocloud.dev/blob"
 )
 
+// keeping it high seems to improve latency at the cost of accuracy in size of fetched data as per policy
 var batchSize = int64(1000)
 
 type blobObjectReader struct {
@@ -121,26 +123,100 @@ func getArray(size int, rev bool) []int {
 	return result
 }
 
-func estimate(reader *file.Reader, option ExtractConfig) ([]int, int64) {
-	rowIndexes := getArray(reader.NumRowGroups(), option.Strategy == TAIL)
+// todo :: see if recordContainer and container can be implemented in a single generic way
+// recordContainer keeps items as per extract config
+type recordContainer struct {
+	config *ExtractConfig
+	items  *list.List
+}
 
-	result := make([]int, 0)
+func (c *recordContainer) Add(record arrow.Record) bool {
+	if c.IsFull() {
+		return false
+	}
+
+	switch c.config.Strategy {
+	case TAIL:
+		// keep latest item at front
+		c.items.PushFront(record)
+		if c.items.Len() > int(c.config.Size) {
+			// remove oldest item
+			record := c.items.Remove(c.items.Back()).(arrow.Record)
+			record.Release()
+		}
+	case HEAD:
+		c.items.PushBack(record)
+	default:
+		c.items.PushBack(record)
+	}
+	return true
+}
+
+func (c *recordContainer) IsFull() bool {
+	switch c.config.Strategy {
+	case TAIL:
+		return false
+	case HEAD:
+		return c.items.Len() >= int(c.config.Size)
+	default:
+		return false
+	}
+}
+
+func (c *recordContainer) Items() []arrow.Record {
+	result := make([]arrow.Record, c.items.Len())
+
+	for front, i := c.items.Front(), 0; front != nil; front, i = c.items.Front(), i+1 {
+		result[i] = c.items.Remove(front).(arrow.Record)
+	}
+	return result
+}
+
+func newRecordContainer(config *ExtractConfig) *recordContainer {
+	return &recordContainer{config: config, items: list.New().Init()}
+}
+
+func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config ExtractConfig) ([]arrow.Record, error) {
+	rowIndexes := getArray(reader.NumRowGroups(), config.Strategy == TAIL)
+
+	// row group indices that we need
+	reqRowIndices := make([]int, 0)
 	var cumSize, rows int64
 	for _, index := range rowIndexes {
-		result = append(result, index)
+		reqRowIndices = append(reqRowIndices, index)
 		rowGroup := reader.RowGroup(index)
 		rowGroupSize := rowGroup.ByteSize()
 		rowCount := rowGroup.NumRows()
 
-		if cumSize+rowGroupSize > option.Size {
+		if cumSize+rowGroupSize > config.Size {
 			// taking entire rowgroup crosses allowed size
 			perRowSize := rowGroupSize / rowCount
-			rows += (option.Size - cumSize) / perRowSize
-			return result, rows
+			rows += (config.Size - cumSize) / perRowSize
+			break
 		}
 		rows += rowCount
 	}
-	return result, rows
+
+	r, err := pqToArrowReader.GetRecordReader(ctx, getArray(reader.RowGroup(0).NumColumns(), false), reqRowIndices)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Release()
+
+	// one record has batchsize rows
+	numRecords := rows / batchSize
+	if numRecords == 0 {
+		// if parquet file has less than batchSize rows or user selects less than batchSize rows
+		numRecords = 1
+	}
+
+	container := newRecordContainer(&ExtractConfig{Strategy: config.Strategy, Size: numRecords})
+	for r.Next() && !container.IsFull() {
+		rec := r.Record()
+		rec.Retain()
+		container.Add(rec)
+	}
+	return container.Items(), nil
 }
 
 func DownloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option ExtractConfig, fw *os.File) error {
@@ -157,6 +233,7 @@ func DownloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	defer pf.Close()
 
 	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: batchSize, Parallel: true}
+	// reader to convert parquet objects to arrow objects
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
 		return err
@@ -167,25 +244,9 @@ func DownloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 		return fmt.Errorf("invalid parquet")
 	}
 
-	rowIndices, rowLimit := estimate(pf, option)
-
-	r, err := fileReader.GetRecordReader(ctx, getArray(pf.RowGroup(0).NumColumns(), false), rowIndices)
+	records, err := estimateRecords(ctx, pf, fileReader, option)
 	if err != nil {
 		return err
-	}
-
-	// one record has batchsize rows
-	records := make([]arrow.Record, rowLimit/batchSize)
-	for i := 0; i < len(records); i++ {
-		// one read fetch batchsize number of rows in one call
-		rec, err := r.Read()
-		if err != nil {
-			return err
-		}
-
-		// need to explicitly retain, else memory is reclaimed
-		rec.Retain()
-		records[i] = rec
 	}
 	defer func() {
 		for _, rec := range records {

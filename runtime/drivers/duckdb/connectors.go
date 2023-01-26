@@ -142,7 +142,12 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format, 0)
+	hivePartition := 1
+	if conf.HivePartition != nil && !*conf.HivePartition {
+		hivePartition = 0
+	}
+
+	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format, hivePartition)
 	if err != nil {
 		return err
 	}

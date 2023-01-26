@@ -137,7 +137,7 @@ type FetchConfigs struct {
 	Extract               *ExtractPolicy
 }
 
-// container encapsulates all extract policy
+// container keeps items as per extract policy
 type container struct {
 	policy *ExtractPolicy
 	items  *list.List
