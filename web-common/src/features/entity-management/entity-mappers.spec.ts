@@ -1,5 +1,5 @@
 import { describe } from "@jest/globals";
-import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
+import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 
 describe("entity-mappers", () => {
   describe("getNameFromFile", () => {

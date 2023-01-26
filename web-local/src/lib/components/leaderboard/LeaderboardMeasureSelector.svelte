@@ -1,7 +1,7 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
   import { runtimeStore } from "../../application-state-stores/application-store";
@@ -72,16 +72,18 @@
       class="flex flex-row items-center ui-copy-muted"
       style:grid-column-gap=".4rem"
       in:send={{ key: "leaderboard-metric" }}
+      style:max-width="355px"
     >
-      <div>Dimension Leaders by</div>
+      <div class="whitespace-nowrap">Dimension Leaders by</div>
 
       <SelectMenu
         {options}
         {selection}
+        tailwindClasses="overflow-hidden"
         alignment="end"
         on:select={handleMeasureUpdate}
       >
-        <span class="font-bold">{selection?.main}</span>
+        <span class="font-bold truncate">{selection?.main}</span>
       </SelectMenu>
     </div>
   {:else}

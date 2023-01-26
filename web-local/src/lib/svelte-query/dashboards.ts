@@ -1,6 +1,7 @@
 import {
   useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceListFiles,
+  useRuntimeServiceListCatalogEntries,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
@@ -44,6 +45,11 @@ export const useMetaQuery = <T = V1MetricsView>(
   });
 };
 
+export const useModelHasTimeSeries = (
+  instanceId: string,
+  metricViewName: string
+) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+
 export const useMetaMeasure = (
   instanceId: string,
   metricViewName: string,
@@ -84,4 +90,23 @@ export const getFilterForDimension = (
         in: dimensionValues.in,
       })),
   };
+};
+
+export const useGetDashboardsForModel = (
+  instanceId: string,
+  modelName: string
+) => {
+  return useRuntimeServiceListCatalogEntries(
+    instanceId,
+    { type: "OBJECT_TYPE_METRICS_VIEW" },
+    {
+      query: {
+        select(data) {
+          return data?.entries?.filter(
+            (entry) => entry?.metricsView?.model === modelName
+          );
+        },
+      },
+    }
+  );
 };

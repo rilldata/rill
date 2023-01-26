@@ -1,7 +1,7 @@
 <script lang="ts">
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { fade } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../application-config";
 
@@ -18,12 +18,11 @@
         style:width="16px"
         style:height="16px"
       >
-        <svelte:component
-          this={isFetching ? Spinner : DataTypeIcon}
-          status={EntityStatus.Running}
-          {type}
-          bg="rgba(0,0,0,.2)"
-        />
+        {#if isFetching}
+          <Spinner status={EntityStatus.Running} bg="rgba(0,0,0,.2)" />
+        {:else}
+          <DataTypeIcon {type} />
+        {/if}
       </div>
     {/key}
   </div>

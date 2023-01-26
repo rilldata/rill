@@ -13,6 +13,12 @@ Rill supports several connectors for importing data: local files, download from 
 
 To import a file using the UI, click "+" by Sources in the left hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
 
+*Experimental: Alternatively, you can directly query sources from within the [model](https://docs.rilldata.com/using-rill/sql-models) itself using a `FROM` statment and `path` with double quotes around it.*
+
+```
+FROM "/path/to/data.csv"
+```
+
 ### Using the CLI
 
 You can also add a local file directly using the Rill CLI. To do so, `cd` into your Rill project and run:
@@ -40,6 +46,12 @@ Note that if you provide a relative path, the path should be relative to your Ri
 
 ### Using the UI
 To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your remote files are stored ("Google Cloud Storage", "Amazon S3", or "http(s)"). Enter your file's URI and click "Add Source".
+
+*Experimental: Alternatively, you can directly query sources from within the [model](https://docs.rilldata.com/using-rill/sql-models) itself using a `FROM` statment and `uri` with double quotes around it. If you need to parameterize your URI for region authentication, we recommend using the modal.*
+
+```
+FROM "https://data.example.org/path/to/file.parquet"
+```
 
 After import, you can reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
 
