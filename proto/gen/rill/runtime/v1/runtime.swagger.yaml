@@ -65,7 +65,7 @@ paths:
           in: query
           required: false
           type: integer
-          format: int32
+          format: int64
         - name: pageToken
           in: query
           required: false

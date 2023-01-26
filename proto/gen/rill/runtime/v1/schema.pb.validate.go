@@ -56,7 +56,16 @@ func (m *Type) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Code
+	if _, ok := Type_Code_name[int32(m.GetCode())]; !ok {
+		err := TypeValidationError{
+			field:  "Code",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Nullable
 

@@ -3,6 +3,7 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/schema.proto";
+import "validate/validate.proto";
 
 // ObjectType represents the different kinds of catalog objects
 enum ObjectType {
@@ -50,7 +51,7 @@ message Model {
   // SQL is a SELECT statement representing the model
   string sql = 2;
   // Dialect of the SQL statement
-  Dialect dialect = 3;
+  Dialect dialect = 3 [(validate.rules).enum.defined_only = true];
   // Detected schema of the model
   StructType schema = 4;
 }
