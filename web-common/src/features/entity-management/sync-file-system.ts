@@ -97,6 +97,8 @@ async function syncFileSystem(
 
   const pagePath = get(page).url.pathname;
   if (!isPathToAsset(pagePath)) return;
+  // TEMPORARY: don't reconcile models
+  if (pagePath.startsWith("/model")) return;
 
   const filePath = getFilePathFromPagePath(pagePath);
   fileArtifactsStore.setIsReconciling(filePath, true);
