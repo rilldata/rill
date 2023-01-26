@@ -1,4 +1,21 @@
-import { EntityType } from "@rilldata/web-common/lib/entity";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+
+export function getFilePathFromPagePath(path: string): string {
+  const pathSplits = path.split("/");
+  const entityType = pathSplits[1];
+  const entityName = pathSplits[2];
+
+  switch (entityType) {
+    case "source":
+      return `/sources/${entityName}.yaml`;
+    case "model":
+      return `/models/${entityName}.sql`;
+    case "dashboard":
+      return `/dashboards/${entityName}.yaml`;
+    default:
+      throw new Error("type must be either 'source', 'model', or 'dashboard'");
+  }
+}
 
 export function getFilePathFromNameAndType(
   name: string,

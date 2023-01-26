@@ -2,15 +2,16 @@
   import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
+  import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-  } from "../../../svelte-query/actions";
+    appQueryStatusStore,
+    runtimeStore,
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
   import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
 
@@ -31,7 +32,7 @@
       e.target.value = metricsDefName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -61,13 +62,13 @@
 
 <WorkspaceHeader
   {...{ titleInput, onChangeCallback }}
-  showStatus={false}
+  appRunning={$appQueryStatusStore}
   showInspectorToggle={false}
 >
   <MetricsIcon slot="icon" />
   <MetricsDefinitionExploreMetricsButton
-    slot="cta"
     {metricsDefName}
     {metricsInternalRep}
+    slot="cta"
   />
 </WorkspaceHeader>

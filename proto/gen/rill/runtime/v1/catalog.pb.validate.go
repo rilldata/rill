@@ -391,6 +391,8 @@ func (m *Model) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Materialize
+
 	if len(errors) > 0 {
 		return ModelMultiError(errors)
 	}

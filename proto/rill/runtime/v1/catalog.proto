@@ -54,6 +54,8 @@ message Model {
   Dialect dialect = 3 [(validate.rules).enum.defined_only = true];
   // Detected schema of the model
   StructType schema = 4;
+  // To materialize model or not
+  bool materialize = 5;
 }
 
 // Metrics view is the internal representation of a metrics view definition

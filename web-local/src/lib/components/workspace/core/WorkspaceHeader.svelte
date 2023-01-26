@@ -9,12 +9,13 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
   export let titleInput;
-  export let showStatus = true;
+  export let appRunning = true;
   export let editable = true;
   export let showInspectorToggle = true;
   export let width: number = undefined;
@@ -42,6 +43,8 @@
     }
   }
 
+  $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
+
   $: inputSize =
     Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
 
@@ -50,10 +53,10 @@
 
 <svelte:window on:keydown={onKeydown} />
 <header
-  use:listenToNodeResize
-  style:height="var(--header-height)"
   class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
   style:grid-template-columns="[title] auto [controls] auto"
+  style:height="var(--header-height)"
+  use:listenToNodeResize
 >
   <div style:padding-left="{$navigationVisibilityTween * 24}px">
     {#if titleInput !== undefined && titleInput !== null}
@@ -101,6 +104,7 @@
       </h1>
     {/if}
   </div>
+
   <div class="flex items-center mr-4">
     <slot name="workspace-controls" {width} />
     {#if showInspectorToggle}
@@ -124,11 +128,12 @@
         </svelte:fragment>
       </IconButton>
     {/if}
+
     <div class="pl-4">
       <slot name="cta" {width} />
     </div>
-    {#if showStatus}
-      <WorkspaceHeaderStatusSpinner />
-    {/if}
+    <div class="ml-2">
+      <WorkspaceHeaderStatusSpinner {applicationStatus} />
+    </div>
   </div>
 </header>

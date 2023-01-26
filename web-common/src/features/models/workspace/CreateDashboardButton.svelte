@@ -1,17 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
   import {
     addQuickMetricsToDashboardYAML,
     initBlankDashboardYAML,
@@ -24,12 +26,10 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { selectTimestampColumnFromSchema } from "@rilldata/web-local/lib/svelte-query/column-selectors";
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getName } from "../../entity-management/name-utils";
 
   export let modelName: string;
   export let hasError = false;
@@ -40,7 +40,6 @@
     modelName
   );
   $: model = $getModel.data?.entry?.model;
-  $: timestampColumns = selectTimestampColumnFromSchema(model?.schema);
   $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
 
   const queryClient = useQueryClient();
@@ -102,22 +101,18 @@
   }
 </script>
 
-<Tooltip alignment="right" distance={16} location="bottom">
-  <Button
-    disabled={!timestampColumns?.length}
-    on:click={handleCreateDashboard}
-    type="primary"
-  >
+<Tooltip alignment="right" distance={8} location="bottom">
+  <Button on:click={handleCreateDashboard} type="primary">
+    <IconSpaceFixer pullLeft pullRight={collapse}>
+      <Add />
+    </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
-    <Explore size="14px" /></Button
-  >
+  </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
-    {:else if timestampColumns?.length}
-      Generate a dashboard based on your model
     {:else}
-      Add a timestamp column to your model in order to generate a dashboard
+      Create a dashboard from this model
     {/if}
   </TooltipContent>
 </Tooltip>

@@ -9,10 +9,8 @@
   // We'll need a better solution than this!
   function captureKeydown(event) {
     // capture all events
-    if (event.code === "Tab" || event.code === "Space") {
-      document.activeElement.blur();
-      event.preventDefault();
-    }
+    document.activeElement.blur();
+    event.preventDefault();
   }
 
   let classes =

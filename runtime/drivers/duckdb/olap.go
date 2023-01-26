@@ -2,7 +2,9 @@ package duckdb
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -51,12 +53,16 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		}
 		defer func() { _ = release() }()
 
-		prepared, err := conn.PrepareContext(ctx, stmt.Query) // TODO: Find way to validate with args
+		// TODO: Find way to validate with args
+
+		name := uuid.NewString()
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, prepared.Close()
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
+		return nil, err
 	}
 
 	// Acquire connection

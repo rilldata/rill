@@ -1,34 +1,29 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
-  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
+  import { IconButton } from "@rilldata/web-common/components/button";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
-  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
   import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
+    appQueryStatusStore,
+    runtimeStore,
+  } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
+  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
+  import { useGetDashboardsForModel } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getContext } from "svelte";
+  import { renameFileArtifact } from "../../entity-management/actions";
   import {
     getFilePathFromNameAndType,
     getRouteFromName,
-  } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
-  import CreateDashboardButton from "./CreateDashboardButton.svelte";
+  } from "../../entity-management/entity-mappers";
+  import { isDuplicateName } from "../../entity-management/name-utils";
+  import { useAllNames } from "../../entity-management/selectors";
+  import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
 
@@ -45,12 +40,10 @@
 
   let contextMenuOpen = false;
 
-  const onExport = async (exportExtension: "csv" | "parquet") => {
-    // TODO: how do we handle errors ?
-    window.open(
-      `${RuntimeUrl}/v1/instances/${$runtimeStore.instanceId}/table/${modelName}/export/${exportExtension}`
-    );
-  };
+  $: availableDashboards = useGetDashboardsForModel(
+    runtimeInstanceId,
+    modelName
+  );
 
   function formatModelName(str) {
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
@@ -65,7 +58,7 @@
       e.target.value = modelName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, $allNamesQuery.data)) {
+    if (isDuplicateName(e.target.value, modelName, $allNamesQuery.data)) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -98,7 +91,7 @@
 <WorkspaceHeader
   let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-  showStatus={false}
+  appRunning={$appQueryStatusStore}
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -117,66 +110,14 @@
     </IconButton>
   </svelte:fragment>
   <svelte:fragment slot="cta">
+    {@const collapse = width < 800}
     <PanelCTA side="right">
-      <Tooltip
-        alignment="middle"
-        distance={16}
-        location="left"
-        suppress={contextMenuOpen}
-      >
-        <!-- attach floating element right here-->
-        <WithTogglableFloatingElement
-          alignment="start"
-          bind:active={contextMenuOpen}
-          distance={16}
-          let:toggleFloatingElement
-          location="left"
-        >
-          <Button
-            disabled={modelHasError}
-            on:click={toggleFloatingElement}
-            type="secondary"
-          >
-            <ResponsiveButtonText collapse={width < 800}>
-              Export Results
-            </ResponsiveButtonText>
-            <Export size="14px" />
-          </Button>
-          <Menu
-            dark
-            on:click-outside={toggleFloatingElement}
-            on:escape={toggleFloatingElement}
-            slot="floating-element"
-          >
-            <MenuItem
-              on:select={() => {
-                toggleFloatingElement();
-                onExport("parquet");
-              }}
-            >
-              Export as Parquet
-            </MenuItem>
-            <MenuItem
-              on:select={() => {
-                toggleFloatingElement();
-                onExport("csv");
-              }}
-            >
-              Export as CSV
-            </MenuItem>
-          </Menu>
-        </WithTogglableFloatingElement>
-        <TooltipContent slot="tooltip-content">
-          {#if modelHasError}Fix the errors in your model to export
-          {:else}
-            Export the modeled data as a file
-          {/if}
-        </TooltipContent>
-      </Tooltip>
-      <CreateDashboardButton
-        collapse={width < 800}
-        hasError={modelHasError}
+      <ModelWorkspaceCTAs
+        availableDashboards={$availableDashboards?.data}
+        suppressTooltips={contextMenuOpen}
         {modelName}
+        {collapse}
+        {modelHasError}
       />
     </PanelCTA>
   </svelte:fragment>

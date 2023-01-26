@@ -1,7 +1,7 @@
 import {
-  ColumnConfig,
   CellConfigInput,
   CellConfigSelector,
+  ColumnConfig,
 } from "../table-editable/ColumnConfig";
 
 export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
@@ -27,7 +27,8 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
       ),
     },
     {
-      name: "Description",
+      name: "description",
+      label: "Description",
       headerTooltip:
         "A human readable description of this dimension (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),

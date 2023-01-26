@@ -17,6 +17,7 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import {
     MetricsExplorerEntity,
@@ -86,6 +87,9 @@
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
 
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
+
   $: if (
     sortByColumn &&
     sortDirection &&
@@ -121,24 +125,34 @@
       });
     }
 
+    let topListParams = {
+      dimensionName: dimensionName,
+      measureNames: selectedMeasureNames,
+      limit: "250",
+      offset: "0",
+      sort: [
+        {
+          name: sortByColumn,
+          ascending: sortDirection === "asc" ? true : false,
+        },
+      ],
+      filter: filterData,
+    };
+
+    if (hasTimeSeries) {
+      topListParams = {
+        ...topListParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
+
     topListQuery = useRuntimeServiceMetricsViewToplist(
       instanceId,
       metricViewName,
-      {
-        dimensionName: dimensionName,
-        measureNames: selectedMeasureNames,
-        limit: "250",
-        offset: "0",
-        sort: [
-          {
-            name: sortByColumn,
-            ascending: sortDirection === "asc" ? true : false,
-          },
-        ],
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-        filter: filterData,
-      }
+      topListParams
     );
   }
 
@@ -149,14 +163,20 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    if (hasTimeSeries) {
+      totalsQueryParams = {
+        ...totalsQueryParams,
+        ...{
+          timeStart: metricsExplorer.selectedTimeRange?.start,
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
+        },
+      };
+    }
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 

@@ -85,6 +85,7 @@
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nullPercentage?.nullCount}
     slot="nullity"
     totalRows={$nullPercentage?.totalRows}

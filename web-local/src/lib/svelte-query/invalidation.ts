@@ -1,3 +1,5 @@
+import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
@@ -5,8 +7,6 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get } from "svelte/store";
 

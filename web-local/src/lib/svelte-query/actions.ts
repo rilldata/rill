@@ -1,30 +1,11 @@
-import { goto } from "$app/navigation";
-import { notifications } from "@rilldata/web-common/components/notifications";
-import { EntityType } from "@rilldata/web-common/lib/entity";
+import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   RpcStatus,
   runtimeServiceGetCatalogEntry,
   runtimeServicePutFileAndReconcile,
-  useRuntimeServiceListFiles,
-  V1DeleteFileAndReconcileResponse,
   V1ReconcileError,
-  V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
-import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-stores/app-store";
-import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-import {
-  invalidateAfterReconcile,
-  removeEntityQueries,
-} from "@rilldata/web-local/lib/svelte-query/invalidation";
-import {
-  getFilePathFromNameAndType,
-  getLabel,
-  getNameFromFile,
-  getRouteFromName,
-} from "@rilldata/web-local/lib/util/entity-mappers";
-import { getNextEntityName } from "@rilldata/web-local/lib/util/getNextEntityId";
-import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 import {
   MutationFunction,
   useMutation,
@@ -34,91 +15,6 @@ import {
   addQuickMetricsToDashboardYAML,
   initBlankDashboardYAML,
 } from "../application-state-stores/metrics-internal-store";
-
-export function useAllNames(instanceId: string) {
-  return useRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    },
-    {
-      query: {
-        select: (data) =>
-          data.paths?.map((path) => getNameFromFile(path)) ?? [],
-      },
-    }
-  );
-}
-
-export function isDuplicateName(name: string, names: Array<string>) {
-  return names.findIndex((n) => n.toLowerCase() === name.toLowerCase()) >= 0;
-}
-
-export async function renameFileArtifact(
-  queryClient: QueryClient,
-  instanceId: string,
-  fromName: string,
-  toName: string,
-  type: EntityType,
-  renameMutation: UseMutationResult<V1RenameFileAndReconcileResponse>
-) {
-  const resp = await renameMutation.mutateAsync({
-    data: {
-      instanceId,
-      fromPath: getFilePathFromNameAndType(fromName, type),
-      toPath: getFilePathFromNameAndType(toName, type),
-    },
-  });
-  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
-  httpRequestQueue.removeByName(fromName);
-  notifications.send({
-    message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
-  });
-
-  removeEntityQueries(
-    queryClient,
-    instanceId,
-    getFilePathFromNameAndType(fromName, type)
-  );
-  invalidateAfterReconcile(queryClient, instanceId, resp);
-}
-
-export async function deleteFileArtifact(
-  queryClient: QueryClient,
-  instanceId: string,
-  name: string,
-  type: EntityType,
-  deleteMutation: UseMutationResult<V1DeleteFileAndReconcileResponse>,
-  activeEntity: ActiveEntity,
-  names: Array<string>,
-  showNotification = true
-) {
-  const path = getFilePathFromNameAndType(name, type);
-  try {
-    const resp = await deleteMutation.mutateAsync({
-      data: {
-        instanceId,
-        path,
-      },
-    });
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
-    httpRequestQueue.removeByName(name);
-    if (showNotification) {
-      notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
-    }
-
-    removeEntityQueries(queryClient, instanceId, path);
-
-    invalidateAfterReconcile(queryClient, instanceId, resp);
-    if (activeEntity?.name === name) {
-      goto(getRouteFromName(getNextEntityName(names, name), type));
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
 
 export interface CreateDashboardFromSourceRequest {
   instanceId: string;

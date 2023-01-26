@@ -3,8 +3,8 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/lib/entity";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceMetricsViewTimeSeries,
@@ -22,10 +22,9 @@
     metricsExplorerStore,
   } from "../../../../application-state-stores/explorer-stores";
   import { convertTimestampPreview } from "../../../../util/convertTimestampPreview";
-  import { NicelyFormattedTypes } from "../../../../util/humanize-numbers";
   import {
-    formatDateByInterval,
     addGrains,
+    formatDateByInterval,
   } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
@@ -54,15 +53,17 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    const totalsQueryParams = {
+      measureNames: selectedMeasureNames,
+      filter: metricsExplorer?.filters,
+      timeStart: metricsExplorer.selectedTimeRange?.start,
+      timeEnd: metricsExplorer.selectedTimeRange?.end,
+    };
+
     totalsQuery = useRuntimeServiceMetricsViewTotals(
       instanceId,
       metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        filter: metricsExplorer?.filters,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-      }
+      totalsQueryParams
     );
   }
 
@@ -165,15 +166,17 @@
       </div>
       <!-- top axis element -->
       <div />
-      <SimpleDataGraphic
-        height={32}
-        top={34}
-        bottom={0}
-        xMin={startValue}
-        xMax={endValue}
-      >
-        <Axis superlabel side="top" />
-      </SimpleDataGraphic>
+      {#if metricsExplorer?.selectedTimeRange}
+        <SimpleDataGraphic
+          height={32}
+          top={34}
+          bottom={0}
+          xMin={startValue}
+          xMax={endValue}
+        >
+          <Axis superlabel side="top" />
+        </SimpleDataGraphic>
+      {/if}
     </div>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
@@ -198,13 +201,12 @@
           </svelte:fragment>
         </MeasureBigNumber>
         <div class="time-series-body" style:height="125px">
-          {#if $timeSeriesQuery.isError}
+          {#if $timeSeriesQuery?.isError}
             <div class="p-5"><CrossIcon /></div>
           {:else if formattedData}
             <TimeSeriesBody
               bind:mouseoverValue
-              formatPreset={NicelyFormattedTypes[measure?.format] ||
-                NicelyFormattedTypes.HUMANIZE}
+              formatPreset={measure?.format}
               data={formattedData}
               accessor={measure.name}
               mouseover={point}

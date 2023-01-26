@@ -7,7 +7,6 @@
     addQuickMetricsToDashboardYAML,
     MetricsInternalRepresentation,
   } from "../../application-state-stores/metrics-internal-store";
-  import { selectTimestampColumnFromSchema } from "../../svelte-query/column-selectors";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   export let selectedModel: V1Model;
@@ -20,8 +19,6 @@
   async function handleGenerateClick(yaml: string) {
     // if the timeseries field is empty or does not exist,
     // add in the first timestamp column available.
-    // if no timestamp column available, we currently do nothing in this case.
-    // later, we'll remove the requiremen t for a timeseries field.
     const newYAMLString = addQuickMetricsToDashboardYAML(yaml, selectedModel);
     handlePutAndMigrate(newYAMLString);
 
@@ -36,20 +33,10 @@
     closeModal();
   }
 
-  let timestampColumns: Array<string>;
-  $: if (selectedModel) {
-    timestampColumns = selectTimestampColumnFromSchema(selectedModel?.schema);
-  } else {
-    timestampColumns = [];
-  }
-
   let tooltipText = "";
   let buttonDisabled = true;
   $: if ($metricsInternalRep.getMetricKey("model") === "") {
     tooltipText = "Select a model before populating these metrics";
-    buttonDisabled = true;
-  } else if (timestampColumns.length === 0) {
-    tooltipText = "Cannot create metrics for a model with no timestamps";
     buttonDisabled = true;
   } else {
     tooltipText = undefined;
@@ -102,8 +89,8 @@
       {:else}
         <div style="max-width: 30em;">
           Add initial measure <em>events per time period</em>, and add all
-          categorical columns as slicing dimensions. If no timestamp is
-          selected, the first time column from the model will be used.
+          categorical columns as slicing dimensions. If timestamp is present,
+          the first time column from the model will be selected.
           <br /> <strong>Warning:</strong> Replaces current measures and dimensions.
         </div>
       {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     useRuntimeServiceGetDescriptiveStatistics,
     useRuntimeServiceGetRugHistogram,
@@ -99,12 +100,17 @@
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
   <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
     slot="nullity"
     totalRows={$nulls?.totalRows}
     {type}
   />
-  <div class="pl-10 pr-4 py-4" slot="details">
+  <div
+    class="pl-10 pr-4 py-4"
+    slot="details"
+    class:hidden={INTERVALS.has(type)}
+  >
     <NumericPlot
       data={$numericHistogram.data}
       rug={$rug?.data}

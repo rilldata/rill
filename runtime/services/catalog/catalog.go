@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -25,6 +26,7 @@ type Service struct {
 
 	logger      *zap.Logger
 	hasMigrated bool
+	lock        sync.Mutex
 }
 
 func NewService(

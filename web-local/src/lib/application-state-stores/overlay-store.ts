@@ -27,6 +27,7 @@ export function resetQuickStartDashboardOverlay() {
 
 interface Overlay {
   title: string;
+  message?: string;
 }
 
 export const overlay = writable<Overlay>(null);
