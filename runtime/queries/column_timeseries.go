@@ -384,7 +384,11 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 }
 
 func addStruct(v *structpb.Struct, results *[]*runtimev1.TimeSeriesValue, key, value string) {
-	s := &runtimev1.TimeSeriesValue{}
+	s := &runtimev1.TimeSeriesValue{
+		Records: &structpb.Struct{
+			Fields: map[string]*structpb.Value{},
+		},
+	}
 
 	s.Ts = timestamppb.New(time.UnixMilli(int64(v.Fields[key].GetNumberValue())))
 	s.Records.Fields["count"] = v.Fields[value]
