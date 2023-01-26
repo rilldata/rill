@@ -11,9 +11,9 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import MetricsDefinitionExploreMetricsButton from "../../metrics-definition/MetricsDefinitionExploreMetricsButton.svelte";
-  import WorkspaceHeader from "../core/WorkspaceHeader.svelte";
+  import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
 
   export let metricsDefName;
   export let metricsInternalRep;
@@ -66,7 +66,7 @@
   showInspectorToggle={false}
 >
   <MetricsIcon slot="icon" />
-  <MetricsDefinitionExploreMetricsButton
+  <MetricsExploreMetricsButton
     {metricsDefName}
     {metricsInternalRep}
     slot="cta"

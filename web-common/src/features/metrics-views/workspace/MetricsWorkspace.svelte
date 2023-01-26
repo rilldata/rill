@@ -12,21 +12,21 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { SelectorOption } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
+  import { WorkspaceContainer } from "@rilldata/web-local/lib/components/workspace";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { createInternalRepresentation } from "../../../application-state-stores/metrics-internal-store";
-  import { initDimensionColumns } from "../../metrics-definition/DimensionColumns";
-  import { initMeasuresColumns } from "../../metrics-definition/MeasuresColumns";
-  import MetricsDefinitionGenerateButton from "../../metrics-definition/MetricsDefinitionGenerateButton.svelte";
-  import LayoutManager from "../../metrics-definition/MetricsDesignerLayoutManager.svelte";
-  import type { SelectorOption } from "../../table-editable/ColumnConfig";
-  import WorkspaceContainer from "../core/WorkspaceContainer.svelte";
-  import MetricsDefDisplayNameInput from "./MetricsDefDisplayNameInput.svelte";
-  import MetricsDefEntityTable from "./MetricsDefEntityTable.svelte";
-  import MetricsDefModelSelector from "./MetricsDefModelSelector.svelte";
-  import MetricsDefTimeColumnSelector from "./MetricsDefTimeColumnSelector.svelte";
-  import MetricsDefWorkspaceHeader from "./MetricsDefWorkspaceHeader.svelte";
+  import { initDimensionColumns } from "../DimensionColumns";
+  import { initMeasuresColumns } from "../MeasuresColumns";
+  import { createInternalRepresentation } from "../metrics-internal-store";
+  import MetricsDisplayNameInput from "./MetricsDisplayNameInput.svelte";
+  import MetricsEntityTable from "./MetricsEntityTable.svelte";
+  import MetricsGenerateButton from "./MetricsGenerateButton.svelte";
+  import LayoutManager from "./MetricsLayoutManager.svelte";
+  import MetricsModelSelector from "./MetricsModelSelector.svelte";
+  import MetricsTimeColumnSelector from "./MetricsTimeColumnSelector.svelte";
+  import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
 
   // the runtime yaml string
   export let yaml: string;
@@ -148,11 +148,7 @@
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
-  <MetricsDefWorkspaceHeader
-    slot="header"
-    {metricsDefName}
-    {metricsInternalRep}
-  />
+  <MetricsWorkspaceHeader slot="header" {metricsDefName} {metricsInternalRep} />
 
   <div slot="body">
     <div
@@ -161,9 +157,9 @@
     >
       <div class="flex-none flex flex-row">
         <div>
-          <MetricsDefDisplayNameInput {metricsInternalRep} />
-          <MetricsDefModelSelector {metricsInternalRep} />
-          <MetricsDefTimeColumnSelector
+          <MetricsDisplayNameInput {metricsInternalRep} />
+          <MetricsModelSelector {metricsInternalRep} />
+          <MetricsTimeColumnSelector
             selectedModel={model}
             {metricsInternalRep}
           />
@@ -174,7 +170,7 @@
               {metricsSourceSelectionError}
             </Callout>
           {:else}
-            <MetricsDefinitionGenerateButton
+            <MetricsGenerateButton
               handlePutAndMigrate={callPutAndMigrate}
               selectedModel={model}
               {metricsInternalRep}
@@ -188,7 +184,7 @@
         class="flex-1"
       >
         <LayoutManager let:topResizeCallback let:bottomResizeCallback>
-          <MetricsDefEntityTable
+          <MetricsEntityTable
             slot="top-item"
             resizeCallback={topResizeCallback}
             label={"Measures"}
@@ -201,7 +197,7 @@
             addButtonId={"add-measure-button"}
           />
 
-          <MetricsDefEntityTable
+          <MetricsEntityTable
             slot="bottom-item"
             resizeCallback={bottomResizeCallback}
             label={"Dimensions"}
