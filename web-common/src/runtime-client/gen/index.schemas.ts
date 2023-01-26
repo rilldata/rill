@@ -449,6 +449,7 @@ export interface V1NumericSummary {
 
 export interface V1Model {
   dialect?: ModelDialect;
+  materialize?: boolean;
   name?: string;
   schema?: V1StructType;
   sql?: string;

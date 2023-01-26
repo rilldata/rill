@@ -1807,6 +1807,9 @@ definitions:
       dialect:
         $ref: '#/definitions/ModelDialect'
         title: Dialect of the SQL statement
+      materialize:
+        type: boolean
+        title: To materialize model or not
       name:
         type: string
         title: Name of the model
