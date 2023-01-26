@@ -351,16 +351,7 @@ func (m *Model) validate(all bool) error {
 
 	// no validation rules for Sql
 
-	if _, ok := Model_Dialect_name[int32(m.GetDialect())]; !ok {
-		err := ModelValidationError{
-			field:  "Dialect",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Dialect
 
 	if all {
 		switch v := interface{}(m.GetSchema()).(type) {

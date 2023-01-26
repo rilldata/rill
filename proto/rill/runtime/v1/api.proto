@@ -789,7 +789,7 @@ message EstimateRollupIntervalRequest {
 message EstimateRollupIntervalResponse {
   google.protobuf.Timestamp start = 1;
   google.protobuf.Timestamp end = 2;
-  TimeGrain interval = 3 [(validate.rules).enum.defined_only = true];
+  TimeGrain interval = 3;
 }
 
 message ProfileColumnSummary {
@@ -936,7 +936,7 @@ enum TimeGrain {
 
 // Response for RuntimeService.EstimateSmallestTimeGrain
 message EstimateSmallestTimeGrainResponse {
-  TimeGrain time_grain = 1 [(validate.rules).enum.defined_only = true];
+  TimeGrain time_grain = 1;
 }
 
 // Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name

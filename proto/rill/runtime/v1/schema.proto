@@ -1,6 +1,5 @@
 syntax = "proto3";
 package rill.runtime.v1;
-import "validate/validate.proto";
 
 // Type represents a data type in a schema
 message Type {
@@ -33,7 +32,7 @@ message Type {
     CODE_UUID = 24;
   }
   // Code designates the type
-  Code code = 1 [(validate.rules).enum.defined_only = true];
+  Code code = 1;
   // Nullable indicates whether null values are possible
   bool nullable = 2;
   // If code is CODE_ARRAY, array_element_type specifies the type of the array elements

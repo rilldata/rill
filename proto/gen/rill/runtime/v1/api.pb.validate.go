@@ -7385,16 +7385,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 		}
 	}
 
-	if _, ok := TimeGrain_name[int32(m.GetInterval())]; !ok {
-		err := EstimateRollupIntervalResponseValidationError{
-			field:  "Interval",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Interval
 
 	if len(errors) > 0 {
 		return EstimateRollupIntervalResponseMultiError(errors)
@@ -10027,16 +10018,7 @@ func (m *EstimateSmallestTimeGrainResponse) validate(all bool) error {
 
 	var errors []error
 
-	if _, ok := TimeGrain_name[int32(m.GetTimeGrain())]; !ok {
-		err := EstimateSmallestTimeGrainResponseValidationError{
-			field:  "TimeGrain",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for TimeGrain
 
 	if len(errors) > 0 {
 		return EstimateSmallestTimeGrainResponseMultiError(errors)
