@@ -10,8 +10,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/server/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
@@ -139,21 +139,38 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}()
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf(`SELECT %s as ts, * EXCLUDE(%s) FROM %s`, tsAlias, tsAlias, temporaryTableName),
+			Query:    fmt.Sprintf(`SELECT * FROM %s`, temporaryTableName),
 			Priority: priority,
 		})
 		if err != nil {
 			return err
 		}
 
-		results, err := rowsToData(rows)
-		meta := structTypeToMetricsViewColumn(rows.Schema)
-		rows.Close()
+		structs, err := rowsToData(rows)
 		if err != nil {
 			return err
 		}
 
-		var sparkValues []*structpb.Struct
+		results := make([]*runtimev1.TimeSeriesValue, 0, len(structs))
+		for _, s := range structs {
+			t, err := time.Parse(time.RFC3339, s.Fields[tsAlias].GetStringValue())
+			if err != nil {
+				return err
+			}
+
+			results = append(results, &runtimev1.TimeSeriesValue{
+				Ts:      timestamppb.New(t),
+				Bin:     s.Fields["bin"].GetNumberValue(),
+				Records: s,
+			})
+			delete(s.Fields, tsAlias)
+			delete(s.Fields, "bin")
+		}
+
+		meta := structTypeToMetricsViewColumn(rows.Schema)
+		rows.Close()
+
+		var sparkValues []*runtimev1.TimeSeriesValue
 		if q.Pixels != 0 {
 			sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
 			if err != nil {
@@ -257,7 +274,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	tableName string,
 	timestampColumnName string,
 	valueColumn string,
-) ([]*structpb.Struct, error) {
+) ([]*runtimev1.TimeSeriesValue, error) {
 	safeTimestampColumnName := safeName(timestampColumnName)
 	tc := &TableCardinality{
 		TableName: tableName,
@@ -282,7 +299,23 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 			return nil, err
 		}
 
-		return results, nil
+		tsv := make([]*runtimev1.TimeSeriesValue, 0, len(results))
+		for _, r := range results {
+			t, err := time.Parse(time.RFC3339Nano, r.Fields["ts"].GetStringValue())
+			if err != nil {
+				return nil, err
+			}
+
+			tsv = append(tsv, &runtimev1.TimeSeriesValue{
+				Ts:      timestamppb.New(t),
+				Bin:     r.Fields["bin"].GetNumberValue(),
+				Records: r,
+			})
+			delete(r.Fields, "ts")
+			delete(r.Fields, "bin")
+		}
+
+		return tsv, nil
 	}
 
 	sql := ` -- extract unix time
@@ -330,7 +363,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 		return nil, err
 	}
 
-	results := make([]*structpb.Struct, 0, len(aggs)*4)
+	results := make([]*runtimev1.TimeSeriesValue, 0, len(aggs)*4)
 	for _, v := range aggs {
 		addStruct(v, &results, "min_t", "argmin_tv")
 		addStruct(v, &results, "argmin_vt", "min_v")
@@ -350,19 +383,12 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	return results, nil
 }
 
-func addStruct(v *structpb.Struct, results *[]*structpb.Struct, key, value string) {
-	s := &structpb.Struct{
-		Fields: make(map[string]*structpb.Value, 3),
-	}
+func addStruct(v *structpb.Struct, results *[]*runtimev1.TimeSeriesValue, key, value string) {
+	s := &runtimev1.TimeSeriesValue{}
 
-	ts, err := pbutil.ToValue(time.UnixMilli(int64(v.Fields[key].GetNumberValue())))
-	if err != nil {
-		panic(err)
-	}
-
-	s.Fields["ts"] = ts
-	s.Fields["count"] = v.Fields[value]
-	s.Fields["bin"] = v.Fields["bin"]
+	s.Ts = timestamppb.New(time.UnixMilli(int64(v.Fields[key].GetNumberValue())))
+	s.Records.Fields["count"] = v.Fields[value]
+	s.Bin = v.Fields["bin"].GetNumberValue()
 	*results = append(*results, s)
 }
 

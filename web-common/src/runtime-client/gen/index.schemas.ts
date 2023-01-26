@@ -202,20 +202,24 @@ export interface V1TopK {
   entries?: TopKEntry[];
 }
 
+export type V1TimeSeriesValueRecords = { [key: string]: any };
+
+export interface V1TimeSeriesValue {
+  bin?: number;
+  records?: V1TimeSeriesValueRecords;
+  ts?: string;
+}
+
 export interface V1TimeSeriesTimeRange {
   end?: string;
   interval?: V1TimeGrain;
   start?: string;
 }
 
-export type V1TimeSeriesResponseSparkItem = { [key: string]: any };
-
-export type V1TimeSeriesResponseResultsItem = { [key: string]: any };
-
 export interface V1TimeSeriesResponse {
-  results?: V1TimeSeriesResponseResultsItem[];
+  results?: V1TimeSeriesValue[];
   sampleSize?: number;
-  spark?: V1TimeSeriesResponseSparkItem[];
+  spark?: V1TimeSeriesValue[];
   timeRange?: V1TimeSeriesTimeRange;
 }
 
@@ -463,7 +467,10 @@ export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
 }
 
-export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
+export interface V1MetricsViewTimeSeriesResponse {
+  data?: V1TimeSeriesValue[];
+  meta?: V1MetricsViewColumn[];
+}
 
 export interface V1MetricsViewSort {
   ascending?: boolean;
@@ -479,11 +486,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  data?: V1MetricsViewTimeSeriesResponseDataItem[];
-  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {

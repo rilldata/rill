@@ -1753,7 +1753,7 @@ definitions:
       data:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
       meta:
         type: array
         items:
@@ -2172,14 +2172,14 @@ definitions:
       results:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
       sampleSize:
         type: integer
         format: int32
       spark:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
   v1TimeSeriesTimeRange:
@@ -2191,6 +2191,17 @@ definitions:
       interval:
         $ref: '#/definitions/v1TimeGrain'
       start:
+        type: string
+        format: date-time
+  v1TimeSeriesValue:
+    type: object
+    properties:
+      bin:
+        type: number
+        format: double
+      records:
+        type: object
+      ts:
         type: string
         format: date-time
   v1TopK:

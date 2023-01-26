@@ -730,7 +730,7 @@ message MetricsViewTimeSeriesRequest {
 // Response message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
-  repeated google.protobuf.Struct data = 2;
+  repeated TimeSeriesValue data = 2;
 }
 
 // Request message for RuntimeService.MetricsViewTotals
@@ -1024,8 +1024,8 @@ enum TimeRangeName {
 }
 
 message TimeSeriesResponse {
-  repeated google.protobuf.Struct results = 1;
-  repeated google.protobuf.Struct spark = 2;
+  repeated TimeSeriesValue results = 1;
+  repeated TimeSeriesValue spark = 2;
   TimeSeriesTimeRange time_range = 3;
   int32 sample_size = 4;
 }
@@ -1035,9 +1035,9 @@ message GenerateTimeSeriesResponse {
 }
 
 message TimeSeriesValue {
-  string ts = 1;
-  optional double bin = 2;
-  map<string, double> records = 3;
+  google.protobuf.Timestamp ts = 1;
+  double bin = 2;
+  google.protobuf.Struct records = 3;
 }
 
 // **********

@@ -94,11 +94,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	r := tsq.Result
 
-	for _, v := range r.Data.Results {
-		v.Fields[mv.TimeDimension] = v.Fields["ts"]
-		delete(v.Fields, "ts")
-	}
-
 	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
 		Meta: r.Meta,
 		Data: r.Data.Results,

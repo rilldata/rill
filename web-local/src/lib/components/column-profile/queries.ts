@@ -149,21 +149,21 @@ export function getTimeSeriesAndSpark(
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
           $query?.data?.rollup?.results.map((di) => {
-            Object.keys(di).forEach((k) => {
-              di[k] = di[k] === null ? 0 : di[k];
-            });
-            return di;
-          }) || [],
-          "ts"
+            const next = { ...di, count: di.records.count };
+            if (next.count == null || !isFinite(next.count)) {
+              next.count = 0;
+            }
+            return next;
+          }) || []
         ),
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark.map((di) => {
-            Object.keys(di).forEach((k) => {
-              di[k] = di[k] === null ? 0 : di[k];
-            });
-            return di;
-          }) || [],
-          "ts"
+            const next = { ...di, count: di.records.count };
+            if (next.count == null || !isFinite(next.count)) {
+              next.count = 0;
+            }
+            return next;
+          }) || []
         ),
       };
     }
