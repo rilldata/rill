@@ -14,9 +14,9 @@
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import { parseDocument } from "yaml";
+  import DashboardAssets from "../../../../../web-common/src/features/dashboards/DashboardAssets.svelte";
   import { DEFAULT_NAV_WIDTH } from "../../application-config";
   import { drag } from "../../drag";
-  import MetricsDefinitionAssets from "./dashboards/MetricsDefinitionAssets.svelte";
   import Footer from "./Footer.svelte";
   import { shorthandTitle } from "./shorthand-title";
 
@@ -138,7 +138,7 @@
           <TableAssets />
           <ModelAssets />
         {/if}
-        <MetricsDefinitionAssets />
+        <DashboardAssets />
       </div>
       <Footer />
     </div>

@@ -13,6 +13,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -39,8 +40,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { useCreateDashboardFromSource } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
@@ -49,8 +48,10 @@
   import { getName, isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
   import { useModelNames } from "../../models/selectors";
+  import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";
+
   export let sourceName: string;
   export let path: string;
   export let embedded = false;

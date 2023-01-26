@@ -13,9 +13,9 @@
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
   import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
-  import { useGetDashboardsForModel } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
+  import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
     getFilePathFromNameAndType,
