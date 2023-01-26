@@ -47,7 +47,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 
 func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
 	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query:    fmt.Sprintf("select * from %s limit %d", req.TableName, req.Limit),
+		Query:    fmt.Sprintf("select * from %q limit %d", req.TableName, req.Limit),
 		Priority: int(req.Priority),
 	})
 	if err != nil {
