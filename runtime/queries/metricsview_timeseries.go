@@ -20,7 +20,7 @@ type MetricsViewTimeSeries struct {
 	Offset          int64                        `json:"offset,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	TimeGranularity string                       `json:"time_granularity,omitempty"`
+	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -82,7 +82,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    q.TimeStart,
 			End:      q.TimeEnd,
-			Interval: toTimeGrain(q.TimeGranularity),
+			Interval: q.TimeGranularity,
 		},
 		Measures: measures,
 		Filters:  q.Filter,

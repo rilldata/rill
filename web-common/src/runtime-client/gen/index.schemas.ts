@@ -116,7 +116,7 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
   priority?: number;
   timeEnd?: string;
-  timeGranularity?: string;
+  timeGranularity?: V1TimeGrain;
   timeStart?: string;
 };
 

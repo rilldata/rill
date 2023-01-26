@@ -406,7 +406,7 @@ paths:
                 type: string
                 format: date-time
               timeGranularity:
-                type: string
+                $ref: '#/definitions/v1TimeGrain'
               timeStart:
                 type: string
                 format: date-time

@@ -68,6 +68,6 @@ func toTimeGrain(val string) runtimev1.TimeGrain {
 	case "YEAR":
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
 	default:
-		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+		panic(fmt.Errorf("unconvertable time grain specifier: %v", val))
 	}
 }

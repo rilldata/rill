@@ -26,6 +26,7 @@
   import {
     formatDateByInterval,
     addGrains,
+    toV1TimeGrain,
   } from "../time-controls/time-range-utils";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
@@ -86,7 +87,7 @@
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+        timeGranularity: toV1TimeGrain(metricsExplorer.selectedTimeRange?.interval),
       }
     );
   }
