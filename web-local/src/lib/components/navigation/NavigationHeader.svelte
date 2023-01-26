@@ -11,6 +11,7 @@
   export let toggleText = "models";
   /** The CSS ID used for tests for the context button */
   export let contextButtonID: string = undefined;
+  export let canAddAsset = true;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -25,16 +26,18 @@
       <slot />
     </div>
   </CollapsibleSectionTitle>
-  <ContextButton
-    id={contextButtonID}
-    {tooltipText}
-    on:click={() => {
-      dispatch("add");
-    }}
-    width={24}
-    height={24}
-    rounded
-  >
-    <AddIcon />
-  </ContextButton>
+  {#if canAddAsset}
+    <ContextButton
+      id={contextButtonID}
+      {tooltipText}
+      on:click={() => {
+        dispatch("add");
+      }}
+      width={24}
+      height={24}
+      rounded
+    >
+      <AddIcon />
+    </ContextButton>
+  {/if}
 </div>

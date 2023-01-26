@@ -19,6 +19,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	var readonly bool
 	var noUI bool
 	var noOpen bool
+	var strict bool
 	var logFormat string
 
 	startCmd := &cobra.Command{
@@ -44,7 +45,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 				}
 			}
 
-			err = app.Reconcile()
+			err = app.Reconcile(strict)
 			if err != nil {
 				return fmt.Errorf("reconcile project: %w", err)
 			}
@@ -68,6 +69,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 
 	return startCmd

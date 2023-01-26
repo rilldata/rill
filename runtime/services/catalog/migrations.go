@@ -82,6 +82,9 @@ type ArtifactError struct {
 // TODO: support loading existing projects
 
 func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	result := NewReconcileResult()
 
 	// collect repos and create migration items
@@ -265,12 +268,21 @@ func (s *Service) runMigrationItems(
 					result.Errors = append(result.Errors, recErr)
 				}
 			case MigrationCreate:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.createInStore(ctx, item)
 				result.AddedObjects = append(result.AddedObjects, item.CatalogInFile)
 			case MigrationRename:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.renameInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationUpdate:
+				if item.CatalogInFile == nil {
+					break
+				}
 				err = s.updateInStore(ctx, item)
 				result.UpdatedObjects = append(result.UpdatedObjects, item.CatalogInFile)
 			case MigrationReportUpdate:
@@ -316,8 +328,8 @@ func (s *Service) runMigrationItems(
 					FilePath: item.Path,
 				})
 			}
-			if item.CatalogInFile != nil {
-				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
+			if item.CatalogInStore != nil {
+				err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 				if err != nil {
 					// shouldn't ideally happen
 					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
@@ -408,7 +420,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+			return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err

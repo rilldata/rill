@@ -9,11 +9,13 @@
   export let type: string;
   export let nullCount: number;
   export let totalRows: number;
+  export let isFetching: boolean;
 
-  $: percentage = nullCount / totalRows;
+  let percentage;
+  $: if (!isFetching) percentage = nullCount / totalRows;
 </script>
 
-{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage)}
+{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage) && percentage <= 1}
   <Tooltip location="right" alignment="center" distance={8}>
     <BarAndLabel
       compact

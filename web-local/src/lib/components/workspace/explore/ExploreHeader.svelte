@@ -10,11 +10,10 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { useMetaQuery } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { metricsExplorerStore } from "../../../application-state-stores/explorer-stores";
   import { navigationEvent } from "../../../metrics/initMetrics";
+  import { useMetaQuery } from "../../../svelte-query/dashboards";
   import Filters from "./filters/Filters.svelte";
   import TimeControls from "./time-controls/TimeControls.svelte";
 
@@ -23,22 +22,6 @@
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
-
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
-
-  let displayName;
-  // TODO: move this "sync" to a more relevant component
-  $: if (
-    metricViewName &&
-    $metaQuery &&
-    metricViewName === $metaQuery.data?.name
-  ) {
-    if (!$metaQuery.data?.measures?.length) {
-      goto(`/dashboard/${metricViewName}/edit`);
-    }
-    displayName = $metaQuery.data.label;
-    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
-  }
 
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
@@ -51,6 +34,10 @@
       MetricsEventScreenName.MetricsDefinition
     );
   };
+
+  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: displayName = $metaQuery.data?.label;
+  $: isEditableDashboard = $runtimeStore.readOnly === false;
 </script>
 
 <section
@@ -72,16 +59,18 @@
       </div>
     </h1>
     <!-- top right CTAs -->
-    <div style="flex-shrink: 0;">
-      <Tooltip distance={8}>
-        <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
-          Edit Metrics <MetricsIcon size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Edit this dashboard's metrics & settings
-        </TooltipContent>
-      </Tooltip>
-    </div>
+    {#if isEditableDashboard}
+      <div style="flex-shrink: 0;">
+        <Tooltip distance={8}>
+          <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+            Edit Metrics <MetricsIcon size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Edit this dashboard's metrics & settings
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    {/if}
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">

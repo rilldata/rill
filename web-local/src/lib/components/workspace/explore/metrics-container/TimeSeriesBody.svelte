@@ -25,10 +25,13 @@
 
   export let start;
   export let end;
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: string;
   export let data;
   export let accessor: string;
   export let yMin = 0;
+
+  $: formatPresetEnum =
+    (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
 
   // the recycled mouseover event, in case anyone else has one set
   export let mouseover = undefined;
@@ -293,7 +296,7 @@
         format={(value) =>
           formatPreset === NicelyFormattedTypes.NONE
             ? `${value}`
-            : humanizeDataType(value, formatPreset, {
+            : humanizeDataType(value, formatPresetEnum, {
                 excludeDecimalZeros: true,
               })}
       />
@@ -309,7 +312,7 @@
             : (value) =>
                 formatPreset === NicelyFormattedTypes.NONE
                   ? value
-                  : humanizeDataType(value, formatPreset)}
+                  : humanizeDataType(value, formatPresetEnum)}
         />
       {/if}
     </SimpleDataGraphic>
