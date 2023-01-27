@@ -1,5 +1,7 @@
 <script lang="ts">
   export let connector: string;
+
+  $: connector = connector == "local_file" ? "local" : connector;
 </script>
 
 <div
