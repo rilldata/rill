@@ -39,10 +39,9 @@ export function inferSourceName(connector: V1Connector, path: string) {
 
   if (!slug) return;
 
-  let fileName = slug.split(".").shift();
+  const fileName = slug.split(".").shift();
 
   if (!fileName) return;
 
-  fileName = fileName.replace(/\*/g, "");
   return sanitizeEntityName(fileName);
 }
