@@ -5700,11 +5700,41 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_MetricsViewToplistRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for MetricsViewName
 
 	// no validation rules for DimensionName
+
+	_MetricsViewToplistRequest_MeasureNames_Unique := make(map[string]struct{}, len(m.GetMeasureNames()))
+
+	for idx, item := range m.GetMeasureNames() {
+		_, _ = idx, item
+
+		if _, exists := _MetricsViewToplistRequest_MeasureNames_Unique[item]; exists {
+			err := MetricsViewToplistRequestValidationError{
+				field:  fmt.Sprintf("MeasureNames[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_MetricsViewToplistRequest_MeasureNames_Unique[item] = struct{}{}
+		}
+
+		// no validation rules for MeasureNames[idx]
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -5913,6 +5943,8 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewToplistRequestValidationError{}
 
+var _MetricsViewToplistRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on MetricsViewToplistResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -6105,66 +6137,60 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_MetricsViewTimeSeriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for MetricsViewName
 
-	if all {
-		switch v := interface{}(m.GetTimeStart()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
-					field:  "TimeStart",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+	_MetricsViewTimeSeriesRequest_MeasureNames_Unique := make(map[string]struct{}, len(m.GetMeasureNames()))
+
+	for idx, item := range m.GetMeasureNames() {
+		_, _ = idx, item
+
+		if _, exists := _MetricsViewTimeSeriesRequest_MeasureNames_Unique[item]; exists {
+			err := MetricsViewTimeSeriesRequestValidationError{
+				field:  fmt.Sprintf("MeasureNames[%v]", idx),
+				reason: "repeated value must contain unique items",
 			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
-					field:  "TimeStart",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+			if !all {
+				return err
 			}
+			errors = append(errors, err)
+		} else {
+			_MetricsViewTimeSeriesRequest_MeasureNames_Unique[item] = struct{}{}
 		}
-	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewTimeSeriesRequestValidationError{
-				field:  "TimeStart",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
+
+		// no validation rules for MeasureNames[idx]
 	}
 
-	if all {
-		switch v := interface{}(m.GetTimeEnd()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
-					field:  "TimeEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
-					field:  "TimeEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	if m.GetTimeStart() == nil {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "TimeStart",
+			reason: "value is required",
 		}
-	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewTimeSeriesRequestValidationError{
-				field:  "TimeEnd",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+		if !all {
+			return err
 		}
+		errors = append(errors, err)
+	}
+
+	if m.GetTimeEnd() == nil {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "TimeEnd",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for TimeGranularity
@@ -6280,6 +6306,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewTimeSeriesRequestValidationError{}
+
+var _MetricsViewTimeSeriesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on MetricsViewTimeSeriesResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -6474,9 +6502,39 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_MetricsViewTotalsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := MetricsViewTotalsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for MetricsViewName
+
+	_MetricsViewTotalsRequest_MeasureNames_Unique := make(map[string]struct{}, len(m.GetMeasureNames()))
+
+	for idx, item := range m.GetMeasureNames() {
+		_, _ = idx, item
+
+		if _, exists := _MetricsViewTotalsRequest_MeasureNames_Unique[item]; exists {
+			err := MetricsViewTotalsRequestValidationError{
+				field:  fmt.Sprintf("MeasureNames[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_MetricsViewTotalsRequest_MeasureNames_Unique[item] = struct{}{}
+		}
+
+		// no validation rules for MeasureNames[idx]
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -6646,6 +6704,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewTotalsRequestValidationError{}
+
+var _MetricsViewTotalsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on MetricsViewTotalsResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -7216,7 +7276,16 @@ func (m *EstimateRollupIntervalRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_EstimateRollupIntervalRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := EstimateRollupIntervalRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -7304,6 +7373,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EstimateRollupIntervalRequestValidationError{}
+
+var _EstimateRollupIntervalRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on EstimateRollupIntervalResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -9219,7 +9290,16 @@ func (m *GetTopKRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetTopKRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTopKRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -9308,6 +9388,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTopKRequestValidationError{}
+
+var _GetTopKRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on TopK with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
@@ -9463,7 +9545,16 @@ func (m *GetNullCountRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetNullCountRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetNullCountRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -9550,6 +9641,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetNullCountRequestValidationError{}
+
+var _GetNullCountRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on GetNullCountResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9677,7 +9770,16 @@ func (m *GetDescriptiveStatisticsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetDescriptiveStatisticsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetDescriptiveStatisticsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -9765,6 +9867,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetDescriptiveStatisticsRequestValidationError{}
+
+var _GetDescriptiveStatisticsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on NumericStatistics with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -9905,7 +10009,16 @@ func (m *EstimateSmallestTimeGrainRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_EstimateSmallestTimeGrainRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := EstimateSmallestTimeGrainRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -9994,6 +10107,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EstimateSmallestTimeGrainRequestValidationError{}
+
+var _EstimateSmallestTimeGrainRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on EstimateSmallestTimeGrainResponse with
 // the rules defined in the proto definition for this message. If any rules
@@ -10124,7 +10239,16 @@ func (m *GetNumericHistogramRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetNumericHistogramRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetNumericHistogramRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -10211,6 +10335,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetNumericHistogramRequestValidationError{}
+
+var _GetNumericHistogramRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on NumericHistogramBins with the rules
 // defined in the proto definition for this message. If any rules are
@@ -10370,7 +10496,16 @@ func (m *GetRugHistogramRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetRugHistogramRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetRugHistogramRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -10458,6 +10593,8 @@ var _ interface {
 	ErrorName() string
 } = GetRugHistogramRequestValidationError{}
 
+var _GetRugHistogramRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on GetTimeRangeSummaryRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10480,7 +10617,16 @@ func (m *GetTimeRangeSummaryRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetTimeRangeSummaryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTimeRangeSummaryRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -10568,6 +10714,8 @@ var _ interface {
 	ErrorName() string
 } = GetTimeRangeSummaryRequestValidationError{}
 
+var _GetTimeRangeSummaryRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on GetCardinalityOfColumnRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10590,7 +10738,16 @@ func (m *GetCardinalityOfColumnRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetCardinalityOfColumnRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetCardinalityOfColumnRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -10679,6 +10836,8 @@ var _ interface {
 	ErrorName() string
 } = GetCardinalityOfColumnRequestValidationError{}
 
+var _GetCardinalityOfColumnRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on GenerateTimeSeriesRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10701,7 +10860,16 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GenerateTimeSeriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateTimeSeriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -10740,6 +10908,17 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 	}
 
 	// no validation rules for TimestampColumnName
+
+	if m.GetTimeRange() == nil {
+		err := GenerateTimeSeriesRequestValidationError{
+			field:  "TimeRange",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeRange()).(type) {
@@ -10885,6 +11064,8 @@ var _ interface {
 	ErrorName() string
 } = GenerateTimeSeriesRequestValidationError{}
 
+var _GenerateTimeSeriesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on TimeSeriesTimeRange with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10907,62 +11088,26 @@ func (m *TimeSeriesTimeRange) validate(all bool) error {
 
 	var errors []error
 
-	if all {
-		switch v := interface{}(m.GetStart()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, TimeSeriesTimeRangeValidationError{
-					field:  "Start",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, TimeSeriesTimeRangeValidationError{
-					field:  "Start",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	if m.GetStart() == nil {
+		err := TimeSeriesTimeRangeValidationError{
+			field:  "Start",
+			reason: "value is required",
 		}
-	} else if v, ok := interface{}(m.GetStart()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return TimeSeriesTimeRangeValidationError{
-				field:  "Start",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+		if !all {
+			return err
 		}
+		errors = append(errors, err)
 	}
 
-	if all {
-		switch v := interface{}(m.GetEnd()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, TimeSeriesTimeRangeValidationError{
-					field:  "End",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, TimeSeriesTimeRangeValidationError{
-					field:  "End",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	if m.GetEnd() == nil {
+		err := TimeSeriesTimeRangeValidationError{
+			field:  "End",
+			reason: "value is required",
 		}
-	} else if v, ok := interface{}(m.GetEnd()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return TimeSeriesTimeRangeValidationError{
-				field:  "End",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+		if !all {
+			return err
 		}
+		errors = append(errors, err)
 	}
 
 	if _, ok := TimeGrain_name[int32(m.GetInterval())]; !ok {
@@ -11518,7 +11663,16 @@ func (m *GetTableCardinalityRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetTableCardinalityRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTableCardinalityRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -11603,6 +11757,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTableCardinalityRequestValidationError{}
+
+var _GetTableCardinalityRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on GetTableCardinalityResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -11731,7 +11887,16 @@ func (m *ProfileColumnsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_ProfileColumnsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ProfileColumnsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -11816,6 +11981,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ProfileColumnsRequestValidationError{}
+
+var _ProfileColumnsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on ProfileColumnsResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -12081,7 +12248,16 @@ func (m *GetTableRowsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetTableRowsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTableRowsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TableName
 
@@ -12168,6 +12344,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTableRowsRequestValidationError{}
+
+var _GetTableRowsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on GetTableRowsResponse with the rules
 // defined in the proto definition for this message. If any rules are
