@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { DashboardWorkspace } from "@rilldata/web-local/lib/components/workspace";
+  import { DashboardWorkspace } from "@rilldata/web-common/features/dashboards";
+
   export let data;
 
   $: metricViewName = data.metricViewName;

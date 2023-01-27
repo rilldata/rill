@@ -1,9 +1,9 @@
+import { nicelyFormattedTypesSelectorOptions } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 import {
   CellConfigInput,
   CellConfigSelector,
   ColumnConfig,
 } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
-import { nicelyFormattedTypesSelectorOptions } from "@rilldata/web-local/lib/util/humanize-numbers";
 import { ValidationState } from "./errors";
 import type { MeasureEntity } from "./metrics-internal-store";
 
