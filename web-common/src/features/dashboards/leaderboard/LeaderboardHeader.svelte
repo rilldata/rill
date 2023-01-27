@@ -5,7 +5,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import Spinner from "../../entity-management/Spinner.svelte";
   import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
 
   export let displayName: string;

@@ -11,8 +11,8 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { WorkspaceHeader } from "../../../layout/workspace";
   import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
 
   export let metricsDefName;

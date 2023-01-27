@@ -14,8 +14,8 @@ see more button
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher } from "svelte";
+  import { TOOLTIP_STRING_LIMIT } from "../../../layout/config";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;

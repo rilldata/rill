@@ -9,16 +9,16 @@
   import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import SurfaceControlButton from "@rilldata/web-local/lib/components/surface/SurfaceControlButton.svelte";
   import { getContext, onMount } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import { parseDocument } from "yaml";
-  import DashboardAssets from "../../../../../web-common/src/features/dashboards/DashboardAssets.svelte";
-  import { DEFAULT_NAV_WIDTH } from "../../application-config";
-  import { drag } from "../../drag";
+  import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
+  import { DEFAULT_NAV_WIDTH } from "../config";
+  import { drag } from "../drag";
   import Footer from "./Footer.svelte";
   import { shorthandTitle } from "./shorthand-title";
+  import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
   let mounted = false;
   onMount(() => {
