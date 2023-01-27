@@ -49,7 +49,7 @@ func (b *boundedContainer[T]) IsFull() bool {
 }
 
 func (b *boundedContainer[T]) Items() []T {
-	return b.items
+	return b.items[:b.index]
 }
 
 // tailContainer is a container with limited capacity

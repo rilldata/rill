@@ -58,11 +58,11 @@ func ContainerForFileStrategy(strategy runtimev1.Source_ExtractPolicy_Strategy, 
 func plannerForRowStrategy(policy *ExtractPolicy) rowPlanner {
 	if policy.RowsStrategy != runtimev1.Source_ExtractPolicy_UNSPECIFIED {
 		if policy.FilesStrategy != runtimev1.Source_ExtractPolicy_UNSPECIFIED {
-			// global policy since file strategy is specified
-			return &plannerWithGlobalLimits{strategy: policy.RowsStrategy, limitInBytes: policy.RowsLimitBytes}
+			// file strategy specified row limits are per file
+			return &plannerWithPerFileLimits{strategy: policy.RowsStrategy, limitInBytes: policy.RowsLimitBytes}
 		}
-		// no file strategy specified row limits are per file
-		return &plannerWithPerFileLimits{strategy: policy.RowsStrategy, limitInBytes: policy.RowsLimitBytes}
+		// global policy since file strategy is not specified
+		return &plannerWithGlobalLimits{strategy: policy.RowsStrategy, limitInBytes: policy.RowsLimitBytes}
 	}
 	return &plannerWithoutLimits{}
 }
