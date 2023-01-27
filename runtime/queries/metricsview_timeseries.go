@@ -134,7 +134,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsV
 	}
 
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s GROUP BY 1 ORDER BY %s LIMIT 1000",
+		"SELECT %s FROM %q WHERE %s GROUP BY 1 ORDER BY %s LIMIT 1000",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,

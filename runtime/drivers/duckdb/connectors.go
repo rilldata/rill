@@ -81,11 +81,10 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 
 	var query string
 	if appendToTable {
-		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", source.Name, from)
+		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", source.Name, from)
 	} else {
 		query = fmt.Sprintf("COPY %s from %s;", source.Name, from)
 	}
-
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
@@ -127,7 +126,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }

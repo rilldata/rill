@@ -14,10 +14,6 @@
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    addQuickMetricsToDashboardYAML,
-    initBlankDashboardYAML,
-  } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
@@ -30,6 +26,10 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getName } from "../../entity-management/name-utils";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "../../metrics-views/metrics-internal-store";
 
   export let modelName: string;
   export let hasError = false;

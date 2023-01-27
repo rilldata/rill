@@ -7,7 +7,7 @@ import type {
 import { readable, Subscriber } from "svelte/store";
 import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
-import { selectTimestampColumnFromSchema } from "../svelte-query/column-selectors";
+import { selectTimestampColumnFromSchema } from "../../../../web-local/src/lib/svelte-query/column-selectors";
 
 export interface MetricsConfig {
   display_name: string;

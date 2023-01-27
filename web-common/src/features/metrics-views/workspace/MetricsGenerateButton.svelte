@@ -6,7 +6,7 @@
   import {
     addQuickMetricsToDashboardYAML,
     MetricsInternalRepresentation,
-  } from "../../application-state-stores/metrics-internal-store";
+  } from "../metrics-internal-store";
   import QuickMetricsModal from "./QuickMetricsModal.svelte";
 
   export let selectedModel: V1Model;

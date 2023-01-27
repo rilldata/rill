@@ -4,12 +4,12 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/Explore.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { navigationEvent } from "../../metrics/initMetrics";
-  import { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
+  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "../../metrics/service/MetricsTypes";
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
 
   export let metricsInternalRep;
   export let metricsDefName;

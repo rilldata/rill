@@ -15,6 +15,8 @@
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
+  import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import {
     runtimeServiceGetFile,
     useRuntimeServiceDeleteFileAndReconcile,
@@ -23,7 +25,6 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { initBlankDashboardYAML } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -33,7 +34,6 @@
   import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
-  import { SourceModelValidationStatus } from "@rilldata/web-local/lib/temp/metrics.js";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import RenameAssetModal from "../../../../../../web-common/src/features/entity-management/RenameAssetModal.svelte";

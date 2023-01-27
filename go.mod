@@ -12,9 +12,11 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/coreos/go-oidc/v3 v3.4.0
 	github.com/deepmap/oapi-codegen v1.11.0
+	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/getkin/kin-openapi v0.100.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/gorilla/sessions v1.2.1
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/jinzhu/copier v0.3.5
@@ -144,10 +146,10 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/mod v0.6.0 // indirect
+	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
-	golang.org/x/tools v0.2.0 // indirect
-	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	golang.org/x/tools v0.3.0 // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.97.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
@@ -175,9 +177,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
-	golang.org/x/net v0.1.0
-	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/net v0.2.0
+	golang.org/x/sync v0.1.0
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20220920201722-2b89144ce006
 	google.golang.org/protobuf v1.28.1
