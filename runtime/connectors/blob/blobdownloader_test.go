@@ -2,9 +2,7 @@ package blob
 
 import (
 	"context"
-	"math"
 	"os"
-	"reflect"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -22,17 +20,12 @@ var filesData = map[string][]byte{
 }
 
 func TestFetchFileNames(t *testing.T) {
-	bucket, err := prepareBucket()
-	require.NoError(t, err)
-
-	extractConfigs, err := NewExtractConfigs(nil)
-	require.NoError(t, err)
+	policy := NewExtractPolicy(nil)
 	type args struct {
 		ctx         context.Context
 		bucket      *blob.Bucket
-		config      FetchConfigs
+		config      Options
 		globPattern string
-		bucketPath  string
 	}
 	tests := []struct {
 		name    string
@@ -42,49 +35,49 @@ func TestFetchFileNames(t *testing.T) {
 	}{
 		{
 			name:    "single file found",
-			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/01/01/aata.txt", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{ExtractPolicy: policy}, "2020/01/01/aata.txt"},
 			want:    map[string]struct{}{"hello": {}},
 			wantErr: false,
 		},
 		{
 			name:    "single file absent",
-			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/01/01/eata.txt", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{ExtractPolicy: policy}, "2020/01/01/eata.txt"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "recursive glob",
-			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/**/*.txt", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{ExtractPolicy: policy}, "2020/**/*.txt"},
 			want:    map[string]struct{}{"hello": {}, "world": {}, "writing": {}, "test": {}},
 			wantErr: false,
 		},
 		{
 			name:    "non recursive glob",
-			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/0?/0[1-3]/{a,b}ata.txt", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{ExtractPolicy: policy}, "2020/0?/0[1-3]/{a,b}ata.txt"},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
 		},
 		{
 			name:    "glob absent",
-			args:    args{context.Background(), bucket, FetchConfigs{Extract: extractConfigs}, "2020/**/*.csv", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{ExtractPolicy: policy}, "2020/**/*.csv"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "total size limit",
-			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxTotalSize: 1, Extract: extractConfigs}, "2020/**", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxTotalSize: 1, ExtractPolicy: policy}, "2020/**"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "max match limit",
-			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsMatched: 1, Extract: extractConfigs}, "2020/**", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxObjectsMatched: 1, ExtractPolicy: policy}, "2020/**"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "max list limit",
-			args:    args{context.Background(), bucket, FetchConfigs{GlobMaxObjectsListed: 1, Extract: extractConfigs}, "2020/**", "mem://"},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxObjectsListed: 1, ExtractPolicy: policy}, "2020/**"},
 			want:    nil,
 			wantErr: true,
 		},
@@ -92,18 +85,20 @@ func TestFetchFileNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantErr {
+				// verify bucket is already closed on error
+				require.NotNil(t, tt.args.bucket.Close().Error())
 				return
 			}
 
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
 			for it.HasNext() {
-				next, err := it.NextBatch(tt.args.ctx, 1)
+				next, err := it.NextBatch(1)
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}
@@ -121,15 +116,12 @@ func TestFetchFileNames(t *testing.T) {
 }
 
 func TestFetchFileNamesWithParitionLimits(t *testing.T) {
-	bucket, err := prepareBucket()
-	require.NoError(t, err)
 
 	type args struct {
 		ctx         context.Context
 		bucket      *blob.Bucket
-		config      FetchConfigs
+		config      Options
 		globPattern string
-		bucketPath  string
 	}
 	tests := []struct {
 		name    string
@@ -140,21 +132,20 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 		{
 			name: "listing head limits",
 			args: args{context.Background(),
-				bucket,
-				FetchConfigs{Extract: &ExtractPolicy{File: ExtractConfig{Strategy: "head", Size: 2}, Row: ExtractConfig{Strategy: NONE, Size: math.MaxInt64}}},
+				prepareBucket(t),
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_HEAD, FilesLimit: 2}},
 				"2020/**",
-				"mem://",
 			},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
 		},
 		{
 			name: "listing tail limits",
-			args: args{context.Background(),
-				bucket,
-				FetchConfigs{Extract: &ExtractPolicy{File: ExtractConfig{Strategy: "tail", Size: 2}, Row: ExtractConfig{Strategy: NONE, Size: math.MaxInt64}}},
+			args: args{
+				context.Background(),
+				prepareBucket(t),
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_TAIL, FilesLimit: 2}},
 				"2020/**",
-				"mem://",
 			},
 			want:    map[string]struct{}{"test": {}, "writing": {}},
 			wantErr: false,
@@ -163,16 +154,21 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern, tt.args.bucketPath)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.config, tt.args.globPattern)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				// verify bucket is already closed on error
+				require.NotNil(t, tt.args.bucket.Close().Error())
 				return
 			}
 
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
 			for it.HasNext() {
-				next, err := it.NextBatch(tt.args.ctx, 1)
+				next, err := it.NextBatch(1)
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}
@@ -190,74 +186,13 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 	}
 }
 
-func prepareBucket() (*blob.Bucket, error) {
+func prepareBucket(t *testing.T) *blob.Bucket {
 	ctx := context.Background()
 	bucket, err := blob.OpenBucket(ctx, "mem://")
-	if err != nil {
-		return nil, err
-	}
-	for key, value := range filesData {
-		if err := bucket.WriteAll(ctx, key, value, nil); err != nil {
-			return nil, err
-		}
-	}
-	return bucket, nil
-}
+	require.NoError(t, err)
 
-func TestNewExtractConfigs(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   *runtimev1.Source_ExtractPolicy
-		want    *ExtractPolicy
-		wantErr bool
-	}{
-		{
-			name:    "nil input",
-			input:   nil,
-			want:    &ExtractPolicy{File: ExtractConfig{Strategy: NONE}, Row: ExtractConfig{Strategy: NONE}},
-			wantErr: false,
-		},
-		{
-			name:    "parse row",
-			input:   &runtimev1.Source_ExtractPolicy{Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23 KB"}},
-			want:    &ExtractPolicy{File: ExtractConfig{Strategy: NONE}, Row: ExtractConfig{Strategy: TAIL, Size: 23552}},
-			wantErr: false,
-		},
-		{
-			name:    "parse files",
-			input:   &runtimev1.Source_ExtractPolicy{File: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "head", Size: "23"}},
-			want:    &ExtractPolicy{File: ExtractConfig{Strategy: HEAD, Size: 23}, Row: ExtractConfig{Strategy: NONE}},
-			wantErr: false,
-		},
-		{
-			name:    "parse both",
-			input:   &runtimev1.Source_ExtractPolicy{File: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23"}, Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "512 B"}},
-			want:    &ExtractPolicy{File: ExtractConfig{Strategy: TAIL, Size: 23}, Row: ExtractConfig{Strategy: TAIL, Size: 512}},
-			wantErr: false,
-		},
-		{
-			name:    "more examples",
-			input:   &runtimev1.Source_ExtractPolicy{File: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23"}, Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23 gb"}},
-			want:    &ExtractPolicy{File: ExtractConfig{Strategy: TAIL, Size: 23}, Row: ExtractConfig{Strategy: TAIL, Size: 23 * 1024 * 1024 * 1024}},
-			wantErr: false,
-		},
-		{
-			name:    "invalid",
-			input:   &runtimev1.Source_ExtractPolicy{File: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23"}, Row: &runtimev1.Source_ExtractPolicy_ExtractConfig{Strategy: "tail", Size: "23%"}},
-			want:    nil,
-			wantErr: true,
-		},
+	for key, value := range filesData {
+		require.NoError(t, bucket.WriteAll(ctx, key, value, nil))
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewExtractConfigs(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewExtractConfigs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewExtractConfigs() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	return bucket
 }

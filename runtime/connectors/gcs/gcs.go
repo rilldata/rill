@@ -9,7 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"gocloud.dev/blob"
 
 	// blank import required for bucket functions
@@ -45,12 +44,11 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path                  string              `key:"path"`
-	GlobMaxTotalSize      int64               `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int                 `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64               `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int                 `mapstructure:"glob.page_size"`
-	SourceExtract         *yaml.ExtractPolicy `mapstructure:"source.extract"`
+	Path                  string `key:"path"`
+	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int    `mapstructure:"glob.page_size"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -73,7 +71,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.Iterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -95,17 +93,12 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	}
 
 	// prepare fetch configs
-	extractConfig, err := rillblob.NewExtractConfigs(source.Policy)
-	if err != nil {
-		return nil, err
-	}
-
-	fetchConfigs := rillblob.FetchConfigs{
+	fetchConfigs := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
-		Extract:               extractConfig,
+		ExtractPolicy:         rillblob.NewExtractPolicy(source.ExtractPolicy),
 	}
-	return rillblob.NewIterator(ctx, bucketObj, fetchConfigs, url.Path, bucket)
+	return rillblob.NewIterator(ctx, bucketObj, fetchConfigs, url.Path)
 }

@@ -269,6 +269,7 @@ export interface V1Source {
   policy?: SourceExtractPolicy;
   properties?: V1SourceProperties;
   schema?: V1StructType;
+  timeout?: number;
 }
 
 export interface V1RenameFileResponse {
@@ -743,8 +744,10 @@ export interface StructTypeField {
 }
 
 export interface SourceExtractPolicy {
-  file?: ExtractPolicyExtractConfig;
-  row?: ExtractPolicyExtractConfig;
+  filesLimit?: string;
+  filesStrategy?: ExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  rowsStrategy?: ExtractPolicyStrategy;
 }
 
 export interface ReconcileErrorCharLocation {
@@ -801,10 +804,15 @@ export interface GenerateTimeSeriesRequestBasicMeasure {
   sqlName?: string;
 }
 
-export interface ExtractPolicyExtractConfig {
-  size?: string;
-  strategy?: string;
-}
+export type ExtractPolicyStrategy =
+  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExtractPolicyStrategy = {
+  UNSPECIFIED: "UNSPECIFIED",
+  HEAD: "HEAD",
+  TAIL: "TAIL",
+} as const;
 
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];

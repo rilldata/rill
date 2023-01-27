@@ -50,7 +50,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.Iterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -75,32 +75,40 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	file, err := fileutil.CopyToTempFile(resp.Body, "", source.Name, extension)
+	file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 	if err != nil {
 		return nil, err
 	}
-	return &httpIterator{file: file}, nil
+	return &iterator{ctx: ctx, files: []string{file}}, nil
 }
 
-type httpIterator struct {
-	file  string
+// implements connector.FileIterator
+type iterator struct {
+	ctx   context.Context
+	files []string
 	index int
 }
 
-func (h *httpIterator) Close() error {
+func (i *iterator) Close() error {
+	fileutil.ForceRemoveFiles(i.files)
 	return nil
 }
 
-func (h *httpIterator) NextBatch(ctx context.Context, n int) ([]string, error) {
-	if !h.HasNext() {
+func (i *iterator) NextBatch(n int) ([]string, error) {
+	if !i.HasNext() {
 		return nil, io.EOF
 	}
-	h.index++
-	return []string{h.file}, nil
+
+	start := i.index
+	end := i.index + n
+	if end > len(i.files) {
+		end = len(i.files)
+	}
+	return i.files[start:end], nil
 }
 
-func (h *httpIterator) HasNext() bool {
-	return h.index == 0
+func (i *iterator) HasNext() bool {
+	return i.index < len(i.files)
 }
 
 func urlExtension(path string) (string, error) {

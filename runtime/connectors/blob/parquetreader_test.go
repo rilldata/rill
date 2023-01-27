@@ -10,6 +10,7 @@ import (
 	"github.com/apache/arrow/go/v11/arrow/memory"
 	"github.com/apache/arrow/go/v11/parquet/file"
 	"github.com/apache/arrow/go/v11/parquet/pqarrow"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
@@ -23,7 +24,7 @@ func TestDownload(t *testing.T) {
 		ctx    context.Context
 		bucket *blob.Bucket
 		obj    *blob.ListObject
-		option ExtractConfig
+		option extractConfig
 	}
 	tests := []struct {
 		name    string
@@ -33,21 +34,21 @@ func TestDownload(t *testing.T) {
 	}{
 		{
 			name:    "download partial head",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: ExtractConfig{Strategy: HEAD, Size: 1000}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_HEAD, limtInBytes: 1000}},
 			wantErr: false,
 			want:    getInt32Array(1000, false),
 		},
 		{
 			name:    "download partial tail",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: ExtractConfig{Strategy: TAIL, Size: 1000}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_TAIL, limtInBytes: 1000}},
 			wantErr: false,
 			want:    getInt32Array(2000, false)[1000:],
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			file, _ := fileutil.TempFile(t.TempDir(), "test.parquet")
-			err := DownloadParquet(tt.args.ctx, tt.args.bucket, tt.args.obj, tt.args.option, file)
+			file, _ := fileutil.OpenTempFileInDir(t.TempDir(), "test.parquet")
+			err := downloadParquet(tt.args.ctx, tt.args.bucket, tt.args.obj, tt.args.option, file)
 			file.Close()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
@@ -113,7 +114,7 @@ func createArrowTable(mem memory.Allocator) arrow.Table {
 
 func writeParquetFile(t *testing.T) string {
 	tempDir := t.TempDir()
-	file, err := fileutil.TempFile(tempDir, "out.parquet")
+	file, err := fileutil.OpenTempFileInDir(tempDir, "out.parquet")
 	require.NoError(t, err)
 	defer file.Close()
 

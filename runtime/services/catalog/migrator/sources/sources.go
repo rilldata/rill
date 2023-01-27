@@ -22,10 +22,11 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	apiSource := catalogObj.GetSource()
 
 	source := &connectors.Source{
-		Name:       apiSource.Name,
-		Connector:  apiSource.Connector,
-		Properties: apiSource.Properties.AsMap(),
-		Policy:     apiSource.GetPolicy(),
+		Name:          apiSource.Name,
+		Connector:     apiSource.Connector,
+		Properties:    apiSource.Properties.AsMap(),
+		ExtractPolicy: apiSource.GetPolicy(),
+		Timeout:       apiSource.GetTimeout(),
 	}
 
 	env := &connectors.Env{
@@ -95,19 +96,10 @@ func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
 	if (p1 != nil) == (p2 != nil) {
 		if p1 != nil {
 			// both non nil
-			return compareConfig(p1.File, p2.File) && compareConfig(p1.Row, p2.Row)
-		}
-		// both nil
-		return true
-	}
-	return false
-}
-
-func compareConfig(p1, p2 *runtimev1.Source_ExtractPolicy_ExtractConfig) bool {
-	if (p1 != nil) == (p2 != nil) {
-		if p1 != nil {
-			// both non nil
-			return p1.Size == p2.Size && p1.Strategy == p2.Strategy
+			return p1.FilesStrategy == p2.FilesStrategy &&
+				p1.FilesLimit == p2.FilesLimit &&
+				p1.RowsStrategy == p2.RowsStrategy &&
+				p1.RowsLimitBytes == p2.RowsLimitBytes
 		}
 		// both nil
 		return true

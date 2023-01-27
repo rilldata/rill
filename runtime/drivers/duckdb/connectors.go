@@ -16,35 +16,13 @@ import (
 
 // Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	cancellableCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	timeout := 30
+	timeoutInSeconds := 30
 	if value, ok := source.Properties["timeout"]; ok {
-		timeout = int(value.(float64))
+		timeoutInSeconds = int(value.(float64))
 	}
 
-	channel := make(chan error, 1)
-	go func() {
-		// relies on duck db query cancellation to cancel the ingestion
-		err := c.ingestWithoutTimeout(cancellableCtx, env, source)
-		channel <- err
-	}()
-
-	select {
-	case result := <-channel:
-		return result
-
-	case <-time.After(time.Duration(timeout) * time.Second):
-		return context.DeadlineExceeded
-	}
-}
-
-func (c *connection) ingestWithoutTimeout(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	err := source.Validate()
-	if err != nil {
-		return err
-	}
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(timeoutInSeconds)*time.Second)
+	defer cancel()
 
 	// Driver-specific overrides
 	// switch source.Connector {
@@ -52,10 +30,10 @@ func (c *connection) ingestWithoutTimeout(ctx context.Context, env *connectors.E
 	// 	return c.ingestFile(ctx, env, source)
 	// }
 	if source.Connector == "local_file" {
-		return c.ingestLocalFiles(ctx, env, source)
+		return c.ingestLocalFiles(ctxWithTimeout, env, source)
 	}
 
-	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
+	iterator, err := connectors.ConsumeAsIterator(ctxWithTimeout, env, source)
 	if err != nil {
 		return err
 	}
@@ -63,17 +41,12 @@ func (c *connection) ingestWithoutTimeout(ctx context.Context, env *connectors.E
 
 	appendToTable := false
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(ctx, 1)
+		files, err := iterator.NextBatch(8) // todo :: batch in properties ?
 		if err != nil {
 			return err
 		}
 
-		ingestBatch := func() error {
-			defer fileutil.ForceRemoveFiles(files)
-			return c.ingestFiles(ctx, source, files, appendToTable)
-		}
-
-		if err := ingestBatch(); err != nil {
+		if err := c.ingestFiles(ctxWithTimeout, source, files, appendToTable); err != nil {
 			return err
 		}
 
@@ -106,9 +79,11 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 		return err
 	}
 
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
+	var query string
 	if appendToTable {
 		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", source.Name, from)
+	} else {
+		query = fmt.Sprintf("COPY %s from %s;", source.Name, from)
 	}
 
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})

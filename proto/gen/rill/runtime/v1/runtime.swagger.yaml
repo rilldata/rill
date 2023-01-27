@@ -1210,16 +1210,13 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
-  ExtractPolicyExtractConfig:
-    type: object
-    properties:
-      size:
-        type: string
-        title: size
-      strategy:
-        type: string
-        title: strategy of the policy
-    title: extract configs
+  ExtractPolicyStrategy:
+    type: string
+    enum:
+      - UNSPECIFIED
+      - HEAD
+      - TAIL
+    default: UNSPECIFIED
   GenerateTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -1319,12 +1316,22 @@ definitions:
   SourceExtractPolicy:
     type: object
     properties:
-      file:
-        $ref: '#/definitions/ExtractPolicyExtractConfig'
-        title: File policy to select files
-      row:
-        $ref: '#/definitions/ExtractPolicyExtractConfig'
-        title: Row policy to select rows
+      filesLimit:
+        type: string
+        format: uint64
+        title: limit on number of files
+      filesStrategy:
+        $ref: '#/definitions/ExtractPolicyStrategy'
+        title: strategy for selecting files
+      rowsLimitBytes:
+        type: string
+        format: uint64
+        title: |-
+          could in future add: uint64 rows_limit = n;
+          limit on data fetched in bytes
+      rowsStrategy:
+        $ref: '#/definitions/ExtractPolicyStrategy'
+        title: strategy for selecting rows in a file
     title: Extract policy for glob connectors
   StructTypeField:
     type: object
@@ -2141,6 +2148,10 @@ definitions:
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
+      timeout:
+        type: integer
+        format: int32
+        title: timeout for source ingestion
     title: Source is the internal representation of a source definition
   v1StructType:
     type: object

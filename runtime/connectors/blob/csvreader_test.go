@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
@@ -22,7 +23,7 @@ func TestDownloadCSV(t *testing.T) {
 		ctx    context.Context
 		bucket *blob.Bucket
 		obj    *blob.ListObject
-		option ExtractConfig
+		option *extractConfig
 		fw     *os.File
 	}
 	tests := []struct {
@@ -37,7 +38,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: ExtractConfig{Strategy: HEAD, Size: object.Size - 5},
+				option: &extractConfig{strategy: runtimev1.Source_ExtractPolicy_HEAD, limtInBytes: uint64(object.Size - 5)},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: testData[:len(testData)-1],
@@ -48,7 +49,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: ExtractConfig{Strategy: TAIL, Size: object.Size - 5},
+				option: &extractConfig{strategy: runtimev1.Source_ExtractPolicy_TAIL, limtInBytes: uint64(object.Size - 5)},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: resultTail,
@@ -56,7 +57,7 @@ func TestDownloadCSV(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := DownloadCSV(tt.args.ctx, tt.args.bucket, tt.args.obj, tt.args.option, tt.args.fw); (err != nil) != tt.wantErr {
+			if err := downloadCSV(tt.args.ctx, tt.args.bucket, tt.args.obj, tt.args.option, tt.args.fw); (err != nil) != tt.wantErr {
 				t.Errorf("DownloadCSV() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -74,7 +75,7 @@ func TestDownloadCSV(t *testing.T) {
 }
 
 func getTempFile(t *testing.T, name string) *os.File {
-	fw, err := fileutil.TempFile(t.TempDir(), name)
+	fw, err := fileutil.OpenTempFileInDir(t.TempDir(), name)
 	require.NoError(t, err)
 	return fw
 }

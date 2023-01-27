@@ -2,7 +2,10 @@ package yaml
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -25,8 +28,8 @@ type Source struct {
 	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
 	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
-	Timeout               int            `yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
-	Policy                *ExtractPolicy `yaml:"extract,omitempty" mapstructure:"source.extract,omitempty"`
+	Timeout               int32          `yaml:"timeout,omitempty"`
+	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -87,7 +90,7 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 		return nil, err
 	}
 
-	source.Policy = extract
+	source.ExtractPolicy = extract
 	return source, nil
 }
 
@@ -97,9 +100,19 @@ func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy,
 	}
 
 	sourceExtract := &ExtractPolicy{}
-	err := copier.Copy(sourceExtract, extract)
-	if err != nil {
-		return nil, err
+	// set file
+	if extract.FilesStrategy != runtimev1.Source_ExtractPolicy_UNSPECIFIED {
+		sourceExtract.File = &ExtractConfig{}
+		sourceExtract.File.Strategy = extract.FilesStrategy.String()
+		sourceExtract.File.Size = fmt.Sprintf("%v", extract.FilesLimit)
+	}
+
+	// set row
+	if extract.RowsStrategy != runtimev1.Source_ExtractPolicy_UNSPECIFIED {
+		sourceExtract.Row = &ExtractConfig{}
+		sourceExtract.Row.Strategy = extract.RowsStrategy.String()
+		bytes := datasize.ByteSize(extract.RowsLimitBytes)
+		sourceExtract.Row.Size = bytes.HumanReadable()
 	}
 
 	return sourceExtract, nil
@@ -148,16 +161,12 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["hive_partitioning"] = *source.HivePartition
 	}
 
-	if source.Timeout != 0 {
-		props["timeout"] = source.Timeout
-	}
-
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {
 		return nil, err
 	}
 
-	extract, err := fromExtractArtifact(source.Policy)
+	extract, err := fromExtractArtifact(source.ExtractPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -172,22 +181,83 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 			Connector:  source.Type,
 			Properties: propsPB,
 			Policy:     extract,
+			Timeout:    source.Timeout,
 		},
 	}, nil
 }
 
-func fromExtractArtifact(sourceExtract *ExtractPolicy) (*runtimev1.Source_ExtractPolicy, error) {
-	if sourceExtract == nil {
+func fromExtractArtifact(policy *ExtractPolicy) (*runtimev1.Source_ExtractPolicy, error) {
+	if policy == nil {
 		return nil, nil
 	}
 
 	extractPolicy := &runtimev1.Source_ExtractPolicy{}
-	err := copier.Copy(extractPolicy, sourceExtract)
-	if err != nil {
-		return nil, err
+
+	// parse file
+	if policy.File != nil {
+		// parse strategy
+		strategy, err := parseStrategy(policy.File.Strategy)
+		if err != nil {
+			return nil, err
+		}
+
+		extractPolicy.FilesStrategy = strategy
+
+		// parse size
+		size, err := strconv.ParseUint(policy.File.Size, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
+		}
+		if size <= 0 {
+			return nil, fmt.Errorf("invalid size %q", size)
+		}
+
+		extractPolicy.FilesLimit = size
 	}
 
+	// parse rows
+	if policy.Row != nil {
+		// parse strategy
+		strategy, err := parseStrategy(policy.Row.Strategy)
+		if err != nil {
+			return nil, err
+		}
+
+		extractPolicy.RowsStrategy = strategy
+
+		// parse size
+		// todo :: add support for number of rows
+		size, err := getBytes(policy.Row.Size)
+		if err != nil {
+			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
+		}
+		if size <= 0 {
+			return nil, fmt.Errorf("invalid size %q", size)
+		}
+
+		extractPolicy.RowsLimitBytes = size
+	}
 	return extractPolicy, nil
+}
+
+func parseStrategy(s string) (runtimev1.Source_ExtractPolicy_Strategy, error) {
+	switch strings.ToLower(s) {
+	case "tail":
+		return runtimev1.Source_ExtractPolicy_TAIL, nil
+	case "head":
+		return runtimev1.Source_ExtractPolicy_HEAD, nil
+	default:
+		return runtimev1.Source_ExtractPolicy_UNSPECIFIED, fmt.Errorf("invalid extract strategy %q", s)
+	}
+}
+
+func getBytes(size string) (uint64, error) {
+	var s datasize.ByteSize
+	if err := s.UnmarshalText([]byte(size)); err != nil {
+		return 0, err
+	}
+
+	return s.Bytes(), nil
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
