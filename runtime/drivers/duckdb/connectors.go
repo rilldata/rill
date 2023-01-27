@@ -83,7 +83,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 	if appendToTable {
 		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", source.Name, from)
 	} else {
-		query = fmt.Sprintf("COPY %s from %s;", source.Name, from)
+		query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 	}
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
