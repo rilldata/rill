@@ -26,6 +26,7 @@
   import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
+  import LocalSource from "./LocalSource.svelte";
   import {
     fromYupFriendlyKey,
     getYupSchema,
@@ -139,16 +140,24 @@
 </script>
 
 <div class="h-full w-full flex flex-col">
+  {#if connector?.name === "local_file"}
+    <LocalSource on:close />
+  {/if}
   <form
     on:submit|preventDefault={handleSubmit}
     id="remote-source-{connector.name}-form"
     class="px-4 pb-2 flex-grow overflow-y-auto"
   >
     <div class="pt-4 pb-2">
-      Need help? Refer to our
-      <a href="https://docs.rilldata.com/using-rill/import-data" target="_blank"
-        >docs</a
-      > for more information.
+      {#if connector?.name === "local_file"}
+        Alternatively mention the path to file (globs supported)
+      {:else}
+        Need help? Refer to our
+        <a
+          href="https://docs.rilldata.com/using-rill/import-data"
+          target="_blank">docs</a
+        > for more information.
+      {/if}
     </div>
     {#if $createSourceMutation.isError || error}
       <SubmissionError

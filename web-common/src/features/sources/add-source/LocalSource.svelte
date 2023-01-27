@@ -24,8 +24,6 @@
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
 
-  export let showDetailedOptions = false;
-
   const dispatch = createEventDispatcher();
 
   const queryClient = useQueryClient();
@@ -95,13 +93,9 @@
   }
 </script>
 
-<div class="flex flex-col justify-center gap-y-3 place-items-center h-full">
+<div class="flex justify-center place-items-center mt-3">
   <Button on:click={handleOpenFileDialog} type="primary"
     >Upload a CSV or Parquet file
-  </Button>
-  <div class="text-sm ui-copy-disabled">or</div>
-  <Button on:click={() => (showDetailedOptions = true)} type="primary"
-    >Add files using path
   </Button>
   {#if errors?.length}
     <div transition:slide={{ duration: LIST_SLIDE_DURATION * 2 }}>

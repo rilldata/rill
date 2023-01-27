@@ -7,12 +7,10 @@
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
 
   const dispatch = createEventDispatcher();
 
-  let showLocalFileDetailedOptions;
   let selectedConnector: V1Connector;
 
   const TAB_ORDER = ["gcs", "s3", "https", "local_file"];
@@ -67,13 +65,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "local_file" && !showLocalFileDetailedOptions}
-      <LocalSource
-        bind:showDetailedOptions={showLocalFileDetailedOptions}
-        on:close
-      />
-    {/if}
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || showLocalFileDetailedOptions}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "local_file"}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />
       {/key}
