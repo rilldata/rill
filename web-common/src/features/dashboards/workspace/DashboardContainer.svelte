@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let gridConfig: string;
   export let exploreContainerWidth;
@@ -21,10 +21,10 @@
   class="grid items-stretch leaderboard-layout surface"
   style:grid-template-columns={gridConfig}
 >
-  <div class="explore-header">
+  <div class="explore-header pb-3">
     <slot name="header" />
   </div>
-  <hr class="pb-3 pt-1 ui-divider" />
+  <!-- <hr class="pb-3 pt-1 ui-divider" /> -->
   <div
     class="explore-metrics mb-8"
     style:padding-left="calc({$navigationVisibilityTween * 24}px + 1.25rem)"
@@ -44,13 +44,9 @@
     overflow-y: hidden;
     grid-template-areas:
       "header header"
-      "hr hr"
       "metrics leaderboards";
   }
 
-  hr {
-    grid-area: hr;
-  }
   .explore-header {
     grid-area: header;
   }

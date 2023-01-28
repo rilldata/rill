@@ -132,7 +132,7 @@
     <div class="pl-4">
       <slot name="cta" {width} />
     </div>
-    <div class="ml-2">
+    <div class="ml-4">
       <WorkspaceHeaderStatusSpinner {applicationStatus} />
     </div>
   </div>

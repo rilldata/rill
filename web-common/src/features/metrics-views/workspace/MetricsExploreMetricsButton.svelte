@@ -1,7 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
-  import ExploreIcon from "@rilldata/web-common/components/icons/Explore.svelte";
+  import {
+    Button,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
+  import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
@@ -56,7 +59,10 @@
     on:click={() => viewDashboard()}
     type="primary"
   >
-    Go to Dashboard <ExploreIcon size="16px" />
+    <IconSpaceFixer pullLeft pullRight={false}>
+      <Forward />
+    </IconSpaceFixer>
+    Go to Dashboard
   </Button>
   <TooltipContent slot="tooltip-content">
     <div>
