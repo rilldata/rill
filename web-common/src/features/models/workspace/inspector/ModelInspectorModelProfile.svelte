@@ -9,7 +9,6 @@
     useRuntimeServiceGetFile,
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
-    V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -20,7 +19,7 @@
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { getTableReferences } from "../../utils/get-table-references";
-  import EmbeddedSourceReferences from "./EmbeddedSourceReferences.svelte";
+  import EmbeddedSourceReference from "./EmbeddedSourceReference.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -46,56 +45,64 @@
     { type: "OBJECT_TYPE_SOURCE" }
   );
 
-  $: viableSources = derived(
-    $getAllSources?.data?.entries
-      ?.filter((entry) => {
-        return references.some(
-          (ref) =>
-            ref.reference === entry.name ||
-            entry?.children?.includes(modelName.toLowerCase())
-        );
-      })
-      .map((entry) => {
-        return [
-          entry,
-          references.find(
-            (ref) =>
-              ref.reference === entry.name ||
-              entry?.children?.includes(modelName.toLowerCase())
-          ),
-        ];
-      })
-      .map((arr) => {
-        const entry = arr[0] as V1CatalogEntry;
-        const reference = arr[1];
-        return derived(
-          [
-            writable(entry),
-            writable(reference),
-            useRuntimeServiceGetTableCardinality(
-              $runtimeStore?.instanceId,
-              entry.name
-            ),
-          ],
-          ([entry, reference, $cardinality]) => {
-            return {
-              ...entry,
-              ...reference,
-              totalRows: +$cardinality?.data?.cardinality,
-            };
-          }
-        );
-      }),
-    ($row) => $row
+  $: getAllModels = useRuntimeServiceListCatalogEntries(
+    $runtimeStore?.instanceId,
+    { type: "OBJECT_TYPE_MODEL" }
   );
 
-  $: viableEmbeddedSources = $viableSources?.filter((source) => {
-    return source?.embedded;
-  });
+  // for each reference, match to an existing model or source,
+  $: referencedThings = derived(
+    [getAllSources, getAllModels],
+    ([$sources, $models]) => {
+      return [
+        ...($sources?.data?.entries || []),
+        ...($models?.data?.entries || []),
+      ]
+        ?.filter((entry) => {
+          // remove entry w/o a matching reference
+          return references.some((ref) => {
+            return (
+              ref.reference === entry.name ||
+              entry?.children?.includes(modelName.toLowerCase())
+            );
+          });
+        })
+        ?.map((entry) => {
+          // get the reference that matches this entry
+          return [
+            entry,
+            references.find(
+              (ref) =>
+                ref.reference === entry.name ||
+                (entry?.embedded &&
+                  entry?.children?.includes(modelName.toLowerCase()))
+            ),
+          ];
+        });
+    }
+  );
 
-  $: viableExplicitSources = $viableSources?.filter((source) => {
-    return !source?.embedded;
-  });
+  // associate with the cardinality
+  $: referencedWithMetadata = derived(
+    $referencedThings.map(([$thing, ref]) => {
+      return derived(
+        [
+          writable($thing),
+          writable(ref),
+          useRuntimeServiceGetTableCardinality(
+            $runtimeStore?.instanceId,
+            $thing.name
+          ),
+        ],
+        ([$thing, ref, $cardinality]) => ({
+          entry: $thing,
+          reference: ref,
+          totalRows: +$cardinality?.data?.cardinality,
+        })
+      );
+    }),
+    ($referencedThings) => $referencedThings
+  );
 
   let showColumns = true;
 
@@ -123,10 +130,10 @@
     <div class="pt-4 pb-4">
       <div class=" pl-4 pr-4">
         <CollapsibleSectionTitle
-          tooltipText="Sources"
+          tooltipText="References"
           bind:active={showSourceTables}
         >
-          Sources
+          Referenced in this model
         </CollapsibleSectionTitle>
       </div>
 
@@ -135,48 +142,53 @@
           transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
           class="mt-1"
         >
-          {#if viableSources && $viableSources}
-            <EmbeddedSourceReferences
-              {references}
-              entries={viableEmbeddedSources}
-            />
-            {#each viableExplicitSources as source (source.name)}
+          {#each $referencedWithMetadata as reference}
+            {#if reference?.entry?.embedded}
+              <EmbeddedSourceReference
+                entry={reference.entry}
+                reference={reference.reference}
+                totalRows={reference?.totalRows}
+              />
+            {:else}
               <WithModelResultTooltip {modelHasError}>
                 <a
-                  href="/source/{source.name}"
+                  href="/{reference?.entry?.source
+                    ? 'source'
+                    : 'model'}/{reference?.entry?.name}"
                   class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
                   style:grid-template-columns="auto max-content"
-                  on:focus={focus(source)}
-                  on:mouseover={focus(source)}
+                  on:focus={focus(reference.reference)}
+                  on:mouseover={focus(reference.reference)}
                   on:mouseleave={blur}
                   on:blur={blur}
                   class:text-gray-500={modelHasError}
                 >
                   <div class="truncate flex items-center gap-x-2">
                     <div class="truncate">
-                      {source?.embedded
-                        ? source?.source?.properties?.path
-                        : source.name}
+                      {reference.entry?.embedded
+                        ? reference.entry?.source?.properties?.path
+                        : reference.entry.name}
                     </div>
                   </div>
 
                   <div class="text-gray-500">
-                    {#if source.totalRows}
-                      {`${formatCompactInteger(source.totalRows)} rows` || ""}
+                    {#if reference?.totalRows}
+                      {`${formatCompactInteger(reference.totalRows)} rows` ||
+                        ""}
                     {/if}
                   </div>
                 </a>
 
                 <svelte:fragment slot="tooltip-title">
                   <div class="break-all">
-                    {source?.embedded
-                      ? source?.source?.properties?.path
-                      : source.name}
+                    {reference?.entry?.embedded
+                      ? reference?.entry?.source?.properties?.path
+                      : reference?.entry?.name}
                   </div></svelte:fragment
                 >
                 <svelte:fragment slot="tooltip-right">
-                  {#if source.source}
-                    {source.source.connector}
+                  {#if reference?.entry?.source}
+                    {reference?.entry?.source?.connector}
                   {/if}
                 </svelte:fragment>
 
@@ -187,8 +199,8 @@
                   </TooltipShortcutContainer>
                 </svelte:fragment>
               </WithModelResultTooltip>
-            {/each}
-          {/if}
+            {/if}
+          {/each}
         </div>
       {/if}
     </div>
