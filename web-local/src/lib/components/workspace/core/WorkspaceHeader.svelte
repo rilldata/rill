@@ -61,7 +61,6 @@
   <div style:padding-left="{$navigationVisibilityTween * 24}px">
     {#if titleInput !== undefined && titleInput !== null}
       <h1
-        style:font-size="16px"
         class="w-full  overflow-x-hidden  grid grid-flow-col justify-start items-center gap-x-1"
       >
         <Tooltip
@@ -88,7 +87,7 @@
             }}
             class="w-full text-overflow-ellipses whitespace-wrap bg-transparent border border-transparent border-2 {editable
               ? 'hover:border-gray-400 cursor-pointer'
-              : ''} rounded pl-2 pr-2"
+              : ''} rounded pl-1 pr-1"
             class:font-bold={editingTitle === false}
             on:blur={() => {
               editingTitle = false;

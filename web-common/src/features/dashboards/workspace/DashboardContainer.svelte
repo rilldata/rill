@@ -24,7 +24,6 @@
   <div class="explore-header pb-3">
     <slot name="header" />
   </div>
-  <!-- <hr class="pb-3 pt-1 ui-divider" /> -->
   <div
     class="explore-metrics mb-8"
     style:padding-left="calc({$navigationVisibilityTween * 24}px + 1.25rem)"
