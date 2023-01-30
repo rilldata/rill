@@ -4,8 +4,8 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import { crossfade, fly } from "svelte/transition";
+  import Spinner from "../../entity-management/Spinner.svelte";
   import { humanizeDataType, NicelyFormattedTypes } from "../humanize-numbers";
 
   export let value: number;

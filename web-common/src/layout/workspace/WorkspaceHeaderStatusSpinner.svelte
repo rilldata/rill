@@ -2,9 +2,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import Spinner from "../../features/entity-management/Spinner.svelte";
 
   export let applicationStatus = 0;
+
   let asTimer;
   function debounceStatus(status: EntityStatus) {
     clearTimeout(asTimer);

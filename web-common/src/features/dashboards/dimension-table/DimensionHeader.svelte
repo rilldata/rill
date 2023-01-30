@@ -10,10 +10,10 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
+  import Spinner from "../../entity-management/Spinner.svelte";
   import { metricsExplorerStore } from "../dashboard-stores";
 
   export let metricViewName: string;

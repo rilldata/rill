@@ -13,6 +13,7 @@
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
@@ -20,11 +21,8 @@
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
-  import { drag } from "@rilldata/web-local/lib/drag";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
@@ -34,6 +32,8 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { SIDE_PAD } from "../../../layout/config";
+  import { drag } from "../../../layout/drag";
   import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";

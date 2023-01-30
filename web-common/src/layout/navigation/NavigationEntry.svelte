@@ -8,9 +8,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { createCommandClickAction } from "../../util/command-click-action";
-  import ContextButton from "../column-profile/ContextButton.svelte";
-  import ExpanderButton from "../column-profile/ExpanderButton.svelte";
+  import ContextButton from "@rilldata/web-local/lib/components/column-profile/ContextButton.svelte";
+  import ExpanderButton from "@rilldata/web-local/lib/components/column-profile/ExpanderButton.svelte";
+  import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
 
   export let name: string;
   export let href: string;
