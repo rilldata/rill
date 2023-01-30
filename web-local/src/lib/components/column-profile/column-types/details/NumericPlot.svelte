@@ -18,16 +18,22 @@ Otherwise, the page will jump around as the data is fetched.
   } from "@rilldata/web-common/components/data-graphic/marks";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
+  import type {
+    NumericHistogramBinsBin,
+    NumericOutliersOutlier,
+    TopKEntry,
+    V1NumericStatistics,
+  } from "@rilldata/web-common/runtime-client";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
 
-  export let data;
-  export let rug;
-  export let summary;
-  export let topK;
-  export let totalRows;
+  export let data: NumericHistogramBinsBin[];
+  export let rug: NumericOutliersOutlier[];
+  export let summary: V1NumericStatistics;
+  export let topK: TopKEntry[];
+  export let totalRows: number;
   export let type;
 
   let summaryMode: "summary" | "topk" = "summary";
