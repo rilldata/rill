@@ -41,12 +41,12 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 
 **`glob.max_objects_matched`**
  — Appplicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern.
-  - default value is _`100`_
+  - default value is _`10,000`_
 
 **`glob.max_objects_listed`**
  — Appplicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
 
-  - default value is _`10,000`_
+  - default value is _`100,000`_
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 
