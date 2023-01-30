@@ -34,7 +34,7 @@ Otherwise, the page will jump around as the data is fetched.
   export let summary: V1NumericStatistics;
   export let topK: TopKEntry[];
   export let totalRows: number;
-  export let type;
+  export let type: string;
 
   let summaryMode: "summary" | "topk" = "summary";
 
