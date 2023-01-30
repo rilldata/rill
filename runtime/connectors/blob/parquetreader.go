@@ -13,6 +13,7 @@ import (
 	"github.com/apache/arrow/go/v11/parquet/file"
 	"github.com/apache/arrow/go/v11/parquet/pqarrow"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/container"
 	"gocloud.dev/blob"
 )
@@ -84,24 +85,6 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	)
 }
 
-func reverse(s []int) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-}
-
-func rangeInt(start, end int, rev bool) []int {
-	result := make([]int, end-start)
-	for i := start; i < end; i++ {
-		result[i] = i
-	}
-
-	if rev {
-		reverse(result)
-	}
-	return result
-}
-
 func containerForRecordLimiting(option *extractConfig) (container.Container[arrow.Record], error) {
 	switch option.strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
@@ -117,7 +100,7 @@ func containerForRecordLimiting(option *extractConfig) (container.Container[arro
 // estimateRecords estimates the number of rows to fetch based on extract policy
 // each arrow.Record will hold batchSize number of rows
 func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config extractConfig) ([]arrow.Record, error) {
-	rowIndexes := rangeInt(0, reader.NumRowGroups(), config.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL)
+	rowIndexes := arrayutil.RangeInt(0, reader.NumRowGroups(), config.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL)
 
 	// row group indices that we need
 	reqRowIndices := make([]int, 0)
@@ -138,7 +121,7 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 		rows += rowCount
 	}
 
-	r, err := pqToArrowReader.GetRecordReader(ctx, rangeInt(0, reader.RowGroup(0).NumColumns(), false), reqRowIndices)
+	r, err := pqToArrowReader.GetRecordReader(ctx, arrayutil.RangeInt(0, reader.RowGroup(0).NumColumns(), false), reqRowIndices)
 	if err != nil {
 		return nil, err
 	}
