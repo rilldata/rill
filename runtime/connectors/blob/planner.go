@@ -28,7 +28,7 @@ func (p *planner) Add(item *blob.ListObject) bool {
 }
 
 func (p *planner) Done() bool {
-	return p.container.IsFull() || p.rowPlanner.isFull()
+	return p.container.IsFull() || p.rowPlanner.done()
 }
 
 func (p *planner) Items() []*objectWithPlan {

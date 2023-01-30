@@ -7,9 +7,10 @@ import (
 
 type rowPlanner interface {
 	planFile(item *blob.ListObject) *objectWithPlan
-	isFull() bool
+	done() bool
 }
 
+// plannerWithGlobalLimits adds download limit to all file as per strategy
 type plannerWithGlobalLimits struct {
 	cumsizeInBytes uint64
 	strategy       runtimev1.Source_ExtractPolicy_Strategy
@@ -22,29 +23,32 @@ func (r *plannerWithGlobalLimits) planFile(item *blob.ListObject) *objectWithPla
 	obj.full = true
 	if uint64(item.Size)+r.cumsizeInBytes > r.limitInBytes {
 		obj.full = false
-		obj.size = r.limitInBytes - r.cumsizeInBytes
-		obj.stratety = r.strategy
+		obj.extractOption = &extractOption{limtiInBytes: r.limitInBytes - r.cumsizeInBytes, strategy: r.strategy}
 		r.full = true
 	}
 	return obj
 }
 
-func (r *plannerWithGlobalLimits) isFull() bool {
+func (r *plannerWithGlobalLimits) done() bool {
 	return r.full
 }
 
+// plannerWithPerFileLimits adds download limit to every file as per strategy
 type plannerWithPerFileLimits struct {
 	strategy     runtimev1.Source_ExtractPolicy_Strategy
 	limitInBytes uint64
-	full         bool
 }
 
 func (r *plannerWithPerFileLimits) planFile(item *blob.ListObject) *objectWithPlan {
-	return &objectWithPlan{obj: item, full: false, size: r.limitInBytes, stratety: r.strategy}
+	return &objectWithPlan{
+		obj:           item,
+		full:          false,
+		extractOption: &extractOption{limtiInBytes: r.limitInBytes, strategy: r.strategy},
+	}
 }
 
-func (r *plannerWithPerFileLimits) isFull() bool {
-	return r.full
+func (r *plannerWithPerFileLimits) done() bool {
+	return false
 }
 
 type plannerWithoutLimits struct{}
@@ -53,13 +57,17 @@ func (r *plannerWithoutLimits) planFile(item *blob.ListObject) *objectWithPlan {
 	return &objectWithPlan{obj: item, full: true}
 }
 
-func (r *plannerWithoutLimits) isFull() bool {
+func (r *plannerWithoutLimits) done() bool {
 	return false
 }
 
 type objectWithPlan struct {
-	obj      *blob.ListObject
-	full     bool
-	size     uint64
-	stratety runtimev1.Source_ExtractPolicy_Strategy
+	obj           *blob.ListObject
+	full          bool
+	extractOption *extractOption
+}
+
+type extractOption struct {
+	limtiInBytes uint64
+	strategy     runtimev1.Source_ExtractPolicy_Strategy
 }

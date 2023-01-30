@@ -19,10 +19,10 @@ import (
 // increasing this limit can increase speed ingestion
 // but may increase bottleneck at duckdb or network/db IO
 // set without any benchamarks
-const concurrentBlobDownloadLimit = 8
+const _concurrentBlobDownloadLimit = 8
 
 // map of supoprted extensions for partial downloads vs readers
-var partialDownloadReaders = map[string]string{".parquet": "parquet", ".csv": "csv", ".tsv": "csv", ".txt": "csv", ".parquet.gz": "parquet"}
+var _partialDownloadReaders = map[string]string{".parquet": "parquet", ".csv": "csv", ".tsv": "csv", ".txt": "csv", ".parquet.gz": "parquet"}
 
 // implements connector.FileIterator
 type blobIterator struct {
@@ -54,11 +54,10 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, globPat
 	}
 
 	return &blobIterator{
-		ctx:        ctx,
-		bucket:     bucket,
-		objects:    items,
-		tempDir:    tempDir,
-		localFiles: make([]string, 0),
+		ctx:     ctx,
+		bucket:  bucket,
+		objects: items,
+		tempDir: tempDir,
 	}, nil
 }
 
@@ -95,7 +94,7 @@ func (iter *blobIterator) NextBatch(n int) ([]string, error) {
 	// to keep things easy creating a new slice every time
 	iter.localFiles = make([]string, n)
 	g, grpCtx := errgroup.WithContext(iter.ctx)
-	g.SetLimit(concurrentBlobDownloadLimit)
+	g.SetLimit(_concurrentBlobDownloadLimit)
 	for i, obj := range iter.objects[start:end] {
 		obj := obj
 		index := start + i // with repect to object slice
@@ -112,7 +111,7 @@ func (iter *blobIterator) NextBatch(n int) ([]string, error) {
 
 			iter.localFiles[index-start] = file.Name()
 			ext := fileutil.FullExt(obj.obj.Key)
-			partialReader, isPartialDownloadSupported := partialDownloadReaders[ext]
+			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
 			if obj.full || !isPartialDownloadSupported {
 				// download full file
 				return downloadObject(grpCtx, iter.bucket, obj.obj.Key, file)
@@ -121,9 +120,9 @@ func (iter *blobIterator) NextBatch(n int) ([]string, error) {
 			// check if, for smaller size we can download entire file
 			switch partialReader {
 			case "parquet":
-				return downloadParquet(grpCtx, iter.bucket, obj.obj, extractConfig{limtInBytes: obj.size, strategy: obj.stratety}, file)
+				return downloadParquet(grpCtx, iter.bucket, obj.obj, obj.extractOption, file)
 			case "csv":
-				return downloadCSV(grpCtx, iter.bucket, obj.obj, &extractConfig{limtInBytes: obj.size, strategy: obj.stratety}, file)
+				return downloadCSV(grpCtx, iter.bucket, obj.obj, obj.extractOption, file)
 			default:
 				// should not reach here
 				panic(fmt.Errorf("partial download not supported for extension %q", ext))
@@ -177,6 +176,40 @@ func plan(ctx context.Context, bucket *blob.Bucket, opts Options, globPattern st
 		return nil, fmt.Errorf("no files found for glob pattern %q", globPattern)
 	}
 	return items, nil
+}
+
+// listOptions for page listing api
+func listOptions(globPattern string) *blob.ListOptions {
+	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
+		// Access storage.Query via q here.
+		var q *storage.Query
+		if as(&q) {
+			// we only need name and size, adding only required attributes to reduce data fetched
+			_ = q.SetAttrSelection([]string{"Name", "Size"})
+		}
+		return nil
+	}}
+
+	prefix, glob := doublestar.SplitPattern(globPattern)
+	if !fileutil.IsGlob(glob) {
+		// single file
+		listOptions.Prefix = globPattern
+	} else if prefix != "." {
+		listOptions.Prefix = prefix
+	}
+
+	return listOptions
+}
+
+func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, file *os.File) error {
+	rc, err := bucket.NewReader(ctx, objpath, nil)
+	if err != nil {
+		return fmt.Errorf("Object(%q).NewReader: %w", objpath, err)
+	}
+	defer rc.Close()
+
+	_, err = io.Copy(file, rc)
+	return err
 }
 
 type Options struct {
@@ -236,38 +269,4 @@ func NewExtractPolicy(extractPolicy *runtimev1.Source_ExtractPolicy) *ExtractPol
 		RowsStrategy:   extractPolicy.RowsStrategy,
 		RowsLimitBytes: extractPolicy.RowsLimitBytes,
 	}
-}
-
-// listOptions for page listing api
-func listOptions(globPattern string) *blob.ListOptions {
-	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
-		// Access storage.Query via q here.
-		var q *storage.Query
-		if as(&q) {
-			// we only need name and size, adding only required attributes to reduce data fetched
-			_ = q.SetAttrSelection([]string{"Name", "Size"})
-		}
-		return nil
-	}}
-
-	prefix, glob := doublestar.SplitPattern(globPattern)
-	if !fileutil.IsGlob(glob) {
-		// single file
-		listOptions.Prefix = globPattern
-	} else if prefix != "." {
-		listOptions.Prefix = prefix
-	}
-
-	return listOptions
-}
-
-func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, file *os.File) error {
-	rc, err := bucket.NewReader(ctx, objpath, nil)
-	if err != nil {
-		return fmt.Errorf("Object(%q).NewReader: %w", objpath, err)
-	}
-	defer rc.Close()
-
-	_, err = io.Copy(file, rc)
-	return err
 }

@@ -24,7 +24,7 @@ func TestDownload(t *testing.T) {
 		ctx    context.Context
 		bucket *blob.Bucket
 		obj    *blob.ListObject
-		option extractConfig
+		option *extractOption
 	}
 	tests := []struct {
 		name    string
@@ -34,13 +34,13 @@ func TestDownload(t *testing.T) {
 	}{
 		{
 			name:    "download partial head",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limtInBytes: 1000}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limtiInBytes: 1000}},
 			wantErr: false,
 			want:    getInt32Array(1000, false),
 		},
 		{
 			name:    "download partial tail",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limtInBytes: 1000}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limtiInBytes: 1000}},
 			wantErr: false,
 			want:    getInt32Array(2000, false)[1000:],
 		},

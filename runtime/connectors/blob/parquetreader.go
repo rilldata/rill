@@ -20,14 +20,9 @@ import (
 
 // number of rows of a column fetched in one call
 // keeping it high seems to improve latency at the cost of accuracy in size of fetched data as per policy
-const batchSize = int64(1000)
+const _batchSize = int64(1000)
 
-type extractConfig struct {
-	limtInBytes uint64
-	strategy    runtimev1.Source_ExtractPolicy_Strategy
-}
-
-func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option extractConfig, fw *os.File) error {
+func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
 	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 
@@ -40,7 +35,7 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	}
 	defer pf.Close()
 
-	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: batchSize, Parallel: true}
+	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: _batchSize, Parallel: true}
 	// reader to convert parquet objects to arrow objects
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
@@ -85,12 +80,12 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	)
 }
 
-func containerForRecordLimiting(option *extractConfig) (container.Container[arrow.Record], error) {
+func containerForRecordLimiting(option *extractOption) (container.Container[arrow.Record], error) {
 	switch option.strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return container.NewTailContainer(int(option.limtInBytes), func(rec arrow.Record) { rec.Release() })
+		return container.NewTailContainer(int(option.limtiInBytes), func(rec arrow.Record) { rec.Release() })
 	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return container.NewBoundedContainer[arrow.Record](int(option.limtInBytes))
+		return container.NewBoundedContainer[arrow.Record](int(option.limtiInBytes))
 	default:
 		// No option selected - this should not be used for partial downloads though
 		return container.NewUnboundedContainer[arrow.Record]()
@@ -99,23 +94,25 @@ func containerForRecordLimiting(option *extractConfig) (container.Container[arro
 
 // estimateRecords estimates the number of rows to fetch based on extract policy
 // each arrow.Record will hold batchSize number of rows
-func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config extractConfig) ([]arrow.Record, error) {
+func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config *extractOption) ([]arrow.Record, error) {
 	rowIndexes := arrayutil.RangeInt(0, reader.NumRowGroups(), config.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL)
 
-	// row group indices that we need
-	reqRowIndices := make([]int, 0)
-	var cumSize uint64
-	var rows int64
+	var (
+		// row group indices that we need
+		reqRowIndices []int
+		cumSize       uint64
+		rows          int64
+	)
 	for _, index := range rowIndexes {
 		reqRowIndices = append(reqRowIndices, index)
 		rowGroup := reader.RowGroup(index)
 		rowGroupSize := rowGroup.ByteSize()
 		rowCount := rowGroup.NumRows()
 
-		if cumSize+uint64(rowGroupSize) > config.limtInBytes {
+		if cumSize+uint64(rowGroupSize) > config.limtiInBytes {
 			// taking entire rowgroup crosses allowed size
 			perRowSize := uint64(rowGroupSize / rowCount)
-			rows += int64((config.limtInBytes - cumSize) / perRowSize)
+			rows += int64((config.limtiInBytes - cumSize) / perRowSize)
 			break
 		}
 		rows += rowCount
@@ -128,13 +125,13 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 	defer r.Release()
 
 	// one record has batchsize rows
-	numRecords := rows / batchSize
+	numRecords := rows / _batchSize
 	if numRecords == 0 {
 		// if parquet file has less than batchSize rows or user selects less than batchSize rows
 		numRecords = 1
 	}
 
-	c, err := containerForRecordLimiting(&extractConfig{strategy: config.strategy, limtInBytes: uint64(numRecords)})
+	c, err := containerForRecordLimiting(&extractOption{strategy: config.strategy, limtiInBytes: uint64(numRecords)})
 	if err != nil {
 		return nil, err
 	}

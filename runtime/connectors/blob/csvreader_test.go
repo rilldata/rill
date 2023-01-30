@@ -23,7 +23,7 @@ func TestDownloadCSV(t *testing.T) {
 		ctx    context.Context
 		bucket *blob.Bucket
 		obj    *blob.ListObject
-		option *extractConfig
+		option *extractOption
 		fw     *os.File
 	}
 	tests := []struct {
@@ -38,7 +38,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &extractConfig{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limtInBytes: uint64(object.Size - 5)},
+				option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limtiInBytes: uint64(object.Size - 5)},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: testData[:len(testData)-1],
@@ -49,7 +49,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &extractConfig{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limtInBytes: uint64(object.Size - 5)},
+				option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limtiInBytes: uint64(object.Size - 5)},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: resultTail,

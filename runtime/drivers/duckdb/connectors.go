@@ -17,8 +17,8 @@ import (
 // Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	timeoutInSeconds := 30
-	if value, ok := source.Properties["timeout"]; ok {
-		timeoutInSeconds = int(value.(float64))
+	if source.Timeout > 0 {
+		timeoutInSeconds = int(source.Timeout)
 	}
 
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(timeoutInSeconds)*time.Second)
