@@ -11,7 +11,8 @@ import (
 	"gocloud.dev/blob"
 )
 
-// ObjectReader implements io.ReaderAt and io.Seeker interfaces
+// ObjectReader reads range of bytes from cloud objects
+// implements io.ReaderAt and io.Seeker interfaces
 type ObjectReader struct {
 	ctx    context.Context
 	bucket *blob.Bucket

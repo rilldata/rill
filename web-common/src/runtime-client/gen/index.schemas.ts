@@ -809,9 +809,9 @@ export type ExtractPolicyStrategy =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ExtractPolicyStrategy = {
-  UNSPECIFIED: "UNSPECIFIED",
-  HEAD: "HEAD",
-  TAIL: "TAIL",
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
 } as const;
 
 export type ConnectorPropertyType =

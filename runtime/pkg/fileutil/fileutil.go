@@ -148,11 +148,11 @@ func ExpandHome(path string) (string, error) {
 
 // OpenTempFileInDir opens a temp file in given dir
 // If dir doesn't exist it creates full dir path (recursively if required)
-func OpenTempFileInDir(dir, filename string) (*os.File, error) {
+func OpenTempFileInDir(dir, filePath string) (*os.File, error) {
 	// recursively create all directories
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, err
 	}
 
-	return os.CreateTemp(dir, fmt.Sprintf("%s*%s", Stem(filename), FullExt(filename)))
+	return os.CreateTemp(dir, fmt.Sprintf("%s*%s", Stem(filePath), FullExt(filePath)))
 }

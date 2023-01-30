@@ -34,13 +34,13 @@ func TestDownload(t *testing.T) {
 	}{
 		{
 			name:    "download partial head",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_HEAD, limtInBytes: 1000}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limtInBytes: 1000}},
 			wantErr: false,
 			want:    getInt32Array(1000, false),
 		},
 		{
 			name:    "download partial tail",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_TAIL, limtInBytes: 1000}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: extractConfig{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limtInBytes: 1000}},
 			wantErr: false,
 			want:    getInt32Array(2000, false)[1000:],
 		},

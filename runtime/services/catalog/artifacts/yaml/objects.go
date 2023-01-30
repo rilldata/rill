@@ -101,14 +101,14 @@ func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy,
 
 	sourceExtract := &ExtractPolicy{}
 	// set file
-	if extract.FilesStrategy != runtimev1.Source_ExtractPolicy_UNSPECIFIED {
+	if extract.FilesStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
 		sourceExtract.File = &ExtractConfig{}
 		sourceExtract.File.Strategy = extract.FilesStrategy.String()
 		sourceExtract.File.Size = fmt.Sprintf("%v", extract.FilesLimit)
 	}
 
 	// set row
-	if extract.RowsStrategy != runtimev1.Source_ExtractPolicy_UNSPECIFIED {
+	if extract.RowsStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
 		sourceExtract.Row = &ExtractConfig{}
 		sourceExtract.Row.Strategy = extract.RowsStrategy.String()
 		bytes := datasize.ByteSize(extract.RowsLimitBytes)
@@ -243,11 +243,11 @@ func fromExtractArtifact(policy *ExtractPolicy) (*runtimev1.Source_ExtractPolicy
 func parseStrategy(s string) (runtimev1.Source_ExtractPolicy_Strategy, error) {
 	switch strings.ToLower(s) {
 	case "tail":
-		return runtimev1.Source_ExtractPolicy_TAIL, nil
+		return runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, nil
 	case "head":
-		return runtimev1.Source_ExtractPolicy_HEAD, nil
+		return runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, nil
 	default:
-		return runtimev1.Source_ExtractPolicy_UNSPECIFIED, fmt.Errorf("invalid extract strategy %q", s)
+		return runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED, fmt.Errorf("invalid extract strategy %q", s)
 	}
 }
 

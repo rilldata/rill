@@ -98,7 +98,7 @@ func TestFetchFileNames(t *testing.T) {
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
 			for it.HasNext() {
-				next, err := it.NextBatch(1)
+				next, err := it.NextBatch(8)
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}
@@ -133,7 +133,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			name: "listing head limits",
 			args: args{context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_HEAD, FilesLimit: 2}},
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, FilesLimit: 2}},
 				"2020/**",
 			},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
@@ -144,7 +144,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			args: args{
 				context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_TAIL, FilesLimit: 2}},
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, FilesLimit: 2}},
 				"2020/**",
 			},
 			want:    map[string]struct{}{"test": {}, "writing": {}},
@@ -168,7 +168,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
 			for it.HasNext() {
-				next, err := it.NextBatch(1)
+				next, err := it.NextBatch(8)
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}

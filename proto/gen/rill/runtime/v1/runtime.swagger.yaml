@@ -1213,10 +1213,10 @@ definitions:
   ExtractPolicyStrategy:
     type: string
     enum:
-      - UNSPECIFIED
-      - HEAD
-      - TAIL
-    default: UNSPECIFIED
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   GenerateTimeSeriesRequestBasicMeasure:
     type: object
     properties:

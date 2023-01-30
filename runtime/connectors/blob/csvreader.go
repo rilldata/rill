@@ -1,16 +1,18 @@
 package blob
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gocloud.dev/blob"
 )
 
-// todo :: check if string conversions can be avoided
+var newlineseparator = []byte("\n")
+
 func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractConfig, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 
@@ -21,10 +23,10 @@ func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject,
 
 	// write rows
 	for _, r := range rows {
-		if _, err := fw.WriteString(r); err != nil {
+		if _, err := fw.Write(r); err != nil {
 			return err
 		}
-		if _, err := fw.WriteString("\n"); err != nil {
+		if _, err := fw.Write(newlineseparator); err != nil {
 			return err
 		}
 	}
@@ -32,20 +34,20 @@ func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject,
 	return nil
 }
 
-func csvRows(reader *ObjectReader, option *extractConfig) ([]string, error) {
-	if option.strategy == runtimev1.Source_ExtractPolicy_TAIL {
+func csvRows(reader *ObjectReader, option *extractConfig) ([][]byte, error) {
+	if option.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL {
 		return csvRowsTail(reader, option)
 	}
 	return csvRowsHead(reader, option)
 }
 
-func csvRowsTail(reader *ObjectReader, option *extractConfig) ([]string, error) {
+func csvRowsTail(reader *ObjectReader, option *extractConfig) ([][]byte, error) {
 	header, err := getHeader(reader)
 	if err != nil {
 		return nil, err
 	}
 
-	remBytes := int64(option.limtInBytes - uint64(len([]byte(header))))
+	remBytes := int64(option.limtInBytes - uint64(len(header)))
 	if _, err := reader.Seek(0-remBytes, io.SeekEnd); err != nil {
 		return nil, err
 	}
@@ -55,14 +57,14 @@ func csvRowsTail(reader *ObjectReader, option *extractConfig) ([]string, error) 
 		return nil, err
 	}
 
-	rows := strings.Split(string(p), "\n")
+	rows := bytes.Split(p, newlineseparator)
 	// remove first row (possibly incomplete)
 	rows = rows[1:]
 	// append header at start
-	return append([]string{header}, rows...), nil
+	return append([][]byte{header}, rows...), nil
 }
 
-func csvRowsHead(reader *ObjectReader, option *extractConfig) ([]string, error) {
+func csvRowsHead(reader *ObjectReader, option *extractConfig) ([][]byte, error) {
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
@@ -72,24 +74,24 @@ func csvRowsHead(reader *ObjectReader, option *extractConfig) ([]string, error) 
 		return nil, err
 	}
 
-	rows := strings.Split(string(p), "\n")
+	rows := bytes.Split(p, newlineseparator)
 	// remove last row (possibly incomplete)
 	return rows[:len(rows)-1], nil
 }
 
 // tries to get csv header from reader by incrmentally reading 1KB bytes
-func getHeader(r *ObjectReader) (string, error) {
+func getHeader(r *ObjectReader) ([]byte, error) {
 	fetchLength := 1024
 	p := make([]byte, 0)
 	for {
 		temp := make([]byte, fetchLength)
 		n, err := r.Read(temp)
-		if err != nil && !strings.Contains(err.Error(), "EOF") {
-			return "", err
+		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, err
 		}
 
 		p = append(p, temp...)
-		rows := strings.Split(string(p), "\n")
+		rows := bytes.Split(p, newlineseparator)
 		if len(rows) > 1 {
 			// complete header found
 			return rows[0], nil
@@ -97,7 +99,7 @@ func getHeader(r *ObjectReader) (string, error) {
 
 		if n < fetchLength {
 			// end of csv
-			return "", io.EOF
+			return nil, io.EOF
 		}
 	}
 }

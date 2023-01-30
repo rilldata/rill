@@ -39,9 +39,9 @@ message Source {
   // Extract policy for glob connectors
   message ExtractPolicy {
     enum Strategy {
-      UNSPECIFIED = 0;
-      HEAD = 1;
-      TAIL = 2;
+      STRATEGY_UNSPECIFIED = 0;
+      STRATEGY_HEAD = 1;
+      STRATEGY_TAIL = 2;
     }
     // strategy for selecting rows in a file
     Strategy rows_strategy = 1;

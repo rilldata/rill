@@ -17,7 +17,7 @@ import (
 	"gocloud.dev/blob"
 )
 
-// number of rows of a column fetched in next call
+// number of rows of a column fetched in one call
 // keeping it high seems to improve latency at the cost of accuracy in size of fetched data as per policy
 const batchSize = int64(1000)
 
@@ -102,11 +102,11 @@ func rangeInt(start, end int, rev bool) []int {
 	return result
 }
 
-func ContainerForRecordLimiting(option *extractConfig) (container.Container[arrow.Record], error) {
+func containerForRecordLimiting(option *extractConfig) (container.Container[arrow.Record], error) {
 	switch option.strategy {
-	case runtimev1.Source_ExtractPolicy_TAIL:
+	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
 		return container.NewTailContainer(int(option.limtInBytes), func(rec arrow.Record) { rec.Release() })
-	case runtimev1.Source_ExtractPolicy_HEAD:
+	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
 		return container.NewBoundedContainer[arrow.Record](int(option.limtInBytes))
 	default:
 		// No option selected - this should not be used for partial downloads though
@@ -114,8 +114,10 @@ func ContainerForRecordLimiting(option *extractConfig) (container.Container[arro
 	}
 }
 
+// estimateRecords estimates the number of rows to fetch based on extract policy
+// each arrow.Record will hold batchSize number of rows
 func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config extractConfig) ([]arrow.Record, error) {
-	rowIndexes := rangeInt(0, reader.NumRowGroups(), config.strategy == runtimev1.Source_ExtractPolicy_TAIL)
+	rowIndexes := rangeInt(0, reader.NumRowGroups(), config.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL)
 
 	// row group indices that we need
 	reqRowIndices := make([]int, 0)
@@ -149,7 +151,7 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 		numRecords = 1
 	}
 
-	c, err := ContainerForRecordLimiting(&extractConfig{strategy: config.strategy, limtInBytes: uint64(numRecords)})
+	c, err := containerForRecordLimiting(&extractConfig{strategy: config.strategy, limtInBytes: uint64(numRecords)})
 	if err != nil {
 		return nil, err
 	}

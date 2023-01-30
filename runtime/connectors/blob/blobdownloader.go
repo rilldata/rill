@@ -28,7 +28,7 @@ var partialDownloadReaders = map[string]string{".parquet": "parquet", ".csv": "c
 type blobIterator struct {
 	ctx        context.Context
 	bucket     *blob.Bucket
-	objects    []*blobObject
+	objects    []*objectWithPlan
 	index      int
 	localFiles []string
 	// all localfiles are created in this dir
@@ -81,6 +81,7 @@ func (iter *blobIterator) NextBatch(n int) ([]string, error) {
 		return nil, io.EOF
 	}
 
+	// delete files created in last iteration
 	fileutil.ForceRemoveFiles(iter.localFiles)
 	start := iter.index
 	end := iter.index + n
@@ -131,25 +132,25 @@ func (iter *blobIterator) NextBatch(n int) ([]string, error) {
 	}
 
 	if err := g.Wait(); err != nil {
-		fileutil.ForceRemoveFiles(iter.localFiles)
 		return nil, err
 	}
 
-	return iter.localFiles[start:end], nil
+	return iter.localFiles[0:(end - start)], nil
 }
 
-func plan(ctx context.Context, bucket *blob.Bucket, opts Options, globPattern string) ([]*blobObject, error) {
+// todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan
+func plan(ctx context.Context, bucket *blob.Bucket, opts Options, globPattern string) ([]*objectWithPlan, error) {
 	var (
 		size, fetched int64
 		matchCount    int
 	)
-	c, err := newPlanner(opts.ExtractPolicy)
+	planner, err := newPlanner(opts.ExtractPolicy)
 	if err != nil {
 		return nil, err
 	}
 
 	token := blob.FirstPageToken
-	for token != nil && !c.IsFull() {
+	for token != nil && !planner.Done() {
 		objs, nextToken, err := bucket.ListPage(ctx, token, opts.GlobPageSize, listOptions(globPattern))
 		if err != nil {
 			return nil, err
@@ -161,7 +162,7 @@ func plan(ctx context.Context, bucket *blob.Bucket, opts Options, globPattern st
 			if matched, _ := doublestar.Match(globPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
-				if !c.Add(obj) {
+				if !planner.Add(obj) {
 					break
 				}
 			}
@@ -171,7 +172,7 @@ func plan(ctx context.Context, bucket *blob.Bucket, opts Options, globPattern st
 		}
 	}
 
-	items := c.Items()
+	items := planner.Items()
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no files found for glob pattern %q", globPattern)
 	}
