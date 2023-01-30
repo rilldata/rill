@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -139,34 +140,49 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}()
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf(`SELECT * FROM %s`, temporaryTableName),
+			Query:    fmt.Sprintf(`SELECT * FROM %q`, temporaryTableName),
 			Priority: priority,
 		})
 		if err != nil {
 			return err
 		}
 
-		structs, err := rowsToData(rows)
-		if err != nil {
-			return err
-		}
-
-		results := make([]*runtimev1.TimeSeriesValue, 0, len(structs))
-		for _, s := range structs {
-			t, err := time.Parse(time.RFC3339, s.Fields[tsAlias].GetStringValue())
+		var data []*runtimev1.TimeSeriesValue
+		for rows.Next() {
+			rowMap := make(map[string]any)
+			err := rows.MapScan(rowMap)
 			if err != nil {
+				rows.Close()
 				return err
 			}
 
-			results = append(results, &runtimev1.TimeSeriesValue{
-				Ts:      timestamppb.New(t),
-				Bin:     s.Fields["bin"].GetNumberValue(),
-				Records: s,
-			})
-			delete(s.Fields, tsAlias)
-			delete(s.Fields, "bin")
-		}
+			var t time.Time
+			switch v := rowMap[tsAlias].(type) {
+			case time.Time:
+				t = v
+			default:
+				rows.Close()
+				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+			}
 
+			data = append(data, &runtimev1.TimeSeriesValue{
+				Ts: timestamppb.New(t),
+				Records: &structpb.Struct{
+					Fields: make(map[string]*structpb.Value),
+				},
+			})
+			for k, v := range rowMap {
+				if k != tsAlias {
+					vv, err := pbutil.ToValue(v)
+					if err != nil {
+						rows.Close()
+						return err
+					}
+
+					data[len(data)-1].Records.Fields[k] = vv
+				}
+			}
+		}
 		meta := structTypeToMetricsViewColumn(rows.Schema)
 		rows.Close()
 
@@ -181,7 +197,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		q.Result = &ColumnTimeseriesResult{
 			Meta: meta,
 			Data: &runtimev1.TimeSeriesResponse{
-				Results:   results,
+				Results:   data,
 				TimeRange: timeRange,
 				Spark:     sparkValues,
 			},
