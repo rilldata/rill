@@ -23,7 +23,7 @@ import {
   getIsFileReconcilingStore,
 } from "./file-artifacts-store";
 
-const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 1000;
+const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 60000;
 const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;
 
 export function syncFileSystemPeriodically(
