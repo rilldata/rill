@@ -134,7 +134,9 @@ func (iter *blobIterator) NextBatch(n int) ([]string, error) {
 		return nil, err
 	}
 
-	return iter.localFiles[0:(end - start)], nil
+	result := make([]string, end-start)
+	copy(result, iter.localFiles)
+	return result, nil
 }
 
 // todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan
