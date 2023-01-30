@@ -18,7 +18,7 @@
 
   export let width = undefined;
   export let height = undefined;
-  export let data;
+  export let data: unknown[];
   // export let curve = "curveLinear";
   // export let area = false;
   // export let color = "hsl(217, 10%, 50%)";
