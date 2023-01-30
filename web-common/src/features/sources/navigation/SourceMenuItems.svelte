@@ -193,7 +193,7 @@
   };
 </script>
 
-<MenuItem icon on:select={() => handleCreateModel(sourceName)}>
+<MenuItem icon on:select={() => handleCreateModel()}>
   <Model slot="icon" />
   Create new model
 </MenuItem>

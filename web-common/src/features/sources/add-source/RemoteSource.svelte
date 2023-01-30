@@ -38,6 +38,12 @@
   $: sourceNames = useSourceNames(runtimeInstanceId);
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  let createSourceMutationError: {
+    code: number;
+    message: string;
+  };
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
 
   const dispatch = createEventDispatcher();
@@ -154,8 +160,8 @@
       <SubmissionError
         message={humanReadableErrorMessage(
           connector.name,
-          $createSourceMutation?.error?.response?.data?.code ?? 3,
-          $createSourceMutation?.error?.response?.data?.message ?? error.message
+          createSourceMutationError?.code ?? 3,
+          createSourceMutationError?.message ?? error.message
         )}
       />
     {/if}
