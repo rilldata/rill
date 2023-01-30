@@ -5,6 +5,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import LeaderboardListItem from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardListItem.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
     createShiftClickAction,
@@ -13,11 +15,9 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import LeaderboardListItem from "../../../../components/leaderboard/LeaderboardListItem.svelte";
 
   export let colorClass = "bg-blue-200";
 

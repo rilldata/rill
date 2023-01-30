@@ -3,7 +3,7 @@
     humanizeDataType,
     humanizeGroupValues,
     NicelyFormattedTypes,
-  } from "@rilldata/web-local/lib/util/humanize-numbers";
+  } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 
   const examples = [
     { value: 10.534234, type: NicelyFormattedTypes.DECIMAL },

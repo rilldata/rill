@@ -15,8 +15,8 @@ import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
 import type { RuntimeState } from "../../../../web-local/src/lib/application-state-stores/application-store";
-import { overlay } from "../../../../web-local/src/lib/application-state-stores/overlay-store";
 import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";
+import { overlay } from "../../layout/overlay-store";
 import { getFilePathFromPagePath } from "./entity-mappers";
 import {
   FileArtifactsStore,

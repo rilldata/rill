@@ -10,14 +10,14 @@
     useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
-  import NavigationHeader from "@rilldata/web-local/lib/components/navigation/NavigationHeader.svelte";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
+  import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
+  import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
