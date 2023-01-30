@@ -136,7 +136,15 @@
     delay: 200,
   };
 
-  let lineTweenProps = { duration: 400, delay: 0 };
+  let lineTweenProps: {
+    duration: number;
+    delay?: number;
+    interpolate?: any;
+    easing?: any;
+  } = {
+    duration: 400,
+    delay: 0,
+  };
 
   // reactive variables for clarity
   $: newY = yMax;
@@ -150,7 +158,11 @@
     duration: scaleTweenDuration * 2,
     delay: scaleTweenDuration,
   };
-  let yMaxTweenProps = { duration: 400, delay: 0 };
+  let yMaxTweenProps: {
+    duration: number;
+    delay: number;
+    easing?: any;
+  } = { duration: 400, delay: 0 };
 
   $: if (longTimeSeries) {
     /**

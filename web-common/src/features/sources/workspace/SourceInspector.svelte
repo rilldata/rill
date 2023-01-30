@@ -17,11 +17,15 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import { getSummaries } from "@rilldata/web-local/lib/components/column-profile/queries";
+  import {
+    ColumnSummary,
+    getSummaries,
+  } from "@rilldata/web-local/lib/components/column-profile/queries";
   import {
     GridCell,
     LeftRightGrid,
   } from "@rilldata/web-local/lib/components/left-right-grid";
+  import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import ReferenceModels from "./ReferenceModels.svelte";
 
@@ -108,6 +112,7 @@
     { query: { keepPreviousData: true } }
   );
 
+  let summaries: Readable<Array<ColumnSummary>>;
   $: summaries = getSummaries(
     sourceName,
     $runtimeStore?.instanceId,
