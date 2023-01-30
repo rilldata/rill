@@ -14,10 +14,10 @@
     V1GetTableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
+  import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
   import {
     getMatchingCatalogReference,
     getTableReferences,

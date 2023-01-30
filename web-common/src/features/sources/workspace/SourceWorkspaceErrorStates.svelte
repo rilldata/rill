@@ -3,6 +3,7 @@
   import { Callout } from "@rilldata/web-common/components/callout";
   import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/add-source/errors.js";
   import { refreshSource } from "@rilldata/web-common/features/sources/refreshSource";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetFile,
@@ -11,7 +12,6 @@
     useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";

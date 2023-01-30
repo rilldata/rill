@@ -7,7 +7,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { WorkspaceContainer } from "@rilldata/web-local/lib/components/workspace";
+  import { WorkspaceContainer } from "../../../layout/workspace";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { metricsExplorerStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";

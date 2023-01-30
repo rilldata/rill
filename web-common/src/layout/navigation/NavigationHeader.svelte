@@ -1,10 +1,10 @@
 <script lang="ts">
   import AddIcon from "@rilldata/web-common/components/icons/Add.svelte";
+  import ContextButton from "@rilldata/web-local/lib/components/column-profile/ContextButton.svelte";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../application-config";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";
-  import ContextButton from "../column-profile/ContextButton.svelte";
+  import { LIST_SLIDE_DURATION } from "../config";
 
   export let show = true;
   export let tooltipText: string;

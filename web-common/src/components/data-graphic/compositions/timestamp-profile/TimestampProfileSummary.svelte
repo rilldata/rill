@@ -8,8 +8,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { datesToFormattedTimeRange } from "@rilldata/web-common/lib/formatters";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import GridCell from "@rilldata/web-local/lib/components/left-right-grid/GridCell.svelte";
-  import LeftRightGrid from "@rilldata/web-local/lib/components/left-right-grid/LeftRightGrid.svelte";
+  import { GridCell, LeftRightGrid } from "../../../grid";
 
   export let start: Date;
   export let end: Date;

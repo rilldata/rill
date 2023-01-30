@@ -1,10 +1,10 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { crossfade, fly } from "svelte/transition";
+  import Spinner from "../../entity-management/Spinner.svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,

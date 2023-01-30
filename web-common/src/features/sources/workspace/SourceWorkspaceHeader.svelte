@@ -11,11 +11,14 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -30,10 +33,6 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
-  import WorkspaceHeader from "@rilldata/web-local/lib/components/workspace/core/WorkspaceHeader.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -43,6 +42,7 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
+  import { WorkspaceHeader } from "../../../layout/workspace";
   import { renameFileArtifact } from "../../entity-management/actions";
   import { getRouteFromName } from "../../entity-management/entity-mappers";
   import { getName, isDuplicateName } from "../../entity-management/name-utils";

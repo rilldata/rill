@@ -5,7 +5,6 @@
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceMetricsViewTimeSeries,
@@ -18,6 +17,7 @@
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
+  import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import {
     MetricsExplorerEntity,

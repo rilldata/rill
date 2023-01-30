@@ -1,16 +1,16 @@
 <script lang="ts">
+  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
+  import { getContext, setContext } from "svelte";
+  import { tweened } from "svelte/motion";
+  import type { Writable } from "svelte/store";
   import {
     DEFAULT_INSPECTOR_WIDTH,
     DEFAULT_PREVIEW_TABLE_HEIGHT,
     SIDE_PAD,
     SURFACE_SLIDE_DURATION,
     SURFACE_SLIDE_EASING,
-  } from "@rilldata/web-local/lib/application-config";
-  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
-  import { getContext, setContext } from "svelte";
-  import { tweened } from "svelte/motion";
-  import type { Writable } from "svelte/store";
+  } from "../config";
   import Inspector from "./Inspector.svelte";
 
   export let assetID;

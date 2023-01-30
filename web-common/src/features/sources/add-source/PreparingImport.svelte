@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BlockingOverlayContainer from "@rilldata/web-common/features/temp/BlockingOverlayContainer.svelte";
+  import BlockingOverlayContainer from "../../../layout/BlockingOverlayContainer.svelte";
 </script>
 
 <BlockingOverlayContainer
