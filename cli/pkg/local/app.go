@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -307,6 +309,16 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
+	httpPort, err = scanPort(a.BaseLogger, httpPort)
+	if err != nil {
+		return err
+	}
+
+	grpcPort, err = scanPort(a.BaseLogger, httpPort+1)
+	if err != nil {
+		return err
+	}
+
 	// Create a runtime server
 	opts := &runtimeserver.Options{
 		HTTPPort: httpPort,
@@ -351,6 +363,19 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 	a.Logger.Info("Rill shutdown gracefully")
 	return nil
+}
+
+func scanPort(logger *zap.Logger, port int) (int, error) {
+	for i := port; i <= 9999; i++ {
+		conn, err := net.Listen("tcp", ":"+strconv.Itoa(i))
+		if err != nil {
+			logger.Warn(err.Error())
+			continue
+		}
+		conn.Close()
+		return i, nil
+	}
+	return -1, fmt.Errorf("no ports available")
 }
 
 func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) {
