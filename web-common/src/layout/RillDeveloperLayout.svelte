@@ -1,11 +1,6 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-  import {
-    addReconcilingOverlay,
-    syncFileSystemPeriodically,
-  } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
@@ -46,13 +41,14 @@
     return initMetrics(config);
   });
 
-  syncFileSystemPeriodically(
-    queryClient,
-    runtimeStore,
-    page,
-    fileArtifactsStore
-  );
-  $: addReconcilingOverlay($page.url.pathname);
+  // Disabling until the runtime implements async reconcile
+  // syncFileSystemPeriodically(
+  //   queryClient,
+  //   runtimeStore,
+  //   page,
+  //   fileArtifactsStore
+  // );
+  // $: addReconcilingOverlay($page.url.pathname);
 
   let dbRunState = "disconnected";
   let runstateTimer;
