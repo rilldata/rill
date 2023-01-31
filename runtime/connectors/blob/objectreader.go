@@ -87,9 +87,8 @@ func (f *ObjectReader) Seek(offset int64, whence int) (int64, error) {
 
 func NewBlobObjectReader(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject) *ObjectReader {
 	return &ObjectReader{
-		ctx:       ctx,
-		bucket:    bucket,
-		obj:       obj,
-		debugMode: true,
+		ctx:    ctx,
+		bucket: bucket,
+		obj:    obj,
 	}
 }

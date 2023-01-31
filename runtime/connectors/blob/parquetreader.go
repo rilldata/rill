@@ -27,7 +27,6 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 
 	props := parquet.NewReaderProperties(mem)
-	props.BufferedStreamEnabled = true
 
 	pf, err := file.NewParquetReader(reader, file.WithReadProps(props))
 	if err != nil {
@@ -106,7 +105,8 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 	for _, index := range rowIndexes {
 		reqRowIndices = append(reqRowIndices, index)
 		rowGroup := reader.RowGroup(index)
-		rowGroupSize := rowGroup.ByteSize()
+		// we fetch compressed size from fs instead of ByteSize(uncompressed size)
+		rowGroupSize := rowGroup.MetaData().TotalCompressedSize()
 		rowCount := rowGroup.NumRows()
 
 		if cumSize+uint64(rowGroupSize) > config.limtiInBytes {
@@ -115,6 +115,7 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 			rows += int64((config.limtiInBytes - cumSize) / perRowSize)
 			break
 		}
+		cumSize += uint64(rowGroupSize)
 		rows += rowCount
 	}
 
