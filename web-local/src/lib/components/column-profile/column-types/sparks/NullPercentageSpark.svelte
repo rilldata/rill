@@ -11,7 +11,7 @@
   export let totalRows: number;
   export let isFetching: boolean;
 
-  let percentage;
+  let percentage: number;
   $: if (!isFetching) percentage = nullCount / totalRows;
 </script>
 
