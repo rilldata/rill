@@ -106,10 +106,10 @@ func validateLimits(size int64, matchCount int, fetched int64, config FetchConfi
 
 func validateConfigs(fetchConfigs *FetchConfigs) {
 	if fetchConfigs.GlobMaxObjectsMatched == 0 {
-		fetchConfigs.GlobMaxObjectsMatched = 10 * 1000
+		fetchConfigs.GlobMaxObjectsMatched = 1000
 	}
 	if fetchConfigs.GlobMaxObjectsListed == 0 {
-		fetchConfigs.GlobMaxObjectsListed = 100 * 1000
+		fetchConfigs.GlobMaxObjectsListed = 1000 * 1000
 	}
 	if fetchConfigs.GlobMaxTotalSize == 0 {
 		// 10 GB
