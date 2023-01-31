@@ -324,11 +324,9 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 			tsv = append(tsv, &runtimev1.TimeSeriesValue{
 				Ts:      timestamppb.New(t),
-				Bin:     r.Fields["bin"].GetNumberValue(),
 				Records: r,
 			})
 			delete(r.Fields, "ts")
-			delete(r.Fields, "bin")
 		}
 
 		return tsv, nil
