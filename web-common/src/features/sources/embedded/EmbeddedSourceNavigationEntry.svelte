@@ -1,12 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import NavigationEntry from "@rilldata/web-local/lib/components/navigation/NavigationEntry.svelte";
   import { slide } from "svelte/transition";
+  import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import EmbeddedSourceEntry from "./EmbeddedSourceEntry.svelte";
   import EmbeddedSourceMenuItems from "./EmbeddedSourceMenuItems.svelte";
   import EmbeddedSourceTooltip from "./EmbeddedSourceTooltip.svelte";
+
   export let path: string;
   export let connector: string;
   export let cachedSourceName: string;

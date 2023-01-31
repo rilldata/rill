@@ -6,6 +6,7 @@
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
@@ -16,7 +17,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";

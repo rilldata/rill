@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
   import {
     useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { COLUMN_PROFILE_CONFIG } from "../../application-config";
   import { runtimeStore } from "../../application-state-stores/application-store";
   import { NATIVE_SELECT } from "../../util/component-classes";
   import { getColumnType } from "./column-types";
