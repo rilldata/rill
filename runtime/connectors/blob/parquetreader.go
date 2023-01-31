@@ -20,7 +20,7 @@ import (
 
 // number of rows of a column fetched in one call
 // keeping it high seems to improve latency at the cost of accuracy in size of fetched data as per policy
-const _batchSize = int64(1000)
+const _batchSize = int64(1024)
 
 func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
 	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
@@ -34,7 +34,7 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	}
 	defer pf.Close()
 
-	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: _batchSize, Parallel: true}
+	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: 1024, Parallel: false}
 	// reader to convert parquet objects to arrow objects
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
@@ -79,12 +79,12 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	)
 }
 
-func containerForRecordLimiting(option *extractOption) (container.Container[arrow.Record], error) {
-	switch option.strategy {
+func containerForRecordLimiting(strategy runtimev1.Source_ExtractPolicy_Strategy, limit int) (container.Container[arrow.Record], error) {
+	switch strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return container.NewTailContainer(int(option.limtiInBytes), func(rec arrow.Record) { rec.Release() })
+		return container.NewTailContainer(limit, func(rec arrow.Record) { rec.Release() })
 	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return container.NewBoundedContainer[arrow.Record](int(option.limtiInBytes))
+		return container.NewBoundedContainer[arrow.Record](limit)
 	default:
 		// No option selected - this should not be used for partial downloads though
 		return container.NewUnboundedContainer[arrow.Record]()
@@ -109,10 +109,10 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 		rowGroupSize := rowGroup.MetaData().TotalCompressedSize()
 		rowCount := rowGroup.NumRows()
 
-		if cumSize+uint64(rowGroupSize) > config.limtiInBytes {
+		if cumSize+uint64(rowGroupSize) > config.limitInBytes {
 			// taking entire rowgroup crosses allowed size
 			perRowSize := uint64(rowGroupSize / rowCount)
-			rows += int64((config.limtiInBytes - cumSize) / perRowSize)
+			rows += int64((config.limitInBytes - cumSize) / perRowSize)
 			break
 		}
 		cumSize += uint64(rowGroupSize)
@@ -132,7 +132,7 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 		numRecords = 1
 	}
 
-	c, err := containerForRecordLimiting(&extractOption{strategy: config.strategy, limtiInBytes: uint64(numRecords)})
+	c, err := containerForRecordLimiting(config.strategy, int(numRecords))
 	if err != nil {
 		return nil, err
 	}

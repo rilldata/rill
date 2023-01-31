@@ -47,7 +47,7 @@ func csvRowsTail(reader *ObjectReader, option *extractOption) ([][]byte, error) 
 		return nil, err
 	}
 
-	remBytes := int64(option.limtiInBytes - uint64(len(header)))
+	remBytes := int64(option.limitInBytes - uint64(len(header)))
 	if _, err := reader.Seek(0-remBytes, io.SeekEnd); err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func csvRowsHead(reader *ObjectReader, option *extractOption) ([][]byte, error) 
 		return nil, err
 	}
 
-	p := make([]byte, option.limtiInBytes)
+	p := make([]byte, option.limitInBytes)
 	if _, err := reader.Read(p); err != nil {
 		return nil, err
 	}

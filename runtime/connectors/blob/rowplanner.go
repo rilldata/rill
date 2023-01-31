@@ -23,7 +23,7 @@ func (r *plannerWithGlobalLimits) planFile(item *blob.ListObject) *objectWithPla
 	obj.full = true
 	if uint64(item.Size)+r.cumsizeInBytes > r.limitInBytes {
 		obj.full = false
-		obj.extractOption = &extractOption{limtiInBytes: r.limitInBytes - r.cumsizeInBytes, strategy: r.strategy}
+		obj.extractOption = &extractOption{limitInBytes: r.limitInBytes - r.cumsizeInBytes, strategy: r.strategy}
 		r.full = true
 	}
 	return obj
@@ -43,7 +43,7 @@ func (r *plannerWithPerFileLimits) planFile(item *blob.ListObject) *objectWithPl
 	return &objectWithPlan{
 		obj:           item,
 		full:          false,
-		extractOption: &extractOption{limtiInBytes: r.limitInBytes, strategy: r.strategy},
+		extractOption: &extractOption{limitInBytes: r.limitInBytes, strategy: r.strategy},
 	}
 }
 
@@ -68,6 +68,6 @@ type objectWithPlan struct {
 }
 
 type extractOption struct {
-	limtiInBytes uint64
+	limitInBytes uint64
 	strategy     runtimev1.Source_ExtractPolicy_Strategy
 }
