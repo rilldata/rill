@@ -34,7 +34,7 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	}
 	defer pf.Close()
 
-	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: 1024, Parallel: false}
+	arrowReadProperties := pqarrow.ArrowReadProperties{BatchSize: _batchSize, Parallel: true}
 	// reader to convert parquet objects to arrow objects
 	fileReader, err := pqarrow.NewFileReader(pf, arrowReadProperties, mem)
 	if err != nil {
