@@ -13,11 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type input struct {
-	numFiles int
-	path     string
-}
-
 func BenchmarkDownload10Files(b *testing.B) {
 	benchmarkDownload(10, b)
 }
@@ -26,9 +21,9 @@ func BenchmarkDownload20Files(b *testing.B) {
 	benchmarkDownload(20, b)
 }
 
-func BenchmarkDownload100Files(b *testing.B) {
-	benchmarkDownload(100, b)
-}
+// func BenchmarkDownload100Files(b *testing.B) {
+// 	benchmarkDownload(100, b)
+// }
 
 func benchmarkDownload(num int, b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -38,7 +33,7 @@ func benchmarkDownload(num int, b *testing.B) {
 			Name:          "test",
 			Connector:     "gcs",
 			ExtractPolicy: extractPolicy(uint64(num)),
-			Properties:    getMap("gs://ws1-teads.rilldata.com/beta-data/teads/teads_auction/v=1/y=2022/m=0[7-8]/**"),
+			Properties:    props("gs://ws1-teads.rilldata.com/beta-data/teads/teads_auction/v=1/y=2022/m=0[7-8]/**"),
 		})
 		require.NoError(b, err)
 		defer iter.Close()
@@ -66,7 +61,7 @@ func BenchmarkList100K(b *testing.B) {
 }
 
 // func BenchmarkList500K(b *testing.B) {
-// 	benchmarkList("gs://ws1-teads.rilldata.com/beta-data/teads/teads_auction/v=1/y=2022/m=0[7-8]/**", b)
+// 	benchmarkList("gs://ws1-teads.rilldata.com/**", b)
 // }
 
 func benchmarkList(path string, b *testing.B) {
@@ -78,14 +73,14 @@ func benchmarkList(path string, b *testing.B) {
 			Name:          "test",
 			Connector:     "gcs",
 			ExtractPolicy: extractPolicy(uint64(20)),
-			Properties:    getMap(path),
+			Properties:    props(path),
 		})
 		require.NoError(b, err)
 		defer iter.Close()
 	}
 }
 
-func getMap(path string) map[string]any {
+func props(path string) map[string]any {
 	m := make(map[string]any)
 	m["path"] = path
 	m["glob.max_total_size"] = math.MaxInt64
