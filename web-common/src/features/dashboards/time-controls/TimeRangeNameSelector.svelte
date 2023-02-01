@@ -110,12 +110,7 @@
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
         {#each selectableTimeRanges as timeRange}
           <MenuItem on:select={() => onTimeRangeSelect(timeRange.name)}>
-            <div>
-              {timeRange.name}
-            </div>
-            <div slot="right" let:hovered class:opacity-0={!hovered}>
-              {prettyFormatTimeRange(timeRange)}
-            </div>
+            {timeRange.name}
           </MenuItem>
         {/each}
       </Menu>
