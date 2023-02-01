@@ -18,18 +18,18 @@
 
   export let width = undefined;
   export let height = undefined;
-  export let data;
-  export let curve = "curveLinear";
-  export let area = false;
-  export let color = "hsl(217, 10%, 50%)";
-  export let tweenIn = false;
+  export let data: unknown[];
+  // export let curve = "curveLinear";
+  // export let area = false;
+  // export let color = "hsl(217, 10%, 50%)";
+  // export let tweenIn = false;
 
-  // the color of the zoom window
-  export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
-  // the color of the zoom window boundaries
-  export let zoomWindowBoundaryColor = "rgb(100,100,100)";
-  export let zoomWindowXMin: Date = undefined;
-  export let zoomWindowXMax: Date = undefined;
+  // // the color of the zoom window
+  // export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
+  // // the color of the zoom window boundaries
+  // export let zoomWindowBoundaryColor = "rgb(100,100,100)";
+  // export let zoomWindowXMin: Date = undefined;
+  // export let zoomWindowXMax: Date = undefined;
 
   export let xAccessor: string = undefined;
   export let yAccessor: string = undefined;
@@ -41,14 +41,14 @@
   export let top = 12;
   export let bottom = 4;
 
-  export let buffer = 4;
-  export let leftBuffer = buffer;
-  export let rightBuffer = buffer;
-  export let topBuffer = buffer;
-  export let bottomBuffer = buffer;
+  // export let buffer = 4;
+  // export let leftBuffer = buffer;
+  // export let rightBuffer = buffer;
+  // export let topBuffer = buffer;
+  // export let bottomBuffer = buffer;
 
-  export let objectName: string;
-  export let columnName: string;
+  // export let objectName: string;
+  // export let columnName: string;
 
   // $: sparkQuery = useRuntimeServiceGenerateTimeSeries(
   //   $runtimeStore?.instanceId,

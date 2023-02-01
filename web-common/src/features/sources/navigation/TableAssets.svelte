@@ -95,7 +95,7 @@
             </svelte:fragment>
 
             <svelte:fragment slot="tooltip-content">
-              <SourceTooltip {sourceName} />
+              <SourceTooltip {sourceName} connector="" />
             </svelte:fragment>
 
             <svelte:fragment slot="menu-items" let:toggleMenu>

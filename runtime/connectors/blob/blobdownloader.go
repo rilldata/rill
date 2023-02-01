@@ -225,10 +225,10 @@ type Options struct {
 // sets defaults if not set by user
 func (opts *Options) validate() {
 	if opts.GlobMaxObjectsMatched == 0 {
-		opts.GlobMaxObjectsMatched = 100
+		opts.GlobMaxObjectsMatched = 1000
 	}
 	if opts.GlobMaxObjectsListed == 0 {
-		opts.GlobMaxObjectsListed = 10 * 1000
+		opts.GlobMaxObjectsListed = 1000 * 1000
 	}
 	if opts.GlobMaxTotalSize == 0 {
 		// 10 GB

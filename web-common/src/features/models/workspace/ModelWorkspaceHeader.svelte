@@ -12,8 +12,10 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
@@ -33,7 +35,9 @@
   const queryClient = useQueryClient();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
-  const outputLayout = getContext("rill:app:output-layout");
+  const outputLayout = getContext(
+    "rill:app:output-layout"
+  ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelHasError = !!modelError;
