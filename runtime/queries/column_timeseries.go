@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -310,29 +311,36 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 		}
 
 		defer rows.Close()
-		results, err := rowsToData(rows)
-		if err != nil {
-			return nil, err
-		}
 
-		tsv := make([]*runtimev1.TimeSeriesValue, 0, len(results))
-		for _, r := range results {
-			t, err := time.Parse(time.RFC3339Nano, r.Fields["ts"].GetStringValue())
+		results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
+		for rows.Next() {
+			var ts time.Time
+			var count sql.NullFloat64
+			err = rows.Scan(&ts, &count)
 			if err != nil {
 				return nil, err
 			}
 
-			tsv = append(tsv, &runtimev1.TimeSeriesValue{
-				Ts:      timestamppb.New(t),
-				Records: r,
-			})
-			delete(r.Fields, "ts")
+			tsv := &runtimev1.TimeSeriesValue{
+				Ts: timestamppb.New(ts),
+				Records: &structpb.Struct{
+					Fields: make(map[string]*structpb.Value),
+				},
+			}
+
+			if count.Valid {
+				tsv.Records.Fields["count"] = structpb.NewNumberValue(count.Float64)
+			} else {
+				tsv.Records.Fields["count"] = structpb.NewNullValue()
+			}
+
+			results = append(results, tsv)
 		}
 
-		return tsv, nil
+		return results, nil
 	}
 
-	sql := ` -- extract unix time
+	querySQL := ` -- extract unix time
       WITH Q as (
         SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
       ),
@@ -365,49 +373,50 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
     `
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
+		Query:    querySQL,
 		Priority: priority,
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
-	aggs, err := rowsToData(rows)
-	if err != nil {
-		return nil, err
+
+	toTSV := func(ts int64, value sql.NullFloat64, bin float64) *runtimev1.TimeSeriesValue {
+		tsv := &runtimev1.TimeSeriesValue{
+			Records: &structpb.Struct{
+				Fields: make(map[string]*structpb.Value),
+			},
+		}
+		tsv.Ts = timestamppb.New(time.UnixMilli(ts))
+		tsv.Bin = bin
+		if value.Valid {
+			tsv.Records.Fields["count"] = structpb.NewNumberValue(value.Float64)
+		} else {
+			tsv.Records.Fields["count"] = structpb.NewNullValue()
+		}
+		return tsv
 	}
 
-	results := make([]*runtimev1.TimeSeriesValue, 0, len(aggs)*4)
-	for _, v := range aggs {
-		addStruct(v, &results, "min_t", "argmin_tv")
-		addStruct(v, &results, "argmin_vt", "min_v")
-		addStruct(v, &results, "argmax_vt", "max_v")
-		addStruct(v, &results, "max_t", "argmax_tv")
-		if v.Fields["argmin_vt"].GetNumberValue() > v.Fields["argmax_vt"].GetNumberValue() {
+	results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
+	for rows.Next() {
+		var minT, maxT, argminVT, argmaxVT int64
+		var argminTV, argmaxTV, minV, maxV sql.NullFloat64
+		var bin float64
+		err = rows.Scan(&minT, &argminTV, &maxT, &argmaxTV, &minV, &argminVT, &maxV, &argmaxVT, &bin)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, toTSV(minT, argminTV, bin), toTSV(argminVT, minV, bin), toTSV(argmaxVT, maxV, bin), toTSV(maxT, argmaxTV, bin))
+
+		if argminVT > argmaxVT {
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
 	}
 
-	err = rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
 	return results, nil
-}
-
-func addStruct(v *structpb.Struct, results *[]*runtimev1.TimeSeriesValue, key, value string) {
-	s := &runtimev1.TimeSeriesValue{
-		Records: &structpb.Struct{
-			Fields: map[string]*structpb.Value{},
-		},
-	}
-
-	s.Ts = timestamppb.New(time.UnixMilli(int64(v.Fields[key].GetNumberValue())))
-	s.Records.Fields["count"] = v.Fields[value]
-	s.Bin = v.Fields["bin"].GetNumberValue()
-	*results = append(*results, s)
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
