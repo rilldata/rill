@@ -400,7 +400,8 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	results := make([]*runtimev1.TimeSeriesValue, 0, (q.Pixels+1)*4)
 	for rows.Next() {
-		var minT, maxT, argminVT, argmaxVT int64
+		var minT, maxT int64
+		var argminVT, argmaxVT sql.NullInt64
 		var argminTV, argmaxTV, minV, maxV sql.NullFloat64
 		var bin float64
 		err = rows.Scan(&minT, &argminTV, &maxT, &argmaxTV, &minV, &argminVT, &maxV, &argmaxVT, &bin)
@@ -408,9 +409,17 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 			return nil, err
 		}
 
-		results = append(results, toTSV(minT, argminTV, bin), toTSV(argminVT, minV, bin), toTSV(argmaxVT, maxV, bin), toTSV(maxT, argmaxTV, bin))
+		argminVTSafe := minT
+		if argminVT.Valid {
+			argminVTSafe = argminVT.Int64
+		}
+		argmaxVTSafe := maxT
+		if argmaxVT.Valid {
+			argmaxVTSafe = argmaxVT.Int64
+		}
+		results = append(results, toTSV(minT, argminTV, bin), toTSV(argminVTSafe, minV, bin), toTSV(argmaxVTSafe, maxV, bin), toTSV(maxT, argmaxTV, bin))
 
-		if argminVT > argmaxVT {
+		if argminVT.Int64 > argmaxVT.Int64 {
 			i := len(results)
 			results[i-3], results[i-2] = results[i-2], results[i-3]
 		}
