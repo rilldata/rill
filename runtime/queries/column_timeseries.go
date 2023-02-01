@@ -96,7 +96,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
-		sql := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
+		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
 			SELECT
@@ -125,7 +125,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		)`
 
 		err = olap.Exec(ctx, &drivers.Statement{
-			Query:    sql,
+			Query:    querySQL,
 			Args:     args,
 			Priority: priority,
 		})
