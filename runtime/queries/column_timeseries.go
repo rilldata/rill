@@ -19,8 +19,11 @@ import (
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
 
 type ColumnTimeseriesResult struct {
-	Meta []*runtimev1.MetricsViewColumn
-	Data *runtimev1.TimeSeriesResponse
+	Meta       []*runtimev1.MetricsViewColumn
+	Results    []*runtimev1.TimeSeriesValue
+	Spark      []*runtimev1.TimeSeriesValue
+	TimeRange  *runtimev1.TimeSeriesTimeRange
+	SampleSize int32
 }
 
 type ColumnTimeseries struct {
@@ -78,9 +81,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			q.Result = &ColumnTimeseriesResult{
-				Data: &runtimev1.TimeSeriesResponse{},
-			}
+			q.Result = &ColumnTimeseriesResult{}
 			return nil
 		}
 
@@ -196,12 +197,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		q.Result = &ColumnTimeseriesResult{
-			Meta: meta,
-			Data: &runtimev1.TimeSeriesResponse{
-				Results:   data,
-				TimeRange: timeRange,
-				Spark:     sparkValues,
-			},
+			Meta:      meta,
+			Results:   data,
+			TimeRange: timeRange,
+			Spark:     sparkValues,
 		}
 		return nil
 	})

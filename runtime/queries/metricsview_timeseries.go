@@ -96,7 +96,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
 		Meta: r.Meta,
-		Data: r.Data.Results,
+		Data: r.Results,
 	}
 
 	return nil
