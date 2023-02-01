@@ -172,6 +172,7 @@ func plan(ctx context.Context, bucket *blob.Bucket, opts Options, globPattern st
 			return nil, err
 		}
 	}
+	fmt.Printf("total objects %v path %s\n", fetched, globPattern)
 
 	items := planner.Items()
 	if len(items) == 0 {
