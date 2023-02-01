@@ -16,6 +16,7 @@
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
@@ -152,6 +153,12 @@
         $runtimeStore.instanceId,
         resp
       );
+      if (resp.affectedPaths.length === 0) {
+        // when backend detects no change, we need to invalidate the file
+        await queryClient.refetchQueries(
+          getRuntimeServiceGetFileQueryKey($runtimeStore.instanceId, modelPath)
+        );
+      }
     } catch (err) {
       console.error(err);
     }
