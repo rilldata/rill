@@ -93,12 +93,13 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	}
 
 	// prepare fetch configs
-	fetchConfigs := rillblob.Options{
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
 		ExtractPolicy:         rillblob.NewExtractPolicy(source.ExtractPolicy),
+		GlobPattern:           url.Path,
 	}
-	return rillblob.NewIterator(ctx, bucketObj, fetchConfigs, url.Path)
+	return rillblob.NewIterator(ctx, bucketObj, opts)
 }

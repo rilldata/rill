@@ -278,7 +278,7 @@ func (m *Source) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Timeout
+	// no validation rules for TimeoutSeconds
 
 	if len(errors) > 0 {
 		return SourceMultiError(errors)

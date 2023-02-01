@@ -34,7 +34,7 @@ func Delete[E comparable](array []E, c E) []E {
 }
 
 // Reverse reverses a slice in-place
-func Reverse(s []int) {
+func Reverse[T any](s []T) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}

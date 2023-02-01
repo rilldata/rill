@@ -269,7 +269,7 @@ export interface V1Source {
   policy?: SourceExtractPolicy;
   properties?: V1SourceProperties;
   schema?: V1StructType;
-  timeout?: number;
+  timeoutSeconds?: number;
 }
 
 export interface V1RenameFileResponse {

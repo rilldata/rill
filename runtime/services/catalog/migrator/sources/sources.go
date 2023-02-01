@@ -26,7 +26,7 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 		Connector:     apiSource.Connector,
 		Properties:    apiSource.Properties.AsMap(),
 		ExtractPolicy: apiSource.GetPolicy(),
-		Timeout:       apiSource.GetTimeout(),
+		Timeout:       apiSource.GetTimeoutSeconds(),
 	}
 
 	env := &connectors.Env{

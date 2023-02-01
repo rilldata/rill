@@ -55,8 +55,8 @@ message Source {
   }
   // extraction policy for the source
   ExtractPolicy policy = 6;
-  // timeout for source ingestion
-  int32 timeout = 7;
+  // timeout for source ingestion in seconds
+  int32 timeout_seconds = 7;
 }
 
 // Model is the internal representation of a model definition

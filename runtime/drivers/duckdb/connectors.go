@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
+const _iteratorBatch = 8
+
 // Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	timeoutInSeconds := 30
@@ -41,7 +43,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 	appendToTable := false
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(8) // todo :: batch in properties ?
+		files, err := iterator.NextBatch(_iteratorBatch)
 		if err != nil {
 			return err
 		}

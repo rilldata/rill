@@ -2148,10 +2148,10 @@ definitions:
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
-      timeout:
+      timeoutSeconds:
         type: integer
         format: int32
-        title: timeout for source ingestion
+        title: timeout for source ingestion in seconds
     title: Source is the internal representation of a source definition
   v1StructType:
     type: object

@@ -177,11 +177,11 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		Type: drivers.ObjectTypeSource,
 		Path: path,
 		Object: &runtimev1.Source{
-			Name:       name,
-			Connector:  source.Type,
-			Properties: propsPB,
-			Policy:     extract,
-			Timeout:    source.Timeout,
+			Name:           name,
+			Connector:      source.Type,
+			Properties:     propsPB,
+			Policy:         extract,
+			TimeoutSeconds: source.Timeout,
 		},
 	}, nil
 }
