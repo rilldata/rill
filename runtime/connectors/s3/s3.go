@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
@@ -117,9 +118,17 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 }
 
 func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
+	creds := credentials.NewEnvCredentials()
+	_, err := creds.Get()
+	if err != nil {
+		// handle error
+		creds = credentials.AnonymousCredentials
+	}
+
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
-			Region: aws.String(conf.AWSRegion),
+			Region:      aws.String(conf.AWSRegion),
+			Credentials: creds,
 		})
 	}
 	sess, err := session.NewSessionWithOptions(session.Options{
