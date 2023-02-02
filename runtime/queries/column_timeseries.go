@@ -167,23 +167,17 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 			}
 
-			data = append(data, &runtimev1.TimeSeriesValue{
-				Ts: timestamppb.New(t),
-				Records: &structpb.Struct{
-					Fields: make(map[string]*structpb.Value),
-				},
-			})
-			for k, v := range rowMap {
-				if k != tsAlias {
-					vv, err := pbutil.ToValue(v)
-					if err != nil {
-						rows.Close()
-						return err
-					}
-
-					data[len(data)-1].Records.Fields[k] = vv
-				}
+			delete(rowMap, tsAlias)
+			records, err := pbutil.ToStruct(rowMap)
+			if err != nil {
+				rows.Close()
+				return err
 			}
+
+			data = append(data, &runtimev1.TimeSeriesValue{
+				Ts:      timestamppb.New(t),
+				Records: records,
+			})
 		}
 		meta := structTypeToMetricsViewColumn(rows.Schema)
 		rows.Close()
