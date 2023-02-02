@@ -9,6 +9,8 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
+  import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
+  import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import type {
     TimeRangeName,
     TimeSeriesTimeRange,
@@ -62,7 +64,9 @@
     if (!clickOutsideListener) {
       await tick();
       clickOutsideListener = onClickOutside(() => {
-        timeRangeNameMenuOpen = false;
+        if (!customTimeRangeInputOpen) {
+          timeRangeNameMenuOpen = false;
+        }
       }, timeRangeNameMenu);
     }
   };
@@ -74,6 +78,8 @@
     timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
     dispatch(EVENT_NAME, { timeRangeName });
   };
+
+  let customTimeRangeInputOpen = false;
 </script>
 
 <button
@@ -113,6 +119,17 @@
             {timeRange.name}
           </MenuItem>
         {/each}
+        <CustomTimeRangeMenuItem
+          open={customTimeRangeInputOpen}
+          on:select={() =>
+            (customTimeRangeInputOpen = !customTimeRangeInputOpen)}
+        />
+        {#if customTimeRangeInputOpen}
+          <CustomTimeRangeInput
+            on:apply={(e) =>
+              onTimeRangeSelect("custom", e.detail.startDate, e.detail.endDate)}
+          />
+        {/if}
       </Menu>
     </FloatingElement>
   </div>
