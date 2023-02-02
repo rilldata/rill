@@ -10,7 +10,7 @@ import (
 // it adds objects in the container which stops consuming files once it reaches file extract policy limits
 // every objects has details about what is the download strategy for that object
 type planner struct {
-	policy *ExtractPolicy
+	policy *runtimev1.Source_ExtractPolicy
 	// rowPlanner adds support for row extract policy
 	rowPlanner rowPlanner
 	// keeps collection of objects to be downloaded
@@ -35,8 +35,8 @@ func (p *planner) Items() []*objectWithPlan {
 	return p.container.Items()
 }
 
-func newPlanner(policy *ExtractPolicy) (*planner, error) {
-	c, err := ContainerForFileStrategy(policy.FilesStrategy, policy.FilesLimit)
+func newPlanner(policy *runtimev1.Source_ExtractPolicy) (*planner, error) {
+	c, err := ContainerForFileStrategy(policy)
 	if err != nil {
 		return nil, err
 	}
@@ -44,19 +44,30 @@ func newPlanner(policy *ExtractPolicy) (*planner, error) {
 	return &planner{policy: policy, container: c, rowPlanner: rowPlannerForRowStrategy(policy)}, nil
 }
 
-func ContainerForFileStrategy(strategy runtimev1.Source_ExtractPolicy_Strategy, limit uint64) (container.Container[*objectWithPlan], error) {
+func ContainerForFileStrategy(policy *runtimev1.Source_ExtractPolicy) (container.Container[*objectWithPlan], error) {
+	strategy := runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED
+	limit := 0
+	if policy != nil {
+		strategy = policy.FilesStrategy
+		limit = int(policy.FilesLimit)
+	}
+
 	switch strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return container.NewTailContainer(int(limit), func(obj *objectWithPlan) {})
+		return container.NewTailContainer(limit, func(obj *objectWithPlan) {})
 	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return container.NewBoundedContainer[*objectWithPlan](int(limit))
+		return container.NewBoundedContainer[*objectWithPlan](limit)
 	default:
 		// No option selected
 		return container.NewUnboundedContainer[*objectWithPlan]()
 	}
 }
 
-func rowPlannerForRowStrategy(policy *ExtractPolicy) rowPlanner {
+func rowPlannerForRowStrategy(policy *runtimev1.Source_ExtractPolicy) rowPlanner {
+	if policy == nil {
+		return &plannerWithoutLimits{}
+	}
+
 	if policy.RowsStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
 		if policy.FilesStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
 			// file strategy specified row limits are per file

@@ -82,13 +82,12 @@ func (t *tailContainer[T]) IsFull() bool {
 	return false
 }
 
+//todo :: check for memory leak
 func (t *tailContainer[T]) Items() []T {
 	total := t.items.Len()
 	result := make([]T, total)
-	for i := 0; i < total; i++ {
-		front := t.items.Front()
-		result[i] = front.Value.(T)
-		t.items.Remove(front)
+	for i, curr := 0, t.items.Front(); curr != nil; i, curr = i+1, curr.Next() {
+		result[i] = curr.Value.(T)
 	}
 	return result
 }

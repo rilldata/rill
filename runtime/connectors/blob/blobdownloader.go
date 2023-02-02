@@ -36,6 +36,45 @@ type blobIterator struct {
 	opts    *Options
 }
 
+type Options struct {
+	GlobMaxTotalSize      int64
+	GlobMaxObjectsMatched int
+	GlobMaxObjectsListed  int64
+	GlobPageSize          int
+	ExtractPolicy         *runtimev1.Source_ExtractPolicy
+	GlobPattern           string
+}
+
+// sets defaults if not set by user
+func (opts *Options) validate() {
+	if opts.GlobMaxObjectsMatched == 0 {
+		opts.GlobMaxObjectsMatched = 1000
+	}
+	if opts.GlobMaxObjectsListed == 0 {
+		opts.GlobMaxObjectsListed = 1000 * 1000
+	}
+	if opts.GlobMaxTotalSize == 0 {
+		// 10 GB
+		opts.GlobMaxTotalSize = 10 * 1024 * 1024 * 1024
+	}
+	if opts.GlobPageSize == 0 {
+		opts.GlobPageSize = 1000
+	}
+}
+
+func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) error {
+	if size > opts.GlobMaxTotalSize {
+		return fmt.Errorf("glob pattern exceeds limits: would fetch more than %d bytes", opts.GlobMaxTotalSize)
+	}
+	if matchCount > opts.GlobMaxObjectsMatched {
+		return fmt.Errorf("glob pattern exceeds limits: matched more than %d files", opts.GlobMaxObjectsMatched)
+	}
+	if fetched > opts.GlobMaxObjectsListed {
+		return fmt.Errorf("glob pattern exceeds limits: listed more than %d files", opts.GlobMaxObjectsListed)
+	}
+	return nil
+}
+
 // NewIterator returns new instance of blobIterator
 // the iterator keeps list of blob objects eagerly planned as per user's glob pattern and extract policies
 // clients should call close once done to release all resources like closing the bucket
@@ -49,7 +88,7 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options) (connec
 		opts:   &opts,
 	}
 
-	tempDir, err := os.MkdirTemp(os.TempDir(), "blob*ingestion")
+	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
 	if err != nil {
 		it.Close()
 		return nil, err
@@ -106,10 +145,12 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 		index := start + i // with repect to object slice
 		g.Go(func() error {
 			// need to create file by maintaining same dir path as in glob for hivepartition support
-			dir := filepath.Join(it.tempDir, filepath.Dir(obj.obj.Key))
-			// filename
-			objName := filepath.Base(obj.obj.Key)
-			file, err := fileutil.OpenTempFileInDir(dir, objName)
+			filename := filepath.Join(it.tempDir, obj.obj.Key)
+			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
+				return err
+			}
+
+			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
 			if err != nil {
 				return err
 			}
@@ -140,7 +181,9 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 		return nil, err
 	}
 
-	result := make([]string, len(it.localFiles))
+	result := make([]string, end-start)
+	// clients can make changes to slice if passing the same slice that iterator holds
+	// creating a copy since we want to delete all these files on next batch/close
 	copy(result, it.localFiles)
 	return result, nil
 }
@@ -219,64 +262,4 @@ func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, fi
 
 	_, err = io.Copy(file, rc)
 	return err
-}
-
-type Options struct {
-	GlobMaxTotalSize      int64
-	GlobMaxObjectsMatched int
-	GlobMaxObjectsListed  int64
-	GlobPageSize          int
-	ExtractPolicy         *ExtractPolicy
-	GlobPattern           string
-}
-
-// sets defaults if not set by user
-func (opts *Options) validate() {
-	if opts.GlobMaxObjectsMatched == 0 {
-		opts.GlobMaxObjectsMatched = 1000
-	}
-	if opts.GlobMaxObjectsListed == 0 {
-		opts.GlobMaxObjectsListed = 1000 * 1000
-	}
-	if opts.GlobMaxTotalSize == 0 {
-		// 10 GB
-		opts.GlobMaxTotalSize = 10 * 1024 * 1024 * 1024
-	}
-	if opts.GlobPageSize == 0 {
-		opts.GlobPageSize = 1000
-	}
-}
-
-func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) error {
-	if size > opts.GlobMaxTotalSize {
-		return fmt.Errorf("glob pattern exceeds limits: would fetch more than %d bytes", opts.GlobMaxTotalSize)
-	}
-	if matchCount > opts.GlobMaxObjectsMatched {
-		return fmt.Errorf("glob pattern exceeds limits: matched more than %d files", opts.GlobMaxObjectsMatched)
-	}
-	if fetched > opts.GlobMaxObjectsListed {
-		return fmt.Errorf("glob pattern exceeds limits: listed more than %d files", opts.GlobMaxObjectsListed)
-	}
-	return nil
-}
-
-type ExtractPolicy struct {
-	RowsStrategy   runtimev1.Source_ExtractPolicy_Strategy
-	RowsLimitBytes uint64
-	FilesStrategy  runtimev1.Source_ExtractPolicy_Strategy
-	FilesLimit     uint64
-}
-
-// todo :: add defaults if required
-func NewExtractPolicy(extractPolicy *runtimev1.Source_ExtractPolicy) *ExtractPolicy {
-	if extractPolicy == nil {
-		return &ExtractPolicy{}
-	}
-
-	return &ExtractPolicy{
-		FilesStrategy:  extractPolicy.FilesStrategy,
-		FilesLimit:     extractPolicy.FilesLimit,
-		RowsStrategy:   extractPolicy.RowsStrategy,
-		RowsLimitBytes: extractPolicy.RowsLimitBytes,
-	}
 }
