@@ -119,6 +119,7 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 
 func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
 	creds := credentials.NewEnvCredentials()
+	// Retrieve the credentials value
 	_, err := creds.Get()
 	if err != nil {
 		// handle error
@@ -133,12 +134,15 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*ses
 	}
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
+		Config: aws.Config{
+			Credentials: creds,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	reg, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
+	reg, err := s3manager.GetBucketRegion(ctx, sess, bucket, "us-east-1")
 	if err != nil {
 		return nil, err
 	}
