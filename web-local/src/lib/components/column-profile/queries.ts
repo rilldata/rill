@@ -172,18 +172,22 @@ export function getTimeSeriesAndSpark(
         estimatedRollupInterval: $estimatedInterval?.data,
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
-          $query?.data?.rollup?.results?.map((di) => {
+          $query?.data?.rollup?.results.map((di) => {
             const next = { ...di, count: di.records.count };
+            if (next.count == null || !isFinite(next.count)) {
+              next.count = 0;
+            }
             return next;
-          }) || [],
-          "ts"
+          }) || []
         ),
         spark: convertTimestampPreview(
-          $query?.data?.rollup?.spark?.map((di) => {
+          $query?.data?.rollup?.spark.map((di) => {
             const next = { ...di, count: di.records.count };
+            if (next.count == null || !isFinite(next.count)) {
+              next.count = 0;
+            }
             return next;
-          }) || [],
-          "ts"
+          }) || []
         ),
       };
     }

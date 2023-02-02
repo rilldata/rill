@@ -64,7 +64,62 @@ func TestServer_Timeseries(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["max"])
+	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
+}
+
+func TestServer_Timeseries_Spark_NoParams(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId:          instanceID,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		Pixels:              2,
+	})
+
+	require.NoError(t, err)
+	require.True(t, len(response.GetRollup().Results) > 0)
+	require.True(t, len(response.Rollup.Spark) > 0)
+}
+
+func TestServer_Timeseries_nulls_for_empty_intervals(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    "max",
+			},
+			{
+				Expression: "count(*)",
+				SqlName:    "count",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-01T01:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		},
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 2, len(results))
+
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
+
+	require.True(t, isNull(results[1].Records.Fields["count"]))
+	require.True(t, isNull(results[1].Records.Fields["max"]))
+}
+
+func isNull(v *structpb.Value) bool {
+	_, ok := v.Kind.(*structpb.Value_NullValue)
+	return ok
 }
 
 func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
@@ -96,7 +151,7 @@ func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"])
 }
 
 func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
@@ -128,7 +183,7 @@ func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records["count"])
+	require.Equal(t, 0.0, results[0].Records.Fields["count"])
 }
 
 func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
@@ -160,7 +215,7 @@ func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_exclude_all_string(t *testing.T) {
@@ -192,7 +247,7 @@ func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records["Total impressions"])
+	require.Equal(t, 0.0, results[0].Records.Fields["Total impressions"].GetNumberValue())
 }
 
 func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
@@ -224,7 +279,7 @@ func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_exclude_like_all(t *testing.T) {
@@ -257,7 +312,7 @@ func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records["Total impressions"])
+	require.Equal(t, 0.0, results[0].Records.Fields["Total impressions"].GetNumberValue())
 }
 
 func TestServer_Timeseries_numeric_dim(t *testing.T) {
@@ -289,7 +344,7 @@ func TestServer_Timeseries_numeric_dim(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
@@ -321,7 +376,7 @@ func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
@@ -353,7 +408,7 @@ func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 2.0, results[0].Records["count"])
+	require.Equal(t, 2.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
@@ -384,7 +439,7 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 25, len(results))
-	require.Equal(t, 1.0, results[0].Records["max"])
+	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
 }
 
 func TestServer_Timeseries_Empty_Filter(t *testing.T) {
@@ -412,7 +467,7 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["max"])
+	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
 }
 
 func TestServer_Timeseries_No_Measures(t *testing.T) {
@@ -434,7 +489,7 @@ func TestServer_Timeseries_No_Measures(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 2.0, results[0].Records["count"])
+	require.Equal(t, 2.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_Nil_Measures(t *testing.T) {
@@ -455,7 +510,7 @@ func TestServer_Timeseries_Nil_Measures(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 2.0, results[0].Records["count"])
+	require.Equal(t, 2.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_2measures(t *testing.T) {
@@ -495,8 +550,8 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["max"])
-	require.Equal(t, 2.0, results[0].Records["sum"])
+	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
+	require.Equal(t, 2.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_1dim(t *testing.T) {
@@ -531,7 +586,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["sum"])
+	require.Equal(t, 1.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_1dim_null(t *testing.T) {
@@ -563,7 +618,7 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 1.0, results[0].Records["sum"])
+	require.Equal(t, 1.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
@@ -598,7 +653,7 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 2.0, results[0].Records["sum"])
+	require.Equal(t, 2.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
@@ -636,7 +691,7 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 2.0, results[0].Records["sum"])
+	require.Equal(t, 2.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_1dim_2like(t *testing.T) {
@@ -671,7 +726,7 @@ func TestServer_Timeseries_1dim_2like(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 2.0, results[0].Records["sum"])
+	require.Equal(t, 2.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
@@ -711,7 +766,7 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records["sum"])
+	require.Equal(t, 0.0, results[0].Records.Fields["sum"].GetNumberValue())
 }
 
 func TestServer_Timeseries_no_measures(t *testing.T) {
@@ -731,7 +786,7 @@ func TestServer_Timeseries_no_measures(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 2, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
@@ -800,7 +855,7 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 	require.NoError(t, err)
 	results := response.GetRollup().Results
 	require.Equal(t, 2, len(results))
-	require.Equal(t, 1.0, results[0].Records["count"])
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 }
 
 func TestServer_RangeSanity(t *testing.T) {
@@ -822,19 +877,17 @@ func TestServer_RangeSanity(t *testing.T) {
 func TestServer_Timeseries_Spark(t *testing.T) {
 	server, instanceID := getSparkTimeseriesTestServer(t)
 
-	cnt := "count"
-	pxls := int32(2)
 	response, err := server.GenerateTimeSeries(context.Background(), &runtimev1.GenerateTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "count(*)",
-				SqlName:    cnt,
+				SqlName:    "count",
 			},
 		},
 		TimestampColumnName: "time",
-		Pixels:              pxls,
+		Pixels:              2,
 	})
 
 	require.NoError(t, err)

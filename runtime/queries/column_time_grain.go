@@ -78,17 +78,17 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
       )
       SELECT 
         COALESCE(
-            case WHEN ms > 1 THEN 'milliseconds' else NULL END,
-            CASE WHEN second > 1 THEN 'seconds' else NULL END,
-            CASE WHEN minute > 1 THEN 'minutes' else null END,
-            CASE WHEN hour > 1 THEN 'hours' else null END,
+            case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
+            CASE WHEN second > 1 THEN 'SECOND' else NULL END,
+            CASE WHEN minute > 1 THEN 'MINUTE' else null END,
+            CASE WHEN hour > 1 THEN 'HOUR' else null END,
             -- cases above, if equal to 1, then we have some candidates for
             -- bigger time grains. We need to reverse from here
             -- years, months, weeks, days.
-            CASE WHEN dayofyear = 1 and year > 1 THEN 'years' else null END,
-            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'months' else null END,
-            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'weeks' else null END,
-            CASE WHEN hour = 1 THEN 'days' else null END
+            CASE WHEN dayofyear = 1 and year > 1 THEN 'YEAR' else null END,
+            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'MONTH' else null END,
+            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'WEEK' else null END,
+            CASE WHEN hour = 1 THEN 'DAY' else null END
         ) as estimatedSmallestTimeGrain
       FROM time_grains
       `,
@@ -132,23 +132,6 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return nil
 	}
 
-	switch timeGrainString.String {
-	case "milliseconds":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
-	case "seconds":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_SECOND
-	case "minutes":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_MINUTE
-	case "hours":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_HOUR
-	case "days":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_DAY
-	case "weeks":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_WEEK
-	case "months":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_MONTH
-	case "years":
-		q.Result = runtimev1.TimeGrain_TIME_GRAIN_YEAR
-	}
+	q.Result = toTimeGrain(timeGrainString.String)
 	return nil
 }
