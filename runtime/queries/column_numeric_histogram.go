@@ -11,16 +11,36 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+type HistogramMethod int64
+
+const (
+	FD HistogramMethod = iota
+	Diagnostic
+)
+
+func (s HistogramMethod) String() string {
+	switch s {
+	case FD:
+		return "FD"
+	case Diagnostic:
+		return "Diagnostic"
+	default:
+		panic("unknown HistogramMethod")
+	}
+}
+
 type ColumnNumericHistogram struct {
 	TableName  string
 	ColumnName string
+	Method     HistogramMethod
+	Threshold  int
 	Result     []*runtimev1.NumericHistogramBins_Bin
 }
 
 var _ runtime.Query = &ColumnNumericHistogram{}
 
 func (q *ColumnNumericHistogram) Key() string {
-	return fmt.Sprintf("ColumnNumericHistogram:%s:%s", q.TableName, q.ColumnName)
+	return fmt.Sprintf("ColumnNumericHistogram:%s:%s:%s:%d", q.TableName, q.ColumnName, q.Method.String(), q.Threshold)
 }
 
 func (q *ColumnNumericHistogram) Deps() []string {
@@ -41,6 +61,11 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
+	if q.Method == Diagnostic {
+	} else if q.Method == FD {
+	} else {
+		return 0, fmt.Errorf("unknown histogram method: %s", q.Method.String())
+	}
 	sanitizedColumnName := safeName(q.ColumnName)
 	querySQL := fmt.Sprintf(
 		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
