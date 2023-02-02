@@ -82,7 +82,6 @@ func (t *tailContainer[T]) IsFull() bool {
 	return false
 }
 
-//todo :: check for memory leak
 func (t *tailContainer[T]) Items() []T {
 	total := t.items.Len()
 	result := make([]T, total)
