@@ -104,6 +104,7 @@ func (i *iterator) NextBatch(n int) ([]string, error) {
 	if end > len(i.files) {
 		end = len(i.files)
 	}
+	i.index = end
 	return i.files[start:end], nil
 }
 
