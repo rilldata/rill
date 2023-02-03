@@ -79,6 +79,11 @@
     dispatch(EVENT_NAME, { timeRangeName });
   };
 
+  function onApplyCustomTimeRange(startDate: string, endDate: string) {
+    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+    dispatch("select-custom-time-range", { start: startDate, end: endDate });
+  }
+
   let customTimeRangeInputOpen = false;
 </script>
 
@@ -127,7 +132,7 @@
         {#if customTimeRangeInputOpen}
           <CustomTimeRangeInput
             on:apply={(e) =>
-              onTimeRangeSelect("custom", e.detail.startDate, e.detail.endDate)}
+              onApplyCustomTimeRange(e.detail.startDate, e.detail.endDate)}
           />
         {/if}
       </Menu>

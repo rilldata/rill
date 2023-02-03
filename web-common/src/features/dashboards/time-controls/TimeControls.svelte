@@ -34,6 +34,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "../dashboard-stores";
   import {
+    ceilDate,
+    floorDate,
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
     getSelectableTimeGrains,
@@ -187,6 +189,20 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     allTimeRange
   );
 
+  function setCustomTimeRange(start: string, end: string) {
+    // round the start date down to the nearest time grain
+    // round the end date up to the nearest time grain
+    const adjustedStart = floorDate(new Date(start), selectedTimeGrain);
+    const adjustedEnd = ceilDate(new Date(end), selectedTimeGrain);
+
+    const newTimeRange = {
+      start: adjustedStart.toISOString(),
+      end: adjustedEnd.toISOString(),
+      interval: selectedTimeGrain,
+    };
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
+  }
+
   function noTimeseriesCTA() {
     if (timestampColumns?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
@@ -220,6 +236,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       {allTimeRange}
       {metricViewName}
       on:select-time-range-name={setSelectedTimeRangeName}
+      on:select-custom-time-range={(e) =>
+        setCustomTimeRange(e.detail.start, e.detail.end)}
       {selectedTimeRangeName}
     />
     <TimeGrainSelector

@@ -425,7 +425,10 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
   }
 };
 
-const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
+export const floorDate = (
+  date: Date | undefined,
+  timeGrain: TimeGrain
+): Date => {
   if (!date) return new Date();
   switch (timeGrain) {
     case TimeGrain.OneMinute: {
@@ -470,11 +473,12 @@ const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
   }
 };
 
-export const addGrains = (
-  date: Date,
-  units: number,
-  grain: TimeGrain
-): Date => {
+export function ceilDate(date: Date, timeGrain: TimeGrain): Date {
+  const floor = floorDate(date, timeGrain);
+  return addGrains(floor, 1, timeGrain);
+}
+
+export function addGrains(date: Date, units: number, grain: TimeGrain): Date {
   switch (grain) {
     case TimeGrain.OneMinute:
       return new Date(date.getTime() + units * 60 * 1000);
@@ -493,4 +497,4 @@ export const addGrains = (
     default:
       throw new Error(`Unknown time grain: ${grain}`);
   }
-};
+}
