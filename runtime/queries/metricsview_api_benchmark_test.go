@@ -50,7 +50,7 @@ func BenchmarkMetricsViewsTimeSeries(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := &MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
-			TimeGranularity: "DAY",
+			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			MeasureNames:    []string{"measure_0"},
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
