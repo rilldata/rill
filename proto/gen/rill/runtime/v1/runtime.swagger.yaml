@@ -406,7 +406,7 @@ paths:
                 type: string
                 format: date-time
               timeGranularity:
-                type: string
+                $ref: '#/definitions/v1TimeGrain'
               timeStart:
                 type: string
                 format: date-time
@@ -1780,7 +1780,7 @@ definitions:
       data:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
       meta:
         type: array
         items:
@@ -2238,11 +2238,9 @@ definitions:
         format: double
       records:
         type: object
-        additionalProperties:
-          type: number
-          format: double
       ts:
         type: string
+        format: date-time
   v1TopK:
     type: object
     properties:
