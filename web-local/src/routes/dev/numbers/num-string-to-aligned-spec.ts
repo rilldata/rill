@@ -27,8 +27,8 @@ export function splitNumStr(numStr: string): NumberStringParts {
     int = numStr.split(".")[0];
     frac = numStr.split(".")[1] ?? "";
   }
-  if (suffix === undefined) {
-    console.log({ numStr, int, frac, suffix });
+  if (suffix === undefined || int === undefined || frac === undefined) {
+    console.error({ numStr, int, frac, suffix });
   }
   return { int, dot, frac, suffix };
 }
