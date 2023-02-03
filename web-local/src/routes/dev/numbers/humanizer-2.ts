@@ -33,6 +33,18 @@ const shortScaleSuffixIfAvailable = (x: number): string => {
   return "E" + x;
 };
 
+const getOrdersOfMagnitude = (
+  sample: number[],
+  kind: "engineering" | "scientific" = "scientific"
+) => {
+  const engFmt = new Intl.NumberFormat("en-US", {
+    notation: kind,
+  });
+  let rawStrings = sample.map(engFmt.format);
+  let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+  return splitStrs.map((ss) => +ss.suffix.slice(1));
+};
+
 const formatNumWithOrderOfMag = (
   x: number,
   newOrder: number,
@@ -42,10 +54,17 @@ const formatNumWithOrderOfMag = (
     .format(x / 10 ** newOrder)
     .split(".");
   const dot: "." = ".";
-  const splitStr = { int, dot, frac, suffix: "E" + newOrder };
+
+  // if (int === undefined || frac === undefined) {
+  //   console.error({ x, int, frac, newOrder });
+  // }
+
+  const splitStr = { int, dot, frac: frac ?? "", suffix: "E" + newOrder };
 
   return splitStr;
 };
+
+// window.formatNumWithOrderOfMag = formatNumWithOrderOfMag;
 
 const thousandthsNumAsDecimalNumParts = (
   x: number,
@@ -76,6 +95,82 @@ const thousandthsNumAsDecimalNumParts = (
   return { int, dot: ".", frac, suffix: "" };
 };
 
+const splitStrsForMagStratLargestWithDigitsTarget = (
+  sample: number[],
+  options
+): NumberStringParts[] => {
+  const { digitTarget } = options;
+  console.log({ digitTarget });
+  const magnitudes = getOrdersOfMagnitude(sample, "scientific");
+  const maxMag = Math.max(...magnitudes);
+  // if any number is not an integer, may need to reserve one digit
+  // after the decimal point to indicate non-integers
+  const allAreIntegers = sample.reduce(
+    (allSoFar, x) => allSoFar && Number.isInteger(x),
+    true
+  );
+
+  // Plain integers of reasonable size
+  if (0 <= maxMag && maxMag < digitTarget && allAreIntegers) {
+    // can just show the plain integers
+    let formatter = new Intl.NumberFormat("en-US");
+    return sample
+      .map((x) => formatter.format(x).replace(",", ""))
+      .map(splitNumStr);
+  }
+
+  // non-integer of reasonable size
+  if (0 <= maxMag && maxMag < digitTarget - 1 && !allAreIntegers) {
+    // if the numbers are not all integers, but the maximum
+    // magnitude is such that they'd fit withing the digit
+    // target allowing 1 digit after the decimal point,
+    // can still use simple formatting, without suffix
+    // just need the right number of digits
+    let fracDigits = digitTarget - maxMag - 1;
+    let formatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: options.digitTargetPadZero ? fracDigits : 0,
+      maximumFractionDigits: fracDigits,
+    });
+    return sample
+      .map((x) => formatter.format(x).replace(",", ""))
+      .map(splitNumStr);
+  }
+
+  // FIXME add "minNonzeroDigits" option for this case
+  // fractional number with reasonable number of digits
+  if (0 >= maxMag && maxMag >= -digitTarget) {
+    // if maxMag represents a fraction that can be shown within
+    // digitTarget digits of the decimal point,
+    // use simple formatting without suffix
+    let formatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: options.digitTargetPadZero ? digitTarget : 0,
+      maximumFractionDigits: digitTarget,
+    });
+    return sample
+      .map((x) => formatter.format(x).replace(",", ""))
+      .map(splitNumStr);
+  }
+
+  // At this point, the largest magnitude represents
+  // either a tiny infinitesimal, or a large number.
+  // Use standard 3 order of mag groupings and a suffix.
+  const maxMagEng = Math.floor(maxMag / 3) * 3;
+  const intDigits = maxMag - maxMagEng + 1;
+  const fracDigits = digitTarget - intDigits;
+  console.log({ intDigits, fracDigits });
+  const splitStrs = sample.map((x) =>
+    formatNumWithOrderOfMag(x, maxMagEng, {
+      minimumFractionDigits: options.digitTargetPadZero ? fracDigits : 0,
+      maximumFractionDigits: fracDigits,
+    })
+  );
+  let maxOrderSuffix = shortScaleSuffixIfAvailable(maxMagEng);
+  splitStrs.forEach((ss) => {
+    ss.suffix = maxOrderSuffix;
+  });
+  return splitStrs;
+};
+
 const splitStrsForMagStratLargest = (
   sample: number[],
   ordersOfMag: number[],
@@ -96,7 +191,14 @@ const splitStrsForMagStratLargest = (
 
     splitStrs = sample
       .map((x) => formatter.format(x).replace(",", ""))
-      .map(splitNumStr);
+      .map(splitNumStr)
+      .map((splitStr, i) => {
+        if (Number.isInteger(sample[i])) {
+          splitStr.frac = "";
+          splitStr.dot = "";
+        }
+        return splitStr;
+      });
     maxOrderSuffix = "";
   } else if (options.usePlainNumForThousandths && maxOrder === -3) {
     // const formatter = new Intl.NumberFormat("en-US", {
@@ -212,7 +314,11 @@ export const humanized2FormatterFactory: FormatterFactory = (
         maxOrder,
         options
       );
+      break;
 
+    case "largestWithDigitTarget":
+      splitStrs = splitStrsForMagStratLargestWithDigitsTarget(sample, options);
+      console.log("splitStrs", splitStrs);
       break;
 
     default:
