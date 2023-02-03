@@ -64,6 +64,8 @@
     minimumSignificantDigits,
     maximumSignificantDigits,
     magnitudeStrategy,
+    digitTarget,
+    digitTargetPadZero,
     usePlainNumsForThousands,
     usePlainNumsForThousandsOneDecimal,
     usePlainNumForThousandths,
@@ -74,7 +76,10 @@
   };
 
   let numberInputType;
-  let magnitudeStrategy = "largest";
+
+  let magnitudeStrategy = "largestWithDigitTarget";
+  let digitTargetPadZero = false;
+  let digitTarget = 5;
 
   const blue100 = "#dbeafe";
   const grey100 = "#f5f5f5";
@@ -344,6 +349,36 @@
                 pad with zeros
               </label>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option-box">
+        <label>
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
+            name="largestWithDigitTarget"
+            value={"largestWithDigitTarget"}
+          />
+          only use largest magnitude, with digit target
+        </label>
+        <div class:inactive={magnitudeStrategy !== "largestWithDigitTarget"}>
+          <div class="option-box">
+            <label>
+              target num digits
+              <input
+                class="number-input"
+                type="number"
+                max="6"
+                bind:value={digitTarget}
+              />
+            </label>
+            <br />
+            <label>
+              <input type="checkbox" bind:checked={digitTargetPadZero} />
+              pad with zeros (after last significant digit)
+            </label>
           </div>
         </div>
       </div>
