@@ -160,7 +160,6 @@ export function formatDataType(value: any, type: string) {
   }
   // list type
   if (type.includes("[]")) {
-    console.log(value);
     return `[${value
       .map((entry) => (+entry ? +entry : `'${entry}'`))
       .join(", ")}]`;

@@ -11,6 +11,7 @@
     FLOATS,
     INTEGERS,
     INTERVALS,
+    isList,
     isNested,
     STRING_LIKES,
     TIMESTAMPS,
@@ -33,7 +34,7 @@
       return TimestampType;
     } else if (BOOLEANS.has(fieldType)) {
       return BooleanType;
-    } else if (fieldType.includes("[]")) {
+    } else if (isList(fieldType)) {
       return ListType;
     } else if (isNested(fieldType)) {
       return StructType;

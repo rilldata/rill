@@ -25,7 +25,6 @@
   const { shiftClickAction } = createShiftClickAction();
 
   export let topK: TopKEntry[];
-  export let type = "VARCHAR";
   export let totalRows: number;
   export let k = 15;
 
@@ -91,7 +90,6 @@
                 )}
             >
               {item.value}
-              <!-- {formatDataType(item.value, type)} -->
             </div>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>

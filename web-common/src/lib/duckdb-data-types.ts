@@ -61,10 +61,14 @@ export const TIMESTAMPS = new Set([
 ]);
 export const INTERVALS = new Set(["INTERVAL"]);
 export const NESTED = new Set(["STRUCT", "MAP", "LIST"]);
+
+export function isList(type) {
+  return type.includes("[]");
+}
+
 export function isNested(type) {
   return (
-    [...NESTED].some((typeDef) => type.startsWith(typeDef)) ||
-    type.includes("[]")
+    [...NESTED].some((typeDef) => type.startsWith(typeDef)) || isList(type)
   );
 }
 
