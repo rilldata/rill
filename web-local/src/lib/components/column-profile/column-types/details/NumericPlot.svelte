@@ -187,6 +187,7 @@ Otherwise, the page will jump around as the data is fetched.
               {topK}
               {totalRows}
               colorClass="bg-red-200"
+              {type}
             />
           </div>
         {/if}

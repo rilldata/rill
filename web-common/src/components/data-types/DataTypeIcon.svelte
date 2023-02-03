@@ -11,9 +11,12 @@
     FLOATS,
     INTEGERS,
     INTERVALS,
+    isNested,
     STRING_LIKES,
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
+  import ListType from "../icons/ListType.svelte";
+  import StructType from "../icons/StructType.svelte";
 
   export let color = "text-gray-400";
   export let type;
@@ -30,6 +33,10 @@
       return TimestampType;
     } else if (BOOLEANS.has(fieldType)) {
       return BooleanType;
+    } else if (fieldType.includes("[]")) {
+      return ListType;
+    } else if (isNested(fieldType)) {
+      return StructType;
     }
   }
 </script>

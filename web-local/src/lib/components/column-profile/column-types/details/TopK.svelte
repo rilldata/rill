@@ -25,6 +25,7 @@
   const { shiftClickAction } = createShiftClickAction();
 
   export let topK: TopKEntry[];
+  export let type = "VARCHAR";
   export let totalRows: number;
   export let k = 15;
 
@@ -56,6 +57,8 @@
   function handleBlur(value: TopKEntry) {
     return () => dispatch("blur-top-k", value);
   }
+
+  /** handle LISTs and STRUCTs */
 </script>
 
 {#if topK && totalRows}
@@ -88,6 +91,7 @@
                 )}
             >
               {item.value}
+              <!-- {formatDataType(item.value, type)} -->
             </div>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
