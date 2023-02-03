@@ -33,6 +33,23 @@ export const numberLists: NumericSample[] = [
       -27.2133474649, -0.02432294641, -0.000000000039737053,
     ].slice(0, N),
   },
+
+  {
+    desc: "magnitudes (e-15, e-12) (Kasper's case)",
+    sample: range.map((x) => 10 ** uniform(-15, -12)),
+  },
+
+  {
+    desc: "uniform (-1000, 1000)",
+    sample: range.map((x) => uniform(-1000, 1000)),
+  },
+  {
+    desc: "uniform (-300,700) with O(1e7) outlier",
+    sample: range.map((x, i) =>
+      i === 7 ? randu() * 1e7 : uniform(-300, 1000)
+    ),
+  },
+
   {
     desc: "t dist",
     sample: range.map((x) => tDist(1)),
@@ -51,6 +68,26 @@ export const numberLists: NumericSample[] = [
   {
     desc: "t-dist to the 5th, 2 digits precision",
     sample: range.map((x) => +(tDist(1) ** 5).toPrecision(2)),
+  },
+  {
+    desc: "orders of mag e-5 to e5, 2 digits precision, some exact zeros",
+    sample: range
+      .map((x) => -(10 ** uniform(-5, 5)))
+      .map((x) => (randu() < 0.3 ? 0 : x))
+      .map((x) => x * (randu() < 0.5 ? -1 : 1))
+      .map((x) => +x.toPrecision(2)),
+  },
+  {
+    desc: "orders of mag e0 to e5, rounded to ints",
+    sample: range
+      .map((x) => 10 ** uniform(0, 5))
+      .map((x) => x * (randu() < 0.5 ? -1 : 1))
+      .map(Math.round),
+  },
+
+  {
+    desc: "t-dist cubed, rounded",
+    sample: range.map((x) => Math.round(tDist(1) ** 3)),
   },
   {
     desc: "all negative, power law-ish, zero inflated",
@@ -95,21 +132,5 @@ export const numberLists: NumericSample[] = [
   {
     desc: "power law-ish (uniform over magnitudes (e-15, e12))",
     sample: range.map((x) => 10 ** uniform(-15, 12)),
-  },
-
-  {
-    desc: "uniform over magnitudes (e-15, e-12)",
-    sample: range.map((x) => 10 ** uniform(-15, -12)),
-  },
-
-  {
-    desc: "uniform (-1000, 1000)",
-    sample: range.map((x) => uniform(-1000, 1000)),
-  },
-  {
-    desc: "uniform (-300,700) with O(1e7) outlier",
-    sample: range.map((x, i) =>
-      i === 7 ? randu() * 1e7 : uniform(-300, 1000)
-    ),
   },
 ];
