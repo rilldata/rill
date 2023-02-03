@@ -15,15 +15,15 @@ import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@sveltestack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
 import type { RuntimeState } from "../../../../web-local/src/lib/application-state-stores/application-store";
-import { overlay } from "../../../../web-local/src/lib/application-state-stores/overlay-store";
 import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";
+import { overlay } from "../../layout/overlay-store";
 import { getFilePathFromPagePath } from "./entity-mappers";
 import {
   FileArtifactsStore,
   getIsFileReconcilingStore,
 } from "./file-artifacts-store";
 
-const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 1000;
+const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 60000;
 const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;
 
 export function syncFileSystemPeriodically(
@@ -44,7 +44,7 @@ export function syncFileSystemPeriodically(
     if (afterNavigateRanOnce) return;
 
     // Scenario 1: sync when the user navigates to a new page
-    syncFileSystem(queryClient, runtimeInstanceId, page, fileArtifactsStore);
+    // syncFileSystem(queryClient, runtimeInstanceId, page, fileArtifactsStore);
 
     // setup Scenario 2: sync every X seconds
     syncFileSystemInterval = setInterval(
@@ -59,17 +59,17 @@ export function syncFileSystemPeriodically(
     );
 
     // setup Scenario 3: sync when the user returns focus to the browser tab
-    syncFileSystemOnVisibleDocument = async () => {
-      if (document.visibilityState === "visible") {
-        await syncFileSystem(
-          queryClient,
-          runtimeInstanceId,
-          page,
-          fileArtifactsStore
-        );
-      }
-    };
-    window.addEventListener("focus", syncFileSystemOnVisibleDocument);
+    // syncFileSystemOnVisibleDocument = async () => {
+    //   if (document.visibilityState === "visible") {
+    //     await syncFileSystem(
+    //       queryClient,
+    //       runtimeInstanceId,
+    //       page,
+    //       fileArtifactsStore
+    //     );
+    //   }
+    // };
+    // window.addEventListener("focus", syncFileSystemOnVisibleDocument);
 
     afterNavigateRanOnce = true;
   });
@@ -79,7 +79,7 @@ export function syncFileSystemPeriodically(
     clearInterval(syncFileSystemInterval);
 
     // teardown Scenario 3
-    window.removeEventListener("focus", syncFileSystemOnVisibleDocument);
+    // window.removeEventListener("focus", syncFileSystemOnVisibleDocument);
 
     afterNavigateRanOnce = false;
   });
@@ -138,8 +138,7 @@ export function addReconcilingOverlay(pagePath: string) {
     if (isFileReconciling) {
       delayedOverlayTimeout = setTimeout(() => {
         overlay.set({
-          title: `Loading`,
-          message: `Rill is validating your assets and ingesting new sources — this could take a moment`,
+          title: `Updating project — this could take a moment`,
         });
       }, RECONCILE_OVERLAY_DELAY_MILLISECONDS);
     } else {

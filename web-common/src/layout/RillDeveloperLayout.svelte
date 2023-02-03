@@ -9,24 +9,19 @@
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
-  import BlockingOverlayContainer from "@rilldata/web-common/features/temp/BlockingOverlayContainer.svelte";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
+  import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
   import { QueryClientProvider } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import { getArtifactErrors } from "../../../../../web-common/src/features/entity-management/getArtifactErrors";
-  import { runtimeStore } from "../../application-state-stores/application-store";
-  import type { ApplicationBuildMetadata } from "../../application-state-stores/build-metadata";
-  import {
-    importOverlayVisible,
-    overlay,
-    quickStartDashboardOverlay,
-  } from "../../application-state-stores/overlay-store";
-  import { initMetrics } from "../../metrics/initMetrics";
-  import { createQueryClient } from "../../svelte-query/globalQueryClient";
-  import PreparingImport from "../overlay/PreparingImport.svelte";
-  import QuickStartDashboard from "../overlay/QuickStartDashboard.svelte";
+  import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
+  import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
   import BasicLayout from "./BasicLayout.svelte";
+  import { importOverlayVisible, overlay } from "./overlay-store";
 
   const queryClient = createQueryClient();
 
@@ -84,11 +79,6 @@
   <div class="body">
     {#if $importOverlayVisible}
       <PreparingImport />
-    {:else if $quickStartDashboardOverlay?.show}
-      <QuickStartDashboard
-        sourceName={$quickStartDashboardOverlay.sourceName}
-        timeDimension={$quickStartDashboardOverlay.timeDimension}
-      />
     {:else if showDropOverlay}
       <FileDrop bind:showDropOverlay />
     {:else if $overlay !== null}

@@ -15,10 +15,10 @@
     V1GetTableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
+  import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
   import { getTableReferences } from "../../utils/get-table-references";
   import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
@@ -36,7 +36,7 @@
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
-  let rollup;
+  let rollup: number;
   let sourceTableReferences;
 
   // get source table references.
@@ -47,8 +47,8 @@
   $: embeddedSources = useEmbeddedSources($runtimeStore.instanceId);
 
   // get the cardinalitie & table information.
-  let cardinalityQueries = [];
-  let sourceProfileColumns = [];
+  let cardinalityQueries: Array<UseQueryStoreResult<number>> = [];
+  let sourceProfileColumns: Array<UseQueryStoreResult<number>> = [];
 
   $: getAllSources = useRuntimeServiceListCatalogEntries(
     $runtimeStore?.instanceId,
@@ -104,8 +104,8 @@
   // get all source column amounts. We will use this determine the number of dropped columns.
   $: sourceColumns = derived(
     sourceProfileColumns,
-    ($columns) => {
-      return $columns
+    (columns) => {
+      return columns
         .map((col) => col.data)
         .reduce((total: number, columns: number) => columns + total, 0);
     },
@@ -118,7 +118,10 @@
       $runtimeStore.instanceId,
       model?.name
     );
-  $: outputRowCardinalityValue = +$modelCardinalityQuery?.data?.cardinality;
+  let outputRowCardinalityValue: number;
+  $: outputRowCardinalityValue = Number(
+    $modelCardinalityQuery?.data?.cardinality ?? 0
+  );
 
   $: if (
     ($inputCardinalities !== undefined &&

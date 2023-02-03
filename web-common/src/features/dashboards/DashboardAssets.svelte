@@ -23,7 +23,6 @@
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -36,9 +35,10 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import NavigationEntry from "../../../../web-local/src/lib/components/navigation/NavigationEntry.svelte";
-  import NavigationHeader from "../../../../web-local/src/lib/components/navigation/NavigationHeader.svelte";
   import { navigationEvent } from "../../../../web-local/src/lib/metrics/initMetrics";
+  import { LIST_SLIDE_DURATION } from "../../layout/config";
+  import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
+  import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
 
   $: instanceId = $runtimeStore.instanceId;

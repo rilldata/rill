@@ -1,8 +1,8 @@
 <script lang="ts">
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { fly } from "svelte/transition";
-  import { EntityStatus } from "../entity-management/types";
-  import Spinner from "./Spinner.svelte";
+  import Spinner from "../features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "../features/entity-management/types";
 
   export let bg = "rgba(0,0,0,.6)";
 

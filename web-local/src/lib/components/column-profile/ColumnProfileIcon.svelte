@@ -1,9 +1,9 @@
 <script lang="ts">
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Spinner from "@rilldata/web-common/features/temp/Spinner.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { fade } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "../../application-config";
 
   export let isFetching = false;
   export let type: string;

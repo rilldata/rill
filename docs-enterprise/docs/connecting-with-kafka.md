@@ -15,6 +15,7 @@ The following 3 scenarios are covered, and understand that Apache Kafka is desig
 * Private Kafka Cluster
 * VPC Kafka Peering
 * Public Kafka Cluster
+* AWS Kinesis
 
 ### Confluent Cloud
 
@@ -141,6 +142,98 @@ If neither is used, the cluster is wide open and can be accessed by anyone.
 * **Authentication & Authorization**: Create a user to be used for consuming and allow the user to consume from a specific topic
 * Make sure every broker’s advertised endpoint is accessible from a consumer.
 * Set up the consumer by adding broker’s certificate into a trust store and storing the user’s credentials into the consumer’s configuration file
+
+### AWS Kinesis
+
+We can provide access to the Kinesis stream through an IAM Role which will be assumed by the Rill Data AWS Account to gain the access.
+
+:::info Rill Data AWS Account
+arn:aws:iam::248432388601:root
+:::
+
+#### Using Cloudformation Console
+
+1. Open AWS Cloudformation to create a new Stack. 
+https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template
+
+2. Use Amazon S3 URL: 
+`https://s3.amazonaws.com/cf-templates.rilldata.com/rilldata-kinesis-access.yaml`
+![](https://images.contentful.com/ve6smfzbifwz/1JRRBgWrAHR1xzvlTVLAZd/ad7a006b355aa12e124c2fbb6d3da056/01-Kinesis.png)
+
+3. Specify Stack Details
+** Stack Name: `rilldata-kinesis-access`
+** KinesisARN: Name of the bucket we want to provide access to.
+![](https://images.contentful.com/ve6smfzbifwz/2YCBAbqvTugI0kZS2aAGHe/c97d34f6b4236e2d7ca6c73a372f0911/02-Kinesis.png)
+
+4. Click Next, Again Next, Acknowledge the Capabilities and Create the Stack.
+5. You can check the events and it should create the resources for you.
+![](https://images.contentful.com/ve6smfzbifwz/42UQ0zHTkmbo2Ktp8968EG/9c15e3d25a4f2dca27fb80876a2abc7b/03-Kinesis.png)
+
+6. Share the Outputs with Rill Data
+![](https://images.contentful.com/ve6smfzbifwz/65WwqE2EAm559IWIab82Ew/102c54318d22859e492c3d1f051d46f9/04-Kinesis.png)
+
+##### CloudFormation Template Reference
+
+We would be using the following Cloudformation Template.
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: Apache-2.0
+
+Description: 'AWS CloudFormation Template for providing Rill Data Access to Kinesis. It creates a
+  Role that can be assumed by the RillData AWS Account. The Role has a IAM policy associated with them.'
+
+Parameters:
+  KinesisARN:
+    Type: String
+    Description: Kinesis Stream ARN
+  NamePrefix:
+    Type: String
+    Description: Name prefix for the IAM Policy and IAM Role.
+    Default: rilldata
+Resources:
+  KinesisRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: 'RillData Access to the Kinesis. Managed by: Cloudformation'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - 'arn:aws:iam::248432388601:root'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Join
+            - ''
+            - - !Ref NamePrefix
+              - 'KinesisAccessPolicy'
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "kinesis:Describe*"
+                - "kinesis:List*"
+                - "kinesis:Get*"
+              Resource:
+                - !Ref KinesisARN
+      RoleName: !Join
+        - '-'
+        - - !Ref NamePrefix
+          - kinesis-access
+      Tags:
+        - Key: Accessor
+          Value: RillData
+        - Key: ManagedBy
+          Value: Cloudformation
+
+Outputs:
+  RoleName:
+    Value: !GetAtt [KinesisRole, Arn]
+    Description: Kinesis Access Role Arn, to be shared with RillData
+```
 
 ## References
 

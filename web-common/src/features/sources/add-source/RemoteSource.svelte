@@ -6,6 +6,7 @@
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
@@ -16,7 +17,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -38,6 +38,12 @@
   $: sourceNames = useSourceNames(runtimeInstanceId);
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  let createSourceMutationError: {
+    code: number;
+    message: string;
+  };
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
 
   const dispatch = createEventDispatcher();
@@ -154,8 +160,8 @@
       <SubmissionError
         message={humanReadableErrorMessage(
           connector.name,
-          $createSourceMutation?.error?.response?.data?.code ?? 3,
-          $createSourceMutation?.error?.response?.data?.message ?? error.message
+          createSourceMutationError?.code ?? 3,
+          createSourceMutationError?.message ?? error.message
         )}
       />
     {/if}
