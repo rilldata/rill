@@ -24,6 +24,7 @@ type Source struct {
 	GlobMaxObjectsMatched int    `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed  int64  `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize          int    `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
+	S3CompatibleEndpoint  string `yaml:"s3_compatible_endpoint,omitempty" mapstructure:"s3_compatible_endpoint,omitempty"`
 }
 
 type MetricsView struct {
@@ -110,6 +111,11 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.GlobPageSize != 0 {
 		props["glob.page_size"] = source.GlobPageSize
 	}
+
+	if source.S3CompatibleEndpoint != "" {
+		props["s3_compatible_endpoint"] = source.S3CompatibleEndpoint
+	}
+
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {
 		return nil, err

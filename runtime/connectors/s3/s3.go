@@ -59,6 +59,7 @@ type Config struct {
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	S3CompatibleEndpoint  string `mapstructure:"s3_compatible_endpoint"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -117,6 +118,15 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 }
 
 func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
+	// if S3CompatibleEndpoint is set then fs support s3 API
+	if len(conf.S3CompatibleEndpoint) > 0 {
+		return session.NewSession(&aws.Config{
+			Region:           aws.String("us-east-1"),
+			Endpoint:         &conf.S3CompatibleEndpoint,
+			S3ForcePathStyle: aws.Bool(true),
+		})
+	}
+
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
 			Region: aws.String(conf.AWSRegion),
