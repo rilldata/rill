@@ -28,6 +28,8 @@
     style:height="20px"
     style:grid-column="left-control"
     class="
+    focus:outline-none
+    focus:bg-gray-300
     hover:bg-gray-300
     transition-tranform 
     text-gray-400

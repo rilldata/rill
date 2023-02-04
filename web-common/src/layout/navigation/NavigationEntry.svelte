@@ -89,6 +89,8 @@
     class:bg-gray-200={isActive}
     class:bg-gray-100={isActive && mousedown}
     class="
+    focus:bg-gray-200
+    focus:outline-none
     navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!isActive &&
     !mousedown
       ? 'hover:bg-gray-100'
