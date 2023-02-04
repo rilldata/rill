@@ -12,6 +12,7 @@
   import ContextButton from "@rilldata/web-local/lib/components/column-profile/ContextButton.svelte";
   import ExpanderButton from "@rilldata/web-local/lib/components/column-profile/ExpanderButton.svelte";
   import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
+  import { currentHref } from "./stores";
 
   export let name: string;
   export let href: string;
@@ -61,6 +62,8 @@
   let innerOpen = false;
   // always keep innerOpen set to open.
   $: innerOpen = open;
+  // register the current open state with the global store on instantiation.
+  if ($currentHref !== href && open) currentHref.set(href);
 </script>
 
 <Tooltip
@@ -76,6 +79,7 @@
       if (open) onShowDetails();
     }}
     on:mousedown={() => {
+      $currentHref = href;
       mousedown = true;
     }}
     on:mouseup={() => {
@@ -89,11 +93,12 @@
       // perform navigation in this case.
       await goto(href);
       mousedown = false;
+      $currentHref = href;
     }}
     style:height="24px"
-    class:font-bold={innerOpen || mousedown}
-    class:bg-gray-200={innerOpen && !mousedown}
-    class:bg-gray-100={mousedown}
+    class:font-bold={(innerOpen || mousedown) && $currentHref === href}
+    class:bg-gray-200={$currentHref === href}
+    class:bg-gray-100={$currentHref !== href && mousedown}
     class="
     navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!innerOpen &&
     !mousedown
@@ -133,7 +138,7 @@
         {#if $$slots["name"]}
           <slot name="name" />
         {:else}
-          {name}
+          {$currentHref === href} {name}
         {/if}
       </div>
     </div>
@@ -150,7 +155,7 @@
         class="self-center"
         class:opacity-0={!containerFocused &&
           !contextMenuOpen &&
-          !open &&
+          !innerOpen &&
           !contextMenuHovered}
       >
         <ContextButton
