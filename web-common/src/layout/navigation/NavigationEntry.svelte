@@ -46,24 +46,14 @@
     };
   }
 
-  /**
-   * mousedown, innerOpen, and open need to capture three states:
-   * - mousedown focuses on when the mouse has been clicked down on an element.
-   * here, we will highlight the element.
-   * - innerOpen is used to track that the user has released the mouse click, but it's
-   * possible that there will be some render jank for 200-300ms, which would otherwise turn
-   * the nav element back to an unselected state before navigation occurs. We plan to fix this jank in the future;
-   * for now, innerOpen is used to keep the nav element highlighted until the navigation occurs.
-   * - open is the actual state of the nav element, which is used to determine whether or not to highlight
-   * the element.
-   */
+  /** track the mousedown event to provide immediate feedback on the click motion. */
   let mousedown = false;
-  // captures the state of the nav element regardless of navigation or render jank.
-  let innerOpen = false;
-  // always keep innerOpen set to open.
-  $: innerOpen = open;
-  // register the current open state with the global store on instantiation.
-  if ($currentHref !== href && open) currentHref.set(href);
+  /** We'll look at the first two segments of the pathname in order to determine
+   * if this entry is active. So it should only need to match e.g. /dashboard/<name>,
+   * which maintains any subroutes beyond that (like /dashboard/<name>/edit).
+   */
+  $: pathname = $currentHref.split("/").slice(0, 3).join("/");
+  $: isActive = pathname === href;
 </script>
 
 <Tooltip
@@ -75,11 +65,10 @@
   <a
     {href}
     on:click={() => {
-      innerOpen = true;
       if (open) onShowDetails();
     }}
     on:mousedown={() => {
-      $currentHref = href;
+      currentHref.set(href);
       mousedown = true;
     }}
     on:mouseup={() => {
@@ -93,14 +82,14 @@
       // perform navigation in this case.
       await goto(href);
       mousedown = false;
-      $currentHref = href;
+      currentHref.set(href);
     }}
     style:height="24px"
-    class:font-bold={(innerOpen || mousedown) && $currentHref === href}
-    class:bg-gray-200={$currentHref === href}
-    class:bg-gray-100={$currentHref !== href && mousedown}
+    class:font-bold={isActive}
+    class:bg-gray-200={isActive}
+    class:bg-gray-100={isActive && mousedown}
     class="
-    navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!innerOpen &&
+    navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!isActive &&
     !mousedown
       ? 'hover:bg-gray-100'
       : ''}"
@@ -155,7 +144,7 @@
         class="self-center"
         class:opacity-0={!containerFocused &&
           !contextMenuOpen &&
-          !innerOpen &&
+          !isActive &&
           !contextMenuHovered}
       >
         <ContextButton
