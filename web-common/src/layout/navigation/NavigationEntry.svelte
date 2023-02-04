@@ -138,7 +138,7 @@
         {#if $$slots["name"]}
           <slot name="name" />
         {:else}
-          {$currentHref === href} {name}
+          {name}
         {/if}
       </div>
     </div>
