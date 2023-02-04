@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
@@ -43,6 +44,23 @@
       containerFocused = tf;
     };
   }
+
+  /**
+   * mousedown, innerOpen, and open need to capture three states:
+   * - mousedown focuses on when the mouse has been clicked down on an element.
+   * here, we will highlight the element.
+   * - innerOpen is used to track that the user has released the mouse click, but it's
+   * possible that there will be some render jank for 200-300ms, which would otherwise turn
+   * the nav element back to an unselected state before navigation occurs. We plan to fix this jank in the future;
+   * for now, innerOpen is used to keep the nav element highlighted until the navigation occurs.
+   * - open is the actual state of the nav element, which is used to determine whether or not to highlight
+   * the element.
+   */
+  let mousedown = false;
+  // captures the state of the nav element regardless of navigation or render jank.
+  let innerOpen = false;
+  // always keep innerOpen set to open.
+  $: innerOpen = open;
 </script>
 
 <Tooltip
@@ -51,15 +69,34 @@
   distance={16}
   suppress={contextMenuHovered || contextMenuOpen || seeMoreHovered}
 >
-  <div
+  <a
+    {href}
+    on:click={() => {
+      innerOpen = true;
+      if (open) onShowDetails();
+    }}
+    on:mousedown={() => {
+      mousedown = true;
+    }}
+    on:mouseup={() => {
+      mousedown = false;
+    }}
     on:mouseenter={onContainerFocus(true)}
     on:focus={onContainerFocus(true)}
     on:mouseleave={onContainerFocus(false)}
     on:blur={onContainerFocus(false)}
+    on:dragend={async () => {
+      // perform navigation in this case.
+      await goto(href);
+      mousedown = false;
+    }}
     style:height="24px"
-    class:font-bold={open}
-    class:bg-gray-200={open}
-    class="navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!open
+    class:font-bold={innerOpen || mousedown}
+    class:bg-gray-200={innerOpen && !mousedown}
+    class:bg-gray-100={mousedown}
+    class="
+    navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!innerOpen &&
+    !mousedown
       ? 'hover:bg-gray-100'
       : ''}"
     style:grid-template-columns="max-content auto max-content"
@@ -84,12 +121,8 @@
       {/if}
     </div>
 
-    <a
+    <div
       class="ui-copy flex items-center gap-x-1 w-full text-ellipsis overflow-hidden whitespace-nowrap"
-      {href}
-      on:click={() => {
-        if (open) onShowDetails();
-      }}
     >
       {#if $$slots["icon"]}
         <div class="text-gray-400" style:width="1em" style:height="1em">
@@ -103,7 +136,7 @@
           {name}
         {/if}
       </div>
-    </a>
+    </div>
 
     <!-- context menu -->
     <WithTogglableFloatingElement
@@ -124,7 +157,11 @@
           id="more-actions-{name}"
           tooltipText="More actions"
           suppressTooltip={contextMenuOpen}
-          on:click={toggleFloatingElement}
+          on:click={(event) => {
+            /** prevent the link click from registering */
+            event.stopPropagation();
+            toggleFloatingElement();
+          }}
           bind:isHovered={contextMenuHovered}
           width={24}
           height={24}
@@ -144,7 +181,7 @@
         <slot name="menu-items" toggleMenu={toggleFloatingElement} />
       </Menu>
     </WithTogglableFloatingElement>
-  </div>
+  </a>
   <!-- if tooltip content is present in a slot, render the tooltip -->
   <div slot="tooltip-content" class:hidden={!$$slots["tooltip-content"]}>
     {#if $$slots["tooltip-content"]}

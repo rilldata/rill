@@ -28,7 +28,7 @@
   suppress={suppressTooltip || tooltipText === undefined}
 >
   <button
-    on:click
+    on:click|preventDefault
     {id}
     use:captureHoverState
     style:width={`${width}px`}
