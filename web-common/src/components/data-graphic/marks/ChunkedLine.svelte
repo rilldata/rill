@@ -46,31 +46,34 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   let lineFunction;
   let areaFunction;
+  // FIXME:
   $: if ($xScale && $yScale) {
     lineFunction = lineFactory({
       xScale: $xScale,
-      yScale: $yScale,
+      // the y should always plot a line segment so that we can
+      // smoothly tween
+      yScale: (d) => $yScale(d || 0),
       xAccessor,
-      pathDefined: pathIsDefined(yAccessor),
+      // path should always be defined for the chunked line, since
+      // we will clip the path to the segments before
+      // it reaches zero.
+      pathDefined: () => true,
     });
     areaFunction = areaFactory({
       xScale: $xScale,
-      yScale: $yScale,
+      yScale: (d) => $yScale(d || 0),
       xAccessor,
-      pathDefined: pathIsDefined(yAccessor),
+      // path should always be defined for the chunked line, since
+      // we will clip the path to the segments before
+      // it reaches zero.
+      pathDefined: () => true,
     });
   }
 
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
-
-  $: filteredData = data.filter(pathIsDefined(yAccessor));
 </script>
 
-<WithDelayedValue
-  {delay}
-  value={[filteredData, segments]}
-  let:output={delayedValues}
->
+<WithDelayedValue {delay} value={[data, segments]} let:output={delayedValues}>
   {@const delayedFilteredData = delayedValues[0]}
   {@const delayedSegments = delayedValues[1]}
   <g>

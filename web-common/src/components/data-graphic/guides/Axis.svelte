@@ -19,7 +19,7 @@ This component will draw an axis on the specified side.
   export let fontSize: number = undefined;
   export let placement = "middle";
 
-  export let labelColor = "fill-gray-600 dark: fill-gray-400";
+  export let labelColor = "fill-gray-600 dark:fill-gray-400";
 
   // superlabel properties
   export let superlabel = false;

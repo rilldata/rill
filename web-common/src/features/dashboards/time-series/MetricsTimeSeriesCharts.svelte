@@ -106,11 +106,12 @@
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
-  $: if (dataCopy && dataCopy?.length)
-    formattedData = convertTimestampPreview(dataCopy, true).map((di) => {
+  $: if (dataCopy && dataCopy?.length) {
+    formattedData = convertTimestampPreview(dataCopy, true).map((di, i) => {
       di = { ts: di.ts, bin: di.bin, ...di.records };
       return di;
     });
+  }
 
   let mouseoverValue = undefined;
 

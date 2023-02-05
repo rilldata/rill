@@ -50,8 +50,14 @@ export function pathDoesNotDropToZero(yAccessor: string) {
 
 interface LineGeneratorArguments {
   xAccessor: string;
-  xScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
-  yScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
+  xScale:
+    | ScaleLinear<number, number>
+    | ScaleTime<Date, number>
+    | ((d) => number);
+  yScale:
+    | ScaleLinear<number, number>
+    | ScaleTime<Date, number>
+    | ((d) => number);
   curve?: string;
   pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
 }
