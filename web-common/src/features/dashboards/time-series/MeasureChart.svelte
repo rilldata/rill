@@ -50,7 +50,7 @@
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
   $: yMaxStore.set(yExtentMax);
-  $: delay = $previousYMax < yExtentMax ? 200 : 0;
+  $: delay = $previousYMax < yExtentMax ? 50 : 0;
 
   function alwaysBetween(min, max, value) {
     // note: must work with dates
