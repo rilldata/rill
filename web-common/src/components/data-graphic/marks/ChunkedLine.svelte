@@ -71,11 +71,26 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   }
 
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
+  /** plot these as points */
+  $: singletons = segments.filter((segment) => segment.length === 1);
 </script>
 
-<WithDelayedValue {delay} value={[data, segments]} let:output={delayedValues}>
+<WithDelayedValue
+  {delay}
+  value={[data, segments, singletons]}
+  let:output={delayedValues}
+>
   {@const delayedFilteredData = delayedValues[0]}
   {@const delayedSegments = delayedValues[1]}
+  {@const delayedSingletons = delayedValues[2]}
+  {#each delayedSingletons as [singleton]}
+    <circle
+      cx={$xScale(singleton[xAccessor])}
+      cy={$yScale(singleton[yAccessor])}
+      r="1.5"
+      fill="hsla(217,60%, 55%, .5)"
+    />
+  {/each}
   <g>
     <WithTween
       value={lineFunction(yAccessor)(delayedFilteredData)}
