@@ -21,7 +21,7 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
   - _`local_file`_ — a locally available file.
 
 **`uri`**
- —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_
+ —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
   - _`s3://your-org/bucket/file.parquet`_ —  the s3 URI of your file
   - _`gs://your-org/bucket/file.parquet`_ —  the gsutil URI of your file
   - _`https://data.example.org/path/to/file.parquet`_ —  the web address of your file
@@ -29,6 +29,22 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 **`path`**
  — the _local path_ of the connector you are using for the source relative to your project's root directory.   _(required for type: file)_
 - _`/path/to/file.csv`_ —  the path to your file
+
+**`region`**
+ — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
+  - _`us-east-1`_ —  the cloud region identifer
+
+**`glob.max_total_size`**
+ — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern.
+  - default value is _`10737418240 (10GB)`_
+
+**`glob.max_objects_matched`**
+ — Applicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern.
+  - default value is _`1,000`_
+
+**`glob.max_objects_listed`**
+ — Appplicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
+  - default value is _`1,000,000`_
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 

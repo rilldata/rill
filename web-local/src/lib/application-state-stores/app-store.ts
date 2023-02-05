@@ -1,6 +1,6 @@
+import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { Readable, writable } from "svelte/store";
-import type { EntityType } from "../temp/entity";
 
 export interface ActiveEntity {
   type: EntityType;

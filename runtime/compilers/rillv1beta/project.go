@@ -35,7 +35,13 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 		return err
 	}
 
-	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader("*.db\n*.db.wal\ndata/\n"))
+	gitignore, _ := c.Repo.Get(ctx, c.InstanceID, ".gitignore")
+	if gitignore != "" {
+		gitignore += "\n"
+	}
+	gitignore += "# Rill\n*.db\n*.db.wal\ndata/\n"
+
+	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
 		return err
 	}
@@ -73,7 +79,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		out.Path = val
 	}
 
-	if val, ok := props["aws.region"].(string); ok {
+	if val, ok := props["region"].(string); ok {
 		out.Region = val
 	}
 

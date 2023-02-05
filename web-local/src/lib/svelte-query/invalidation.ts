@@ -1,3 +1,5 @@
+import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
@@ -5,8 +7,8 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import { getNameFromFile } from "@rilldata/web-local/lib/util/entity-mappers";
 import type { QueryClient } from "@sveltestack/svelte-query";
+import { get } from "svelte/store";
 
 // invalidation helpers
 
@@ -21,6 +23,11 @@ export const invalidateAfterReconcile = async (
     queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
     ),
+    queryClient.refetchQueries(
+      getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
+        type: "OBJECT_TYPE_SOURCE",
+      })
+    ),
   ]);
 
   // invalidate affected catalog entries and files
@@ -33,7 +40,8 @@ export const invalidateAfterReconcile = async (
         queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
             instanceId,
-            getNameFromFile(path)
+            get(fileArtifactsStore).entities[path]?.name ??
+              getNameFromFile(path)
           )
         ),
       ])
@@ -60,18 +68,13 @@ const getInvalidationsForPath = (
   }
 };
 
-export const invalidateMetricsViewData = (
-  queryClient: QueryClient,
-  metricsViewName: string
-) => {
+export function invalidationForMetricsViewData(query, metricsViewName: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
   );
-  return queryClient.refetchQueries({
-    predicate: (query) =>
-      typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]),
-  });
-};
+
+  return typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]);
+}
 
 export function invalidationForProfileQueries(queryHash, name: string) {
   const r = new RegExp(
@@ -79,6 +82,16 @@ export function invalidationForProfileQueries(queryHash, name: string) {
   );
   return r.test(queryHash);
 }
+
+export const invalidateMetricsViewData = (
+  queryClient: QueryClient,
+  metricsViewName: string
+) => {
+  return queryClient.refetchQueries({
+    predicate: (query) =>
+      invalidationForMetricsViewData(query, metricsViewName),
+  });
+};
 
 export function invalidateProfilingQueries(
   queryClient: QueryClient,
@@ -90,3 +103,35 @@ export function invalidateProfilingQueries(
     },
   });
 }
+
+export const removeEntityQueries = async (
+  queryClient: QueryClient,
+  instanceId: string,
+  path: string
+) => {
+  const name = getNameFromFile(path);
+  // remove affected catalog entries and files
+  await Promise.all([
+    queryClient.removeQueries(
+      getRuntimeServiceGetFileQueryKey(instanceId, path)
+    ),
+    queryClient.removeQueries(
+      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name)
+    ),
+  ]);
+
+  if (path.startsWith("/dashboards")) {
+    return queryClient.removeQueries({
+      predicate: (query) => {
+        return invalidationForMetricsViewData(query, name);
+      },
+    });
+  } else {
+    // remove profiling queries
+    return queryClient.removeQueries({
+      predicate: (query) => {
+        return invalidationForProfileQueries(query.queryHash, name);
+      },
+    });
+  }
+};

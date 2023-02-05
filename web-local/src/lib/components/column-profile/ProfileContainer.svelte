@@ -1,26 +1,25 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import {
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
-  } from "../../application-config";
-
-  const dispatch = createEventDispatcher();
-  const { shiftClickAction } = createShiftClickAction();
+  } from "@rilldata/web-common/layout/config";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { createEventDispatcher } from "svelte";
+  import { slide } from "svelte/transition";
 
   export let active = false;
   export let emphasize = false;
   export let type;
   export let example;
   export let isFetching;
-
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
   export let mode = "summaries";
+
+  const dispatch = createEventDispatcher();
+  const { shiftClickAction } = createShiftClickAction();
 
   let columns: string;
   $: summarySize =

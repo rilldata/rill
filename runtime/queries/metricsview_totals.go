@@ -125,12 +125,12 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += clause
+		whereClause += " " + clause
 		args = append(args, clauseArgs...)
 	}
 
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s",
+		"SELECT %s FROM %q WHERE %s",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,

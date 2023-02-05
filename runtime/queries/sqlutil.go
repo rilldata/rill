@@ -1,13 +1,11 @@
 package queries
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func quoteName(name string) string {
@@ -23,16 +21,6 @@ func safeName(name string) string {
 		return name
 	}
 	return quoteName(escapeDoubleQuotes(name))
-}
-
-func dropTempTable(olap drivers.OLAPStore, priority int, tableName string) {
-	rs, er := olap.Execute(context.Background(), &drivers.Statement{
-		Query:    `DROP TABLE "` + tableName + `"`,
-		Priority: priority,
-	})
-	if er == nil {
-		rs.Close()
-	}
 }
 
 func tempName(prefix string) string {
@@ -59,4 +47,27 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 		return "YEAR"
 	}
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
+}
+
+func toTimeGrain(val string) runtimev1.TimeGrain {
+	switch strings.ToUpper(val) {
+	case "MILLISECOND":
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
+	case "SECOND":
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
+	case "MINUTE":
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
+	case "HOUR":
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
+	case "DAY":
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY
+	case "WEEK":
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
+	case "MONTH":
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+	case "YEAR":
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	default:
+		panic(fmt.Errorf("unconvertable time grain specifier: %v", val))
+	}
 }

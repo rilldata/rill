@@ -170,6 +170,18 @@ func Test_extractFromStatements(t *testing.T) {
 			` FROM tbl JOIN "s3://path/to/bucket.parquet" as tbl2 ON tbl2.id = tbl.id`,
 			[]string{"tbl", `"s3://path/to/bucket.parquet"`},
 		},
+		{
+			`select id, timestamp, publisher, domain, bid_price from "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"`,
+			[]string{`"gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz"`},
+		},
+		{
+			` FROM tbl JOIN "s3://path/to/bucket.parquet?a=b#abc" as tbl2 ON tbl2.id = tbl.id`,
+			[]string{"tbl", `"s3://path/to/bucket.parquet?a=b#abc"`},
+		},
+		{
+			` FROM tbl JOIN "s3://path/to/*/bucket[0-9].parquet" as tbl2 ON tbl2.id = tbl.id`,
+			[]string{"tbl", `"s3://path/to/*/bucket[0-9].parquet"`},
+		},
 	}
 
 	for i, tt := range fromTests {

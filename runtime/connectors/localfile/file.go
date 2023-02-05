@@ -2,8 +2,7 @@ package localfile
 
 import (
 	"context"
-	"errors"
-	"path"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -57,10 +56,6 @@ func ParseConfig(props map[string]any) (*Config, error) {
 		return nil, err
 	}
 
-	if conf.Format == "" {
-		conf.Format = path.Ext(conf.Path)
-	}
-
 	return conf, nil
 }
 
@@ -70,6 +65,8 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFile(ctx context.Context, env *connectors.Env, source *connectors.Source) (string, error) {
-	return "", errors.New("not implemented")
+// local file connectors should directly use glob patterns
+// keeping it for reference
+func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+	return nil, fmt.Errorf("not implemented")
 }

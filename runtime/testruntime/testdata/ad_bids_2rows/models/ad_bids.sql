@@ -8,5 +8,6 @@ SELECT
     impressions,
     "ad words",
     clicks,
-    1 as numeric_dim
+    1 as numeric_dim,
+    device
 FROM ad_bids_source

@@ -3,24 +3,16 @@
  * It does not contain any of the state for the entities; instead, it contains information
  * about things like the active entity and the application status.
  */
-import { writable, Writable } from "svelte/store";
-
-export enum DuplicateActions {
-  None = "NONE",
-  KeepBoth = "KEEP_BOTH",
-  Overwrite = "OVERWRITE",
-  Cancel = "CANCEL",
-}
-
-export const duplicateSourceAction: Writable<DuplicateActions> = writable(
-  DuplicateActions.None
-);
-
-export const duplicateSourceName: Writable<string> = writable(null);
+import { writable } from "svelte/store";
 
 export type RuntimeState = {
   instanceId: string;
+  readOnly: boolean;
 };
 export const runtimeStore = writable<RuntimeState>({
   instanceId: null,
+  readOnly: undefined,
 });
+
+// Store to show application running status based on Query Queue
+export const appQueryStatusStore = writable<boolean>(false);

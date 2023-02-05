@@ -65,7 +65,7 @@ paths:
           in: query
           required: false
           type: integer
-          format: int32
+          format: int64
         - name: pageToken
           in: query
           required: false
@@ -406,7 +406,7 @@ paths:
                 type: string
                 format: date-time
               timeGranularity:
-                type: string
+                $ref: '#/definitions/v1TimeGrain'
               timeStart:
                 type: string
                 format: date-time
@@ -908,7 +908,7 @@ paths:
             type: object
             properties:
               filters:
-                $ref: '#/definitions/v1MetricsViewRequestFilter'
+                $ref: '#/definitions/v1MetricsViewFilter'
               measures:
                 type: array
                 items:
@@ -1239,7 +1239,8 @@ definitions:
         items: {}
       like:
         type: array
-        items: {}
+        items:
+          type: string
       name:
         type: string
   MetricsViewMeasure:
@@ -1383,15 +1384,28 @@ definitions:
   v1CatalogEntry:
     type: object
     properties:
+      children:
+        type: array
+        items:
+          type: string
+        title: Immediate child entries in the DAG
       createdOn:
         type: string
         format: date-time
+      embedded:
+        type: boolean
+        description: Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
       metricsView:
         $ref: '#/definitions/v1MetricsView'
       model:
         $ref: '#/definitions/v1Model'
       name:
         type: string
+      parents:
+        type: array
+        items:
+          type: string
+        title: Immediate parent entries in the DAG
       path:
         type: string
       refreshedOn:
@@ -1713,18 +1727,6 @@ definitions:
       type:
         type: string
     title: MetricsViewColumn represents a column in a metrics view
-  v1MetricsViewDimensionValue:
-    type: object
-    properties:
-      in:
-        type: array
-        items: {}
-      like:
-        type: array
-        items:
-          type: string
-      name:
-        type: string
   v1MetricsViewFilter:
     type: object
     properties:
@@ -1736,22 +1738,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/MetricsViewFilterCond'
-      match:
-        type: array
-        items:
-          type: string
     title: Filter clause for metrics view requests
-  v1MetricsViewRequestFilter:
-    type: object
-    properties:
-      exclude:
-        type: array
-        items:
-          $ref: '#/definitions/v1MetricsViewDimensionValue'
-      include:
-        type: array
-        items:
-          $ref: '#/definitions/v1MetricsViewDimensionValue'
   v1MetricsViewSort:
     type: object
     properties:
@@ -1766,7 +1753,7 @@ definitions:
       data:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
       meta:
         type: array
         items:
@@ -1800,6 +1787,9 @@ definitions:
       dialect:
         $ref: '#/definitions/ModelDialect'
         title: Dialect of the SQL statement
+      materialize:
+        type: boolean
+        title: To materialize model or not
       name:
         type: string
         title: Name of the model
@@ -2214,11 +2204,9 @@ definitions:
         format: double
       records:
         type: object
-        additionalProperties:
-          type: number
-          format: double
       ts:
         type: string
+        format: date-time
   v1TopK:
     type: object
     properties:

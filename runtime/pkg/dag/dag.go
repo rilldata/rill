@@ -1,5 +1,12 @@
 package dag
 
+import (
+	"container/list"
+	"fmt"
+
+	"golang.org/x/exp/slices"
+)
+
 // DAG is a simple implementation of a directed acyclic graph.
 type DAG struct {
 	NameMap map[string]*Node
@@ -11,8 +18,6 @@ func NewDAG() *DAG {
 	}
 }
 
-// TODO: handle cycles when we support model to model connection
-
 type Node struct {
 	Name     string
 	Present  bool
@@ -20,12 +25,18 @@ type Node struct {
 	Children map[string]*Node
 }
 
-func (d *DAG) Add(name string, dependants []string) *Node {
+func (d *DAG) Add(name string, dependants []string) (*Node, error) {
 	n := d.getNode(name)
 	n.Present = true
 
 	dependantMap := make(map[string]bool)
 	for _, dependant := range dependants {
+		childrens := d.GetDeepChildren(name)
+		ok := slices.Contains(childrens, dependant)
+		if ok {
+			return nil, fmt.Errorf("encountered circular dependency between %q and %q", name, dependant)
+		}
+
 		dependantMap[dependant] = true
 	}
 
@@ -43,7 +54,7 @@ func (d *DAG) Add(name string, dependants []string) *Node {
 		n.Parents[newParent] = d.addChild(newParent, n)
 	}
 
-	return n
+	return n, nil
 }
 
 func (d *DAG) Delete(name string) {
@@ -52,33 +63,66 @@ func (d *DAG) Delete(name string) {
 	d.deleteBranch(n)
 }
 
-func (d *DAG) GetChildren(name string) []string {
+// GetDeepChildren will go down the DAG and get all children in the subtree
+func (d *DAG) GetDeepChildren(name string) []string {
 	children := make([]string, 0)
-	childMap := make(map[string]bool)
 
 	n, ok := d.NameMap[name]
 	if !ok {
 		return []string{}
 	}
 
-	// we need the immediate children to be loaded 1st.
-	for _, child := range n.Children {
-		children = append(children, child.Name)
-		childMap[child.Name] = true
-	}
+	visited := make(map[string]*Node)
+	// queue of the nodes to visit
+	queue := list.New()
+	queue.PushBack(n)
+	// add the root node to the map of the visited nodes
+	visited[n.Name] = n
 
-	// then we load deeper children
-	for _, child := range n.Children {
-		deepChildren := d.GetChildren(child.Name)
-		for _, deepChild := range deepChildren {
-			if _, ok := childMap[deepChild]; !ok {
-				children = append(children, deepChild)
-				childMap[deepChild] = true
+	for queue.Len() > 0 {
+		qnode := queue.Front()
+		// iterate through all of its neighbors
+		// mark the visited nodes; enqueue the non-visted
+		for child, node := range qnode.Value.(*Node).Children {
+			if _, ok := visited[child]; !ok {
+				children = append(children, child)
+				visited[child] = node
+				queue.PushBack(node)
 			}
 		}
+		queue.Remove(qnode)
 	}
 
 	return children
+}
+
+// GetChildren only returns the immediate children
+func (d *DAG) GetChildren(name string) []string {
+	n, ok := d.NameMap[name]
+	if !ok {
+		return []string{}
+	}
+	children := make([]string, 0)
+	for childName, childNode := range n.Children {
+		if !childNode.Present {
+			continue
+		}
+		children = append(children, childName)
+	}
+	return children
+}
+
+// GetParents only returns the immediate parents
+func (d *DAG) GetParents(name string) []string {
+	n := d.getNode(name)
+	parents := make([]string, 0)
+	for _, parent := range n.Parents {
+		if !parent.Present {
+			continue
+		}
+		parents = append(parents, parent.Name)
+	}
+	return parents
 }
 
 func (d *DAG) Has(name string) bool {

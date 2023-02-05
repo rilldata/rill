@@ -2,7 +2,6 @@
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
-  import Interval from "@rilldata/web-common/components/data-types/Interval.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
@@ -73,7 +72,6 @@
   <div class={TIMESTAMP_TOKENS.textClass} slot="summary">
     <WithParentClientRect let:rect>
       <TimestampSpark
-        area
         bottom={4}
         color={"currentColor"}
         data={$timeSeries?.spark}
@@ -86,6 +84,7 @@
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nullPercentage?.nullCount}
     slot="nullity"
     totalRows={$nullPercentage?.totalRows}
@@ -103,7 +102,7 @@
             {type}
             data={$timeSeries?.data}
             spark={$timeSeries?.spark}
-            interval={Interval[$timeSeries?.estimatedRollupInterval]}
+            rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
             estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
             xAccessor="ts"
             yAccessor="count"

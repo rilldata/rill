@@ -16,17 +16,26 @@ func StartCmd(ver version.Version) *cobra.Command {
 	var httpPort int
 	var grpcPort int
 	var verbose bool
+	var readonly bool
 	var noUI bool
 	var noOpen bool
+	var strict bool
+	var logFormat string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
+			if !ok {
+				return fmt.Errorf("invalid log format %q", logFormat)
+			}
+
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat)
 			if err != nil {
 				return err
 			}
+			defer app.Close()
 
 			// If not initialized, init repo with an empty project
 			if !app.IsProjectInit() {
@@ -36,12 +45,12 @@ func StartCmd(ver version.Version) *cobra.Command {
 				}
 			}
 
-			err = app.Reconcile()
+			err = app.Reconcile(strict)
 			if err != nil {
 				return fmt.Errorf("reconcile project: %w", err)
 			}
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen)
+			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -57,8 +66,11 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 9010, "Port for gRPC")
+	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
+	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 
 	return startCmd
 }

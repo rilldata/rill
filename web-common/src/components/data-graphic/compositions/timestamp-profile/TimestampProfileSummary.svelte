@@ -6,79 +6,84 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
-  import {
-    intervalToTimestring,
-    PreviewRollupIntervalFormatter,
-  } from "@rilldata/web-common/lib/formatters";
+  import { datesToFormattedTimeRange } from "@rilldata/web-common/lib/formatters";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { GridCell, LeftRightGrid } from "../../../grid";
 
-  export let type: string;
-  export let estimatedSmallestTimeGrain: string;
-  export let interval: Interval;
-  export let rollupGrain: string;
+  export let start: Date;
+  export let end: Date;
+  export let estimatedSmallestTimeGrain: V1TimeGrain;
+  export let rollupTimeGrain: V1TimeGrain;
+
+  enum NicerTimeGrain {
+    TIME_GRAIN_MILLISECOND = "milliseconds",
+    TIME_GRAIN_SECOND = "seconds",
+    TIME_GRAIN_MINUTE = "minutes",
+    TIME_GRAIN_HOUR = "hourly",
+    TIME_GRAIN_DAY = "daily",
+    TIME_GRAIN_WEEK = "weekly",
+    TIME_GRAIN_MONTH = "monthly",
+    TIME_GRAIN_YEAR = "yearly",
+  }
+
+  $: displayEstimatedSmallestTimegrain =
+    NicerTimeGrain?.[estimatedSmallestTimeGrain] || estimatedSmallestTimeGrain;
+
+  $: formattedTimeRange = datesToFormattedTimeRange(start, end);
+
+  $: displayRollupGrain = NicerTimeGrain[rollupTimeGrain];
 </script>
 
-<div
-  class="text-gray-500 pb-3"
-  style="
-        display: grid;
-        grid-template-columns: auto auto;
-    "
->
-  <Tooltip distance={16} location="top">
-    <div style:font-weight="600">
-      {type}
-    </div>
+<div class="ui-copy-muted" style:font-size="11px">
+  <LeftRightGrid>
+    <GridCell>
+      <Tooltip distance={16} location="top">
+        <div>
+          {#if rollupTimeGrain}
+            <span class="font-semibold">{formattedTimeRange}</span>
+          {/if}
+        </div>
+        <TooltipContent slot="tooltip-content">
+          <div style:max-width="315px">
+            The range of this column is {formattedTimeRange}.
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </GridCell>
+    <GridCell side="right">
+      <Tooltip distance={16} location="top">
+        <div>
+          <span class="font-semibold">{displayRollupGrain}</span> row counts
+        </div>
 
-    <TooltipContent slot="tooltip-content">
-      <div style:max-width="315px">
-        This column has the {type} type.
-      </div>
-    </TooltipContent>
-  </Tooltip>
-
-  <Tooltip distance={16} location="top">
-    <div class="text-right">
-      {#if estimatedSmallestTimeGrain}
-        min. interval
-        {estimatedSmallestTimeGrain}
-      {/if}
-    </div>
-    <TooltipContent slot="tooltip-content">
-      <div style:max-width="315px">
-        The smallest available time interval in this column appears to be at the <i
-          >{estimatedSmallestTimeGrain}</i
-        > level.
-      </div>
-    </TooltipContent>
-  </Tooltip>
-
-  <Tooltip distance={16} location="top">
-    <div>
-      {#if interval}
-        {intervalToTimestring(interval)}
-      {/if}
-    </div>
-    <TooltipContent slot="tooltip-content">
-      <div style:max-width="315px">
-        The range of this timestamp is {intervalToTimestring(interval)}.
-      </div>
-    </TooltipContent>
-  </Tooltip>
-
-  <Tooltip distance={16} location="top">
-    <div class="text-right">
-      {#if rollupGrain}
-        showing {PreviewRollupIntervalFormatter[rollupGrain]} row counts
-      {/if}
-    </div>
-    <TooltipContent slot="tooltip-content">
-      <div style:max-width="315px">
-        This timestamp column is aggregated so each point on the time series
-        represents a rollup count at the <b style:font-weight="600"
-          >{rollupGrain} level</b
-        >.
-      </div>
-    </TooltipContent>
-  </Tooltip>
+        <TooltipContent slot="tooltip-content">
+          <div style:max-width="315px">
+            This timestamp column is aggregated so each point on the time series
+            represents a rollup count at the <b style:font-weight="600"
+              >{displayRollupGrain} level</b
+            >.
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </GridCell>
+    <GridCell side="right">
+      <Tooltip distance={16} location="top">
+        <div class="text-right">
+          {#if estimatedSmallestTimeGrain}
+            min. interval at
+            <span class="font-semibold"
+              >{displayEstimatedSmallestTimegrain}</span
+            >
+            level
+          {/if}
+        </div>
+        <TooltipContent slot="tooltip-content">
+          <div style:max-width="315px">
+            The smallest available time interval in this column appears to be at
+            the <i>{displayEstimatedSmallestTimegrain}</i> level.
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </GridCell>
+  </LeftRightGrid>
 </div>

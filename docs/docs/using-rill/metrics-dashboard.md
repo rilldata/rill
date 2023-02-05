@@ -7,7 +7,7 @@ sidebar_position: 30
 
 In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
 * _**a model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
-* _**a timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time perioids
+* _**a timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
 * _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
 * _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
 

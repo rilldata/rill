@@ -5,6 +5,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import LeaderboardListItem from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardListItem.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
     createShiftClickAction,
@@ -13,17 +15,16 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import LeaderboardListItem from "../../../../components/leaderboard/LeaderboardListItem.svelte";
 
   export let colorClass = "bg-blue-200";
 
   const { shiftClickAction } = createShiftClickAction();
 
-  export let topK;
+  export let topK: TopKEntry[];
   export let totalRows: number;
   export let k = 15;
 
@@ -40,7 +41,7 @@
       ? format("0.1%")
       : () => "";
 
-  function ensureSpaces(str, n = 6) {
+  function ensureSpaces(str: string, n = 6) {
     return `${Array.from({ length: n - str.length })
       .fill("&nbsp;")
       .join("")}${str}`;
@@ -48,11 +49,11 @@
 
   let tooltipProps = { location: "right", distance: 16 };
 
-  function handleFocus(value) {
+  function handleFocus(value: TopKEntry) {
     return () => dispatch("focus-top-k", value);
   }
 
-  function handleBlur(value) {
+  function handleBlur(value: TopKEntry) {
     return () => dispatch("blur-top-k", value);
   }
 </script>

@@ -32,6 +32,212 @@ func TestServer_MetricsViewTotals(t *testing.T) {
 	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
+func TestServer_MetricsViewTotals_row_null_exclude(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewStringValue("iphone"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_exclude_null(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_exclude_all(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+						structpb.NewStringValue("iphone"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 0.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_include(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewStringValue("iphone"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_include_null(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_include_all(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+						structpb.NewStringValue("iphone"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_exclude_like(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					Like: []string{"iphone"},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 1.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_exclude_like_and_null(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					In: []*structpb.Value{
+						structpb.NewNullValue(),
+					},
+					Like: []string{"iphone"},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 0.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTotals_row_null_exclude_like_doesntexist(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"measure_0"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "device",
+					Like: []string{"doesntexist"},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data.Fields))
+	require.Equal(t, 2.0, tr.Data.Fields["measure_0"].GetNumberValue())
+}
+
 func TestServer_MetricsViewTotals_timestamp_name_with_spaces(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
@@ -226,9 +432,7 @@ func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%com"),
-					},
+					Like: []string{"%com"},
 				},
 			},
 		},
@@ -252,9 +456,7 @@ func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 					In: []*structpb.Value{
 						structpb.NewStringValue("yahoo"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%com"),
-					},
+					Like: []string{"%com"},
 				},
 			},
 		},
@@ -275,10 +477,7 @@ func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("msn%"),
-						structpb.NewStringValue("y%"),
-					},
+					Like: []string{"msn%", "y%"},
 				},
 			},
 		},
@@ -299,9 +498,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
 					Name: "domain",
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%com"),
-					},
+					Like: []string{"%com"},
 				},
 			},
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
@@ -356,9 +553,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 					In: []*structpb.Value{
 						structpb.NewStringValue("msn.com"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%yahoo%"),
-					},
+					Like: []string{"%yahoo%"},
 				},
 			},
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
@@ -367,9 +562,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 					In: []*structpb.Value{
 						structpb.NewNullValue(),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("Y%"),
-					},
+					Like: []string{"Y%"},
 				},
 			},
 		},
@@ -647,20 +840,20 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: "DAY",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0", "measure_2"},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Data))
-	require.Equal(t, 3, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
 
-	require.Equal(t, "2022-01-01T00:00:00Z", tr.Data[0].Fields["timestamp"].GetStringValue())
-	require.Equal(t, 1.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
-	require.Equal(t, 2.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, parseTime(t, "2022-01-01T00:00:00Z"), tr.Data[0].Ts)
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
 
-	require.Equal(t, "2022-01-02T00:00:00Z", tr.Data[1].Fields["timestamp"].GetStringValue())
-	require.Equal(t, 1.0, tr.Data[1].Fields["measure_0"].GetNumberValue())
-	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, parseTime(t, "2022-01-02T00:00:00Z"), tr.Data[1].Ts)
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
 }
 
 func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) {
@@ -669,7 +862,7 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: "DAY",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0", "measure_1"},
 		Filter: &runtimev1.MetricsViewFilter{
 			Include: []*runtimev1.MetricsViewFilter_Cond{
@@ -678,16 +871,15 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 					In: []*structpb.Value{
 						structpb.NewStringValue("msn.com"),
 					},
-					Like: []*structpb.Value{
-						structpb.NewStringValue("%yahoo%"),
-					},
+					Like: []string{"%yahoo%"},
 				},
 			},
 		},
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 0)
-	require.Equal(t, 3, len(tr.Data[0].Fields))
-	require.True(t, tr.Data[0].Fields["measure_0"].GetNumberValue() > 0)
-	require.True(t, tr.Data[0].Fields["measure_1"].GetNumberValue() > 0)
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+	require.NotEmpty(t, tr.Data[0].Ts)
+	require.True(t, tr.Data[0].Records.Fields["measure_0"].GetNumberValue() > 0)
+	require.True(t, tr.Data[0].Records.Fields["measure_1"].GetNumberValue() > 0)
 }

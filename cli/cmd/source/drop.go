@@ -28,10 +28,11 @@ func DropCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("not a valid source name: %s", sourceName)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole)
 			if err != nil {
 				return err
 			}
+			defer app.Close()
 
 			if !app.IsProjectInit() {
 				return fmt.Errorf("not a valid Rill project")

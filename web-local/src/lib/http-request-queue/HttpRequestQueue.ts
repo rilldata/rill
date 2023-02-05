@@ -15,6 +15,7 @@ import {
   fetchWrapper,
   FetchWrapperOptions,
 } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { appQueryStatusStore } from "../application-state-stores/application-store";
 
 export const UrlExtractorRegex =
   /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
@@ -24,7 +25,7 @@ let QueryQueueSize = 5;
 try {
   if (
     window.location.protocol === "https:" ||
-    window.location.host !== "localhost"
+    window.location.hostname !== "localhost"
   ) {
     QueryQueueSize = 200;
   }
@@ -147,6 +148,7 @@ export class HttpRequestQueue {
         this.nameHeap.pop();
       }
     }
+    appQueryStatusStore.set(this.activeCount > 0);
   }
 
   private getNameEntry(name: string): RequestQueueNameEntry {
@@ -171,6 +173,7 @@ export class HttpRequestQueue {
       entry.reject(err);
     }
     this.activeCount--;
+    appQueryStatusStore.set(this.activeCount > 0);
     return this.popEntries();
   }
 

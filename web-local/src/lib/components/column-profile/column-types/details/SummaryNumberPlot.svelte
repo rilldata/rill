@@ -8,16 +8,16 @@
   import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
   import { format } from "d3-format";
 
-  export let min;
-  export let max;
-  export let q25;
-  export let q50;
-  export let q75;
-  export let mean;
+  export let min: number;
+  export let max: number;
+  export let q25: number;
+  export let q50: number;
+  export let q75: number;
+  export let mean: number;
   export let rowHeight = 24;
   export let type: string;
 
-  $: formatter = INTEGERS.has(type) ? format(".0r") : justEnoughPrecision;
+  $: formatter = INTEGERS.has(type) ? format(".0f") : justEnoughPrecision;
   $: values = [
     { label: "min", value: min, format: formatter },
     { label: "q25", value: q25, format: formatter },
@@ -39,12 +39,7 @@
 
 {#if values}
   <!-- note: this currently inherits its settings from a parent GraphicContext -->
-  <SimpleDataGraphic
-    top={0}
-    buffer={0}
-    height={values?.length * rowHeight}
-    let:xScale
-  >
+  <SimpleDataGraphic top={0} height={values?.length * rowHeight} let:xScale>
     {#each values as { label, value, format = undefined }, i}
       <g transform="translate(0 {(values.length - i - 1) * rowHeight})">
         <GraphicContext height={rowHeight}>

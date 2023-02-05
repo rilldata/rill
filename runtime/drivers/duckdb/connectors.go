@@ -3,10 +3,10 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -26,25 +26,50 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	// }
 
 	if source.Connector == "local_file" {
-		return c.ingestFile(ctx, env, source)
+		return c.ingestLocalFiles(ctx, env, source)
 	}
 
-	path, err := connectors.ConsumeAsFile(ctx, env, source)
+	localPaths, err := connectors.ConsumeAsFiles(ctx, env, source)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(path)
-
-	return c.ingestFromRawFile(ctx, source, path)
+	defer fileutil.ForceRemoveFiles(localPaths)
+	// multiple parquet files can be loaded in single sql
+	// this seems to be performing very fast as compared to appending individual files
+	return c.ingestFiles(ctx, source, localPaths)
 }
 
-func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+// for files downloaded locally from remote sources
+func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source, filenames []string) error {
+	format := ""
+	if value, ok := source.Properties["format"]; ok {
+		format = value.(string)
+	}
+
+	delimiter := ""
+	if value, ok := source.Properties["csv.delimiter"]; ok {
+		format = value.(string)
+	}
+
+	from, err := sourceReader(filenames, delimiter, format)
+	if err != nil {
+		return err
+	}
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s);", source.Name, from)
+	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+}
+
+// local files
+func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
 	conf, err := localfile.ParseConfig(source.Properties)
 	if err != nil {
 		return err
 	}
 
-	path := conf.Path
+	path, err := fileutil.ExpandHome(conf.Path)
+	if err != nil {
+		return err
+	}
 	if !filepath.IsAbs(path) {
 		// If the path is relative, it's relative to the repo root
 		if env.RepoDriver != "file" || env.RepoDSN == "" {
@@ -53,54 +78,44 @@ func (c *connection) ingestFile(ctx context.Context, env *connectors.Env, source
 		path = filepath.Join(env.RepoDSN, path)
 	}
 
-	// Not using query args since not quite sure about behaviour of injecting table names that way.
-	// Also, it's a source, so the caller can be trusted.
-
-	var from string
-	if conf.Format == ".csv" && conf.CSVDelimiter != "" {
-		from = fmt.Sprintf("read_csv_auto('%s', delim='%s')", path, conf.CSVDelimiter)
-	} else {
-		from, err = getSourceReader(path)
-		if err != nil {
-			return err
-		}
-	}
-
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
-
-	rows, err := c.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	// get all files in case glob passed
+	localPaths, err := doublestar.FilepathGlob(path)
 	if err != nil {
 		return err
 	}
-	err = rows.Close()
-	return err
+	if len(localPaths) == 0 {
+		return fmt.Errorf("file does not exist at %s", conf.Path)
+	}
+
+	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format)
+	if err != nil {
+		return err
+	}
+
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
+
+	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func (c *connection) ingestFromRawFile(ctx context.Context, source *connectors.Source, path string) error {
-	from, err := getSourceReader(path)
-	if err != nil {
-		return err
+func sourceReader(paths []string, csvDelimiter, format string) (string, error) {
+	if format == "" {
+		format = fileutil.FullExt(paths[0])
 	}
-	rows, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from),
-		Priority: 1,
-	})
-	if err != nil {
-		return err
-	}
-	err = rows.Close()
-	return err
-}
 
-func getSourceReader(path string) (string, error) {
-	ext := fileutil.FullExt(path)
-	if ext == "" {
+	if format == "" {
 		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") || strings.Contains(ext, ".txt") {
-		return fmt.Sprintf("read_csv_auto('%s')", path), nil
-	} else if strings.Contains(ext, ".parquet") {
-		return fmt.Sprintf("read_parquet('%s')", path), nil
+	} else if strings.Contains(format, ".csv") || strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
+		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
+	} else if strings.Contains(format, ".parquet") {
+		return fmt.Sprintf("read_parquet(['%s'])", strings.Join(paths, "','")), nil
 	} else {
-		return "", fmt.Errorf("file type not supported : %s", ext)
+		return "", fmt.Errorf("file type not supported : %s", format)
 	}
+}
+
+func sourceReaderWithDelimiter(paths []string, delimiter string) string {
+	if delimiter == "" {
+		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','"))
+	}
+	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", strings.Join(paths, "','"), delimiter)
 }

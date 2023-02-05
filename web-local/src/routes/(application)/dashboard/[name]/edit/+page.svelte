@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { MetricsDefinitionWorkspace } from "@rilldata/web-local/lib/components/workspace";
-  import { EntityType } from "@rilldata/web-local/lib/temp/entity";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 
   export let data;
 
@@ -24,5 +24,5 @@
 </svelte:head>
 
 {#if yaml}
-  <MetricsDefinitionWorkspace {metricsDefName} {nonStandardError} {yaml} />
+  <MetricsWorkspace {metricsDefName} {nonStandardError} {yaml} />
 {/if}

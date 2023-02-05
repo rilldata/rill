@@ -1,6 +1,6 @@
 <script lang="ts">
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { fly } from "svelte/transition";
   import PointLabel from "./PointLabel.svelte";
   export let xAccessor: string;

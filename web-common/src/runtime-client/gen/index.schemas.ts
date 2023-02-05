@@ -33,7 +33,7 @@ export type RuntimeServiceGetTopKBody = {
 };
 
 export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewRequestFilter;
+  filters?: V1MetricsViewFilter;
   measures?: GenerateTimeSeriesRequestBasicMeasure[];
   pixels?: number;
   priority?: number;
@@ -116,7 +116,7 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
   priority?: number;
   timeEnd?: string;
-  timeGranularity?: string;
+  timeGranularity?: V1TimeGrain;
   timeStart?: string;
 };
 
@@ -202,7 +202,7 @@ export interface V1TopK {
   entries?: TopKEntry[];
 }
 
-export type V1TimeSeriesValueRecords = { [key: string]: number };
+export type V1TimeSeriesValueRecords = { [key: string]: any };
 
 export interface V1TimeSeriesValue {
   bin?: number;
@@ -448,6 +448,7 @@ export interface V1NumericSummary {
 
 export interface V1Model {
   dialect?: ModelDialect;
+  materialize?: boolean;
   name?: string;
   schema?: V1StructType;
   sql?: string;
@@ -462,10 +463,13 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
+export interface V1MetricsViewToplistResponse {
+  data?: V1MetricsViewToplistResponseDataItem[];
+  meta?: V1MetricsViewColumn[];
+}
 
 export interface V1MetricsViewTimeSeriesResponse {
-  data?: V1MetricsViewTimeSeriesResponseDataItem[];
+  data?: V1TimeSeriesValue[];
   meta?: V1MetricsViewColumn[];
 }
 
@@ -477,29 +481,12 @@ export interface V1MetricsViewSort {
 export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
   include?: MetricsViewFilterCond[];
-  match?: string[];
-}
-
-export interface V1MetricsViewDimensionValue {
-  in?: unknown[];
-  like?: string[];
-  name?: string;
-}
-
-export interface V1MetricsViewRequestFilter {
-  exclude?: V1MetricsViewDimensionValue[];
-  include?: V1MetricsViewDimensionValue[];
 }
 
 export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
-}
-
-export interface V1MetricsViewToplistResponse {
-  data?: V1MetricsViewToplistResponseDataItem[];
-  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {
@@ -686,10 +673,14 @@ export interface V1CategoricalSummary {
 }
 
 export interface V1CatalogEntry {
+  children?: string[];
   createdOn?: string;
+  /** Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact. */
+  embedded?: boolean;
   metricsView?: V1MetricsView;
   model?: V1Model;
   name?: string;
+  parents?: string[];
   path?: string;
   refreshedOn?: string;
   source?: V1Source;
@@ -786,7 +777,7 @@ export interface MetricsViewMeasure {
 
 export interface MetricsViewFilterCond {
   in?: unknown[];
-  like?: unknown[];
+  like?: string[];
   name?: string;
 }
 

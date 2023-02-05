@@ -7,22 +7,22 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -56,12 +56,14 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
+			grpc_validator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
+			grpc_validator.UnaryServerInterceptor(),
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)

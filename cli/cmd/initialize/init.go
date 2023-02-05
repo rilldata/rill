@@ -40,10 +40,11 @@ func InitCmd(ver version.Version) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole)
 			if err != nil {
 				return err
 			}
+			defer app.Close()
 
 			if app.IsProjectInit() {
 				if projectPath == "." {
@@ -68,13 +69,14 @@ func InitCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("init project: %w", err)
 			}
 
-			err = app.Reconcile()
+			err = app.Reconcile(false)
 			if err != nil {
 				return fmt.Errorf("reconcile project: %w", err)
 			}
 
 			return nil
 		},
+		Args: cobra.ExactArgs(0),
 	}
 
 	initCmd.Flags().SortFlags = false

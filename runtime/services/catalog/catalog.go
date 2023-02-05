@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -22,10 +23,10 @@ type Service struct {
 	// used to get path when we only have name. happens when we get name from DAG
 	// TODO: should we add path to the DAG instead
 	NameToPath map[string]string
-	// used to get last logged name when parsing fails
-	PathToName map[string]string
 
-	logger *zap.Logger
+	logger      *zap.Logger
+	hasMigrated bool
+	lock        sync.Mutex
 }
 
 func NewService(
@@ -46,16 +47,28 @@ func NewService(
 
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
-		PathToName: make(map[string]string),
 
 		logger: logger,
 	}
 }
 
 func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
-	return s.Catalog.FindEntries(ctx, s.InstID, typ)
+	entries := s.Catalog.FindEntries(ctx, s.InstID, typ)
+	for _, entry := range entries {
+		s.fillDAGInEntry(entry)
+	}
+	return entries
 }
 
 func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
-	return s.Catalog.FindEntry(ctx, s.InstID, name)
+	entry, ok := s.Catalog.FindEntry(ctx, s.InstID, name)
+	if ok {
+		s.fillDAGInEntry(entry)
+	}
+	return entry, ok
+}
+
+func (s *Service) fillDAGInEntry(entry *drivers.CatalogEntry) {
+	entry.Children = s.dag.GetChildren(normalizeName(entry.Name))
+	entry.Parents = s.dag.GetParents(normalizeName(entry.Name))
 }

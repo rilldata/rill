@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/version"
@@ -36,6 +35,14 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
+type LogFormat string
+
+// Default log formats for logger
+const (
+	LogFormatConsole = "console"
+	LogFormatJSON    = "json"
+)
+
 // Default instance config on local.
 const (
 	DefaultInstanceID = "default"
@@ -57,15 +64,29 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string) (*App, error) {
-	// Setup a friendly-looking colored logger
-	conf := zap.NewDevelopmentEncoderConfig()
-	conf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(conf),
-		zapcore.AddSync(colorable.NewColorableStdout()),
-		zapcore.DebugLevel,
-	))
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat) (*App, error) {
+	// Setup a friendly-looking colored/json logger
+	var logger *zap.Logger
+	var err error
+	switch logFormat {
+	case LogFormatJSON:
+		cfg := zap.NewProductionConfig()
+		cfg.DisableStacktrace = true
+		cfg.Level.SetLevel(zapcore.DebugLevel)
+		logger, err = cfg.Build()
+	case LogFormatConsole:
+		encCfg := zap.NewDevelopmentEncoderConfig()
+		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger = zap.New(zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encCfg),
+			zapcore.AddSync(os.Stdout),
+			zapcore.DebugLevel,
+		))
+	}
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Set logging level
 	lvl := zap.InfoLevel
@@ -127,6 +148,10 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		ProjectPath: projectPath,
 	}
 	return app, nil
+}
+
+func (a *App) Close() error {
+	return a.Runtime.Close()
 }
 
 func (a *App) IsProjectInit() bool {
@@ -201,7 +226,7 @@ func (a *App) InitProject(exampleName string) error {
 	return nil
 }
 
-func (a *App) Reconcile() error {
+func (a *App) Reconcile(strict bool) error {
 	a.Logger.Infof("Hydrating project '%s'", a.ProjectPath)
 	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
 	if err != nil {
@@ -209,7 +234,6 @@ func (a *App) Reconcile() error {
 	}
 	if a.Context.Err() != nil {
 		a.Logger.Errorf("Hydration canceled")
-		return nil
 	}
 	for _, path := range res.AffectedPaths {
 		a.Logger.Infof("Reconciled: %s", path)
@@ -219,6 +243,8 @@ func (a *App) Reconcile() error {
 	}
 	if len(res.Errors) == 0 {
 		a.Logger.Infof("Hydration completed!")
+	} else if strict {
+		a.Logger.Fatalf("Hydration failed")
 	} else {
 		a.Logger.Infof("Hydration failed")
 	}
@@ -250,7 +276,7 @@ func (a *App) ReconcileSource(sourcePath string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser bool) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
 	// Build local info for frontend
 	localConf, err := config()
 	if err != nil {
@@ -266,6 +292,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser bool) error {
 		BuildTime:        a.Version.Timestamp,
 		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: localConf.AnalyticsEnabled,
+		Readonly:         readonly,
 	}
 
 	// Create server logger.
@@ -369,6 +396,7 @@ type localInfo struct {
 	BuildTime        string `json:"build_time"`
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
+	Readonly         bool   `json:"readonly"`
 }
 
 // infoHandler servers the local info struct.
@@ -435,4 +463,15 @@ func cors(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+func ParseLogFormat(format string) (LogFormat, bool) {
+	switch format {
+	case "json":
+		return LogFormatJSON, true
+	case "console":
+		return LogFormatConsole, true
+	default:
+		return "", false
+	}
 }

@@ -110,8 +110,8 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (
 		}
 	}
 
-	args := []any{}
 	whereClause := "1=1"
+	args := []any{}
 	if mv.TimeDimension != "" {
 		if q.TimeStart != nil {
 			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
@@ -146,7 +146,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,

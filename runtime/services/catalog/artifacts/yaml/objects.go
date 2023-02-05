@@ -14,13 +14,16 @@ import (
 /**
  * This file contains the mapping from CatalogObject to Yaml files
  */
-
 type Source struct {
-	Type         string
-	Path         string `yaml:"path,omitempty"`
-	CsvDelimiter string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
-	URI          string `yaml:"uri,omitempty"`
-	Region       string `yaml:"region,omitempty" mapstructure:"aws.region,omitempty"`
+	Type                  string
+	Path                  string `yaml:"path,omitempty"`
+	CsvDelimiter          string `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
+	URI                   string `yaml:"uri,omitempty"`
+	Region                string `yaml:"region,omitempty" mapstructure:"region,omitempty"`
+	GlobMaxTotalSize      int64  `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
+	GlobMaxObjectsMatched int    `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
+	GlobMaxObjectsListed  int64  `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
+	GlobPageSize          int    `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
 }
 
 type MetricsView struct {
@@ -87,10 +90,25 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["path"] = source.URI
 	}
 	if source.Region != "" {
-		props["aws.region"] = source.Region
+		props["region"] = source.Region
 	}
 	if source.CsvDelimiter != "" {
 		props["csv.delimiter"] = source.CsvDelimiter
+	}
+	if source.GlobMaxTotalSize != 0 {
+		props["glob.max_total_size"] = source.GlobMaxTotalSize
+	}
+
+	if source.GlobMaxObjectsMatched != 0 {
+		props["glob.max_objects_matched"] = source.GlobMaxObjectsMatched
+	}
+
+	if source.GlobMaxObjectsListed != 0 {
+		props["glob.max_objects_listed"] = source.GlobMaxObjectsListed
+	}
+
+	if source.GlobPageSize != 0 {
+		props["glob.page_size"] = source.GlobPageSize
 	}
 	propsPB, err := structpb.NewStruct(props)
 	if err != nil {

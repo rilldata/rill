@@ -66,6 +66,12 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
 	q.Result = count
 	return nil
 }

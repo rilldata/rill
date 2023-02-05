@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -21,7 +20,7 @@ type MetricsViewTimeSeries struct {
 	Offset          int64                        `json:"offset,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	TimeGranularity string                       `json:"time_granularity,omitempty"`
+	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -72,73 +71,53 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	// Build query
-	sql, args, err := q.buildMetricsTimeSeriesSQL(mv)
-	if err != nil {
-		return fmt.Errorf("error building query: %w", err)
-	}
-
-	// Execute
-	meta, data, err := metricsQuery(ctx, olap, priority, sql, args)
+	measures, err := toMeasures(mv.Measures, q.MeasureNames)
 	if err != nil {
 		return err
 	}
 
+	tsq := &ColumnTimeseries{
+		TableName:           mv.Model,
+		TimestampColumnName: mv.TimeDimension,
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    q.TimeStart,
+			End:      q.TimeEnd,
+			Interval: q.TimeGranularity,
+		},
+		Measures: measures,
+		Filters:  q.Filter,
+	}
+	err = rt.Query(ctx, instanceID, tsq, priority)
+	if err != nil {
+		return err
+	}
+
+	r := tsq.Result
+
 	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
-		Meta: meta,
-		Data: data,
+		Meta: r.Meta,
+		Data: r.Results,
 	}
 
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) buildMetricsTimeSeriesSQL(mv *runtimev1.MetricsView) (string, []any, error) {
-	timestampColumnName := safeName(mv.TimeDimension)
-	timeCol := fmt.Sprintf("DATE_TRUNC('%s', %s) AS %s", q.TimeGranularity, timestampColumnName, timestampColumnName)
-	selectCols := []string{timeCol}
-	for _, n := range q.MeasureNames {
+func toMeasures(measures []*runtimev1.MetricsView_Measure, measureNames []string) ([]*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, error) {
+	var res []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure
+	for _, n := range measureNames {
 		found := false
-		for _, m := range mv.Measures {
+		for _, m := range measures {
 			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
+				res = append(res, &runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+					SqlName:    m.Name,
+					Expression: m.Expression,
+				})
 				found = true
-				break
 			}
 		}
 		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
+			return nil, fmt.Errorf("measure does not exist: '%s'", n)
 		}
 	}
-
-	whereClause := "1=1"
-	args := []any{}
-	if mv.TimeDimension != "" {
-		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", timestampColumnName)
-			args = append(args, q.TimeStart.AsTime())
-		}
-		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", timestampColumnName)
-			args = append(args, q.TimeEnd.AsTime())
-		}
-	}
-
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter)
-		if err != nil {
-			return "", nil, err
-		}
-		whereClause += clause
-		args = append(args, clauseArgs...)
-	}
-
-	sql := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s GROUP BY 1 ORDER BY %s LIMIT 1000",
-		strings.Join(selectCols, ", "),
-		mv.Model,
-		whereClause,
-		timestampColumnName,
-	)
-	return sql, args, nil
+	return res, nil
 }
