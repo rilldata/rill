@@ -74,6 +74,56 @@ func TestColumnTopK(t *testing.T) {
 	require.Equal(t, 2, int(q.Result.Entries[0].Count))
 }
 
+func TestColumnTopKList(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT [10, 20] AS col, 1 AS val`)
+	q := &ColumnTopK{
+		TableName:  "test",
+		ColumnName: "col",
+		Agg:        "count(*)",
+		K:          10,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Equal(t, 1, len(q.Result.Entries))
+	require.Equal(t, 10.0, q.Result.Entries[0].Value.GetListValue().Values[0].GetNumberValue())
+	require.Equal(t, 20.0, q.Result.Entries[0].Value.GetListValue().Values[1].GetNumberValue())
+	require.Equal(t, 1, int(q.Result.Entries[0].Count))
+}
+
+func TestColumnTopKStruct(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT {'x': 10, 'y': null} AS col, 1 AS val`)
+	q := &ColumnTopK{
+		TableName:  "test",
+		ColumnName: "col",
+		Agg:        "count(*)",
+		K:          10,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Equal(t, 1, len(q.Result.Entries))
+	require.Equal(t, 10.0, q.Result.Entries[0].Value.GetStructValue().AsMap()["x"])
+	require.Equal(t, nil, q.Result.Entries[0].Value.GetStructValue().AsMap()["y"])
+	require.Equal(t, 1, int(q.Result.Entries[0].Count))
+}
+
+func TestColumnTopKJSON(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT '[10]'::JSON AS col, 1 AS val`)
+	q := &ColumnTopK{
+		TableName:  "test",
+		ColumnName: "col",
+		Agg:        "count(*)",
+		K:          10,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Equal(t, 1, len(q.Result.Entries))
+	require.Equal(t, "[10]", q.Result.Entries[0].Value.GetStringValue())
+	require.Equal(t, 1, int(q.Result.Entries[0].Count))
+}
+
 func BenchmarkColumnTopK(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
