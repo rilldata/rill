@@ -314,7 +314,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
 			CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
 		FROM histogram_stage
-	  `,
+		`,
 		selectColumn,
 		sanitizedColumnName,
 		safeName(q.TableName),
