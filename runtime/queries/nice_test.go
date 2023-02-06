@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func nice(start, stop, count float64) []float64 {
+	return NiceAndStep(start, stop, count)[:2]
+}
+
 func TestTimeseries_normaliseTimeRange_Specified1(t *testing.T) {
 	rt, instanceID := instanceWith2RowsModel(t)
 

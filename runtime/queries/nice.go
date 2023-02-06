@@ -34,10 +34,6 @@ func tickIncrement(start, stop, count float64) float64 {
 	}
 }
 
-func nice(start, stop, count float64) []float64 {
-	return NiceAndStep(start, stop, count)[:2]
-}
-
 func NiceAndStep(start, stop, count float64) []float64 {
 	var prestep float64
 	for {
