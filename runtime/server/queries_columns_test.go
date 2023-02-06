@@ -49,7 +49,7 @@ func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
 	require.NotEmpty(t, res)
 	topk := res.CategoricalSummary.GetTopK()
 	require.Equal(t, 1, len(topk.Entries))
-	require.Equal(t, "170141183460469231731687303715884105727", topk.Entries[0].Value.GetStringValue())
+	require.Equal(t, 170141183460469231731687303715884105727.0, topk.Entries[0].Value.GetNumberValue())
 	require.Equal(t, 1.0, topk.Entries[0].Count)
 }
 
