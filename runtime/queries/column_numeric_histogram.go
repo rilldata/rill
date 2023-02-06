@@ -11,28 +11,10 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type HistogramMethod int64
-
-const (
-	FD HistogramMethod = iota
-	Diagnostic
-)
-
-func (s HistogramMethod) String() string {
-	switch s {
-	case FD:
-		return "FD"
-	case Diagnostic:
-		return "Diagnostic"
-	default:
-		panic("unknown HistogramMethod")
-	}
-}
-
 type ColumnNumericHistogram struct {
 	TableName  string
 	ColumnName string
-	Method     HistogramMethod
+	Method     runtimev1.HistogramMethod
 	Threshold  int
 	Result     []*runtimev1.NumericHistogramBins_Bin
 }
@@ -61,11 +43,6 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
-	if q.Method == Diagnostic {
-	} else if q.Method == FD {
-	} else {
-		return 0, fmt.Errorf("unknown histogram method: %s", q.Method.String())
-	}
 	sanitizedColumnName := safeName(q.ColumnName)
 	querySQL := fmt.Sprintf(
 		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
@@ -128,17 +105,18 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	sanitizedColumnName := safeName(q.ColumnName)
-	bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
-	if err != nil {
-		return err
-	}
-	if bucketSize == 0 {
-		return nil
-	}
+	if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD {
+		bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
+		if err != nil {
+			return err
+		}
+		if bucketSize == 0 {
+			return nil
+		}
 
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	histogramSQL := fmt.Sprintf(
-		`
+		selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+		histogramSQL := fmt.Sprintf(
+			`
           WITH data_table AS (
             SELECT %[1]s as %[2]s 
             FROM %[3]s
@@ -190,36 +168,178 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
 	      `,
-		selectColumn,
-		sanitizedColumnName,
-		safeName(q.TableName),
-		bucketSize,
-	)
+			selectColumn,
+			sanitizedColumnName,
+			safeName(q.TableName),
+			bucketSize,
+		)
 
-	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    histogramSQL,
-		Priority: priority,
-	})
-	if err != nil {
-		return err
-	}
-	defer histogramRows.Close()
-
-	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
-	for histogramRows.Next() {
-		bin := &runtimev1.NumericHistogramBins_Bin{}
-		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
+		histogramRows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    histogramSQL,
+			Priority: priority,
+		})
 		if err != nil {
 			return err
 		}
-		histogramBins = append(histogramBins, bin)
-	}
+		defer histogramRows.Close()
 
-	err = histogramRows.Err()
-	if err != nil {
-		return err
-	}
+		histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
+		for histogramRows.Next() {
+			bin := &runtimev1.NumericHistogramBins_Bin{}
+			err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Count)
+			if err != nil {
+				return err
+			}
+			histogramBins = append(histogramBins, bin)
+		}
 
-	q.Result = histogramBins
+		err = histogramRows.Err()
+		if err != nil {
+			return err
+		}
+
+		q.Result = histogramBins
+	} else if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_DIAGNOSTIC {
+		minMaxSQL := fmt.Sprintf(
+			`
+				SELECT
+					min(%[2]s) as min,
+					max(%[2]s) as max,
+					max(%[2]s) - min(%[2]s) as range
+				FROM %[1]s 
+				WHERE %[2]s IS NOT NULL
+			`,
+			safeName(q.TableName),
+			sanitizedColumnName,
+		)
+
+		minMaxRow, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    minMaxSQL,
+			Priority: priority,
+		})
+		if err != nil {
+			return err
+		}
+
+		var min, max, rng float64
+		if minMaxRow.Next() {
+			err = minMaxRow.Scan(&min, &max, &rng)
+			if err != nil {
+				minMaxRow.Close()
+				return err
+			}
+		}
+
+		minMaxRow.Close()
+
+		ticks := 40.0
+		if rng < ticks {
+			ticks = rng
+		}
+		niceResult := Nice0(min, max, ticks)
+		startTick := niceResult[0]
+		endTick := niceResult[1]
+		gap := niceResult[2]
+		if gap < 0.0 {
+			gap = 1 / -gap
+		}
+		bucketCount := int(math.Ceil((endTick - startTick) / gap))
+
+		selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+		histogramSQL := fmt.Sprintf(
+			`
+			WITH data_table AS (
+				SELECT %[1]s as %[2]s 
+				FROM %[3]s
+				WHERE %[2]s IS NOT NULL
+			), S AS (
+				SELECT 
+					min(%[2]s) as minVal,
+					max(%[2]s) as maxVal,
+					(max(%[2]s) - min(%[2]s)) as range
+					FROM data_table
+			), values AS (
+				SELECT %[2]s as value from data_table
+				WHERE %[2]s IS NOT NULL
+			), buckets AS (
+				SELECT
+					range as bucket,
+					(range * %[7]f::FLOAT + %[5]f) as low,
+					(range * %[7]f::FLOAT + %7f::FLOAT / 2 + %[5]f) as midpoint,
+					((range + 1) * %[7]f::FLOAT + %[5]f) as high
+				FROM range(0, %[4]d, 1) 
+			),
+			-- bin the values
+			binned_data AS (
+				SELECT 
+					FLOOR(%[4]d::FLOAT * ((value::FLOAT - %[5]f) / %[8]f)) as bucket
+				from values
+			),
+			-- join the bucket set with the binned values to generate the histogram
+			histogram_stage AS (
+				SELECT
+					buckets.bucket,
+					low,
+					high,
+					midpoint,
+					SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
+				FROM buckets
+				LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
+				GROUP BY buckets.bucket, low, high, midpoint
+				ORDER BY buckets.bucket
+			),
+			-- calculate the right edge, sine in histogram_stage we don't look at the values that
+			-- might be the largest.
+			right_edge AS (
+				SELECT count(*) as c from values WHERE value = %[6]f 
+			)
+			SELECT 
+				bucket,
+				low,
+				high,
+				midpoint,
+			-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+				CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+			FROM histogram_stage
+	      `,
+			selectColumn,
+			sanitizedColumnName,
+			safeName(q.TableName),
+			bucketCount,
+			startTick,
+			endTick,
+			gap,
+			endTick-startTick,
+		)
+
+		histogramRows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:    histogramSQL,
+			Priority: priority,
+		})
+		if err != nil {
+			return err
+		}
+
+		defer histogramRows.Close()
+
+		histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
+		for histogramRows.Next() {
+			bin := &runtimev1.NumericHistogramBins_Bin{}
+			err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Midpoint, &bin.Count)
+			if err != nil {
+				return err
+			}
+			histogramBins = append(histogramBins, bin)
+		}
+
+		err = histogramRows.Err()
+		if err != nil {
+			return err
+		}
+
+		q.Result = histogramBins
+	} else {
+		panic(fmt.Sprintf("Unknown histogram method %v", q.Method))
+	}
 	return nil
 }
