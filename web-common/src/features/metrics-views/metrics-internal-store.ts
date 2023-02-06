@@ -14,7 +14,8 @@ export interface MetricsConfig {
   description: string;
   timeseries: string;
   timegrains?: Array<string>;
-  default_timegrain?: Array<string>;
+  default_timerange?: string;
+  default_timegrain?: string;
   model: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
@@ -247,6 +248,8 @@ export function initBlankDashboardYAML(dashboardName: string) {
 
 display_name: ""
 model: ""
+default_timerange: ""
+default_timegrain: ""
 timeseries: ""
 measures: []
 dimensions: []

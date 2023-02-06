@@ -20,6 +20,8 @@
   import { initDimensionColumns } from "../DimensionColumns";
   import { initMeasuresColumns } from "../MeasuresColumns";
   import { createInternalRepresentation } from "../metrics-internal-store";
+  import MetricsDefaultTimeGrainSelector from "./MetricsDefaultTimeGrainSelector.svelte";
+  import MetricsDefaultTimeRange from "./MetricsDefaultTimeRange.svelte";
   import MetricsDisplayNameInput from "./MetricsDisplayNameInput.svelte";
   import MetricsEntityTable from "./MetricsEntityTable.svelte";
   import MetricsGenerateButton from "./MetricsGenerateButton.svelte";
@@ -159,7 +161,16 @@
         <div>
           <MetricsDisplayNameInput {metricsInternalRep} />
           <MetricsModelSelector {metricsInternalRep} />
+        </div>
+        <div class="pl-10">
           <MetricsTimeColumnSelector
+            selectedModel={model}
+            {metricsInternalRep}
+          />
+          <MetricsDefaultTimeRange selectedModel={model} {metricsInternalRep} />
+        </div>
+        <div class="pl-10">
+          <MetricsDefaultTimeGrainSelector
             selectedModel={model}
             {metricsInternalRep}
           />

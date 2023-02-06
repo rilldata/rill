@@ -47,7 +47,7 @@
   }
 </script>
 
-<div class="flex items-center">
+<div class="flex items-center mb-3">
   <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
     Timestamp
   </div>
