@@ -22,7 +22,15 @@ import (
 const _concurrentBlobDownloadLimit = 8
 
 // map of supoprted extensions for partial downloads vs readers
-var _partialDownloadReaders = map[string]string{".parquet": "parquet", ".csv": "csv", ".tsv": "csv", ".txt": "csv", ".parquet.gz": "parquet"}
+var _partialDownloadReaders = map[string]string{
+	".parquet":    "parquet",
+	".parquet.gz": "parquet",
+	".csv":        "csv",
+	".tsv":        "csv",
+	".txt":        "csv",
+	".ndjson":     "csv",
+	".json":       "csv",
+}
 
 // implements connector.FileIterator
 type blobIterator struct {
@@ -169,7 +177,9 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			case "parquet":
 				return downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
 			case "csv":
-				return downloadCSV(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
+				return downloadCSV(grpCtx, it.bucket, obj.obj, &csvExtractOption{extractOption: obj.extractOption, hasHeader: true}, file)
+			case "json":
+				return downloadCSV(grpCtx, it.bucket, obj.obj, &csvExtractOption{extractOption: obj.extractOption, hasHeader: false}, file)
 			default:
 				// should not reach here
 				panic(fmt.Errorf("partial download not supported for extension %q", ext))

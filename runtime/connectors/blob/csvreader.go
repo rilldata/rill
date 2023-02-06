@@ -13,7 +13,12 @@ import (
 
 var _newLineSeparator = []byte("\n")
 
-func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
+type csvExtractOption struct {
+	extractOption *extractOption
+	hasHeader     bool // set if first row is header
+}
+
+func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *csvExtractOption, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 
 	rows, err := csvRows(reader, option)
@@ -34,25 +39,31 @@ func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject,
 	return nil
 }
 
-func csvRows(reader *ObjectReader, option *extractOption) ([][]byte, error) {
-	if option.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL {
+func csvRows(reader *ObjectReader, option *csvExtractOption) ([][]byte, error) {
+	if option.extractOption.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL {
 		return csvRowsTail(reader, option)
 	}
-	return csvRowsHead(reader, option)
+	return csvRowsHead(reader, option.extractOption)
 }
 
-func csvRowsTail(reader *ObjectReader, option *extractOption) ([][]byte, error) {
-	header, err := getHeader(reader)
-	if err != nil {
+func csvRowsTail(reader *ObjectReader, option *csvExtractOption) ([][]byte, error) {
+	headerRow := make([]byte, 0)
+	bytesToRead := option.extractOption.limitInBytes
+	if option.hasHeader {
+		// csv has header, need to read header first
+		header, err := getHeader(reader)
+		if err != nil {
+			return nil, err
+		}
+		headerRow = header
+		bytesToRead = option.extractOption.limitInBytes - uint64(len(header))
+	}
+
+	if _, err := reader.Seek(0-int64(bytesToRead), io.SeekEnd); err != nil {
 		return nil, err
 	}
 
-	remBytes := int64(option.limitInBytes - uint64(len(header)))
-	if _, err := reader.Seek(0-remBytes, io.SeekEnd); err != nil {
-		return nil, err
-	}
-
-	p := make([]byte, remBytes)
+	p := make([]byte, bytesToRead)
 	if _, err := reader.Read(p); err != nil {
 		return nil, err
 	}
@@ -61,7 +72,7 @@ func csvRowsTail(reader *ObjectReader, option *extractOption) ([][]byte, error) 
 	// remove first row (possibly incomplete)
 	rows = rows[1:]
 	// append header at start
-	return append([][]byte{header}, rows...), nil
+	return append([][]byte{headerRow}, rows...), nil
 }
 
 func csvRowsHead(reader *ObjectReader, option *extractOption) ([][]byte, error) {
