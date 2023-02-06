@@ -1,6 +1,6 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
-import {
+import type {
   V1DeleteFileAndReconcileResponse,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";

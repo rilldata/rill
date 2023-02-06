@@ -37,9 +37,9 @@
   $: allConnectors = $connectors?.data?.connectors?.map(
     (connector) => connector.name
   );
-  $: remoteConnectorNames = allConnectors
-    ?.map((connector) => connector.name)
-    ?.filter((name) => name !== "local_file");
+  $: remoteConnectorNames = allConnectors?.filter(
+    (name) => name !== "local_file"
+  );
 
   const queryClient = useQueryClient();
   const createSource = useRuntimeServicePutFileAndReconcile();

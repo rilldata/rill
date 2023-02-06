@@ -16,7 +16,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import { getSummaries } from "@rilldata/web-local/lib/components/column-profile/queries";
+  import {
+    ColumnSummary,
+    getSummaries,
+  } from "@rilldata/web-local/lib/components/column-profile/queries";
+  import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
@@ -38,7 +42,6 @@
   }
 
   let showColumns = true;
-  let showModelReferences = true;
 
   // get source table references.
 
@@ -105,6 +108,7 @@
     { query: { keepPreviousData: true } }
   );
 
+  let summaries: Readable<Array<ColumnSummary>>;
   $: summaries = getSummaries(
     sourceName,
     $runtimeStore?.instanceId,
