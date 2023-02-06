@@ -29,9 +29,9 @@ func tickIncrement(start, stop, count float64) float64 {
 	e := calculateE(stepError)
 	if power >= 0 {
 		return e * math.Pow(10, power)
-	} else {
-		return -math.Pow(10, -power) / e
 	}
+
+	return -math.Pow(10, -power) / e
 }
 
 func NiceAndStep(start, stop, count float64) []float64 {
