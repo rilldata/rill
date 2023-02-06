@@ -361,13 +361,11 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return err
 		}
-
 	} else if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_DIAGNOSTIC {
 		err := q.calculateDiagnosticMethod(ctx, rt, instanceID, priority)
 		if err != nil {
 			return err
 		}
-
 	} else {
 		panic(fmt.Sprintf("Unknown histogram method %v", q.Method))
 	}
