@@ -18,6 +18,8 @@ type csvExtractOption struct {
 	hasHeader     bool // set if first row is header
 }
 
+// downloadCSV copies partial data to fw with the assumption that rows are separated by \n
+// the data format doesn't necessarily have to be csv
 func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *csvExtractOption, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 

@@ -28,8 +28,8 @@ var _partialDownloadReaders = map[string]string{
 	".csv":        "csv",
 	".tsv":        "csv",
 	".txt":        "csv",
-	".ndjson":     "csv",
-	".json":       "csv",
+	".ndjson":     "json",
+	".json":       "json",
 }
 
 // implements connector.FileIterator
