@@ -62,11 +62,6 @@ func TestNice_InfinityCount(t *testing.T) {
 	Equal(t, []float64{0, 1}, nice(0, 1, math.Inf(-1)))
 }
 
-func TestNice_ExpectedValues0(t *testing.T) {
-	Equal(t, []float64{0.132, 0.876}, nice(0.132, 0.876, 0.5))
-	require.True(t, 1 == 2)
-}
-
 func TestNice_ExpectedValues(t *testing.T) {
 	Equal(t, []float64{0.132, 0.876, -1000}, NiceAndStep(0.132, 0.876, 1000))
 	Equal(t, []float64{0.13, 0.88, -100}, NiceAndStep(0.132, 0.876, 100))
