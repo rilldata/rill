@@ -236,7 +236,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 		if rng < ticks {
 			ticks = rng
 		}
-		niceResult := Nice0(min, max, ticks)
+		niceResult := NiceAndStep(min, max, ticks)
 		startTick := niceResult[0]
 		endTick := niceResult[1]
 		gap := niceResult[2]

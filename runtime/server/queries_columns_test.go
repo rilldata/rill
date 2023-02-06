@@ -204,7 +204,7 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	niceResult := queries.Nice0(1, 5, 5)
+	niceResult := queries.NiceAndStep(1, 5, 5)
 	gap := niceResult[2]
 	if niceResult[2] < 0 {
 		gap = 1 / -niceResult[2]
