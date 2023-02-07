@@ -12,6 +12,8 @@
   let start: string;
   let end: string;
 
+  $: disabled = !start || !end;
+
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
   $: timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
     $runtimeStore.instanceId,
@@ -34,7 +36,7 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !disabled) {
       applyCustomTimeRange();
     }
   }
@@ -73,7 +75,7 @@
       type="primary"
       submitForm
       form="custom-time-range-form"
-      disabled={!start || !end}
+      {disabled}
       on:click={applyCustomTimeRange}>Apply</Button
     >
   </div>
