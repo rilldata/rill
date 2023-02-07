@@ -11,11 +11,24 @@
   export let baselineColor = "#eeeeee";
   export let barBackgroundColor = "#ffffff";
 
+  export let absoluteValExtentsIfPosAndNeg = true;
+  export let absoluteValExtentsAlways = false;
+
+  $: symmetricExtents =
+    absoluteValExtentsAlways ||
+    (absoluteValExtentsIfPosAndNeg &&
+      richNum.range.min < 0 &&
+      richNum.range.max > 0);
+
+  $: absExtent = symmetricExtents
+    ? Math.max(-richNum.range.min, richNum.range.max)
+    : 0;
+
   // if all the value are positive, the min for the range is 0
-  $: validMin = Math.min(richNum.range.min, 0);
+  $: validMin = Math.min(richNum.range.min, -absExtent);
 
   // if all the values are negative, the max for the range is 0
-  $: validMax = Math.max(richNum.range.max, 0);
+  $: validMax = Math.max(richNum.range.max, absExtent);
 
   $: barLeft = richNum.number < 0 ? richNum.number : 0;
   $: barRight = richNum.number < 0 ? 0 : richNum.number;

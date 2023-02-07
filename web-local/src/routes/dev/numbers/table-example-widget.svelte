@@ -12,13 +12,12 @@
     RichFormatNumber,
   } from "./number-to-string-formatters";
   import { onMount } from "svelte";
-  import { writable } from "svelte/store";
   import LayeredContainer from "./layered-container.svelte";
   import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
 
   export let defaultFormatterIndex = 1;
-  let alignDecimalPoints = true;
-  let alignSuffixes = true;
+  export let alignDecimalPoints = true;
+  export let alignSuffixes = true;
   let suffixPadding = 2;
 
   let lowerCaseEForEng = true;
@@ -33,9 +32,12 @@
 
   let truncateThousandths = true;
   let truncateTinyOrdersIfBigOrderExists = true;
-  let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
+  export let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
+  export let showMagSuffixForZero = false;
 
-  let showBars = true;
+  let showBars = false;
+  let absoluteValExtentsIfPosAndNeg = true;
+  let absoluteValExtentsAlways = false;
   let barPosition: "left" | "behind" | "right" = "behind";
   let barContainerWidth = 81;
   let barOffset = 10;
@@ -65,7 +67,8 @@
     maximumSignificantDigits,
     magnitudeStrategy,
     digitTarget,
-    digitTargetPadZero,
+    digitTargetShowSignificantZeros,
+    digitTargetPadWithInsignificantZeros,
     usePlainNumsForThousands,
     usePlainNumsForThousandsOneDecimal,
     usePlainNumForThousandths,
@@ -78,7 +81,8 @@
   let numberInputType;
 
   let magnitudeStrategy = "largestWithDigitTarget";
-  let digitTargetPadZero = false;
+  let digitTargetShowSignificantZeros = true;
+  let digitTargetPadWithInsignificantZeros = false;
   let digitTarget = 5;
 
   const blue100 = "#dbeafe";
@@ -192,7 +196,17 @@
         name="currency"
         value={"currency"}
       />
-      currency
+      treat numbers as currency (no rounding)
+    </label>
+
+    <label>
+      <input
+        type="radio"
+        bind:group={numberInputType}
+        name="currency"
+        value={"currencyRoundCent"}
+      />
+      treat numbers as currency (round fracs to nearest cent)
     </label>
 
     <label>
@@ -202,7 +216,7 @@
         name="percentage"
         value={"percentage"}
       />
-      percentages
+      display values as percentages
     </label>
   </form>
 </div>
@@ -239,7 +253,7 @@
             class="number-input"
             type="number"
             bind:value={suffixPadding}
-          />
+          /> px
         </label>
       </div>
     </div>
@@ -249,7 +263,7 @@
         force lower case "e" for exponential variants
       </label>
     </div>
-    <div>
+    <!-- <div>
       significant digits:
       <label>
         min
@@ -267,7 +281,7 @@
           bind:value={maximumSignificantDigits}
         />
       </label>
-    </div>
+    </div> -->
   </div>
 
   <div style="padding-left: 40px;">
@@ -304,11 +318,16 @@
           "0." for exact zeros
         </label>
       </form>
+
+      <label>
+        <input type="checkbox" bind:checked={showMagSuffixForZero} />
+        show order of magnitude suffix for exact zeros
+      </label>
     </div>
 
     new humanizer strategy
     <form>
-      <div class="option-box">
+      <!-- <div class="option-box">
         <label>
           <input
             type="radio"
@@ -351,7 +370,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <div class="option-box">
         <label>
@@ -370,14 +389,26 @@
               <input
                 class="number-input"
                 type="number"
-                max="6"
+                min="3"
+                max="8"
                 bind:value={digitTarget}
               />
             </label>
             <br />
             <label>
-              <input type="checkbox" bind:checked={digitTargetPadZero} />
-              pad with zeros (after last significant digit)
+              <input
+                type="checkbox"
+                bind:checked={digitTargetShowSignificantZeros}
+              />
+              show significant zeros
+            </label>
+            <br />
+            <label>
+              <input
+                type="checkbox"
+                bind:checked={digitTargetPadWithInsignificantZeros}
+              />
+              pad with insignificant zeros (after last significant digit)
             </label>
           </div>
         </div>
@@ -411,6 +442,7 @@
       </div>
     </form>
   </div>
+
   <div style="padding-left: 10px;">
     bar options
 
@@ -420,6 +452,17 @@
         show bars
       </label>
       <div class="option-box">
+        <label>
+          <input type="checkbox" bind:checked={absoluteValExtentsIfPosAndNeg} />
+          use symmetric extent if a sample has pos and neg values
+        </label>
+        <div class="option-box">
+          <label>
+            <input type="checkbox" bind:checked={absoluteValExtentsAlways} />
+            always use symmetric extents
+          </label>
+        </div>
+
         <form>
           <label>
             <input
@@ -539,6 +582,7 @@
                     {lowerCaseEForEng}
                     {zeroHandling}
                     {suffixPadding}
+                    {showMagSuffixForZero}
                   />
                   <div slot="background" style="width: {barContainerWidth}px;">
                     {#if showBars}
@@ -550,6 +594,8 @@
                         {showBaseline}
                         {baselineColor}
                         {barBackgroundColor}
+                        {absoluteValExtentsIfPosAndNeg}
+                        {absoluteValExtentsAlways}
                       />
                     {/if}
                   </div>

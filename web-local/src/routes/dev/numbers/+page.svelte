@@ -1,11 +1,20 @@
 <script lang="ts">
   import TableExampleWidget from "./table-example-widget.svelte";
   import StringMeasurer from "./string-measurer.svelte";
+  import { runTestsmallestPrecisionMagnitude } from "./smallest-precision-magnitude";
+  runTestsmallestPrecisionMagnitude();
+  import { runTest_formatNumWithOrderOfMag2 } from "./format-with-order-of-magnitude";
+  runTest_formatNumWithOrderOfMag2();
 </script>
 
 <h1 class="pb-4">Tabular / columnar number formatting</h1>
 
-<TableExampleWidget />
+<TableExampleWidget
+  alignDecimalPoints={false}
+  alignSuffixes={false}
+  showMagSuffixForZero={true}
+  zeroHandling="noSpecial"
+/>
 <TableExampleWidget defaultFormatterIndex={2} />
 
 <h1 class="pb-4 pt-10">string widths</h1>
