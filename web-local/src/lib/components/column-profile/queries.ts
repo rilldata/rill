@@ -7,6 +7,7 @@ import {
   useRuntimeServiceGetNumericHistogram,
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
+  RuntimeServiceGetNumericHistogramHistogramMethod,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
@@ -203,7 +204,11 @@ export function getNumericHistogram(
   return useRuntimeServiceGetNumericHistogram(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("numeric-histogram", active) },
+    { 
+      columnName, 
+      histogramMethod: RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      priority: getPriorityForColumn("numeric-histogram", active) 
+    },
     {
       query: {
         select(query) {

@@ -191,7 +191,15 @@ func TestServer_EstimateSmallestTimeGrain_EmptyModel(t *testing.T) {
 func TestServer_GetNumericHistogram_FD(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3, len(res.NumericSummary.GetNumericHistogramBins().Bins))
