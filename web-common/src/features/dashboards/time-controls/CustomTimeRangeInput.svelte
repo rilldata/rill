@@ -52,7 +52,6 @@
       name="start-date"
       {min}
       {max}
-      required
       on:keydown={handleKeydown}
     />
   </div>
@@ -65,7 +64,6 @@
       name="end-date"
       {min}
       {max}
-      required
       on:keydown={handleKeydown}
     />
   </div>
