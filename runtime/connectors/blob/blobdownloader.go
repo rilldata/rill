@@ -22,7 +22,14 @@ import (
 const _concurrentBlobDownloadLimit = 8
 
 // map of supoprted extensions for partial downloads vs readers
-var _partialDownloadReaders = map[string]string{".parquet": "parquet", ".csv": "csv", ".tsv": "csv", ".txt": "csv", ".parquet.gz": "parquet"}
+// zipped csv files can't be partialled downloaded
+// parquet files with compression has extension in format .<compression>.parquet eg: .gz.parquet
+var _partialDownloadReaders = map[string]string{
+	".parquet": "parquet",
+	".csv":     "csv",
+	".tsv":     "csv",
+	".txt":     "csv",
+}
 
 // implements connector.FileIterator
 type blobIterator struct {
@@ -158,7 +165,7 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			defer file.Close()
 
 			it.localFiles[index-start] = file.Name()
-			ext := fileutil.FullExt(obj.obj.Key)
+			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
 			if obj.full || !isPartialDownloadSupported {
 				// download full file
