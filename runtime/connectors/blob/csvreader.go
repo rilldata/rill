@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -21,27 +22,22 @@ func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject,
 		return err
 	}
 
-	// write rows
-	for _, r := range rows {
-		if _, err := fw.Write(r); err != nil {
-			return err
-		}
-		if _, err := fw.Write(_newLineSeparator); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	_, err = fw.Write(rows)
+	return err
 }
 
-func csvRows(reader *ObjectReader, option *extractOption) ([][]byte, error) {
-	if option.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL {
+func csvRows(reader *ObjectReader, option *extractOption) ([]byte, error) {
+	switch option.strategy {
+	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
+		return csvRowsHead(reader, option)
+	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
 		return csvRowsTail(reader, option)
+	default:
+		panic(fmt.Sprintf("unsupported strategy %s", option.strategy))
 	}
-	return csvRowsHead(reader, option)
 }
 
-func csvRowsTail(reader *ObjectReader, option *extractOption) ([][]byte, error) {
+func csvRowsTail(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	header, err := getHeader(reader)
 	if err != nil {
 		return nil, err
@@ -57,14 +53,14 @@ func csvRowsTail(reader *ObjectReader, option *extractOption) ([][]byte, error) 
 		return nil, err
 	}
 
-	rows := bytes.Split(p, _newLineSeparator)
-	// remove first row (possibly incomplete)
-	rows = rows[1:]
+	lastLineIndex := bytes.Index(p, _newLineSeparator)
+	// remove data before \n since its possibly incomplete
 	// append header at start
-	return append([][]byte{header}, rows...), nil
+	header = append(header, _newLineSeparator...)
+	return append(header, p[lastLineIndex+1:]...), nil
 }
 
-func csvRowsHead(reader *ObjectReader, option *extractOption) ([][]byte, error) {
+func csvRowsHead(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
@@ -74,9 +70,14 @@ func csvRowsHead(reader *ObjectReader, option *extractOption) ([][]byte, error) 
 		return nil, err
 	}
 
-	rows := bytes.Split(p, _newLineSeparator)
-	// remove last row (possibly incomplete)
-	return rows[:len(rows)-1], nil
+	lastLineIndex := bytes.LastIndex(p, _newLineSeparator)
+	if lastLineIndex == -1 {
+		// data can still be complete in case there is a single row without any newline delimitter
+		// let ingestion system decide
+		return p, nil
+	}
+	// remove data after \n since its incomplete
+	return p[:lastLineIndex+1], nil
 }
 
 // tries to get csv header from reader by incrmentally reading 1KB bytes

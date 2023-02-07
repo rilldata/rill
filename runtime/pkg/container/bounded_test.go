@@ -8,11 +8,11 @@ import (
 )
 
 func TestOverCapacity(t *testing.T) {
-	c, err := NewBoundedContainer[int](32)
+	c, err := NewBounded[int](32)
 	require.NoError(t, err)
 
 	i := 0
-	for ; i < 50 && !c.IsFull(); i += 1 {
+	for ; i < 50 && !c.Full(); i += 1 {
 		c.Add(i)
 	}
 	require.Equal(t, 32, i)
@@ -20,11 +20,11 @@ func TestOverCapacity(t *testing.T) {
 }
 
 func TestUnderCapacity(t *testing.T) {
-	c, err := NewBoundedContainer[int](32)
+	c, err := NewBounded[int](32)
 	require.NoError(t, err)
 
 	i := 0
-	for ; i < 16 && !c.IsFull(); i += 1 {
+	for ; i < 16 && !c.Full(); i += 1 {
 		c.Add(i)
 	}
 	require.Equal(t, 16, i)
@@ -32,11 +32,11 @@ func TestUnderCapacity(t *testing.T) {
 }
 
 func TestMatchCapacity(t *testing.T) {
-	c, err := NewBoundedContainer[int](32)
+	c, err := NewBounded[int](32)
 	require.NoError(t, err)
 
 	i := 0
-	for ; i < 32 && !c.IsFull(); i += 1 {
+	for ; i < 32 && !c.Full(); i += 1 {
 		c.Add(i)
 	}
 	require.Equal(t, 32, i)
@@ -44,7 +44,7 @@ func TestMatchCapacity(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	c, err := NewBoundedContainer[int](-1)
+	c, err := NewBounded[int](-1)
 	require.Error(t, err)
 	require.Nil(t, c)
 }

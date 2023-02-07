@@ -22,10 +22,10 @@ import (
 // keeping it high seems to improve latency at the cost of accuracy in size of fetched data as per policy
 const _batchSize = int64(1024)
 
+// downloadParquet downloads partial file as per extractOption
 func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
-	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
 	reader := NewBlobObjectReader(ctx, bucket, obj)
-
+	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
 	props := parquet.NewReaderProperties(mem)
 
 	pf, err := file.NewParquetReader(reader, file.WithReadProps(props))
@@ -79,18 +79,6 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	)
 }
 
-func containerForRecordLimiting(strategy runtimev1.Source_ExtractPolicy_Strategy, limit int) (container.Container[arrow.Record], error) {
-	switch strategy {
-	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return container.NewTailContainer(limit, func(rec arrow.Record) { rec.Release() })
-	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return container.NewBoundedContainer[arrow.Record](limit)
-	default:
-		// No option selected - this should not be used for partial downloads though
-		return container.NewUnboundedContainer[arrow.Record]()
-	}
-}
-
 // estimateRecords estimates the number of rows to fetch based on extract policy
 // each arrow.Record will hold batchSize number of rows
 func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config *extractOption) ([]arrow.Record, error) {
@@ -119,7 +107,7 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 		rows += rowCount
 	}
 
-	r, err := pqToArrowReader.GetRecordReader(ctx, arrayutil.RangeInt(0, reader.RowGroup(0).NumColumns(), false), reqRowIndices)
+	r, err := pqToArrowReader.GetRecordReader(ctx, nil, reqRowIndices)
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +125,23 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 		return nil, err
 	}
 
-	for r.Next() && !c.IsFull() {
+	for r.Next() && !c.Full() {
 		rec := r.Record()
 		rec.Retain()
 		c.Add(rec)
 	}
 	return c.Items(), nil
+}
+
+func containerForRecordLimiting(strategy runtimev1.Source_ExtractPolicy_Strategy, limit int) (container.Container[arrow.Record], error) {
+	switch strategy {
+	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
+		return container.NewFIFO(limit, func(rec arrow.Record) { rec.Release() })
+	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
+		return container.NewBounded[arrow.Record](limit)
+	default:
+		// No option selected - this should not be used for partial downloads though
+		// in case of no extract policy we should be directly downloading the entire file
+		return container.NewUnbounded[arrow.Record]()
+	}
 }

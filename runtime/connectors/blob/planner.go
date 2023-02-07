@@ -18,8 +18,22 @@ type planner struct {
 	container container.Container[*objectWithPlan]
 }
 
-func (p *planner) Add(item *blob.ListObject) bool {
-	if p.Done() {
+func newPlanner(policy *runtimev1.Source_ExtractPolicy) (*planner, error) {
+	c, err := containerForFileStrategy(policy)
+	if err != nil {
+		return nil, err
+	}
+
+	rowPlanner := rowPlannerForRowStrategy(policy)
+	return &planner{
+		policy:     policy,
+		container:  c,
+		rowPlanner: rowPlanner,
+	}, nil
+}
+
+func (p *planner) add(item *blob.ListObject) bool {
+	if p.done() {
 		return false
 	}
 
@@ -27,24 +41,15 @@ func (p *planner) Add(item *blob.ListObject) bool {
 	return p.container.Add(obj)
 }
 
-func (p *planner) Done() bool {
-	return p.container.IsFull() || p.rowPlanner.done()
+func (p *planner) done() bool {
+	return p.container.Full() || p.rowPlanner.done()
 }
 
-func (p *planner) Items() []*objectWithPlan {
+func (p *planner) items() []*objectWithPlan {
 	return p.container.Items()
 }
 
-func newPlanner(policy *runtimev1.Source_ExtractPolicy) (*planner, error) {
-	c, err := ContainerForFileStrategy(policy)
-	if err != nil {
-		return nil, err
-	}
-
-	return &planner{policy: policy, container: c, rowPlanner: rowPlannerForRowStrategy(policy)}, nil
-}
-
-func ContainerForFileStrategy(policy *runtimev1.Source_ExtractPolicy) (container.Container[*objectWithPlan], error) {
+func containerForFileStrategy(policy *runtimev1.Source_ExtractPolicy) (container.Container[*objectWithPlan], error) {
 	strategy := runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED
 	limit := 0
 	if policy != nil {
@@ -54,12 +59,12 @@ func ContainerForFileStrategy(policy *runtimev1.Source_ExtractPolicy) (container
 
 	switch strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return container.NewTailContainer(limit, func(obj *objectWithPlan) {})
+		return container.NewFIFO[*objectWithPlan](limit, nil)
 	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return container.NewBoundedContainer[*objectWithPlan](limit)
+		return container.NewBounded[*objectWithPlan](limit)
 	default:
 		// No option selected
-		return container.NewUnboundedContainer[*objectWithPlan]()
+		return container.NewUnbounded[*objectWithPlan]()
 	}
 }
 

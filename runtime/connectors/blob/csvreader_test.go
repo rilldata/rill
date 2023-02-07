@@ -74,6 +74,36 @@ func TestDownloadCSV(t *testing.T) {
 	}
 }
 
+func TestDownloadCSVSingleLineHead(t *testing.T) {
+	ctx := context.Background()
+	bucket, err := blob.OpenBucket(ctx, "mem://")
+	require.NoError(t, err)
+	p := []byte("1,2020")
+	require.NoError(t, bucket.WriteAll(ctx, "data.csv", p, nil))
+
+	withNewLine := []byte("1,2020\n")
+	require.NoError(t, bucket.WriteAll(ctx, "withNewLine.csv", withNewLine, nil))
+
+	for _, file := range []string{"data.csv", "withNewLine.csv"} {
+		object, err := bucket.List(&blob.ListOptions{Prefix: file}).Next(ctx)
+		require.NoError(t, err)
+
+		extractOption := &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size)}
+		fw := getTempFile(t, "temp.csv")
+		err = downloadCSV(ctx, bucket, object, extractOption, fw)
+		require.NoError(t, err)
+		fw.Close()
+
+		r, err := os.Open(fw.Name())
+		require.NoError(t, err)
+
+		csvReader := csv.NewReader(r)
+		records, err := csvReader.ReadAll()
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"1", "2020"}}, records)
+	}
+}
+
 func getTempFile(t *testing.T, name string) *os.File {
 	fw, err := fileutil.OpenTempFileInDir(t.TempDir(), name)
 	require.NoError(t, err)

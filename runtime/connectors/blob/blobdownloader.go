@@ -105,6 +105,7 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options) (connec
 	return it, nil
 }
 
+// Close frees the resources
 func (it *blobIterator) Close() error {
 	// remove temp dir since recursive paths created have to be removed as well
 	err := os.RemoveAll(it.tempDir)
@@ -114,12 +115,12 @@ func (it *blobIterator) Close() error {
 	return err
 }
 
+// HasNext returns true if iterator has more data
 func (it *blobIterator) HasNext() bool {
 	return it.index < len(it.objects)
 }
 
 // NextBatch downloads next n files and copies to local directory
-// Thread unsafe
 func (it *blobIterator) NextBatch(n int) ([]string, error) {
 	if !it.HasNext() {
 		return nil, io.EOF
@@ -201,7 +202,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 
 	listOpts := listOptions(it.opts.GlobPattern)
 	token := blob.FirstPageToken
-	for token != nil && !planner.Done() {
+	for token != nil && !planner.done() {
 		objs, nextToken, err := it.bucket.ListPage(it.ctx, token, it.opts.GlobPageSize, listOpts)
 		if err != nil {
 			return nil, err
@@ -213,7 +214,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 			if matched, _ := doublestar.Match(it.opts.GlobPattern, obj.Key); matched {
 				size += obj.Size
 				matchCount++
-				if !planner.Add(obj) {
+				if !planner.add(obj) {
 					break
 				}
 			}
@@ -223,7 +224,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		}
 	}
 
-	items := planner.Items()
+	items := planner.items()
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no files found for glob pattern %q", it.opts.GlobPattern)
 	}
@@ -253,6 +254,7 @@ func listOptions(globPattern string) *blob.ListOptions {
 	return listOptions
 }
 
+// download full object
 func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, file *os.File) error {
 	rc, err := bucket.NewReader(ctx, objpath, nil)
 	if err != nil {

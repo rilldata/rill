@@ -8,11 +8,11 @@ import (
 )
 
 func TestUnboundedContainer(t *testing.T) {
-	c, err := NewUnboundedContainer[int]()
+	c, err := NewUnbounded[int]()
 	require.NoError(t, err)
 
 	i := 0
-	for ; i < 50 && !c.IsFull(); i += 1 {
+	for ; i < 50 && !c.Full(); i += 1 {
 		c.Add(i)
 	}
 	require.Equal(t, 50, i)
