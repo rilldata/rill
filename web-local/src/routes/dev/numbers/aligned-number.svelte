@@ -7,6 +7,7 @@
   export let richNum: RichFormatNumber;
   export let alignSuffix = false;
   export let suffixPadding = 0;
+  export let showMagSuffixForZero = false;
 
   export let lowerCaseEForEng = false;
   export let alignDecimalPoints = false;
@@ -22,6 +23,8 @@
     // console.log({ lowerCaseEForEng });
     suffixFinal = suffix;
     if (lowerCaseEForEng) suffixFinal = suffixFinal.replace("E", "e");
+
+    if (richNum.number === 0 && !showMagSuffixForZero) suffixFinal = "";
   }
 
   let decimalPoint: "" | ".";

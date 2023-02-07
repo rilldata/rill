@@ -4,6 +4,8 @@ import {
   NicelyFormattedTypes,
 } from "@rilldata/web-local/lib/util/humanize-numbers";
 
+import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
+import { formatNumWithOrderOfMag2 } from "./format-with-order-of-magnitude";
 import {
   splitNumStr,
   getSpacingMetadataForRawStrings,
@@ -100,7 +102,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
   options
 ): NumberStringParts[] => {
   const { digitTarget } = options;
-  console.log({ digitTarget });
+  // console.log({ digitTarget });
   const magnitudes = getOrdersOfMagnitude(sample, "scientific");
   const maxMag = Math.max(...magnitudes);
   // if any number is not an integer, may need to reserve one digit
@@ -126,14 +128,31 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
     // target allowing 1 digit after the decimal point,
     // can still use simple formatting, without suffix
     // just need the right number of digits
+
     let fracDigits = digitTarget - maxMag - 1;
-    let formatter = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: options.digitTargetPadZero ? fracDigits : 0,
-      maximumFractionDigits: fracDigits,
+
+    let splitStrs = sample.map((x) =>
+      formatNumWithOrderOfMag2(
+        x,
+        0,
+        fracDigits,
+        options.digitTargetPadWithInsignificantZeros
+      )
+    );
+    splitStrs.forEach((ss) => {
+      ss.suffix = "";
     });
-    return sample
-      .map((x) => formatter.format(x).replace(",", ""))
-      .map(splitNumStr);
+    return splitStrs;
+    // let formatter = new Intl.NumberFormat("en-US", {
+    //   minimumFractionDigits: options.digitTargetShowSignificantZeros
+    //     ? fracDigits
+    //     : 0,
+    //   maximumFractionDigits: fracDigits,
+    // });
+
+    // return sample
+    //   .map((x) => formatter.format(x).replace(",", ""))
+    //   .map(splitNumStr);
   }
 
   // FIXME add "minNonzeroDigits" option for this case
@@ -143,7 +162,9 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
     // digitTarget digits of the decimal point,
     // use simple formatting without suffix
     let formatter = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: options.digitTargetPadZero ? digitTarget : 0,
+      minimumFractionDigits: options.digitTargetShowSignificantZeros
+        ? digitTarget
+        : 0,
       maximumFractionDigits: digitTarget,
     });
     return sample
@@ -157,10 +178,12 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
   const maxMagEng = Math.floor(maxMag / 3) * 3;
   const intDigits = maxMag - maxMagEng + 1;
   const fracDigits = digitTarget - intDigits;
-  console.log({ intDigits, fracDigits });
+  // console.log({ intDigits, fracDigits });
   const splitStrs = sample.map((x) =>
     formatNumWithOrderOfMag(x, maxMagEng, {
-      minimumFractionDigits: options.digitTargetPadZero ? fracDigits : 0,
+      minimumFractionDigits: options.digitTargetShowSignificantZeros
+        ? fracDigits
+        : 0,
       maximumFractionDigits: fracDigits,
     })
   );
@@ -295,7 +318,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
   });
 
   splitStrs.forEach((ss) => {
-    if (ss.suffix === undefined) console.log("bad suffix pre", ss);
+    if (ss.suffix === undefined) console.error("bad suffix pre", ss);
   });
 
   switch (options.magnitudeStrategy) {
@@ -318,7 +341,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
 
     case "largestWithDigitTarget":
       splitStrs = splitStrsForMagStratLargestWithDigitsTarget(sample, options);
-      console.log("splitStrs", splitStrs);
+      // console.log("splitStrs", splitStrs);
       break;
 
     default:
@@ -326,7 +349,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
   }
 
   splitStrs.forEach((ss, i) => {
-    if (ss.suffix === undefined) console.log("bad suffix post", ss);
+    if (ss.suffix === undefined) console.error("bad suffix post", ss);
   });
 
   let spacing: FormatterSpacingMeta =
