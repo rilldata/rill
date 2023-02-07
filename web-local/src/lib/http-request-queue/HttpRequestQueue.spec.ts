@@ -240,14 +240,11 @@ function getProfilingQueries(table: string, cols: number) {
     ...Array(cols)
       .fill(0)
       .map((_, i) =>
-        runtimeServiceGetNumericHistogram(
-          "i", 
-          table, 
-          { 
-            columnName: `c${i}`, 
-            histogramMethod: RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD 
-          }
-        )
+        runtimeServiceGetNumericHistogram("i", table, {
+          columnName: `c${i}`,
+          histogramMethod:
+            RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+        })
       ),
     ...Array(cols)
       .fill(0)

@@ -204,10 +204,11 @@ export function getNumericHistogram(
   return useRuntimeServiceGetNumericHistogram(
     instanceId,
     objectName,
-    { 
-      columnName, 
-      histogramMethod: RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
-      priority: getPriorityForColumn("numeric-histogram", active) 
+    {
+      columnName,
+      histogramMethod:
+        RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      priority: getPriorityForColumn("numeric-histogram", active),
     },
     {
       query: {
