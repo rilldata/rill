@@ -51,6 +51,19 @@ export const numberLists: NumericSample[] = [
   },
 
   {
+    desc: "in (0,1), ragged, with exact zeros",
+    sample: range
+      .map(() => randu() * 1.1 - 0.2)
+      .map((x) => (x > 0 ? x : 0))
+      .map((x) => +x.toPrecision(randDiscrete(1, 5))),
+  },
+
+  {
+    desc: "(t-dist)^8 (all positive, with exact zeros)",
+    sample: range.map((x) => tDist(1) ** 8).map((x) => (x < 0.01 ? 0 : x)),
+  },
+
+  {
     desc: "t dist",
     sample: range.map((x) => tDist(1)),
   },
@@ -58,11 +71,6 @@ export const numberLists: NumericSample[] = [
   {
     desc: "t-dist to the 5th",
     sample: range.map((x) => tDist(1) ** 7),
-  },
-
-  {
-    desc: "(t-dist)^8 (all positive, with exact zeros)",
-    sample: range.map((x) => tDist(1) ** 8).map((x) => (x < 0.01 ? 0 : x)),
   },
 
   {
@@ -114,14 +122,6 @@ export const numberLists: NumericSample[] = [
   {
     desc: "uniform (0,1)",
     sample: range.map((x) => randu()),
-  },
-
-  {
-    desc: "in (0,1), ragged, with exact zeros",
-    sample: range
-      .map(() => randu() * 1.1 - 0.2)
-      .map((x) => (x > 0 ? x : 0))
-      .map((x) => +x.toPrecision(randDiscrete(1, 5))),
   },
 
   {
