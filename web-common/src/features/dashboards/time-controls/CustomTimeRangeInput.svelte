@@ -3,6 +3,7 @@
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
   import { useRuntimeServiceGetTimeRangeSummary } from "../../../runtime-client";
+  import { metricsExplorerStore } from "../dashboard-stores";
   import { useMetaQuery } from "../selectors";
 
   export let metricViewName: string;
@@ -11,6 +12,14 @@
 
   let start: string;
   let end: string;
+
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: if (!start && !end) {
+    if (metricsExplorer?.selectedTimeRange) {
+      start = metricsExplorer.selectedTimeRange.start.replace(/Z$/, "");
+      end = metricsExplorer.selectedTimeRange.end.replace(/Z$/, "");
+    }
+  }
 
   $: disabled = !start || !end;
 
