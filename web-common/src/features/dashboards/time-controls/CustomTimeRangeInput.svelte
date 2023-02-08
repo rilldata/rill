@@ -20,8 +20,8 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: if (!start && !end) {
     if (metricsExplorer?.selectedTimeRange) {
-      start = metricsExplorer.selectedTimeRange.start.replace(/Z$/, "");
-      end = metricsExplorer.selectedTimeRange.end.replace(/Z$/, "");
+      start = stripUTCTimezone(metricsExplorer.selectedTimeRange.start);
+      end = stripUTCTimezone(metricsExplorer.selectedTimeRange.end);
     }
   }
 
@@ -49,23 +49,32 @@
     );
   }
 
-  // TODO: fix time zone handling
-  // temporary hack: datetime-local assumes local time, so we need to remove the time zone information
-  $: min = $timeRangeQuery.data.timeRangeSummary.min.replace(/Z$/, "");
-  $: max = $timeRangeQuery.data.timeRangeSummary.max.replace(/Z$/, "");
+  // <input type=datetime-local/> does not accept time zone information
+  $: min = stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.min);
+  $: max = stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.max);
 
   function applyCustomTimeRange() {
-    dispatch("apply", { startDate: start, endDate: end });
+    // Currently, we assume UTC
+    dispatch("apply", {
+      startDate: addUTCTimezone(start),
+      endDate: addUTCTimezone(end),
+    });
   }
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter" && !disabled) {
-      applyCustomTimeRange();
-    }
+  function stripUTCTimezone(date: string) {
+    return date.replace(/Z$/, "");
+  }
+
+  function addUTCTimezone(date: string) {
+    return date + "Z";
   }
 </script>
 
-<form id="custom-time-range-form" class="flex flex-col gap-y-3 my-3 px-3">
+<form
+  id="custom-time-range-form"
+  class="flex flex-col gap-y-3 my-3 px-3"
+  on:submit|preventDefault={applyCustomTimeRange}
+>
   <div class="flex flex-col gap-y-1">
     <label for="start-date" style="font-size: 10px;">Start date</label>
     <input
@@ -75,7 +84,6 @@
       name="start-date"
       {min}
       {max}
-      on:keydown={handleKeydown}
     />
   </div>
   <div class="flex flex-col gap-y-1">
@@ -87,17 +95,12 @@
       name="end-date"
       {min}
       {max}
-      on:keydown={handleKeydown}
     />
   </div>
   <div class="flex">
     <div class="flex-grow" />
-    <Button
-      type="primary"
-      submitForm
-      form="custom-time-range-form"
-      {disabled}
-      on:click={applyCustomTimeRange}>Apply</Button
-    >
+    <Button type="primary" submitForm form="custom-time-range-form" {disabled}>
+      Apply
+    </Button>
   </div>
 </form>
