@@ -23,6 +23,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/marcboeker/go-duckdb v1.0.8
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/senseyeio/duration v0.0.0-20180430131211-7c2a214ada46
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
