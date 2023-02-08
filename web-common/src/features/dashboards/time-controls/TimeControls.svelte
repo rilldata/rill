@@ -186,11 +186,7 @@ We should rename TimeSeriesTimeRange to a better name.
     const adjustedStart = floorDate(start, selectedTimeGrain);
 
     // Round end time to start of next grain, since end times are exclusive
-    let adjustedEnd = addGrains(
-      new Date(allTimeRange?.end),
-      1,
-      selectedTimeGrain
-    );
+    let adjustedEnd = addGrains(new Date(end), 1, selectedTimeGrain);
     adjustedEnd = floorDate(adjustedEnd, selectedTimeGrain);
 
     // the adjusted time range
