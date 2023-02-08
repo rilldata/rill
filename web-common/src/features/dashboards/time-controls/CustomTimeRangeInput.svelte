@@ -50,8 +50,12 @@
   }
 
   // <input type=datetime-local/> does not accept time zone information
-  $: min = stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.min);
-  $: max = stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.max);
+  $: min = $timeRangeQuery.data.timeRangeSummary?.min
+    ? stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.min)
+    : undefined;
+  $: max = $timeRangeQuery.data.timeRangeSummary?.min
+    ? stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.max)
+    : undefined;
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC
