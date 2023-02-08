@@ -1,10 +1,14 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
-  import { useRuntimeServiceGetTimeRangeSummary } from "../../../runtime-client";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceGetTimeRangeSummary,
+    V1GetTimeRangeSummaryResponse,
+  } from "../../../runtime-client";
   import { metricsExplorerStore } from "../dashboard-stores";
-  import { useMetaQuery } from "../selectors";
 
   export let metricViewName: string;
 
@@ -23,17 +27,27 @@
 
   $: disabled = !start || !end;
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
-  $: timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
-    $runtimeStore.instanceId,
-    $metaQuery.data?.model,
-    { columnName: $metaQuery.data?.timeDimension },
-    {
-      query: {
-        enabled: !!$metaQuery.data,
-      },
-    }
-  );
+  let metricsViewQuery;
+  $: if ($runtimeStore?.instanceId) {
+    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+      $runtimeStore.instanceId,
+      metricViewName
+    );
+  }
+  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
+  $: if (
+    $runtimeStore?.instanceId &&
+    $metricsViewQuery?.data?.entry?.metricsView?.model &&
+    $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
+  ) {
+    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+      $runtimeStore.instanceId,
+      $metricsViewQuery.data.entry.metricsView.model,
+      {
+        columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
+      }
+    );
+  }
 
   // TODO: fix time zone handling
   // temporary hack: datetime-local assumes local time, so we need to remove the time zone information

@@ -1,65 +1,55 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
-  lastXTimeRanges,
+  lastXTimeRangeNames,
   TimeGrain,
+  TimeRange,
   TimeRangeName,
   TimeSeriesTimeRange,
 } from "./time-control-types";
 
-// TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
-export const getSelectableTimeRangeNames = (
-  allTimeRange: TimeSeriesTimeRange
-): TimeRangeName[] => {
-  if (!allTimeRange) return [];
+export function getSelectableRelativeTimeRanges(
+  allTimeRange: TimeRange
+): TimeRange[] {
+  const allTimeRangeDurationMs = getAllTimeRangeDurationMs(allTimeRange);
+  const selectableTimeRanges: TimeRange[] = [];
 
-  const allTimeRangeDuration = getTimeRangeDuration(
-    TimeRangeName.AllTime,
-    allTimeRange
-  );
+  for (const timeRangeName of lastXTimeRangeNames) {
+    const timeRangeDurationMs = getLastXTimeRangeDurationMs(timeRangeName);
 
-  const selectableTimeRangeNames: TimeRangeName[] = [];
-  for (const timeRangeName in TimeRangeName) {
-    const timeRangeDuration = getTimeRangeDuration(
-      TimeRangeName[timeRangeName],
-      allTimeRange
-    );
     // only show a time range if it is within the time range of the data
-    const showTimeRange = allTimeRangeDuration >= timeRangeDuration;
+    const showTimeRange = timeRangeDurationMs <= allTimeRangeDurationMs;
     if (showTimeRange) {
-      selectableTimeRangeNames.push(TimeRangeName[timeRangeName]);
+      const timeRange = makeRelativeTimeRange(timeRangeName, allTimeRange.end);
+      selectableTimeRanges.push(timeRange);
     }
   }
 
-  return selectableTimeRangeNames;
-};
+  return selectableTimeRanges;
+}
 
-// TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
-export const getDefaultTimeRangeName = (): TimeRangeName => {
+export function getDefaultTimeRange(allTimeRange: TimeRange): TimeRange {
   // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
-  return TimeRangeName.AllTime;
-};
+  return allTimeRange;
+}
 
 export interface TimeGrainOption {
   timeGrain: TimeGrain;
   enabled: boolean;
 }
 
-// This is for pre-set relative time ranges – where the start/end dates are not yet deterimined.
-// For custom time ranges, we'll need another function with "breakpoint" logic that analyzes the user-determined start/end dates.
-export const getSelectableTimeGrains = (
-  timeRangeName: TimeRangeName,
-  allTimeRange: TimeSeriesTimeRange
-): TimeGrainOption[] => {
-  if (!timeRangeName || !allTimeRange) return [];
-  const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
+export function getSelectableTimeGrains(
+  start: Date,
+  end: Date
+): TimeGrainOption[] {
+  const timeRangeDurationMs = end.getTime() - start.getTime();
 
   const timeGrains: TimeGrainOption[] = [];
   for (const timeGrain in TimeGrain) {
     // only show a time grain if it results in a reasonable number of points on the line chart
     const MINIMUM_POINTS_ON_LINE_CHART = 2;
     const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
-    const timeGrainDuration = getTimeGrainDuration(TimeGrain[timeGrain]);
-    const pointsOnLineChart = timeRangeDuration / timeGrainDuration;
+    const timeGrainDurationMs = getTimeGrainDurationMs(TimeGrain[timeGrain]);
+    const pointsOnLineChart = timeRangeDurationMs / timeGrainDurationMs;
     const showTimeGrain =
       pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
       pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
@@ -68,127 +58,25 @@ export const getSelectableTimeGrains = (
       enabled: showTimeGrain,
     });
   }
-  if (timeGrains.length === 0) {
-    throw new Error(`No time grains generated for time range ${timeRangeName}`);
-  }
   return timeGrains;
-};
+}
 
-export const getDefaultTimeGrain = (
-  timeRangeName: TimeRangeName,
-  allTimeRange: TimeSeriesTimeRange
-): TimeGrain => {
-  switch (timeRangeName) {
-    case TimeRangeName.LastHour:
-      return TimeGrain.OneMinute;
-    case TimeRangeName.Last6Hours:
-      return TimeGrain.OneHour;
-    case TimeRangeName.LastDay:
-      return TimeGrain.OneHour;
-    case TimeRangeName.Last2Days:
-      return TimeGrain.OneHour;
-    case TimeRangeName.Last5Days:
-      return TimeGrain.OneHour;
-    case TimeRangeName.LastWeek:
-      return TimeGrain.OneHour;
-    case TimeRangeName.Last2Weeks:
-      return TimeGrain.OneDay;
-    case TimeRangeName.Last30Days:
-      return TimeGrain.OneDay;
-    case TimeRangeName.Last60Days:
-      return TimeGrain.OneDay;
-    case TimeRangeName.AllTime: {
-      if (!allTimeRange) return TimeGrain.OneDay;
-      const allTimeRangeDuration = getTimeRangeDuration(
-        TimeRangeName.AllTime,
-        allTimeRange
-      );
-      if (allTimeRangeDuration <= 2 * 60 * 60 * 1000) {
-        return TimeGrain.OneMinute;
-      }
-      if (allTimeRangeDuration <= 14 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneHour;
-      }
-      if (allTimeRangeDuration <= 60 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneDay;
-      }
-      if (allTimeRangeDuration <= 365 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneWeek;
-      }
-      if (allTimeRangeDuration <= 20 * 365 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneMonth;
-      }
-      return TimeGrain.OneYear;
-    }
-    default:
-      throw new Error(`No default time grain for time range ${timeRangeName}`);
-  }
-};
-
-export const makeTimeRange = (
-  timeRangeName: TimeRangeName,
-  timeGrain: TimeGrain,
-  allTimeRange: TimeSeriesTimeRange
-): TimeSeriesTimeRange => {
-  // Compute actual start time
-  let start: Date;
-  if (timeRangeName === TimeRangeName.AllTime) {
-    start = new Date(allTimeRange.start);
-  } else if (lastXTimeRanges.includes(timeRangeName)) {
-    const allTimeEnd = new Date(allTimeRange?.end);
-    start = new Date(
-      allTimeEnd.getTime() - getLastXTimeRangeDuration(timeRangeName)
-    );
+export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
+  const timeRangeDurationMs = end.getTime() - start.getTime();
+  if (timeRangeDurationMs <= 2 * 60 * 60 * 1000) {
+    return TimeGrain.OneMinute;
+  } else if (timeRangeDurationMs <= 14 * 24 * 60 * 60 * 1000) {
+    return TimeGrain.OneHour;
+  } else if (timeRangeDurationMs <= 60 * 24 * 60 * 60 * 1000) {
+    return TimeGrain.OneDay;
+  } else if (timeRangeDurationMs <= 365 * 24 * 60 * 60 * 1000) {
+    return TimeGrain.OneWeek;
+  } else if (timeRangeDurationMs <= 20 * 365 * 24 * 60 * 60 * 1000) {
+    return TimeGrain.OneMonth;
   } else {
-    throw new Error(`Unknown time range name: ${timeRangeName}`);
+    return TimeGrain.OneYear;
   }
-
-  // Round start time to nearest lower time grain
-  start = floorDate(start, timeGrain);
-
-  // Round end time to start of next grain, since end times are exclusive
-  let end = addGrains(new Date(allTimeRange?.end), 1, timeGrain);
-  end = floorDate(end, timeGrain);
-
-  return {
-    name: timeRangeName,
-    start: start.toISOString(),
-    end: end.toISOString(),
-    interval: timeGrain,
-  };
-};
-
-export const makeTimeRanges = (
-  timeRangeNames: TimeRangeName[],
-  allTimeRangeInDataset: TimeSeriesTimeRange
-): TimeSeriesTimeRange[] => {
-  if (!timeRangeNames || !allTimeRangeInDataset) return [];
-
-  const timeRanges: TimeSeriesTimeRange[] = [];
-  for (const timeRangeName of timeRangeNames) {
-    const defaultTimeGrain = getDefaultTimeGrain(
-      timeRangeName,
-      allTimeRangeInDataset
-    );
-    const timeRange = makeTimeRange(
-      timeRangeName,
-      defaultTimeGrain,
-      allTimeRangeInDataset
-    );
-    timeRanges.push(timeRange);
-  }
-  return timeRanges;
-};
-
-export const getSelectableTimeRanges = (
-  allTimeRangeInDataset: TimeSeriesTimeRange
-) => {
-  // TODO: replace this with a call to the `/meta` endpoint, once available.
-  const selectableTimeRangeNames = getSelectableTimeRangeNames(
-    allTimeRangeInDataset
-  );
-  return makeTimeRanges(selectableTimeRangeNames, allTimeRangeInDataset);
-};
+}
 
 export const prettyFormatTimeRange = (
   timeRange: TimeSeriesTimeRange
@@ -362,23 +250,14 @@ export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
   }
 };
 
-const getTimeRangeDuration = (
-  timeRangeName: TimeRangeName,
-  allTimeRange: TimeSeriesTimeRange
-): number => {
-  if (lastXTimeRanges.includes(timeRangeName)) {
-    return getLastXTimeRangeDuration(timeRangeName);
-  }
-  if (timeRangeName === TimeRangeName.AllTime) {
-    return (
-      new Date(allTimeRange.end).getTime() -
-      new Date(allTimeRange.start).getTime()
-    );
-  }
-  throw new Error(`Unknown time range: ${timeRangeName}`);
-};
+function getAllTimeRangeDurationMs(allTimeRange: TimeRange): number {
+  return (
+    new Date(allTimeRange.end).getTime() -
+    new Date(allTimeRange.start).getTime()
+  );
+}
 
-const getLastXTimeRangeDuration = (name: TimeRangeName): number => {
+const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
   switch (name) {
     case TimeRangeName.LastHour:
       return 60 * 60 * 1000;
@@ -403,7 +282,7 @@ const getLastXTimeRangeDuration = (name: TimeRangeName): number => {
   }
 };
 
-const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
+const getTimeGrainDurationMs = (timeGrain: TimeGrain): number => {
   switch (timeGrain) {
     case TimeGrain.OneMinute:
       return 60 * 1000;
@@ -517,4 +396,28 @@ export function addGrains(date: Date, units: number, grain: TimeGrain): Date {
     default:
       throw new Error(`Unknown time grain: ${grain}`);
   }
+}
+
+export function checkValidTimeGrain(
+  timeGrain: TimeGrain,
+  timeGrainOptions: TimeGrainOption[]
+): boolean {
+  const timeGrainOption = timeGrainOptions.find(
+    (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
+  );
+  return timeGrainOption?.enabled;
+}
+
+export function makeRelativeTimeRange(
+  timeRangeName: TimeRangeName,
+  endTime: Date
+): TimeRange {
+  const startTime = new Date(
+    endTime.getTime() - getLastXTimeRangeDurationMs(timeRangeName)
+  );
+  return {
+    name: timeRangeName,
+    start: startTime,
+    end: endTime,
+  };
 }

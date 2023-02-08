@@ -1,9 +1,11 @@
 <!--
 @component
-Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€“ by taking as input:
+Constructs a TimeSeriesTimeRange object â€“ to be used as the filter in MetricsExplorer â€“ by taking as input:
 - the time range name (a semantic understanding of the time range, like "Last 6 Hours" or "Last 30 days")
 - the time grain (e.g., "hour" or "day")
 - the dataset's full time range (so its end time can be used in relative time ranges)
+
+We should rename TimeSeriesTimeRange to a better name.
 -->
 <script lang="ts">
   import { goto } from "$app/navigation";
@@ -12,12 +14,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
-  import type {
     TimeGrain,
+    TimeRange,
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
@@ -34,41 +34,67 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     metricsExplorerStore,
   } from "../dashboard-stores";
   import {
-    ceilDate,
+    addGrains,
+    checkValidTimeGrain,
     floorDate,
     getDefaultTimeGrain,
-    getDefaultTimeRangeName,
+    getDefaultTimeRange,
     getSelectableTimeGrains,
-    makeTimeRange,
     TimeGrainOption,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
-  import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
+  import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
   export let metricViewName: string;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let selectedTimeRangeName;
-  let selectedTimeGrain;
+  // user selections, used to construct TimeSeriesTimeRange
+  let selectedTimeRange: TimeRange;
+  let selectedTimeGrain: TimeGrain;
 
-  // query the `/meta` endpoint to get the all time range of the dataset
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: selectedTimeRange = {
+    name: metricsExplorer?.selectedTimeRange?.name,
+    start: new Date(metricsExplorer?.selectedTimeRange?.start),
+    end: new Date(metricsExplorer?.selectedTimeRange?.end),
+  };
+  $: selectedTimeGrain = metricsExplorer?.selectedTimeRange?.interval;
+
+  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+    $runtimeStore.instanceId,
+    metricViewName,
+    {
+      query: {
+        enabled: !!$runtimeStore.instanceId,
+      },
+    }
+  );
+
+  // once we have the allTimeRange, set the default time range and time grain
+  $: if (allTimeRange) {
+    const timeRange = getDefaultTimeRange(allTimeRange);
+    selectedTimeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+    setSelectedTimeRange(
+      timeRange.name,
+      timeRange.start.toISOString(),
+      timeRange.end.toISOString()
+    );
+  }
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtimeStore.instanceId,
     metricViewName
   );
-  $: hasTimeSeries = $metricTimeSeries.data;
+  $: hasTimeSeries = $metricTimeSeries?.data;
 
-  let modelQuery;
   let timestampColumns: Array<string>;
 
-  $: if (metaQuery && $metaQuery.isSuccess && !$metaQuery.isRefetching) {
+  let modelQuery;
+  $: if ($metricsViewQuery?.data?.entry?.metricsView?.model) {
     modelQuery = useRuntimeServiceGetCatalogEntry(
       $runtimeStore.instanceId,
-      $metaQuery?.data?.model
+      $metricsViewQuery?.data?.entry?.metricsView?.model
     );
   }
 
@@ -82,124 +108,99 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";
 
   let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
-
   $: if (
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching &&
-    hasTimeSeries
+    hasTimeSeries &&
+    !!$runtimeStore?.instanceId &&
+    !!$metricsViewQuery?.data?.entry?.metricsView?.model &&
+    !!$metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
-      $metaQuery.data.model,
-      { columnName: $metaQuery.data.timeDimension }
+      $metricsViewQuery.data.entry.metricsView.model,
+      {
+        columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
+      }
     );
   }
 
-  let allTimeRange;
-  $: if (
-    hasTimeSeries &&
-    timeRangeQuery &&
-    $timeRangeQuery.isSuccess &&
-    !$timeRangeQuery.isRefetching
-  ) {
+  let allTimeRange: TimeRange;
+  $: if (hasTimeSeries && $timeRangeQuery?.data?.timeRangeSummary) {
     allTimeRange = {
-      start: $timeRangeQuery.data.timeRangeSummary.min,
-      end: $timeRangeQuery.data.timeRangeSummary.max,
+      name: TimeRangeName.AllTime,
+      start: new Date($timeRangeQuery.data.timeRangeSummary.min),
+      end: new Date($timeRangeQuery.data.timeRangeSummary.max),
     };
   }
-
-  const initializeState = (metricsExplorer: MetricsExplorerEntity) => {
-    if (
-      metricsExplorer?.selectedTimeRange?.name &&
-      metricsExplorer?.selectedTimeRange?.interval
-    ) {
-      selectedTimeRangeName = metricsExplorer.selectedTimeRange?.name;
-      selectedTimeGrain = metricsExplorer.selectedTimeRange?.interval;
-    } else {
-      selectedTimeRangeName = getDefaultTimeRangeName();
-      selectedTimeGrain = getDefaultTimeGrain(
-        selectedTimeRangeName,
-        allTimeRange
-      );
-    }
-  };
-  $: initializeState(metricsExplorer);
-
-  const setSelectedTimeRangeName = (evt) => {
-    selectedTimeRangeName = evt.detail.timeRangeName;
-  };
-  const setSelectedTimeGrain = (evt) => {
-    selectedTimeGrain = evt.detail.timeGrain;
-  };
 
   // we get the selectableTimeGrains so that we can assess whether or not the
   // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
   let selectableTimeGrains: TimeGrainOption[];
   $: selectableTimeGrains = getSelectableTimeGrains(
-    selectedTimeRangeName,
-    allTimeRange
+    selectedTimeRange?.start,
+    selectedTimeRange?.end
   );
 
-  const checkValidTimeGrain = (timeGrain: TimeGrain) => {
-    const timeGrainOption = selectableTimeGrains.find(
-      (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
+  function setSelectedTimeRange(
+    name: TimeRangeName,
+    start: string,
+    end: string
+  ) {
+    selectedTimeRange = {
+      name: name,
+      start: new Date(start),
+      end: new Date(end),
+    };
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      name,
+      selectedTimeRange.start,
+      selectedTimeRange.end
     );
-    return timeGrainOption?.enabled;
-  };
+  }
 
-  const makeValidTimeRangeAndUpdateAppState = (
-    timeRangeName: TimeRangeName,
-    timeGrain: TimeGrain,
-    allTimeRangeInDataset: TimeSeriesTimeRange
-  ) => {
-    if (!timeRangeName || !timeGrain || !allTimeRangeInDataset) return;
+  function setSelectedTimeGrain(timeGrain: TimeGrain) {
+    selectedTimeGrain = timeGrain;
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      selectedTimeRange.name,
+      selectedTimeRange.start,
+      selectedTimeRange.end
+    );
+  }
 
+  function makeTimeSeriesTimeRangeAndUpdateAppState(
+    name: TimeRangeName,
+    start: Date,
+    end: Date
+  ) {
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
-    const isValidTimeGrain = checkValidTimeGrain(timeGrain);
+    selectableTimeGrains = getSelectableTimeGrains(start, end);
+    const isValidTimeGrain = checkValidTimeGrain(
+      selectedTimeGrain,
+      selectableTimeGrains
+    );
     if (!isValidTimeGrain) {
-      selectedTimeGrain = getDefaultTimeGrain(
-        timeRangeName,
-        allTimeRangeInDataset
-      );
+      selectedTimeGrain = getDefaultTimeGrain(start, end);
     }
 
-    const newTimeRange = makeTimeRange(
-      selectedTimeRangeName,
-      selectedTimeGrain,
-      allTimeRange
+    // Round start time to nearest lower time grain
+    const adjustedStart = floorDate(start, selectedTimeGrain);
+
+    // Round end time to start of next grain, since end times are exclusive
+    let adjustedEnd = addGrains(
+      new Date(allTimeRange?.end),
+      1,
+      selectedTimeGrain
     );
+    adjustedEnd = floorDate(adjustedEnd, selectedTimeGrain);
 
-    // don't update if time range hasn't changed
-    if (
-      newTimeRange.start === metricsExplorer?.selectedTimeRange?.start &&
-      newTimeRange.end === metricsExplorer?.selectedTimeRange?.end &&
-      newTimeRange.interval === metricsExplorer?.selectedTimeRange?.interval
-    )
-      return;
-
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
-  };
-
-  // reactive statement that makes a new valid time range whenever the selected options change
-  $: makeValidTimeRangeAndUpdateAppState(
-    selectedTimeRangeName,
-    selectedTimeGrain,
-    allTimeRange
-  );
-
-  function setCustomTimeRange(start: string, end: string) {
-    // round the start date down to the nearest time grain
-    // round the end date up to the nearest time grain
-    const adjustedStart = floorDate(new Date(start), selectedTimeGrain);
-    const adjustedEnd = ceilDate(new Date(end), selectedTimeGrain);
-
-    const newTimeRange = {
+    // the adjusted time range
+    const newTimeRange: TimeSeriesTimeRange = {
+      name: name,
       start: adjustedStart.toISOString(),
       end: adjustedEnd.toISOString(),
       interval: selectedTimeGrain,
     };
+
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   }
 
@@ -207,7 +208,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     if (timestampColumns?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     } else {
-      const modelName = $metaQuery.data?.model;
+      const modelName = $metricsViewQuery?.data?.entry?.metricsView?.model;
       goto(`/model/${modelName}`);
     }
   }
@@ -232,16 +233,15 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       </TooltipContent>
     </Tooltip>
   {:else}
-    <TimeRangeNameSelector
-      {allTimeRange}
+    <TimeRangeSelector
       {metricViewName}
-      on:select-time-range-name={setSelectedTimeRangeName}
-      on:select-custom-time-range={(e) =>
-        setCustomTimeRange(e.detail.start, e.detail.end)}
-      {selectedTimeRangeName}
+      {allTimeRange}
+      {selectedTimeRange}
+      on:select-time-range={(e) =>
+        setSelectedTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
     <TimeGrainSelector
-      on:select-time-grain={setSelectedTimeGrain}
+      on:select-time-grain={(e) => setSelectedTimeGrain(e.detail.timeGrain)}
       {selectableTimeGrains}
       {selectedTimeGrain}
     />

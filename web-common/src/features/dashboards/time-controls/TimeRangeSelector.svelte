@@ -11,44 +11,47 @@
   } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import type {
-    TimeRangeName,
-    TimeSeriesTimeRange,
-  } from "./time-control-types";
+  import { TimeRange, TimeRangeName } from "./time-control-types";
   import {
-    getSelectableTimeRangeNames,
-    makeTimeRanges,
+    getSelectableRelativeTimeRanges,
     prettyFormatTimeRange,
   } from "./time-range-utils";
 
   export let metricViewName: string;
-  export let selectedTimeRangeName: TimeRangeName;
-  export let allTimeRange;
+  export let selectedTimeRange: TimeRange;
+  export let allTimeRange: TimeRange;
 
   const dispatch = createEventDispatcher();
-  const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let selectableTimeRanges: TimeSeriesTimeRange[];
+  let selectableRelativeTimeRanges: TimeRange[];
 
-  // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
-  const getSelectableTimeRanges = (
-    allTimeRangeInDataset: TimeSeriesTimeRange
-  ) => {
-    const selectableTimeRangeNames = getSelectableTimeRangeNames(
-      allTimeRangeInDataset
-    );
-    const selectableTimeRanges = makeTimeRanges(
-      selectableTimeRangeNames,
-      allTimeRangeInDataset
-    );
-    return selectableTimeRanges;
-  };
   $: if (allTimeRange) {
-    selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
+    selectableRelativeTimeRanges =
+      getSelectableRelativeTimeRanges(allTimeRange);
   }
+
+  function onSelectRelativeTimeRange(timeRange: TimeRange) {
+    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+    dispatch("select-time-range", {
+      name: timeRange.name,
+      start: timeRange.start,
+      end: timeRange.end,
+    });
+  }
+
+  function onSelectCustomTimeRange(startDate: string, endDate: string) {
+    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
+    dispatch("select-time-range", {
+      name: TimeRangeName.Custom,
+      start: startDate,
+      end: endDate,
+    });
+  }
+
+  let customTimeRangeInputOpen = false;
 
   /// Start boilerplate for DIY Dropdown menu ///
   let timeRangeNameMenu;
@@ -73,18 +76,6 @@
 
   let target: HTMLElement;
   /// End boilerplate for DIY Dropdown menu ///
-
-  const onTimeRangeSelect = (timeRangeName: TimeRangeName) => {
-    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-    dispatch(EVENT_NAME, { timeRangeName });
-  };
-
-  function onApplyCustomTimeRange(startDate: string, endDate: string) {
-    timeRangeNameMenuOpen = !timeRangeNameMenuOpen;
-    dispatch("select-custom-time-range", { start: startDate, end: endDate });
-  }
-
-  let customTimeRangeInputOpen = false;
 </script>
 
 <button
@@ -97,7 +88,7 @@
       <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
       <span class="ui-copy-icon"><Calendar size="16px" /></span>
       <span style:transform="translateY(1px)">
-        {selectedTimeRangeName ?? "Select a time range"}
+        {selectedTimeRange.name ?? "Select a time range"}
       </span>
     </div>
     <span style:transform="translateY(1px)">
@@ -119,11 +110,16 @@
       distance={8}
     >
       <Menu on:escape={() => (timeRangeNameMenuOpen = false)}>
-        {#each selectableTimeRanges as timeRange}
-          <MenuItem on:select={() => onTimeRangeSelect(timeRange.name)}>
-            {timeRange.name}
+        {#each selectableRelativeTimeRanges as relativeTimeRange}
+          <MenuItem
+            on:select={() => onSelectRelativeTimeRange(relativeTimeRange)}
+          >
+            {relativeTimeRange.name}
           </MenuItem>
         {/each}
+        <MenuItem on:select={() => onSelectRelativeTimeRange(allTimeRange)}>
+          {TimeRangeName.AllTime}
+        </MenuItem>
         <CustomTimeRangeMenuItem
           open={customTimeRangeInputOpen}
           on:select={() =>
@@ -131,8 +127,9 @@
         />
         {#if customTimeRangeInputOpen}
           <CustomTimeRangeInput
+            {metricViewName}
             on:apply={(e) =>
-              onApplyCustomTimeRange(e.detail.startDate, e.detail.endDate)}
+              onSelectCustomTimeRange(e.detail.startDate, e.detail.endDate)}
           />
         {/if}
       </Menu>
