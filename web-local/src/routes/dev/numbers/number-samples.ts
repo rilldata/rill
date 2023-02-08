@@ -70,11 +70,11 @@ const numberListsGen: NumericSampleGen[] = [
   },
 
   {
-    desc: "power law-ish (uniform over magnitudes (e-6, e10))",
+    desc: "power law-ish (uniform over magnitudes (e-6, e13))",
     sampleFn: () =>
       range
-        .map((x) => 10 ** uniform(-6, 10))
-        .map((x) => (randu() < 0.1 ? 0 : x)),
+        .map((x) => 10 ** uniform(-6, 13))
+        .map((x) => (randu() < 0.2 ? 0 : x)),
   },
 
   {
@@ -111,7 +111,7 @@ const numberListsGen: NumericSampleGen[] = [
   },
 
   {
-    desc: "t-dist cubed, rounded",
+    desc: "t-dist cubed, rounded to int",
     sampleFn: () => range.map((x) => Math.round(tDist(1) ** 3)),
   },
   {
