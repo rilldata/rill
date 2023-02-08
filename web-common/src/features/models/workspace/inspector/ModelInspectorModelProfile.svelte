@@ -10,7 +10,7 @@
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
-    useRuntimeServiceGetTableCardinality,
+    useQueryServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
@@ -80,7 +80,7 @@
           [
             writable(entry),
             writable(reference),
-            useRuntimeServiceGetTableCardinality(
+            useQueryServiceGetTableCardinality(
               $runtimeStore?.instanceId,
               entry.name
             ),

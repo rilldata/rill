@@ -1,13 +1,13 @@
 import {
-  useRuntimeServiceEstimateRollupInterval,
-  useRuntimeServiceEstimateSmallestTimeGrain,
-  useRuntimeServiceGenerateTimeSeries,
-  useRuntimeServiceGetCardinalityOfColumn,
-  useRuntimeServiceGetNullCount,
-  useRuntimeServiceGetNumericHistogram,
-  useRuntimeServiceGetTableCardinality,
-  useRuntimeServiceGetTopK,
-  RuntimeServiceGetNumericHistogramHistogramMethod,
+  useQueryServiceEstimateRollupInterval,
+  useQueryServiceEstimateSmallestTimeGrain,
+  useQueryServiceGenerateTimeSeries,
+  useQueryServiceGetCardinalityOfColumn,
+  useQueryServiceGetNullCount,
+  useQueryServiceGetNumericHistogram,
+  useQueryServiceGetTableCardinality,
+  useQueryServiceGetTopK,
+  QueryServiceGetNumericHistogramHistogramMethod,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
@@ -36,7 +36,7 @@ export function getSummaries(
       return derived(
         [
           writable(column),
-          useRuntimeServiceGetNullCount(
+          useQueryServiceGetNullCount(
             instanceId,
             objectName,
             { columnName: column.name },
@@ -44,7 +44,7 @@ export function getSummaries(
               query: { keepPreviousData: true },
             }
           ),
-          useRuntimeServiceGetCardinalityOfColumn(
+          useQueryServiceGetCardinalityOfColumn(
             instanceId,
             objectName,
             { columnName: column.name },
@@ -73,10 +73,10 @@ export function getNullPercentage(
   objectName: string,
   columnName: string
 ) {
-  const nullQuery = useRuntimeServiceGetNullCount(instanceId, objectName, {
+  const nullQuery = useQueryServiceGetNullCount(instanceId, objectName, {
     columnName,
   });
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
+  const totalRowsQuery = useQueryServiceGetTableCardinality(
     instanceId,
     objectName
   );
@@ -94,13 +94,13 @@ export function getCountDistinct(
   objectName: string,
   columnName: string
 ) {
-  const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
+  const cardinalityQuery = useQueryServiceGetCardinalityOfColumn(
     instanceId,
     objectName,
     { columnName }
   );
 
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
+  const totalRowsQuery = useQueryServiceGetTableCardinality(
     instanceId,
     objectName
   );
@@ -123,7 +123,7 @@ export function getTopK(
   columnName: string,
   active = false
 ) {
-  const topKQuery = useRuntimeServiceGetTopK(instanceId, objectName, {
+  const topKQuery = useQueryServiceGetTopK(instanceId, objectName, {
     columnName: columnName,
     agg: "count(*)",
     k: 75,
@@ -140,7 +140,7 @@ export function getTimeSeriesAndSpark(
   columnName: string,
   active = false
 ) {
-  const query = useRuntimeServiceGenerateTimeSeries(
+  const query = useQueryServiceGenerateTimeSeries(
     instanceId,
     objectName,
     // FIXME: convert pixel back to number once the API
@@ -150,13 +150,13 @@ export function getTimeSeriesAndSpark(
       priority: getPriorityForColumn("timeseries", active),
     }
   );
-  const estimatedInterval = useRuntimeServiceEstimateRollupInterval(
+  const estimatedInterval = useQueryServiceEstimateRollupInterval(
     instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rollup-interval", active) }
   );
 
-  const smallestTimeGrain = useRuntimeServiceEstimateSmallestTimeGrain(
+  const smallestTimeGrain = useQueryServiceEstimateSmallestTimeGrain(
     instanceId,
     objectName,
     {
@@ -201,13 +201,13 @@ export function getNumericHistogram(
   columnName: string,
   active = false
 ) {
-  return useRuntimeServiceGetNumericHistogram(
+  return useQueryServiceGetNumericHistogram(
     instanceId,
     objectName,
     {
       columnName,
       histogramMethod:
-        RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+        QueryServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
       priority: getPriorityForColumn("numeric-histogram", active),
     },
     {

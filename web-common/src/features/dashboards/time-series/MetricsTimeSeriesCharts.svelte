@@ -7,8 +7,8 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
-    useRuntimeServiceMetricsViewTimeSeries,
-    useRuntimeServiceMetricsViewTotals,
+    useQueryServiceMetricsViewTimeSeries,
+    useQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -61,7 +61,7 @@
       timeEnd: metricsExplorer.selectedTimeRange?.end,
     };
 
-    totalsQuery = useRuntimeServiceMetricsViewTotals(
+    totalsQuery = useQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams
@@ -79,7 +79,7 @@
     !$metaQuery.isRefetching &&
     metricsExplorer.selectedTimeRange
   ) {
-    timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(
+    timeSeriesQuery = useQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {

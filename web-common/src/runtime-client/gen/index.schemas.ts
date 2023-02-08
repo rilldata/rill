@@ -15,7 +15,7 @@ This is mainly used by UI to reconcile paths missing in catalog and get errors i
   strict?: boolean;
 };
 
-export type RuntimeServiceQueryBody = {
+export type QueryServiceQueryBody = {
   args?: unknown[];
   dryRun?: boolean;
   priority?: number;
@@ -25,74 +25,74 @@ export type RuntimeServiceQueryBody = {
 /**
  * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
  */
-export type RuntimeServiceGetTopKBody = {
+export type QueryServiceGetTopKBody = {
   agg?: string;
   columnName?: string;
   k?: number;
   priority?: number;
 };
 
-export type RuntimeServiceGetTimeRangeSummaryParams = {
+export type QueryServiceGetTimeRangeSummaryParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceGetTableCardinalityParams = { priority?: number };
+export type QueryServiceGetTableCardinalityParams = { priority?: number };
 
-export type RuntimeServiceEstimateSmallestTimeGrainParams = {
+export type QueryServiceEstimateSmallestTimeGrainParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceGetRugHistogramParams = {
+export type QueryServiceGetRugHistogramParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceGetTableRowsParams = {
+export type QueryServiceGetTableRowsParams = {
   limit?: number;
   priority?: number;
 };
 
-export type RuntimeServiceEstimateRollupIntervalBody = {
+export type QueryServiceEstimateRollupIntervalBody = {
   columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceGetNumericHistogramHistogramMethod =
-  typeof RuntimeServiceGetNumericHistogramHistogramMethod[keyof typeof RuntimeServiceGetNumericHistogramHistogramMethod];
+export type QueryServiceGetNumericHistogramHistogramMethod =
+  typeof QueryServiceGetNumericHistogramHistogramMethod[keyof typeof QueryServiceGetNumericHistogramHistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RuntimeServiceGetNumericHistogramHistogramMethod = {
+export const QueryServiceGetNumericHistogramHistogramMethod = {
   HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
-export type RuntimeServiceGetNumericHistogramParams = {
+export type QueryServiceGetNumericHistogramParams = {
   columnName?: string;
-  histogramMethod?: RuntimeServiceGetNumericHistogramHistogramMethod;
+  histogramMethod?: QueryServiceGetNumericHistogramHistogramMethod;
   priority?: number;
 };
 
-export type RuntimeServiceGetNullCountParams = {
-  columnName?: string;
-  priority?: number;
-};
-
-export type RuntimeServiceGetDescriptiveStatisticsParams = {
+export type QueryServiceGetNullCountParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceProfileColumnsParams = { priority?: number };
-
-export type RuntimeServiceGetCardinalityOfColumnParams = {
+export type QueryServiceGetDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type RuntimeServiceMetricsViewTotalsBody = {
+export type QueryServiceProfileColumnsParams = { priority?: number };
+
+export type QueryServiceGetCardinalityOfColumnParams = {
+  columnName?: string;
+  priority?: number;
+};
+
+export type QueryServiceMetricsViewTotalsBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
   priority?: number;
@@ -100,7 +100,7 @@ export type RuntimeServiceMetricsViewTotalsBody = {
   timeStart?: string;
 };
 
-export type RuntimeServiceMetricsViewToplistBody = {
+export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   filter?: V1MetricsViewFilter;
   limit?: string;
@@ -112,7 +112,7 @@ export type RuntimeServiceMetricsViewToplistBody = {
   timeStart?: string;
 };
 
-export type RuntimeServiceMetricsViewTimeSeriesBody = {
+export type QueryServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
   measureNames?: string[];
   priority?: number;
@@ -217,7 +217,7 @@ export interface V1TimeSeriesTimeRange {
   start?: string;
 }
 
-export type RuntimeServiceGenerateTimeSeriesBody = {
+export type QueryServiceGenerateTimeSeriesBody = {
   filters?: V1MetricsViewFilter;
   measures?: GenerateTimeSeriesRequestBasicMeasure[];
   pixels?: number;

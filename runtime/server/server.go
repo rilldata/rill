@@ -33,12 +33,16 @@ type Options struct {
 
 type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
+	runtimev1.UnsafeQueryServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
 	logger  *zap.Logger
 }
 
-var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
+var (
+	_ runtimev1.RuntimeServiceServer = (*Server)(nil)
+	_ runtimev1.QueryServiceServer   = (*Server)(nil)
+)
 
 func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	return &Server{
@@ -67,6 +71,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)
+	runtimev1.RegisterQueryServiceServer(server, s)
 	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }

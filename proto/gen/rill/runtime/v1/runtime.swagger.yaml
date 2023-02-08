@@ -3,6 +3,7 @@ info:
   title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
+  - name: QueryService
   - name: RuntimeService
 consumes:
   - application/json
@@ -368,7 +369,7 @@ paths:
       summary: |-
         MetricsViewTimeSeries returns time series for the measures in the metrics view.
         It's a convenience API for querying a metrics view.
-      operationId: RuntimeService_MetricsViewTimeSeries
+      operationId: QueryService_MetricsViewTimeSeries
       responses:
         "200":
           description: A successful response.
@@ -412,13 +413,13 @@ paths:
                 format: date-time
             title: Request message for RuntimeService.MetricsViewTimeSeries
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/metrics-views/{metricsViewName}/toplist:
     post:
       summary: |-
         MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
         It's a convenience API for querying a metrics view.
-      operationId: RuntimeService_MetricsViewToplist
+      operationId: QueryService_MetricsViewToplist
       responses:
         "200":
           description: A successful response.
@@ -472,13 +473,13 @@ paths:
                 format: date-time
             title: Request message for RuntimeService.MetricsViewToplist
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/metrics-views/{metricsViewName}/totals:
     post:
       summary: |-
         MetricsViewTotals returns totals over a time period for the measures in a metrics view.
         It's a convenience API for querying a metrics view.
-      operationId: RuntimeService_MetricsViewTotals
+      operationId: QueryService_MetricsViewTotals
       responses:
         "200":
           description: A successful response.
@@ -520,11 +521,11 @@ paths:
                 format: date-time
             title: Request message for RuntimeService.MetricsViewTotals
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
-      operationId: RuntimeService_GetCardinalityOfColumn
+      operationId: QueryService_GetCardinalityOfColumn
       responses:
         "200":
           description: A successful response.
@@ -553,11 +554,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
     post:
       summary: 'ProfileColumns (TODO: add description)'
-      operationId: RuntimeService_ProfileColumns
+      operationId: QueryService_ProfileColumns
       responses:
         "200":
           description: A successful response.
@@ -582,11 +583,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
     get:
       summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
-      operationId: RuntimeService_GetDescriptiveStatistics
+      operationId: QueryService_GetDescriptiveStatistics
       responses:
         "200":
           description: A successful response.
@@ -615,11 +616,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
     get:
       summary: Get the number of nulls in a column
-      operationId: RuntimeService_GetNullCount
+      operationId: QueryService_GetNullCount
       responses:
         "200":
           description: A successful response.
@@ -648,11 +649,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}:
     get:
       summary: Get the histogram for values in a column
-      operationId: RuntimeService_GetNumericHistogram
+      operationId: QueryService_GetNumericHistogram
       responses:
         "200":
           description: A successful response.
@@ -690,11 +691,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
       summary: 'EstimateRollupInterval (TODO: add description)'
-      operationId: RuntimeService_EstimateRollupInterval
+      operationId: QueryService_EstimateRollupInterval
       responses:
         "200":
           description: A successful response.
@@ -725,11 +726,11 @@ paths:
                 type: integer
                 format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
     get:
       summary: 'TableRows (TODO: add description)'
-      operationId: RuntimeService_GetTableRows
+      operationId: QueryService_GetTableRows
       responses:
         "200":
           description: A successful response.
@@ -759,11 +760,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}:
     get:
       summary: Get outliers for a numeric column
-      operationId: RuntimeService_GetRugHistogram
+      operationId: QueryService_GetRugHistogram
       responses:
         "200":
           description: A successful response.
@@ -792,11 +793,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}:
     get:
       summary: Estimates the smallest time grain present in the column
-      operationId: RuntimeService_EstimateSmallestTimeGrain
+      operationId: QueryService_EstimateSmallestTimeGrain
       responses:
         "200":
           description: A successful response.
@@ -825,11 +826,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}:
     get:
       summary: 'TableCardinality (TODO: add description)'
-      operationId: RuntimeService_GetTableCardinality
+      operationId: QueryService_GetTableCardinality
       responses:
         "200":
           description: A successful response.
@@ -854,11 +855,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}:
     get:
       summary: Get the time range summaries (min, max) for a column
-      operationId: RuntimeService_GetTimeRangeSummary
+      operationId: QueryService_GetTimeRangeSummary
       responses:
         "200":
           description: A successful response.
@@ -887,11 +888,11 @@ paths:
           type: integer
           format: int32
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/timeseries/tables/{tableName}:
     post:
       summary: Generate time series
-      operationId: RuntimeService_GenerateTimeSeries
+      operationId: QueryService_GenerateTimeSeries
       responses:
         "200":
           description: A successful response.
@@ -936,13 +937,13 @@ paths:
               timestampColumnName:
                 type: string
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
     post:
       summary: |-
         Get TopK elements from a table for a column given an agg function
         agg function and k are optional, defaults are count(*) and 50 respectively
-      operationId: RuntimeService_GetTopK
+      operationId: QueryService_GetTopK
       responses:
         "200":
           description: A successful response.
@@ -981,11 +982,11 @@ paths:
                 format: int32
             description: Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/query:
     post:
       summary: Query runs a SQL query against the instance's OLAP datastore.
-      operationId: RuntimeService_Query
+      operationId: QueryService_Query
       responses:
         "200":
           description: A successful response.
@@ -1023,7 +1024,7 @@ paths:
                 title: SELECT statement
             title: Request message for RuntimeService.Query
       tags:
-        - RuntimeService
+        - QueryService
   /v1/instances/{instanceId}/reconcile:
     post:
       summary: |-

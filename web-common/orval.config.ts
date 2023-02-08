@@ -18,42 +18,42 @@ export default defineConfig({
         // Override queries and mutations here
         operations: {
           // Turn MetricsViewMeta into a query even though it's a POST request
-          RuntimeService_MetricsViewMeta: {
+          QueryService_MetricsViewMeta: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_EstimateRollupInterval: {
+          QueryService_EstimateRollupInterval: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_GetTopK: {
+          QueryService_GetTopK: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_GenerateTimeSeries: {
+          QueryService_GenerateTimeSeries: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_ProfileColumns: {
+          QueryService_ProfileColumns: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_MetricsViewTotals: {
+          QueryService_MetricsViewTotals: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_MetricsViewTimeSeries: {
+          QueryService_MetricsViewTimeSeries: {
             query: {
               useQuery: true,
             },
           },
-          RuntimeService_MetricsViewToplist: {
+          QueryService_MetricsViewToplist: {
             query: {
               useQuery: true,
             },

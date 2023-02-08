@@ -10,7 +10,7 @@ import (
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
 // once the metrics view artifact representation is ready.
 
-// MetricsViewToplist implements RuntimeService.
+// MetricsViewToplist implements QueryService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
@@ -31,7 +31,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	return q.Result, nil
 }
 
-// MetricsViewTimeSeries implements RuntimeService.
+// MetricsViewTimeSeries implements QueryService.
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
@@ -49,7 +49,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	return q.Result, nil
 }
 
-// MetricsViewTotals implements RuntimeService.
+// MetricsViewTotals implements QueryService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
 	q := &queries.MetricsViewTotals{
 		MetricsViewName: req.MetricsViewName,
