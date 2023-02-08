@@ -17,7 +17,7 @@ export enum TimeRangeName {
   AllTime = "All time",
   // Today = "Today",
   // MonthToDate = "Month to date",
-  Custom = "Custom",
+  Custom = "Custom range",
 }
 
 export const lastXTimeRangeNames: TimeRangeName[] = [
