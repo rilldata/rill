@@ -237,7 +237,7 @@ export const formatterFactories: NamedFormatterFactory[] = [
     fn: humanizeGroupValuesFormatterFactory,
   },
 
-  { desc: "humanized 2", fn: humanized2FormatterFactory },
+  { desc: "new humanizer", fn: humanized2FormatterFactory },
 
   {
     desc: "scientific",
