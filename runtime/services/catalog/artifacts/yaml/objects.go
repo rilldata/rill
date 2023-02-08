@@ -300,7 +300,7 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	if metrics.DefaultTimeRange != "" {
 		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
 		if err != nil {
-			return nil, fmt.Errorf("invalid default_time_grain: %s", err)
+			return nil, fmt.Errorf("invalid default_time_grain: %w", err)
 		}
 		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
 	}
