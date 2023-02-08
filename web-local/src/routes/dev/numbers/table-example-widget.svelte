@@ -233,8 +233,9 @@
 </div>
 
 <div class="options-container-row">
-  <div>
-    generic formatter options
+  <div style:width="300px">
+    <h2>Display options (applies to all formatters)</h2>
+
     <div>
       <label>
         <input type="checkbox" bind:checked={alignDecimalPoints} />
@@ -263,6 +264,57 @@
         force lower case "e" for exponential variants
       </label>
     </div>
+
+    Zero handling - zeros are semantically and mathematically important values,
+    and should be represented with care, especially when juxtaposed with finite
+    precision decimal representation of small numbers (e.g. "0.000" often means
+    "a non-zero number, but one that rounds to zero to the third decimal of
+    precision", whereas "0" can be reserved for 0
+    <em>exactly</em>.)
+    <div class="option-box">
+      <form>
+        <div>
+          <label>
+            <input
+              type="radio"
+              bind:group={zeroHandling}
+              name="exactZero"
+              value={"exactZero"}
+            />
+            "0" for exact zeros
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="radio"
+              bind:group={zeroHandling}
+              name="zeroDot"
+              value={"zeroDot"}
+            />
+            "0." for exact zeros. (Used by legacy dash)
+          </label>
+        </div>
+
+        <div>
+          <label>
+            <input
+              type="radio"
+              bind:group={zeroHandling}
+              name="noSpecial"
+              value={"noSpecial"}
+            />
+            no special treament for exact zeros
+          </label>
+        </div>
+      </form>
+
+      <label>
+        <input type="checkbox" bind:checked={showMagSuffixForZero} />
+        Show order of magnitude suffix for exact zeros (not recommended -- order
+        of magnitude is not relevant to 0)
+      </label>
+    </div>
     <!-- <div>
       significant digits:
       <label>
@@ -285,47 +337,14 @@
   </div>
 
   <div style="padding-left: 40px;">
-    new humanizer shared options
+    <h2>new humanizer shared options</h2>
 
-    <div class="option-box">
-      <form>
-        <label>
-          <input
-            type="radio"
-            bind:group={zeroHandling}
-            name="noSpecial"
-            value={"noSpecial"}
-          />
-          no special treament for exact zeros
-        </label>
-        <label>
-          <input
-            type="radio"
-            bind:group={zeroHandling}
-            name="exactZero"
-            value={"exactZero"}
-          />
-          "0" for exact zeros
-        </label>
+    <label>
+      <input type="checkbox" bind:checked={digitTargetShowSignificantZeros} />
+      show significant zeros
+    </label>
 
-        <label>
-          <input
-            type="radio"
-            bind:group={zeroHandling}
-            name="zeroDot"
-            value={"zeroDot"}
-          />
-          "0." for exact zeros
-        </label>
-      </form>
-
-      <label>
-        <input type="checkbox" bind:checked={showMagSuffixForZero} />
-        show order of magnitude suffix for exact zeros
-      </label>
-    </div>
-
-    new humanizer strategy
+    <h2>new humanizer strategy (and strategy-specific options)</h2>
     <form>
       <!-- <div class="option-box">
         <label>
