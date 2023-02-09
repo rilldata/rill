@@ -2,7 +2,6 @@ package yaml
 
 import (
 	"fmt"
-	"github.com/senseyeio/duration"
 	"strconv"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/senseyeio/duration"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
