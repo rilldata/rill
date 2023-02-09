@@ -192,13 +192,11 @@
               {metricsSourceSelectionError}
             </Callout>
           {:else}
-            <div>
-              <MetricsGenerateButton
-                handlePutAndMigrate={callPutAndMigrate}
-                selectedModel={model}
-                {metricsInternalRep}
-              />
-            </div>
+            <MetricsGenerateButton
+              handlePutAndMigrate={callPutAndMigrate}
+              selectedModel={model}
+              {metricsInternalRep}
+            />
           {/if}
         </div>
       </div>
