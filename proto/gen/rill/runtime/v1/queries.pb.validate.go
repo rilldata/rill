@@ -1866,22 +1866,22 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewColumnValidationError{}
 
-// Validate checks the field values on EstimateRollupIntervalRequest with the
+// Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EstimateRollupIntervalRequest) Validate() error {
+func (m *ColumnRollupIntervalRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EstimateRollupIntervalRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// EstimateRollupIntervalRequestMultiError, or nil if none found.
-func (m *EstimateRollupIntervalRequest) ValidateAll() error {
+// ValidateAll checks the field values on ColumnRollupIntervalRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnRollupIntervalRequestMultiError, or nil if none found.
+func (m *ColumnRollupIntervalRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EstimateRollupIntervalRequest) validate(all bool) error {
+func (m *ColumnRollupIntervalRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1897,19 +1897,19 @@ func (m *EstimateRollupIntervalRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return EstimateRollupIntervalRequestMultiError(errors)
+		return ColumnRollupIntervalRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// EstimateRollupIntervalRequestMultiError is an error wrapping multiple
-// validation errors returned by EstimateRollupIntervalRequest.ValidateAll()
-// if the designated constraints aren't met.
-type EstimateRollupIntervalRequestMultiError []error
+// ColumnRollupIntervalRequestMultiError is an error wrapping multiple
+// validation errors returned by ColumnRollupIntervalRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ColumnRollupIntervalRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EstimateRollupIntervalRequestMultiError) Error() string {
+func (m ColumnRollupIntervalRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1918,12 +1918,12 @@ func (m EstimateRollupIntervalRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EstimateRollupIntervalRequestMultiError) AllErrors() []error { return m }
+func (m ColumnRollupIntervalRequestMultiError) AllErrors() []error { return m }
 
-// EstimateRollupIntervalRequestValidationError is the validation error
-// returned by EstimateRollupIntervalRequest.Validate if the designated
-// constraints aren't met.
-type EstimateRollupIntervalRequestValidationError struct {
+// ColumnRollupIntervalRequestValidationError is the validation error returned
+// by ColumnRollupIntervalRequest.Validate if the designated constraints
+// aren't met.
+type ColumnRollupIntervalRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1931,24 +1931,24 @@ type EstimateRollupIntervalRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e EstimateRollupIntervalRequestValidationError) Field() string { return e.field }
+func (e ColumnRollupIntervalRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EstimateRollupIntervalRequestValidationError) Reason() string { return e.reason }
+func (e ColumnRollupIntervalRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EstimateRollupIntervalRequestValidationError) Cause() error { return e.cause }
+func (e ColumnRollupIntervalRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EstimateRollupIntervalRequestValidationError) Key() bool { return e.key }
+func (e ColumnRollupIntervalRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EstimateRollupIntervalRequestValidationError) ErrorName() string {
-	return "EstimateRollupIntervalRequestValidationError"
+func (e ColumnRollupIntervalRequestValidationError) ErrorName() string {
+	return "ColumnRollupIntervalRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EstimateRollupIntervalRequestValidationError) Error() string {
+func (e ColumnRollupIntervalRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1960,14 +1960,14 @@ func (e EstimateRollupIntervalRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEstimateRollupIntervalRequest.%s: %s%s",
+		"invalid %sColumnRollupIntervalRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EstimateRollupIntervalRequestValidationError{}
+var _ error = ColumnRollupIntervalRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1975,24 +1975,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EstimateRollupIntervalRequestValidationError{}
+} = ColumnRollupIntervalRequestValidationError{}
 
-// Validate checks the field values on EstimateRollupIntervalResponse with the
+// Validate checks the field values on ColumnRollupIntervalResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EstimateRollupIntervalResponse) Validate() error {
+func (m *ColumnRollupIntervalResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EstimateRollupIntervalResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// EstimateRollupIntervalResponseMultiError, or nil if none found.
-func (m *EstimateRollupIntervalResponse) ValidateAll() error {
+// ValidateAll checks the field values on ColumnRollupIntervalResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnRollupIntervalResponseMultiError, or nil if none found.
+func (m *ColumnRollupIntervalResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EstimateRollupIntervalResponse) validate(all bool) error {
+func (m *ColumnRollupIntervalResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2003,7 +2003,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 		switch v := interface{}(m.GetStart()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EstimateRollupIntervalResponseValidationError{
+				errors = append(errors, ColumnRollupIntervalResponseValidationError{
 					field:  "Start",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2011,7 +2011,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, EstimateRollupIntervalResponseValidationError{
+				errors = append(errors, ColumnRollupIntervalResponseValidationError{
 					field:  "Start",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2020,7 +2020,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetStart()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return EstimateRollupIntervalResponseValidationError{
+			return ColumnRollupIntervalResponseValidationError{
 				field:  "Start",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2032,7 +2032,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 		switch v := interface{}(m.GetEnd()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EstimateRollupIntervalResponseValidationError{
+				errors = append(errors, ColumnRollupIntervalResponseValidationError{
 					field:  "End",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2040,7 +2040,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, EstimateRollupIntervalResponseValidationError{
+				errors = append(errors, ColumnRollupIntervalResponseValidationError{
 					field:  "End",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2049,7 +2049,7 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetEnd()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return EstimateRollupIntervalResponseValidationError{
+			return ColumnRollupIntervalResponseValidationError{
 				field:  "End",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2060,19 +2060,19 @@ func (m *EstimateRollupIntervalResponse) validate(all bool) error {
 	// no validation rules for Interval
 
 	if len(errors) > 0 {
-		return EstimateRollupIntervalResponseMultiError(errors)
+		return ColumnRollupIntervalResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// EstimateRollupIntervalResponseMultiError is an error wrapping multiple
-// validation errors returned by EstimateRollupIntervalResponse.ValidateAll()
-// if the designated constraints aren't met.
-type EstimateRollupIntervalResponseMultiError []error
+// ColumnRollupIntervalResponseMultiError is an error wrapping multiple
+// validation errors returned by ColumnRollupIntervalResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ColumnRollupIntervalResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EstimateRollupIntervalResponseMultiError) Error() string {
+func (m ColumnRollupIntervalResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2081,12 +2081,12 @@ func (m EstimateRollupIntervalResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EstimateRollupIntervalResponseMultiError) AllErrors() []error { return m }
+func (m ColumnRollupIntervalResponseMultiError) AllErrors() []error { return m }
 
-// EstimateRollupIntervalResponseValidationError is the validation error
-// returned by EstimateRollupIntervalResponse.Validate if the designated
-// constraints aren't met.
-type EstimateRollupIntervalResponseValidationError struct {
+// ColumnRollupIntervalResponseValidationError is the validation error returned
+// by ColumnRollupIntervalResponse.Validate if the designated constraints
+// aren't met.
+type ColumnRollupIntervalResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2094,24 +2094,24 @@ type EstimateRollupIntervalResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e EstimateRollupIntervalResponseValidationError) Field() string { return e.field }
+func (e ColumnRollupIntervalResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EstimateRollupIntervalResponseValidationError) Reason() string { return e.reason }
+func (e ColumnRollupIntervalResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EstimateRollupIntervalResponseValidationError) Cause() error { return e.cause }
+func (e ColumnRollupIntervalResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EstimateRollupIntervalResponseValidationError) Key() bool { return e.key }
+func (e ColumnRollupIntervalResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EstimateRollupIntervalResponseValidationError) ErrorName() string {
-	return "EstimateRollupIntervalResponseValidationError"
+func (e ColumnRollupIntervalResponseValidationError) ErrorName() string {
+	return "ColumnRollupIntervalResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EstimateRollupIntervalResponseValidationError) Error() string {
+func (e ColumnRollupIntervalResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2123,14 +2123,14 @@ func (e EstimateRollupIntervalResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEstimateRollupIntervalResponse.%s: %s%s",
+		"invalid %sColumnRollupIntervalResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EstimateRollupIntervalResponseValidationError{}
+var _ error = ColumnRollupIntervalResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2138,7 +2138,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EstimateRollupIntervalResponseValidationError{}
+} = ColumnRollupIntervalResponseValidationError{}
 
 // Validate checks the field values on ProfileColumnSummary with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2530,22 +2530,22 @@ var _ interface {
 	ErrorName() string
 } = CategoricalSummaryValidationError{}
 
-// Validate checks the field values on GetCardinalityOfColumnResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ColumnCardinalityResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetCardinalityOfColumnResponse) Validate() error {
+func (m *ColumnCardinalityResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetCardinalityOfColumnResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetCardinalityOfColumnResponseMultiError, or nil if none found.
-func (m *GetCardinalityOfColumnResponse) ValidateAll() error {
+// ValidateAll checks the field values on ColumnCardinalityResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnCardinalityResponseMultiError, or nil if none found.
+func (m *ColumnCardinalityResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetCardinalityOfColumnResponse) validate(all bool) error {
+func (m *ColumnCardinalityResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2556,7 +2556,7 @@ func (m *GetCardinalityOfColumnResponse) validate(all bool) error {
 		switch v := interface{}(m.GetCategoricalSummary()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetCardinalityOfColumnResponseValidationError{
+				errors = append(errors, ColumnCardinalityResponseValidationError{
 					field:  "CategoricalSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2564,7 +2564,7 @@ func (m *GetCardinalityOfColumnResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetCardinalityOfColumnResponseValidationError{
+				errors = append(errors, ColumnCardinalityResponseValidationError{
 					field:  "CategoricalSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2573,7 +2573,7 @@ func (m *GetCardinalityOfColumnResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetCardinalityOfColumnResponseValidationError{
+			return ColumnCardinalityResponseValidationError{
 				field:  "CategoricalSummary",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2582,19 +2582,19 @@ func (m *GetCardinalityOfColumnResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetCardinalityOfColumnResponseMultiError(errors)
+		return ColumnCardinalityResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetCardinalityOfColumnResponseMultiError is an error wrapping multiple
-// validation errors returned by GetCardinalityOfColumnResponse.ValidateAll()
-// if the designated constraints aren't met.
-type GetCardinalityOfColumnResponseMultiError []error
+// ColumnCardinalityResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnCardinalityResponse.ValidateAll() if the
+// designated constraints aren't met.
+type ColumnCardinalityResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetCardinalityOfColumnResponseMultiError) Error() string {
+func (m ColumnCardinalityResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2603,12 +2603,11 @@ func (m GetCardinalityOfColumnResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetCardinalityOfColumnResponseMultiError) AllErrors() []error { return m }
+func (m ColumnCardinalityResponseMultiError) AllErrors() []error { return m }
 
-// GetCardinalityOfColumnResponseValidationError is the validation error
-// returned by GetCardinalityOfColumnResponse.Validate if the designated
-// constraints aren't met.
-type GetCardinalityOfColumnResponseValidationError struct {
+// ColumnCardinalityResponseValidationError is the validation error returned by
+// ColumnCardinalityResponse.Validate if the designated constraints aren't met.
+type ColumnCardinalityResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2616,24 +2615,24 @@ type GetCardinalityOfColumnResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetCardinalityOfColumnResponseValidationError) Field() string { return e.field }
+func (e ColumnCardinalityResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetCardinalityOfColumnResponseValidationError) Reason() string { return e.reason }
+func (e ColumnCardinalityResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetCardinalityOfColumnResponseValidationError) Cause() error { return e.cause }
+func (e ColumnCardinalityResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetCardinalityOfColumnResponseValidationError) Key() bool { return e.key }
+func (e ColumnCardinalityResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetCardinalityOfColumnResponseValidationError) ErrorName() string {
-	return "GetCardinalityOfColumnResponseValidationError"
+func (e ColumnCardinalityResponseValidationError) ErrorName() string {
+	return "ColumnCardinalityResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetCardinalityOfColumnResponseValidationError) Error() string {
+func (e ColumnCardinalityResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2645,14 +2644,14 @@ func (e GetCardinalityOfColumnResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetCardinalityOfColumnResponse.%s: %s%s",
+		"invalid %sColumnCardinalityResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetCardinalityOfColumnResponseValidationError{}
+var _ error = ColumnCardinalityResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2660,24 +2659,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetCardinalityOfColumnResponseValidationError{}
+} = ColumnCardinalityResponseValidationError{}
 
-// Validate checks the field values on GetTopKResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *GetTopKResponse) Validate() error {
+// Validate checks the field values on ColumnTopKResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTopKResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTopKResponse with the rules
+// ValidateAll checks the field values on ColumnTopKResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetTopKResponseMultiError, or nil if none found.
-func (m *GetTopKResponse) ValidateAll() error {
+// ColumnTopKResponseMultiError, or nil if none found.
+func (m *ColumnTopKResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTopKResponse) validate(all bool) error {
+func (m *ColumnTopKResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2688,7 +2687,7 @@ func (m *GetTopKResponse) validate(all bool) error {
 		switch v := interface{}(m.GetCategoricalSummary()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetTopKResponseValidationError{
+				errors = append(errors, ColumnTopKResponseValidationError{
 					field:  "CategoricalSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2696,7 +2695,7 @@ func (m *GetTopKResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetTopKResponseValidationError{
+				errors = append(errors, ColumnTopKResponseValidationError{
 					field:  "CategoricalSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2705,7 +2704,7 @@ func (m *GetTopKResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetTopKResponseValidationError{
+			return ColumnTopKResponseValidationError{
 				field:  "CategoricalSummary",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2714,19 +2713,19 @@ func (m *GetTopKResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetTopKResponseMultiError(errors)
+		return ColumnTopKResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTopKResponseMultiError is an error wrapping multiple validation errors
-// returned by GetTopKResponse.ValidateAll() if the designated constraints
+// ColumnTopKResponseMultiError is an error wrapping multiple validation errors
+// returned by ColumnTopKResponse.ValidateAll() if the designated constraints
 // aren't met.
-type GetTopKResponseMultiError []error
+type ColumnTopKResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTopKResponseMultiError) Error() string {
+func (m ColumnTopKResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2735,11 +2734,11 @@ func (m GetTopKResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTopKResponseMultiError) AllErrors() []error { return m }
+func (m ColumnTopKResponseMultiError) AllErrors() []error { return m }
 
-// GetTopKResponseValidationError is the validation error returned by
-// GetTopKResponse.Validate if the designated constraints aren't met.
-type GetTopKResponseValidationError struct {
+// ColumnTopKResponseValidationError is the validation error returned by
+// ColumnTopKResponse.Validate if the designated constraints aren't met.
+type ColumnTopKResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2747,22 +2746,24 @@ type GetTopKResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTopKResponseValidationError) Field() string { return e.field }
+func (e ColumnTopKResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTopKResponseValidationError) Reason() string { return e.reason }
+func (e ColumnTopKResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTopKResponseValidationError) Cause() error { return e.cause }
+func (e ColumnTopKResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTopKResponseValidationError) Key() bool { return e.key }
+func (e ColumnTopKResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTopKResponseValidationError) ErrorName() string { return "GetTopKResponseValidationError" }
+func (e ColumnTopKResponseValidationError) ErrorName() string {
+	return "ColumnTopKResponseValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e GetTopKResponseValidationError) Error() string {
+func (e ColumnTopKResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2774,14 +2775,14 @@ func (e GetTopKResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTopKResponse.%s: %s%s",
+		"invalid %sColumnTopKResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTopKResponseValidationError{}
+var _ error = ColumnTopKResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2789,7 +2790,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTopKResponseValidationError{}
+} = ColumnTopKResponseValidationError{}
 
 // Validate checks the field values on NumericSummary with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -3019,22 +3020,22 @@ var _ interface {
 	ErrorName() string
 } = NumericSummaryValidationError{}
 
-// Validate checks the field values on GetRugHistogramResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ColumnRugHistogramResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetRugHistogramResponse) Validate() error {
+func (m *ColumnRugHistogramResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetRugHistogramResponse with the
+// ValidateAll checks the field values on ColumnRugHistogramResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetRugHistogramResponseMultiError, or nil if none found.
-func (m *GetRugHistogramResponse) ValidateAll() error {
+// ColumnRugHistogramResponseMultiError, or nil if none found.
+func (m *ColumnRugHistogramResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetRugHistogramResponse) validate(all bool) error {
+func (m *ColumnRugHistogramResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -3045,7 +3046,7 @@ func (m *GetRugHistogramResponse) validate(all bool) error {
 		switch v := interface{}(m.GetNumericSummary()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetRugHistogramResponseValidationError{
+				errors = append(errors, ColumnRugHistogramResponseValidationError{
 					field:  "NumericSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -3053,7 +3054,7 @@ func (m *GetRugHistogramResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetRugHistogramResponseValidationError{
+				errors = append(errors, ColumnRugHistogramResponseValidationError{
 					field:  "NumericSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -3062,7 +3063,7 @@ func (m *GetRugHistogramResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetRugHistogramResponseValidationError{
+			return ColumnRugHistogramResponseValidationError{
 				field:  "NumericSummary",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -3071,150 +3072,19 @@ func (m *GetRugHistogramResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetRugHistogramResponseMultiError(errors)
+		return ColumnRugHistogramResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetRugHistogramResponseMultiError is an error wrapping multiple validation
-// errors returned by GetRugHistogramResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GetRugHistogramResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetRugHistogramResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetRugHistogramResponseMultiError) AllErrors() []error { return m }
-
-// GetRugHistogramResponseValidationError is the validation error returned by
-// GetRugHistogramResponse.Validate if the designated constraints aren't met.
-type GetRugHistogramResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetRugHistogramResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetRugHistogramResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetRugHistogramResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetRugHistogramResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetRugHistogramResponseValidationError) ErrorName() string {
-	return "GetRugHistogramResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetRugHistogramResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetRugHistogramResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetRugHistogramResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetRugHistogramResponseValidationError{}
-
-// Validate checks the field values on GetNumericHistogramResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetNumericHistogramResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetNumericHistogramResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetNumericHistogramResponseMultiError, or nil if none found.
-func (m *GetNumericHistogramResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetNumericHistogramResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetNumericSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetNumericHistogramResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, GetNumericHistogramResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return GetNumericHistogramResponseValidationError{
-				field:  "NumericSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return GetNumericHistogramResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetNumericHistogramResponseMultiError is an error wrapping multiple
-// validation errors returned by GetNumericHistogramResponse.ValidateAll() if
+// ColumnRugHistogramResponseMultiError is an error wrapping multiple
+// validation errors returned by ColumnRugHistogramResponse.ValidateAll() if
 // the designated constraints aren't met.
-type GetNumericHistogramResponseMultiError []error
+type ColumnRugHistogramResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetNumericHistogramResponseMultiError) Error() string {
+func (m ColumnRugHistogramResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -3223,12 +3093,11 @@ func (m GetNumericHistogramResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetNumericHistogramResponseMultiError) AllErrors() []error { return m }
+func (m ColumnRugHistogramResponseMultiError) AllErrors() []error { return m }
 
-// GetNumericHistogramResponseValidationError is the validation error returned
-// by GetNumericHistogramResponse.Validate if the designated constraints
-// aren't met.
-type GetNumericHistogramResponseValidationError struct {
+// ColumnRugHistogramResponseValidationError is the validation error returned
+// by ColumnRugHistogramResponse.Validate if the designated constraints aren't met.
+type ColumnRugHistogramResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -3236,24 +3105,24 @@ type GetNumericHistogramResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetNumericHistogramResponseValidationError) Field() string { return e.field }
+func (e ColumnRugHistogramResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetNumericHistogramResponseValidationError) Reason() string { return e.reason }
+func (e ColumnRugHistogramResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetNumericHistogramResponseValidationError) Cause() error { return e.cause }
+func (e ColumnRugHistogramResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetNumericHistogramResponseValidationError) Key() bool { return e.key }
+func (e ColumnRugHistogramResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetNumericHistogramResponseValidationError) ErrorName() string {
-	return "GetNumericHistogramResponseValidationError"
+func (e ColumnRugHistogramResponseValidationError) ErrorName() string {
+	return "ColumnRugHistogramResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetNumericHistogramResponseValidationError) Error() string {
+func (e ColumnRugHistogramResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3265,14 +3134,14 @@ func (e GetNumericHistogramResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetNumericHistogramResponse.%s: %s%s",
+		"invalid %sColumnRugHistogramResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetNumericHistogramResponseValidationError{}
+var _ error = ColumnRugHistogramResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -3280,25 +3149,157 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetNumericHistogramResponseValidationError{}
+} = ColumnRugHistogramResponseValidationError{}
 
-// Validate checks the field values on GetDescriptiveStatisticsResponse with
+// Validate checks the field values on ColumnNumericHistogramResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnNumericHistogramResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnNumericHistogramResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ColumnNumericHistogramResponseMultiError, or nil if none found.
+func (m *ColumnNumericHistogramResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnNumericHistogramResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetNumericSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnNumericHistogramResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnNumericHistogramResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnNumericHistogramResponseValidationError{
+				field:  "NumericSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnNumericHistogramResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnNumericHistogramResponseMultiError is an error wrapping multiple
+// validation errors returned by ColumnNumericHistogramResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ColumnNumericHistogramResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnNumericHistogramResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnNumericHistogramResponseMultiError) AllErrors() []error { return m }
+
+// ColumnNumericHistogramResponseValidationError is the validation error
+// returned by ColumnNumericHistogramResponse.Validate if the designated
+// constraints aren't met.
+type ColumnNumericHistogramResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnNumericHistogramResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnNumericHistogramResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnNumericHistogramResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnNumericHistogramResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnNumericHistogramResponseValidationError) ErrorName() string {
+	return "ColumnNumericHistogramResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnNumericHistogramResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnNumericHistogramResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnNumericHistogramResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnNumericHistogramResponseValidationError{}
+
+// Validate checks the field values on ColumnDescriptiveStatisticsResponse with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are
 // no violations.
-func (m *GetDescriptiveStatisticsResponse) Validate() error {
+func (m *ColumnDescriptiveStatisticsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetDescriptiveStatisticsResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetDescriptiveStatisticsResponseMultiError, or nil if none found.
-func (m *GetDescriptiveStatisticsResponse) ValidateAll() error {
+// ValidateAll checks the field values on ColumnDescriptiveStatisticsResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ColumnDescriptiveStatisticsResponseMultiError, or nil if none found.
+func (m *ColumnDescriptiveStatisticsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetDescriptiveStatisticsResponse) validate(all bool) error {
+func (m *ColumnDescriptiveStatisticsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -3309,7 +3310,7 @@ func (m *GetDescriptiveStatisticsResponse) validate(all bool) error {
 		switch v := interface{}(m.GetNumericSummary()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetDescriptiveStatisticsResponseValidationError{
+				errors = append(errors, ColumnDescriptiveStatisticsResponseValidationError{
 					field:  "NumericSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -3317,7 +3318,7 @@ func (m *GetDescriptiveStatisticsResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetDescriptiveStatisticsResponseValidationError{
+				errors = append(errors, ColumnDescriptiveStatisticsResponseValidationError{
 					field:  "NumericSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -3326,7 +3327,7 @@ func (m *GetDescriptiveStatisticsResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetDescriptiveStatisticsResponseValidationError{
+			return ColumnDescriptiveStatisticsResponseValidationError{
 				field:  "NumericSummary",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -3335,20 +3336,20 @@ func (m *GetDescriptiveStatisticsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetDescriptiveStatisticsResponseMultiError(errors)
+		return ColumnDescriptiveStatisticsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetDescriptiveStatisticsResponseMultiError is an error wrapping multiple
+// ColumnDescriptiveStatisticsResponseMultiError is an error wrapping multiple
 // validation errors returned by
-// GetDescriptiveStatisticsResponse.ValidateAll() if the designated
+// ColumnDescriptiveStatisticsResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GetDescriptiveStatisticsResponseMultiError []error
+type ColumnDescriptiveStatisticsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetDescriptiveStatisticsResponseMultiError) Error() string {
+func (m ColumnDescriptiveStatisticsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -3357,12 +3358,12 @@ func (m GetDescriptiveStatisticsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetDescriptiveStatisticsResponseMultiError) AllErrors() []error { return m }
+func (m ColumnDescriptiveStatisticsResponseMultiError) AllErrors() []error { return m }
 
-// GetDescriptiveStatisticsResponseValidationError is the validation error
-// returned by GetDescriptiveStatisticsResponse.Validate if the designated
+// ColumnDescriptiveStatisticsResponseValidationError is the validation error
+// returned by ColumnDescriptiveStatisticsResponse.Validate if the designated
 // constraints aren't met.
-type GetDescriptiveStatisticsResponseValidationError struct {
+type ColumnDescriptiveStatisticsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -3370,24 +3371,24 @@ type GetDescriptiveStatisticsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetDescriptiveStatisticsResponseValidationError) Field() string { return e.field }
+func (e ColumnDescriptiveStatisticsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetDescriptiveStatisticsResponseValidationError) Reason() string { return e.reason }
+func (e ColumnDescriptiveStatisticsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetDescriptiveStatisticsResponseValidationError) Cause() error { return e.cause }
+func (e ColumnDescriptiveStatisticsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetDescriptiveStatisticsResponseValidationError) Key() bool { return e.key }
+func (e ColumnDescriptiveStatisticsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetDescriptiveStatisticsResponseValidationError) ErrorName() string {
-	return "GetDescriptiveStatisticsResponseValidationError"
+func (e ColumnDescriptiveStatisticsResponseValidationError) ErrorName() string {
+	return "ColumnDescriptiveStatisticsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetDescriptiveStatisticsResponseValidationError) Error() string {
+func (e ColumnDescriptiveStatisticsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3399,14 +3400,14 @@ func (e GetDescriptiveStatisticsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetDescriptiveStatisticsResponse.%s: %s%s",
+		"invalid %sColumnDescriptiveStatisticsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetDescriptiveStatisticsResponseValidationError{}
+var _ error = ColumnDescriptiveStatisticsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -3414,24 +3415,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetDescriptiveStatisticsResponseValidationError{}
+} = ColumnDescriptiveStatisticsResponseValidationError{}
 
-// Validate checks the field values on GetTimeRangeSummaryResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ColumnTimeRangeResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetTimeRangeSummaryResponse) Validate() error {
+func (m *ColumnTimeRangeResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTimeRangeSummaryResponse with the
+// ValidateAll checks the field values on ColumnTimeRangeResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetTimeRangeSummaryResponseMultiError, or nil if none found.
-func (m *GetTimeRangeSummaryResponse) ValidateAll() error {
+// ColumnTimeRangeResponseMultiError, or nil if none found.
+func (m *ColumnTimeRangeResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTimeRangeSummaryResponse) validate(all bool) error {
+func (m *ColumnTimeRangeResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -3442,7 +3443,7 @@ func (m *GetTimeRangeSummaryResponse) validate(all bool) error {
 		switch v := interface{}(m.GetTimeRangeSummary()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetTimeRangeSummaryResponseValidationError{
+				errors = append(errors, ColumnTimeRangeResponseValidationError{
 					field:  "TimeRangeSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -3450,7 +3451,7 @@ func (m *GetTimeRangeSummaryResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetTimeRangeSummaryResponseValidationError{
+				errors = append(errors, ColumnTimeRangeResponseValidationError{
 					field:  "TimeRangeSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -3459,7 +3460,7 @@ func (m *GetTimeRangeSummaryResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetTimeRangeSummary()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetTimeRangeSummaryResponseValidationError{
+			return ColumnTimeRangeResponseValidationError{
 				field:  "TimeRangeSummary",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -3468,19 +3469,19 @@ func (m *GetTimeRangeSummaryResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetTimeRangeSummaryResponseMultiError(errors)
+		return ColumnTimeRangeResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTimeRangeSummaryResponseMultiError is an error wrapping multiple
-// validation errors returned by GetTimeRangeSummaryResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GetTimeRangeSummaryResponseMultiError []error
+// ColumnTimeRangeResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeRangeResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnTimeRangeResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTimeRangeSummaryResponseMultiError) Error() string {
+func (m ColumnTimeRangeResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -3489,12 +3490,11 @@ func (m GetTimeRangeSummaryResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTimeRangeSummaryResponseMultiError) AllErrors() []error { return m }
+func (m ColumnTimeRangeResponseMultiError) AllErrors() []error { return m }
 
-// GetTimeRangeSummaryResponseValidationError is the validation error returned
-// by GetTimeRangeSummaryResponse.Validate if the designated constraints
-// aren't met.
-type GetTimeRangeSummaryResponseValidationError struct {
+// ColumnTimeRangeResponseValidationError is the validation error returned by
+// ColumnTimeRangeResponse.Validate if the designated constraints aren't met.
+type ColumnTimeRangeResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -3502,24 +3502,24 @@ type GetTimeRangeSummaryResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTimeRangeSummaryResponseValidationError) Field() string { return e.field }
+func (e ColumnTimeRangeResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTimeRangeSummaryResponseValidationError) Reason() string { return e.reason }
+func (e ColumnTimeRangeResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTimeRangeSummaryResponseValidationError) Cause() error { return e.cause }
+func (e ColumnTimeRangeResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTimeRangeSummaryResponseValidationError) Key() bool { return e.key }
+func (e ColumnTimeRangeResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTimeRangeSummaryResponseValidationError) ErrorName() string {
-	return "GetTimeRangeSummaryResponseValidationError"
+func (e ColumnTimeRangeResponseValidationError) ErrorName() string {
+	return "ColumnTimeRangeResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetTimeRangeSummaryResponseValidationError) Error() string {
+func (e ColumnTimeRangeResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3531,14 +3531,14 @@ func (e GetTimeRangeSummaryResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTimeRangeSummaryResponse.%s: %s%s",
+		"invalid %sColumnTimeRangeResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTimeRangeSummaryResponseValidationError{}
+var _ error = ColumnTimeRangeResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -3546,7 +3546,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTimeRangeSummaryResponseValidationError{}
+} = ColumnTimeRangeResponseValidationError{}
 
 // Validate checks the field values on TimeRangeSummary with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -3869,22 +3869,22 @@ var _ interface {
 	ErrorName() string
 } = NumericOutliersValidationError{}
 
-// Validate checks the field values on GetTopKRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *GetTopKRequest) Validate() error {
+// Validate checks the field values on ColumnTopKRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTopKRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTopKRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in GetTopKRequestMultiError,
-// or nil if none found.
-func (m *GetTopKRequest) ValidateAll() error {
+// ValidateAll checks the field values on ColumnTopKRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTopKRequestMultiError, or nil if none found.
+func (m *ColumnTopKRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTopKRequest) validate(all bool) error {
+func (m *ColumnTopKRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -3904,19 +3904,19 @@ func (m *GetTopKRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetTopKRequestMultiError(errors)
+		return ColumnTopKRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTopKRequestMultiError is an error wrapping multiple validation errors
-// returned by GetTopKRequest.ValidateAll() if the designated constraints
+// ColumnTopKRequestMultiError is an error wrapping multiple validation errors
+// returned by ColumnTopKRequest.ValidateAll() if the designated constraints
 // aren't met.
-type GetTopKRequestMultiError []error
+type ColumnTopKRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTopKRequestMultiError) Error() string {
+func (m ColumnTopKRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -3925,11 +3925,11 @@ func (m GetTopKRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTopKRequestMultiError) AllErrors() []error { return m }
+func (m ColumnTopKRequestMultiError) AllErrors() []error { return m }
 
-// GetTopKRequestValidationError is the validation error returned by
-// GetTopKRequest.Validate if the designated constraints aren't met.
-type GetTopKRequestValidationError struct {
+// ColumnTopKRequestValidationError is the validation error returned by
+// ColumnTopKRequest.Validate if the designated constraints aren't met.
+type ColumnTopKRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -3937,22 +3937,24 @@ type GetTopKRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTopKRequestValidationError) Field() string { return e.field }
+func (e ColumnTopKRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTopKRequestValidationError) Reason() string { return e.reason }
+func (e ColumnTopKRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTopKRequestValidationError) Cause() error { return e.cause }
+func (e ColumnTopKRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTopKRequestValidationError) Key() bool { return e.key }
+func (e ColumnTopKRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTopKRequestValidationError) ErrorName() string { return "GetTopKRequestValidationError" }
+func (e ColumnTopKRequestValidationError) ErrorName() string {
+	return "ColumnTopKRequestValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e GetTopKRequestValidationError) Error() string {
+func (e ColumnTopKRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3964,14 +3966,14 @@ func (e GetTopKRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTopKRequest.%s: %s%s",
+		"invalid %sColumnTopKRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTopKRequestValidationError{}
+var _ error = ColumnTopKRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -3979,7 +3981,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTopKRequestValidationError{}
+} = ColumnTopKRequestValidationError{}
 
 // Validate checks the field values on TopK with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
@@ -4113,22 +4115,22 @@ var _ interface {
 	ErrorName() string
 } = TopKValidationError{}
 
-// Validate checks the field values on GetNullCountRequest with the rules
+// Validate checks the field values on ColumnNullCountRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetNullCountRequest) Validate() error {
+func (m *ColumnNullCountRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetNullCountRequest with the rules
+// ValidateAll checks the field values on ColumnNullCountRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetNullCountRequestMultiError, or nil if none found.
-func (m *GetNullCountRequest) ValidateAll() error {
+// ColumnNullCountRequestMultiError, or nil if none found.
+func (m *ColumnNullCountRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetNullCountRequest) validate(all bool) error {
+func (m *ColumnNullCountRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4144,19 +4146,19 @@ func (m *GetNullCountRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetNullCountRequestMultiError(errors)
+		return ColumnNullCountRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetNullCountRequestMultiError is an error wrapping multiple validation
-// errors returned by GetNullCountRequest.ValidateAll() if the designated
+// ColumnNullCountRequestMultiError is an error wrapping multiple validation
+// errors returned by ColumnNullCountRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GetNullCountRequestMultiError []error
+type ColumnNullCountRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetNullCountRequestMultiError) Error() string {
+func (m ColumnNullCountRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4165,11 +4167,11 @@ func (m GetNullCountRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetNullCountRequestMultiError) AllErrors() []error { return m }
+func (m ColumnNullCountRequestMultiError) AllErrors() []error { return m }
 
-// GetNullCountRequestValidationError is the validation error returned by
-// GetNullCountRequest.Validate if the designated constraints aren't met.
-type GetNullCountRequestValidationError struct {
+// ColumnNullCountRequestValidationError is the validation error returned by
+// ColumnNullCountRequest.Validate if the designated constraints aren't met.
+type ColumnNullCountRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4177,24 +4179,24 @@ type GetNullCountRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetNullCountRequestValidationError) Field() string { return e.field }
+func (e ColumnNullCountRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetNullCountRequestValidationError) Reason() string { return e.reason }
+func (e ColumnNullCountRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetNullCountRequestValidationError) Cause() error { return e.cause }
+func (e ColumnNullCountRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetNullCountRequestValidationError) Key() bool { return e.key }
+func (e ColumnNullCountRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetNullCountRequestValidationError) ErrorName() string {
-	return "GetNullCountRequestValidationError"
+func (e ColumnNullCountRequestValidationError) ErrorName() string {
+	return "ColumnNullCountRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetNullCountRequestValidationError) Error() string {
+func (e ColumnNullCountRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4206,14 +4208,14 @@ func (e GetNullCountRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetNullCountRequest.%s: %s%s",
+		"invalid %sColumnNullCountRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetNullCountRequestValidationError{}
+var _ error = ColumnNullCountRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -4221,24 +4223,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetNullCountRequestValidationError{}
+} = ColumnNullCountRequestValidationError{}
 
-// Validate checks the field values on GetNullCountResponse with the rules
+// Validate checks the field values on ColumnNullCountResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetNullCountResponse) Validate() error {
+func (m *ColumnNullCountResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetNullCountResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ColumnNullCountResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetNullCountResponseMultiError, or nil if none found.
-func (m *GetNullCountResponse) ValidateAll() error {
+// ColumnNullCountResponseMultiError, or nil if none found.
+func (m *ColumnNullCountResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetNullCountResponse) validate(all bool) error {
+func (m *ColumnNullCountResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4248,19 +4250,19 @@ func (m *GetNullCountResponse) validate(all bool) error {
 	// no validation rules for Count
 
 	if len(errors) > 0 {
-		return GetNullCountResponseMultiError(errors)
+		return ColumnNullCountResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetNullCountResponseMultiError is an error wrapping multiple validation
-// errors returned by GetNullCountResponse.ValidateAll() if the designated
+// ColumnNullCountResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnNullCountResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GetNullCountResponseMultiError []error
+type ColumnNullCountResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetNullCountResponseMultiError) Error() string {
+func (m ColumnNullCountResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4269,11 +4271,11 @@ func (m GetNullCountResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetNullCountResponseMultiError) AllErrors() []error { return m }
+func (m ColumnNullCountResponseMultiError) AllErrors() []error { return m }
 
-// GetNullCountResponseValidationError is the validation error returned by
-// GetNullCountResponse.Validate if the designated constraints aren't met.
-type GetNullCountResponseValidationError struct {
+// ColumnNullCountResponseValidationError is the validation error returned by
+// ColumnNullCountResponse.Validate if the designated constraints aren't met.
+type ColumnNullCountResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4281,24 +4283,24 @@ type GetNullCountResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetNullCountResponseValidationError) Field() string { return e.field }
+func (e ColumnNullCountResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetNullCountResponseValidationError) Reason() string { return e.reason }
+func (e ColumnNullCountResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetNullCountResponseValidationError) Cause() error { return e.cause }
+func (e ColumnNullCountResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetNullCountResponseValidationError) Key() bool { return e.key }
+func (e ColumnNullCountResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetNullCountResponseValidationError) ErrorName() string {
-	return "GetNullCountResponseValidationError"
+func (e ColumnNullCountResponseValidationError) ErrorName() string {
+	return "ColumnNullCountResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetNullCountResponseValidationError) Error() string {
+func (e ColumnNullCountResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4310,14 +4312,14 @@ func (e GetNullCountResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetNullCountResponse.%s: %s%s",
+		"invalid %sColumnNullCountResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetNullCountResponseValidationError{}
+var _ error = ColumnNullCountResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -4325,24 +4327,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetNullCountResponseValidationError{}
+} = ColumnNullCountResponseValidationError{}
 
-// Validate checks the field values on GetDescriptiveStatisticsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetDescriptiveStatisticsRequest) Validate() error {
+// Validate checks the field values on ColumnDescriptiveStatisticsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ColumnDescriptiveStatisticsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetDescriptiveStatisticsRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetDescriptiveStatisticsRequestMultiError, or nil if none found.
-func (m *GetDescriptiveStatisticsRequest) ValidateAll() error {
+// ValidateAll checks the field values on ColumnDescriptiveStatisticsRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ColumnDescriptiveStatisticsRequestMultiError, or nil if none found.
+func (m *ColumnDescriptiveStatisticsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetDescriptiveStatisticsRequest) validate(all bool) error {
+func (m *ColumnDescriptiveStatisticsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4358,19 +4361,20 @@ func (m *GetDescriptiveStatisticsRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetDescriptiveStatisticsRequestMultiError(errors)
+		return ColumnDescriptiveStatisticsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetDescriptiveStatisticsRequestMultiError is an error wrapping multiple
-// validation errors returned by GetDescriptiveStatisticsRequest.ValidateAll()
-// if the designated constraints aren't met.
-type GetDescriptiveStatisticsRequestMultiError []error
+// ColumnDescriptiveStatisticsRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// ColumnDescriptiveStatisticsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnDescriptiveStatisticsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetDescriptiveStatisticsRequestMultiError) Error() string {
+func (m ColumnDescriptiveStatisticsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4379,12 +4383,12 @@ func (m GetDescriptiveStatisticsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetDescriptiveStatisticsRequestMultiError) AllErrors() []error { return m }
+func (m ColumnDescriptiveStatisticsRequestMultiError) AllErrors() []error { return m }
 
-// GetDescriptiveStatisticsRequestValidationError is the validation error
-// returned by GetDescriptiveStatisticsRequest.Validate if the designated
+// ColumnDescriptiveStatisticsRequestValidationError is the validation error
+// returned by ColumnDescriptiveStatisticsRequest.Validate if the designated
 // constraints aren't met.
-type GetDescriptiveStatisticsRequestValidationError struct {
+type ColumnDescriptiveStatisticsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4392,24 +4396,24 @@ type GetDescriptiveStatisticsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetDescriptiveStatisticsRequestValidationError) Field() string { return e.field }
+func (e ColumnDescriptiveStatisticsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetDescriptiveStatisticsRequestValidationError) Reason() string { return e.reason }
+func (e ColumnDescriptiveStatisticsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetDescriptiveStatisticsRequestValidationError) Cause() error { return e.cause }
+func (e ColumnDescriptiveStatisticsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetDescriptiveStatisticsRequestValidationError) Key() bool { return e.key }
+func (e ColumnDescriptiveStatisticsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetDescriptiveStatisticsRequestValidationError) ErrorName() string {
-	return "GetDescriptiveStatisticsRequestValidationError"
+func (e ColumnDescriptiveStatisticsRequestValidationError) ErrorName() string {
+	return "ColumnDescriptiveStatisticsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetDescriptiveStatisticsRequestValidationError) Error() string {
+func (e ColumnDescriptiveStatisticsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4421,14 +4425,14 @@ func (e GetDescriptiveStatisticsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetDescriptiveStatisticsRequest.%s: %s%s",
+		"invalid %sColumnDescriptiveStatisticsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetDescriptiveStatisticsRequestValidationError{}
+var _ error = ColumnDescriptiveStatisticsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -4436,7 +4440,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetDescriptiveStatisticsRequestValidationError{}
+} = ColumnDescriptiveStatisticsRequestValidationError{}
 
 // Validate checks the field values on NumericStatistics with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -4554,23 +4558,22 @@ var _ interface {
 	ErrorName() string
 } = NumericStatisticsValidationError{}
 
-// Validate checks the field values on EstimateSmallestTimeGrainRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *EstimateSmallestTimeGrainRequest) Validate() error {
+// Validate checks the field values on ColumnTimeGrainRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTimeGrainRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EstimateSmallestTimeGrainRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// EstimateSmallestTimeGrainRequestMultiError, or nil if none found.
-func (m *EstimateSmallestTimeGrainRequest) ValidateAll() error {
+// ValidateAll checks the field values on ColumnTimeGrainRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTimeGrainRequestMultiError, or nil if none found.
+func (m *ColumnTimeGrainRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EstimateSmallestTimeGrainRequest) validate(all bool) error {
+func (m *ColumnTimeGrainRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4586,20 +4589,19 @@ func (m *EstimateSmallestTimeGrainRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return EstimateSmallestTimeGrainRequestMultiError(errors)
+		return ColumnTimeGrainRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// EstimateSmallestTimeGrainRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// EstimateSmallestTimeGrainRequest.ValidateAll() if the designated
+// ColumnTimeGrainRequestMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeGrainRequest.ValidateAll() if the designated
 // constraints aren't met.
-type EstimateSmallestTimeGrainRequestMultiError []error
+type ColumnTimeGrainRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EstimateSmallestTimeGrainRequestMultiError) Error() string {
+func (m ColumnTimeGrainRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4608,12 +4610,11 @@ func (m EstimateSmallestTimeGrainRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EstimateSmallestTimeGrainRequestMultiError) AllErrors() []error { return m }
+func (m ColumnTimeGrainRequestMultiError) AllErrors() []error { return m }
 
-// EstimateSmallestTimeGrainRequestValidationError is the validation error
-// returned by EstimateSmallestTimeGrainRequest.Validate if the designated
-// constraints aren't met.
-type EstimateSmallestTimeGrainRequestValidationError struct {
+// ColumnTimeGrainRequestValidationError is the validation error returned by
+// ColumnTimeGrainRequest.Validate if the designated constraints aren't met.
+type ColumnTimeGrainRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4621,24 +4622,24 @@ type EstimateSmallestTimeGrainRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e EstimateSmallestTimeGrainRequestValidationError) Field() string { return e.field }
+func (e ColumnTimeGrainRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EstimateSmallestTimeGrainRequestValidationError) Reason() string { return e.reason }
+func (e ColumnTimeGrainRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EstimateSmallestTimeGrainRequestValidationError) Cause() error { return e.cause }
+func (e ColumnTimeGrainRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EstimateSmallestTimeGrainRequestValidationError) Key() bool { return e.key }
+func (e ColumnTimeGrainRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EstimateSmallestTimeGrainRequestValidationError) ErrorName() string {
-	return "EstimateSmallestTimeGrainRequestValidationError"
+func (e ColumnTimeGrainRequestValidationError) ErrorName() string {
+	return "ColumnTimeGrainRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EstimateSmallestTimeGrainRequestValidationError) Error() string {
+func (e ColumnTimeGrainRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4650,14 +4651,14 @@ func (e EstimateSmallestTimeGrainRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEstimateSmallestTimeGrainRequest.%s: %s%s",
+		"invalid %sColumnTimeGrainRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EstimateSmallestTimeGrainRequestValidationError{}
+var _ error = ColumnTimeGrainRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -4665,25 +4666,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EstimateSmallestTimeGrainRequestValidationError{}
+} = ColumnTimeGrainRequestValidationError{}
 
-// Validate checks the field values on EstimateSmallestTimeGrainResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *EstimateSmallestTimeGrainResponse) Validate() error {
+// Validate checks the field values on ColumnTimeGrainResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTimeGrainResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EstimateSmallestTimeGrainResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// EstimateSmallestTimeGrainResponseMultiError, or nil if none found.
-func (m *EstimateSmallestTimeGrainResponse) ValidateAll() error {
+// ValidateAll checks the field values on ColumnTimeGrainResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTimeGrainResponseMultiError, or nil if none found.
+func (m *ColumnTimeGrainResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EstimateSmallestTimeGrainResponse) validate(all bool) error {
+func (m *ColumnTimeGrainResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4693,20 +4693,19 @@ func (m *EstimateSmallestTimeGrainResponse) validate(all bool) error {
 	// no validation rules for TimeGrain
 
 	if len(errors) > 0 {
-		return EstimateSmallestTimeGrainResponseMultiError(errors)
+		return ColumnTimeGrainResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// EstimateSmallestTimeGrainResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// EstimateSmallestTimeGrainResponse.ValidateAll() if the designated
+// ColumnTimeGrainResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeGrainResponse.ValidateAll() if the designated
 // constraints aren't met.
-type EstimateSmallestTimeGrainResponseMultiError []error
+type ColumnTimeGrainResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EstimateSmallestTimeGrainResponseMultiError) Error() string {
+func (m ColumnTimeGrainResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4715,12 +4714,11 @@ func (m EstimateSmallestTimeGrainResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EstimateSmallestTimeGrainResponseMultiError) AllErrors() []error { return m }
+func (m ColumnTimeGrainResponseMultiError) AllErrors() []error { return m }
 
-// EstimateSmallestTimeGrainResponseValidationError is the validation error
-// returned by EstimateSmallestTimeGrainResponse.Validate if the designated
-// constraints aren't met.
-type EstimateSmallestTimeGrainResponseValidationError struct {
+// ColumnTimeGrainResponseValidationError is the validation error returned by
+// ColumnTimeGrainResponse.Validate if the designated constraints aren't met.
+type ColumnTimeGrainResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4728,24 +4726,24 @@ type EstimateSmallestTimeGrainResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e EstimateSmallestTimeGrainResponseValidationError) Field() string { return e.field }
+func (e ColumnTimeGrainResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EstimateSmallestTimeGrainResponseValidationError) Reason() string { return e.reason }
+func (e ColumnTimeGrainResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EstimateSmallestTimeGrainResponseValidationError) Cause() error { return e.cause }
+func (e ColumnTimeGrainResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EstimateSmallestTimeGrainResponseValidationError) Key() bool { return e.key }
+func (e ColumnTimeGrainResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EstimateSmallestTimeGrainResponseValidationError) ErrorName() string {
-	return "EstimateSmallestTimeGrainResponseValidationError"
+func (e ColumnTimeGrainResponseValidationError) ErrorName() string {
+	return "ColumnTimeGrainResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EstimateSmallestTimeGrainResponseValidationError) Error() string {
+func (e ColumnTimeGrainResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4757,14 +4755,14 @@ func (e EstimateSmallestTimeGrainResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEstimateSmallestTimeGrainResponse.%s: %s%s",
+		"invalid %sColumnTimeGrainResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EstimateSmallestTimeGrainResponseValidationError{}
+var _ error = ColumnTimeGrainResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -4772,24 +4770,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EstimateSmallestTimeGrainResponseValidationError{}
+} = ColumnTimeGrainResponseValidationError{}
 
-// Validate checks the field values on GetNumericHistogramRequest with the
+// Validate checks the field values on ColumnNumericHistogramRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetNumericHistogramRequest) Validate() error {
+func (m *ColumnNumericHistogramRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetNumericHistogramRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetNumericHistogramRequestMultiError, or nil if none found.
-func (m *GetNumericHistogramRequest) ValidateAll() error {
+// ValidateAll checks the field values on ColumnNumericHistogramRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ColumnNumericHistogramRequestMultiError, or nil if none found.
+func (m *ColumnNumericHistogramRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetNumericHistogramRequest) validate(all bool) error {
+func (m *ColumnNumericHistogramRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -4807,19 +4805,19 @@ func (m *GetNumericHistogramRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetNumericHistogramRequestMultiError(errors)
+		return ColumnNumericHistogramRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetNumericHistogramRequestMultiError is an error wrapping multiple
-// validation errors returned by GetNumericHistogramRequest.ValidateAll() if
-// the designated constraints aren't met.
-type GetNumericHistogramRequestMultiError []error
+// ColumnNumericHistogramRequestMultiError is an error wrapping multiple
+// validation errors returned by ColumnNumericHistogramRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ColumnNumericHistogramRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetNumericHistogramRequestMultiError) Error() string {
+func (m ColumnNumericHistogramRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4828,11 +4826,12 @@ func (m GetNumericHistogramRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetNumericHistogramRequestMultiError) AllErrors() []error { return m }
+func (m ColumnNumericHistogramRequestMultiError) AllErrors() []error { return m }
 
-// GetNumericHistogramRequestValidationError is the validation error returned
-// by GetNumericHistogramRequest.Validate if the designated constraints aren't met.
-type GetNumericHistogramRequestValidationError struct {
+// ColumnNumericHistogramRequestValidationError is the validation error
+// returned by ColumnNumericHistogramRequest.Validate if the designated
+// constraints aren't met.
+type ColumnNumericHistogramRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4840,24 +4839,24 @@ type GetNumericHistogramRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetNumericHistogramRequestValidationError) Field() string { return e.field }
+func (e ColumnNumericHistogramRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetNumericHistogramRequestValidationError) Reason() string { return e.reason }
+func (e ColumnNumericHistogramRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetNumericHistogramRequestValidationError) Cause() error { return e.cause }
+func (e ColumnNumericHistogramRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetNumericHistogramRequestValidationError) Key() bool { return e.key }
+func (e ColumnNumericHistogramRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetNumericHistogramRequestValidationError) ErrorName() string {
-	return "GetNumericHistogramRequestValidationError"
+func (e ColumnNumericHistogramRequestValidationError) ErrorName() string {
+	return "ColumnNumericHistogramRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetNumericHistogramRequestValidationError) Error() string {
+func (e ColumnNumericHistogramRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -4869,14 +4868,14 @@ func (e GetNumericHistogramRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetNumericHistogramRequest.%s: %s%s",
+		"invalid %sColumnNumericHistogramRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetNumericHistogramRequestValidationError{}
+var _ error = ColumnNumericHistogramRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -4884,7 +4883,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetNumericHistogramRequestValidationError{}
+} = ColumnNumericHistogramRequestValidationError{}
 
 // Validate checks the field values on NumericHistogramBins with the rules
 // defined in the proto definition for this message. If any rules are
@@ -5022,22 +5021,22 @@ var _ interface {
 	ErrorName() string
 } = NumericHistogramBinsValidationError{}
 
-// Validate checks the field values on GetRugHistogramRequest with the rules
+// Validate checks the field values on ColumnRugHistogramRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetRugHistogramRequest) Validate() error {
+func (m *ColumnRugHistogramRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetRugHistogramRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ColumnRugHistogramRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetRugHistogramRequestMultiError, or nil if none found.
-func (m *GetRugHistogramRequest) ValidateAll() error {
+// ColumnRugHistogramRequestMultiError, or nil if none found.
+func (m *ColumnRugHistogramRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetRugHistogramRequest) validate(all bool) error {
+func (m *ColumnRugHistogramRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5053,19 +5052,129 @@ func (m *GetRugHistogramRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetRugHistogramRequestMultiError(errors)
+		return ColumnRugHistogramRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetRugHistogramRequestMultiError is an error wrapping multiple validation
-// errors returned by GetRugHistogramRequest.ValidateAll() if the designated
+// ColumnRugHistogramRequestMultiError is an error wrapping multiple validation
+// errors returned by ColumnRugHistogramRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ColumnRugHistogramRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnRugHistogramRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnRugHistogramRequestMultiError) AllErrors() []error { return m }
+
+// ColumnRugHistogramRequestValidationError is the validation error returned by
+// ColumnRugHistogramRequest.Validate if the designated constraints aren't met.
+type ColumnRugHistogramRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnRugHistogramRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnRugHistogramRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnRugHistogramRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnRugHistogramRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnRugHistogramRequestValidationError) ErrorName() string {
+	return "ColumnRugHistogramRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnRugHistogramRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnRugHistogramRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnRugHistogramRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnRugHistogramRequestValidationError{}
+
+// Validate checks the field values on ColumnTimeRangeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTimeRangeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnTimeRangeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTimeRangeRequestMultiError, or nil if none found.
+func (m *ColumnTimeRangeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnTimeRangeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for TableName
+
+	// no validation rules for ColumnName
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return ColumnTimeRangeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnTimeRangeRequestMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeRangeRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GetRugHistogramRequestMultiError []error
+type ColumnTimeRangeRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetRugHistogramRequestMultiError) Error() string {
+func (m ColumnTimeRangeRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5074,11 +5183,11 @@ func (m GetRugHistogramRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetRugHistogramRequestMultiError) AllErrors() []error { return m }
+func (m ColumnTimeRangeRequestMultiError) AllErrors() []error { return m }
 
-// GetRugHistogramRequestValidationError is the validation error returned by
-// GetRugHistogramRequest.Validate if the designated constraints aren't met.
-type GetRugHistogramRequestValidationError struct {
+// ColumnTimeRangeRequestValidationError is the validation error returned by
+// ColumnTimeRangeRequest.Validate if the designated constraints aren't met.
+type ColumnTimeRangeRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5086,24 +5195,24 @@ type GetRugHistogramRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetRugHistogramRequestValidationError) Field() string { return e.field }
+func (e ColumnTimeRangeRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetRugHistogramRequestValidationError) Reason() string { return e.reason }
+func (e ColumnTimeRangeRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetRugHistogramRequestValidationError) Cause() error { return e.cause }
+func (e ColumnTimeRangeRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetRugHistogramRequestValidationError) Key() bool { return e.key }
+func (e ColumnTimeRangeRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetRugHistogramRequestValidationError) ErrorName() string {
-	return "GetRugHistogramRequestValidationError"
+func (e ColumnTimeRangeRequestValidationError) ErrorName() string {
+	return "ColumnTimeRangeRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetRugHistogramRequestValidationError) Error() string {
+func (e ColumnTimeRangeRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5115,14 +5224,14 @@ func (e GetRugHistogramRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetRugHistogramRequest.%s: %s%s",
+		"invalid %sColumnTimeRangeRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetRugHistogramRequestValidationError{}
+var _ error = ColumnTimeRangeRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -5130,245 +5239,134 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetRugHistogramRequestValidationError{}
+} = ColumnTimeRangeRequestValidationError{}
 
-// Validate checks the field values on GetTimeRangeSummaryRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetTimeRangeSummaryRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetTimeRangeSummaryRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetTimeRangeSummaryRequestMultiError, or nil if none found.
-func (m *GetTimeRangeSummaryRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetTimeRangeSummaryRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for TableName
-
-	// no validation rules for ColumnName
-
-	// no validation rules for Priority
-
-	if len(errors) > 0 {
-		return GetTimeRangeSummaryRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetTimeRangeSummaryRequestMultiError is an error wrapping multiple
-// validation errors returned by GetTimeRangeSummaryRequest.ValidateAll() if
-// the designated constraints aren't met.
-type GetTimeRangeSummaryRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetTimeRangeSummaryRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetTimeRangeSummaryRequestMultiError) AllErrors() []error { return m }
-
-// GetTimeRangeSummaryRequestValidationError is the validation error returned
-// by GetTimeRangeSummaryRequest.Validate if the designated constraints aren't met.
-type GetTimeRangeSummaryRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetTimeRangeSummaryRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetTimeRangeSummaryRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetTimeRangeSummaryRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetTimeRangeSummaryRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetTimeRangeSummaryRequestValidationError) ErrorName() string {
-	return "GetTimeRangeSummaryRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetTimeRangeSummaryRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetTimeRangeSummaryRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetTimeRangeSummaryRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetTimeRangeSummaryRequestValidationError{}
-
-// Validate checks the field values on GetCardinalityOfColumnRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetCardinalityOfColumnRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetCardinalityOfColumnRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetCardinalityOfColumnRequestMultiError, or nil if none found.
-func (m *GetCardinalityOfColumnRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetCardinalityOfColumnRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for TableName
-
-	// no validation rules for ColumnName
-
-	// no validation rules for Priority
-
-	if len(errors) > 0 {
-		return GetCardinalityOfColumnRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetCardinalityOfColumnRequestMultiError is an error wrapping multiple
-// validation errors returned by GetCardinalityOfColumnRequest.ValidateAll()
-// if the designated constraints aren't met.
-type GetCardinalityOfColumnRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetCardinalityOfColumnRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetCardinalityOfColumnRequestMultiError) AllErrors() []error { return m }
-
-// GetCardinalityOfColumnRequestValidationError is the validation error
-// returned by GetCardinalityOfColumnRequest.Validate if the designated
-// constraints aren't met.
-type GetCardinalityOfColumnRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetCardinalityOfColumnRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetCardinalityOfColumnRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetCardinalityOfColumnRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetCardinalityOfColumnRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetCardinalityOfColumnRequestValidationError) ErrorName() string {
-	return "GetCardinalityOfColumnRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetCardinalityOfColumnRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetCardinalityOfColumnRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetCardinalityOfColumnRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetCardinalityOfColumnRequestValidationError{}
-
-// Validate checks the field values on GenerateTimeSeriesRequest with the rules
+// Validate checks the field values on ColumnCardinalityRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GenerateTimeSeriesRequest) Validate() error {
+func (m *ColumnCardinalityRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GenerateTimeSeriesRequest with the
+// ValidateAll checks the field values on ColumnCardinalityRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GenerateTimeSeriesRequestMultiError, or nil if none found.
-func (m *GenerateTimeSeriesRequest) ValidateAll() error {
+// ColumnCardinalityRequestMultiError, or nil if none found.
+func (m *ColumnCardinalityRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateTimeSeriesRequest) validate(all bool) error {
+func (m *ColumnCardinalityRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for TableName
+
+	// no validation rules for ColumnName
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return ColumnCardinalityRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnCardinalityRequestMultiError is an error wrapping multiple validation
+// errors returned by ColumnCardinalityRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnCardinalityRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnCardinalityRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnCardinalityRequestMultiError) AllErrors() []error { return m }
+
+// ColumnCardinalityRequestValidationError is the validation error returned by
+// ColumnCardinalityRequest.Validate if the designated constraints aren't met.
+type ColumnCardinalityRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnCardinalityRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnCardinalityRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnCardinalityRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnCardinalityRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnCardinalityRequestValidationError) ErrorName() string {
+	return "ColumnCardinalityRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnCardinalityRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnCardinalityRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnCardinalityRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnCardinalityRequestValidationError{}
+
+// Validate checks the field values on ColumnTimeSeriesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTimeSeriesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnTimeSeriesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTimeSeriesRequestMultiError, or nil if none found.
+func (m *ColumnTimeSeriesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5386,7 +5384,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GenerateTimeSeriesRequestValidationError{
+					errors = append(errors, ColumnTimeSeriesRequestValidationError{
 						field:  fmt.Sprintf("Measures[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -5394,7 +5392,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GenerateTimeSeriesRequestValidationError{
+					errors = append(errors, ColumnTimeSeriesRequestValidationError{
 						field:  fmt.Sprintf("Measures[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -5403,7 +5401,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GenerateTimeSeriesRequestValidationError{
+				return ColumnTimeSeriesRequestValidationError{
 					field:  fmt.Sprintf("Measures[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5419,7 +5417,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 		switch v := interface{}(m.GetTimeRange()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GenerateTimeSeriesRequestValidationError{
+				errors = append(errors, ColumnTimeSeriesRequestValidationError{
 					field:  "TimeRange",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5427,7 +5425,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GenerateTimeSeriesRequestValidationError{
+				errors = append(errors, ColumnTimeSeriesRequestValidationError{
 					field:  "TimeRange",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5436,7 +5434,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetTimeRange()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GenerateTimeSeriesRequestValidationError{
+			return ColumnTimeSeriesRequestValidationError{
 				field:  "TimeRange",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -5448,7 +5446,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 		switch v := interface{}(m.GetFilters()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GenerateTimeSeriesRequestValidationError{
+				errors = append(errors, ColumnTimeSeriesRequestValidationError{
 					field:  "Filters",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5456,7 +5454,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GenerateTimeSeriesRequestValidationError{
+				errors = append(errors, ColumnTimeSeriesRequestValidationError{
 					field:  "Filters",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5465,7 +5463,7 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetFilters()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GenerateTimeSeriesRequestValidationError{
+			return ColumnTimeSeriesRequestValidationError{
 				field:  "Filters",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -5480,19 +5478,19 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GenerateTimeSeriesRequestMultiError(errors)
+		return ColumnTimeSeriesRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateTimeSeriesRequestMultiError is an error wrapping multiple validation
-// errors returned by GenerateTimeSeriesRequest.ValidateAll() if the
-// designated constraints aren't met.
-type GenerateTimeSeriesRequestMultiError []error
+// ColumnTimeSeriesRequestMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeSeriesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnTimeSeriesRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateTimeSeriesRequestMultiError) Error() string {
+func (m ColumnTimeSeriesRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5501,11 +5499,11 @@ func (m GenerateTimeSeriesRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateTimeSeriesRequestMultiError) AllErrors() []error { return m }
+func (m ColumnTimeSeriesRequestMultiError) AllErrors() []error { return m }
 
-// GenerateTimeSeriesRequestValidationError is the validation error returned by
-// GenerateTimeSeriesRequest.Validate if the designated constraints aren't met.
-type GenerateTimeSeriesRequestValidationError struct {
+// ColumnTimeSeriesRequestValidationError is the validation error returned by
+// ColumnTimeSeriesRequest.Validate if the designated constraints aren't met.
+type ColumnTimeSeriesRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5513,24 +5511,24 @@ type GenerateTimeSeriesRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateTimeSeriesRequestValidationError) Field() string { return e.field }
+func (e ColumnTimeSeriesRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateTimeSeriesRequestValidationError) Reason() string { return e.reason }
+func (e ColumnTimeSeriesRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateTimeSeriesRequestValidationError) Cause() error { return e.cause }
+func (e ColumnTimeSeriesRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateTimeSeriesRequestValidationError) Key() bool { return e.key }
+func (e ColumnTimeSeriesRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateTimeSeriesRequestValidationError) ErrorName() string {
-	return "GenerateTimeSeriesRequestValidationError"
+func (e ColumnTimeSeriesRequestValidationError) ErrorName() string {
+	return "ColumnTimeSeriesRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateTimeSeriesRequestValidationError) Error() string {
+func (e ColumnTimeSeriesRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5542,14 +5540,14 @@ func (e GenerateTimeSeriesRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateTimeSeriesRequest.%s: %s%s",
+		"invalid %sColumnTimeSeriesRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateTimeSeriesRequestValidationError{}
+var _ error = ColumnTimeSeriesRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -5557,7 +5555,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateTimeSeriesRequestValidationError{}
+} = ColumnTimeSeriesRequestValidationError{}
 
 // Validate checks the field values on TimeSeriesTimeRange with the rules
 // defined in the proto definition for this message. If any rules are
@@ -5931,22 +5929,22 @@ var _ interface {
 	ErrorName() string
 } = TimeSeriesResponseValidationError{}
 
-// Validate checks the field values on GenerateTimeSeriesResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ColumnTimeSeriesResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GenerateTimeSeriesResponse) Validate() error {
+func (m *ColumnTimeSeriesResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GenerateTimeSeriesResponse with the
+// ValidateAll checks the field values on ColumnTimeSeriesResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GenerateTimeSeriesResponseMultiError, or nil if none found.
-func (m *GenerateTimeSeriesResponse) ValidateAll() error {
+// ColumnTimeSeriesResponseMultiError, or nil if none found.
+func (m *ColumnTimeSeriesResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateTimeSeriesResponse) validate(all bool) error {
+func (m *ColumnTimeSeriesResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5957,7 +5955,7 @@ func (m *GenerateTimeSeriesResponse) validate(all bool) error {
 		switch v := interface{}(m.GetRollup()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GenerateTimeSeriesResponseValidationError{
+				errors = append(errors, ColumnTimeSeriesResponseValidationError{
 					field:  "Rollup",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5965,7 +5963,7 @@ func (m *GenerateTimeSeriesResponse) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GenerateTimeSeriesResponseValidationError{
+				errors = append(errors, ColumnTimeSeriesResponseValidationError{
 					field:  "Rollup",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5974,7 +5972,7 @@ func (m *GenerateTimeSeriesResponse) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetRollup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GenerateTimeSeriesResponseValidationError{
+			return ColumnTimeSeriesResponseValidationError{
 				field:  "Rollup",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -5983,19 +5981,19 @@ func (m *GenerateTimeSeriesResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GenerateTimeSeriesResponseMultiError(errors)
+		return ColumnTimeSeriesResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateTimeSeriesResponseMultiError is an error wrapping multiple
-// validation errors returned by GenerateTimeSeriesResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GenerateTimeSeriesResponseMultiError []error
+// ColumnTimeSeriesResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeSeriesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnTimeSeriesResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateTimeSeriesResponseMultiError) Error() string {
+func (m ColumnTimeSeriesResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6004,11 +6002,11 @@ func (m GenerateTimeSeriesResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateTimeSeriesResponseMultiError) AllErrors() []error { return m }
+func (m ColumnTimeSeriesResponseMultiError) AllErrors() []error { return m }
 
-// GenerateTimeSeriesResponseValidationError is the validation error returned
-// by GenerateTimeSeriesResponse.Validate if the designated constraints aren't met.
-type GenerateTimeSeriesResponseValidationError struct {
+// ColumnTimeSeriesResponseValidationError is the validation error returned by
+// ColumnTimeSeriesResponse.Validate if the designated constraints aren't met.
+type ColumnTimeSeriesResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6016,24 +6014,24 @@ type GenerateTimeSeriesResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateTimeSeriesResponseValidationError) Field() string { return e.field }
+func (e ColumnTimeSeriesResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateTimeSeriesResponseValidationError) Reason() string { return e.reason }
+func (e ColumnTimeSeriesResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateTimeSeriesResponseValidationError) Cause() error { return e.cause }
+func (e ColumnTimeSeriesResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateTimeSeriesResponseValidationError) Key() bool { return e.key }
+func (e ColumnTimeSeriesResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateTimeSeriesResponseValidationError) ErrorName() string {
-	return "GenerateTimeSeriesResponseValidationError"
+func (e ColumnTimeSeriesResponseValidationError) ErrorName() string {
+	return "ColumnTimeSeriesResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateTimeSeriesResponseValidationError) Error() string {
+func (e ColumnTimeSeriesResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6045,14 +6043,14 @@ func (e GenerateTimeSeriesResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateTimeSeriesResponse.%s: %s%s",
+		"invalid %sColumnTimeSeriesResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateTimeSeriesResponseValidationError{}
+var _ error = ColumnTimeSeriesResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -6060,7 +6058,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateTimeSeriesResponseValidationError{}
+} = ColumnTimeSeriesResponseValidationError{}
 
 // Validate checks the field values on TimeSeriesValue with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -6222,22 +6220,22 @@ var _ interface {
 	ErrorName() string
 } = TimeSeriesValueValidationError{}
 
-// Validate checks the field values on GetTableCardinalityRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on TableCardinalityRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetTableCardinalityRequest) Validate() error {
+func (m *TableCardinalityRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTableCardinalityRequest with the
+// ValidateAll checks the field values on TableCardinalityRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetTableCardinalityRequestMultiError, or nil if none found.
-func (m *GetTableCardinalityRequest) ValidateAll() error {
+// TableCardinalityRequestMultiError, or nil if none found.
+func (m *TableCardinalityRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTableCardinalityRequest) validate(all bool) error {
+func (m *TableCardinalityRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6251,19 +6249,19 @@ func (m *GetTableCardinalityRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetTableCardinalityRequestMultiError(errors)
+		return TableCardinalityRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTableCardinalityRequestMultiError is an error wrapping multiple
-// validation errors returned by GetTableCardinalityRequest.ValidateAll() if
-// the designated constraints aren't met.
-type GetTableCardinalityRequestMultiError []error
+// TableCardinalityRequestMultiError is an error wrapping multiple validation
+// errors returned by TableCardinalityRequest.ValidateAll() if the designated
+// constraints aren't met.
+type TableCardinalityRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTableCardinalityRequestMultiError) Error() string {
+func (m TableCardinalityRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6272,11 +6270,11 @@ func (m GetTableCardinalityRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTableCardinalityRequestMultiError) AllErrors() []error { return m }
+func (m TableCardinalityRequestMultiError) AllErrors() []error { return m }
 
-// GetTableCardinalityRequestValidationError is the validation error returned
-// by GetTableCardinalityRequest.Validate if the designated constraints aren't met.
-type GetTableCardinalityRequestValidationError struct {
+// TableCardinalityRequestValidationError is the validation error returned by
+// TableCardinalityRequest.Validate if the designated constraints aren't met.
+type TableCardinalityRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6284,24 +6282,24 @@ type GetTableCardinalityRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTableCardinalityRequestValidationError) Field() string { return e.field }
+func (e TableCardinalityRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTableCardinalityRequestValidationError) Reason() string { return e.reason }
+func (e TableCardinalityRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTableCardinalityRequestValidationError) Cause() error { return e.cause }
+func (e TableCardinalityRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTableCardinalityRequestValidationError) Key() bool { return e.key }
+func (e TableCardinalityRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTableCardinalityRequestValidationError) ErrorName() string {
-	return "GetTableCardinalityRequestValidationError"
+func (e TableCardinalityRequestValidationError) ErrorName() string {
+	return "TableCardinalityRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetTableCardinalityRequestValidationError) Error() string {
+func (e TableCardinalityRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6313,14 +6311,14 @@ func (e GetTableCardinalityRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTableCardinalityRequest.%s: %s%s",
+		"invalid %sTableCardinalityRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTableCardinalityRequestValidationError{}
+var _ error = TableCardinalityRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -6328,24 +6326,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTableCardinalityRequestValidationError{}
+} = TableCardinalityRequestValidationError{}
 
-// Validate checks the field values on GetTableCardinalityResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on TableCardinalityResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetTableCardinalityResponse) Validate() error {
+func (m *TableCardinalityResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTableCardinalityResponse with the
+// ValidateAll checks the field values on TableCardinalityResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetTableCardinalityResponseMultiError, or nil if none found.
-func (m *GetTableCardinalityResponse) ValidateAll() error {
+// TableCardinalityResponseMultiError, or nil if none found.
+func (m *TableCardinalityResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTableCardinalityResponse) validate(all bool) error {
+func (m *TableCardinalityResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6355,19 +6353,19 @@ func (m *GetTableCardinalityResponse) validate(all bool) error {
 	// no validation rules for Cardinality
 
 	if len(errors) > 0 {
-		return GetTableCardinalityResponseMultiError(errors)
+		return TableCardinalityResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTableCardinalityResponseMultiError is an error wrapping multiple
-// validation errors returned by GetTableCardinalityResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GetTableCardinalityResponseMultiError []error
+// TableCardinalityResponseMultiError is an error wrapping multiple validation
+// errors returned by TableCardinalityResponse.ValidateAll() if the designated
+// constraints aren't met.
+type TableCardinalityResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTableCardinalityResponseMultiError) Error() string {
+func (m TableCardinalityResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6376,12 +6374,11 @@ func (m GetTableCardinalityResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTableCardinalityResponseMultiError) AllErrors() []error { return m }
+func (m TableCardinalityResponseMultiError) AllErrors() []error { return m }
 
-// GetTableCardinalityResponseValidationError is the validation error returned
-// by GetTableCardinalityResponse.Validate if the designated constraints
-// aren't met.
-type GetTableCardinalityResponseValidationError struct {
+// TableCardinalityResponseValidationError is the validation error returned by
+// TableCardinalityResponse.Validate if the designated constraints aren't met.
+type TableCardinalityResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6389,24 +6386,24 @@ type GetTableCardinalityResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTableCardinalityResponseValidationError) Field() string { return e.field }
+func (e TableCardinalityResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTableCardinalityResponseValidationError) Reason() string { return e.reason }
+func (e TableCardinalityResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTableCardinalityResponseValidationError) Cause() error { return e.cause }
+func (e TableCardinalityResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTableCardinalityResponseValidationError) Key() bool { return e.key }
+func (e TableCardinalityResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTableCardinalityResponseValidationError) ErrorName() string {
-	return "GetTableCardinalityResponseValidationError"
+func (e TableCardinalityResponseValidationError) ErrorName() string {
+	return "TableCardinalityResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetTableCardinalityResponseValidationError) Error() string {
+func (e TableCardinalityResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6418,14 +6415,14 @@ func (e GetTableCardinalityResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTableCardinalityResponse.%s: %s%s",
+		"invalid %sTableCardinalityResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTableCardinalityResponseValidationError{}
+var _ error = TableCardinalityResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -6433,24 +6430,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTableCardinalityResponseValidationError{}
+} = TableCardinalityResponseValidationError{}
 
-// Validate checks the field values on ProfileColumnsRequest with the rules
+// Validate checks the field values on TableColumnsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ProfileColumnsRequest) Validate() error {
+func (m *TableColumnsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ProfileColumnsRequest with the rules
+// ValidateAll checks the field values on TableColumnsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ProfileColumnsRequestMultiError, or nil if none found.
-func (m *ProfileColumnsRequest) ValidateAll() error {
+// TableColumnsRequestMultiError, or nil if none found.
+func (m *TableColumnsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ProfileColumnsRequest) validate(all bool) error {
+func (m *TableColumnsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6464,19 +6461,19 @@ func (m *ProfileColumnsRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return ProfileColumnsRequestMultiError(errors)
+		return TableColumnsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ProfileColumnsRequestMultiError is an error wrapping multiple validation
-// errors returned by ProfileColumnsRequest.ValidateAll() if the designated
+// TableColumnsRequestMultiError is an error wrapping multiple validation
+// errors returned by TableColumnsRequest.ValidateAll() if the designated
 // constraints aren't met.
-type ProfileColumnsRequestMultiError []error
+type TableColumnsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ProfileColumnsRequestMultiError) Error() string {
+func (m TableColumnsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6485,11 +6482,11 @@ func (m ProfileColumnsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ProfileColumnsRequestMultiError) AllErrors() []error { return m }
+func (m TableColumnsRequestMultiError) AllErrors() []error { return m }
 
-// ProfileColumnsRequestValidationError is the validation error returned by
-// ProfileColumnsRequest.Validate if the designated constraints aren't met.
-type ProfileColumnsRequestValidationError struct {
+// TableColumnsRequestValidationError is the validation error returned by
+// TableColumnsRequest.Validate if the designated constraints aren't met.
+type TableColumnsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6497,24 +6494,24 @@ type ProfileColumnsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ProfileColumnsRequestValidationError) Field() string { return e.field }
+func (e TableColumnsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ProfileColumnsRequestValidationError) Reason() string { return e.reason }
+func (e TableColumnsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ProfileColumnsRequestValidationError) Cause() error { return e.cause }
+func (e TableColumnsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ProfileColumnsRequestValidationError) Key() bool { return e.key }
+func (e TableColumnsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ProfileColumnsRequestValidationError) ErrorName() string {
-	return "ProfileColumnsRequestValidationError"
+func (e TableColumnsRequestValidationError) ErrorName() string {
+	return "TableColumnsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ProfileColumnsRequestValidationError) Error() string {
+func (e TableColumnsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6526,14 +6523,14 @@ func (e ProfileColumnsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sProfileColumnsRequest.%s: %s%s",
+		"invalid %sTableColumnsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ProfileColumnsRequestValidationError{}
+var _ error = TableColumnsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -6541,24 +6538,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ProfileColumnsRequestValidationError{}
+} = TableColumnsRequestValidationError{}
 
-// Validate checks the field values on ProfileColumnsResponse with the rules
+// Validate checks the field values on TableColumnsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ProfileColumnsResponse) Validate() error {
+func (m *TableColumnsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ProfileColumnsResponse with the rules
+// ValidateAll checks the field values on TableColumnsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ProfileColumnsResponseMultiError, or nil if none found.
-func (m *ProfileColumnsResponse) ValidateAll() error {
+// TableColumnsResponseMultiError, or nil if none found.
+func (m *TableColumnsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ProfileColumnsResponse) validate(all bool) error {
+func (m *TableColumnsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6572,7 +6569,7 @@ func (m *ProfileColumnsResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ProfileColumnsResponseValidationError{
+					errors = append(errors, TableColumnsResponseValidationError{
 						field:  fmt.Sprintf("ProfileColumns[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -6580,7 +6577,7 @@ func (m *ProfileColumnsResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ProfileColumnsResponseValidationError{
+					errors = append(errors, TableColumnsResponseValidationError{
 						field:  fmt.Sprintf("ProfileColumns[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -6589,7 +6586,7 @@ func (m *ProfileColumnsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ProfileColumnsResponseValidationError{
+				return TableColumnsResponseValidationError{
 					field:  fmt.Sprintf("ProfileColumns[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6600,19 +6597,19 @@ func (m *ProfileColumnsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ProfileColumnsResponseMultiError(errors)
+		return TableColumnsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ProfileColumnsResponseMultiError is an error wrapping multiple validation
-// errors returned by ProfileColumnsResponse.ValidateAll() if the designated
+// TableColumnsResponseMultiError is an error wrapping multiple validation
+// errors returned by TableColumnsResponse.ValidateAll() if the designated
 // constraints aren't met.
-type ProfileColumnsResponseMultiError []error
+type TableColumnsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ProfileColumnsResponseMultiError) Error() string {
+func (m TableColumnsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6621,11 +6618,11 @@ func (m ProfileColumnsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ProfileColumnsResponseMultiError) AllErrors() []error { return m }
+func (m TableColumnsResponseMultiError) AllErrors() []error { return m }
 
-// ProfileColumnsResponseValidationError is the validation error returned by
-// ProfileColumnsResponse.Validate if the designated constraints aren't met.
-type ProfileColumnsResponseValidationError struct {
+// TableColumnsResponseValidationError is the validation error returned by
+// TableColumnsResponse.Validate if the designated constraints aren't met.
+type TableColumnsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6633,24 +6630,24 @@ type ProfileColumnsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ProfileColumnsResponseValidationError) Field() string { return e.field }
+func (e TableColumnsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ProfileColumnsResponseValidationError) Reason() string { return e.reason }
+func (e TableColumnsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ProfileColumnsResponseValidationError) Cause() error { return e.cause }
+func (e TableColumnsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ProfileColumnsResponseValidationError) Key() bool { return e.key }
+func (e TableColumnsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ProfileColumnsResponseValidationError) ErrorName() string {
-	return "ProfileColumnsResponseValidationError"
+func (e TableColumnsResponseValidationError) ErrorName() string {
+	return "TableColumnsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ProfileColumnsResponseValidationError) Error() string {
+func (e TableColumnsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6662,14 +6659,14 @@ func (e ProfileColumnsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sProfileColumnsResponse.%s: %s%s",
+		"invalid %sTableColumnsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ProfileColumnsResponseValidationError{}
+var _ error = TableColumnsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -6677,7 +6674,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ProfileColumnsResponseValidationError{}
+} = TableColumnsResponseValidationError{}
 
 // Validate checks the field values on ProfileColumn with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -6785,22 +6782,22 @@ var _ interface {
 	ErrorName() string
 } = ProfileColumnValidationError{}
 
-// Validate checks the field values on GetTableRowsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetTableRowsRequest) Validate() error {
+// Validate checks the field values on TableRowsRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *TableRowsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTableRowsRequest with the rules
+// ValidateAll checks the field values on TableRowsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetTableRowsRequestMultiError, or nil if none found.
-func (m *GetTableRowsRequest) ValidateAll() error {
+// TableRowsRequestMultiError, or nil if none found.
+func (m *TableRowsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTableRowsRequest) validate(all bool) error {
+func (m *TableRowsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6816,19 +6813,19 @@ func (m *GetTableRowsRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return GetTableRowsRequestMultiError(errors)
+		return TableRowsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTableRowsRequestMultiError is an error wrapping multiple validation
-// errors returned by GetTableRowsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GetTableRowsRequestMultiError []error
+// TableRowsRequestMultiError is an error wrapping multiple validation errors
+// returned by TableRowsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type TableRowsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTableRowsRequestMultiError) Error() string {
+func (m TableRowsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6837,11 +6834,11 @@ func (m GetTableRowsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTableRowsRequestMultiError) AllErrors() []error { return m }
+func (m TableRowsRequestMultiError) AllErrors() []error { return m }
 
-// GetTableRowsRequestValidationError is the validation error returned by
-// GetTableRowsRequest.Validate if the designated constraints aren't met.
-type GetTableRowsRequestValidationError struct {
+// TableRowsRequestValidationError is the validation error returned by
+// TableRowsRequest.Validate if the designated constraints aren't met.
+type TableRowsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6849,24 +6846,22 @@ type GetTableRowsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTableRowsRequestValidationError) Field() string { return e.field }
+func (e TableRowsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTableRowsRequestValidationError) Reason() string { return e.reason }
+func (e TableRowsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTableRowsRequestValidationError) Cause() error { return e.cause }
+func (e TableRowsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTableRowsRequestValidationError) Key() bool { return e.key }
+func (e TableRowsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTableRowsRequestValidationError) ErrorName() string {
-	return "GetTableRowsRequestValidationError"
-}
+func (e TableRowsRequestValidationError) ErrorName() string { return "TableRowsRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e GetTableRowsRequestValidationError) Error() string {
+func (e TableRowsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6878,14 +6873,14 @@ func (e GetTableRowsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTableRowsRequest.%s: %s%s",
+		"invalid %sTableRowsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTableRowsRequestValidationError{}
+var _ error = TableRowsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -6893,24 +6888,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTableRowsRequestValidationError{}
+} = TableRowsRequestValidationError{}
 
-// Validate checks the field values on GetTableRowsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetTableRowsResponse) Validate() error {
+// Validate checks the field values on TableRowsResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *TableRowsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetTableRowsResponse with the rules
+// ValidateAll checks the field values on TableRowsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetTableRowsResponseMultiError, or nil if none found.
-func (m *GetTableRowsResponse) ValidateAll() error {
+// TableRowsResponseMultiError, or nil if none found.
+func (m *TableRowsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetTableRowsResponse) validate(all bool) error {
+func (m *TableRowsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6924,7 +6919,7 @@ func (m *GetTableRowsResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetTableRowsResponseValidationError{
+					errors = append(errors, TableRowsResponseValidationError{
 						field:  fmt.Sprintf("Data[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -6932,7 +6927,7 @@ func (m *GetTableRowsResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetTableRowsResponseValidationError{
+					errors = append(errors, TableRowsResponseValidationError{
 						field:  fmt.Sprintf("Data[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -6941,7 +6936,7 @@ func (m *GetTableRowsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetTableRowsResponseValidationError{
+				return TableRowsResponseValidationError{
 					field:  fmt.Sprintf("Data[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6952,19 +6947,19 @@ func (m *GetTableRowsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetTableRowsResponseMultiError(errors)
+		return TableRowsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetTableRowsResponseMultiError is an error wrapping multiple validation
-// errors returned by GetTableRowsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GetTableRowsResponseMultiError []error
+// TableRowsResponseMultiError is an error wrapping multiple validation errors
+// returned by TableRowsResponse.ValidateAll() if the designated constraints
+// aren't met.
+type TableRowsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetTableRowsResponseMultiError) Error() string {
+func (m TableRowsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6973,11 +6968,11 @@ func (m GetTableRowsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetTableRowsResponseMultiError) AllErrors() []error { return m }
+func (m TableRowsResponseMultiError) AllErrors() []error { return m }
 
-// GetTableRowsResponseValidationError is the validation error returned by
-// GetTableRowsResponse.Validate if the designated constraints aren't met.
-type GetTableRowsResponseValidationError struct {
+// TableRowsResponseValidationError is the validation error returned by
+// TableRowsResponse.Validate if the designated constraints aren't met.
+type TableRowsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6985,24 +6980,24 @@ type GetTableRowsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetTableRowsResponseValidationError) Field() string { return e.field }
+func (e TableRowsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetTableRowsResponseValidationError) Reason() string { return e.reason }
+func (e TableRowsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetTableRowsResponseValidationError) Cause() error { return e.cause }
+func (e TableRowsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetTableRowsResponseValidationError) Key() bool { return e.key }
+func (e TableRowsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetTableRowsResponseValidationError) ErrorName() string {
-	return "GetTableRowsResponseValidationError"
+func (e TableRowsResponseValidationError) ErrorName() string {
+	return "TableRowsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetTableRowsResponseValidationError) Error() string {
+func (e TableRowsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7014,14 +7009,14 @@ func (e GetTableRowsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetTableRowsResponse.%s: %s%s",
+		"invalid %sTableRowsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetTableRowsResponseValidationError{}
+var _ error = TableRowsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -7029,7 +7024,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetTableRowsResponseValidationError{}
+} = TableRowsResponseValidationError{}
 
 // Validate checks the field values on MetricsViewFilter_Cond with the rules
 // defined in the proto definition for this message. If any rules are
@@ -7631,24 +7626,23 @@ var _ interface {
 	ErrorName() string
 } = NumericHistogramBins_BinValidationError{}
 
-// Validate checks the field values on GenerateTimeSeriesRequest_BasicMeasure
+// Validate checks the field values on ColumnTimeSeriesRequest_BasicMeasure
 // with the rules defined in the proto definition for this message. If any
 // rules are violated, the first error encountered is returned, or nil if
 // there are no violations.
-func (m *GenerateTimeSeriesRequest_BasicMeasure) Validate() error {
+func (m *ColumnTimeSeriesRequest_BasicMeasure) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on
-// GenerateTimeSeriesRequest_BasicMeasure with the rules defined in the proto
-// definition for this message. If any rules are violated, the result is a
-// list of violation errors wrapped in
-// GenerateTimeSeriesRequest_BasicMeasureMultiError, or nil if none found.
-func (m *GenerateTimeSeriesRequest_BasicMeasure) ValidateAll() error {
+// ValidateAll checks the field values on ColumnTimeSeriesRequest_BasicMeasure
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ColumnTimeSeriesRequest_BasicMeasureMultiError, or nil if none found.
+func (m *ColumnTimeSeriesRequest_BasicMeasure) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateTimeSeriesRequest_BasicMeasure) validate(all bool) error {
+func (m *ColumnTimeSeriesRequest_BasicMeasure) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7662,20 +7656,20 @@ func (m *GenerateTimeSeriesRequest_BasicMeasure) validate(all bool) error {
 	// no validation rules for SqlName
 
 	if len(errors) > 0 {
-		return GenerateTimeSeriesRequest_BasicMeasureMultiError(errors)
+		return ColumnTimeSeriesRequest_BasicMeasureMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateTimeSeriesRequest_BasicMeasureMultiError is an error wrapping
-// multiple validation errors returned by
-// GenerateTimeSeriesRequest_BasicMeasure.ValidateAll() if the designated
+// ColumnTimeSeriesRequest_BasicMeasureMultiError is an error wrapping multiple
+// validation errors returned by
+// ColumnTimeSeriesRequest_BasicMeasure.ValidateAll() if the designated
 // constraints aren't met.
-type GenerateTimeSeriesRequest_BasicMeasureMultiError []error
+type ColumnTimeSeriesRequest_BasicMeasureMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateTimeSeriesRequest_BasicMeasureMultiError) Error() string {
+func (m ColumnTimeSeriesRequest_BasicMeasureMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7684,12 +7678,12 @@ func (m GenerateTimeSeriesRequest_BasicMeasureMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateTimeSeriesRequest_BasicMeasureMultiError) AllErrors() []error { return m }
+func (m ColumnTimeSeriesRequest_BasicMeasureMultiError) AllErrors() []error { return m }
 
-// GenerateTimeSeriesRequest_BasicMeasureValidationError is the validation
-// error returned by GenerateTimeSeriesRequest_BasicMeasure.Validate if the
-// designated constraints aren't met.
-type GenerateTimeSeriesRequest_BasicMeasureValidationError struct {
+// ColumnTimeSeriesRequest_BasicMeasureValidationError is the validation error
+// returned by ColumnTimeSeriesRequest_BasicMeasure.Validate if the designated
+// constraints aren't met.
+type ColumnTimeSeriesRequest_BasicMeasureValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7697,24 +7691,24 @@ type GenerateTimeSeriesRequest_BasicMeasureValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) Field() string { return e.field }
+func (e ColumnTimeSeriesRequest_BasicMeasureValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) Reason() string { return e.reason }
+func (e ColumnTimeSeriesRequest_BasicMeasureValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) Cause() error { return e.cause }
+func (e ColumnTimeSeriesRequest_BasicMeasureValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) Key() bool { return e.key }
+func (e ColumnTimeSeriesRequest_BasicMeasureValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) ErrorName() string {
-	return "GenerateTimeSeriesRequest_BasicMeasureValidationError"
+func (e ColumnTimeSeriesRequest_BasicMeasureValidationError) ErrorName() string {
+	return "ColumnTimeSeriesRequest_BasicMeasureValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) Error() string {
+func (e ColumnTimeSeriesRequest_BasicMeasureValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7726,14 +7720,14 @@ func (e GenerateTimeSeriesRequest_BasicMeasureValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateTimeSeriesRequest_BasicMeasure.%s: %s%s",
+		"invalid %sColumnTimeSeriesRequest_BasicMeasure.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateTimeSeriesRequest_BasicMeasureValidationError{}
+var _ error = ColumnTimeSeriesRequest_BasicMeasureValidationError{}
 
 var _ interface {
 	Field() string
@@ -7741,4 +7735,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateTimeSeriesRequest_BasicMeasureValidationError{}
+} = ColumnTimeSeriesRequest_BasicMeasureValidationError{}

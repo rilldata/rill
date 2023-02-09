@@ -1,8 +1,8 @@
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
   import {
-    useQueryServiceGetTableRows,
-    useQueryServiceProfileColumns,
+    useQueryServiceTableRows,
+    useQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import { runtimeStore } from "../../application-state-stores/application-store";
@@ -30,7 +30,7 @@
 
   // get all column profiles.
   let profileColumns;
-  $: profileColumns = useQueryServiceProfileColumns(
+  $: profileColumns = useQueryServiceTableColumns(
     $runtimeStore?.instanceId,
     objectName,
     {},
@@ -39,7 +39,7 @@
 
   /** get single example */
   let exampleValue;
-  $: exampleValue = useQueryServiceGetTableRows(
+  $: exampleValue = useQueryServiceTableRows(
     $runtimeStore?.instanceId,
     objectName,
     { limit: 1 }

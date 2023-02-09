@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    useQueryServiceGetTableRows,
-    useQueryServiceProfileColumns,
+    useQueryServiceTableRows,
+    useQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
 
@@ -11,14 +11,14 @@
   export let objectName: string;
   export let limit = 150;
 
-  $: profileColumnsQuery = useQueryServiceProfileColumns(
+  $: profileColumnsQuery = useQueryServiceTableColumns(
     $runtimeStore?.instanceId,
     objectName,
     {}
   );
   $: profileColumns = $profileColumnsQuery?.data?.profileColumns;
 
-  $: tableQuery = useQueryServiceGetTableRows(
+  $: tableQuery = useQueryServiceTableRows(
     $runtimeStore?.instanceId,
     objectName,
     { limit }

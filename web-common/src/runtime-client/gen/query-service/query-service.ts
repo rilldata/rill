@@ -14,91 +14,91 @@ import type {
   QueryKey,
 } from "@sveltestack/svelte-query";
 import type {
-  V1MetricsViewTimeSeriesResponse,
+  V1ColumnCardinalityResponse,
   RpcStatus,
-  QueryServiceMetricsViewTimeSeriesBody,
+  QueryServiceColumnCardinalityParams,
+  V1TableColumnsResponse,
+  QueryServiceTableColumnsParams,
+  V1ColumnDescriptiveStatisticsResponse,
+  QueryServiceColumnDescriptiveStatisticsParams,
   V1MetricsViewToplistResponse,
   QueryServiceMetricsViewToplistBody,
+  V1MetricsViewTimeSeriesResponse,
+  QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewTotalsResponse,
   QueryServiceMetricsViewTotalsBody,
-  V1GetCardinalityOfColumnResponse,
-  QueryServiceGetCardinalityOfColumnParams,
-  V1ProfileColumnsResponse,
-  QueryServiceProfileColumnsParams,
-  V1GetDescriptiveStatisticsResponse,
-  QueryServiceGetDescriptiveStatisticsParams,
-  V1GetNullCountResponse,
-  QueryServiceGetNullCountParams,
-  V1GetNumericHistogramResponse,
-  QueryServiceGetNumericHistogramParams,
-  V1EstimateRollupIntervalResponse,
-  QueryServiceEstimateRollupIntervalBody,
-  V1GetTableRowsResponse,
-  QueryServiceGetTableRowsParams,
-  V1GetRugHistogramResponse,
-  QueryServiceGetRugHistogramParams,
-  V1EstimateSmallestTimeGrainResponse,
-  QueryServiceEstimateSmallestTimeGrainParams,
-  V1GetTableCardinalityResponse,
-  QueryServiceGetTableCardinalityParams,
-  V1GetTimeRangeSummaryResponse,
-  QueryServiceGetTimeRangeSummaryParams,
-  V1GenerateTimeSeriesResponse,
-  QueryServiceGenerateTimeSeriesBody,
-  V1GetTopKResponse,
-  QueryServiceGetTopKBody,
+  V1ColumnNullCountResponse,
+  QueryServiceColumnNullCountParams,
+  V1ColumnNumericHistogramResponse,
+  QueryServiceColumnNumericHistogramParams,
+  V1ColumnRollupIntervalResponse,
+  QueryServiceColumnRollupIntervalBody,
+  V1TableRowsResponse,
+  QueryServiceTableRowsParams,
+  V1ColumnRugHistogramResponse,
+  QueryServiceColumnRugHistogramParams,
+  V1ColumnTimeGrainResponse,
+  QueryServiceColumnTimeGrainParams,
+  V1TableCardinalityResponse,
+  QueryServiceTableCardinalityParams,
+  V1ColumnTimeRangeResponse,
+  QueryServiceColumnTimeRangeParams,
+  V1ColumnTimeSeriesResponse,
+  QueryServiceColumnTimeSeriesBody,
+  V1ColumnTopKResponse,
+  QueryServiceColumnTopKBody,
   V1QueryResponse,
   QueryServiceQueryBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
 /**
- * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
-It's a convenience API for querying a metrics view.
+ * @summary Get cardinality for a column
  */
-export const queryServiceMetricsViewTimeSeries = (
+export const queryServiceColumnCardinality = (
   instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody
+  tableName: string,
+  params?: QueryServiceColumnCardinalityParams,
+  signal?: AbortSignal
 ) => {
-  return httpClient<V1MetricsViewTimeSeriesResponse>({
-    url: `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/timeseries`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: queryServiceMetricsViewTimeSeriesBody,
+  return httpClient<V1ColumnCardinalityResponse>({
+    url: `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
+    method: "get",
+    params,
+    signal,
   });
 };
 
-export const getQueryServiceMetricsViewTimeSeriesQueryKey = (
+export const getQueryServiceColumnCardinalityQueryKey = (
   instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody
+  tableName: string,
+  params?: QueryServiceColumnCardinalityParams
 ) => [
-  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/timeseries`,
-  queryServiceMetricsViewTimeSeriesBody,
+  `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
+  ...(params ? [params] : []),
 ];
 
-export type QueryServiceMetricsViewTimeSeriesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
+export type QueryServiceColumnCardinalityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnCardinality>>
 >;
-export type QueryServiceMetricsViewTimeSeriesQueryError = RpcStatus;
+export type QueryServiceColumnCardinalityQueryError = RpcStatus;
 
-export const useQueryServiceMetricsViewTimeSeries = <
-  TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+export const useQueryServiceColumnCardinality = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
   TError = RpcStatus
 >(
   instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
+  tableName: string,
+  params?: QueryServiceColumnCardinalityParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+      Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+  Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
   TError,
   TData,
   QueryKey
@@ -107,30 +107,190 @@ export const useQueryServiceMetricsViewTimeSeries = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceMetricsViewTimeSeriesQueryKey(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewTimeSeriesBody
-    );
+    getQueryServiceColumnCardinalityQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
-  > = () =>
-    queryServiceMetricsViewTimeSeries(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewTimeSeriesBody
-    );
+    Awaited<ReturnType<typeof queryServiceColumnCardinality>>
+  > = ({ signal }) =>
+    queryServiceColumnCardinality(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+    Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(instanceId && metricsViewName),
+    enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+    Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary TableColumns (TODO: add description)
+ */
+export const queryServiceTableColumns = (
+  instanceId: string,
+  tableName: string,
+  params?: QueryServiceTableColumnsParams
+) => {
+  return httpClient<V1TableColumnsResponse>({
+    url: `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
+    method: "post",
+    params,
+  });
+};
+
+export const getQueryServiceTableColumnsQueryKey = (
+  instanceId: string,
+  tableName: string,
+  params?: QueryServiceTableColumnsParams
+) => [
+  `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
+  ...(params ? [params] : []),
+];
+
+export type QueryServiceTableColumnsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceTableColumns>>
+>;
+export type QueryServiceTableColumnsQueryError = RpcStatus;
+
+export const useQueryServiceTableColumns = <
+  TData = Awaited<ReturnType<typeof queryServiceTableColumns>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  params?: QueryServiceTableColumnsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof queryServiceTableColumns>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof queryServiceTableColumns>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceTableColumnsQueryKey(instanceId, tableName, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceTableColumns>>
+  > = () => queryServiceTableColumns(instanceId, tableName, params);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof queryServiceTableColumns>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof queryServiceTableColumns>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary Get basic stats for a numeric column like min, max, mean, stddev, etc
+ */
+export const queryServiceColumnDescriptiveStatistics = (
+  instanceId: string,
+  tableName: string,
+  params?: QueryServiceColumnDescriptiveStatisticsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ColumnDescriptiveStatisticsResponse>({
+    url: `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getQueryServiceColumnDescriptiveStatisticsQueryKey = (
+  instanceId: string,
+  tableName: string,
+  params?: QueryServiceColumnDescriptiveStatisticsParams
+) => [
+  `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
+  ...(params ? [params] : []),
+];
+
+export type QueryServiceColumnDescriptiveStatisticsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>
+>;
+export type QueryServiceColumnDescriptiveStatisticsQueryError = RpcStatus;
+
+export const useQueryServiceColumnDescriptiveStatistics = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  tableName: string,
+  params?: QueryServiceColumnDescriptiveStatisticsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceColumnDescriptiveStatisticsQueryKey(
+      instanceId,
+      tableName,
+      params
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>
+  > = ({ signal }) =>
+    queryServiceColumnDescriptiveStatistics(
+      instanceId,
+      tableName,
+      params,
+      signal
+    );
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
     TError,
     TData,
     QueryKey
@@ -151,7 +311,7 @@ export const queryServiceMetricsViewToplist = (
   queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
 ) => {
   return httpClient<V1MetricsViewToplistResponse>({
-    url: `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist`,
+    url: `/v1/instances/${instanceId}/queries/metric-views/${metricsViewName}/toplist`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewToplistBody,
@@ -163,7 +323,7 @@ export const getQueryServiceMetricsViewToplistQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
 ) => [
-  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/toplist`,
+  `/v1/instances/${instanceId}/queries/metric-views/${metricsViewName}/toplist`,
   queryServiceMetricsViewToplistBody,
 ];
 
@@ -231,6 +391,95 @@ export const useQueryServiceMetricsViewToplist = <
 };
 
 /**
+ * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
+It's a convenience API for querying a metrics view.
+ */
+export const queryServiceMetricsViewTimeSeries = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody
+) => {
+  return httpClient<V1MetricsViewTimeSeriesResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewTimeSeriesBody,
+  });
+};
+
+export const getQueryServiceMetricsViewTimeSeriesQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody
+) => [
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
+  queryServiceMetricsViewTimeSeriesBody,
+];
+
+export type QueryServiceMetricsViewTimeSeriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
+>;
+export type QueryServiceMetricsViewTimeSeriesQueryError = RpcStatus;
+
+export const useQueryServiceMetricsViewTimeSeries = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewTimeSeriesQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewTimeSeriesBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
+  > = () =>
+    queryServiceMetricsViewTimeSeries(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewTimeSeriesBody
+    );
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 It's a convenience API for querying a metrics view.
  */
@@ -240,7 +489,7 @@ export const queryServiceMetricsViewTotals = (
   queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody
 ) => {
   return httpClient<V1MetricsViewTotalsResponse>({
-    url: `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/totals`,
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewTotalsBody,
@@ -252,7 +501,7 @@ export const getQueryServiceMetricsViewTotalsQueryKey = (
   metricsViewName: string,
   queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody
 ) => [
-  `/v1/instances/${instanceId}/metrics-views/${metricsViewName}/totals`,
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
   queryServiceMetricsViewTotalsBody,
 ];
 
@@ -320,263 +569,15 @@ export const useQueryServiceMetricsViewTotals = <
 };
 
 /**
- * @summary Get cardinality for a column
- */
-export const queryServiceGetCardinalityOfColumn = (
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceGetCardinalityOfColumnParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1GetCardinalityOfColumnResponse>({
-    url: `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getQueryServiceGetCardinalityOfColumnQueryKey = (
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceGetCardinalityOfColumnParams
-) => [
-  `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
-
-export type QueryServiceGetCardinalityOfColumnQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>
->;
-export type QueryServiceGetCardinalityOfColumnQueryError = RpcStatus;
-
-export const useQueryServiceGetCardinalityOfColumn = <
-  TData = Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceGetCardinalityOfColumnParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getQueryServiceGetCardinalityOfColumnQueryKey(
-      instanceId,
-      tableName,
-      params
-    );
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>
-  > = ({ signal }) =>
-    queryServiceGetCardinalityOfColumn(instanceId, tableName, params, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetCardinalityOfColumn>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary ProfileColumns (TODO: add description)
- */
-export const queryServiceProfileColumns = (
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceProfileColumnsParams
-) => {
-  return httpClient<V1ProfileColumnsResponse>({
-    url: `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
-    method: "post",
-    params,
-  });
-};
-
-export const getQueryServiceProfileColumnsQueryKey = (
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceProfileColumnsParams
-) => [
-  `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
-
-export type QueryServiceProfileColumnsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceProfileColumns>>
->;
-export type QueryServiceProfileColumnsQueryError = RpcStatus;
-
-export const useQueryServiceProfileColumns = <
-  TData = Awaited<ReturnType<typeof queryServiceProfileColumns>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceProfileColumnsParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceProfileColumns>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceProfileColumns>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getQueryServiceProfileColumnsQueryKey(instanceId, tableName, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceProfileColumns>>
-  > = () => queryServiceProfileColumns(instanceId, tableName, params);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceProfileColumns>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceProfileColumns>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary Get basic stats for a numeric column like min, max, mean, stddev, etc
- */
-export const queryServiceGetDescriptiveStatistics = (
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceGetDescriptiveStatisticsParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1GetDescriptiveStatisticsResponse>({
-    url: `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getQueryServiceGetDescriptiveStatisticsQueryKey = (
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceGetDescriptiveStatisticsParams
-) => [
-  `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
-  ...(params ? [params] : []),
-];
-
-export type QueryServiceGetDescriptiveStatisticsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>
->;
-export type QueryServiceGetDescriptiveStatisticsQueryError = RpcStatus;
-
-export const useQueryServiceGetDescriptiveStatistics = <
-  TData = Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  tableName: string,
-  params?: QueryServiceGetDescriptiveStatisticsParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getQueryServiceGetDescriptiveStatisticsQueryKey(
-      instanceId,
-      tableName,
-      params
-    );
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>
-  > = ({ signal }) =>
-    queryServiceGetDescriptiveStatistics(instanceId, tableName, params, signal);
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && tableName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetDescriptiveStatistics>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
  * @summary Get the number of nulls in a column
  */
-export const queryServiceGetNullCount = (
+export const queryServiceColumnNullCount = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetNullCountParams,
+  params?: QueryServiceColumnNullCountParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetNullCountResponse>({
+  return httpClient<V1ColumnNullCountResponse>({
     url: `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
     method: "get",
     params,
@@ -584,36 +585,36 @@ export const queryServiceGetNullCount = (
   });
 };
 
-export const getQueryServiceGetNullCountQueryKey = (
+export const getQueryServiceColumnNullCountQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetNullCountParams
+  params?: QueryServiceColumnNullCountParams
 ) => [
   `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceGetNullCountQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetNullCount>>
+export type QueryServiceColumnNullCountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnNullCount>>
 >;
-export type QueryServiceGetNullCountQueryError = RpcStatus;
+export type QueryServiceColumnNullCountQueryError = RpcStatus;
 
-export const useQueryServiceGetNullCount = <
-  TData = Awaited<ReturnType<typeof queryServiceGetNullCount>>,
+export const useQueryServiceColumnNullCount = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetNullCountParams,
+  params?: QueryServiceColumnNullCountParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetNullCount>>,
+      Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetNullCount>>,
+  Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
   TError,
   TData,
   QueryKey
@@ -622,22 +623,22 @@ export const useQueryServiceGetNullCount = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetNullCountQueryKey(instanceId, tableName, params);
+    getQueryServiceColumnNullCountQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetNullCount>>
+    Awaited<ReturnType<typeof queryServiceColumnNullCount>>
   > = ({ signal }) =>
-    queryServiceGetNullCount(instanceId, tableName, params, signal);
+    queryServiceColumnNullCount(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetNullCount>>,
+    Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetNullCount>>,
+    Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
     TError,
     TData,
     QueryKey
@@ -651,13 +652,13 @@ export const useQueryServiceGetNullCount = <
 /**
  * @summary Get the histogram for values in a column
  */
-export const queryServiceGetNumericHistogram = (
+export const queryServiceColumnNumericHistogram = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetNumericHistogramParams,
+  params?: QueryServiceColumnNumericHistogramParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetNumericHistogramResponse>({
+  return httpClient<V1ColumnNumericHistogramResponse>({
     url: `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
     method: "get",
     params,
@@ -665,36 +666,36 @@ export const queryServiceGetNumericHistogram = (
   });
 };
 
-export const getQueryServiceGetNumericHistogramQueryKey = (
+export const getQueryServiceColumnNumericHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetNumericHistogramParams
+  params?: QueryServiceColumnNumericHistogramParams
 ) => [
   `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceGetNumericHistogramQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>
+export type QueryServiceColumnNumericHistogramQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>
 >;
-export type QueryServiceGetNumericHistogramQueryError = RpcStatus;
+export type QueryServiceColumnNumericHistogramQueryError = RpcStatus;
 
-export const useQueryServiceGetNumericHistogram = <
-  TData = Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>,
+export const useQueryServiceColumnNumericHistogram = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetNumericHistogramParams,
+  params?: QueryServiceColumnNumericHistogramParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>,
+      Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>,
+  Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
   TError,
   TData,
   QueryKey
@@ -703,22 +704,26 @@ export const useQueryServiceGetNumericHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetNumericHistogramQueryKey(instanceId, tableName, params);
+    getQueryServiceColumnNumericHistogramQueryKey(
+      instanceId,
+      tableName,
+      params
+    );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>
+    Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>
   > = ({ signal }) =>
-    queryServiceGetNumericHistogram(instanceId, tableName, params, signal);
+    queryServiceColumnNumericHistogram(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>,
+    Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetNumericHistogram>>,
+    Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
     TError,
     TData,
     QueryKey
@@ -730,51 +735,51 @@ export const useQueryServiceGetNumericHistogram = <
 };
 
 /**
- * @summary EstimateRollupInterval (TODO: add description)
+ * @summary ColumnRollupInterval (TODO: add description)
  */
-export const queryServiceEstimateRollupInterval = (
+export const queryServiceColumnRollupInterval = (
   instanceId: string,
   tableName: string,
-  queryServiceEstimateRollupIntervalBody: QueryServiceEstimateRollupIntervalBody
+  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody
 ) => {
-  return httpClient<V1EstimateRollupIntervalResponse>({
+  return httpClient<V1ColumnRollupIntervalResponse>({
     url: `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceEstimateRollupIntervalBody,
+    data: queryServiceColumnRollupIntervalBody,
   });
 };
 
-export const getQueryServiceEstimateRollupIntervalQueryKey = (
+export const getQueryServiceColumnRollupIntervalQueryKey = (
   instanceId: string,
   tableName: string,
-  queryServiceEstimateRollupIntervalBody: QueryServiceEstimateRollupIntervalBody
+  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody
 ) => [
   `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
-  queryServiceEstimateRollupIntervalBody,
+  queryServiceColumnRollupIntervalBody,
 ];
 
-export type QueryServiceEstimateRollupIntervalQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>
+export type QueryServiceColumnRollupIntervalQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
 >;
-export type QueryServiceEstimateRollupIntervalQueryError = RpcStatus;
+export type QueryServiceColumnRollupIntervalQueryError = RpcStatus;
 
-export const useQueryServiceEstimateRollupInterval = <
-  TData = Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>,
+export const useQueryServiceColumnRollupInterval = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  queryServiceEstimateRollupIntervalBody: QueryServiceEstimateRollupIntervalBody,
+  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>,
+      Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>,
+  Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
   TError,
   TData,
   QueryKey
@@ -783,30 +788,30 @@ export const useQueryServiceEstimateRollupInterval = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceEstimateRollupIntervalQueryKey(
+    getQueryServiceColumnRollupIntervalQueryKey(
       instanceId,
       tableName,
-      queryServiceEstimateRollupIntervalBody
+      queryServiceColumnRollupIntervalBody
     );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>
+    Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
   > = () =>
-    queryServiceEstimateRollupInterval(
+    queryServiceColumnRollupInterval(
       instanceId,
       tableName,
-      queryServiceEstimateRollupIntervalBody
+      queryServiceColumnRollupIntervalBody
     );
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>,
+    Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceEstimateRollupInterval>>,
+    Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
     TError,
     TData,
     QueryKey
@@ -820,13 +825,13 @@ export const useQueryServiceEstimateRollupInterval = <
 /**
  * @summary TableRows (TODO: add description)
  */
-export const queryServiceGetTableRows = (
+export const queryServiceTableRows = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTableRowsParams,
+  params?: QueryServiceTableRowsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetTableRowsResponse>({
+  return httpClient<V1TableRowsResponse>({
     url: `/v1/instances/${instanceId}/queries/rows/tables/${tableName}`,
     method: "get",
     params,
@@ -834,36 +839,36 @@ export const queryServiceGetTableRows = (
   });
 };
 
-export const getQueryServiceGetTableRowsQueryKey = (
+export const getQueryServiceTableRowsQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTableRowsParams
+  params?: QueryServiceTableRowsParams
 ) => [
   `/v1/instances/${instanceId}/queries/rows/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceGetTableRowsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetTableRows>>
+export type QueryServiceTableRowsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceTableRows>>
 >;
-export type QueryServiceGetTableRowsQueryError = RpcStatus;
+export type QueryServiceTableRowsQueryError = RpcStatus;
 
-export const useQueryServiceGetTableRows = <
-  TData = Awaited<ReturnType<typeof queryServiceGetTableRows>>,
+export const useQueryServiceTableRows = <
+  TData = Awaited<ReturnType<typeof queryServiceTableRows>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTableRowsParams,
+  params?: QueryServiceTableRowsParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetTableRows>>,
+      Awaited<ReturnType<typeof queryServiceTableRows>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetTableRows>>,
+  Awaited<ReturnType<typeof queryServiceTableRows>>,
   TError,
   TData,
   QueryKey
@@ -872,22 +877,22 @@ export const useQueryServiceGetTableRows = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetTableRowsQueryKey(instanceId, tableName, params);
+    getQueryServiceTableRowsQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetTableRows>>
+    Awaited<ReturnType<typeof queryServiceTableRows>>
   > = ({ signal }) =>
-    queryServiceGetTableRows(instanceId, tableName, params, signal);
+    queryServiceTableRows(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetTableRows>>,
+    Awaited<ReturnType<typeof queryServiceTableRows>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetTableRows>>,
+    Awaited<ReturnType<typeof queryServiceTableRows>>,
     TError,
     TData,
     QueryKey
@@ -901,13 +906,13 @@ export const useQueryServiceGetTableRows = <
 /**
  * @summary Get outliers for a numeric column
  */
-export const queryServiceGetRugHistogram = (
+export const queryServiceColumnRugHistogram = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetRugHistogramParams,
+  params?: QueryServiceColumnRugHistogramParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetRugHistogramResponse>({
+  return httpClient<V1ColumnRugHistogramResponse>({
     url: `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
     method: "get",
     params,
@@ -915,36 +920,36 @@ export const queryServiceGetRugHistogram = (
   });
 };
 
-export const getQueryServiceGetRugHistogramQueryKey = (
+export const getQueryServiceColumnRugHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetRugHistogramParams
+  params?: QueryServiceColumnRugHistogramParams
 ) => [
   `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceGetRugHistogramQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetRugHistogram>>
+export type QueryServiceColumnRugHistogramQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>
 >;
-export type QueryServiceGetRugHistogramQueryError = RpcStatus;
+export type QueryServiceColumnRugHistogramQueryError = RpcStatus;
 
-export const useQueryServiceGetRugHistogram = <
-  TData = Awaited<ReturnType<typeof queryServiceGetRugHistogram>>,
+export const useQueryServiceColumnRugHistogram = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetRugHistogramParams,
+  params?: QueryServiceColumnRugHistogramParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetRugHistogram>>,
+      Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetRugHistogram>>,
+  Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
   TError,
   TData,
   QueryKey
@@ -953,22 +958,22 @@ export const useQueryServiceGetRugHistogram = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetRugHistogramQueryKey(instanceId, tableName, params);
+    getQueryServiceColumnRugHistogramQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetRugHistogram>>
+    Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>
   > = ({ signal }) =>
-    queryServiceGetRugHistogram(instanceId, tableName, params, signal);
+    queryServiceColumnRugHistogram(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetRugHistogram>>,
+    Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetRugHistogram>>,
+    Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
     TError,
     TData,
     QueryKey
@@ -982,13 +987,13 @@ export const useQueryServiceGetRugHistogram = <
 /**
  * @summary Estimates the smallest time grain present in the column
  */
-export const queryServiceEstimateSmallestTimeGrain = (
+export const queryServiceColumnTimeGrain = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceEstimateSmallestTimeGrainParams,
+  params?: QueryServiceColumnTimeGrainParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1EstimateSmallestTimeGrainResponse>({
+  return httpClient<V1ColumnTimeGrainResponse>({
     url: `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
     method: "get",
     params,
@@ -996,36 +1001,36 @@ export const queryServiceEstimateSmallestTimeGrain = (
   });
 };
 
-export const getQueryServiceEstimateSmallestTimeGrainQueryKey = (
+export const getQueryServiceColumnTimeGrainQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceEstimateSmallestTimeGrainParams
+  params?: QueryServiceColumnTimeGrainParams
 ) => [
   `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceEstimateSmallestTimeGrainQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>
+export type QueryServiceColumnTimeGrainQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>
 >;
-export type QueryServiceEstimateSmallestTimeGrainQueryError = RpcStatus;
+export type QueryServiceColumnTimeGrainQueryError = RpcStatus;
 
-export const useQueryServiceEstimateSmallestTimeGrain = <
-  TData = Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>,
+export const useQueryServiceColumnTimeGrain = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceEstimateSmallestTimeGrainParams,
+  params?: QueryServiceColumnTimeGrainParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>,
+      Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>,
+  Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
   TError,
   TData,
   QueryKey
@@ -1034,31 +1039,22 @@ export const useQueryServiceEstimateSmallestTimeGrain = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceEstimateSmallestTimeGrainQueryKey(
-      instanceId,
-      tableName,
-      params
-    );
+    getQueryServiceColumnTimeGrainQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>
+    Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>
   > = ({ signal }) =>
-    queryServiceEstimateSmallestTimeGrain(
-      instanceId,
-      tableName,
-      params,
-      signal
-    );
+    queryServiceColumnTimeGrain(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>,
+    Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceEstimateSmallestTimeGrain>>,
+    Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
     TError,
     TData,
     QueryKey
@@ -1072,13 +1068,13 @@ export const useQueryServiceEstimateSmallestTimeGrain = <
 /**
  * @summary TableCardinality (TODO: add description)
  */
-export const queryServiceGetTableCardinality = (
+export const queryServiceTableCardinality = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTableCardinalityParams,
+  params?: QueryServiceTableCardinalityParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetTableCardinalityResponse>({
+  return httpClient<V1TableCardinalityResponse>({
     url: `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
     method: "get",
     params,
@@ -1086,36 +1082,36 @@ export const queryServiceGetTableCardinality = (
   });
 };
 
-export const getQueryServiceGetTableCardinalityQueryKey = (
+export const getQueryServiceTableCardinalityQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTableCardinalityParams
+  params?: QueryServiceTableCardinalityParams
 ) => [
   `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceGetTableCardinalityQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetTableCardinality>>
+export type QueryServiceTableCardinalityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceTableCardinality>>
 >;
-export type QueryServiceGetTableCardinalityQueryError = RpcStatus;
+export type QueryServiceTableCardinalityQueryError = RpcStatus;
 
-export const useQueryServiceGetTableCardinality = <
-  TData = Awaited<ReturnType<typeof queryServiceGetTableCardinality>>,
+export const useQueryServiceTableCardinality = <
+  TData = Awaited<ReturnType<typeof queryServiceTableCardinality>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTableCardinalityParams,
+  params?: QueryServiceTableCardinalityParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetTableCardinality>>,
+      Awaited<ReturnType<typeof queryServiceTableCardinality>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetTableCardinality>>,
+  Awaited<ReturnType<typeof queryServiceTableCardinality>>,
   TError,
   TData,
   QueryKey
@@ -1124,22 +1120,22 @@ export const useQueryServiceGetTableCardinality = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetTableCardinalityQueryKey(instanceId, tableName, params);
+    getQueryServiceTableCardinalityQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetTableCardinality>>
+    Awaited<ReturnType<typeof queryServiceTableCardinality>>
   > = ({ signal }) =>
-    queryServiceGetTableCardinality(instanceId, tableName, params, signal);
+    queryServiceTableCardinality(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetTableCardinality>>,
+    Awaited<ReturnType<typeof queryServiceTableCardinality>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetTableCardinality>>,
+    Awaited<ReturnType<typeof queryServiceTableCardinality>>,
     TError,
     TData,
     QueryKey
@@ -1153,13 +1149,13 @@ export const useQueryServiceGetTableCardinality = <
 /**
  * @summary Get the time range summaries (min, max) for a column
  */
-export const queryServiceGetTimeRangeSummary = (
+export const queryServiceColumnTimeRange = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTimeRangeSummaryParams,
+  params?: QueryServiceColumnTimeRangeParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1GetTimeRangeSummaryResponse>({
+  return httpClient<V1ColumnTimeRangeResponse>({
     url: `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
     method: "get",
     params,
@@ -1167,36 +1163,36 @@ export const queryServiceGetTimeRangeSummary = (
   });
 };
 
-export const getQueryServiceGetTimeRangeSummaryQueryKey = (
+export const getQueryServiceColumnTimeRangeQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTimeRangeSummaryParams
+  params?: QueryServiceColumnTimeRangeParams
 ) => [
   `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
   ...(params ? [params] : []),
 ];
 
-export type QueryServiceGetTimeRangeSummaryQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>
+export type QueryServiceColumnTimeRangeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnTimeRange>>
 >;
-export type QueryServiceGetTimeRangeSummaryQueryError = RpcStatus;
+export type QueryServiceColumnTimeRangeQueryError = RpcStatus;
 
-export const useQueryServiceGetTimeRangeSummary = <
-  TData = Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>,
+export const useQueryServiceColumnTimeRange = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  params?: QueryServiceGetTimeRangeSummaryParams,
+  params?: QueryServiceColumnTimeRangeParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>,
+      Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>,
+  Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
   TError,
   TData,
   QueryKey
@@ -1205,22 +1201,22 @@ export const useQueryServiceGetTimeRangeSummary = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetTimeRangeSummaryQueryKey(instanceId, tableName, params);
+    getQueryServiceColumnTimeRangeQueryKey(instanceId, tableName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>
+    Awaited<ReturnType<typeof queryServiceColumnTimeRange>>
   > = ({ signal }) =>
-    queryServiceGetTimeRangeSummary(instanceId, tableName, params, signal);
+    queryServiceColumnTimeRange(instanceId, tableName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>,
+    Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetTimeRangeSummary>>,
+    Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
     TError,
     TData,
     QueryKey
@@ -1234,49 +1230,49 @@ export const useQueryServiceGetTimeRangeSummary = <
 /**
  * @summary Generate time series
  */
-export const queryServiceGenerateTimeSeries = (
+export const queryServiceColumnTimeSeries = (
   instanceId: string,
   tableName: string,
-  queryServiceGenerateTimeSeriesBody: QueryServiceGenerateTimeSeriesBody
+  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody
 ) => {
-  return httpClient<V1GenerateTimeSeriesResponse>({
+  return httpClient<V1ColumnTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceGenerateTimeSeriesBody,
+    data: queryServiceColumnTimeSeriesBody,
   });
 };
 
-export const getQueryServiceGenerateTimeSeriesQueryKey = (
+export const getQueryServiceColumnTimeSeriesQueryKey = (
   instanceId: string,
   tableName: string,
-  queryServiceGenerateTimeSeriesBody: QueryServiceGenerateTimeSeriesBody
+  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody
 ) => [
   `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
-  queryServiceGenerateTimeSeriesBody,
+  queryServiceColumnTimeSeriesBody,
 ];
 
-export type QueryServiceGenerateTimeSeriesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>
+export type QueryServiceColumnTimeSeriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
 >;
-export type QueryServiceGenerateTimeSeriesQueryError = RpcStatus;
+export type QueryServiceColumnTimeSeriesQueryError = RpcStatus;
 
-export const useQueryServiceGenerateTimeSeries = <
-  TData = Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>,
+export const useQueryServiceColumnTimeSeries = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  queryServiceGenerateTimeSeriesBody: QueryServiceGenerateTimeSeriesBody,
+  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>,
+      Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>,
+  Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
   TError,
   TData,
   QueryKey
@@ -1285,30 +1281,30 @@ export const useQueryServiceGenerateTimeSeries = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGenerateTimeSeriesQueryKey(
+    getQueryServiceColumnTimeSeriesQueryKey(
       instanceId,
       tableName,
-      queryServiceGenerateTimeSeriesBody
+      queryServiceColumnTimeSeriesBody
     );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>
+    Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
   > = () =>
-    queryServiceGenerateTimeSeries(
+    queryServiceColumnTimeSeries(
       instanceId,
       tableName,
-      queryServiceGenerateTimeSeriesBody
+      queryServiceColumnTimeSeriesBody
     );
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>,
+    Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGenerateTimeSeries>>,
+    Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
     TError,
     TData,
     QueryKey
@@ -1323,49 +1319,49 @@ export const useQueryServiceGenerateTimeSeries = <
  * @summary Get TopK elements from a table for a column given an agg function
 agg function and k are optional, defaults are count(*) and 50 respectively
  */
-export const queryServiceGetTopK = (
+export const queryServiceColumnTopK = (
   instanceId: string,
   tableName: string,
-  queryServiceGetTopKBody: QueryServiceGetTopKBody
+  queryServiceColumnTopKBody: QueryServiceColumnTopKBody
 ) => {
-  return httpClient<V1GetTopKResponse>({
+  return httpClient<V1ColumnTopKResponse>({
     url: `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceGetTopKBody,
+    data: queryServiceColumnTopKBody,
   });
 };
 
-export const getQueryServiceGetTopKQueryKey = (
+export const getQueryServiceColumnTopKQueryKey = (
   instanceId: string,
   tableName: string,
-  queryServiceGetTopKBody: QueryServiceGetTopKBody
+  queryServiceColumnTopKBody: QueryServiceColumnTopKBody
 ) => [
   `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
-  queryServiceGetTopKBody,
+  queryServiceColumnTopKBody,
 ];
 
-export type QueryServiceGetTopKQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceGetTopK>>
+export type QueryServiceColumnTopKQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceColumnTopK>>
 >;
-export type QueryServiceGetTopKQueryError = RpcStatus;
+export type QueryServiceColumnTopKQueryError = RpcStatus;
 
-export const useQueryServiceGetTopK = <
-  TData = Awaited<ReturnType<typeof queryServiceGetTopK>>,
+export const useQueryServiceColumnTopK = <
+  TData = Awaited<ReturnType<typeof queryServiceColumnTopK>>,
   TError = RpcStatus
 >(
   instanceId: string,
   tableName: string,
-  queryServiceGetTopKBody: QueryServiceGetTopKBody,
+  queryServiceColumnTopKBody: QueryServiceColumnTopKBody,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceGetTopK>>,
+      Awaited<ReturnType<typeof queryServiceColumnTopK>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceGetTopK>>,
+  Awaited<ReturnType<typeof queryServiceColumnTopK>>,
   TError,
   TData,
   QueryKey
@@ -1374,25 +1370,26 @@ export const useQueryServiceGetTopK = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceGetTopKQueryKey(
+    getQueryServiceColumnTopKQueryKey(
       instanceId,
       tableName,
-      queryServiceGetTopKBody
+      queryServiceColumnTopKBody
     );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceGetTopK>>
-  > = () => queryServiceGetTopK(instanceId, tableName, queryServiceGetTopKBody);
+    Awaited<ReturnType<typeof queryServiceColumnTopK>>
+  > = () =>
+    queryServiceColumnTopK(instanceId, tableName, queryServiceColumnTopKBody);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceGetTopK>>,
+    Awaited<ReturnType<typeof queryServiceColumnTopK>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(instanceId && tableName),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceGetTopK>>,
+    Awaited<ReturnType<typeof queryServiceColumnTopK>>,
     TError,
     TData,
     QueryKey

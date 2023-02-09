@@ -8,7 +8,7 @@ import (
 )
 
 // Metrics/Timeseries APIs
-func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.EstimateRollupIntervalRequest) (*runtimev1.EstimateRollupIntervalResponse, error) {
+func (s *Server) ColumnRollupInterval(ctx context.Context, request *runtimev1.ColumnRollupIntervalRequest) (*runtimev1.ColumnRollupIntervalResponse, error) {
 	q := &queries.RollupInterval{
 		TableName:  request.TableName,
 		ColumnName: request.ColumnName,
@@ -21,7 +21,7 @@ func (s *Server) EstimateRollupInterval(ctx context.Context, request *runtimev1.
 	return q.Result, nil
 }
 
-func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.GenerateTimeSeriesRequest) (*runtimev1.GenerateTimeSeriesResponse, error) {
+func (s *Server) ColumnTimeSeries(ctx context.Context, request *runtimev1.ColumnTimeSeriesRequest) (*runtimev1.ColumnTimeSeriesResponse, error) {
 	q := &queries.ColumnTimeseries{
 		TableName:           request.TableName,
 		TimestampColumnName: request.TimestampColumnName,
@@ -36,7 +36,7 @@ func (s *Server) GenerateTimeSeries(ctx context.Context, request *runtimev1.Gene
 		return nil, err
 	}
 
-	return &runtimev1.GenerateTimeSeriesResponse{
+	return &runtimev1.ColumnTimeSeriesResponse{
 		Rollup: &runtimev1.TimeSeriesResponse{
 			Results:    q.Result.Results,
 			Spark:      q.Result.Spark,

@@ -23,71 +23,56 @@ export type QueryServiceQueryBody = {
 };
 
 /**
- * Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
+ * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
  */
-export type QueryServiceGetTopKBody = {
+export type QueryServiceColumnTopKBody = {
   agg?: string;
   columnName?: string;
   k?: number;
   priority?: number;
 };
 
-export type QueryServiceGetTimeRangeSummaryParams = {
+export type QueryServiceColumnTimeRangeParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceGetTableCardinalityParams = { priority?: number };
+export type QueryServiceTableCardinalityParams = { priority?: number };
 
-export type QueryServiceEstimateSmallestTimeGrainParams = {
+export type QueryServiceColumnTimeGrainParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceGetRugHistogramParams = {
+export type QueryServiceColumnRugHistogramParams = {
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceGetTableRowsParams = {
-  limit?: number;
-  priority?: number;
-};
+export type QueryServiceTableRowsParams = { limit?: number; priority?: number };
 
-export type QueryServiceEstimateRollupIntervalBody = {
+export type QueryServiceColumnRollupIntervalBody = {
   columnName?: string;
   priority?: number;
 };
 
-export type QueryServiceGetNumericHistogramHistogramMethod =
-  typeof QueryServiceGetNumericHistogramHistogramMethod[keyof typeof QueryServiceGetNumericHistogramHistogramMethod];
+export type QueryServiceColumnNumericHistogramHistogramMethod =
+  typeof QueryServiceColumnNumericHistogramHistogramMethod[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const QueryServiceGetNumericHistogramHistogramMethod = {
+export const QueryServiceColumnNumericHistogramHistogramMethod = {
   HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
-export type QueryServiceGetNumericHistogramParams = {
+export type QueryServiceColumnNumericHistogramParams = {
   columnName?: string;
-  histogramMethod?: QueryServiceGetNumericHistogramHistogramMethod;
+  histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
   priority?: number;
 };
 
-export type QueryServiceGetNullCountParams = {
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceGetDescriptiveStatisticsParams = {
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceProfileColumnsParams = { priority?: number };
-
-export type QueryServiceGetCardinalityOfColumnParams = {
+export type QueryServiceColumnNullCountParams = {
   columnName?: string;
   priority?: number;
 };
@@ -97,6 +82,15 @@ export type QueryServiceMetricsViewTotalsBody = {
   measureNames?: string[];
   priority?: number;
   timeEnd?: string;
+  timeStart?: string;
+};
+
+export type QueryServiceMetricsViewTimeSeriesBody = {
+  filter?: V1MetricsViewFilter;
+  measureNames?: string[];
+  priority?: number;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   timeStart?: string;
 };
 
@@ -112,13 +106,16 @@ export type QueryServiceMetricsViewToplistBody = {
   timeStart?: string;
 };
 
-export type QueryServiceMetricsViewTimeSeriesBody = {
-  filter?: V1MetricsViewFilter;
-  measureNames?: string[];
+export type QueryServiceColumnDescriptiveStatisticsParams = {
+  columnName?: string;
   priority?: number;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  timeStart?: string;
+};
+
+export type QueryServiceTableColumnsParams = { priority?: number };
+
+export type QueryServiceColumnCardinalityParams = {
+  columnName?: string;
+  priority?: number;
 };
 
 export type RuntimeServiceRenameFileBody = {
@@ -217,9 +214,9 @@ export interface V1TimeSeriesTimeRange {
   start?: string;
 }
 
-export type QueryServiceGenerateTimeSeriesBody = {
+export type QueryServiceColumnTimeSeriesBody = {
   filters?: V1MetricsViewFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasure[];
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
   pixels?: number;
   priority?: number;
   sampleSize?: number;
@@ -254,6 +251,20 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export type V1TableRowsResponseDataItem = { [key: string]: any };
+
+export interface V1TableRowsResponse {
+  data?: V1TableRowsResponseDataItem[];
+}
+
+export interface V1TableColumnsResponse {
+  profileColumns?: V1ProfileColumn[];
+}
+
+export interface V1TableCardinalityResponse {
+  cardinality?: string;
+}
 
 export interface V1StructType {
   fields?: StructTypeField[];
@@ -304,6 +315,16 @@ export interface V1RenameFileAndReconcileRequest {
   toPath?: string;
 }
 
+export interface V1RefreshAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+}
+
 export interface V1RefreshAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
@@ -347,16 +368,6 @@ It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1ReconcileResponse {
@@ -409,10 +420,6 @@ export interface V1ProfileColumn {
   type?: string;
 }
 
-export interface V1ProfileColumnsResponse {
-  profileColumns?: V1ProfileColumn[];
-}
-
 export interface V1PingResponse {
   time?: string;
   version?: string;
@@ -448,7 +455,7 @@ export interface V1NumericHistogramBins {
 }
 
 /**
- * Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
+ * Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
 Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
  */
 export interface V1NumericSummary {
@@ -466,11 +473,6 @@ export interface V1Model {
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
-
-export interface V1MetricsViewTotalsResponse {
-  data?: V1MetricsViewTotalsResponseData;
-  meta?: V1MetricsViewColumn[];
-}
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
@@ -498,6 +500,11 @@ export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
+}
+
+export interface V1MetricsViewTotalsResponse {
+  data?: V1MetricsViewTotalsResponseData;
+  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {
@@ -566,36 +573,6 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
-export interface V1GetTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
-export interface V1GetTimeRangeSummaryResponse {
-  timeRangeSummary?: V1TimeRangeSummary;
-}
-
-export type V1GetTableRowsResponseDataItem = { [key: string]: any };
-
-export interface V1GetTableRowsResponse {
-  data?: V1GetTableRowsResponseDataItem[];
-}
-
-export interface V1GetTableCardinalityResponse {
-  cardinality?: string;
-}
-
-export interface V1GetRugHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
-export interface V1GetNumericHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
-export interface V1GetNullCountResponse {
-  count?: number;
-}
-
 export interface V1GetInstanceResponse {
   instance?: V1Instance;
 }
@@ -603,32 +580,6 @@ export interface V1GetInstanceResponse {
 export interface V1GetFileResponse {
   blob?: string;
   updatedOn?: string;
-}
-
-export interface V1GetDescriptiveStatisticsResponse {
-  numericSummary?: V1NumericSummary;
-}
-
-export interface V1GetCatalogEntryResponse {
-  entry?: V1CatalogEntry;
-}
-
-export interface V1GetCardinalityOfColumnResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
-export interface V1GenerateTimeSeriesResponse {
-  rollup?: V1TimeSeriesResponse;
-}
-
-export interface V1EstimateSmallestTimeGrainResponse {
-  timeGrain?: V1TimeGrain;
-}
-
-export interface V1EstimateRollupIntervalResponse {
-  end?: string;
-  interval?: V1TimeGrain;
-  start?: string;
 }
 
 export interface V1DeleteInstanceResponse {
@@ -685,12 +636,54 @@ export interface V1Connector {
   properties?: ConnectorProperty[];
 }
 
+export interface V1ColumnTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1ColumnTimeSeriesResponse {
+  rollup?: V1TimeSeriesResponse;
+}
+
+export interface V1ColumnTimeRangeResponse {
+  timeRangeSummary?: V1TimeRangeSummary;
+}
+
+export interface V1ColumnTimeGrainResponse {
+  timeGrain?: V1TimeGrain;
+}
+
+export interface V1ColumnRugHistogramResponse {
+  numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnRollupIntervalResponse {
+  end?: string;
+  interval?: V1TimeGrain;
+  start?: string;
+}
+
+export interface V1ColumnNumericHistogramResponse {
+  numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnNullCountResponse {
+  count?: number;
+}
+
+export interface V1ColumnDescriptiveStatisticsResponse {
+  numericSummary?: V1NumericSummary;
+}
+
 /**
- * Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
+ * Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
   cardinality?: number;
   topK?: V1TopK;
+}
+
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {
@@ -707,6 +700,10 @@ export interface V1CatalogEntry {
   source?: V1Source;
   table?: V1Table;
   updatedOn?: string;
+}
+
+export interface V1GetCatalogEntryResponse {
+  entry?: V1CatalogEntry;
 }
 
 export interface Runtimev1Type {
@@ -809,12 +806,6 @@ export interface MetricsViewDimension {
   name?: string;
 }
 
-export interface GenerateTimeSeriesRequestBasicMeasure {
-  expression?: string;
-  id?: string;
-  sqlName?: string;
-}
-
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
 
@@ -836,4 +827,10 @@ export interface ConnectorProperty {
   nullable?: boolean;
   placeholder?: string;
   type?: ConnectorPropertyType;
+}
+
+export interface ColumnTimeSeriesRequestBasicMeasure {
+  expression?: string;
+  id?: string;
+  sqlName?: string;
 }

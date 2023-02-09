@@ -27,14 +27,14 @@ type ColumnTimeseriesResult struct {
 }
 
 type ColumnTimeseries struct {
-	TableName           string                                              `json:"table_name"`
-	Measures            []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure `json:"measures"`
-	TimestampColumnName string                                              `json:"timestamp_column_name"`
-	TimeRange           *runtimev1.TimeSeriesTimeRange                      `json:"time_range"`
-	Filters             *runtimev1.MetricsViewFilter                        `json:"filters"`
-	Pixels              int32                                               `json:"pixels"`
-	SampleSize          int32                                               `json:"sample_size"`
-	Result              *ColumnTimeseriesResult                             `json:"-"`
+	TableName           string                                            `json:"table_name"`
+	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
+	TimestampColumnName string                                            `json:"timestamp_column_name"`
+	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
+	Filters             *runtimev1.MetricsViewFilter                      `json:"filters"`
+	Pixels              int32                                             `json:"pixels"`
+	SampleSize          int32                                             `json:"sample_size"`
+	Result              *ColumnTimeseriesResult                           `json:"-"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -422,7 +422,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
+func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
 		result += measure.Expression + " as " + safeName(measure.SqlName)
@@ -434,7 +434,7 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.GenerateTimeSeriesRe
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure) string {
+func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
 		result += fmt.Sprintf(`series.%s as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
@@ -445,9 +445,9 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.GenerateTimeSeriesReque
 	return result
 }
 
-func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure {
+func normaliseMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure {
 	if len(measures) == 0 {
-		return []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+		return []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "count(*)",
 				SqlName:    "count",
@@ -468,7 +468,7 @@ func normaliseMeasures(measures []*runtimev1.GenerateTimeSeriesRequest_BasicMeas
 	}
 
 	if !countExists && generateCount {
-		measures = append(measures, &runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+		measures = append(measures, &runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 			Expression: "count(*)",
 			SqlName:    "count",
 			Id:         "",

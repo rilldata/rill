@@ -23,8 +23,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useQueryServiceGetTimeRangeSummary,
-    V1GetTimeRangeSummaryResponse,
+    useQueryServiceColumnTimeRange,
+    V1ColumnTimeRangeResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
@@ -79,7 +79,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";
 
-  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
+  let timeRangeQuery: UseQueryStoreResult<V1ColumnTimeRangeResponse, Error>;
 
   $: if (
     metaQuery &&
@@ -87,7 +87,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     !$metaQuery.isRefetching &&
     hasTimeSeries
   ) {
-    timeRangeQuery = useQueryServiceGetTimeRangeSummary(
+    timeRangeQuery = useQueryServiceColumnTimeRange(
       $runtimeStore.instanceId,
       $metaQuery.data.model,
       { columnName: $metaQuery.data.timeDimension }

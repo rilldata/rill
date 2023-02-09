@@ -9,9 +9,9 @@
   } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useQueryServiceGetTableCardinality,
-    useQueryServiceProfileColumns,
-    V1GetTableCardinalityResponse,
+    useQueryServiceTableCardinality,
+    useQueryServiceTableColumns,
+    V1TableCardinalityResponse,
     V1Model,
     V1ProfileColumn,
   } from "@rilldata/web-common/runtime-client";
@@ -54,7 +54,7 @@
 
   $: if (sourceTableReferences?.length) {
     cardinalityQueries = sourceTableReferences.map((table) => {
-      return useQueryServiceGetTableCardinality(
+      return useQueryServiceTableCardinality(
         $runtimeStore?.instanceId,
         getMatchingCatalogReference(
           table,
@@ -66,7 +66,7 @@
       );
     });
     sourceProfileColumns = sourceTableReferences.map((table) => {
-      return useQueryServiceProfileColumns(
+      return useQueryServiceTableColumns(
         $runtimeStore?.instanceId,
         getMatchingCatalogReference(
           table,
@@ -97,9 +97,9 @@
     0
   );
 
-  let modelCardinalityQuery: UseQueryStoreResult<V1GetTableCardinalityResponse>;
+  let modelCardinalityQuery: UseQueryStoreResult<V1TableCardinalityResponse>;
   $: if (model?.name)
-    modelCardinalityQuery = useQueryServiceGetTableCardinality(
+    modelCardinalityQuery = useQueryServiceTableCardinality(
       $runtimeStore.instanceId,
       model?.name
     );

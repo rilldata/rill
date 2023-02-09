@@ -9,8 +9,6 @@ import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
 service QueryService {
-  // Queries
-
   // Query runs a SQL query against the instance's OLAP datastore.
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
@@ -50,8 +48,8 @@ service QueryService {
 
   // Profiling APIs
 
-  // EstimateRollupInterval (TODO: add description)
-  rpc EstimateRollupInterval(EstimateRollupIntervalRequest) returns (EstimateRollupIntervalResponse) {
+  // ColumnRollupInterval (TODO: add description)
+  rpc ColumnRollupInterval(ColumnRollupIntervalRequest) returns (ColumnRollupIntervalResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
       body: "*"
@@ -60,7 +58,7 @@ service QueryService {
 
   // Get TopK elements from a table for a column given an agg function
   // agg function and k are optional, defaults are count(*) and 50 respectively
-  rpc GetTopK(GetTopKRequest) returns (GetTopKResponse) {
+  rpc ColumnTopK(ColumnTopKRequest) returns (ColumnTopKResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}",
       body: "*"
@@ -68,42 +66,42 @@ service QueryService {
   }
 
   // Get the number of nulls in a column
-  rpc GetNullCount(GetNullCountRequest) returns (GetNullCountResponse) {
+  rpc ColumnNullCount(ColumnNullCountRequest) returns (ColumnNullCountResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}"};
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
-  rpc GetDescriptiveStatistics(GetDescriptiveStatisticsRequest) returns (GetDescriptiveStatisticsResponse) {
+  rpc ColumnDescriptiveStatistics(ColumnDescriptiveStatisticsRequest) returns (ColumnDescriptiveStatisticsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}"};
   }
 
   // Estimates the smallest time grain present in the column
-  rpc EstimateSmallestTimeGrain(EstimateSmallestTimeGrainRequest) returns (EstimateSmallestTimeGrainResponse) {
+  rpc ColumnTimeGrain(ColumnTimeGrainRequest) returns (ColumnTimeGrainResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}"};
   }
 
   // Get the histogram for values in a column
-  rpc GetNumericHistogram(GetNumericHistogramRequest) returns (GetNumericHistogramResponse) {
+  rpc ColumnNumericHistogram(ColumnNumericHistogramRequest) returns (ColumnNumericHistogramResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}"};
   }
 
   // Get outliers for a numeric column
-  rpc GetRugHistogram(GetRugHistogramRequest) returns (GetRugHistogramResponse) {
+  rpc ColumnRugHistogram(ColumnRugHistogramRequest) returns (ColumnRugHistogramResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}"};
   }
 
   // Get the time range summaries (min, max) for a column
-  rpc GetTimeRangeSummary(GetTimeRangeSummaryRequest) returns (GetTimeRangeSummaryResponse) {
+  rpc ColumnTimeRange(ColumnTimeRangeRequest) returns (ColumnTimeRangeResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}"};
   }
 
   // Get cardinality for a column
-  rpc GetCardinalityOfColumn(GetCardinalityOfColumnRequest) returns (GetCardinalityOfColumnResponse) {
+  rpc ColumnCardinality(ColumnCardinalityRequest) returns (ColumnCardinalityResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/column-cardinality/tables/{table_name}"};
   }
 
   // Generate time series
-  rpc GenerateTimeSeries(GenerateTimeSeriesRequest) returns (GenerateTimeSeriesResponse) {
+  rpc ColumnTimeSeries(ColumnTimeSeriesRequest) returns (ColumnTimeSeriesResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}",
       body: "*"
@@ -113,26 +111,22 @@ service QueryService {
   // Tablewide profiling APIs
 
   // TableCardinality (TODO: add description)
-  rpc GetTableCardinality(GetTableCardinalityRequest) returns (GetTableCardinalityResponse) {
+  rpc TableCardinality(TableCardinalityRequest) returns (TableCardinalityResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/table-cardinality/tables/{table_name}"};
   }
 
-  // ProfileColumns (TODO: add description)
-  rpc ProfileColumns(ProfileColumnsRequest) returns (ProfileColumnsResponse) {
+  // TableColumns (TODO: add description)
+  rpc TableColumns(TableColumnsRequest) returns (TableColumnsResponse) {
     option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"};
   }
 
   // TableRows (TODO: add description)
-  rpc GetTableRows(GetTableRowsRequest) returns (GetTableRowsResponse) {
+  rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
 }
 
-// **********
-// Queries
-// **********
-
-// Request message for RuntimeService.Query
+// Request message for QueryService.Query
 message QueryRequest {
   // Instance to query
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
@@ -146,7 +140,7 @@ message QueryRequest {
   bool dry_run = 5;
 }
 
-// Response message for RuntimeService.Query
+// Response message for QueryService.Query
 message QueryResponse {
   // Schema of result data
   StructType meta = 1;
@@ -158,7 +152,7 @@ message QueryResponse {
 // Explore APIs
 // **********
 
-// Request message for RuntimeService.MetricsViewToplist
+// Request message for QueryService.MetricsViewToplist
 message MetricsViewToplistRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
@@ -173,13 +167,13 @@ message MetricsViewToplistRequest {
   int32 priority = 11;
 }
 
-// Response message for RuntimeService.MetricsViewToplist
+// Response message for QueryService.MetricsViewToplist
 message MetricsViewToplistResponse {
   repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
-// Request message for RuntimeService.MetricsViewTimeSeries
+// Request message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
@@ -191,13 +185,13 @@ message MetricsViewTimeSeriesRequest {
   int32 priority = 8;
 }
 
-// Response message for RuntimeService.MetricsViewTimeSeries
+// Response message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
   repeated TimeSeriesValue data = 2;
 }
 
-// Request message for RuntimeService.MetricsViewTotals
+// Request message for QueryService.MetricsViewTotals
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
@@ -208,7 +202,7 @@ message MetricsViewTotalsRequest {
   int32 priority = 8;
 }
 
-// Response message for RuntimeService.MetricsViewTotals
+// Response message for QueryService.MetricsViewTotals
 message MetricsViewTotalsResponse {
   repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
@@ -242,14 +236,14 @@ message MetricsViewColumn {
 // Profiling APIs
 // **********
 
-message EstimateRollupIntervalRequest {
+message ColumnRollupIntervalRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
 }
 
-message EstimateRollupIntervalResponse {
+message ColumnRollupIntervalResponse {
   google.protobuf.Timestamp start = 1;
   google.protobuf.Timestamp end = 2;
   TimeGrain interval = 3;
@@ -263,7 +257,7 @@ message ProfileColumnSummary {
   }
 }
 
-// Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
+// Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
 message CategoricalSummary {
   oneof case {
     TopK top_k = 1;
@@ -271,15 +265,15 @@ message CategoricalSummary {
   }
 }
 
-message GetCardinalityOfColumnResponse {
+message ColumnCardinalityResponse {
   CategoricalSummary categorical_summary = 1;
 }
 
-message GetTopKResponse {
+message ColumnTopKResponse {
   CategoricalSummary categorical_summary = 1;
 }
 
-// Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
+// Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
 // Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
 message NumericSummary {
   oneof case {
@@ -289,19 +283,19 @@ message NumericSummary {
   }
 }
 
-message GetRugHistogramResponse {
+message ColumnRugHistogramResponse {
   NumericSummary numeric_summary = 1;
 }
 
-message GetNumericHistogramResponse {
+message ColumnNumericHistogramResponse {
   NumericSummary numeric_summary = 1;
 }
 
-message GetDescriptiveStatisticsResponse {
+message ColumnDescriptiveStatisticsResponse {
   NumericSummary numeric_summary = 1;
 }
 
-message GetTimeRangeSummaryResponse {
+message ColumnTimeRangeResponse {
   TimeRangeSummary time_range_summary = 1;
 }
 
@@ -327,8 +321,8 @@ message NumericOutliers {
   repeated Outlier outliers = 1;
 }
 
-// Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
-message GetTopKRequest {
+// Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
+message ColumnTopKRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -345,28 +339,28 @@ message TopK {
   }
 }
 
-// Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
-message GetNullCountRequest {
+// Request for QueryService.ColumnNullCount. Returns the null count for a given column for table table_name
+message ColumnNullCountRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
 }
 
-// Response for RuntimeService.GetNullCount
-message GetNullCountResponse {
+// Response for QueryService.ColumnNullCount
+message ColumnNullCountResponse {
   double count = 1;
 }
 
-// Request for RuntimeService.GetGetDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
-message GetDescriptiveStatisticsRequest {
+// Request for QueryService.GetColumnDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
+message ColumnDescriptiveStatisticsRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
 }
 
-// Response for RuntimeService.GetDescriptiveStatistics
+// Response for QueryService.ColumnDescriptiveStatistics
 message NumericStatistics {
   double min = 1;
   double max = 2;
@@ -377,8 +371,8 @@ message NumericStatistics {
   double sd = 7;
 }
 
-// Request for RuntimeService.EstimateSmallestTimeGrainRequest
-message EstimateSmallestTimeGrainRequest {
+// Request for QueryService.ColumnTimeGrainRequest
+message ColumnTimeGrainRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -397,8 +391,8 @@ enum TimeGrain {
   TIME_GRAIN_YEAR = 8;
 }
 
-// Response for RuntimeService.EstimateSmallestTimeGrain
-message EstimateSmallestTimeGrainResponse {
+// Response for QueryService.ColumnTimeGrain
+message ColumnTimeGrainResponse {
   TimeGrain time_grain = 1;
 }
 
@@ -408,8 +402,8 @@ enum HistogramMethod {
   HISTOGRAM_METHOD_DIAGNOSTIC = 2;
 }
 
-// Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
-message GetNumericHistogramRequest {
+// Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name
+message ColumnNumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
@@ -417,7 +411,7 @@ message GetNumericHistogramRequest {
   int32 priority = 5;
 }
 
-// Response for RuntimeService.GetNumericHistogram
+// Response for QueryService.ColumnNumericHistogram
 message NumericHistogramBins {
   message Bin {
     int32 bucket = 1;
@@ -429,31 +423,31 @@ message NumericHistogramBins {
   repeated Bin bins = 1;
 }
 
-// Request for RuntimeService.GetRugHistogram
-message GetRugHistogramRequest {
+// Request for QueryService.ColumnRugHistogram
+message ColumnRugHistogramRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
 }
 
-// Request for RuntimeService.GetTimeRangeSummary
-message GetTimeRangeSummaryRequest {
+// Request for QueryService.ColumnTimeRange
+message ColumnTimeRangeRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
 }
 
-// Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
-message GetCardinalityOfColumnRequest {
+// Request for QueryService.ColumnCardinality. Returns the cardinality for a given column for table table_name
+message ColumnCardinalityRequest {
   string instance_id = 1;
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
 }
 
-message GenerateTimeSeriesRequest {
+message ColumnTimeSeriesRequest {
   string instance_id = 1;
   string table_name = 2;
   repeated BasicMeasure measures = 3;
@@ -502,7 +496,7 @@ message TimeSeriesResponse {
   int32 sample_size = 4;
 }
 
-message GenerateTimeSeriesResponse {
+message ColumnTimeSeriesResponse {
   TimeSeriesResponse rollup = 1;
 }
 
@@ -523,23 +517,23 @@ enum DatabaseObjectType {
   DATABASE_OBJECT_TYPE_FUNCTION = 3;
 }
 
-message GetTableCardinalityRequest {
+message TableCardinalityRequest {
   string instance_id = 1;
   string table_name = 2;
   int32 priority = 3;
 }
 
-message GetTableCardinalityResponse {
+message TableCardinalityResponse {
   int64 cardinality = 1;
 }
 
-message ProfileColumnsRequest {
+message TableColumnsRequest {
   string instance_id = 1;
   string table_name = 2;
   int32 priority = 3;
 }
 
-message ProfileColumnsResponse {
+message TableColumnsResponse {
   repeated ProfileColumn profile_columns = 1;
 }
 
@@ -549,13 +543,13 @@ message ProfileColumn {
   int32 largest_string_length = 3;
 }
 
-message GetTableRowsRequest {
+message TableRowsRequest {
   string instance_id = 1;
   string table_name = 2;
   int32 limit = 3;
   int32 priority = 4;
 }
 
-message GetTableRowsResponse {
+message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }

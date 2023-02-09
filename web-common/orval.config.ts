@@ -23,22 +23,22 @@ export default defineConfig({
               useQuery: true,
             },
           },
-          QueryService_EstimateRollupInterval: {
+          QueryService_ColumnRollupInterval: {
             query: {
               useQuery: true,
             },
           },
-          QueryService_GetTopK: {
+          QueryService_ColumnTopK: {
             query: {
               useQuery: true,
             },
           },
-          QueryService_GenerateTimeSeries: {
+          QueryService_ColumnTimeSeries: {
             query: {
               useQuery: true,
             },
           },
-          QueryService_ProfileColumns: {
+          QueryService_TableColumns: {
             query: {
               useQuery: true,
             },
