@@ -15,6 +15,7 @@ and the menu closes.
   export let selection = undefined;
 
   export let dark: boolean = undefined;
+  export let disabled: boolean = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
@@ -70,6 +71,7 @@ and the menu closes.
   {location}
   {alignment}
   {distance}
+  {disabled}
   let:handleClose
   let:toggleFloatingElement
 >

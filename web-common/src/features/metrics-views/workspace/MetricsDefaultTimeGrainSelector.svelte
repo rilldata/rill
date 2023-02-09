@@ -6,6 +6,7 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { SelectMenu } from "../../../components/menu";
   import {
     getSelectableTimeGrains,
     TimeGrainOption,
@@ -23,7 +24,7 @@
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
 
   let timeRangeQuery;
-  $: if (selectedModel.name && timeColumn) {
+  $: if (selectedModel?.name && timeColumn) {
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
       selectedModel.name,
@@ -49,16 +50,17 @@
       selectedTimeRange,
       allTimeRange
     );
-
-    console.log(selectableTimeGrains);
   }
 
-  function updateMetricsDefinitionHandler(evt: Event) {
-    $metricsInternalRep.updateMetricKey(
-      "default_timegrain",
-      (<HTMLSelectElement>evt.target).value
-    );
-  }
+  $: options =
+    selectableTimeGrains
+      .filter((timeGrain) => timeGrain.enabled)
+      .map((grain) => {
+        return {
+          key: grain.timeGrain,
+          main: grain.timeGrain,
+        };
+      }) || [];
 
   let tooltipText = "";
   let dropdownDisabled = true;
@@ -74,7 +76,7 @@
   }
 </script>
 
-<div class="flex items-center">
+<div class="w-80 flex items-center">
   <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
     Default Time Grain
   </div>
@@ -85,20 +87,28 @@
       location="right"
       suppress={tooltipText === undefined}
     >
-      <select
-        class="hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300"
+      <SelectMenu
+        {options}
         disabled={dropdownDisabled}
-        on:change={updateMetricsDefinitionHandler}
-        style="background-color: #FFF; width:18em;"
-        value={defaultTimeGrainValue}
+        selection={defaultTimeGrainValue}
+        tailwindClasses="overflow-hidden"
+        alignment="start"
+        on:select={(evt) => {
+          $metricsInternalRep.updateMetricsParams({
+            default_timegrain: evt.detail?.key,
+          });
+        }}
       >
-        <option disabled hidden selected value="__DEFAULT_VALUE__"
-          >Select a time grain...</option
-        >
-        {#each selectableTimeGrains as timeGrain}
-          <option value={timeGrain.timeGrain}>{timeGrain.timeGrain}</option>
-        {/each}
-      </select>
+        {#if dropdownDisabled}
+          <span>Select a timestamp</span>
+        {:else if defaultTimeGrainValue === "__DEFAULT_VALUE__"}
+          <span>Select a default time range...</span>
+        {:else}
+          <span style:max-width="16em" class="font-bold truncate"
+            >{defaultTimeGrainValue}</span
+          >
+        {/if}
+      </SelectMenu>
 
       <TooltipContent slot="tooltip-content">
         {tooltipText}

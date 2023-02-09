@@ -21,6 +21,7 @@ A slot is provided to change the text within the button.
   export let block = false;
   export let level: undefined | "error" = undefined;
   export let dark: boolean = undefined;
+  export let disabled = false;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
@@ -39,6 +40,7 @@ A slot is provided to change the text within the button.
   {location}
   {alignment}
   {distance}
+  {disabled}
   on:select={(event) => {
     /** TODO: change this to work for multiple selections later. */
     selection = event.detail;
@@ -55,6 +57,7 @@ A slot is provided to change the text within the button.
     {tailwindClasses}
     {active}
     {block}
+    {disabled}
     {level}
   >
     <slot>

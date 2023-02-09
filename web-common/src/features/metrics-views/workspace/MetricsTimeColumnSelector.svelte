@@ -5,6 +5,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import { SelectMenu } from "../../../components/menu";
   import { selectTimestampColumnFromSchema } from "../column-selectors";
 
   export let metricsInternalRep;
@@ -22,15 +23,12 @@
     timestampColumns = [];
   }
 
-  function updateMetricsDefinitionHandler(evt: Event) {
-    $metricsInternalRep.updateMetricKey(
-      "timeseries",
-      (<HTMLSelectElement>evt.target).value
-    );
-  }
-
   function removeTimeseries() {
-    $metricsInternalRep.updateMetricKey("timeseries", "");
+    $metricsInternalRep.updateMetricsParams({
+      timeseries: "",
+      default_timegrain: "",
+      default_timerange: "",
+    });
   }
 
   let tooltipText = "";
@@ -45,9 +43,17 @@
     tooltipText = undefined;
     dropdownDisabled = false;
   }
+
+  $: options =
+    timestampColumns.map((columnName) => {
+      return {
+        key: columnName,
+        main: columnName,
+      };
+    }) || [];
 </script>
 
-<div class="flex items-center mb-3">
+<div class="w-80 flex items-center mb-3">
   <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
     Timestamp
   </div>
@@ -58,21 +64,26 @@
       location="right"
       suppress={tooltipText === undefined}
     >
-      <select
-        bind:this={selection}
-        class="hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300"
+      <SelectMenu
+        {options}
         disabled={dropdownDisabled}
-        on:change={updateMetricsDefinitionHandler}
-        style="background-color: #FFF; width:18em;"
-        value={timeColumnSelectedValue}
+        selection={timeColumnSelectedValue}
+        tailwindClasses="overflow-hidden"
+        alignment="start"
+        on:select={(evt) => {
+          $metricsInternalRep.updateMetricsParams({
+            timeseries: evt.detail?.key,
+          });
+        }}
       >
-        <option disabled hidden selected value="__DEFAULT_VALUE__"
-          >Select a timestamp...</option
-        >
-        {#each timestampColumns as column}
-          <option value={column}>{column}</option>
-        {/each}
-      </select>
+        {#if timeColumnSelectedValue === "__DEFAULT_VALUE__"}
+          <span class="text-gray-500">Select a timestamp column...</span>
+        {:else}
+          <span style:max-width="16em" class="font-bold truncate"
+            >{timeColumnSelectedValue}</span
+          >
+        {/if}
+      </SelectMenu>
 
       <TooltipContent slot="tooltip-content">
         {tooltipText}

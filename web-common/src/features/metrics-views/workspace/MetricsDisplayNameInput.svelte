@@ -14,10 +14,9 @@
     },
     onSubmit: async (values) => {
       try {
-        $metricsInternalRep.updateMetricKey(
-          "display_name",
-          values.newDisplayName
-        );
+        $metricsInternalRep.updateMetricsParams({
+          display_name: values.newDisplayName,
+        });
       } catch (err) {
         console.error(err);
         notifications.send({ message: err.response.data.message });
@@ -41,7 +40,7 @@
   $: updateFormWithNewDisplayName(displayName);
 </script>
 
-<div class="flex items-center mb-3">
+<div class="w-80 flex items-center mb-3">
   <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
     Display name
   </div>
@@ -53,7 +52,6 @@
         on:keydown={handleKeydown}
         on:blur={handleSubmit}
         class="bg-white hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300 px-1"
-        style="width:18em"
       />
     </form>
   </div>

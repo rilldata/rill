@@ -7,17 +7,18 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { SelectMenu } from "../../../components/menu";
-  import type { TimeSeriesTimeRange } from "../../dashboards/time-controls/time-control-types";
   import {
-    getSelectableTimeRangeNames,
-    makeTimeRanges,
+    getSelectableTimeGrains,
+    TimeGrainOption,
   } from "../../dashboards/time-controls/time-range-utils";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
 
-  $: timeRangeSelectedValue =
-    $metricsInternalRep.getMetricKey("default_timerange") ||
+  $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_timerange");
+
+  $: defaultTimeGrainValue =
+    $metricsInternalRep.getMetricKey("default_timegrain") ||
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
@@ -43,36 +44,28 @@
     };
   }
 
-  const getSelectableTimeRanges = (
-    allTimeRangeInDataset: TimeSeriesTimeRange
-  ) => {
-    const selectableTimeRangeNames = getSelectableTimeRangeNames(
-      allTimeRangeInDataset
+  let selectableTimeGrains: TimeGrainOption[] = [];
+  $: if (selectedTimeRange) {
+    selectableTimeGrains = getSelectableTimeGrains(
+      selectedTimeRange,
+      allTimeRange
     );
-    const selectableTimeRanges = makeTimeRanges(
-      selectableTimeRangeNames,
-      allTimeRangeInDataset
-    );
-    return selectableTimeRanges;
-  };
-
-  let selectableTimeRanges = [];
-  $: if (allTimeRange) {
-    selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
   }
 
   $: options =
-    selectableTimeRanges.map((range) => {
-      return {
-        key: range.name,
-        main: range.name,
-      };
-    }) || [];
+    selectableTimeGrains
+      .filter((timeGrain) => timeGrain.enabled)
+      .map((grain) => {
+        return {
+          key: grain.timeGrain,
+          main: grain.timeGrain,
+        };
+      }) || [];
 
   let tooltipText = "";
   let dropdownDisabled = true;
   $: if (selectedModel?.name === undefined) {
-    tooltipText = "Select a model before selecting a time range";
+    tooltipText = "Select a model before selecting a timestamp column";
     dropdownDisabled = true;
   } else if (!timeColumn) {
     tooltipText = "The selected model has no timestamp columns";
@@ -83,9 +76,9 @@
   }
 </script>
 
-<div class="w-80 flex items-center mb-3">
+<div class="flex items-center">
   <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-    Time Range
+    Default Time Grain
   </div>
   <div>
     <Tooltip
@@ -97,23 +90,20 @@
       <SelectMenu
         {options}
         disabled={dropdownDisabled}
-        selection={timeRangeSelectedValue}
+        selection={defaultTimeGrainValue}
         tailwindClasses="overflow-hidden"
         alignment="start"
         on:select={(evt) => {
           $metricsInternalRep.updateMetricsParams({
-            default_timerange: evt.detail?.key,
-            default_timegrain: "",
+            default_timegrain: evt.detail?.key,
           });
         }}
       >
-        {#if dropdownDisabled}
-          <span>Select a timestamp</span>
-        {:else if timeRangeSelectedValue === "__DEFAULT_VALUE__"}
-          <span>Select a default time range...</span>
+        {#if defaultTimeGrainValue === "__DEFAULT_VALUE__"}
+          <span class="text-gray-500">Select a default time range...</span>
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
-            >{timeRangeSelectedValue}</span
+            >{defaultTimeGrainValue}</span
           >
         {/if}
       </SelectMenu>

@@ -4,6 +4,7 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
 
   export let block = false;
+  export let disabled: boolean;
   export let tailwindClasses: string = undefined;
   export let active = false;
   export let level: undefined | "error" = undefined;
@@ -29,8 +30,10 @@
     error: `text-red-600 hover:bg-red-200 ${
       active ? "bg-red-200" : "bg-red-100"
     }`,
-    undefined: `bg-transparent hover:bg-gray-200 hover:dark:bg-gray-600 ${
-      active ? "bg-gray-200" : "bg-transparent"
+    undefined: `bg-transparent ${active ? "bg-gray-200" : "bg-transparent"} ${
+      disabled
+        ? "ui-copy-disabled-faint italic"
+        : "hover:bg-gray-200 hover:dark:bg-gray-600"
     }`,
   };
 </script>
@@ -44,7 +47,10 @@
   on:click
 >
   <slot />
-  <span class="{active ? '-rotate-180' : ''} transition-transform">
+  <span
+    class:hidden={disabled}
+    class="{active ? '-rotate-180' : ''} transition-transform"
+  >
     <CaretDownIcon />
   </span>
 </button>
