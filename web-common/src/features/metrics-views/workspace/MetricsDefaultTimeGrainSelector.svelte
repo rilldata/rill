@@ -91,6 +91,9 @@
   } else if (!timeColumn) {
     tooltipText = "The selected model has no timestamp columns";
     dropdownDisabled = true;
+  } else if (!selectedTimeRange) {
+    tooltipText = "Default time grain will be inferred from the data";
+    dropdownDisabled = true;
   } else {
     tooltipText = undefined;
     dropdownDisabled = false;
@@ -123,7 +126,11 @@
         on:select={handleDefaultTimeGrainUpdate}
       >
         {#if dropdownDisabled}
-          <span>Select a timestamp</span>
+          {#if !selectedTimeRange}
+            <span>Infered from data</span>
+          {:else}
+            <span>Select a timestamp</span>
+          {/if}
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
             >{defaultTimeGrainValue === "__DEFAULT_VALUE__"

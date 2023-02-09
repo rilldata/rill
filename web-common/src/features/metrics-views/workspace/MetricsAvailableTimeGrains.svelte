@@ -86,6 +86,9 @@
   } else if (!timeColumn) {
     tooltipText = "The selected model has no timestamp columns";
     dropdownDisabled = true;
+  } else if (!selectedTimeRange) {
+    tooltipText = "Time grains will be inferred from the data";
+    dropdownDisabled = true;
   } else {
     tooltipText = undefined;
     dropdownDisabled = false;
@@ -118,11 +121,17 @@
         alignment="start"
         on:select={handleAvailableTimeGrainsUpdate}
       >
-        {#if !availableTimeGrains.length}
-          <span class="font-bold">Infer from data</span>
+        {#if dropdownDisabled}
+          {#if !selectedTimeRange}
+            <span>Infered from data</span>
+          {:else}
+            <span>Select a timestamp</span>
+          {/if}
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
-            >{availableTimeGrains.join(",")}</span
+            >{availableTimeGrains.length
+              ? availableTimeGrains.join(",")
+              : "Infer from timerange"}</span
           >
         {/if}
       </SelectMenu>

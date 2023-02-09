@@ -22,6 +22,8 @@ A slot is provided to change the text within the button.
   export let level: undefined | "error" = undefined;
   export let dark: boolean = undefined;
   export let disabled = false;
+
+  /* For multiSelect maintain array of keys in the consumer */
   export let multiSelect = false;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
@@ -44,8 +46,7 @@ A slot is provided to change the text within the button.
   {disabled}
   {multiSelect}
   on:select={(event) => {
-    /** TODO: change this to work for multiple selections later. */
-    selection = event.detail;
+    if (!multiSelect) selection = event.detail;
     dispatch("select", selection);
   }}
   bind:selection

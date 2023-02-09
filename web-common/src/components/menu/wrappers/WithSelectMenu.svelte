@@ -54,7 +54,7 @@ and the menu closes.
 
   function isSelected(selection, key) {
     if (multiSelect) {
-      return selection && selection.includes(key);
+      return selection?.length && selection?.includes(key);
     }
     return selection === key || selection.key === key;
   }
@@ -68,7 +68,10 @@ and the menu closes.
   $: isAlreadySelectedButNotBeingAnimated = (
     key: string,
     isSelected: boolean
-  ) => temporarilySelectedKey === undefined && isSelected;
+  ) => {
+    if (multiSelect) return isSelected;
+    else return temporarilySelectedKey === undefined && isSelected;
+  };
 </script>
 
 <WithTogglableFloatingElement
