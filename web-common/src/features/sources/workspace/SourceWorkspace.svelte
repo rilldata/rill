@@ -7,8 +7,6 @@
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 
   export let sourceName: string;
-  export let embedded = false;
-  export let path: string = undefined;
 
   const switchToSource = async (name: string) => {
     if (!name) return;
@@ -21,7 +19,7 @@
 
 {#key sourceName}
   <WorkspaceContainer assetID={sourceName}>
-    <SourceWorkspaceHeader {sourceName} {path} {embedded} slot="header" />
+    <SourceWorkspaceHeader {sourceName} slot="header" />
     <SourceWorkspaceBody {sourceName} slot="body" />
     <SourceInspector {sourceName} slot="inspector" />
   </WorkspaceContainer>

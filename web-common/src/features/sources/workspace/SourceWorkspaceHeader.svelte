@@ -75,7 +75,11 @@
   let entry: V1CatalogEntry;
   let source: V1Source;
   $: entry = $getSource?.data?.entry;
-  $: source = entry?.source;
+  $: if (entry) {
+    source = entry?.source;
+    embedded = entry?.embedded;
+    path = entry?.source?.properties?.path;
+  }
 
   $: modelNames = useModelNames(runtimeInstanceId);
   $: dashboardNames = useDashboardNames(runtimeInstanceId);
@@ -232,10 +236,10 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
-    editable={!embedded}
-    width={headerWidth}
-    let:width
     appRunning={$appQueryStatusStore}
+    editable={!embedded}
+    let:width
+    width={headerWidth}
   >
     <svelte:fragment slot="icon">
       <Source />

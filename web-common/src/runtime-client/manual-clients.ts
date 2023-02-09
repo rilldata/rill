@@ -13,12 +13,18 @@ export type V1RuntimeGetConfig = {
   analytics_enabled: boolean;
   readonly: boolean;
 };
+
+export let globalConfig: V1RuntimeGetConfig;
+
 export const runtimeServiceGetConfig =
   async (): Promise<V1RuntimeGetConfig> => {
-    return httpClient({
-      url: "/local/config",
-      method: "GET",
-    });
+    if (!globalConfig) {
+      globalConfig = await httpClient({
+        url: "/local/config",
+        method: "GET",
+      });
+    }
+    return globalConfig;
   };
 
 export const runtimeServiceFileUpload = async (

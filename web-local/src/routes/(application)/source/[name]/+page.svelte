@@ -8,8 +8,4 @@
   <title>Rill Developer | {data?.embedded ? data.path : data.sourceName}</title>
 </svelte:head>
 
-<SourceWorkspace
-  sourceName={data.sourceName}
-  embedded={data?.embedded}
-  path={data?.path}
-/>
+<SourceWorkspace sourceName={data.sourceName} />
