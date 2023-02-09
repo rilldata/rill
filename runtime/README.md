@@ -79,7 +79,7 @@ curl --request POST --url http://localhost:8080/v1/instances/default/query --hea
   --data '{ "sql": "select * from ad_bids limit 10" }'
 
 # Query explore API
-curl --request POST --url http://localhost:8080/v1/instances/default/metrics-views/ad_bids_metrics/toplist/domain --header 'Content-Type: application/json' \
+curl --request POST --url http://localhost:8080/v1/instances/default/queries/metrics-views/ad_bids_metrics/toplist/domain --header 'Content-Type: application/json' \
   --data '{
     "measure_names": ["measure_0"],
     "limit": 10,

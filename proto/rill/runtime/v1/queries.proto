@@ -25,7 +25,7 @@ service QueryService {
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/toplist",
+      post: "/v1/instances/{instance_id}/queries/metric-views/{metrics_view_name}/toplist",
       body: "*"
     };
   }
@@ -34,7 +34,7 @@ service QueryService {
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewTimeSeries(MetricsViewTimeSeriesRequest) returns (MetricsViewTimeSeriesResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/timeseries",
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/timeseries",
       body: "*"
     };
   }
@@ -43,7 +43,7 @@ service QueryService {
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewTotals(MetricsViewTotalsRequest) returns (MetricsViewTotalsResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/metrics-views/{metrics_view_name}/totals",
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/totals",
       body: "*"
     };
   }

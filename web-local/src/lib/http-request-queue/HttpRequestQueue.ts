@@ -17,8 +17,11 @@ import {
 } from "@rilldata/web-local/lib/util/fetchWrapper";
 import { appQueryStatusStore } from "../application-state-stores/application-store";
 
+// Examples:
+// v1/instances/id/queries/columns-profile/tables/table-name
+// v1/instances/id/queries/metrics-views/mv-name/timeseries
 export const UrlExtractorRegex =
-  /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;
+  /v1\/instances\/[\w-]+\/queries\/([\w-]+)\/([\w-]+)\/([\w-]+)/;
 
 // intentionally 1 less than max to allow for non profiling query calls
 let QueryQueueSize = 5;
@@ -44,38 +47,40 @@ export class HttpRequestQueue {
   public constructor(private readonly urlBase: string) {}
 
   public add(requestOptions: FetchWrapperOptions) {
-    const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
     // prepend after parsing to make parsing faster
     requestOptions.url = `${this.urlBase}${requestOptions.url}`;
 
+    let urlMatch = UrlExtractorRegex.exec(requestOptions.url);
+
+    let type: string;
+    let name: string;
+    if (urlMatch) {
+        if (urlMatch[1] === "metrics-views") {
+          name = urlMatch[2];
+          type = urlMatch[3];
+        } else {
+          name = urlMatch[3];
+          type = urlMatch[1];
+        }
+    } else {
+        // make the call directly if the url is not recognised
+        return fetchWrapper(requestOptions);
+    }
+    
     const entry: RequestQueueEntry = {
       requestOptions,
       weight: DefaultQueryPriority,
     };
 
-    let type: string;
-    let name: string;
     let columnName: string;
     let priority: number;
-    switch (urlMatch?.[1]) {
-      case "metrics-views":
-        name = urlMatch[3];
-        type = urlMatch[2];
-        break;
-      case "queries":
-        name = urlMatch[4];
-        type = urlMatch[2];
-        requestOptions.params ??= {};
-        priority =
-          requestOptions.data?.priority ??
-          (requestOptions.params.priority as number);
-        columnName =
-          requestOptions.params.columnName ?? requestOptions.data?.columnName;
-        break;
-      default:
-        // make the call directly if the url is not recognised
-        return fetchWrapper(requestOptions);
-    }
+    requestOptions.params ??= {};
+    priority =
+      requestOptions.data?.priority ??
+      (requestOptions.params.priority as number);
+    columnName =
+      requestOptions.params.columnName ?? requestOptions.data?.columnName;
+
     if (!priority) {
       priority = getPriority(type);
     }

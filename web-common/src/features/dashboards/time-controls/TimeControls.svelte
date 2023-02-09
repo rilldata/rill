@@ -23,7 +23,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTimeRangeSummary,
+    useQueryServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -87,7 +87,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     !$metaQuery.isRefetching &&
     hasTimeSeries
   ) {
-    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+    timeRangeQuery = useQueryServiceGetTimeRangeSummary(
       $runtimeStore.instanceId,
       $metaQuery.data.model,
       { columnName: $metaQuery.data.timeDimension }
