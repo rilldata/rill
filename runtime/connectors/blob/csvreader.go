@@ -49,7 +49,8 @@ func csvRowsTail(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	}
 
 	p := make([]byte, remBytes)
-	if _, err := reader.Read(p); err != nil {
+	_, err = reader.Read(p)
+	if err := unsucessfullError(err); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +67,8 @@ func csvRowsHead(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	}
 
 	p := make([]byte, option.limitInBytes)
-	if _, err := reader.Read(p); err != nil {
+	_, err := reader.Read(p)
+	if err := unsucessfullError(err); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +89,7 @@ func getHeader(r *ObjectReader) ([]byte, error) {
 	for {
 		temp := make([]byte, fetchLength)
 		n, err := r.Read(temp)
-		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		if err := unsucessfullError(err); err != nil {
 			return nil, err
 		}
 
@@ -103,4 +105,16 @@ func getHeader(r *ObjectReader) ([]byte, error) {
 			return nil, io.EOF
 		}
 	}
+}
+
+// unsucessfullError silents the io.EOF and io.ErrUnexpectedEOF
+// the reader.Read can succeed as well as return the two errors in case more data is requested than what is present
+func unsucessfullError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return nil
+	}
+	return err
 }

@@ -68,7 +68,7 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 	// keeping compressions as uncompressed since file will be immediately consumed and deleted
 	wp := parquet.NewWriterProperties(
 		parquet.WithRootRepetition(parquet.Repetitions.Required),
-		parquet.WithCompression(compress.Codecs.Uncompressed),
+		parquet.WithCompression(compress.Codecs.Snappy),
 		parquet.WithAllocator(mem))
 	return pqarrow.WriteTable(
 		table,

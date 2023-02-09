@@ -5,7 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/storage v1.27.0
 	github.com/NYTimes/gziphandler v1.1.1
-	github.com/apache/arrow/go/v11 v11.0.0-20230119224128-9a1373452ff5
+	github.com/apache/arrow/go/v11 v11.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.1.0
 	github.com/aws/aws-sdk-go v1.44.118
 	github.com/bmatcuk/doublestar/v4 v4.4.0
@@ -33,7 +33,7 @@ require (
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
 	google.golang.org/grpc v1.49.0
-	modernc.org/sqlite v1.18.1
+	modernc.org/sqlite v1.10.6
 )
 
 require (
@@ -186,3 +186,5 @@ require (
 )
 
 replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
+
+exclude modernc.org/sqlite v1.18.1

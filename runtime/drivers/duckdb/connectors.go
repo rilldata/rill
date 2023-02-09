@@ -14,11 +14,14 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-const _iteratorBatch = 8
+const (
+	_iteratorBatch           = 8
+	_defaultTimeoutInSeconds = 60 * 5 // 5 minutes
+)
 
 // Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	timeoutInSeconds := 30
+	timeoutInSeconds := _defaultTimeoutInSeconds
 	if source.Timeout > 0 {
 		timeoutInSeconds = int(source.Timeout)
 	}
