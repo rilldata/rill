@@ -97,7 +97,7 @@
   }
 </script>
 
-<div class="w-80 flex items-center">
+<div class="w-80 flex items-center mb-3">
   <Tooltip alignment="middle" distance={8} location="bottom">
     <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
       Time Grain

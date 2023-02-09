@@ -22,6 +22,7 @@ A slot is provided to change the text within the button.
   export let level: undefined | "error" = undefined;
   export let dark: boolean = undefined;
   export let disabled = false;
+  export let multiSelect = false;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
@@ -41,6 +42,7 @@ A slot is provided to change the text within the button.
   {alignment}
   {distance}
   {disabled}
+  {multiSelect}
   on:select={(event) => {
     /** TODO: change this to work for multiple selections later. */
     selection = event.detail;

@@ -6,6 +6,7 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
   import { SelectMenu } from "../../../components/menu";
   import {
     getSelectableTimeGrains,
@@ -17,9 +18,7 @@
 
   $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_timerange");
 
-  $: defaultTimeGrainValue =
-    $metricsInternalRep.getMetricKey("default_timegrain") ||
-    "__DEFAULT_VALUE__";
+  $: availableTimeGrains = $metricsInternalRep.getMetricKey("timegrains") || [];
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
 
@@ -62,6 +61,23 @@
         };
       }) || [];
 
+  function handleAvailableTimeGrainsUpdate(event) {
+    const selectedTimeGrain = event.detail?.key;
+
+    const isPresent = removeIfExists(
+      availableTimeGrains,
+      (timeGrain) => timeGrain === selectedTimeGrain
+    );
+
+    if (!isPresent) {
+      availableTimeGrains.push(selectedTimeGrain);
+    }
+
+    $metricsInternalRep.updateMetricsParams({
+      timegrains: availableTimeGrains,
+    });
+  }
+
   let tooltipText = "";
   let dropdownDisabled = true;
   $: if (selectedModel?.name === undefined) {
@@ -79,11 +95,11 @@
 <div class="flex items-center">
   <Tooltip alignment="middle" distance={16} location="bottom">
     <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Default Time Grain
+      Available Time Grains
     </div>
 
     <TooltipContent slot="tooltip-content">
-      Select a default time grain for the time series charts
+      Select the timegrains that will be available in the dashboard
     </TooltipContent>
   </Tooltip>
   <div>
@@ -95,21 +111,18 @@
     >
       <SelectMenu
         {options}
+        multiSelect={true}
         disabled={dropdownDisabled}
-        selection={defaultTimeGrainValue}
+        selection={availableTimeGrains}
         tailwindClasses="overflow-hidden"
         alignment="start"
-        on:select={(evt) => {
-          $metricsInternalRep.updateMetricsParams({
-            default_timegrain: evt.detail?.key,
-          });
-        }}
+        on:select={handleAvailableTimeGrainsUpdate}
       >
-        {#if defaultTimeGrainValue === "__DEFAULT_VALUE__"}
+        {#if !availableTimeGrains.length}
           <span class="text-gray-500">Select a default time range...</span>
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
-            >{defaultTimeGrainValue}</span
+            >{availableTimeGrains.join(",")}</span
           >
         {/if}
       </SelectMenu>

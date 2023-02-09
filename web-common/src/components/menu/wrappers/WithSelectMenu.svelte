@@ -16,6 +16,7 @@ and the menu closes.
 
   export let dark: boolean = undefined;
   export let disabled: boolean = undefined;
+  export let multiSelect: boolean = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
@@ -39,18 +40,22 @@ and the menu closes.
     closeEventHandler: () => void
   ) {
     return async () => {
-      if (isSelected(selection, key)) {
+      if (!multiSelect && isSelected(selection, key)) {
         return;
       }
       selection = { main, right, description, key, disabled, index };
       dispatch("select", selection);
-      closeEventHandler();
+
+      if (!multiSelect) closeEventHandler();
 
       temporarilySelectedKey = undefined;
     };
   }
 
   function isSelected(selection, key) {
+    if (multiSelect) {
+      return selection && selection.includes(key);
+    }
     return selection === key || selection.key === key;
   }
 

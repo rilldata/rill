@@ -78,11 +78,13 @@
       $metricsInternalRep.updateMetricsParams({
         default_timerange: "",
         default_timegrain: "",
+        timegrains: [],
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
         default_timerange: timeRangeSelectedValue,
         default_timegrain: "",
+        timegrains: [],
       });
     }
   }

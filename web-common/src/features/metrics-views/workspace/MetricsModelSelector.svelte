@@ -21,6 +21,7 @@
       timeseries: "",
       default_timegrain: "",
       default_timerange: "",
+      timegrains: [],
     });
   }
 
