@@ -119,7 +119,7 @@
         on:select={handleAvailableTimeGrainsUpdate}
       >
         {#if !availableTimeGrains.length}
-          <span class="text-gray-500">Select a default time range...</span>
+          <span class="font-bold">Infer from data</span>
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
             >{availableTimeGrains.join(",")}</span
