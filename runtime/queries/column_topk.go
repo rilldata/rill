@@ -2,13 +2,12 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/protobuf/types/known/structpb"
+	"github.com/rilldata/rill/runtime/server/pbutil"
 )
 
 type ColumnTopK struct {
@@ -55,7 +54,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	}
 
 	// Build SQL
-	qry := fmt.Sprintf("SELECT CAST(%s as VARCHAR) AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
+	qry := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
 		safeName(q.ColumnName),
 		q.Agg,
 		safeName(q.TableName),
@@ -77,15 +76,14 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	res := &runtimev1.TopK{}
 	for rows.Next() {
 		entry := &runtimev1.TopK_Entry{}
-		var val sql.NullString
+		var val interface{}
 		err = rows.Scan(&val, &entry.Count)
 		if err != nil {
 			return err
 		}
-		if val.Valid {
-			entry.Value = structpb.NewStringValue(val.String)
-		} else {
-			entry.Value = structpb.NewNullValue()
+		entry.Value, err = pbutil.ToValue(val)
+		if err != nil {
+			return err
 		}
 		res.Entries = append(res.Entries, entry)
 	}
