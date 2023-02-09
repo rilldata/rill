@@ -18,6 +18,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server/jwt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -57,6 +58,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
+			jwt.StreamServerInterceptor,
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
@@ -64,6 +66,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
+			jwt.UnaryServerInterceptor,
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)

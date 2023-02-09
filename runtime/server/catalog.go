@@ -5,15 +5,21 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rilldata/rill/runtime/server/jwt"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListCatalogEntries implements RuntimeService.
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
+	err := authorizeInstanceID(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
 	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
@@ -202,4 +208,12 @@ func catalogObjectToPB(obj *drivers.CatalogEntry) (*runtimev1.CatalogEntry, erro
 	}
 
 	return catalog, nil
+}
+
+func authorizeInstanceID(ctx context.Context, instanceID string) error {
+	jwtClaims := jwt.GetJWTFromContext(ctx)
+	if jwtClaims != nil && jwtClaims.InstanceID != instanceID {
+		return status.Errorf(codes.PermissionDenied, "target instance_id %q does not match instance_id %q for which JWT was issued", instanceID, jwtClaims.InstanceID)
+	}
+	return nil
 }
