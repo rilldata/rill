@@ -179,17 +179,19 @@
           />
         </div>
 
-        <div class="self-center pl-10">
+        <div class="ml-auto">
           {#if metricsSourceSelectionError}
             <Callout level="error">
               {metricsSourceSelectionError}
             </Callout>
           {:else}
-            <MetricsGenerateButton
-              handlePutAndMigrate={callPutAndMigrate}
-              selectedModel={model}
-              {metricsInternalRep}
-            />
+            <div>
+              <MetricsGenerateButton
+                handlePutAndMigrate={callPutAndMigrate}
+                selectedModel={model}
+                {metricsInternalRep}
+              />
+            </div>
           {/if}
         </div>
       </div>

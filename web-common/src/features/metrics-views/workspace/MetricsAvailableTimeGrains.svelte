@@ -129,7 +129,7 @@
             <span>Select a timestamp</span>
           {/if}
         {:else}
-          <span style:max-width="16em" class="font-bold truncate"
+          <span style:max-width="14em" class="font-bold truncate"
             >{availableTimeGrains.length
               ? availableTimeGrains.join(",")
               : "Infer from timerange"}</span

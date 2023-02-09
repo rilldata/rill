@@ -58,7 +58,7 @@
       {#if sourceModelDisplayValue === "__DEFAULT_VALUE__"}
         <span class="text-gray-500">Select a model...</span>
       {:else}
-        <span style:max-width="16em" class="font-bold truncate"
+        <span style:max-width="14em" class="font-bold truncate"
           >{sourceModelDisplayValue}</span
         >
       {/if}

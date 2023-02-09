@@ -131,7 +131,7 @@
         {#if dropdownDisabled}
           <span>Select a timestamp</span>
         {:else}
-          <span style:max-width="16em" class="font-bold truncate"
+          <span style:max-width="14em" class="font-bold truncate"
             >{timeRangeSelectedValue === "__DEFAULT_VALUE__"
               ? "Infer from data"
               : timeRangeSelectedValue}</span

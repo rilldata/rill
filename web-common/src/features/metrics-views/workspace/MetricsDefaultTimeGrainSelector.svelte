@@ -132,7 +132,7 @@
             <span>Select a timestamp</span>
           {/if}
         {:else}
-          <span style:max-width="16em" class="font-bold truncate"
+          <span style:max-width="14em" class="font-bold truncate"
             >{defaultTimeGrainValue === "__DEFAULT_VALUE__"
               ? "Infer from timerange"
               : defaultTimeGrainValue}</span
