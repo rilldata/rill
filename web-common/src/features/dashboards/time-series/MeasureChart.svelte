@@ -50,7 +50,26 @@
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
   $: yMaxStore.set(yExtentMax);
-  $: delay = $previousYMax < yExtentMax ? 50 : 0;
+  const timeRangeKey = writable(`${xMin}-${xMax}`);
+
+  const previousTimeRangeKey = previousValueStore(timeRangeKey);
+
+  /** reset the keys to trigger animations on time range changes */
+  let syncTimeRangeKey;
+  $: {
+    timeRangeKey.set(`${xMin}-${xMax}`);
+    if ($previousTimeRangeKey !== $timeRangeKey) {
+      if (syncTimeRangeKey) clearTimeout(syncTimeRangeKey);
+      syncTimeRangeKey = setTimeout(() => {
+        previousTimeRangeKey.set($timeRangeKey);
+      }, 400);
+    }
+  }
+
+  $: delay =
+    $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
+      ? 50
+      : 0;
 
   function alwaysBetween(min, max, value) {
     // note: must work with dates
@@ -85,7 +104,20 @@
   <Axis side="right" format={mouseoverFormat} />
   <Grid />
   <Body>
-    <ChunkedLine {delay} {data} {xAccessor} {yAccessor} />
+    <!-- key on the time range itself to prevent weird tweening animations.
+    We'll need to migrate this to a more robust solution once we've figured out
+    the right way to "tile" together a time series with multiple pages of data.
+    -->
+    {#key $timeRangeKey}
+      <ChunkedLine
+        delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+        duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 400}
+        {data}
+        {xAccessor}
+        {yAccessor}
+        key={$timeRangeKey}
+      />
+    {/key}
   </Body>
   {#if hovered && !scrubbing}
     <g transition:fade|local={{ duration: 100 }}>

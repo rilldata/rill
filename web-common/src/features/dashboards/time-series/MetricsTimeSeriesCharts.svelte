@@ -205,6 +205,9 @@
               yAccessor={measure.name}
               xMin={startValue}
               xMax={endValue}
+              timegrain={toV1TimeGrain(
+                metricsExplorer.selectedTimeRange?.interval
+              )}
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
