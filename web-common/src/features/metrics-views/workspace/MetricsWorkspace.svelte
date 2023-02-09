@@ -17,6 +17,7 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { WorkspaceContainer } from "../../../layout/workspace";
+  import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
   import { initDimensionColumns } from "../DimensionColumns";
   import { initMeasuresColumns } from "../MeasuresColumns";
   import { createInternalRepresentation } from "../metrics-internal-store";
@@ -37,6 +38,8 @@
   export let nonStandardError;
 
   const queryClient = useQueryClient();
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -148,26 +151,30 @@
   $: metricsSourceSelectionError = nonStandardError
     ? nonStandardError
     : MetricsSourceSelectionError(errors);
+
+  $: metricsConfigWidth = $observedNode?.offsetWidth || 0;
+  $: numRowsInConfig = metricsConfigWidth < 1300 ? 3 : 2;
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {metricsInternalRep} />
 
-  <div slot="body">
+  <div use:listenToNodeResize slot="body">
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
       <div class="flex-none flex flex-row">
-        <div>
+        <div
+          class="grid grid-flow-col grid-rows-{numRowsInConfig} gap-y-3 gap-x-5"
+        >
           <MetricsDisplayNameInput {metricsInternalRep} />
           <MetricsModelSelector {metricsInternalRep} />
           <MetricsTimeColumnSelector
             selectedModel={model}
             {metricsInternalRep}
           />
-        </div>
-        <div class="pl-10">
+
           <MetricsDefaultTimeRange selectedModel={model} {metricsInternalRep} />
           <MetricsDefaultTimeGrainSelector
             selectedModel={model}

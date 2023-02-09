@@ -99,7 +99,7 @@
 <div class="flex items-center">
   <Tooltip alignment="middle" distance={16} location="bottom">
     <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Available Time Grains
+      Time Grains
     </div>
 
     <TooltipContent slot="tooltip-content">
