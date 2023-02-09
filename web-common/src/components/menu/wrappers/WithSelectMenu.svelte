@@ -51,7 +51,7 @@ and the menu closes.
   }
 
   function isSelected(selection, key) {
-    return selection.key === key;
+    return selection === key || selection.key === key;
   }
 
   /** this function will make the circle check appear briefly before the menu closes */

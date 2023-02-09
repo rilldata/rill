@@ -54,18 +54,39 @@
 
   $: options =
     selectableTimeGrains
-      .filter((timeGrain) => timeGrain.enabled)
       .map((grain) => {
         return {
           key: grain.timeGrain,
           main: grain.timeGrain,
+          disabled: !grain.enabled,
+          description: !grain.enabled
+            ? "not valid for this time range"
+            : undefined,
         };
+      })
+      .concat({
+        key: "__DEFAULT_VALUE__",
+        main: "Infer from timerange",
       }) || [];
+
+  function handleDefaultTimeGrainUpdate(event) {
+    const selectedTimeGrain = event.detail?.key;
+
+    if (selectedTimeGrain === "") {
+      $metricsInternalRep.updateMetricsParams({
+        default_timegrain: "",
+      });
+    } else {
+      $metricsInternalRep.updateMetricsParams({
+        default_timegrain: selectedTimeGrain,
+      });
+    }
+  }
 
   let tooltipText = "";
   let dropdownDisabled = true;
   $: if (selectedModel?.name === undefined) {
-    tooltipText = "Select a model before selecting a timestamp column";
+    tooltipText = "Select a model before selecting a time grain";
     dropdownDisabled = true;
   } else if (!timeColumn) {
     tooltipText = "The selected model has no timestamp columns";
@@ -77,9 +98,15 @@
 </script>
 
 <div class="w-80 flex items-center">
-  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-    Default Time Grain
-  </div>
+  <Tooltip alignment="middle" distance={8} location="bottom">
+    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+      Time Grain
+    </div>
+
+    <TooltipContent slot="tooltip-content">
+      Select a default time grain for the time series charts
+    </TooltipContent>
+  </Tooltip>
   <div>
     <Tooltip
       alignment="middle"
@@ -93,19 +120,15 @@
         selection={defaultTimeGrainValue}
         tailwindClasses="overflow-hidden"
         alignment="start"
-        on:select={(evt) => {
-          $metricsInternalRep.updateMetricsParams({
-            default_timegrain: evt.detail?.key,
-          });
-        }}
+        on:select={handleDefaultTimeGrainUpdate}
       >
         {#if dropdownDisabled}
           <span>Select a timestamp</span>
-        {:else if defaultTimeGrainValue === "__DEFAULT_VALUE__"}
-          <span>Select a default time range...</span>
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
-            >{defaultTimeGrainValue}</span
+            >{defaultTimeGrainValue === "__DEFAULT_VALUE__"
+              ? "Infer from timerange"
+              : defaultTimeGrainValue}</span
           >
         {/if}
       </SelectMenu>

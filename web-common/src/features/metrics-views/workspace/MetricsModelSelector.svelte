@@ -3,6 +3,8 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { Readable } from "svelte/store";
   import { SelectMenu } from "../../../components/menu";
+  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import type { MetricsInternalRepresentation } from "../metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
@@ -31,10 +33,16 @@
     }) || [];
 </script>
 
-<div class="w-80 flex items-center">
-  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-    Model
-  </div>
+<div class="w-80 flex items-center mb-3">
+  <Tooltip alignment="middle" distance={8} location="bottom">
+    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+      Model
+    </div>
+
+    <TooltipContent slot="tooltip-content">
+      Assign a model for the dashboard
+    </TooltipContent>
+  </Tooltip>
 
   <div>
     <SelectMenu

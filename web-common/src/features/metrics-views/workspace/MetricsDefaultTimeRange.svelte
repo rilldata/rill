@@ -62,12 +62,30 @@
   }
 
   $: options =
-    selectableTimeRanges.map((range) => {
-      return {
-        key: range.name,
-        main: range.name,
-      };
-    }) || [];
+    selectableTimeRanges
+      .map((range) => {
+        return {
+          key: range.name,
+          main: range.name,
+        };
+      })
+      .concat({ key: "__DEFAULT_VALUE__", main: "Infer from data" }) || [];
+
+  function handleDefaultTimeRangeUpdate(event) {
+    const timeRangeSelectedValue = event.detail?.key;
+
+    if (timeRangeSelectedValue === "__DEFAULT_VALUE__") {
+      $metricsInternalRep.updateMetricsParams({
+        default_timerange: "",
+        default_timegrain: "",
+      });
+    } else {
+      $metricsInternalRep.updateMetricsParams({
+        default_timerange: timeRangeSelectedValue,
+        default_timegrain: "",
+      });
+    }
+  }
 
   let tooltipText = "";
   let dropdownDisabled = true;
@@ -84,9 +102,15 @@
 </script>
 
 <div class="w-80 flex items-center mb-3">
-  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-    Time Range
-  </div>
+  <Tooltip alignment="middle" distance={8} location="bottom">
+    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+      Time Range
+    </div>
+
+    <TooltipContent slot="tooltip-content">
+      Select a default time range for the time series charts
+    </TooltipContent>
+  </Tooltip>
   <div>
     <Tooltip
       alignment="middle"
@@ -100,20 +124,15 @@
         selection={timeRangeSelectedValue}
         tailwindClasses="overflow-hidden"
         alignment="start"
-        on:select={(evt) => {
-          $metricsInternalRep.updateMetricsParams({
-            default_timerange: evt.detail?.key,
-            default_timegrain: "",
-          });
-        }}
+        on:select={handleDefaultTimeRangeUpdate}
       >
         {#if dropdownDisabled}
           <span>Select a timestamp</span>
-        {:else if timeRangeSelectedValue === "__DEFAULT_VALUE__"}
-          <span>Select a default time range...</span>
         {:else}
           <span style:max-width="16em" class="font-bold truncate"
-            >{timeRangeSelectedValue}</span
+            >{timeRangeSelectedValue === "__DEFAULT_VALUE__"
+              ? "Infer from data"
+              : timeRangeSelectedValue}</span
           >
         {/if}
       </SelectMenu>

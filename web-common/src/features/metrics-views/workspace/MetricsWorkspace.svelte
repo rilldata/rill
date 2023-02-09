@@ -161,20 +161,19 @@
         <div>
           <MetricsDisplayNameInput {metricsInternalRep} />
           <MetricsModelSelector {metricsInternalRep} />
-        </div>
-        <div class="pl-10">
           <MetricsTimeColumnSelector
             selectedModel={model}
             {metricsInternalRep}
           />
-          <MetricsDefaultTimeRange selectedModel={model} {metricsInternalRep} />
         </div>
         <div class="pl-10">
+          <MetricsDefaultTimeRange selectedModel={model} {metricsInternalRep} />
           <MetricsDefaultTimeGrainSelector
             selectedModel={model}
             {metricsInternalRep}
           />
         </div>
+
         <div class="self-center pl-10">
           {#if metricsSourceSelectionError}
             <Callout level="error">

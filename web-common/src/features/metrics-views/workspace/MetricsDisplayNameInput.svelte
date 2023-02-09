@@ -2,6 +2,8 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { createForm } from "svelte-forms-lib";
   import type { Readable } from "svelte/store";
+  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import type { MetricsInternalRepresentation } from "../metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
@@ -41,9 +43,15 @@
 </script>
 
 <div class="w-80 flex items-center mb-3">
-  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-    Display name
-  </div>
+  <Tooltip alignment="middle" distance={8} location="bottom">
+    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+      Display Name
+    </div>
+
+    <TooltipContent slot="tooltip-content">
+      Add a title to your dashboard
+    </TooltipContent>
+  </Tooltip>
   <div>
     <form id="display-name-form" autocomplete="off">
       <input

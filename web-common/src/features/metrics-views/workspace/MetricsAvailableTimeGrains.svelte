@@ -77,9 +77,15 @@
 </script>
 
 <div class="flex items-center">
-  <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-    Default Time Grain
-  </div>
+  <Tooltip alignment="middle" distance={16} location="bottom">
+    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+      Default Time Grain
+    </div>
+
+    <TooltipContent slot="tooltip-content">
+      Select a default time grain for the time series charts
+    </TooltipContent>
+  </Tooltip>
   <div>
     <Tooltip
       alignment="middle"
