@@ -15,10 +15,10 @@
   export let metricsInternalRep;
   export let selectedModel: V1Model;
 
-  $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_timerange");
+  $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_time_range");
 
   $: defaultTimeGrainValue =
-    $metricsInternalRep.getMetricKey("default_timegrain") ||
+    $metricsInternalRep.getMetricKey("default_time_grain") ||
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
@@ -74,11 +74,11 @@
 
     if (selectedTimeGrain === "") {
       $metricsInternalRep.updateMetricsParams({
-        default_timegrain: "",
+        default_time_grain: "",
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
-        default_timegrain: selectedTimeGrain,
+        default_time_grain: selectedTimeGrain,
       });
     }
   }

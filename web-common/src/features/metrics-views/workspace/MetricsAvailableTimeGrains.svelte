@@ -16,9 +16,10 @@
   export let metricsInternalRep;
   export let selectedModel: V1Model;
 
-  $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_timerange");
+  $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_time_range");
 
-  $: availableTimeGrains = $metricsInternalRep.getMetricKey("timegrains") || [];
+  $: availableTimeGrains =
+    $metricsInternalRep.getMetricKey("time_grains") || [];
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
 
@@ -74,7 +75,7 @@
     }
 
     $metricsInternalRep.updateMetricsParams({
-      timegrains: availableTimeGrains,
+      time_grains: availableTimeGrains,
     });
   }
 
