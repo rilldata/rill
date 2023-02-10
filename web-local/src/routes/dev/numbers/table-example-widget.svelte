@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { number } from "yup/lib/locale";
   import AlignedNumber from "./aligned-number.svelte";
   import ColorPicker from "svelte-awesome-color-picker";
   // import { HsvPicker } from "svelte-color-picker";
@@ -50,24 +49,40 @@
   let showBars = false;
   let absoluteValExtentsIfPosAndNeg = true;
   let absoluteValExtentsAlways = false;
-  let barPosition: "left" | "behind" | "right" = "behind";
-  let barContainerWidth = 81;
+  let barPosition: "left" | "behind" | "right" = "right";
+  let barContainerWidth = 30;
   let barOffset = 10;
 
-  let negativeColor = "#ffbebe";
-  let positiveColor = "#eaeaea";
-  let barBackgroundColor = "#ffffff";
+  let negativeColor = "#c5deff";
+  let positiveColor = "#c5deff";
+  let barBackgroundColor = "#f8f8f8";
 
   let showBaseline = true;
-  let baselineColor = "#eeeeee";
+  let baselineColor = "#e2e2e2";
 
   // TABLE FORMAT OPTIONS
   let tableGutterWidth = 30;
 
-  $: worstCaseStringWidth = 79 + suffixPadding;
+  let worstCaseStringWidth = 79 + suffixPadding;
+  $: {
+    if (
+      pxWidthLookupFn !== undefined &&
+      magnitudeStrategy === "unlimitedDigitTarget"
+    ) {
+      let int = pxWidthLookupFn("0", true) * maxDigitsRight;
+      let dot = pxWidthLookupFn(".", false);
+      let frac = pxWidthLookupFn("0", true) * maxDigitsLeft;
+      let suffix = pxWidthLookupFn("e-15", false);
+      worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
+    } else {
+      worstCaseStringWidth = 79 + suffixPadding;
+    }
+    console.log({ worstCaseStringWidth });
+  }
+
   $: layerContainerWidth =
     worstCaseStringWidth +
-    (barPosition === "behind" ? 0 : barContainerWidth + barOffset);
+    (showBars && barPosition != "behind" ? barContainerWidth + barOffset : 0);
 
   $: usePlainNumForThousandthsPadZeros =
     usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
@@ -778,11 +793,11 @@
                 <LayeredContainer
                   containerWidth={layerContainerWidth}
                   {barPosition}
-                  {barOffset}
+                  barOffset={showBars ? barOffset : 0}
                 >
                   <AlignedNumber
                     slot="foreground"
-                    containerWidth={79 + suffixPadding}
+                    containerWidth={worstCaseStringWidth}
                     {richNum}
                     alignSuffix={alignSuffixes}
                     {alignDecimalPoints}
@@ -791,7 +806,10 @@
                     {suffixPadding}
                     {showMagSuffixForZero}
                   />
-                  <div slot="background" style="width: {barContainerWidth}px;">
+                  <div
+                    slot="background"
+                    style="width: {showBars ? barContainerWidth : 0}px;"
+                  >
                     {#if showBars}
                       <RichNumberBipolarBar
                         containerWidth={barContainerWidth}
