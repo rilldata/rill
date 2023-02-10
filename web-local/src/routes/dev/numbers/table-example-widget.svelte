@@ -263,7 +263,7 @@
     <div>
       <label>
         <input type="checkbox" bind:checked={alignSuffixes} />
-        align suffixes (requires "aligns decimal points")
+        align suffixes
       </label>
       <div>
         <label>
