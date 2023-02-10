@@ -1,7 +1,6 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   lastXTimeRanges,
-  TimeGrain,
   TimeRangeName,
   TimeSeriesTimeRange,
 } from "./time-control-types";
@@ -40,31 +39,40 @@ export const getDefaultTimeRangeName = (): TimeRangeName => {
 };
 
 export interface TimeGrainOption {
-  timeGrain: TimeGrain;
+  timeGrain: V1TimeGrain;
   enabled: boolean;
 }
 
 // This is for pre-set relative time ranges – where the start/end dates are not yet deterimined.
 // For custom time ranges, we'll need another function with "breakpoint" logic that analyzes the user-determined start/end dates.
 export const getSelectableTimeGrains = (
-  timeRangeName: TimeRangeName,
+  timeRangeISO: string,
   allTimeRange: TimeSeriesTimeRange
 ): TimeGrainOption[] => {
+  const timeRangeName = ISODurationToTimeRange(timeRangeISO);
   if (!timeRangeName || !allTimeRange) return [];
   const timeRangeDuration = getTimeRangeDuration(timeRangeName, allTimeRange);
 
   const timeGrains: TimeGrainOption[] = [];
-  for (const timeGrain in TimeGrain) {
+  for (const timeGrain in V1TimeGrain) {
+    const unsupportedTypes = [
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      V1TimeGrain.TIME_GRAIN_MILLISECOND,
+      V1TimeGrain.TIME_GRAIN_SECOND,
+    ];
+    if (unsupportedTypes.includes(V1TimeGrain[timeGrain])) {
+      continue;
+    }
     // only show a time grain if it results in a reasonable number of points on the line chart
     const MINIMUM_POINTS_ON_LINE_CHART = 2;
     const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
-    const timeGrainDuration = getTimeGrainDuration(TimeGrain[timeGrain]);
+    const timeGrainDuration = getTimeGrainDuration(V1TimeGrain[timeGrain]);
     const pointsOnLineChart = timeRangeDuration / timeGrainDuration;
     const showTimeGrain =
       pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
       pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
     timeGrains.push({
-      timeGrain: TimeGrain[timeGrain],
+      timeGrain: V1TimeGrain[timeGrain],
       enabled: showTimeGrain,
     });
   }
@@ -74,51 +82,107 @@ export const getSelectableTimeGrains = (
   return timeGrains;
 };
 
+export const timeRangeToISODuration = (
+  timeRangeName: TimeRangeName
+): string => {
+  switch (timeRangeName) {
+    case TimeRangeName.LastHour:
+      return "PT1H";
+    case TimeRangeName.Last6Hours:
+      return "PT6H";
+    case TimeRangeName.LastDay:
+      return "P1D";
+    case TimeRangeName.Last2Days:
+      return "P2D";
+    case TimeRangeName.Last5Days:
+      return "P5D";
+    case TimeRangeName.LastWeek:
+      return "P7D";
+    case TimeRangeName.Last2Weeks:
+      return "P14D";
+    case TimeRangeName.Last30Days:
+      return "P30D";
+    case TimeRangeName.Last60Days:
+      return "P60D";
+    case TimeRangeName.AllTime:
+      return "P9999Y";
+    default:
+      throw new Error(`No ISO duration for time range ${timeRangeName}`);
+  }
+};
+
+export const ISODurationToTimeRange = (isoDuration: string): TimeRangeName => {
+  switch (isoDuration) {
+    case "PT1H":
+      return TimeRangeName.LastHour;
+    case "PT6H":
+      return TimeRangeName.Last6Hours;
+    case "P1D":
+      return TimeRangeName.LastDay;
+    case "P2D":
+      return TimeRangeName.Last2Days;
+    case "P5D":
+      return TimeRangeName.Last5Days;
+    case "P7D":
+      return TimeRangeName.LastWeek;
+    case "P14D":
+      return TimeRangeName.Last2Weeks;
+    case "P30D":
+      return TimeRangeName.Last30Days;
+    case "P60D":
+      return TimeRangeName.Last60Days;
+    case "P9999Y":
+      return TimeRangeName.AllTime;
+    default:
+      return TimeRangeName.AllTime;
+  }
+};
+
 export const getDefaultTimeGrain = (
   timeRangeName: TimeRangeName,
   allTimeRange: TimeSeriesTimeRange
-): TimeGrain => {
+): V1TimeGrain => {
   switch (timeRangeName) {
     case TimeRangeName.LastHour:
-      return TimeGrain.OneMinute;
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
     case TimeRangeName.Last6Hours:
-      return TimeGrain.OneHour;
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     case TimeRangeName.LastDay:
-      return TimeGrain.OneHour;
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     case TimeRangeName.Last2Days:
-      return TimeGrain.OneHour;
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     case TimeRangeName.Last5Days:
-      return TimeGrain.OneHour;
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     case TimeRangeName.LastWeek:
-      return TimeGrain.OneHour;
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     case TimeRangeName.Last2Weeks:
-      return TimeGrain.OneDay;
+      return V1TimeGrain.TIME_GRAIN_DAY;
     case TimeRangeName.Last30Days:
-      return TimeGrain.OneDay;
+      return V1TimeGrain.TIME_GRAIN_DAY;
     case TimeRangeName.Last60Days:
-      return TimeGrain.OneDay;
+      return V1TimeGrain.TIME_GRAIN_DAY;
     case TimeRangeName.AllTime: {
-      if (!allTimeRange) return TimeGrain.OneDay;
+      if (!allTimeRange) return V1TimeGrain.TIME_GRAIN_DAY;
       const allTimeRangeDuration = getTimeRangeDuration(
         TimeRangeName.AllTime,
         allTimeRange
       );
       if (allTimeRangeDuration <= 2 * 60 * 60 * 1000) {
-        return TimeGrain.OneMinute;
+        return V1TimeGrain.TIME_GRAIN_MINUTE;
       }
       if (allTimeRangeDuration <= 14 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneHour;
+        return V1TimeGrain.TIME_GRAIN_HOUR;
       }
       if (allTimeRangeDuration <= 60 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneDay;
+        return V1TimeGrain.TIME_GRAIN_DAY;
       }
       if (allTimeRangeDuration <= 365 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneWeek;
+        return V1TimeGrain.TIME_GRAIN_WEEK;
       }
       if (allTimeRangeDuration <= 20 * 365 * 24 * 60 * 60 * 1000) {
-        return TimeGrain.OneMonth;
+        return V1TimeGrain.TIME_GRAIN_MONTH;
       }
-      return TimeGrain.OneYear;
+      return V1TimeGrain.TIME_GRAIN_YEAR;
     }
     default:
       throw new Error(`No default time grain for time range ${timeRangeName}`);
@@ -127,7 +191,7 @@ export const getDefaultTimeGrain = (
 
 export const makeTimeRange = (
   timeRangeName: TimeRangeName,
-  timeGrain: TimeGrain,
+  timeGrain: V1TimeGrain,
   allTimeRange: TimeSeriesTimeRange
 ): TimeSeriesTimeRange => {
   // Compute actual start time
@@ -291,12 +355,12 @@ export const prettyFormatTimeRange = (
 };
 
 export const formatDateByInterval = (
-  interval: string, // DuckDB interval
+  interval: V1TimeGrain, // DuckDB interval
   date: string
 ): string => {
   if (!interval || !date) return "";
   switch (interval) {
-    case "minute":
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
@@ -304,31 +368,31 @@ export const formatDateByInterval = (
         hour: "numeric",
         minute: "numeric",
       });
-    case "hour":
+    case V1TimeGrain.TIME_GRAIN_HOUR:
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
         hour: "numeric",
       });
-    case "day":
+    case V1TimeGrain.TIME_GRAIN_DAY:
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
       });
-    case "week":
+    case V1TimeGrain.TIME_GRAIN_WEEK:
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
       });
-    case "month":
+    case V1TimeGrain.TIME_GRAIN_MONTH:
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
       });
-    case "year":
+    case V1TimeGrain.TIME_GRAIN_YEAR:
       return new Date(date).toLocaleDateString(undefined, {
         year: "numeric",
       });
@@ -337,24 +401,24 @@ export const formatDateByInterval = (
   }
 };
 
-export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
+export const prettyTimeGrain = (timeGrain: V1TimeGrain): string => {
   if (!timeGrain) return "";
   switch (timeGrain) {
-    case TimeGrain.OneMinute:
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
       return "minute";
     // case TimeGrain.FiveMinutes:
     //   return "5 minute";
     // case TimeGrain.FifteenMinutes:
     //   return "15 minute";
-    case TimeGrain.OneHour:
+    case V1TimeGrain.TIME_GRAIN_HOUR:
       return "hourly";
-    case TimeGrain.OneDay:
+    case V1TimeGrain.TIME_GRAIN_DAY:
       return "daily";
-    case TimeGrain.OneWeek:
+    case V1TimeGrain.TIME_GRAIN_WEEK:
       return "weekly";
-    case TimeGrain.OneMonth:
+    case V1TimeGrain.TIME_GRAIN_MONTH:
       return "monthly";
-    case TimeGrain.OneYear:
+    case V1TimeGrain.TIME_GRAIN_YEAR:
       return "yearly";
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
@@ -402,85 +466,54 @@ const getLastXTimeRangeDuration = (name: TimeRangeName): number => {
   }
 };
 
-const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
+const getTimeGrainDuration = (timeGrain: V1TimeGrain): number => {
   switch (timeGrain) {
-    case TimeGrain.OneMinute:
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
       return 60 * 1000;
-    // case TimeGrain.FiveMinutes:
-    //   return 5 * 60 * 1000;
-    // case TimeGrain.FifteenMinutes:
-    //   return 15 * 60 * 1000;
-    case TimeGrain.OneHour:
+    case V1TimeGrain.TIME_GRAIN_HOUR:
       return 60 * 60 * 1000;
-    case TimeGrain.OneDay:
+    case V1TimeGrain.TIME_GRAIN_DAY:
       return 24 * 60 * 60 * 1000;
-    case TimeGrain.OneWeek:
+    case V1TimeGrain.TIME_GRAIN_WEEK:
       return 7 * 24 * 60 * 60 * 1000;
-    case TimeGrain.OneMonth:
+    case V1TimeGrain.TIME_GRAIN_MONTH:
       return 30 * 24 * 60 * 60 * 1000;
-    case TimeGrain.OneYear:
+    case V1TimeGrain.TIME_GRAIN_YEAR:
       return 365 * 24 * 60 * 60 * 1000;
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }
 };
 
-export const toV1TimeGrain = (timeGrain: TimeGrain): V1TimeGrain => {
-  switch (timeGrain) {
-    case TimeGrain.OneMinute:
-      return V1TimeGrain.TIME_GRAIN_MINUTE;
-    case TimeGrain.OneHour:
-      return V1TimeGrain.TIME_GRAIN_HOUR;
-    case TimeGrain.OneDay:
-      return V1TimeGrain.TIME_GRAIN_DAY;
-    case TimeGrain.OneWeek:
-      return V1TimeGrain.TIME_GRAIN_WEEK;
-    case TimeGrain.OneMonth:
-      return V1TimeGrain.TIME_GRAIN_MONTH;
-    case TimeGrain.OneYear:
-      return V1TimeGrain.TIME_GRAIN_YEAR;
-    default:
-      throw new Error(`Unknown time grain: ${timeGrain}`);
-  }
-};
-
-const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
+const floorDate = (date: Date | undefined, timeGrain: V1TimeGrain): Date => {
   if (!date) return new Date();
   switch (timeGrain) {
-    case TimeGrain.OneMinute: {
+    case V1TimeGrain.TIME_GRAIN_MINUTE: {
       const interval = 60 * 1000;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
-    // case TimeGrain.FiveMinutes: {
-    //   const interval = 5 * 60 * 1000;
-    //   return new Date(Math.round(date.getTime() / interval) * interval);
-    // }
-    // case TimeGrain.FifteenMinutes: {
-    //   const interval = 15 * 60 * 1000;
-    //   return new Date(Math.floor(date.getTime() / interval) * interval);
-    // }
-    case TimeGrain.OneHour: {
+    case V1TimeGrain.TIME_GRAIN_HOUR: {
       const interval = 60 * 60 * 1000;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
-    case TimeGrain.OneDay: {
+    case V1TimeGrain.TIME_GRAIN_DAY: {
       const interval = 24 * 60 * 60 * 1000;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
-    case TimeGrain.OneWeek: {
+    case V1TimeGrain.TIME_GRAIN_WEEK: {
       // rounds to the most recent Monday
       const day = date.getUTCDay();
-      const dateRoundedDownByDay = floorDate(date, TimeGrain.OneDay);
+      const dateRoundedDownByDay = floorDate(date, V1TimeGrain.TIME_GRAIN_DAY);
       const timeFromMonday = (day === 0 ? 6 : day - 1) * 24 * 60 * 60 * 1000;
       return new Date(dateRoundedDownByDay.getTime() - timeFromMonday);
     }
-    case TimeGrain.OneMonth: {
+    case V1TimeGrain.TIME_GRAIN_MONTH: {
       // rounds to the 1st of the current month
       return new Date(
         Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0)
       );
     }
-    case TimeGrain.OneYear: {
+    case V1TimeGrain.TIME_GRAIN_YEAR: {
       // rounds to January 1st of the current year
       return new Date(Date.UTC(date.getUTCFullYear(), 1, 1));
     }
@@ -492,22 +525,22 @@ const floorDate = (date: Date | undefined, timeGrain: TimeGrain): Date => {
 export const addGrains = (
   date: Date,
   units: number,
-  grain: TimeGrain
+  grain: V1TimeGrain
 ): Date => {
   switch (grain) {
-    case TimeGrain.OneMinute:
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
       return new Date(date.getTime() + units * 60 * 1000);
-    case TimeGrain.OneHour:
+    case V1TimeGrain.TIME_GRAIN_HOUR:
       return new Date(date.getTime() + units * 60 * 60 * 1000);
-    case TimeGrain.OneDay:
+    case V1TimeGrain.TIME_GRAIN_DAY:
       return new Date(date.getTime() + units * 24 * 60 * 60 * 1000);
-    case TimeGrain.OneWeek:
+    case V1TimeGrain.TIME_GRAIN_WEEK:
       return new Date(date.getTime() + units * 7 * 24 * 60 * 60 * 1000);
-    case TimeGrain.OneMonth:
+    case V1TimeGrain.TIME_GRAIN_MONTH:
       return new Date(
         Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + units, 1)
       );
-    case TimeGrain.OneYear:
+    case V1TimeGrain.TIME_GRAIN_YEAR:
       return new Date(Date.UTC(date.getUTCFullYear() + units, 1, 1));
     default:
       throw new Error(`Unknown time grain: ${grain}`);

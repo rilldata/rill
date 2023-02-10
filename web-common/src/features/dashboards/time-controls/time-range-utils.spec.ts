@@ -1,4 +1,5 @@
-import { TimeGrain, TimeRangeName } from "./time-control-types";
+import { V1TimeGrain } from "../../../runtime-client";
+import { TimeRangeName } from "./time-control-types";
 import {
   getDefaultTimeGrain,
   getDefaultTimeRangeName,
@@ -75,28 +76,28 @@ describe("getDefaultTimeGrain", () => {
       start: "2020-03-01",
       end: "2020-03-31",
     });
-    expect(timeGrain).toEqual(TimeGrain.OneDay);
+    expect(timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_DAY);
   });
   it("should return the default time grain (for an AllTime time range", () => {
     const timeGrain = getDefaultTimeGrain(TimeRangeName.AllTime, {
       start: "2010-03-01",
       end: "2020-03-31",
     });
-    expect(timeGrain).toEqual(TimeGrain.OneMonth);
+    expect(timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_MONTH);
   });
   it("should return the default time grain (for an AllTime time range", () => {
     const timeGrain = getDefaultTimeGrain(TimeRangeName.AllTime, {
       start: "2010-03-01",
       end: "2030-03-31",
     });
-    expect(timeGrain).toEqual(TimeGrain.OneYear);
+    expect(timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_YEAR);
   });
 });
 
 describe("makeTimeRange", () => {
   it("should create a TimeRange object representing the Last Two Weeks", () => {
     expect(
-      makeTimeRange(TimeRangeName.Last2Weeks, TimeGrain.OneDay, {
+      makeTimeRange(TimeRangeName.Last2Weeks, V1TimeGrain.TIME_GRAIN_DAY, {
         start: "2022-01-01T11:00:01",
         end: "2022-03-31T20:00:01",
       })

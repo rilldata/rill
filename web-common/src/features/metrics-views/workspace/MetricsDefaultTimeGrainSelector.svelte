@@ -9,6 +9,7 @@
   import { SelectMenu } from "../../../components/menu";
   import {
     getSelectableTimeGrains,
+    prettyTimeGrain,
     TimeGrainOption,
   } from "../../dashboards/time-controls/time-range-utils";
 
@@ -53,21 +54,21 @@
   }
 
   $: options =
-    selectableTimeGrains
-      .map((grain) => {
+    (
+      selectableTimeGrains.map((grain) => {
         return {
           key: grain.timeGrain,
-          main: grain.timeGrain,
+          main: prettyTimeGrain(grain.timeGrain),
           disabled: !grain.enabled,
           description: !grain.enabled
             ? "not valid for this time range"
             : undefined,
         };
-      })
-      .concat({
-        key: "__DEFAULT_VALUE__",
-        main: "Infer from timerange",
-      }) || [];
+      }) as any[]
+    ).concat({
+      key: "__DEFAULT_VALUE__",
+      main: "Infer from timerange",
+    }) || [];
 
   function handleDefaultTimeGrainUpdate(event) {
     const selectedTimeGrain = event.detail?.key;
@@ -135,7 +136,7 @@
           <span style:max-width="14em" class="font-bold truncate"
             >{defaultTimeGrainValue === "__DEFAULT_VALUE__"
               ? "Infer from timerange"
-              : defaultTimeGrainValue}</span
+              : prettyTimeGrain(defaultTimeGrainValue)}</span
           >
         {/if}
       </SelectMenu>

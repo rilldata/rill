@@ -2,10 +2,10 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
-  import type { TimeGrain } from "./time-control-types";
+  import type { V1TimeGrain } from "../../../runtime-client";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
-  export let selectedTimeGrain: TimeGrain;
+  export let selectedTimeGrain: V1TimeGrain;
   export let selectableTimeGrains: TimeGrainOption[];
 
   const dispatch = createEventDispatcher();
@@ -20,7 +20,7 @@
       }))
     : undefined;
 
-  const onTimeGrainSelect = (timeGrain: TimeGrain) => {
+  const onTimeGrainSelect = (timeGrain: V1TimeGrain) => {
     dispatch(EVENT_NAME, { timeGrain });
   };
 </script>

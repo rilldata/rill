@@ -7,11 +7,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { SelectMenu } from "../../../components/menu";
-  import type { TimeSeriesTimeRange } from "../../dashboards/time-controls/time-control-types";
   import {
-    getSelectableTimeRangeNames,
     getSelectableTimeRanges,
-    makeTimeRanges,
+    ISODurationToTimeRange,
+    timeRangeToISODuration,
   } from "../../dashboards/time-controls/time-range-utils";
 
   export let metricsInternalRep;
@@ -53,7 +52,7 @@
     selectableTimeRanges
       .map((range) => {
         return {
-          key: range.name,
+          key: timeRangeToISODuration(range.name),
           main: range.name,
         };
       })
@@ -122,7 +121,7 @@
           <span style:max-width="14em" class="font-bold truncate"
             >{timeRangeSelectedValue === "__DEFAULT_VALUE__"
               ? "Infer from data"
-              : timeRangeSelectedValue}</span
+              : ISODurationToTimeRange(timeRangeSelectedValue)}</span
           >
         {/if}
       </SelectMenu>

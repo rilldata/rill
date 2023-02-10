@@ -152,6 +152,7 @@
     ? nonStandardError
     : MetricsSourceSelectionError(errors);
 
+  let numRowsInConfig = 3;
   $: metricsConfigWidth = $observedNode?.offsetWidth || 0;
   $: numRowsInConfig = metricsConfigWidth < 1300 ? 3 : 2;
 </script>

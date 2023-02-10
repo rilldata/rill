@@ -17,7 +17,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import type {
-    TimeGrain,
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
@@ -25,6 +24,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
@@ -37,6 +37,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
     getSelectableTimeGrains,
+    ISODurationToTimeRange,
     makeTimeRange,
     TimeGrainOption,
   } from "./time-range-utils";
@@ -50,6 +51,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   let selectedTimeRangeName;
   let selectedTimeGrain;
+
+  let defaultTimeRange: TimeRangeName;
+  let defaultTimeGrain: V1TimeGrain;
+  let availableTimeGrains: V1TimeGrain[];
 
   // query the `/meta` endpoint to get the all time range of the dataset
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
@@ -68,6 +73,12 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       $runtimeStore.instanceId,
       $metaQuery?.data?.model
     );
+
+    defaultTimeRange = ISODurationToTimeRange(
+      $metaQuery?.data?.defaultTimeRange
+    );
+    defaultTimeGrain = $metaQuery?.data?.defaultTimeGrain;
+    availableTimeGrains = $metaQuery?.data?.timeGrains;
   }
 
   $: if ($modelQuery && $modelQuery.isSuccess && !$modelQuery.isRefetching) {
@@ -115,14 +126,15 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       selectedTimeRangeName = metricsExplorer.selectedTimeRange?.name;
       selectedTimeGrain = metricsExplorer.selectedTimeRange?.interval;
     } else {
-      selectedTimeRangeName = getDefaultTimeRangeName();
-      selectedTimeGrain = getDefaultTimeGrain(
-        selectedTimeRangeName,
-        allTimeRange
-      );
+      selectedTimeRangeName = defaultTimeRange
+        ? defaultTimeRange
+        : getDefaultTimeRangeName();
+      selectedTimeGrain = defaultTimeGrain
+        ? defaultTimeGrain
+        : getDefaultTimeGrain(selectedTimeRangeName, allTimeRange);
     }
   };
-  $: initializeState(metricsExplorer);
+  $: if (allTimeRange) initializeState(metricsExplorer);
 
   const setSelectedTimeRangeName = (evt) => {
     selectedTimeRangeName = evt.detail.timeRangeName;
@@ -139,7 +151,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     allTimeRange
   );
 
-  const checkValidTimeGrain = (timeGrain: TimeGrain) => {
+  const checkValidTimeGrain = (timeGrain: V1TimeGrain) => {
     const timeGrainOption = selectableTimeGrains.find(
       (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
     );
@@ -148,7 +160,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   const makeValidTimeRangeAndUpdateAppState = (
     timeRangeName: TimeRangeName,
-    timeGrain: TimeGrain,
+    timeGrain: V1TimeGrain,
     allTimeRangeInDataset: TimeSeriesTimeRange
   ) => {
     if (!timeRangeName || !timeGrain || !allTimeRangeInDataset) return;

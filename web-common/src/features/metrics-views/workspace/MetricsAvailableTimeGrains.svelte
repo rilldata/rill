@@ -10,6 +10,7 @@
   import { SelectMenu } from "../../../components/menu";
   import {
     getSelectableTimeGrains,
+    prettyTimeGrain,
     TimeGrainOption,
   } from "../../dashboards/time-controls/time-range-utils";
 
@@ -58,7 +59,7 @@
       .map((grain) => {
         return {
           key: grain.timeGrain,
-          main: grain.timeGrain,
+          main: prettyTimeGrain(grain.timeGrain),
         };
       }) || [];
 
@@ -78,6 +79,9 @@
       time_grains: availableTimeGrains,
     });
   }
+
+  const prettyTimeGrains = (timeGrains) =>
+    timeGrains.map((timeGrain) => prettyTimeGrain(timeGrain)).join(", ");
 
   let tooltipText = "";
   let dropdownDisabled = true;
@@ -131,7 +135,7 @@
         {:else}
           <span style:max-width="14em" class="font-bold truncate"
             >{availableTimeGrains.length
-              ? availableTimeGrains.join(",")
+              ? prettyTimeGrains(availableTimeGrains)
               : "Infer from timerange"}</span
           >
         {/if}
