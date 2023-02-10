@@ -5,6 +5,8 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { onClickOutside } from "@rilldata/web-local/lib/util/on-click-outside";
   import { createEventDispatcher, tick } from "svelte";
+  import { slide } from "svelte/transition";
+  import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -120,17 +122,20 @@
         <MenuItem on:select={() => onSelectRelativeTimeRange(allTimeRange)}>
           {TimeRangeName.AllTime}
         </MenuItem>
+        <hr class="my-2" />
         <CustomTimeRangeMenuItem
           open={customTimeRangeInputOpen}
           on:select={() =>
             (customTimeRangeInputOpen = !customTimeRangeInputOpen)}
         />
         {#if customTimeRangeInputOpen}
-          <CustomTimeRangeInput
-            {metricViewName}
-            on:apply={(e) =>
-              onSelectCustomTimeRange(e.detail.startDate, e.detail.endDate)}
-          />
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+            <CustomTimeRangeInput
+              {metricViewName}
+              on:apply={(e) =>
+                onSelectCustomTimeRange(e.detail.startDate, e.detail.endDate)}
+            />
+          </div>
         {/if}
       </Menu>
     </FloatingElement>
