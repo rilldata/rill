@@ -6,7 +6,7 @@
   export let open: boolean;
 </script>
 
-<MenuItem on:select>
+<MenuItem animateSelect={false} on:select>
   <div
     class="w-full flex flex-row flex-grow items-center transition-tranform duration-100"
   >
