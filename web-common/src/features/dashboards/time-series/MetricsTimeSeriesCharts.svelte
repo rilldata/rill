@@ -26,6 +26,7 @@
   import {
     addGrains,
     formatDateByInterval,
+    toV1TimeGrain,
   } from "../time-controls/time-range-utils";
   import TimeSeriesBody from "./TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -87,7 +88,9 @@
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+        timeGranularity: toV1TimeGrain(
+          metricsExplorer.selectedTimeRange?.interval
+        ),
       }
     );
   }
@@ -104,7 +107,7 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy)
-    formattedData = convertTimestampPreview(dataCopy, timeDimension, true)
+    formattedData = convertTimestampPreview(dataCopy, true)
       // FIXME: we will need to refactor the graph component animations based on the runtime API return
       // signature. Previously, we were returning 0s instead of nulls. This was likely due to re-using
       // the old diagnostic ts code here. Of course, this isn't correct; null is not the same as 0.
@@ -114,6 +117,7 @@
       // the individual segments. Alternatively, writing a custom array interpolator could help quite
       // a bit; null values within the interpolator could tween from 0 or from a contiguous point.
       .map((di) => {
+        di = { ts: di.ts, bin: di.bin, ...di.records };
         // set nulls to 0, as per the FIXME comment above.
         Object.keys(di).forEach((k) => {
           di[k] = di[k] === null ? 0 : di[k];

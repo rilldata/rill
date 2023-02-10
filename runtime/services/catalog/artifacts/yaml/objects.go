@@ -2,12 +2,14 @@ package yaml
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/senseyeio/duration"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -30,9 +32,10 @@ type MetricsView struct {
 	Label            string `yaml:"display_name"`
 	Description      string
 	Model            string
-	TimeDimension    string `yaml:"timeseries"`
-	TimeGrains       []string
-	DefaultTimeGrain string `yaml:"default_timegrain"`
+	TimeDimension    string   `yaml:"timeseries"`
+	TimeGrains       []string `yaml:"time_grains"`
+	DefaultTimeGrain string   `yaml:"default_time_grain"`
+	DefaultTimeRange string   `yaml:"default_time_range"`
 	Dimensions       []*Dimension
 	Measures         []*Measure
 }
@@ -75,6 +78,13 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
 	err := copier.Copy(metricsArtifact, catalog.Object)
+	var timeGrains []string
+	for _, timeGrainEnum := range catalog.GetMetricsView().TimeGrains {
+		timeGrains = append(timeGrains, getTimeGrainString(timeGrainEnum))
+	}
+	metricsArtifact.TimeGrains = timeGrains
+	metricsArtifact.DefaultTimeGrain = getTimeGrainString(catalog.GetMetricsView().DefaultTimeGrain)
+	metricsArtifact.DefaultTimeRange = catalog.GetMetricsView().DefaultTimeRange
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +159,16 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	metrics.Dimensions = dimensions
 
 	apiMetrics := &runtimev1.MetricsView{}
+
+	// validate correctness of default time range
+	if metrics.DefaultTimeRange != "" {
+		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("invalid default_time_grain: %w", err)
+		}
+		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
+	}
+
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
 		return nil, err
@@ -159,6 +179,11 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
+	for _, timeGrain := range metrics.TimeGrains {
+		apiMetrics.TimeGrains = append(apiMetrics.TimeGrains, getTimeGrainEnum(timeGrain))
+	}
+	apiMetrics.DefaultTimeGrain = getTimeGrainEnum(metrics.DefaultTimeGrain)
+
 	name := fileutil.Stem(path)
 	apiMetrics.Name = name
 	return &drivers.CatalogEntry{
@@ -167,4 +192,52 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		Path:   path,
 		Object: apiMetrics,
 	}, nil
+}
+
+// Get TimeGrain enum from string
+func getTimeGrainEnum(timeGrain string) runtimev1.TimeGrain {
+	switch strings.ToLower(timeGrain) {
+	case "millisecond":
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
+	case "second":
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
+	case "minute":
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
+	case "hour":
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
+	case "day":
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY
+	case "week":
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
+	case "month":
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+	case "year":
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	default:
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+	}
+}
+
+// Get TimeGrain string from enum
+func getTimeGrainString(timeGrain runtimev1.TimeGrain) string {
+	switch timeGrain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "millisecond"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "second"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "minute"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "hour"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "day"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "week"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "month"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "year"
+	default:
+		return ""
+	}
 }

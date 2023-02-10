@@ -1,3 +1,4 @@
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   lastXTimeRanges,
   TimeGrain,
@@ -419,6 +420,25 @@ const getTimeGrainDuration = (timeGrain: TimeGrain): number => {
       return 30 * 24 * 60 * 60 * 1000;
     case TimeGrain.OneYear:
       return 365 * 24 * 60 * 60 * 1000;
+    default:
+      throw new Error(`Unknown time grain: ${timeGrain}`);
+  }
+};
+
+export const toV1TimeGrain = (timeGrain: TimeGrain): V1TimeGrain => {
+  switch (timeGrain) {
+    case TimeGrain.OneMinute:
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
+    case TimeGrain.OneHour:
+      return V1TimeGrain.TIME_GRAIN_HOUR;
+    case TimeGrain.OneDay:
+      return V1TimeGrain.TIME_GRAIN_DAY;
+    case TimeGrain.OneWeek:
+      return V1TimeGrain.TIME_GRAIN_WEEK;
+    case TimeGrain.OneMonth:
+      return V1TimeGrain.TIME_GRAIN_MONTH;
+    case TimeGrain.OneYear:
+      return V1TimeGrain.TIME_GRAIN_YEAR;
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }

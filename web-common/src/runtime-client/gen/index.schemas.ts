@@ -116,7 +116,7 @@ export type RuntimeServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
   priority?: number;
   timeEnd?: string;
-  timeGranularity?: string;
+  timeGranularity?: V1TimeGrain;
   timeStart?: string;
 };
 
@@ -202,7 +202,7 @@ export interface V1TopK {
   entries?: TopKEntry[];
 }
 
-export type V1TimeSeriesValueRecords = { [key: string]: number };
+export type V1TimeSeriesValueRecords = { [key: string]: any };
 
 export interface V1TimeSeriesValue {
   bin?: number;
@@ -468,7 +468,10 @@ export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
 }
 
-export type V1MetricsViewTimeSeriesResponseDataItem = { [key: string]: any };
+export interface V1MetricsViewTimeSeriesResponse {
+  data?: V1TimeSeriesValue[];
+  meta?: V1MetricsViewColumn[];
+}
 
 export interface V1MetricsViewSort {
   ascending?: boolean;
@@ -486,12 +489,9 @@ export interface V1MetricsViewColumn {
   type?: string;
 }
 
-export interface V1MetricsViewTimeSeriesResponse {
-  data?: V1MetricsViewTimeSeriesResponseDataItem[];
-  meta?: V1MetricsViewColumn[];
-}
-
 export interface V1MetricsView {
+  defaultTimeGrain?: V1TimeGrain;
+  defaultTimeRange?: string;
   description?: string;
   dimensions?: MetricsViewDimension[];
   label?: string;
@@ -501,7 +501,7 @@ export interface V1MetricsView {
   timeDimension?: string;
   /** Recommended granularities for rolling up the time dimension.
 Should be a valid SQL INTERVAL value. */
-  timeGrains?: string[];
+  timeGrains?: V1TimeGrain[];
 }
 
 export interface V1MapType {

@@ -81,7 +81,7 @@ message MetricsView {
   string time_dimension = 3;
   // Recommended granularities for rolling up the time dimension.
   // Should be a valid SQL INTERVAL value.
-  repeated string time_grains = 4;
+  repeated TimeGrain time_grains = 4;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 5;
   // Measures in the metrics view
@@ -90,4 +90,20 @@ message MetricsView {
   string label = 7;
   // Brief description of the dashboard
   string description = 8;
+  // default time grain
+  TimeGrain default_time_grain = 9;
+  // default time range for the dashboard
+  string default_time_range = 10;
+}
+
+enum TimeGrain {
+  TIME_GRAIN_UNSPECIFIED = 0;
+  TIME_GRAIN_MILLISECOND = 1;
+  TIME_GRAIN_SECOND = 2;
+  TIME_GRAIN_MINUTE = 3;
+  TIME_GRAIN_HOUR = 4;
+  TIME_GRAIN_DAY = 5;
+  TIME_GRAIN_WEEK = 6;
+  TIME_GRAIN_MONTH = 7;
+  TIME_GRAIN_YEAR = 8;
 }

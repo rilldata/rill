@@ -723,7 +723,7 @@ message MetricsViewTimeSeriesRequest {
   repeated string measure_names = 3;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  string time_granularity = 6;
+  TimeGrain time_granularity = 6;
   MetricsViewFilter filter = 7;
   int32 priority = 8;
 }
@@ -731,7 +731,7 @@ message MetricsViewTimeSeriesRequest {
 // Response message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
-  repeated google.protobuf.Struct data = 2;
+  repeated TimeSeriesValue data = 2;
 }
 
 // Request message for RuntimeService.MetricsViewTotals
@@ -922,18 +922,6 @@ message EstimateSmallestTimeGrainRequest {
   int32 priority = 4;
 }
 
-enum TimeGrain {
-  TIME_GRAIN_UNSPECIFIED = 0;
-  TIME_GRAIN_MILLISECOND = 1;
-  TIME_GRAIN_SECOND = 2;
-  TIME_GRAIN_MINUTE = 3;
-  TIME_GRAIN_HOUR = 4;
-  TIME_GRAIN_DAY = 5;
-  TIME_GRAIN_WEEK = 6;
-  TIME_GRAIN_MONTH = 7;
-  TIME_GRAIN_YEAR = 8;
-}
-
 // Response for RuntimeService.EstimateSmallestTimeGrain
 message EstimateSmallestTimeGrainResponse {
   TimeGrain time_grain = 1;
@@ -1036,9 +1024,9 @@ message GenerateTimeSeriesResponse {
 }
 
 message TimeSeriesValue {
-  string ts = 1;
-  optional double bin = 2;
-  map<string, double> records = 3;
+  google.protobuf.Timestamp ts = 1;
+  double bin = 2;
+  google.protobuf.Struct records = 3;
 }
 
 // **********
