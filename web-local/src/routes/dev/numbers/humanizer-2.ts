@@ -18,6 +18,7 @@ import type {
   NumberStringParts,
   NumPartPxWidthLookupFn,
 } from "./number-to-string-formatters";
+import { splitStrsForMagStratMultipleMagsNoAlign } from "./humanizer-strategy-many-mags-2";
 
 const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
   0: "",
@@ -28,14 +29,36 @@ const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
   15: "Q",
 };
 
-const shortScaleSuffixIfAvailable = (x: number): string => {
+export const shortScaleSuffixIfAvailable = (x: number): string => {
   let suffix = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[x];
   if (suffix !== undefined) return suffix;
 
   return "E" + x;
 };
 
-const getOrdersOfMagnitude = (
+const ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX = {
+  E0: "",
+  E3: "k",
+  E6: "M",
+  E9: "B",
+  E12: "T",
+  E15: "Q",
+};
+export const shortScaleSuffixIfAvailableForStr = (suffixIn: string): string => {
+  let suffix = ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX[suffixIn.toUpperCase()];
+  if (suffix !== undefined) return suffix;
+  return suffixIn;
+};
+
+export const orderOfMagnitude = (x) => {
+  return Math.floor(Math.log10(Math.abs(x)));
+};
+
+export const orderOfMagnitudeEng = (x) => {
+  return Math.round(Math.floor(orderOfMagnitude(x) / 3) * 3);
+};
+
+export const getOrdersOfMagnitude = (
   sample: number[],
   kind: "engineering" | "scientific" = "scientific"
 ) => {
@@ -47,7 +70,7 @@ const getOrdersOfMagnitude = (
   return splitStrs.map((ss) => +ss.suffix.slice(1));
 };
 
-const formatNumWithOrderOfMag = (
+export const formatNumWithOrderOfMag = (
   x: number,
   newOrder: number,
   options = { minimumFractionDigits: 3, maximumFractionDigits: 3 }
@@ -68,7 +91,7 @@ const formatNumWithOrderOfMag = (
 
 // window.formatNumWithOrderOfMag = formatNumWithOrderOfMag;
 
-const thousandthsNumAsDecimalNumParts = (
+export const thousandthsNumAsDecimalNumParts = (
   x: number,
   maximumFractionDigits: number = 6,
   padZero: boolean = false
@@ -143,16 +166,6 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
       ss.suffix = "";
     });
     return splitStrs;
-    // let formatter = new Intl.NumberFormat("en-US", {
-    //   minimumFractionDigits: options.digitTargetShowSignificantZeros
-    //     ? fracDigits
-    //     : 0,
-    //   maximumFractionDigits: fracDigits,
-    // });
-
-    // return sample
-    //   .map((x) => formatter.format(x).replace(",", ""))
-    //   .map(splitNumStr);
   }
 
   // FIXME add "minNonzeroDigits" option for this case
@@ -341,6 +354,11 @@ export const humanized2FormatterFactory: FormatterFactory = (
 
     case "largestWithDigitTarget":
       splitStrs = splitStrsForMagStratLargestWithDigitsTarget(sample, options);
+      // console.log("splitStrs", splitStrs);
+      break;
+
+    case "unlimitedDigitTarget":
+      splitStrs = splitStrsForMagStratMultipleMagsNoAlign(sample, options);
       // console.log("splitStrs", splitStrs);
       break;
 

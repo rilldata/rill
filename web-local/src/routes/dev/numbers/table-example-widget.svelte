@@ -15,15 +15,22 @@
   import LayeredContainer from "./layered-container.svelte";
   import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
 
+  // FORMATTER SELECTION
   export let defaultFormatterIndex = 1;
+  let selectedFormatter = formatterFactories[defaultFormatterIndex];
+  let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
+
+  // SHARED DISPLAY OPTIONS
   export let alignDecimalPoints = true;
   export let alignSuffixes = true;
   let suffixPadding = 2;
-
   let lowerCaseEForEng = true;
-  let minimumSignificantDigits = 3;
-  let maximumSignificantDigits = 5;
+  // let minimumSignificantDigits = 3;
+  // let maximumSignificantDigits = 5;
+  export let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
+  export let showMagSuffixForZero = false;
 
+  // NEW HUMANIZER OPTIONS
   let onlyUseLargestMagnitude = false;
   let usePlainNumsForThousands = true;
   let usePlainNumsForThousandsOneDecimal = false;
@@ -32,9 +39,14 @@
 
   let truncateThousandths = true;
   let truncateTinyOrdersIfBigOrderExists = true;
-  export let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
-  export let showMagSuffixForZero = false;
 
+  let maxTotalDigits = 6;
+  let maxDigitsLeft = 3;
+  let maxDigitsRight = 3;
+  let minDigitsNonzero = 1;
+  let nonIntegerHandling = "trailingDot";
+
+  // BARS OPTIONS
   let showBars = false;
   let absoluteValExtentsIfPosAndNeg = true;
   let absoluteValExtentsAlways = false;
@@ -49,9 +61,7 @@
   let showBaseline = true;
   let baselineColor = "#eeeeee";
 
-  let selectedFormatter = formatterFactories[defaultFormatterIndex];
-  let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
-
+  // TABLE FORMAT OPTIONS
   let tableGutterWidth = 30;
 
   $: worstCaseStringWidth = 79 + suffixPadding;
@@ -63,8 +73,8 @@
     usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
 
   $: formatterOptions = {
-    minimumSignificantDigits,
-    maximumSignificantDigits,
+    // minimumSignificantDigits,
+    // maximumSignificantDigits,
     magnitudeStrategy,
     digitTarget,
     digitTargetShowSignificantZeros,
@@ -76,11 +86,19 @@
     truncateThousandths,
     truncateTinyOrdersIfBigOrderExists,
     zeroHandling,
+    maxTotalDigits,
+    maxDigitsLeft,
+    maxDigitsRight,
+    minDigitsNonzero,
+    nonIntegerHandling,
   };
 
   let numberInputType;
 
-  let magnitudeStrategy = "largestWithDigitTarget";
+  let magnitudeStrategy:
+    | "unlimited"
+    | "unlimitedDigitTarget"
+    | "largestWithDigitTarget" = "unlimitedDigitTarget";
   let digitTargetShowSignificantZeros = true;
   let digitTargetPadWithInsignificantZeros = false;
   let digitTarget = 5;
@@ -265,12 +283,7 @@
       </label>
     </div>
 
-    Zero handling - zeros are semantically and mathematically important values,
-    and should be represented with care, especially when juxtaposed with finite
-    precision decimal representation of small numbers (e.g. "0.000" often means
-    "a non-zero number, but one that rounds to zero to the third decimal of
-    precision", whereas "0" can be reserved for 0
-    <em>exactly</em>.)
+    <h3>Zero handling</h3>
     <div class="option-box">
       <form>
         <div>
@@ -457,6 +470,167 @@
             />
             truncate tiny numbers if sample has any non-tiny numbers
           </label>
+        </div>
+      </div>
+
+      <div class="option-box">
+        <label>
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
+            name="unlimitedDigitTarget"
+            value={"unlimitedDigitTarget"}
+          />
+          allow as many magnitudes as needed, digit targets
+        </label>
+
+        <div class="option-box">
+          <label>
+            max total digits
+            <input
+              class="number-input"
+              type="number"
+              min="3"
+              max="12"
+              bind:value={maxTotalDigits}
+              on:change={() => {
+                if (maxDigitsLeft >= maxTotalDigits) {
+                  maxDigitsLeft = maxTotalDigits;
+                }
+                if (maxDigitsRight >= maxTotalDigits) {
+                  maxDigitsRight = maxTotalDigits;
+                }
+              }}
+            />
+          </label>
+          <br />
+
+          <label>
+            max digits left of decimal point
+            <input
+              class="number-input"
+              type="number"
+              min="3"
+              max="12"
+              bind:value={maxDigitsLeft}
+              on:change={() => {
+                if (maxDigitsLeft >= maxTotalDigits) {
+                  maxTotalDigits = maxDigitsLeft;
+                }
+              }}
+            />
+          </label>
+          <br />
+
+          <label>
+            max digits right of decimal point
+            <input
+              class="number-input"
+              type="number"
+              min="0"
+              max="12"
+              bind:value={maxDigitsRight}
+              on:change={() => {
+                if (maxDigitsRight >= maxTotalDigits) {
+                  maxTotalDigits = maxDigitsRight;
+                }
+                if (maxDigitsRight <= minDigitsNonzero) {
+                  minDigitsNonzero = maxDigitsRight;
+                }
+              }}
+            />
+          </label>
+          <br />
+
+          <label>
+            min non-zero digits for fractional vals
+            <input
+              class="number-input"
+              type="number"
+              min="0"
+              max={maxDigitsRight}
+              bind:value={minDigitsNonzero}
+            />
+          </label>
+
+          <br />
+
+          <b>Presets</b>
+          <div class="option-box">
+            <button
+              on:click|preventDefault={() => {
+                maxTotalDigits = 6;
+                maxDigitsLeft = 3;
+                maxDigitsRight = 3;
+                minDigitsNonzero = 0;
+              }}>prioritize alignment, truncate small nums entirely</button
+            >
+            <br />
+            <button
+              on:click|preventDefault={() => {
+                maxTotalDigits = 6;
+                maxDigitsLeft = 3;
+                maxDigitsRight = 3;
+                minDigitsNonzero = 1;
+              }}>prioritize alignment, truncate small nums mostly</button
+            >
+            <br />
+            <button
+              on:click|preventDefault={() => {
+                maxTotalDigits = 6;
+                maxDigitsLeft = 6;
+                maxDigitsRight = 5;
+                minDigitsNonzero = 0;
+              }}>less aligned, truncate small nums entirely</button
+            >
+            <br />
+            <button
+              on:click|preventDefault={() => {
+                maxTotalDigits = 6;
+                maxDigitsLeft = 6;
+                maxDigitsRight = 5;
+                minDigitsNonzero = 1;
+              }}>less aligned, truncate small nums mostly</button
+            >
+            &nbsp;
+          </div>
+
+          <b>Non-integer handling</b>
+          <div class="option-box">
+            <form>
+              <label>
+                <input
+                  type="radio"
+                  bind:group={nonIntegerHandling}
+                  name="noSpecial"
+                  value={"noSpecial"}
+                />
+                no special treament <br /> ex: 403.35 -> "403"
+              </label>
+              <br />
+
+              <label>
+                <input
+                  type="radio"
+                  bind:group={nonIntegerHandling}
+                  name="oneDigit"
+                  value={"oneDigit"}
+                />
+                reserve one digit after the "." <br /> ex: "403.35" -> "403.6"
+              </label>
+              <br />
+
+              <label>
+                <input
+                  type="radio"
+                  bind:group={nonIntegerHandling}
+                  name="trailingDot"
+                  value={"trailingDot"}
+                />
+                leave a trailing "." <br /> ex: 403.35 -> "403."
+              </label>
+            </form>
+          </div>
         </div>
       </div>
     </form>
@@ -679,7 +853,7 @@
   } */
 
   .option-box {
-    padding-left: 30px;
+    padding-left: 15px;
   }
 
   .inactive {
