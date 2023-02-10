@@ -20,6 +20,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     areaFactory,
+    createAdaptiveLineThicknessStore,
     lineFactory,
     pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
@@ -75,6 +76,12 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
   /** plot these as points */
   $: singletons = segments.filter((segment) => segment.length === 1);
+
+  /** use this line thickness heuristic to allow some amount of overplotting
+   * FIXME: this needs refinement!
+   */
+  let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
+  $: lineThickness.setData(data);
 </script>
 
 <WithDelayedValue
@@ -104,7 +111,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       let:output={dt}
     >
       <path
-        stroke-width="1px"
+        stroke-width={$lineThickness}
         stroke="hsla(217,60%, 55%, 1)"
         d={dt}
         id="segments-line"

@@ -40,6 +40,7 @@ to the props.
 
   export let mouseoverValue = undefined;
   export let hovered = undefined;
+  export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
 
@@ -47,6 +48,7 @@ to the props.
 </script>
 
 <svg
+  style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
   use:scrub
   on:scrub-start
   on:scrub-end

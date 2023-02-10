@@ -119,7 +119,7 @@
       />
     {/key}
   </Body>
-  {#if hovered && !scrubbing}
+  {#if hovered && !scrubbing && mouseoverValue?.x}
     <g transition:fade|local={{ duration: 100 }}>
       <TimeSeriesMouseover
         {data}
