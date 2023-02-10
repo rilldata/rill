@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
+import { currentHref } from "@rilldata/web-common/layout/navigation/stores";
 import type {
   V1DeleteFileAndReconcileResponse,
   V1RenameFileAndReconcileResponse,
@@ -79,7 +80,10 @@ export async function deleteFileArtifact(
 
     invalidateAfterReconcile(queryClient, instanceId, resp);
     if (activeEntity?.name === name) {
-      goto(getRouteFromName(getNextEntityName(names, name), type));
+      const route = getRouteFromName(getNextEntityName(names, name), type);
+      /** set the href store so the menu selection has an immediate visual update. */
+      currentHref.set(route);
+      goto(route);
     }
   } catch (err) {
     console.error(err);
