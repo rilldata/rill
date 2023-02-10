@@ -10,6 +10,7 @@
   import type { TimeSeriesTimeRange } from "../../dashboards/time-controls/time-control-types";
   import {
     getSelectableTimeRangeNames,
+    getSelectableTimeRanges,
     makeTimeRanges,
   } from "../../dashboards/time-controls/time-range-utils";
 
@@ -42,19 +43,6 @@
       end: $timeRangeQuery.data.timeRangeSummary.max,
     };
   }
-
-  const getSelectableTimeRanges = (
-    allTimeRangeInDataset: TimeSeriesTimeRange
-  ) => {
-    const selectableTimeRangeNames = getSelectableTimeRangeNames(
-      allTimeRangeInDataset
-    );
-    const selectableTimeRanges = makeTimeRanges(
-      selectableTimeRangeNames,
-      allTimeRangeInDataset
-    );
-    return selectableTimeRanges;
-  };
 
   let selectableTimeRanges = [];
   $: if (allTimeRange) {

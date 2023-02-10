@@ -15,6 +15,7 @@
   } from "./time-control-types";
   import {
     getSelectableTimeRangeNames,
+    getSelectableTimeRanges,
     makeTimeRanges,
     prettyFormatTimeRange,
   } from "./time-range-utils";
@@ -31,19 +32,6 @@
 
   let selectableTimeRanges: TimeSeriesTimeRange[];
 
-  // TODO: move this logic to server-side and fetch the results from the `/meta` endpoint directly
-  const getSelectableTimeRanges = (
-    allTimeRangeInDataset: TimeSeriesTimeRange
-  ) => {
-    const selectableTimeRangeNames = getSelectableTimeRangeNames(
-      allTimeRangeInDataset
-    );
-    const selectableTimeRanges = makeTimeRanges(
-      selectableTimeRangeNames,
-      allTimeRangeInDataset
-    );
-    return selectableTimeRanges;
-  };
   $: if (allTimeRange) {
     selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
   }
