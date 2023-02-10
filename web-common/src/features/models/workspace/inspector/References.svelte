@@ -84,7 +84,7 @@
     {#if showSourceTables}
       <div
         transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
-        class="mt-1"
+        class="mt-2 "
       >
         {#each $referencedWithMetadata as reference}
           {#if reference?.entry?.embedded}
@@ -94,54 +94,57 @@
               totalRows={reference?.totalRows}
             />
           {:else}
-            <WithModelResultTooltip {modelHasError}>
-              <a
-                href="/{reference?.entry?.source
-                  ? 'source'
-                  : 'model'}/{reference?.entry?.name}"
-                class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
-                style:grid-template-columns="auto max-content"
-                on:focus={focus(reference.reference)}
-                on:mouseover={focus(reference.reference)}
-                on:mouseleave={blur}
-                on:blur={blur}
-                class:text-gray-500={modelHasError}
-              >
-                <div class="truncate flex items-center gap-x-2">
-                  <div class="truncate">
-                    {reference.entry?.embedded
-                      ? reference.entry?.source?.properties?.path
-                      : reference.entry.name}
+            <div>
+              <WithModelResultTooltip {modelHasError}>
+                <a
+                  href="/{reference?.entry?.source
+                    ? 'source'
+                    : 'model'}/{reference?.entry?.name}"
+                  class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} pl-4 pr-4"
+                  style:grid-template-columns="auto max-content"
+                  on:focus={focus(reference.reference)}
+                  on:mouseover={focus(reference.reference)}
+                  on:mouseleave={blur}
+                  on:blur={blur}
+                  class:text-gray-500={modelHasError}
+                >
+                  <div class="truncate flex items-center gap-x-2">
+                    <div class="truncate">
+                      {reference.entry?.embedded
+                        ? reference.entry?.source?.properties?.path
+                        : reference.entry.name}
+                    </div>
                   </div>
-                </div>
 
-                <div class="text-gray-500">
-                  {#if reference?.totalRows}
-                    {`${formatCompactInteger(reference.totalRows)} rows` || ""}
+                  <div class="text-gray-500">
+                    {#if reference?.totalRows}
+                      {`${formatCompactInteger(reference.totalRows)} rows` ||
+                        ""}
+                    {/if}
+                  </div>
+                </a>
+
+                <svelte:fragment slot="tooltip-title">
+                  <div class="break-all">
+                    {reference?.entry?.embedded
+                      ? reference?.entry?.source?.properties?.path
+                      : reference?.entry?.name}
+                  </div></svelte:fragment
+                >
+                <svelte:fragment slot="tooltip-right">
+                  {#if reference?.entry?.source}
+                    {reference?.entry?.source?.connector}
                   {/if}
-                </div>
-              </a>
+                </svelte:fragment>
 
-              <svelte:fragment slot="tooltip-title">
-                <div class="break-all">
-                  {reference?.entry?.embedded
-                    ? reference?.entry?.source?.properties?.path
-                    : reference?.entry?.name}
-                </div></svelte:fragment
-              >
-              <svelte:fragment slot="tooltip-right">
-                {#if reference?.entry?.source}
-                  {reference?.entry?.source?.connector}
-                {/if}
-              </svelte:fragment>
-
-              <svelte:fragment slot="tooltip-description">
-                <TooltipShortcutContainer>
-                  <div>Open in workspace</div>
-                  <Shortcut>Click</Shortcut>
-                </TooltipShortcutContainer>
-              </svelte:fragment>
-            </WithModelResultTooltip>
+                <svelte:fragment slot="tooltip-description">
+                  <TooltipShortcutContainer>
+                    <div>Open in workspace</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
+                </svelte:fragment>
+              </WithModelResultTooltip>
+            </div>
           {/if}
         {/each}
       </div>
