@@ -48,7 +48,7 @@ service QueryService {
 
   // Profiling APIs
 
-  // ColumnRollupInterval (TODO: add description)
+  // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
   rpc ColumnRollupInterval(ColumnRollupIntervalRequest) returns (ColumnRollupIntervalResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
@@ -100,7 +100,7 @@ service QueryService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/column-cardinality/tables/{table_name}"};
   }
 
-  // Generate time series
+  // Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
   rpc ColumnTimeSeries(ColumnTimeSeriesRequest) returns (ColumnTimeSeriesResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}",
@@ -110,17 +110,17 @@ service QueryService {
 
   // Tablewide profiling APIs
 
-  // TableCardinality (TODO: add description)
+  // TableCardinality returns row count
   rpc TableCardinality(TableCardinalityRequest) returns (TableCardinalityResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/table-cardinality/tables/{table_name}"};
   }
 
-  // TableColumns (TODO: add description)
+  // TableColumns returns column profiles
   rpc TableColumns(TableColumnsRequest) returns (TableColumnsResponse) {
     option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"};
   }
 
-  // TableRows (TODO: add description)
+  // TableRows returns table rows
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
