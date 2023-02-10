@@ -49,6 +49,7 @@
   // we delay the tween if previousYMax < yMax
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
+
   $: yMaxStore.set(yExtentMax);
   const timeRangeKey = writable(`${xMin}-${xMax}`);
 
@@ -68,7 +69,7 @@
 
   $: delay =
     $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
-      ? 50
+      ? 100
       : 0;
 
   function alwaysBetween(min, max, value) {
@@ -111,7 +112,7 @@
     {#key $timeRangeKey}
       <ChunkedLine
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-        duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 400}
+        duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
         {data}
         {xAccessor}
         {yAccessor}
@@ -119,7 +120,7 @@
       />
     {/key}
   </Body>
-  {#if hovered && !scrubbing && mouseoverValue?.x}
+  {#if !scrubbing && mouseoverValue?.x}
     <g transition:fade|local={{ duration: 100 }}>
       <TimeSeriesMouseover
         {data}

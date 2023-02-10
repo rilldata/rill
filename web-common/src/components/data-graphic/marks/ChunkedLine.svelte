@@ -93,6 +93,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   {@const delayedSegments = delayedValues[1]}
   {@const delayedSingletons = delayedValues[2]}
   {#each delayedSingletons as [singleton]}
+    <rect
+      x={$xScale(singleton[xAccessor]) - 0.75}
+      y={Math.min($yScale(0), $yScale(singleton[yAccessor]))}
+      width="1.5"
+      height={Math.abs($yScale(0) - $yScale(singleton[yAccessor]))}
+      fill="hsla(217,60%, 55%, .5)"
+    />
     <circle
       cx={$xScale(singleton[xAccessor])}
       cy={$yScale(singleton[yAccessor])}

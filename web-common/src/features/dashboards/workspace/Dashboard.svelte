@@ -48,7 +48,7 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: gridConfig = hasTimeSeries
-    ? "560px minmax(355px, auto)"
+    ? "calc(560px + 1rem) minmax(355px, auto)"
     : "max-content minmax(355px, auto)";
 </script>
 
