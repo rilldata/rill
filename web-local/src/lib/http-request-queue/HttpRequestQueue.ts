@@ -50,7 +50,7 @@ export class HttpRequestQueue {
     // prepend after parsing to make parsing faster
     requestOptions.url = `${this.urlBase}${requestOptions.url}`;
 
-    let urlMatch = UrlExtractorRegex.exec(requestOptions.url);
+    const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
 
     let type: string;
     let name: string;
@@ -72,13 +72,12 @@ export class HttpRequestQueue {
       weight: DefaultQueryPriority,
     };
 
-    let columnName: string;
     let priority: number;
     requestOptions.params ??= {};
     priority =
       requestOptions.data?.priority ??
       (requestOptions.params.priority as number);
-    columnName =
+    const columnName =
       requestOptions.params.columnName ?? requestOptions.data?.columnName;
 
     if (!priority) {
