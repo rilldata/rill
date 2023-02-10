@@ -50,7 +50,7 @@
 
   // $: containerWidth = `${intPx + dotPx + fracPx + suffixPx}px`;
 
-  $: fracAndSuffixWidth = `${dotPx + fracPx + suffixPx}px`;
+  $: fracAndSuffixWidth = `${dotPx + fracPx + suffixPadFinal + suffixPx}px`;
 
   $: logProps = () => {
     console.log({ ...richNum, lowerCaseEForEng });
@@ -73,9 +73,11 @@
       </div>
     {:else}
       {int}{decimalPoint}{frac}
-      <div class="number-suff" style="padding-left: {suffixPadFinal}px">
-        {suffixFinal}
-      </div>
+      {#if suffixFinal != ""}
+        <div class="number-suff" style="padding-left: {suffixPadFinal}px">
+          {suffixFinal}
+        </div>
+      {/if}
     {/if}
   {:else}
     <div class="number-whole" style="width: {intPx}px;">
@@ -94,7 +96,12 @@
       </div>
     {:else}
       <div class="number-frac-and-suff" style="width: {fracAndSuffixWidth};">
-        {decimalPoint}{frac}{suffixFinal}
+        {decimalPoint}{frac}<span
+          class="number-suff"
+          style="padding-left: {suffixPadFinal}px"
+        >
+          {suffixFinal}
+        </span>
       </div>
     {/if}
   {/if}
