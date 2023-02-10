@@ -40,6 +40,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     ISODurationToTimeRange,
     makeTimeRange,
     TimeGrainOption,
+    timeRangeToISODuration,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeNameSelector from "./TimeRangeNameSelector.svelte";
@@ -147,9 +148,11 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
   let selectableTimeGrains: TimeGrainOption[];
   $: selectableTimeGrains = getSelectableTimeGrains(
-    selectedTimeRangeName,
+    timeRangeToISODuration(selectedTimeRangeName),
     allTimeRange
   );
+
+  // $: console.log(selectableTimeGrains, selectedTimeRangeName, allTimeRange);
 
   const checkValidTimeGrain = (timeGrain: V1TimeGrain) => {
     const timeGrainOption = selectableTimeGrains.find(

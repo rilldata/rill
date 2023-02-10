@@ -107,7 +107,7 @@ export const timeRangeToISODuration = (
     case TimeRangeName.AllTime:
       return "P9999Y";
     default:
-      throw new Error(`No ISO duration for time range ${timeRangeName}`);
+      return undefined;
   }
 };
 

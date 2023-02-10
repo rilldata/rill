@@ -83,7 +83,7 @@
         }}
       >
         {#if timeColumnSelectedValue === "__DEFAULT_VALUE__"}
-          <span class="text-gray-500">Select a timestamp column...</span>
+          <span class="text-gray-500">Select a timestamp column</span>
         {:else}
           <span style:max-width="14em" class="font-bold truncate"
             >{timeColumnSelectedValue}</span
