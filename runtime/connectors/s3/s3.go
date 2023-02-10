@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -140,6 +141,9 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*ses
 	})
 	_, err := creds.Get()
 	if err != nil {
+		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
+			return nil, err
+		}
 		creds = credentials.AnonymousCredentials
 	}
 
@@ -148,7 +152,8 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*ses
 	// If the user explicitly set a region, we use that
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
-			Region: aws.String(conf.AWSRegion),
+			Region:      aws.String(conf.AWSRegion),
+			Credentials: creds,
 		})
 	}
 

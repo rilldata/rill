@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
@@ -11,6 +12,7 @@
   import ContextButton from "@rilldata/web-local/lib/components/column-profile/ContextButton.svelte";
   import ExpanderButton from "@rilldata/web-local/lib/components/column-profile/ExpanderButton.svelte";
   import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
+  import { currentHref } from "./stores";
 
   export let name: string;
   export let href: string;
@@ -43,6 +45,15 @@
       containerFocused = tf;
     };
   }
+
+  /** track the mousedown event to provide immediate feedback on the click motion. */
+  let mousedown = false;
+  /** We'll look at the first two segments of the pathname in order to determine
+   * if this entry is active. So it should only need to match e.g. /dashboard/<name>,
+   * which maintains any subroutes beyond that (like /dashboard/<name>/edit).
+   */
+  $: pathname = $currentHref.split("/").slice(0, 3).join("/");
+  $: isActive = pathname === href;
 </script>
 
 <Tooltip
@@ -51,15 +62,37 @@
   distance={16}
   suppress={contextMenuHovered || contextMenuOpen || seeMoreHovered}
 >
-  <div
+  <a
+    {href}
+    on:click={() => {
+      if (open) onShowDetails();
+    }}
+    on:mousedown={() => {
+      currentHref.set(href);
+      mousedown = true;
+    }}
+    on:mouseup={() => {
+      mousedown = false;
+    }}
     on:mouseenter={onContainerFocus(true)}
     on:focus={onContainerFocus(true)}
     on:mouseleave={onContainerFocus(false)}
     on:blur={onContainerFocus(false)}
+    on:dragend={async () => {
+      // perform navigation in this case.
+      await goto(href);
+      mousedown = false;
+      currentHref.set(href);
+    }}
     style:height="24px"
-    class:font-bold={open}
-    class:bg-gray-200={open}
-    class="navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!open
+    class:font-bold={isActive}
+    class:bg-gray-200={isActive}
+    class:bg-gray-100={isActive && mousedown}
+    class="
+    focus:bg-gray-200
+    focus:outline-none
+    navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!isActive &&
+    !mousedown
       ? 'hover:bg-gray-100'
       : ''}"
     style:grid-template-columns="max-content auto max-content"
@@ -84,12 +117,8 @@
       {/if}
     </div>
 
-    <a
+    <div
       class="ui-copy flex items-center gap-x-1 w-full text-ellipsis overflow-hidden whitespace-nowrap"
-      {href}
-      on:click={() => {
-        if (open) onShowDetails();
-      }}
     >
       {#if $$slots["icon"]}
         <div class="text-gray-400" style:width="1em" style:height="1em">
@@ -103,7 +132,7 @@
           {name}
         {/if}
       </div>
-    </a>
+    </div>
 
     <!-- context menu -->
     <WithTogglableFloatingElement
@@ -117,14 +146,18 @@
         class="self-center"
         class:opacity-0={!containerFocused &&
           !contextMenuOpen &&
-          !open &&
+          !isActive &&
           !contextMenuHovered}
       >
         <ContextButton
           id="more-actions-{name}"
           tooltipText="More actions"
           suppressTooltip={contextMenuOpen}
-          on:click={toggleFloatingElement}
+          on:click={(event) => {
+            /** prevent the link click from registering */
+            event.stopPropagation();
+            toggleFloatingElement();
+          }}
           bind:isHovered={contextMenuHovered}
           width={24}
           height={24}
@@ -144,7 +177,7 @@
         <slot name="menu-items" toggleMenu={toggleFloatingElement} />
       </Menu>
     </WithTogglableFloatingElement>
-  </div>
+  </a>
   <!-- if tooltip content is present in a slot, render the tooltip -->
   <div slot="tooltip-content" class:hidden={!$$slots["tooltip-content"]}>
     {#if $$slots["tooltip-content"]}
