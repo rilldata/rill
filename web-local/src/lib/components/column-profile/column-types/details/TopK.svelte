@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     formatBigNumberPercentage,
+    formatDataType,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
@@ -27,6 +28,7 @@
   export let topK: TopKEntry[];
   export let totalRows: number;
   export let k = 15;
+  export let type: string;
 
   const dispatch = createEventDispatcher();
 
@@ -89,7 +91,7 @@
                   }" to clipboard`
                 )}
             >
-              {item.value}
+              {formatDataType(item.value, type)}
             </div>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
