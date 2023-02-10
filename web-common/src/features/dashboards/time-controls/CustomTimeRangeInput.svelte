@@ -53,7 +53,7 @@
   $: min = $timeRangeQuery.data.timeRangeSummary?.min
     ? stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.min)
     : undefined;
-  $: max = $timeRangeQuery.data.timeRangeSummary?.min
+  $: max = $timeRangeQuery.data.timeRangeSummary?.max
     ? stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.max)
     : undefined;
 
