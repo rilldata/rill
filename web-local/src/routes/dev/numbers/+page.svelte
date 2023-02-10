@@ -9,13 +9,14 @@
 
 <h1 class="pb-4">Tabular / columnar number formatting</h1>
 
+<TableExampleWidget defaultFormatterIndex={2} />
+
 <TableExampleWidget
   alignDecimalPoints={false}
   alignSuffixes={false}
   showMagSuffixForZero={true}
   zeroHandling="noSpecial"
 />
-<TableExampleWidget defaultFormatterIndex={2} />
 
 <h1 class="pb-4 pt-10">string widths</h1>
 Worst case if we always want to use multiple of 3 exponents

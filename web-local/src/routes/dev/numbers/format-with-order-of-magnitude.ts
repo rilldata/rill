@@ -55,7 +55,7 @@ export const formatNumWithOrderOfMag2 = (
     minimumFractionDigits: fractionDigits,
   })
     .format(x / 10 ** newOrder)
-    .replace(",", "")
+    .replace(/,/g, "")
     .split(".");
 
   const splitStr = { int, dot, frac: frac ?? "", suffix };
@@ -98,6 +98,15 @@ const testCases: [[number, number, number, boolean], NumberStringParts][] = [
   [
     [710.7237956, 0, 2, false],
     { int: "710", dot: ".", frac: "72", suffix: "E0" },
+  ],
+
+  [
+    [523523710.7237956, 0, 5, true],
+    { int: "523523710", dot: ".", frac: "72380", suffix: "E0" },
+  ],
+  [
+    [523523710.7237956, 0, 5, false],
+    { int: "523523710", dot: ".", frac: "72380", suffix: "E0" },
   ],
 
   [
