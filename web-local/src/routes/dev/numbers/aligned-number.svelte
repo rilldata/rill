@@ -63,7 +63,20 @@
   style="width: {containerWidth}px;"
 >
   {#if !alignDecimalPoints}
-    {int}{decimalPoint}{frac}{suffixFinal}
+    {#if alignSuffix}
+      {int}{decimalPoint}{frac}
+      <div
+        class="number-suff"
+        style="width: {suffixPx}px; padding-left: {suffixPadFinal}px"
+      >
+        {suffixFinal}
+      </div>
+    {:else}
+      {int}{decimalPoint}{frac}
+      <div class="number-suff" style="padding-left: {suffixPadFinal}px">
+        {suffixFinal}
+      </div>
+    {/if}
   {:else}
     <div class="number-whole" style="width: {intPx}px;">
       {int}
