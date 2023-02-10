@@ -55,18 +55,18 @@ export class HttpRequestQueue {
     let type: string;
     let name: string;
     if (urlMatch) {
-        if (urlMatch[1] === "metrics-views") {
-          name = urlMatch[2];
-          type = urlMatch[3];
-        } else {
-          name = urlMatch[3];
-          type = urlMatch[1];
-        }
+      if (urlMatch[1] === "metrics-views") {
+        name = urlMatch[2];
+        type = urlMatch[3];
+      } else {
+        name = urlMatch[3];
+        type = urlMatch[1];
+      }
     } else {
-        // make the call directly if the url is not recognised
-        return fetchWrapper(requestOptions);
+      // make the call directly if the url is not recognised
+      return fetchWrapper(requestOptions);
     }
-    
+
     const entry: RequestQueueEntry = {
       requestOptions,
       weight: DefaultQueryPriority,

@@ -20,10 +20,7 @@
   $: modelsAndRowCounts = derived(
     embeds.map((modelName) => {
       return derived(
-        useQueryServiceTableCardinality(
-          $runtimeStore?.instanceId,
-          modelName
-        ),
+        useQueryServiceTableCardinality($runtimeStore?.instanceId, modelName),
 
         (totalRows) => {
           return {
