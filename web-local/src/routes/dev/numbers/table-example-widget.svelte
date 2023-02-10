@@ -356,6 +356,15 @@
       <input type="checkbox" bind:checked={digitTargetShowSignificantZeros} />
       show significant zeros
     </label>
+    <br />
+
+    <label>
+      <input
+        type="checkbox"
+        bind:checked={digitTargetPadWithInsignificantZeros}
+      />
+      pad with insignificant zeros (after last significant digit)
+    </label>
 
     <h2>new humanizer strategy (and strategy-specific options)</h2>
     <form>
@@ -412,7 +421,7 @@
             name="largestWithDigitTarget"
             value={"largestWithDigitTarget"}
           />
-          only use largest magnitude, with digit target
+          <b>only use largest magnitude</b>
         </label>
         <div class:inactive={magnitudeStrategy !== "largestWithDigitTarget"}>
           <div class="option-box">
@@ -426,7 +435,7 @@
                 bind:value={digitTarget}
               />
             </label>
-            <br />
+            <!-- <br />
             <label>
               <input
                 type="checkbox"
@@ -441,7 +450,7 @@
                 bind:checked={digitTargetPadWithInsignificantZeros}
               />
               pad with insignificant zeros (after last significant digit)
-            </label>
+            </label> -->
           </div>
         </div>
       </div>
@@ -454,7 +463,7 @@
             name="unlimited"
             value={"unlimited"}
           />
-          allow as many magnitudes as needed
+          <b>multiple magnitudes v1</b>
         </label>
         <div class="option-box">
           <label>
@@ -481,8 +490,8 @@
             name="unlimitedDigitTarget"
             value={"unlimitedDigitTarget"}
           />
-          allow as many magnitudes as needed, digit targets
-        </label>
+          <b>multiple magnitudes v2 (digit targets) </b></label
+        >
 
         <div class="option-box">
           <label>
@@ -558,39 +567,43 @@
           <b>Presets</b>
           <div class="option-box">
             <button
+              title="better for alignment; truncate small nums entirely"
               on:click|preventDefault={() => {
                 maxTotalDigits = 6;
                 maxDigitsLeft = 3;
                 maxDigitsRight = 3;
                 minDigitsNonzero = 0;
-              }}>prioritize alignment, truncate small nums entirely</button
+              }}>1</button
             >
-            <br />
+            &nbsp;
             <button
+              title="better for alignment; truncate small nums mostly"
               on:click|preventDefault={() => {
                 maxTotalDigits = 6;
                 maxDigitsLeft = 3;
                 maxDigitsRight = 3;
                 minDigitsNonzero = 1;
-              }}>prioritize alignment, truncate small nums mostly</button
+              }}>2</button
             >
-            <br />
+            &nbsp;
             <button
+              title="not optimal for alignment; truncate small nums entirely"
               on:click|preventDefault={() => {
                 maxTotalDigits = 6;
                 maxDigitsLeft = 6;
                 maxDigitsRight = 5;
                 minDigitsNonzero = 0;
-              }}>less aligned, truncate small nums entirely</button
+              }}>3</button
             >
-            <br />
+            &nbsp;
             <button
+              title="not optimal for alignment; truncate small nums mostly"
               on:click|preventDefault={() => {
                 maxTotalDigits = 6;
                 maxDigitsLeft = 6;
                 maxDigitsRight = 5;
                 minDigitsNonzero = 1;
-              }}>less aligned, truncate small nums mostly</button
+              }}>4</button
             >
             &nbsp;
           </div>
