@@ -2,11 +2,8 @@ syntax = "proto3";
 package rill.runtime.v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/catalog.proto";
-import "rill/runtime/v1/queries.proto";
-import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
