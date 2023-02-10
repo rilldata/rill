@@ -271,6 +271,7 @@
           <input
             class="number-input"
             type="number"
+            min="0"
             bind:value={suffixPadding}
           /> px
         </label>
