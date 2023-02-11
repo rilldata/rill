@@ -3,6 +3,7 @@ import {
   CATEGORICALS,
   FLOATS,
   INTEGERS,
+  isNested,
   TIMESTAMPS,
 } from "@rilldata/web-common/lib/duckdb-data-types";
 
@@ -43,6 +44,8 @@ export function sortByType(a, b) {
   else if (!CATEGORICALS.has(a.type) && CATEGORICALS.has(b.type)) return -1;
   else if (FLOATS.has(a.type) && !FLOATS.has(b.type)) return 1;
   else if (!FLOATS.has(a.type) && FLOATS.has(b.type)) return -1;
+  else if (isNested(a.type) && !isNested(b.type)) return 1;
+  else if (!isNested(a.type) && isNested(b.type)) return -1;
   else if (INTEGERS.has(a.type) && !INTEGERS.has(b.type)) return 1;
   else if (!INTEGERS.has(a.type) && INTEGERS.has(b.type)) return -1;
   else if (TIMESTAMPS.has(a.type) && TIMESTAMPS.has(b.type)) {
