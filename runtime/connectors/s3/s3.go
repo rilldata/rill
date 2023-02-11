@@ -120,16 +120,21 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 }
 
 func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
-	// if S3Endpoint is set then fs support s3 API
+	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if len(conf.S3Endpoint) > 0 {
-		return session.NewSession(&aws.Config{
-			// region is set for bwd compatibility reasons
+		region := conf.AWSRegion
+		if region == "" {
+			// Set the default region for bwd compatibility reasons
 			// cloudflare and minio ignore if us-east-1 is set, not tested for others
-			Region:           aws.String("us-east-1"),
+			region = "us-east-1"
+		}
+		return session.NewSession(&aws.Config{
+			Region:           aws.String(region),
 			Endpoint:         &conf.S3Endpoint,
 			S3ForcePathStyle: aws.Bool(true),
 		})
 	}
+	// The logic below is AWS-specific, so we ignore it when conf.S3Endpoint is set
 
 	// Find credentials to use.
 	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
