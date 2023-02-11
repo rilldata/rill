@@ -56,20 +56,17 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
  — If set to true, hive style partitioning is transformed into column values in the data source on ingestion.
  - _`true`_ by default
 
-**`extract`** - Optionally limit the data ingested from remote sources (s3/gcs only)
- - **`rows`** - rows clause limits the size of data fetched 
-    - **`strategy`** - strategy to fetch data (**head** / **tail**)
-    - **`size`** -  size of data to be fetched (like 100MB, 1GB, 100KB etc)
-  
-  **NOTE** : The system can sometimes fetch more data than what is set in extract stategy. This is especially true for parquet files where complete row group needs to be fetched.
- - **`files`** -  files clause limit the total number of files to be fetched as per glob pattern
-    - **`strategy`** - strategy to fetch files (**head** / **tail**)
+**`extract`** - Optionally limit the data ingested from remote sources (S3/GCS only)
+  - **`rows`** - limits the size of data fetched
+    - **`strategy`** - strategy to fetch data (**head** or **tail**)
+    - **`size`** - size of data to be fetched (like `100MB`, `1GB`, etc). This is best-effort and may fetch more data than specified.
+  - **`files`** - limits the total number of files to be fetched as per glob pattern
+    - **`strategy`** - strategy to fetch files (**head** or **tail**)
     - **`size`** -  number of files
-
-Semantics - 
-  - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
-  - If only `rows` is specified, no limit on number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
-  - If only `files` is specified, each file will be fully ingested.
+  - Semantics
+    - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
+    - If only `rows` is specified, no limit on number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
+    - If only `files` is specified, each file will be fully ingested.
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 
