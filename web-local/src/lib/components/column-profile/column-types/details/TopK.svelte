@@ -93,11 +93,11 @@
             >
               {formatDataType(item.value, type)}
             </div>
-            <TooltipContent slot="tooltip-content">
+            <TooltipContent slot="tooltip-content" maxWidth="300px">
               <TooltipTitle>
-                <svelte:fragment slot="name"
-                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
-                >
+                <svelte:fragment slot="name">
+                  {`${formatDataType(item.value, type)}`}
+                </svelte:fragment>
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
                 >
@@ -131,7 +131,7 @@
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
                 <svelte:fragment slot="name"
-                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
+                  >{`${formatDataType(item.value, type)}`}</svelte:fragment
                 >
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
