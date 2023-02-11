@@ -23,6 +23,7 @@ type Source struct {
 	CsvDelimiter          string         `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
 	URI                   string         `yaml:"uri,omitempty"`
 	Region                string         `yaml:"region,omitempty" mapstructure:"region,omitempty"`
+	S3Endpoint            string         `yaml:"endpoint,omitempty" mapstructure:"endpoint,omitempty"`
 	GlobMaxTotalSize      int64          `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
 	GlobMaxObjectsMatched int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
@@ -155,6 +156,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.GlobPageSize != 0 {
 		props["glob.page_size"] = source.GlobPageSize
+	}
+
+	if source.S3Endpoint != "" {
+		props["endpoint"] = source.S3Endpoint
 	}
 
 	if source.HivePartition != nil {
