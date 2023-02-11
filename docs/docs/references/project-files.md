@@ -34,6 +34,9 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
  — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
   - _`us-east-1`_ —  the cloud region identifer
 
+**`endpoint`**
+ — Optionally overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.
+
 **`glob.max_total_size`**
  — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern.
   - default value is _`10737418240 (10GB)`_
