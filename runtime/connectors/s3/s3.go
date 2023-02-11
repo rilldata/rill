@@ -2,17 +2,18 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob/s3blob"
 )
 
@@ -68,9 +69,11 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if !doublestar.ValidatePattern(conf.Path) {
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
+
 	return conf, nil
 }
 
@@ -80,52 +83,95 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	bucket, glob, _, err := s3URLParts(conf.Path)
+	url, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
 
-	sess, err := getAwsSessionConfig(conf)
+	if url.Scheme != "s3" {
+		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
+	}
+
+	sess, err := getAwsSessionConfig(ctx, conf, url.Host)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
 
-	bucketObj, err := s3blob.OpenBucket(ctx, sess, bucket, nil)
+	bucketObj, err := s3blob.OpenBucket(ctx, sess, url.Host, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
-	defer bucketObj.Close()
 
-	fetchConfigs := rillblob.FetchConfigs{
+	// prepare fetch configs
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
+		GlobPattern:           url.Path,
+		ExtractPolicy:         source.ExtractPolicy,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
+	return rillblob.NewIterator(ctx, bucketObj, opts)
 }
 
-func s3URLParts(path string) (string, string, string, error) {
-	u, err := url.Parse(path)
+func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
+	// Find credentials to use.
+	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
+	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
+	// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
+	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.EnvProvider{},
+		&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
+	})
+	_, err := creds.Get()
 	if err != nil {
-		return "", "", "", err
+		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
+			return nil, err
+		}
+		creds = credentials.AnonymousCredentials
 	}
-	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
-}
 
-func getAwsSessionConfig(conf *Config) (*session.Session, error) {
+	// The complexity below relates to AWS being pretty strict about regions (probably to avoid unexpected cross-region traffic).
+
+	// If the user explicitly set a region, we use that
 	if conf.AWSRegion != "" {
 		return session.NewSession(&aws.Config{
-			Region: aws.String(conf.AWSRegion),
+			Region:      aws.String(conf.AWSRegion),
+			Credentials: creds,
 		})
 	}
-	return session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
+
+	// Create a session that tries to infer the region from the environment
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable, // Tells to look for default region set with `aws configure`
+		Config: aws.Config{
+			Credentials: creds,
+		},
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// If no region was found, we default to us-east-1 (which will be used to resolve the lookup in the next step)
+	if sess.Config.Region == nil || *sess.Config.Region == "" {
+		sess = sess.Copy(&aws.Config{Region: aws.String("us-east-1")})
+	}
+
+	// Bucket names are globally unique, but requests will fail if their region doesn't match the one configured in the session.
+	// So we do a lookup for the bucket's region and configure the session to use that.
+	reg, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
+	if err != nil {
+		return nil, err
+	}
+	if reg != "" {
+		sess = sess.Copy(&aws.Config{Region: aws.String(reg)})
+	}
+
+	return sess, nil
 }

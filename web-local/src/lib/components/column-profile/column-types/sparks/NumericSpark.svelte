@@ -3,10 +3,11 @@
   import { HistogramPrimitive } from "@rilldata/web-common/components/data-graphic/marks";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
+  import type { NumericHistogramBinsBin } from "@rilldata/web-common/runtime-client";
 
   export let compact = false;
-  export let data;
+  export let data: NumericHistogramBinsBin[];
 
   $: summaryWidthSize =
     COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];

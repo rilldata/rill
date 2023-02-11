@@ -5,7 +5,12 @@ managed:
     default: github.com/rilldata/rill
     except:
       - buf.build/googleapis/googleapis
+      - buf.build/envoyproxy/protoc-gen-validate
 plugins:
+  - plugin: buf.build/bufbuild/validate-go
+    out: gen
+    opt:
+      - paths=source_relative
   - remote: buf.build/protocolbuffers/plugins/go:v1.28.1-1
     out: gen
     opt:

@@ -7,10 +7,14 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
+  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceDeleteFileAndReconcile,
@@ -22,8 +26,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -31,19 +33,14 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import {
-    deleteFileArtifact,
-    useCreateDashboardFromSource,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { schemaHasTimestampColumn } from "@rilldata/web-local/lib/svelte-query/column-selectors";
-  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { EntityType } from "../../../lib/entity";
+  import { deleteFileArtifact } from "../../entity-management/actions";
+  import { getName } from "../../entity-management/name-utils";
+  import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
+  import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
   import { refreshSource } from "../refreshSource";
 
@@ -196,24 +193,18 @@
   };
 </script>
 
-<MenuItem icon on:select={() => handleCreateModel(sourceName)}>
+<MenuItem icon on:select={() => handleCreateModel()}>
   <Model slot="icon" />
   Create new model
 </MenuItem>
 
 <MenuItem
-  disabled={!schemaHasTimestampColumn(source?.schema)}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
-  <svelte:fragment slot="description">
-    {#if !schemaHasTimestampColumn(source?.schema)}
-      Requires a timestamp column
-    {/if}
-  </svelte:fragment>
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "local_file"}

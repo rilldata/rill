@@ -3,7 +3,6 @@ package localfile
 import (
 	"context"
 	"fmt"
-	"path"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -45,9 +44,10 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path         string `mapstructure:"path"`
-	Format       string `mapstructure:"format"`
-	CSVDelimiter string `mapstructure:"csv.delimiter"`
+	Path          string `mapstructure:"path"`
+	Format        string `mapstructure:"format"`
+	CSVDelimiter  string `mapstructure:"csv.delimiter"`
+	HivePartition *bool  `mapstructure:"hive_partitioning"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -55,10 +55,6 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	err := mapstructure.Decode(props, &conf)
 	if err != nil {
 		return nil, err
-	}
-
-	if conf.Format == "" {
-		conf.Format = path.Ext(conf.Path)
 	}
 
 	return conf, nil
@@ -72,6 +68,6 @@ func (c connector) Spec() connectors.Spec {
 
 // local file connectors should directly use glob patterns
 // keeping it for reference
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	return nil, fmt.Errorf("not implemented")
 }

@@ -2,6 +2,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServicePutFileAndReconcile,
@@ -9,7 +10,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {

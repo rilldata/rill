@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -30,7 +31,7 @@ func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore
 	return nil
 }
 
-func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
+func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
@@ -51,9 +52,6 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 	if mv.Model == "" {
 		return migrator.CreateValidationError(catalog.Path, SourceNotSelected)
 	}
-	if mv.TimeDimension == "" {
-		return migrator.CreateValidationError(catalog.Path, TimestampNotSelected)
-	}
 	model, err := olap.InformationSchema().Lookup(ctx, mv.Model)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
@@ -64,32 +62,27 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	fieldsMap := make(map[string]*runtimev1.StructType_Field)
 	for _, field := range model.Schema.Fields {
-		fieldsMap[field.Name] = field
+		fieldsMap[strings.ToLower(field.Name)] = field
 	}
 
-	if _, ok := fieldsMap[mv.TimeDimension]; !ok {
-		return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
+	// if a time dimension is selected it should exist
+	if mv.TimeDimension != "" {
+		if _, ok := fieldsMap[strings.ToLower(mv.TimeDimension)]; !ok {
+			return migrator.CreateValidationError(catalog.Path, TimestampNotFound)
+		}
 	}
 
 	var validationErrors []*runtimev1.ReconcileError
 
 	for i, dimension := range mv.Dimensions {
-		err := validateDimension(ctx, model, dimension)
-		if err != nil {
+		if _, ok := fieldsMap[strings.ToLower(dimension.Name)]; !ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
-				Message:      err.Error(),
+				Message:      fmt.Sprintf("dimension not found: %s", dimension.Name),
 				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 		}
-	}
-	if len(mv.Dimensions) == 0 {
-		validationErrors = append(validationErrors, &runtimev1.ReconcileError{
-			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
-			FilePath: catalog.Path,
-			Message:  MissingDimension,
-		})
 	}
 
 	for i, measure := range mv.Measures {
@@ -103,6 +96,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 		}
 	}
+	// at least one measure has to be there in the metrics view
 	if len(mv.Measures) == 0 {
 		validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 			Code:     runtimev1.ReconcileError_CODE_VALIDATION,
@@ -121,17 +115,6 @@ func (m *metricsViewMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.C
 
 func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
 	return true, nil
-}
-
-func validateDimension(ctx context.Context, model *drivers.Table, dimension *runtimev1.MetricsView_Dimension) error {
-	for _, field := range model.Schema.Fields {
-		// TODO: check type
-		if field.Name == dimension.Name {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("dimension not found: %s", dimension.Name)
 }
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *runtimev1.MetricsView_Measure) error {

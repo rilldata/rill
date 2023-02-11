@@ -1,6 +1,6 @@
-import type { EntityRecord } from "@rilldata/web-common/lib/entity";
+import type { EntityRecord } from "@rilldata/web-common/features/entity-management/types";
 import type { SvelteComponent } from "svelte";
-import type { ValidationState } from "../../temp/metrics";
+import type { ValidationState } from "../../../../../web-common/src/features/metrics-views/errors";
 import TableCellInput from "./TableCellInput.svelte";
 import TableCellSelector from "./TableCellSelector.svelte";
 

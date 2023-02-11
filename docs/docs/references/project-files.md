@@ -21,8 +21,7 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
   - _`local_file`_ — a locally available file.
 
 **`uri`**
- —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_.
- Additionally Rill also supports glob patterns as part of URI including recursive searches for s3 and gcs.
+ —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
   - _`s3://your-org/bucket/file.parquet`_ —  the s3 URI of your file
   - _`gs://your-org/bucket/file.parquet`_ —  the gsutil URI of your file
   - _`https://data.example.org/path/to/file.parquet`_ —  the web address of your file
@@ -36,11 +35,11 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
   - _`us-east-1`_ —  the cloud region identifer
 
 **`glob.max_total_size`**
- — Appplicable if the URI is a glob pattern. The max allowed total size(in bytes) of all objects matching the glob pattern.
+ — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern.
   - default value is _`10737418240 (10GB)`_
 
 **`glob.max_objects_matched`**
- — Appplicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern.
+ — Applicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern.
   - default value is _`1,000`_
 
 **`glob.max_objects_listed`**
@@ -68,7 +67,6 @@ Semantics -
   - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
   - If only `rows` is specified, no limit on number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
   - If only `files` is specified, each file will be fully ingested.
-
 
 See our Using Rill guide for an [example](../using-rill/import-data#using-code).
 

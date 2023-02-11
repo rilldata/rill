@@ -36,6 +36,27 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
+  // Extract policy for glob connectors
+  message ExtractPolicy {
+    enum Strategy {
+      STRATEGY_UNSPECIFIED = 0;
+      STRATEGY_HEAD = 1;
+      STRATEGY_TAIL = 2;
+    }
+    // strategy for selecting rows in a file
+    Strategy rows_strategy = 1;
+    // could in future add: uint64 rows_limit = n;
+    // limit on data fetched in bytes
+    uint64 rows_limit_bytes = 2;
+    // strategy for selecting files
+    Strategy files_strategy = 3;
+    // limit on number of files
+    uint64 files_limit = 4;
+  }
+  // extraction policy for the source
+  ExtractPolicy policy = 6;
+  // timeout for source ingestion in seconds
+  int32 timeout_seconds = 7;
 }
 
 // Model is the internal representation of a model definition
@@ -53,6 +74,8 @@ message Model {
   Dialect dialect = 3;
   // Detected schema of the model
   StructType schema = 4;
+  // To materialize model or not
+  bool materialize = 5;
 }
 
 // Metrics view is the internal representation of a metrics view definition

@@ -1,23 +1,26 @@
-import { EntityType } from "@rilldata/web-common/lib/entity";
+import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   runtimeServiceGetCatalogEntry,
   runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
-import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
 import { error } from "@sveltejs/kit";
 
 export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
-  const localConfig = await runtimeServiceGetConfig();
+  const config = await runtimeServiceGetConfig();
+  if (config.readonly) {
+    throw error(404, "Page not found");
+  }
 
   // try to get the catalog entry.
   let catalogEntry;
   try {
     catalogEntry = await runtimeServiceGetCatalogEntry(
-      localConfig.instance_id,
+      config.instance_id,
       params.name
     );
     // if this is a valid catalog entry, then we can return it.
@@ -32,7 +35,7 @@ export async function load({ params }) {
 
   try {
     await runtimeServiceGetFile(
-      localConfig.instance_id,
+      config.instance_id,
       getFilePathFromNameAndType(params.name, EntityType.Table)
     );
 

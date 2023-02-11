@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -13,39 +14,82 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
+const (
+	_iteratorBatch           = 8
+	_defaultTimeoutInSeconds = 60 * 5 // 5 minutes
+)
+
+// Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	err := source.Validate()
-	if err != nil {
-		return err
+	timeoutInSeconds := _defaultTimeoutInSeconds
+	if source.Timeout > 0 {
+		timeoutInSeconds = int(source.Timeout)
 	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(timeoutInSeconds)*time.Second)
+	defer cancel()
 
 	// Driver-specific overrides
 	// switch source.Connector {
 	// case "local_file":
 	// 	return c.ingestFile(ctx, env, source)
 	// }
-
 	if source.Connector == "local_file" {
-		return c.ingestLocalFiles(ctx, env, source)
+		return c.ingestLocalFiles(ctxWithTimeout, env, source)
 	}
 
-	localPaths, err := connectors.ConsumeAsFiles(ctx, env, source)
+	iterator, err := connectors.ConsumeAsIterator(ctxWithTimeout, env, source)
 	if err != nil {
 		return err
 	}
-	defer fileutil.ForceRemoveFiles(localPaths)
-	// multiple parquet files can be loaded in single sql
-	// this seems to be performing very fast as compared to appending individual files
-	return c.ingestFiles(ctx, source, localPaths)
+	defer iterator.Close()
+
+	appendToTable := false
+	for iterator.HasNext() {
+		files, err := iterator.NextBatch(_iteratorBatch)
+		if err != nil {
+			return err
+		}
+
+		if err := c.ingestFiles(ctxWithTimeout, source, files, appendToTable); err != nil {
+			return err
+		}
+
+		appendToTable = true
+	}
+	return nil
 }
 
 // for files downloaded locally from remote sources
-func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source, filenames []string) error {
-	from, err := getSourceReader(filenames)
+func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source, filenames []string, appendToTable bool) error {
+	format := ""
+	if value, ok := source.Properties["format"]; ok {
+		format = value.(string)
+	}
+
+	delimiter := ""
+	if value, ok := source.Properties["csv.delimiter"]; ok {
+		format = value.(string)
+	}
+
+	hivePartition := 1
+	if value, ok := source.Properties["hive_partitioning"]; ok {
+		if !value.(bool) {
+			hivePartition = 0
+		}
+	}
+
+	from, err := sourceReader(filenames, delimiter, format, hivePartition)
 	if err != nil {
 		return err
 	}
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
+
+	var query string
+	if appendToTable {
+		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", source.Name, from)
+	} else {
+		query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
+	}
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
@@ -77,33 +121,40 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	// Not using query args since not quite sure about behaviour of injecting table names that way.
-	// Also, it's a source, so the caller can be trusted.
-
-	var from string
-	if conf.Format == ".csv" && conf.CSVDelimiter != "" {
-		from = fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", path, conf.CSVDelimiter)
-	} else {
-		from, err = getSourceReader(localPaths)
-		if err != nil {
-			return err
-		}
+	hivePartition := 1
+	if conf.HivePartition != nil && !*conf.HivePartition {
+		hivePartition = 0
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", source.Name, from)
+	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format, hivePartition)
+	if err != nil {
+		return err
+	}
+
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func getSourceReader(paths []string) (string, error) {
-	ext := fileutil.FullExt(paths[0])
-	if ext == "" {
-		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(ext, ".csv") || strings.Contains(ext, ".tsv") || strings.Contains(ext, ".txt") {
-		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','")), nil
-	} else if strings.Contains(ext, ".parquet") {
-		return fmt.Sprintf("read_parquet(['%s'])", strings.Join(paths, "','")), nil
-	} else {
-		return "", fmt.Errorf("file type not supported : %s", ext)
+func sourceReader(paths []string, csvDelimiter, format string, hivePartition int) (string, error) {
+	if format == "" {
+		format = fileutil.FullExt(paths[0])
 	}
+
+	if format == "" {
+		return "", fmt.Errorf("invalid file")
+	} else if strings.Contains(format, ".csv") || strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
+		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
+	} else if strings.Contains(format, ".parquet") {
+		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
+	} else {
+		return "", fmt.Errorf("file type not supported : %s", format)
+	}
+}
+
+func sourceReaderWithDelimiter(paths []string, delimiter string) string {
+	if delimiter == "" {
+		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','"))
+	}
+	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", strings.Join(paths, "','"), delimiter)
 }

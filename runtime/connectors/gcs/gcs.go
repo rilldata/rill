@@ -3,14 +3,12 @@ package gcs
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob"
 
 	// blank import required for bucket functions
@@ -73,37 +71,35 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	bucket, glob, _, err := gcsURLParts(conf.Path)
+	url, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
 
-	bucket = fmt.Sprintf("gs://%s", bucket)
+	if url.Scheme != "gs" {
+		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
+	}
+
+	bucket := fmt.Sprintf("gs://%s", url.Host)
 	bucketObj, err := blob.OpenBucket(ctx, bucket)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %s, %w", bucket, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", bucket, err)
 	}
-	defer bucketObj.Close()
 
-	fetchConfigs := rillblob.FetchConfigs{
+	// prepare fetch configs
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
+		GlobPattern:           url.Path,
+		ExtractPolicy:         source.ExtractPolicy,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, glob, bucket)
-}
-
-func gcsURLParts(path string) (string, string, string, error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", "", "", err
-	}
-	return u.Host, strings.Replace(u.Path, "/", "", 1), fileutil.FullExt(u.Path), nil
+	return rillblob.NewIterator(ctx, bucketObj, opts)
 }

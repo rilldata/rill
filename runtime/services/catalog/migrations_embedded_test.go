@@ -23,42 +23,56 @@ var AdBidsNewModeName = "AdBids_new_model"
 var AdBidsNewModelPath = "/models/AdBids_new_model.sql"
 
 func TestEmbeddedSourcesHappyPath(t *testing.T) {
-	s, dir := initBasicService(t)
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+		{"ReconcileSelected", catalog.ReconcileConfig{
+			ChangedPaths: []string{AdBidsNewModelPath, AdBidsModelRepoPath},
+		}},
+	}
 
-	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
 
-	addEmbeddedModel(t, s)
-	addEmbeddedNewModel(t, s)
-	testutils.AssertTable(t, s, "AdBids_new_model", AdBidsNewModelPath)
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
 
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	// no errors when reconcile is run later
-	testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
-	require.NoError(t, err)
+			addEmbeddedModel(t, s)
+			addEmbeddedNewModel(t, s)
+			testutils.AssertTable(t, s, "AdBids_new_model", AdBidsNewModelPath)
 
-	// delete on of the models
-	err = os.Remove(path.Join(dir, AdBidsNewModelPath))
-	time.Sleep(10 * time.Millisecond)
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 0, 1, 1, []string{AdBidsNewModelPath, EmbeddedSourcePath})
-	testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			result, err := s.Reconcile(context.Background(), tt.config)
+			// no errors when reconcile is run later
+			testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
+			require.NoError(t, err)
 
-	// delete the other model
-	err = os.Remove(path.Join(dir, AdBidsModelRepoPath))
-	time.Sleep(10 * time.Millisecond)
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(
-		t,
-		result,
-		1,
-		0,
-		0,
-		2,
-		[]string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, EmbeddedSourcePath},
-	)
-	testutils.AssertTableAbsence(t, s, EmbeddedSourceName)
+			// delete on of the models
+			err = os.Remove(path.Join(dir, AdBidsNewModelPath))
+			time.Sleep(10 * time.Millisecond)
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 0, 1, 1, []string{AdBidsNewModelPath, EmbeddedSourcePath})
+			testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+
+			// delete the other model
+			err = os.Remove(path.Join(dir, AdBidsModelRepoPath))
+			time.Sleep(10 * time.Millisecond)
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(
+				t,
+				result,
+				1,
+				0,
+				0,
+				2,
+				[]string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, EmbeddedSourcePath},
+			)
+			testutils.AssertTableAbsence(t, s, EmbeddedSourceName)
+		})
+	}
 }
 
 func TestEmbeddedSourcesQueryChanging(t *testing.T) {
@@ -281,39 +295,53 @@ func TestEmbeddedSourceRefresh(t *testing.T) {
 }
 
 func TestEmbeddedSourcesErroredOut(t *testing.T) {
-	s, dir := initBasicService(t)
+	configs := []struct {
+		title  string
+		config catalog.ReconcileConfig
+	}{
+		{"ReconcileAll", catalog.ReconcileConfig{}},
+		{"ReconcileSelected", catalog.ReconcileConfig{
+			ChangedPaths: []string{AdBidsNewModelPath},
+		}},
+	}
 
-	testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
-	addEmbeddedModel(t, s)
-	addEmbeddedNewModel(t, s)
+	for _, tt := range configs {
+		t.Run(tt.title, func(t *testing.T) {
+			s, dir := initBasicService(t)
 
-	// change the model to point to invalid file
-	testutils.CreateModel(
-		t,
-		s,
-		"AdBids_model",
-		`select id, timestamp, publisher, domain, bid_price from "data/AdBids.cs"`,
-		AdBidsNewModelPath,
-	)
-	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/AdBids.cs"})
-	adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.ElementsMatch(t, []string{strings.ToLower("AdBids_model")}, adBidsEntry.Children)
+			testutils.CopyFileToData(t, dir, AdBidsCsvPath, "AdBids.csv")
+			addEmbeddedModel(t, s)
+			addEmbeddedNewModel(t, s)
 
-	// change back to original valid file
-	testutils.CreateModel(
-		t,
-		s,
-		"AdBids_model",
-		`select id, timestamp, publisher, domain, bid_price from "data/AdBids.csv"`,
-		AdBidsNewModelPath,
-	)
-	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
-	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 0, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath})
-	adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
-	require.ElementsMatch(t, []string{strings.ToLower("AdBids_model"), strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
+			// change the model to point to invalid file
+			testutils.CreateModel(
+				t,
+				s,
+				"AdBids_model",
+				`select id, timestamp, publisher, domain, bid_price from "data/AdBids.cs"`,
+				AdBidsNewModelPath,
+			)
+			result, err := s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 2, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath, "data/AdBids.cs"})
+			adBidsEntry := testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.ElementsMatch(t, []string{strings.ToLower("AdBids_model")}, adBidsEntry.Children)
+
+			// change back to original valid file
+			testutils.CreateModel(
+				t,
+				s,
+				"AdBids_model",
+				`select id, timestamp, publisher, domain, bid_price from "data/AdBids.csv"`,
+				AdBidsNewModelPath,
+			)
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 1, 1, 0, []string{AdBidsNewModelPath, EmbeddedSourcePath})
+			adBidsEntry = testutils.AssertTable(t, s, EmbeddedSourceName, EmbeddedSourcePath)
+			require.ElementsMatch(t, []string{strings.ToLower("AdBids_model"), strings.ToLower(AdBidsNewModeName)}, adBidsEntry.Children)
+		})
+	}
 }
 
 func addEmbeddedModel(t *testing.T, s *catalog.Service) {

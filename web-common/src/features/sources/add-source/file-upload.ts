@@ -4,8 +4,8 @@ import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
+import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
-import { importOverlayVisible } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { FILE_EXTENSION_TO_TABLE_TYPE } from "@rilldata/web-local/lib/types";
 import {
   extractFileExtension,

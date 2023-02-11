@@ -16,7 +16,7 @@
   export let y: number = undefined;
   export let rx: number = undefined;
   export let ry: number = undefined;
-  export let dy: number = undefined;
+  export let dy: string | number = undefined;
 
   export let color: string = undefined;
   export let colorClass: string = undefined;

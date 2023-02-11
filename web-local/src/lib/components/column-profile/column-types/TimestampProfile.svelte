@@ -72,7 +72,6 @@
   <div class={TIMESTAMP_TOKENS.textClass} slot="summary">
     <WithParentClientRect let:rect>
       <TimestampSpark
-        area
         bottom={4}
         color={"currentColor"}
         data={$timeSeries?.spark}
@@ -85,6 +84,7 @@
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nullPercentage?.nullCount}
     slot="nullity"
     totalRows={$nullPercentage?.totalRows}
