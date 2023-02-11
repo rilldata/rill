@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
+  import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { getTableReferences } from "../../utils/get-table-references";
@@ -24,6 +25,8 @@
 
   let showSourceTables = true;
   let modelHasError = false;
+
+  const queryHighlight = getContext("rill:app:query-highlight");
 
   $: getModelFile = useRuntimeServiceGetFile(
     $runtimeStore?.instanceId,
@@ -68,6 +71,17 @@
     }),
     ($referencedThings) => $referencedThings
   );
+
+  function focus(reference) {
+    return () => {
+      if (reference) {
+        queryHighlight.set([reference]);
+      }
+    };
+  }
+  function blur() {
+    queryHighlight.set(undefined);
+  }
 </script>
 
 {#if $referencedWithMetadata?.length}
