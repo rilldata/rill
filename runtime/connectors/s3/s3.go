@@ -61,6 +61,7 @@ type Config struct {
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	S3Endpoint            string `mapstructure:"endpoint"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -83,7 +84,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -107,18 +108,36 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
-	defer bucketObj.Close()
 
-	fetchConfigs := rillblob.FetchConfigs{
+	// prepare fetch configs
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
+		GlobPattern:           url.Path,
+		ExtractPolicy:         source.ExtractPolicy,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
+	return rillblob.NewIterator(ctx, bucketObj, opts)
 }
 
 func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
+	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
+	if len(conf.S3Endpoint) > 0 {
+		region := conf.AWSRegion
+		if region == "" {
+			// Set the default region for bwd compatibility reasons
+			// cloudflare and minio ignore if us-east-1 is set, not tested for others
+			region = "us-east-1"
+		}
+		return session.NewSession(&aws.Config{
+			Region:           aws.String(region),
+			Endpoint:         &conf.S3Endpoint,
+			S3ForcePathStyle: aws.Bool(true),
+		})
+	}
+	// The logic below is AWS-specific, so we ignore it when conf.S3Endpoint is set
+
 	// Find credentials to use.
 	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
 	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.

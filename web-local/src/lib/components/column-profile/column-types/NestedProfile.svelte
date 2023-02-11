@@ -1,5 +1,9 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    DATA_TYPE_COLORS,
+    INTERVALS,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
@@ -16,17 +20,17 @@
 
   export let columnName: string;
   export let objectName: string;
-  export let example: any;
   export let type: string;
+  export let mode = "summaries";
+  export let example: any;
 
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
-  export let mode: "example" | "summaries" = "summaries";
-
-  let active = false;
 
   let topKLimit = 15;
+
+  let active = false;
 
   $: nulls = getNullPercentage(
     $runtimeStore?.instanceId,
@@ -40,19 +44,20 @@
     columnName
   );
 
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName, active);
+  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
   function toggleColumnProfile() {
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
-  $: fetchingSummaries = isFetching($nulls, $columnCardinality);
+  $: fetchingSummaries = isFetching($nulls);
 </script>
 
 <ProfileContainer
   isFetching={fetchingSummaries}
   {active}
+  {compact}
   emphasize={active}
   {example}
   {hideNullPercentage}
@@ -63,7 +68,8 @@
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
+  <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
+
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
   <ColumnCardinalitySpark
@@ -71,6 +77,7 @@
     {compact}
     slot="summary"
     totalRows={$columnCardinality?.totalRows}
+    {type}
   />
   <NullPercentageSpark
     isFetching={fetchingSummaries}
@@ -79,21 +86,17 @@
     totalRows={$nulls?.totalRows}
     {type}
   />
-
   <div
     class="pl-10 pr-4 py-4"
     slot="details"
-    style:min-height="{Math.min(topKLimit, $columnCardinality?.cardinality) *
-      18 +
-      42 || 250}px"
+    class:hidden={INTERVALS.has(type)}
   >
-    <div>
-      <TopK
-        {type}
-        topK={$topK}
-        k={topKLimit}
-        totalRows={$columnCardinality?.totalRows}
-      />
-    </div>
+    <TopK
+      {type}
+      topK={$topK}
+      k={topKLimit}
+      totalRows={$columnCardinality?.totalRows}
+      colorClass={DATA_TYPE_COLORS["STRUCT"].bgClass}
+    />
   </div>
 </ProfileContainer>

@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     formatBigNumberPercentage,
+    formatDataType,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
@@ -27,6 +28,7 @@
   export let topK: TopKEntry[];
   export let totalRows: number;
   export let k = 15;
+  export let type: string;
 
   const dispatch = createEventDispatcher();
 
@@ -56,6 +58,8 @@
   function handleBlur(value: TopKEntry) {
     return () => dispatch("blur-top-k", value);
   }
+
+  /** handle LISTs and STRUCTs */
 </script>
 
 {#if topK && totalRows}
@@ -87,13 +91,13 @@
                   }" to clipboard`
                 )}
             >
-              {item.value}
+              {formatDataType(item.value, type)}
             </div>
-            <TooltipContent slot="tooltip-content">
+            <TooltipContent slot="tooltip-content" maxWidth="300px">
               <TooltipTitle>
-                <svelte:fragment slot="name"
-                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
-                >
+                <svelte:fragment slot="name">
+                  {`${formatDataType(item.value, type)}`}
+                </svelte:fragment>
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
                 >
@@ -127,7 +131,7 @@
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
                 <svelte:fragment slot="name"
-                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
+                  >{`${formatDataType(item.value, type)}`}</svelte:fragment
                 >
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
