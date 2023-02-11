@@ -249,6 +249,37 @@ func (m *Source) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetPolicy()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SourceValidationError{
+					field:  "Policy",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SourceValidationError{
+					field:  "Policy",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPolicy()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SourceValidationError{
+				field:  "Policy",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for TimeoutSeconds
+
 	if len(errors) > 0 {
 		return SourceMultiError(errors)
 	}
@@ -637,6 +668,116 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewValidationError{}
+
+// Validate checks the field values on Source_ExtractPolicy with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *Source_ExtractPolicy) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Source_ExtractPolicy with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// Source_ExtractPolicyMultiError, or nil if none found.
+func (m *Source_ExtractPolicy) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Source_ExtractPolicy) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RowsStrategy
+
+	// no validation rules for RowsLimitBytes
+
+	// no validation rules for FilesStrategy
+
+	// no validation rules for FilesLimit
+
+	if len(errors) > 0 {
+		return Source_ExtractPolicyMultiError(errors)
+	}
+
+	return nil
+}
+
+// Source_ExtractPolicyMultiError is an error wrapping multiple validation
+// errors returned by Source_ExtractPolicy.ValidateAll() if the designated
+// constraints aren't met.
+type Source_ExtractPolicyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m Source_ExtractPolicyMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m Source_ExtractPolicyMultiError) AllErrors() []error { return m }
+
+// Source_ExtractPolicyValidationError is the validation error returned by
+// Source_ExtractPolicy.Validate if the designated constraints aren't met.
+type Source_ExtractPolicyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Source_ExtractPolicyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Source_ExtractPolicyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Source_ExtractPolicyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Source_ExtractPolicyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Source_ExtractPolicyValidationError) ErrorName() string {
+	return "Source_ExtractPolicyValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Source_ExtractPolicyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSource_ExtractPolicy.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Source_ExtractPolicyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Source_ExtractPolicyValidationError{}
 
 // Validate checks the field values on MetricsView_Dimension with the rules
 // defined in the proto definition for this message. If any rules are

@@ -44,9 +44,10 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path         string `mapstructure:"path"`
-	Format       string `mapstructure:"format"`
-	CSVDelimiter string `mapstructure:"csv.delimiter"`
+	Path          string `mapstructure:"path"`
+	Format        string `mapstructure:"format"`
+	CSVDelimiter  string `mapstructure:"csv.delimiter"`
+	HivePartition *bool  `mapstructure:"hive_partitioning"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -67,6 +68,6 @@ func (c connector) Spec() connectors.Spec {
 
 // local file connectors should directly use glob patterns
 // keeping it for reference
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	return nil, fmt.Errorf("not implemented")
 }
