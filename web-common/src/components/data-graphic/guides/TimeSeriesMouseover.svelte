@@ -42,6 +42,7 @@
     showReferenceLine
     showDistanceFromZero
     showText={false}
+    {format}
   />
   {#key showRawValue}
     <g transition:fly={{ duration: LIST_SLIDE_DURATION, x: -16 }}>

@@ -17,6 +17,8 @@ A simple composable container for SVG-based data graphics.
   export let xType = undefined;
   export let yType = undefined;
 
+  export let overflowHidden = true;
+
   export let xMin = undefined;
   export let xMax = undefined;
   export let yMin = undefined;
@@ -65,6 +67,7 @@ A simple composable container for SVG-based data graphics.
     {yMaxTweenProps}
   >
     <SimpleSVGContainer
+      {overflowHidden}
       bind:mouseoverValue
       bind:hovered
       let:xScale

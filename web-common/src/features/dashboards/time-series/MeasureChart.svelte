@@ -85,6 +85,7 @@
 </script>
 
 <SimpleDataGraphic
+  overflowHidden={false}
   yMin={internalYMin * inflate}
   yMax={internalYMax}
   shareYScale={false}
