@@ -2,9 +2,9 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/struct.proto";
+// import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "validate/validate.proto";
+// import "validate/validate.proto";
 
 service AdminService {
   // Ping returns information about the admin
@@ -108,7 +108,7 @@ message FindOrganizationRequest {
 
 // Response message for AdminService.GetInstance
 message FindOrganizationResponse {
-  Organization Organization = 1;
+  Organization organization = 1;
 }
 
 

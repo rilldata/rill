@@ -1853,7 +1853,7 @@ definitions:
   v1FindOrganizationResponse:
     type: object
     properties:
-      Organization:
+      organization:
         $ref: '#/definitions/v1Organization'
     title: Response message for AdminService.GetInstance
   v1FindOrganizationsResponse:
