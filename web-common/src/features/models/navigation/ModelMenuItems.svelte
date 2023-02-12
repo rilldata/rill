@@ -4,9 +4,11 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
+  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServiceGetCatalogEntry,
@@ -16,11 +18,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import {
-    addQuickMetricsToDashboardYAML,
-    initBlankDashboardYAML,
-  } from "@rilldata/web-local/lib/application-state-stores/metrics-internal-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -28,12 +25,15 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "../../metrics-views/metrics-internal-store";
   import { useModelNames } from "../selectors";
 
   export let modelName: string;

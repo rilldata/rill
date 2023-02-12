@@ -406,7 +406,7 @@ paths:
                 type: string
                 format: date-time
               timeGranularity:
-                type: string
+                $ref: '#/definitions/v1TimeGrain'
               timeStart:
                 type: string
                 format: date-time
@@ -1210,6 +1210,13 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
+  ExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   GenerateTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -1306,6 +1313,26 @@ definitions:
         type: integer
         format: int64
     title: CharLocation is a line and column in a code artifact
+  SourceExtractPolicy:
+    type: object
+    properties:
+      filesLimit:
+        type: string
+        format: uint64
+        title: limit on number of files
+      filesStrategy:
+        $ref: '#/definitions/ExtractPolicyStrategy'
+        title: strategy for selecting files
+      rowsLimitBytes:
+        type: string
+        format: uint64
+        title: |-
+          could in future add: uint64 rows_limit = n;
+          limit on data fetched in bytes
+      rowsStrategy:
+        $ref: '#/definitions/ExtractPolicyStrategy'
+        title: strategy for selecting rows in a file
+    title: Extract policy for glob connectors
   StructTypeField:
     type: object
     properties:
@@ -1753,7 +1780,7 @@ definitions:
       data:
         type: array
         items:
-          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
       meta:
         type: array
         items:
@@ -2112,12 +2139,19 @@ definitions:
       name:
         type: string
         title: Name of the source
+      policy:
+        $ref: '#/definitions/SourceExtractPolicy'
+        title: extraction policy for the source
       properties:
         type: object
         title: Connector properties assigned in the source
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
+      timeoutSeconds:
+        type: integer
+        format: int32
+        title: timeout for source ingestion in seconds
     title: Source is the internal representation of a source definition
   v1StructType:
     type: object
@@ -2204,11 +2238,9 @@ definitions:
         format: double
       records:
         type: object
-        additionalProperties:
-          type: number
-          format: double
       ts:
         type: string
+        format: date-time
   v1TopK:
     type: object
     properties:

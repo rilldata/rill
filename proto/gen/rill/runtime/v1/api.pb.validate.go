@@ -11908,12 +11908,64 @@ func (m *TimeSeriesValue) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Ts
+	if all {
+		switch v := interface{}(m.GetTs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeSeriesValueValidationError{
+					field:  "Ts",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeSeriesValueValidationError{
+					field:  "Ts",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeSeriesValueValidationError{
+				field:  "Ts",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for Records
+	// no validation rules for Bin
 
-	if m.Bin != nil {
-		// no validation rules for Bin
+	if all {
+		switch v := interface{}(m.GetRecords()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeSeriesValueValidationError{
+					field:  "Records",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeSeriesValueValidationError{
+					field:  "Records",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRecords()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeSeriesValueValidationError{
+				field:  "Records",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {

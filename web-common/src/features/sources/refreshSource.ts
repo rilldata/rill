@@ -6,11 +6,11 @@ import {
   uploadFile,
 } from "@rilldata/web-common/features/sources/add-source/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
+import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import type {
   V1PutFileAndReconcileResponse,
   V1RefreshAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
-import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 

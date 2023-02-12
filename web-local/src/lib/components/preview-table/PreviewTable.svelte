@@ -58,6 +58,9 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   const HEADER_X_PAD = CHARACTER_X_PAD;
   const HEADER_FLEX_SPACING = 16;
 
+  $: rowScrollOffset = 0;
+  $: colScrollOffset = 0;
+
   let manuallyResizedColumns = tweened({});
   $: if (rows && columnNames) {
     // initialize resizers?
@@ -77,6 +80,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       estimateSize: () => config.rowHeight,
       overscan: rowOverscanAmount,
       paddingStart: config.rowHeight,
+      initialOffset: rowScrollOffset,
     });
 
     /** if we're inferring the column widths from static-ish data, let's
@@ -169,6 +173,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
       },
       overscan: columnOverscanAmount,
       paddingStart: config.indexWidth,
+      initialOffset: colScrollOffset,
     });
   }
 
@@ -212,6 +217,9 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   }
 
   async function handleResizeColumn(event) {
+    rowScrollOffset = $rowVirtualizer.scrollOffset;
+    colScrollOffset = $columnVirtualizer.scrollOffset;
+
     const { size, name } = event.detail;
     manuallyResizedColumns.update((state) => {
       state[name] = Math.max(config.minColumnWidth, size);

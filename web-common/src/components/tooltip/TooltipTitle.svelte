@@ -3,7 +3,7 @@
   style="grid-template-columns: auto max-content"
   style:min-width="200px"
 >
-  <div class="font-bold">
+  <div class="font-bold truncate">
     <slot name="name" />
   </div>
   <div class="text-gray-300 justify-self-end pl-3">

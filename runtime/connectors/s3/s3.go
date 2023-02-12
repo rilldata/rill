@@ -2,9 +2,11 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
@@ -59,6 +61,7 @@ type Config struct {
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	S3Endpoint            string `mapstructure:"endpoint"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -81,7 +84,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -105,36 +108,86 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
-	defer bucketObj.Close()
 
-	fetchConfigs := rillblob.FetchConfigs{
+	// prepare fetch configs
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
+		GlobPattern:           url.Path,
+		ExtractPolicy:         source.ExtractPolicy,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
+	return rillblob.NewIterator(ctx, bucketObj, opts)
 }
 
 func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
-	if conf.AWSRegion != "" {
+	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
+	if len(conf.S3Endpoint) > 0 {
+		region := conf.AWSRegion
+		if region == "" {
+			// Set the default region for bwd compatibility reasons
+			// cloudflare and minio ignore if us-east-1 is set, not tested for others
+			region = "us-east-1"
+		}
 		return session.NewSession(&aws.Config{
-			Region: aws.String(conf.AWSRegion),
+			Region:           aws.String(region),
+			Endpoint:         &conf.S3Endpoint,
+			S3ForcePathStyle: aws.Bool(true),
 		})
 	}
+	// The logic below is AWS-specific, so we ignore it when conf.S3Endpoint is set
+
+	// Find credentials to use.
+	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
+	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
+	// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
+	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.EnvProvider{},
+		&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
+	})
+	_, err := creds.Get()
+	if err != nil {
+		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
+			return nil, err
+		}
+		creds = credentials.AnonymousCredentials
+	}
+
+	// The complexity below relates to AWS being pretty strict about regions (probably to avoid unexpected cross-region traffic).
+
+	// If the user explicitly set a region, we use that
+	if conf.AWSRegion != "" {
+		return session.NewSession(&aws.Config{
+			Region:      aws.String(conf.AWSRegion),
+			Credentials: creds,
+		})
+	}
+
+	// Create a session that tries to infer the region from the environment
 	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
+		SharedConfigState: session.SharedConfigEnable, // Tells to look for default region set with `aws configure`
+		Config: aws.Config{
+			Credentials: creds,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// If no region was found, we default to us-east-1 (which will be used to resolve the lookup in the next step)
+	if sess.Config.Region == nil || *sess.Config.Region == "" {
+		sess = sess.Copy(&aws.Config{Region: aws.String("us-east-1")})
+	}
+
+	// Bucket names are globally unique, but requests will fail if their region doesn't match the one configured in the session.
+	// So we do a lookup for the bucket's region and configure the session to use that.
 	reg, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
 	if err != nil {
 		return nil, err
 	}
 	if reg != "" {
-		sess.Config.Region = aws.String(reg)
+		sess = sess.Copy(&aws.Config{Region: aws.String(reg)})
 	}
 
 	return sess, nil

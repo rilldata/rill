@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { RillDeveloperApplicationLayout } from "@rilldata/web-local/lib/components/layouts";
+  import { RillDeveloperLayout } from "@rilldata/web-common/layout";
 </script>
 
-<RillDeveloperApplicationLayout>
+<RillDeveloperLayout>
   <slot />
-</RillDeveloperApplicationLayout>
+</RillDeveloperLayout>

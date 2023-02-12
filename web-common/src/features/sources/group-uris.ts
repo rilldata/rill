@@ -4,13 +4,18 @@
  * The values are
  */
 
+import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
 import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
 
 export interface GroupedURIObject {
   [domainOrBucketPlusOnePath: string]: GroupedURI;
 }
 
-export interface SourceURI extends V1CatalogEntry {
+// used in derived stores that merge catalog, parsed reference from a model query and other info
+export type ViableSourceCatalogEntry = V1CatalogEntry &
+  Reference & { totalRows: number };
+
+export interface SourceURI extends ViableSourceCatalogEntry {
   uri: string;
   abbreviatedURI: string;
 }
@@ -26,24 +31,24 @@ export interface GroupedURI {
   uris: SourceURI[];
 }
 
-export function groupURIs(uris: V1CatalogEntry[]): GroupedURIObject {
+export function groupURIs(uris: ViableSourceCatalogEntry[]): GroupedURIObject {
   /** create the grouped URIs object. */
-  const groupedURIs: Record<string, Array<V1CatalogEntry>> = uris.reduce(
-    (obj, entry) => {
-      const uri = entry.path;
-      const [, , rest] = uri.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
+  const groupedURIs: Record<
+    string,
+    Array<ViableSourceCatalogEntry>
+  > = uris.reduce((obj, entry) => {
+    const uri = entry.path;
+    const [, , rest] = uri.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
 
-      const components = rest ? rest.split("/") : [uri];
-      const domain =
-        components.length > 2
-          ? components.slice(0, 2).join("/")
-          : components.join("/");
+    const components = rest ? rest.split("/") : [uri];
+    const domain =
+      components.length > 2
+        ? components.slice(0, 2).join("/")
+        : components.join("/");
 
-      obj[domain] = obj[domain] ? [...obj[domain], entry] : [entry];
-      return obj;
-    },
-    {} as Record<string, Array<V1CatalogEntry>>
-  );
+    obj[domain] = obj[domain] ? [...obj[domain], entry] : [entry];
+    return obj;
+  }, {} as Record<string, Array<ViableSourceCatalogEntry>>);
 
   const groupedURIObjects: GroupedURIObject = {};
 

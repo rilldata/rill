@@ -4,7 +4,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import WorkspaceContainer from "@rilldata/web-local/lib/components/workspace/core/WorkspaceContainer.svelte";
+  import { WorkspaceContainer } from "../../layout/workspace";
 
   const dataModelerSteps = [
     {

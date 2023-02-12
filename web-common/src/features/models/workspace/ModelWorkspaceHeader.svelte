@@ -3,6 +3,7 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -11,11 +12,12 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
-  import { useGetDashboardsForModel } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import { WorkspaceHeader } from "../../../layout/workspace";
+  import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
     getFilePathFromNameAndType,
@@ -33,7 +35,9 @@
   const queryClient = useQueryClient();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
-  const outputLayout = getContext("rill:app:output-layout");
+  const outputLayout = getContext(
+    "rill:app:output-layout"
+  ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelHasError = !!modelError;
