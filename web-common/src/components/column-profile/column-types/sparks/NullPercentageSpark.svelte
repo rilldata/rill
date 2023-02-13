@@ -7,7 +7,7 @@
     isNested,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import { singleDigitPercentage } from "@rilldata/web-common/lib/formatters";
-  import BarAndLabel from "@rilldata/web-local/lib/components/viz/BarAndLabel.svelte";
+  import BarAndLabel from "../../../BarAndLabel.svelte";
 
   export let type: string;
   export let nullCount: number;
