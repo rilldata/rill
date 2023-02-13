@@ -8,10 +8,10 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/cli/pkg/duration"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/senseyeio/duration"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -316,9 +316,17 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	}
 
 	for _, timeGrain := range metrics.TimeGrains {
-		apiMetrics.TimeGrains = append(apiMetrics.TimeGrains, getTimeGrainEnum(timeGrain))
+		timeGrainEnum, err := getTimeGrainEnum(timeGrain)
+		if err != nil {
+			return nil, err
+		}
+		apiMetrics.TimeGrains = append(apiMetrics.TimeGrains, timeGrainEnum)
 	}
-	apiMetrics.DefaultTimeGrain = getTimeGrainEnum(metrics.DefaultTimeGrain)
+	timeGrainEnum, err := getTimeGrainEnum(metrics.DefaultTimeGrain)
+	if err != nil {
+		return nil, err
+	}
+	apiMetrics.DefaultTimeGrain = timeGrainEnum
 
 	name := fileutil.Stem(path)
 	apiMetrics.Name = name
@@ -331,26 +339,28 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 }
 
 // Get TimeGrain enum from string
-func getTimeGrainEnum(timeGrain string) runtimev1.TimeGrain {
+func getTimeGrainEnum(timeGrain string) (runtimev1.TimeGrain, error) {
 	switch strings.ToLower(timeGrain) {
+	case "":
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil
 	case "millisecond":
-		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, nil
 	case "second":
-		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND, nil
 	case "minute":
-		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE, nil
 	case "hour":
-		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR, nil
 	case "day":
-		return runtimev1.TimeGrain_TIME_GRAIN_DAY
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY, nil
 	case "week":
-		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK, nil
 	case "month":
-		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH, nil
 	case "year":
-		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
 	default:
-		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain: %s", timeGrain)
 	}
 }
 
