@@ -11,6 +11,7 @@
     copyToClipboard,
     createShiftClickAction,
   } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { isNested } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     formatBigNumberPercentage,
     formatDataType,
@@ -87,7 +88,11 @@
                 copyToClipboard(
                   item.value,
                   `copied column value "${
-                    item.value === null ? "NULL" : item.value
+                    item.value === null
+                      ? "NULL"
+                      : isNested(type)
+                      ? formatDataType(item.value, type)
+                      : item.value
                   }" to clipboard`
                 )}
             >
