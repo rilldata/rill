@@ -492,6 +492,8 @@ export interface V1MetricsViewColumn {
 }
 
 export interface V1MetricsView {
+  defaultTimeGrain?: V1TimeGrain;
+  defaultTimeRange?: string;
   description?: string;
   dimensions?: MetricsViewDimension[];
   label?: string;
@@ -501,7 +503,7 @@ export interface V1MetricsView {
   timeDimension?: string;
   /** Recommended granularities for rolling up the time dimension.
 Should be a valid SQL INTERVAL value. */
-  timeGrains?: string[];
+  timeGrains?: V1TimeGrain[];
 }
 
 export interface V1MapType {

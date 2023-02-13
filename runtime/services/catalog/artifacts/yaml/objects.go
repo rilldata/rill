@@ -8,6 +8,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/cli/pkg/duration"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -47,9 +48,10 @@ type MetricsView struct {
 	Label            string `yaml:"display_name"`
 	Description      string
 	Model            string
-	TimeDimension    string `yaml:"timeseries"`
-	TimeGrains       []string
-	DefaultTimeGrain string `yaml:"default_timegrain"`
+	TimeDimension    string   `yaml:"timeseries"`
+	TimeGrains       []string `yaml:"time_grains"`
+	DefaultTimeGrain string   `yaml:"default_time_grain"`
+	DefaultTimeRange string   `yaml:"default_time_range"`
 	Dimensions       []*Dimension
 	Measures         []*Measure
 }
@@ -122,6 +124,13 @@ func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy,
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
 	err := copier.Copy(metricsArtifact, catalog.Object)
+	var timeGrains []string
+	for _, timeGrainEnum := range catalog.GetMetricsView().TimeGrains {
+		timeGrains = append(timeGrains, getTimeGrainString(timeGrainEnum))
+	}
+	metricsArtifact.TimeGrains = timeGrains
+	metricsArtifact.DefaultTimeGrain = getTimeGrainString(catalog.GetMetricsView().DefaultTimeGrain)
+	metricsArtifact.DefaultTimeRange = catalog.GetMetricsView().DefaultTimeRange
 	if err != nil {
 		return nil, err
 	}
@@ -286,6 +295,16 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	metrics.Dimensions = dimensions
 
 	apiMetrics := &runtimev1.MetricsView{}
+
+	// validate correctness of default time range
+	if metrics.DefaultTimeRange != "" {
+		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("invalid default_time_grain: %w", err)
+		}
+		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
+	}
+
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
 		return nil, err
@@ -296,6 +315,19 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
+	for _, timeGrain := range metrics.TimeGrains {
+		timeGrainEnum, err := getTimeGrainEnum(timeGrain)
+		if err != nil {
+			return nil, err
+		}
+		apiMetrics.TimeGrains = append(apiMetrics.TimeGrains, timeGrainEnum)
+	}
+	timeGrainEnum, err := getTimeGrainEnum(metrics.DefaultTimeGrain)
+	if err != nil {
+		return nil, err
+	}
+	apiMetrics.DefaultTimeGrain = timeGrainEnum
+
 	name := fileutil.Stem(path)
 	apiMetrics.Name = name
 	return &drivers.CatalogEntry{
@@ -304,4 +336,54 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		Path:   path,
 		Object: apiMetrics,
 	}, nil
+}
+
+// Get TimeGrain enum from string
+func getTimeGrainEnum(timeGrain string) (runtimev1.TimeGrain, error) {
+	switch strings.ToLower(timeGrain) {
+	case "":
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil
+	case "millisecond":
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, nil
+	case "second":
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND, nil
+	case "minute":
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE, nil
+	case "hour":
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR, nil
+	case "day":
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY, nil
+	case "week":
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK, nil
+	case "month":
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH, nil
+	case "year":
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
+	default:
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain: %s", timeGrain)
+	}
+}
+
+// Get TimeGrain string from enum
+func getTimeGrainString(timeGrain runtimev1.TimeGrain) string {
+	switch timeGrain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "millisecond"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "second"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "minute"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "hour"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "day"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "week"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "month"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "year"
+	default:
+		return ""
+	}
 }
