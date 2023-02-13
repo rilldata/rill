@@ -1,6 +1,6 @@
 <script lang="ts">
+  import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
   import AddIcon from "@rilldata/web-common/components/icons/Add.svelte";
-  import ContextButton from "@rilldata/web-local/lib/components/column-profile/ContextButton.svelte";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import CollapsibleSectionTitle from "../CollapsibleSectionTitle.svelte";

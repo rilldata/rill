@@ -10,7 +10,7 @@
     formatCompactInteger,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
-  import BarAndLabel from "../../../viz/BarAndLabel.svelte";
+  import BarAndLabel from "@rilldata/web-local/lib/components/viz/BarAndLabel.svelte";
 
   export let cardinality: number;
   export let totalRows: number;
