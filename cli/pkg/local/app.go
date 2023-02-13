@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -307,6 +309,18 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
+	// Check if given gRPC port is open
+	err = scanPort(grpcPort)
+	if err != nil {
+		return fmt.Errorf("Given GRPCport: %d alreay in use", grpcPort)
+	}
+
+	// Check if given Http port is open
+	err = scanPort(httpPort)
+	if err != nil {
+		return fmt.Errorf("Given HTPPport: %d alreay in use", httpPort)
+	}
+
 	// Create a runtime server
 	opts := &runtimeserver.Options{
 		HTTPPort: httpPort,
@@ -474,4 +488,13 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	default:
 		return "", false
 	}
+}
+
+func scanPort(port int) error {
+	conn, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return nil
 }
