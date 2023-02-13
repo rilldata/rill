@@ -6,10 +6,11 @@
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { createEventDispatcher } from "svelte";
   import { tick } from "svelte/internal";
-  import ContextButton from "../../../../../web-common/src/components/column-profile/ContextButton.svelte";
+  import ContextButton from "../column-profile/ContextButton.svelte";
   import TableHeader from "./TableHeader.svelte";
 
   export let index: number;
+
   const dispatch = createEventDispatcher();
 
   let rowHovered = false;
