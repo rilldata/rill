@@ -68,7 +68,9 @@ export function isList(type) {
 
 export function isNested(type) {
   return (
-    [...NESTED].some((typeDef) => type.startsWith(typeDef)) || isList(type)
+    type === "JSON" ||
+    [...NESTED].some((typeDef) => type.startsWith(typeDef)) ||
+    isList(type)
   );
 }
 
