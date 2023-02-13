@@ -9,7 +9,7 @@ import {
   useRuntimeServiceGetTopK,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
-import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
+import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import { derived, Readable, writable } from "svelte/store";
 import { convertTimestampPreview } from "../../util/convertTimestampPreview";
 
