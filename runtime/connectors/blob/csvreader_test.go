@@ -23,7 +23,7 @@ func TestDownloadCSV(t *testing.T) {
 		ctx    context.Context
 		bucket *blob.Bucket
 		obj    *blob.ListObject
-		option *extractOption
+		option *csvExtractOption
 		fw     *os.File
 	}
 	tests := []struct {
@@ -38,7 +38,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size - 5)},
+				option: &csvExtractOption{extractOption: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size - 5)}, hasHeader: true},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: testData[:len(testData)-1],
@@ -49,7 +49,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limitInBytes: uint64(object.Size - 5)},
+				option: &csvExtractOption{extractOption: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limitInBytes: uint64(object.Size - 5)}, hasHeader: true},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: resultTail,
@@ -90,7 +90,7 @@ func TestDownloadCSVSingleLineHead(t *testing.T) {
 
 		extractOption := &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size)}
 		fw := getTempFile(t, "temp.csv")
-		err = downloadCSV(ctx, bucket, object, extractOption, fw)
+		err = downloadCSV(ctx, bucket, object, &csvExtractOption{extractOption: extractOption, hasHeader: true}, fw)
 		require.NoError(t, err)
 		fw.Close()
 
