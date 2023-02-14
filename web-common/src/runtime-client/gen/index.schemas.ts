@@ -266,8 +266,10 @@ export type V1SourceProperties = { [key: string]: any };
 export interface V1Source {
   connector?: string;
   name?: string;
+  policy?: SourceExtractPolicy;
   properties?: V1SourceProperties;
   schema?: V1StructType;
+  timeoutSeconds?: number;
 }
 
 export interface V1RenameFileResponse {
@@ -509,11 +511,6 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
 export interface V1ListFilesResponse {
   paths?: string[];
 }
@@ -545,6 +542,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1GetTopKResponse {
@@ -741,6 +743,13 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
+export interface SourceExtractPolicy {
+  filesLimit?: string;
+  filesStrategy?: ExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  rowsStrategy?: ExtractPolicyStrategy;
+}
+
 export interface ReconcileErrorCharLocation {
   column?: number;
   line?: number;
@@ -794,6 +803,16 @@ export interface GenerateTimeSeriesRequestBasicMeasure {
   id?: string;
   sqlName?: string;
 }
+
+export type ExtractPolicyStrategy =
+  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
 
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
