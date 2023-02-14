@@ -69,7 +69,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 
 	delimiter := ""
 	if value, ok := source.Properties["csv.delimiter"]; ok {
-		format = value.(string)
+		delimiter = value.(string)
 	}
 
 	hivePartition := 1
