@@ -126,7 +126,7 @@ export const getAvailableTimeGrains = (
   if (maxTimeGrainPossible)
     return timeGrains.slice(
       0,
-      timeGrains.indexOf(maxTimeGrainPossible.timeGrain)
+      timeGrains.indexOf(maxTimeGrainPossible.timeGrain) + 1
     );
   return [];
 };
