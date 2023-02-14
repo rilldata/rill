@@ -16,7 +16,8 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 **`type`**
  —  the type of connector you are using for the source _(required)_. Possible values include:
   - _`https`_ — public files available on the web.
-  - _`s3`_ — a file available on amazon s3.
+  - _`s3`_ — a file available on amazon s3. 
+    - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
   - _`gcs`_ — a file available on google cloud platform.
   - _`local_file`_ — a locally available file.
 
@@ -33,6 +34,9 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 **`region`**
  — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
   - _`us-east-1`_ —  the cloud region identifer
+
+**`endpoint`**
+ — Override command's default URL with the given URL. If this is set, we assume we're targeting an S3 compatible API (but not AWS).
 
 **`glob.max_total_size`**
  — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern.
