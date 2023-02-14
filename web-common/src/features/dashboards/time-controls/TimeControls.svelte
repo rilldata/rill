@@ -193,15 +193,17 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
         timeRangeName,
         allTimeRangeInDataset
       );
-
       const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
+      selectedTimeGrain = defaultTimeGrain;
 
-      let i = defaultGrainIndex + 1;
+      let i = defaultGrainIndex;
+
+      // loop through time grains until we find a valid one
       while (!checkValidTimeGrain(selectedTimeGrain)) {
-        selectedTimeGrain = timeGrainEnums[i] as V1TimeGrain;
+        selectedTimeGrain = timeGrainEnums[i + 1] as V1TimeGrain;
         i++;
-        if (i >= timeGrainEnums.length) {
-          i = 0;
+        if (i == timeGrainEnums.length - 1) {
+          i = -1;
         }
       }
     }

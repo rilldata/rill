@@ -301,15 +301,12 @@ export const getSelectableTimeRanges = (
     allTimeRangeInDataset
   );
   if (availableTimeGrains.length) {
-    console.log(selectableTimeRangeNames);
-
     selectableTimeRangeNames = selectableTimeRangeNames.filter((timeRange) => {
       const selectableTimeGrains = getSelectableTimeGrains(
         timeRangeToISODuration(timeRange),
         allTimeRangeInDataset
       ).filter((grain) => grain.enabled);
 
-      console.log(selectableTimeGrains);
       // check if selectableTimeGrains is a subset of availableTimeGrains
       return selectableTimeGrains.some((timeGrain) =>
         availableTimeGrains.includes(timeGrain.timeGrain)
