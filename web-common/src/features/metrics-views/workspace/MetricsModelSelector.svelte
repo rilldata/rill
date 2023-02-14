@@ -2,6 +2,7 @@
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { Readable } from "svelte/store";
+  import Spacer from "../../../components/icons/Spacer.svelte";
   import { SelectMenu } from "../../../components/menu";
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
@@ -45,11 +46,12 @@
     </TooltipContent>
   </Tooltip>
 
-  <div>
+  <div class="grow">
     <SelectMenu
+      block
       {options}
       selection={sourceModelDisplayValue}
-      tailwindClasses="overflow-hidden"
+      tailwindClasses="overflow-hidden px-2 py-2 rounded"
       alignment="start"
       on:select={(evt) => {
         updateMetricsDefinitionHandler(evt.detail?.key);

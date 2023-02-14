@@ -152,9 +152,10 @@
     ? nonStandardError
     : MetricsSourceSelectionError(errors);
 
-  let numRowsInConfig = 3;
+  let gridTemplate = "repeat(3, 45px)";
   $: metricsConfigWidth = $observedNode?.offsetWidth || 0;
-  $: numRowsInConfig = metricsConfigWidth < 1300 ? 3 : 2;
+  $: gridTemplate =
+    metricsConfigWidth < 1300 ? "repeat(3, 35px)" : "repeat(2, 40px)";
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
@@ -167,7 +168,8 @@
     >
       <div class="flex-none flex flex-row">
         <div
-          class="grid grid-flow-col grid-rows-{numRowsInConfig} gap-y-3 gap-x-5"
+          style:grid-template-rows={gridTemplate}
+          class="grid grid-flow-col gap-y-2 gap-x-5"
         >
           <MetricsDisplayNameInput {metricsInternalRep} />
           <MetricsModelSelector {metricsInternalRep} />

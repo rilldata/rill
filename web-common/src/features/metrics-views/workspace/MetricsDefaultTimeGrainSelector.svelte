@@ -115,7 +115,7 @@
       on inital load.
     </TooltipContent>
   </Tooltip>
-  <div>
+  <div class="grow">
     <Tooltip
       alignment="middle"
       distance={16}
@@ -123,10 +123,11 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        block
         {options}
         disabled={dropdownDisabled}
         selection={defaultTimeGrainValue}
-        tailwindClasses="overflow-hidden"
+        tailwindClasses="overflow-hidden px-2 py-2 rounded"
         alignment="start"
         on:select={handleDefaultTimeGrainUpdate}
       >

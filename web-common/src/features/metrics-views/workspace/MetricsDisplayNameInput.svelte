@@ -52,7 +52,7 @@
       Add a title to your dashboard
     </TooltipContent>
   </Tooltip>
-  <div>
+  <div class="px-2">
     <form id="display-name-form" autocomplete="off">
       <input
         type="text"

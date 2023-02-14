@@ -128,7 +128,7 @@
       Select the timegrains that will be available in the dashboard
     </TooltipContent>
   </Tooltip>
-  <div>
+  <div class="grow">
     <Tooltip
       alignment="middle"
       distance={16}
@@ -136,11 +136,12 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        block
         {options}
         multiSelect={true}
         disabled={dropdownDisabled}
         selection={availableTimeGrains}
-        tailwindClasses="overflow-hidden"
+        tailwindClasses="overflow-hidden px-2 py-2 rounded"
         alignment="start"
         on:select={handleAvailableTimeGrainsUpdate}
       >

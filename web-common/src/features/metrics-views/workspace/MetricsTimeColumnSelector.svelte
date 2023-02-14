@@ -59,11 +59,11 @@
       Timestamp
     </div>
 
-    <TooltipContent slot="tooltip-content">
+    <TooltipContent maxWidth="400px" slot="tooltip-content">
       Select a timestamp column to see the time series charts on the dashboard.
     </TooltipContent>
   </Tooltip>
-  <div>
+  <div class="grow">
     <Tooltip
       alignment="middle"
       distance={16}
@@ -71,10 +71,11 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        block
         {options}
         disabled={dropdownDisabled}
         selection={timeColumnSelectedValue}
-        tailwindClasses="overflow-hidden"
+        tailwindClasses="overflow-hidden px-2 py-2 rounded"
         alignment="start"
         on:select={(evt) => {
           $metricsInternalRep.updateMetricsParams({
@@ -83,7 +84,7 @@
         }}
       >
         {#if timeColumnSelectedValue === "__DEFAULT_VALUE__"}
-          <span class="text-gray-500">Select a timestamp column</span>
+          <span class="text-gray-500">Select a time column</span>
         {:else}
           <span style:max-width="14em" class="font-bold truncate"
             >{timeColumnSelectedValue}</span

@@ -6,6 +6,7 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import Spacer from "../../../components/icons/Spacer.svelte";
   import { SelectMenu } from "../../../components/menu";
   import {
     getSelectableTimeRanges,
@@ -102,7 +103,7 @@
       Select a default time range for the time series charts
     </TooltipContent>
   </Tooltip>
-  <div>
+  <div class="grow">
     <Tooltip
       alignment="middle"
       distance={16}
@@ -110,10 +111,11 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        block
         {options}
         disabled={dropdownDisabled}
         selection={timeRangeSelectedValue}
-        tailwindClasses="overflow-hidden"
+        tailwindClasses="overflow-hidden px-2 py-2 rounded"
         alignment="start"
         on:select={handleDefaultTimeRangeUpdate}
       >
