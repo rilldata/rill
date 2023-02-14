@@ -2,7 +2,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
-  import { DATA_TYPE_COLORS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import {
+    DATA_TYPE_COLORS,
+    isNested,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
   import { singleDigitPercentage } from "@rilldata/web-common/lib/formatters";
   import BarAndLabel from "../../../viz/BarAndLabel.svelte";
 
@@ -13,6 +16,7 @@
 
   let percentage: number;
   $: if (!isFetching) percentage = nullCount / totalRows;
+  $: innerType = isNested(type) ? "STRUCT" : type;
 </script>
 
 {#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage) && percentage <= 1}
@@ -20,7 +24,7 @@
     <BarAndLabel
       compact
       showBackground={nullCount !== 0}
-      color={DATA_TYPE_COLORS[type]?.bgClass}
+      color={DATA_TYPE_COLORS[innerType]?.bgClass}
       value={percentage || 0}
     >
       <span

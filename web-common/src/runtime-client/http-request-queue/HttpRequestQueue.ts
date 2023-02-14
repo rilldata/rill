@@ -1,21 +1,21 @@
-import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
+import type { RequestQueueEntry } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
 import {
   getHeapByName,
   getHeapByQuery,
   RequestQueueNameEntry,
-} from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
+} from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
 import {
   ActiveColumnPriorityOffset,
   ActivePriority,
   DefaultQueryPriority,
   getPriority,
   InactivePriority,
-} from "@rilldata/web-local/lib/http-request-queue/priorities";
+} from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import {
   fetchWrapper,
   FetchWrapperOptions,
 } from "@rilldata/web-local/lib/util/fetchWrapper";
-import { appQueryStatusStore } from "../application-state-stores/application-store";
+import { appQueryStatusStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
 
 export const UrlExtractorRegex =
   /v1\/instances\/[\w-]*\/(metrics-views|queries)\/([\w-]*)\/([\w-]*)\/(?:([\w-]*)(?:\/|$))?/;

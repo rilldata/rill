@@ -28,7 +28,7 @@
   suppress={suppressTooltip || tooltipText === undefined}
 >
   <button
-    on:click
+    on:click|preventDefault
     {id}
     use:captureHoverState
     style:width={`${width}px`}
@@ -36,6 +36,8 @@
     style:grid-column="left-control"
     class:rounded
     class="
+        focus:outline-none
+        focus:bg-gray-300
         hover:bg-gray-300
         transition-tranform 
         text-gray-500

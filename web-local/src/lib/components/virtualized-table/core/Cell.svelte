@@ -11,6 +11,7 @@
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     INTERVALS,
+    isNested,
     STRING_LIKES,
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
@@ -133,7 +134,7 @@
         use:shiftClickAction
         on:shift-click={async () => {
           let exportedValue = value;
-          if (INTERVALS.has(type)) {
+          if (INTERVALS.has(type) || isNested(type)) {
             exportedValue = formatDataType(value, type);
           } else if (TIMESTAMPS.has(type)) {
             exportedValue = `TIMESTAMP '${value}'`;

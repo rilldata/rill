@@ -1,25 +1,22 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    useRuntimeServiceGetDescriptiveStatistics,
-    useRuntimeServiceGetRugHistogram,
-  } from "@rilldata/web-common/runtime-client";
+    DATA_TYPE_COLORS,
+    INTERVALS,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { derived } from "svelte/store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
+    getCountDistinct,
     getNullPercentage,
-    getNumericHistogram,
     getTopK,
     isFetching,
   } from "../queries";
-  import NumericPlot from "./details/NumericPlot.svelte";
+  import TopK from "./details/TopK.svelte";
+  import ColumnCardinalitySpark from "./sparks/ColumnCardinalitySpark.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
-  import NumericSpark from "./sparks/NumericSpark.svelte";
 
   export let columnName: string;
   export let objectName: string;
@@ -31,6 +28,8 @@
   export let compact = false;
   export let hideNullPercentage = false;
 
+  let topKLimit = 15;
+
   let active = false;
 
   $: nulls = getNullPercentage(
@@ -39,46 +38,20 @@
     columnName
   );
 
-  $: numericHistogram = getNumericHistogram(
+  $: columnCardinality = getCountDistinct(
     $runtimeStore?.instanceId,
     objectName,
-    columnName,
-    active
+    columnName
   );
-  $: rug = useRuntimeServiceGetRugHistogram(
-    $runtimeStore?.instanceId,
-    objectName,
-    { columnName, priority: getPriorityForColumn("rug-histogram", active) },
-    {
-      query: {
-        select($query) {
-          return $query?.numericSummary?.numericOutliers?.outliers;
-        },
-      },
-    }
-  );
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
-  $: summary = derived(
-    useRuntimeServiceGetDescriptiveStatistics(
-      $runtimeStore?.instanceId,
-      objectName,
-      {
-        columnName: columnName,
-        priority: getPriorityForColumn("descriptive-statistics", active),
-      }
-    ),
-    ($query) => {
-      return $query?.data?.numericSummary?.numericStatistics;
-    }
-  );
+  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
   function toggleColumnProfile() {
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
-  $: fetchingSummaries = isFetching($nulls, $numericHistogram);
+  $: fetchingSummaries = isFetching($nulls);
 </script>
 
 <ProfileContainer
@@ -98,7 +71,14 @@
   <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
+
+  <ColumnCardinalitySpark
+    cardinality={$columnCardinality?.cardinality}
+    {compact}
+    slot="summary"
+    totalRows={$columnCardinality?.totalRows}
+    {type}
+  />
   <NullPercentageSpark
     isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
@@ -111,13 +91,12 @@
     slot="details"
     class:hidden={INTERVALS.has(type)}
   >
-    <NumericPlot
-      data={$numericHistogram.data}
-      rug={$rug?.data}
-      summary={$summary}
-      topK={$topK}
-      totalRows={$nulls?.totalRows}
+    <TopK
       {type}
+      topK={$topK}
+      k={topKLimit}
+      totalRows={$columnCardinality?.totalRows}
+      colorClass={DATA_TYPE_COLORS["STRUCT"].bgClass}
     />
   </div>
 </ProfileContainer>

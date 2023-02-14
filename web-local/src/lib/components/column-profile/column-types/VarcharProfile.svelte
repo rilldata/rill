@@ -89,6 +89,7 @@
   >
     <div>
       <TopK
+        {type}
         topK={$topK}
         k={topKLimit}
         totalRows={$columnCardinality?.totalRows}
