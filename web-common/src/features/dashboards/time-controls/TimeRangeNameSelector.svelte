@@ -13,28 +13,17 @@
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "./time-control-types";
-  import {
-    getSelectableTimeRangeNames,
-    getSelectableTimeRanges,
-    makeTimeRanges,
-    prettyFormatTimeRange,
-  } from "./time-range-utils";
+  import { prettyFormatTimeRange } from "./time-range-utils";
 
   export let metricViewName: string;
   export let selectedTimeRangeName: TimeRangeName;
-  export let allTimeRange;
+  export let selectableTimeRanges: TimeSeriesTimeRange[];
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-range-name";
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-
-  let selectableTimeRanges: TimeSeriesTimeRange[];
-
-  $: if (allTimeRange) {
-    selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
-  }
 
   /// Start boilerplate for DIY Dropdown menu ///
   let timeRangeNameMenu;

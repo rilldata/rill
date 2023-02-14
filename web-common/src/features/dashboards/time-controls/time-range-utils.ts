@@ -5,6 +5,24 @@ import {
   TimeSeriesTimeRange,
 } from "./time-control-types";
 
+export const supportedTimeGrainEnums = () => {
+  const supportedEnums: string[] = [];
+  const unsupportedTypes = [
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    V1TimeGrain.TIME_GRAIN_MILLISECOND,
+    V1TimeGrain.TIME_GRAIN_SECOND,
+  ];
+
+  for (const timeGrain in V1TimeGrain) {
+    if (unsupportedTypes.includes(V1TimeGrain[timeGrain])) {
+      continue;
+    }
+    supportedEnums.push(timeGrain);
+  }
+
+  return supportedEnums;
+};
+
 // TODO: replace this with a call to the `/meta?metricsDefId={metricsDefId}` endpoint, once it's available
 export const getSelectableTimeRangeNames = (
   allTimeRange: TimeSeriesTimeRange
@@ -276,11 +294,29 @@ export const makeTimeRanges = (
 };
 
 export const getSelectableTimeRanges = (
-  allTimeRangeInDataset: TimeSeriesTimeRange
+  allTimeRangeInDataset: TimeSeriesTimeRange,
+  availableTimeGrains: V1TimeGrain[] = []
 ) => {
-  const selectableTimeRangeNames = getSelectableTimeRangeNames(
+  let selectableTimeRangeNames = getSelectableTimeRangeNames(
     allTimeRangeInDataset
   );
+  if (availableTimeGrains.length) {
+    console.log(selectableTimeRangeNames);
+
+    selectableTimeRangeNames = selectableTimeRangeNames.filter((timeRange) => {
+      const selectableTimeGrains = getSelectableTimeGrains(
+        timeRangeToISODuration(timeRange),
+        allTimeRangeInDataset
+      ).filter((grain) => grain.enabled);
+
+      console.log(selectableTimeGrains);
+      // check if selectableTimeGrains is a subset of availableTimeGrains
+      return selectableTimeGrains.some((timeGrain) =>
+        availableTimeGrains.includes(timeGrain.timeGrain)
+      );
+    });
+  }
+
   return makeTimeRanges(selectableTimeRangeNames, allTimeRangeInDataset);
 };
 

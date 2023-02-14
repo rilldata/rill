@@ -37,8 +37,10 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     getDefaultTimeGrain,
     getDefaultTimeRangeName,
     getSelectableTimeGrains,
+    getSelectableTimeRanges,
     ISODurationToTimeRange,
     makeTimeRange,
+    supportedTimeGrainEnums,
     TimeGrainOption,
     timeRangeToISODuration,
   } from "./time-range-utils";
@@ -148,17 +150,31 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
 
   // we get the selectableTimeGrains so that we can assess whether or not the
   // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
-  let selectableTimeGrains: TimeGrainOption[];
-  $: selectableTimeGrains = getSelectableTimeGrains(
-    timeRangeToISODuration(selectedTimeRangeName),
-    allTimeRange
-  );
+  let selectableTimeGrains: TimeGrainOption[] = [];
+  let selectableTimeRanges: TimeSeriesTimeRange[] = [];
+  $: if (allTimeRange) {
+    selectableTimeRanges = getSelectableTimeRanges(
+      allTimeRange,
+      availableTimeGrains
+    );
+    selectableTimeGrains = getSelectableTimeGrains(
+      timeRangeToISODuration(selectedTimeRangeName),
+      allTimeRange
+    );
+  }
 
   const checkValidTimeGrain = (timeGrain: V1TimeGrain) => {
     const timeGrainOption = selectableTimeGrains.find(
       (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
     );
-    return timeGrainOption?.enabled;
+
+    if (timeGrainOption?.enabled) {
+      if (availableTimeGrains.length) {
+        return availableTimeGrains.includes(timeGrainOption.timeGrain);
+      }
+      return true;
+    }
+    return false;
   };
 
   const makeValidTimeRangeAndUpdateAppState = (
@@ -172,10 +188,22 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
     const isValidTimeGrain = checkValidTimeGrain(timeGrain);
     if (!isValidTimeGrain) {
-      selectedTimeGrain = getDefaultTimeGrain(
+      const timeGrainEnums = supportedTimeGrainEnums();
+      const defaultTimeGrain = getDefaultTimeGrain(
         timeRangeName,
         allTimeRangeInDataset
       );
+
+      const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
+
+      let i = defaultGrainIndex + 1;
+      while (!checkValidTimeGrain(selectedTimeGrain)) {
+        selectedTimeGrain = timeGrainEnums[i] as V1TimeGrain;
+        i++;
+        if (i >= timeGrainEnums.length) {
+          i = 0;
+        }
+      }
     }
 
     const newTimeRange = makeTimeRange(
@@ -232,7 +260,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     </Tooltip>
   {:else}
     <TimeRangeNameSelector
-      {allTimeRange}
+      {selectableTimeRanges}
       {metricViewName}
       on:select-time-range-name={setSelectedTimeRangeName}
       {selectedTimeRangeName}
@@ -241,6 +269,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       on:select-time-grain={setSelectedTimeGrain}
       {selectableTimeGrains}
       {selectedTimeGrain}
+      {availableTimeGrains}
     />
   {/if}
 </div>

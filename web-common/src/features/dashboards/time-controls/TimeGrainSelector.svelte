@@ -6,18 +6,28 @@
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
   export let selectedTimeGrain: V1TimeGrain;
+  export let availableTimeGrains: V1TimeGrain[];
   export let selectableTimeGrains: TimeGrainOption[];
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-grain";
 
   $: options = selectableTimeGrains
-    ? selectableTimeGrains.map(({ timeGrain, enabled }) => ({
-        main: prettyTimeGrain(timeGrain),
-        disabled: !enabled,
-        key: timeGrain,
-        description: !enabled ? "not valid for this time range" : undefined,
-      }))
+    ? selectableTimeGrains.map(({ timeGrain, enabled }) => {
+        const isTimeGrainAvailable =
+          !availableTimeGrains.length ||
+          availableTimeGrains.includes(timeGrain);
+        return {
+          main: prettyTimeGrain(timeGrain),
+          disabled: !enabled || !isTimeGrainAvailable,
+          key: timeGrain,
+          description: !enabled
+            ? "not valid for this time range"
+            : !isTimeGrainAvailable
+            ? "not available"
+            : undefined,
+        };
+      })
     : undefined;
 
   const onTimeGrainSelect = (timeGrain: V1TimeGrain) => {
