@@ -103,7 +103,7 @@
       {max}
     />
   </div>
-  <div class="flex">
+  <div class="flex mt-1">
     <div class="flex-grow" />
     <Button type="primary" submitForm form="custom-time-range-form" {disabled}>
       Apply
