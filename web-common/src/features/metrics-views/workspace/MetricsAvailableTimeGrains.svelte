@@ -12,7 +12,7 @@
   import { SelectMenu } from "../../../components/menu";
   import {
     getAvailableTimeGrains,
-    prettyTimeGrain,
+    timeGrainEnumToYamlString,
   } from "../../dashboards/time-controls/time-range-utils";
 
   export let metricsInternalRep;
@@ -59,8 +59,8 @@
   ].concat(
     selectableTimeGrains.map((grain) => {
       return {
-        key: grain,
-        main: prettyTimeGrain(grain),
+        key: timeGrainEnumToYamlString(grain),
+        main: timeGrainEnumToYamlString(grain),
         divider: false,
       };
     })
@@ -99,7 +99,7 @@
     if (timeGrains[0] === "__DEFAULT_VALUE__") {
       return "Infer from timerange";
     }
-    return timeGrains.map((timeGrain) => prettyTimeGrain(timeGrain)).join(", ");
+    return timeGrains.join(", ");
   };
 
   let tooltipText = "";

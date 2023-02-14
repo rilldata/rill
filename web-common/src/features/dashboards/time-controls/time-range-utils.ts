@@ -432,15 +432,31 @@ export const formatDateByInterval = (
   }
 };
 
+export const timeGrainEnumToYamlString = (timeGrain: V1TimeGrain): string => {
+  if (!timeGrain) return "";
+  switch (timeGrain) {
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
+      return "minute";
+    case V1TimeGrain.TIME_GRAIN_HOUR:
+      return "hour";
+    case V1TimeGrain.TIME_GRAIN_DAY:
+      return "day";
+    case V1TimeGrain.TIME_GRAIN_WEEK:
+      return "week";
+    case V1TimeGrain.TIME_GRAIN_MONTH:
+      return "month";
+    case V1TimeGrain.TIME_GRAIN_YEAR:
+      return "year";
+    default:
+      return timeGrain;
+  }
+};
+
 export const prettyTimeGrain = (timeGrain: V1TimeGrain): string => {
   if (!timeGrain) return "";
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_MINUTE:
       return "minute";
-    // case TimeGrain.FiveMinutes:
-    //   return "5 minute";
-    // case TimeGrain.FifteenMinutes:
-    //   return "15 minute";
     case V1TimeGrain.TIME_GRAIN_HOUR:
       return "hourly";
     case V1TimeGrain.TIME_GRAIN_DAY:

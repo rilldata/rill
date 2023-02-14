@@ -11,6 +11,7 @@
   import {
     getSelectableTimeGrains,
     prettyTimeGrain,
+    timeGrainEnumToYamlString,
     TimeGrainOption,
   } from "../../dashboards/time-controls/time-range-utils";
 
@@ -64,8 +65,8 @@
     selectableTimeGrains.map((grain) => {
       return {
         divider: false,
-        key: grain.timeGrain,
-        main: prettyTimeGrain(grain.timeGrain),
+        key: timeGrainEnumToYamlString(grain.timeGrain),
+        main: timeGrainEnumToYamlString(grain.timeGrain),
         disabled: !grain.enabled,
         description: !grain.enabled
           ? "not valid for this time range"
@@ -83,7 +84,7 @@
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
-        default_time_grain: selectedTimeGrain,
+        default_time_grain: timeGrainEnumToYamlString(selectedTimeGrain),
       });
     }
   }
@@ -142,7 +143,7 @@
           <span style:max-width="14em" class="font-bold truncate"
             >{defaultTimeGrainValue === "__DEFAULT_VALUE__"
               ? "Infer from timerange"
-              : prettyTimeGrain(defaultTimeGrainValue)}</span
+              : defaultTimeGrainValue}</span
           >
         {/if}
       </SelectMenu>

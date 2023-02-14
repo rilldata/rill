@@ -50,8 +50,8 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let selectedTimeRangeName;
-  let selectedTimeGrain;
+  let selectedTimeRangeName: TimeRangeName;
+  let selectedTimeGrain: V1TimeGrain;
 
   let defaultTimeRange: TimeRangeName;
   let defaultTimeGrain: V1TimeGrain;
@@ -79,6 +79,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       $metaQuery?.data?.defaultTimeRange
     );
     defaultTimeGrain = $metaQuery?.data?.defaultTimeGrain;
+
     availableTimeGrains = $metaQuery?.data?.timeGrains;
   }
 
@@ -130,6 +131,7 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       selectedTimeRangeName = defaultTimeRange
         ? defaultTimeRange
         : getDefaultTimeRangeName();
+
       selectedTimeGrain = defaultTimeGrain
         ? defaultTimeGrain
         : getDefaultTimeGrain(selectedTimeRangeName, allTimeRange);
