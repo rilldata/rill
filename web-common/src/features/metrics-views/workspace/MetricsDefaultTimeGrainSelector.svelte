@@ -53,22 +53,25 @@
     );
   }
 
-  $: options =
-    (
-      selectableTimeGrains.map((grain) => {
-        return {
-          key: grain.timeGrain,
-          main: prettyTimeGrain(grain.timeGrain),
-          disabled: !grain.enabled,
-          description: !grain.enabled
-            ? "not valid for this time range"
-            : undefined,
-        };
-      }) as any[]
-    ).concat({
+  $: options = [
+    {
       key: "__DEFAULT_VALUE__",
       main: "Infer from timerange",
-    }) || [];
+      divider: true,
+    },
+  ].concat(
+    selectableTimeGrains.map((grain) => {
+      return {
+        divider: false,
+        key: grain.timeGrain,
+        main: prettyTimeGrain(grain.timeGrain),
+        disabled: !grain.enabled,
+        description: !grain.enabled
+          ? "not valid for this time range"
+          : undefined,
+      };
+    }) as any[]
+  );
 
   function handleDefaultTimeGrainUpdate(event) {
     const selectedTimeGrain = event.detail?.key;
@@ -107,8 +110,9 @@
       Default Time Grain
     </div>
 
-    <TooltipContent slot="tooltip-content">
-      Select a default time grain for the time series charts
+    <TooltipContent maxWidth="400px" slot="tooltip-content">
+      Select a default time grain for the time series charts which will be shown
+      on inital load.
     </TooltipContent>
   </Tooltip>
   <div>

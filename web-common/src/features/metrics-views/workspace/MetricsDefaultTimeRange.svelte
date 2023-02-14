@@ -48,15 +48,17 @@
     selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
   }
 
-  $: options =
-    selectableTimeRanges
-      .map((range) => {
-        return {
-          key: timeRangeToISODuration(range.name),
-          main: range.name,
-        };
-      })
-      .concat({ key: "__DEFAULT_VALUE__", main: "Infer from data" }) || [];
+  $: options = [
+    { key: "__DEFAULT_VALUE__", main: "Infer from data", divider: true },
+  ].concat(
+    selectableTimeRanges.map((range) => {
+      return {
+        divider: false,
+        key: timeRangeToISODuration(range.name),
+        main: range.name,
+      };
+    })
+  );
 
   function handleDefaultTimeRangeUpdate(event) {
     const timeRangeSelectedValue = event.detail?.key;

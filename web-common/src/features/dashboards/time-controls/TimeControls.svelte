@@ -152,8 +152,6 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
     allTimeRange
   );
 
-  // $: console.log(selectableTimeGrains, selectedTimeRangeName, allTimeRange);
-
   const checkValidTimeGrain = (timeGrain: V1TimeGrain) => {
     const timeGrainOption = selectableTimeGrains.find(
       (timeGrainOption) => timeGrainOption.timeGrain === timeGrain

@@ -4,14 +4,14 @@
   import {
     useRuntimeServiceGetTimeRangeSummary,
     V1Model,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
   import { SelectMenu } from "../../../components/menu";
   import {
-    getSelectableTimeGrains,
+    getAvailableTimeGrains,
     prettyTimeGrain,
-    TimeGrainOption,
   } from "../../dashboards/time-controls/time-range-utils";
 
   export let metricsInternalRep;
@@ -19,8 +19,10 @@
 
   $: selectedTimeRange = $metricsInternalRep.getMetricKey("default_time_range");
 
-  $: availableTimeGrains =
-    $metricsInternalRep.getMetricKey("time_grains") || [];
+  $: timeGrainsInYaml = $metricsInternalRep.getMetricKey("time_grains") || [];
+  $: availableTimeGrains = timeGrainsInYaml.length
+    ? timeGrainsInYaml
+    : ["__DEFAULT_VALUE__"];
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
 
@@ -45,26 +47,38 @@
     };
   }
 
-  let selectableTimeGrains: TimeGrainOption[] = [];
+  let selectableTimeGrains: V1TimeGrain[] = [];
   $: if (selectedTimeRange) {
-    selectableTimeGrains = getSelectableTimeGrains(
-      selectedTimeRange,
-      allTimeRange
-    );
+    // get all available time grains
+    selectableTimeGrains = getAvailableTimeGrains(allTimeRange);
   }
 
-  $: options =
-    selectableTimeGrains
-      .filter((timeGrain) => timeGrain.enabled)
-      .map((grain) => {
-        return {
-          key: grain.timeGrain,
-          main: prettyTimeGrain(grain.timeGrain),
-        };
-      }) || [];
+  $: options = [
+    { key: "__DEFAULT_VALUE__", main: "Infer from timerange", divider: true },
+  ].concat(
+    selectableTimeGrains.map((grain) => {
+      return {
+        key: grain,
+        main: prettyTimeGrain(grain),
+        divider: false,
+      };
+    })
+  );
 
   function handleAvailableTimeGrainsUpdate(event) {
     const selectedTimeGrain = event.detail?.key;
+
+    if (selectedTimeGrain === "__DEFAULT_VALUE__") {
+      $metricsInternalRep.updateMetricsParams({
+        time_grains: [],
+      });
+      availableTimeGrains = ["__DEFAULT_VALUE__"];
+      return;
+    } else {
+      availableTimeGrains = availableTimeGrains.filter(
+        (timeGrain) => timeGrain !== "__DEFAULT_VALUE__"
+      );
+    }
 
     const isPresent = removeIfExists(
       availableTimeGrains,
@@ -80,8 +94,12 @@
     });
   }
 
-  const prettyTimeGrains = (timeGrains) =>
-    timeGrains.map((timeGrain) => prettyTimeGrain(timeGrain)).join(", ");
+  const prettyTimeGrains = (timeGrains) => {
+    if (timeGrains[0] === "__DEFAULT_VALUE__") {
+      return "Infer from timerange";
+    }
+    return timeGrains.map((timeGrain) => prettyTimeGrain(timeGrain)).join(", ");
+  };
 
   let tooltipText = "";
   let dropdownDisabled = true;
@@ -103,7 +121,7 @@
 <div class="flex items-center">
   <Tooltip alignment="middle" distance={16} location="bottom">
     <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Time Grains
+      Available Time Grains
     </div>
 
     <TooltipContent slot="tooltip-content">
@@ -133,7 +151,7 @@
             <span>Select a timestamp</span>
           {/if}
         {:else}
-          <span style:max-width="14em" class="font-bold truncate"
+          <span style:max-width="14em" class="font-bold text-left"
             >{availableTimeGrains.length
               ? prettyTimeGrains(availableTimeGrains)
               : "Infer from timerange"}</span

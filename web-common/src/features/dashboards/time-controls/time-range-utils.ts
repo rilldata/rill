@@ -82,6 +82,37 @@ export const getSelectableTimeGrains = (
   return timeGrains;
 };
 
+export const getAvailableTimeGrains = (
+  alltimeRange: TimeSeriesTimeRange
+): V1TimeGrain[] => {
+  const timeGrains: V1TimeGrain[] = [];
+  for (const timeGrain in V1TimeGrain) {
+    const unsupportedTypes = [
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      V1TimeGrain.TIME_GRAIN_MILLISECOND,
+      V1TimeGrain.TIME_GRAIN_SECOND,
+    ];
+    if (unsupportedTypes.includes(V1TimeGrain[timeGrain])) {
+      continue;
+    }
+    timeGrains.push(V1TimeGrain[timeGrain]);
+  }
+
+  const maxTimeGrainPossible = getSelectableTimeGrains(
+    timeRangeToISODuration(TimeRangeName.AllTime),
+    alltimeRange
+  )
+    .filter((timeGrain) => timeGrain.enabled)
+    .pop();
+
+  if (maxTimeGrainPossible)
+    return timeGrains.slice(
+      0,
+      timeGrains.indexOf(maxTimeGrainPossible.timeGrain)
+    );
+  return [];
+};
+
 export const timeRangeToISODuration = (
   timeRangeName: TimeRangeName
 ): string => {
@@ -421,7 +452,7 @@ export const prettyTimeGrain = (timeGrain: V1TimeGrain): string => {
     case V1TimeGrain.TIME_GRAIN_YEAR:
       return "yearly";
     default:
-      throw new Error(`Unknown time grain: ${timeGrain}`);
+      return timeGrain;
   }
 };
 

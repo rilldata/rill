@@ -251,7 +251,7 @@ display_name: ""
 model: ""
 default_time_range: ""
 default_time_grain: ""
-time_grains:[]
+time_grains: []
 timeseries: ""
 measures: []
 dimensions: []

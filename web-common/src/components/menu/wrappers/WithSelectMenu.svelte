@@ -9,7 +9,7 @@ and the menu closes.
   import type { Alignment, Location } from "../../floating-element/types";
   import Check from "../../icons/Check.svelte";
   import Spacer from "../../icons/Spacer.svelte";
-  import { Menu, MenuItem } from "../index";
+  import { Divider, Menu, MenuItem } from "../index";
 
   export let options;
   export let selection = undefined;
@@ -93,7 +93,7 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { key, main, description, right, disabled = false }, i}
+    {#each options as { key, main, description, right, divider = false, disabled = false }, i}
       {@const selected = isSelected(selection, key)}
       <MenuItem
         icon
@@ -132,6 +132,9 @@ and the menu closes.
           {right || ""}
         </svelte:fragment>
       </MenuItem>
+      {#if divider}
+        <Divider marginTop={0} marginBottom={0.5} />
+      {/if}
     {/each}
   </Menu>
 </WithTogglableFloatingElement>
