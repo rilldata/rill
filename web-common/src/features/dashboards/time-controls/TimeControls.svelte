@@ -201,9 +201,13 @@ Constructs a TimeRange object â€“ to be used as the filter in MetricsExplorer â€
       // loop through time grains until we find a valid one
       while (!checkValidTimeGrain(selectedTimeGrain)) {
         selectedTimeGrain = timeGrainEnums[i + 1] as V1TimeGrain;
-        i++;
-        if (i == timeGrainEnums.length - 1) {
-          i = -1;
+        i = i == timeGrainEnums.length - 1 ? -1 : i + 1;
+
+        if (i == defaultGrainIndex) {
+          // if we've looped through all the time grains and haven't found
+          // a valid one, use default
+          selectedTimeGrain = defaultTimeGrain;
+          break;
         }
       }
     }
