@@ -2,6 +2,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { createForm } from "svelte-forms-lib";
   import type { Readable } from "svelte/store";
+  import Spacer from "../../../components/icons/Spacer.svelte";
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import type { MetricsInternalRepresentation } from "../metrics-internal-store";
@@ -44,7 +45,10 @@
 
 <div class="w-80 flex items-center">
   <Tooltip alignment="middle" distance={8} location="bottom">
-    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
+    <div
+      class="text-gray-500 font-medium"
+      style="min-width:10em; font-size:11px;"
+    >
       Display Name
     </div>
 
@@ -52,15 +56,16 @@
       Add a title to your dashboard
     </TooltipContent>
   </Tooltip>
-  <div class="px-2">
+  <div class="grow">
     <form id="display-name-form" autocomplete="off">
       <input
         type="text"
         bind:value={$form["newDisplayName"]}
         on:keydown={handleKeydown}
         on:blur={handleSubmit}
-        class="bg-white hover:bg-gray-100 rounded border border-6 border-transparent hover:border-gray-300 px-1"
+        class="bg-white w-full hover:bg-gray-100 rounded border border-6 border-gray-200 hover:border-gray-300 px-1 py-1"
       />
     </form>
   </div>
+  <Spacer size="24px" />
 </div>

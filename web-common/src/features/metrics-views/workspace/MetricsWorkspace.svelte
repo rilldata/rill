@@ -155,7 +155,7 @@
   let gridTemplate = "repeat(3, 45px)";
   $: metricsConfigWidth = $observedNode?.offsetWidth || 0;
   $: gridTemplate =
-    metricsConfigWidth < 1300 ? "repeat(3, 35px)" : "repeat(2, 40px)";
+    metricsConfigWidth < 1400 ? "repeat(3, 35px)" : "repeat(2, 40px)";
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>

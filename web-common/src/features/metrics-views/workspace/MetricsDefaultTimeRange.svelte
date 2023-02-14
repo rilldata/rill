@@ -135,4 +135,5 @@
       </TooltipContent>
     </Tooltip>
   </div>
+  <Spacer size="24px" />
 </div>

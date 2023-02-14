@@ -6,6 +6,7 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import Spacer from "../../../components/icons/Spacer.svelte";
   import { SelectMenu } from "../../../components/menu";
   import {
     getSelectableTimeGrains,
@@ -151,4 +152,5 @@
       </TooltipContent>
     </Tooltip>
   </div>
+  <Spacer size="24px" />
 </div>

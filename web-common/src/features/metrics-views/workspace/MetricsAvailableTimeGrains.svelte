@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
+  import Spacer from "../../../components/icons/Spacer.svelte";
   import { SelectMenu } from "../../../components/menu";
   import {
     getAvailableTimeGrains,
@@ -118,8 +119,8 @@
   }
 </script>
 
-<div class="flex items-center">
-  <Tooltip alignment="middle" distance={16} location="bottom">
+<div class="w-80 flex items-center">
+  <Tooltip alignment="middle" distance={8} location="bottom">
     <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
       Available Time Grains
     </div>
@@ -165,4 +166,5 @@
       </TooltipContent>
     </Tooltip>
   </div>
+  <Spacer size="24px" />
 </div>
