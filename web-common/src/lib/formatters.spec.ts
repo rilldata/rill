@@ -53,6 +53,14 @@ const fours = [
   { input: 1234.12, output: "1234.1" },
 ];
 
+const veryLarge = [{ input: 9876543212345678, output: "9876543212345678" }];
+
+const verySmall = [
+  { input: 0.00000123456, output: "0.00000123456" },
+  { input: 0.000000123456, output: "1.2346e-7" },
+  { input: 0.0000000123456, output: "1.2346e-8" },
+];
+
 // add negative versions of all test cases
 const withNegativesToo = (testCases: TestCase[]) => [
   ...testCases,
@@ -69,6 +77,8 @@ const allTestCases = withNegativesToo([
   ...twos,
   ...threes,
   ...fours,
+  ...veryLarge,
+  ...verySmall,
 ]);
 
 describe("justEnoughPrecision", () => {
