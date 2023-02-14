@@ -11,9 +11,14 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     useRuntimeServiceGetCatalogEntry,
@@ -28,32 +33,25 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import ResponsiveButtonText from "@rilldata/web-local/lib/components/panel/ResponsiveButtonText.svelte";
-  import WorkspaceHeader from "@rilldata/web-local/lib/components/workspace/core/WorkspaceHeader.svelte";
   import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-    useCreateDashboardFromSource,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useDashboardNames } from "@rilldata/web-local/lib/svelte-query/dashboards";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { getRouteFromName } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { getName } from "@rilldata/web-local/lib/util/incrementName";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
+  import { WorkspaceHeader } from "../../../layout/workspace";
+  import { renameFileArtifact } from "../../entity-management/actions";
+  import { getRouteFromName } from "../../entity-management/entity-mappers";
+  import { getName, isDuplicateName } from "../../entity-management/name-utils";
+  import { useAllNames } from "../../entity-management/selectors";
   import { useModelNames } from "../../models/selectors";
+  import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";
+
   export let sourceName: string;
   export let path: string;
   export let embedded = false;

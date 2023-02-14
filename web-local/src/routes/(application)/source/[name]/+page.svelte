@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {data.sourceName}</title>
+  <title>Rill Developer | {data?.embedded ? data.path : data.sourceName}</title>
 </svelte:head>
 
 <SourceWorkspace

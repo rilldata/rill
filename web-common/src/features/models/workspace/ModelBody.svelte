@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import {
     embeddedSourcesError,
     filterKnownEmbeddedSources,
@@ -10,30 +14,29 @@
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    getRuntimeServiceGetFileQueryKey,
     useRuntimeServiceGetFile,
     useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { SIDE_PAD } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
   import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
-  import { drag } from "@rilldata/web-local/lib/drag";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { SIDE_PAD } from "../../../layout/config";
+  import { drag } from "../../../layout/drag";
   import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
@@ -43,13 +46,15 @@
 
   const queryClient = useQueryClient();
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  const queryHighlight: Writable<QueryHighlightState> = getContext(
+    "rill:app:query-highlight"
+  );
 
   $: runtimeInstanceId = $runtimeStore.instanceId;
   const updateModel = useRuntimeServicePutFileAndReconcile();
 
   // track innerHeight to calculate the size of the editor element.
-  let innerHeight;
+  let innerHeight: number;
 
   let showPreview = true;
   let modelPath: string;
@@ -74,8 +79,12 @@
 
   let embeddedSourceErrors: Array<string>;
 
-  const outputLayout = getContext("rill:app:output-layout");
-  const outputPosition = getContext("rill:app:output-height-tween");
+  const outputLayout = getContext(
+    "rill:app:output-layout"
+  ) as Writable<LayoutElement>;
+  const outputPosition = getContext(
+    "rill:app:output-height-tween"
+  ) as Writable<number>;
   const outputVisibilityTween = getContext(
     "rill:app:output-visibility-tween"
   ) as Writable<number>;
@@ -144,6 +153,12 @@
         $runtimeStore.instanceId,
         resp
       );
+      if (resp.affectedPaths.length === 0) {
+        // when backend detects no change, we need to invalidate the file
+        await queryClient.refetchQueries(
+          getRuntimeServiceGetFileQueryKey($runtimeStore.instanceId, modelPath)
+        );
+      }
     } catch (err) {
       console.error(err);
     }

@@ -1,6 +1,8 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -12,17 +14,16 @@
     V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import { getSummaries } from "@rilldata/web-local/lib/components/column-profile/queries";
   import {
-    GridCell,
-    LeftRightGrid,
-  } from "@rilldata/web-local/lib/components/left-right-grid";
+    ColumnSummary,
+    getSummaries,
+  } from "@rilldata/web-local/lib/components/column-profile/queries";
+  import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { GridCell, LeftRightGrid } from "../../../components/grid";
+  import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import ReferenceModels from "./ReferenceModels.svelte";
 
   export let sourceName: string;
@@ -41,7 +42,6 @@
   }
 
   let showColumns = true;
-  let showModelReferences = true;
 
   // get source table references.
 
@@ -108,6 +108,7 @@
     { query: { keepPreviousData: true } }
   );
 
+  let summaries: Readable<Array<ColumnSummary>>;
   $: summaries = getSummaries(
     sourceName,
     $runtimeStore?.instanceId,

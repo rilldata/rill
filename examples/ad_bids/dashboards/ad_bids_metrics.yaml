@@ -3,8 +3,8 @@ display_name: Ad bids
 description:
 
 timeseries: timestamp
-default_timegrain: ""
-timegrains:
+default_time_grain: ""
+time_grains:
   - day
   - month
 

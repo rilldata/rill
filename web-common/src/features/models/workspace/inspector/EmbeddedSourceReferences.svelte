@@ -1,18 +1,26 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
   import EmbeddedSourceEntry from "@rilldata/web-common/features/sources/embedded/EmbeddedSourceEntry.svelte";
-  import { groupURIs } from "@rilldata/web-common/features/sources/group-uris";
+  import {
+    ViableSourceCatalogEntry,
+    groupURIs,
+  } from "@rilldata/web-common/features/sources/group-uris";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  const queryHighlight: Writable<QueryHighlightState> = getContext(
+    "rill:app:query-highlight"
+  );
 
-  export let entries;
+  export let entries: Array<ViableSourceCatalogEntry>;
   export let modelHasError = false;
-  export let references;
+  export let references: Array<Reference>;
 
   function focus(reference) {
     return () => {

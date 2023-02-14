@@ -3,28 +3,28 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import {
-    runtimeStore,
     appQueryStatusStore,
+    runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { fileArtifactsStore } from "@rilldata/web-local/lib/application-state-stores/file-artifacts-store";
-  import PanelCTA from "@rilldata/web-local/lib/components/panel/PanelCTA.svelte";
-  import { WorkspaceHeader } from "@rilldata/web-local/lib/components/workspace";
-  import {
-    isDuplicateName,
-    renameFileArtifact,
-    useAllNames,
-  } from "@rilldata/web-local/lib/svelte-query/actions";
-  import { useGetDashboardsForModel } from "@rilldata/web-local/lib/svelte-query/dashboards";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import { WorkspaceHeader } from "../../../layout/workspace";
+  import { useGetDashboardsForModel } from "../../dashboards/selectors";
+  import { renameFileArtifact } from "../../entity-management/actions";
   import {
     getFilePathFromNameAndType,
     getRouteFromName,
-  } from "@rilldata/web-local/lib/util/entity-mappers";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import { getContext } from "svelte";
+  } from "../../entity-management/entity-mappers";
+  import { isDuplicateName } from "../../entity-management/name-utils";
+  import { useAllNames } from "../../entity-management/selectors";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
@@ -35,7 +35,9 @@
   const queryClient = useQueryClient();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
-  const outputLayout = getContext("rill:app:output-layout");
+  const outputLayout = getContext(
+    "rill:app:output-layout"
+  ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelHasError = !!modelError;

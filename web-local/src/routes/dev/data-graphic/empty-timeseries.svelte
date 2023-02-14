@@ -2,11 +2,9 @@
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
-
-  import { NicelyFormattedTypes } from "@rilldata/web-local/lib/util/humanize-numbers";
-
-  import TimeSeriesBody from "../../_surfaces/workspace/explore/time-series-charts/TimeSeriesBody.svelte";
-  import TimeSeriesChartContainer from "../../_surfaces/workspace/explore/time-series-charts/TimeSeriesChartContainer.svelte";
+  import { NicelyFormattedTypes } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+  import TimeSeriesBody from "@rilldata/web-common/features/dashboards/workspace/metrics-container/TimeSeriesBody.svelte";
+  import TimeSeriesChartContainer from "@rilldata/web-common/features/dashboards/workspace/metrics-container/TimeSeriesChartContainer.svelte";
 
   const startValue = new Date("2020-08-04T18:30:00.000Z");
   const endValue = new Date("2020-08-05T00:29:59.000Z");

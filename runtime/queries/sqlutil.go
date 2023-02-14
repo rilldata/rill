@@ -48,3 +48,26 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 	}
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
 }
+
+func toTimeGrain(val string) runtimev1.TimeGrain {
+	switch strings.ToUpper(val) {
+	case "MILLISECOND":
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
+	case "SECOND":
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
+	case "MINUTE":
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
+	case "HOUR":
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
+	case "DAY":
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY
+	case "WEEK":
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
+	case "MONTH":
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+	case "YEAR":
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	default:
+		panic(fmt.Errorf("unconvertable time grain specifier: %v", val))
+	}
+}

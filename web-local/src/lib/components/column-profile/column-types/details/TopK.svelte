@@ -5,27 +5,31 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import LeaderboardListItem from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardListItem.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
     createShiftClickAction,
   } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { isNested } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     formatBigNumberPercentage,
+    formatDataType,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
+  import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import LeaderboardListItem from "../../../../components/leaderboard/LeaderboardListItem.svelte";
 
   export let colorClass = "bg-blue-200";
 
   const { shiftClickAction } = createShiftClickAction();
 
-  export let topK;
+  export let topK: TopKEntry[];
   export let totalRows: number;
   export let k = 15;
+  export let type: string;
 
   const dispatch = createEventDispatcher();
 
@@ -40,7 +44,7 @@
       ? format("0.1%")
       : () => "";
 
-  function ensureSpaces(str, n = 6) {
+  function ensureSpaces(str: string, n = 6) {
     return `${Array.from({ length: n - str.length })
       .fill("&nbsp;")
       .join("")}${str}`;
@@ -48,13 +52,15 @@
 
   let tooltipProps = { location: "right", distance: 16 };
 
-  function handleFocus(value) {
+  function handleFocus(value: TopKEntry) {
     return () => dispatch("focus-top-k", value);
   }
 
-  function handleBlur(value) {
+  function handleBlur(value: TopKEntry) {
     return () => dispatch("blur-top-k", value);
   }
+
+  /** handle LISTs and STRUCTs */
 </script>
 
 {#if topK && totalRows}
@@ -82,17 +88,21 @@
                 copyToClipboard(
                   item.value,
                   `copied column value "${
-                    item.value === null ? "NULL" : item.value
+                    item.value === null
+                      ? "NULL"
+                      : isNested(type)
+                      ? formatDataType(item.value, type)
+                      : item.value
                   }" to clipboard`
                 )}
             >
-              {item.value}
+              {formatDataType(item.value, type)}
             </div>
-            <TooltipContent slot="tooltip-content">
+            <TooltipContent slot="tooltip-content" maxWidth="300px">
               <TooltipTitle>
-                <svelte:fragment slot="name"
-                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
-                >
+                <svelte:fragment slot="name">
+                  {`${formatDataType(item.value, type)}`}
+                </svelte:fragment>
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment
                 >
@@ -126,7 +136,7 @@
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
                 <svelte:fragment slot="name"
-                  >{`${item.value}`.slice(0, 100)}</svelte:fragment
+                  >{`${formatDataType(item.value, type)}`}</svelte:fragment
                 >
                 <svelte:fragment slot="description"
                   >{formatBigNumberPercentage(item.count / totalRows)} of rows</svelte:fragment

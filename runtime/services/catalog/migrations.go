@@ -328,8 +328,8 @@ func (s *Service) runMigrationItems(
 					FilePath: item.Path,
 				})
 			}
-			if item.CatalogInFile != nil {
-				err := migrator.Delete(ctx, s.Olap, item.CatalogInFile)
+			if item.CatalogInStore != nil {
+				err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 				if err != nil {
 					// shouldn't ideally happen
 					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
@@ -420,7 +420,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInFile)
+			return migrator.Update(ctx, s.Olap, s.Repo, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err

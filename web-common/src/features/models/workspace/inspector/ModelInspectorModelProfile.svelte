@@ -1,7 +1,11 @@
 <script lang="ts">
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import { EntityType } from "@rilldata/web-common/lib/entity";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  import type { ViableSourceCatalogEntry } from "@rilldata/web-common/features/sources/group-uris";
+  import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
@@ -10,22 +14,25 @@
     useRuntimeServiceListCatalogEntries,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import CollapsibleSectionTitle from "@rilldata/web-local/lib/components/CollapsibleSectionTitle.svelte";
   import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
-  import { getFilePathFromNameAndType } from "@rilldata/web-local/lib/util/entity-mappers";
   import { getContext } from "svelte";
-  import { derived, writable } from "svelte/store";
+  import { derived, Readable, Writable, writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { getTableReferences } from "../../utils/get-table-references";
+  import { LIST_SLIDE_DURATION } from "../../../../layout/config";
+  import {
+    getTableReferences,
+    Reference,
+  } from "../../utils/get-table-references";
   import EmbeddedSourceReferences from "./EmbeddedSourceReferences.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  const queryHighlight: Writable<QueryHighlightState> = getContext(
+    "rill:app:query-highlight"
+  );
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtimeStore?.instanceId,
@@ -46,6 +53,7 @@
     { type: "OBJECT_TYPE_SOURCE" }
   );
 
+  let viableSources: Readable<Array<ViableSourceCatalogEntry>>;
   $: viableSources = derived(
     $getAllSources?.data?.entries
       ?.filter((entry) => {
@@ -67,7 +75,7 @@
       })
       .map((arr) => {
         const entry = arr[0] as V1CatalogEntry;
-        const reference = arr[1];
+        const reference = arr[1] as Reference;
         return derived(
           [
             writable(entry),
@@ -77,16 +85,16 @@
               entry.name
             ),
           ],
-          ([entry, reference, $cardinality]) => {
+          ([entry, reference, cardinality]) => {
             return {
               ...entry,
               ...reference,
-              totalRows: +$cardinality?.data?.cardinality,
+              totalRows: +(cardinality?.data?.cardinality ?? 0),
             };
           }
         );
       }),
-    ($row) => $row
+    (row) => row
   );
 
   $: viableEmbeddedSources = $viableSources?.filter((source) => {

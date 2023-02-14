@@ -13,6 +13,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -55,12 +56,14 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
+			grpc_validator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
 			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
+			grpc_validator.UnaryServerInterceptor(),
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)

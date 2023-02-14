@@ -1,24 +1,30 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { DATA_TYPE_COLORS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
+  import {
+    DATA_TYPE_COLORS,
+    isNested,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
   import { singleDigitPercentage } from "@rilldata/web-common/lib/formatters";
-  import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-local/lib/application-config";
   import BarAndLabel from "../../../viz/BarAndLabel.svelte";
 
   export let type: string;
   export let nullCount: number;
   export let totalRows: number;
+  export let isFetching: boolean;
 
-  $: percentage = nullCount / totalRows;
+  let percentage: number;
+  $: if (!isFetching) percentage = nullCount / totalRows;
+  $: innerType = isNested(type) ? "STRUCT" : type;
 </script>
 
-{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage)}
+{#if totalRows !== undefined && nullCount !== undefined && !isNaN(percentage) && percentage <= 1}
   <Tooltip location="right" alignment="center" distance={8}>
     <BarAndLabel
       compact
       showBackground={nullCount !== 0}
-      color={DATA_TYPE_COLORS[type]?.bgClass}
+      color={DATA_TYPE_COLORS[innerType]?.bgClass}
       value={percentage || 0}
     >
       <span

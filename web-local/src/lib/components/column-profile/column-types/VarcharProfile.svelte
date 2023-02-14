@@ -16,8 +16,8 @@
 
   export let columnName: string;
   export let objectName: string;
-  export let example;
-  export let type;
+  export let example: any;
+  export let type: string;
 
   export let hideRight = false;
   export let compact = false;
@@ -73,6 +73,7 @@
     totalRows={$columnCardinality?.totalRows}
   />
   <NullPercentageSpark
+    isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
     slot="nullity"
     totalRows={$nulls?.totalRows}
@@ -88,6 +89,7 @@
   >
     <div>
       <TopK
+        {type}
         topK={$topK}
         k={topKLimit}
         totalRows={$columnCardinality?.totalRows}

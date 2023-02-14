@@ -7,20 +7,18 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     INTERVALS,
+    isNested,
     STRING_LIKES,
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataType } from "@rilldata/web-common/lib/formatters";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-local/lib/application-config";
   import { createEventDispatcher, getContext } from "svelte";
   import BarAndLabel from "../../viz/BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
-
-  const config: VirtualizedTableConfig = getContext("config");
-  const isDimensionTable = config.table === "DimensionTable";
 
   export let row;
   export let column;
@@ -34,6 +32,9 @@
   export let atLeastOneSelected = false;
   export let excludeMode = false;
   export let positionStatic = false;
+
+  const config: VirtualizedTableConfig = getContext("config");
+  const isDimensionTable = config.table === "DimensionTable";
 
   let cellActive = false;
 
@@ -133,7 +134,7 @@
         use:shiftClickAction
         on:shift-click={async () => {
           let exportedValue = value;
-          if (INTERVALS.has(type)) {
+          if (INTERVALS.has(type) || isNested(type)) {
             exportedValue = formatDataType(value, type);
           } else if (TIMESTAMPS.has(type)) {
             exportedValue = `TIMESTAMP '${value}'`;

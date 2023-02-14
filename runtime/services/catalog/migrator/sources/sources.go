@@ -22,9 +22,11 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	apiSource := catalogObj.GetSource()
 
 	source := &connectors.Source{
-		Name:       apiSource.Name,
-		Connector:  apiSource.Connector,
-		Properties: apiSource.Properties.AsMap(),
+		Name:          apiSource.Name,
+		Connector:     apiSource.Connector,
+		Properties:    apiSource.Properties.AsMap(),
+		ExtractPolicy: apiSource.GetPolicy(),
+		Timeout:       apiSource.GetTimeoutSeconds(),
 	}
 
 	env := &connectors.Env{
@@ -35,8 +37,8 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
-	return m.Create(ctx, olap, repo, catalogObj)
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+	return m.Create(ctx, olap, repo, newCatalogObj)
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
@@ -78,6 +80,9 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	if cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
+	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
+		return false
+	}
 	s1 := &connectors.Source{
 		Properties: cat1.GetSource().Properties.AsMap(),
 	}
@@ -85,6 +90,21 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 		Properties: cat2.GetSource().Properties.AsMap(),
 	}
 	return s1.PropertiesEquals(s2)
+}
+
+func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
+	if (p1 != nil) == (p2 != nil) {
+		if p1 != nil {
+			// both non nil
+			return p1.FilesStrategy == p2.FilesStrategy &&
+				p1.FilesLimit == p2.FilesLimit &&
+				p1.RowsStrategy == p2.RowsStrategy &&
+				p1.RowsLimitBytes == p2.RowsLimitBytes
+		}
+		// both nil
+		return true
+	}
+	return false
 }
 
 func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {

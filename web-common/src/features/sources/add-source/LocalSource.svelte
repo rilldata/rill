@@ -1,24 +1,24 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     useRuntimeServiceDeleteFileAndReconcile,
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-local/lib/application-config";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { overlay } from "@rilldata/web-local/lib/application-state-stores/overlay-store";
-  import { deleteFileArtifact } from "@rilldata/web-local/lib/svelte-query/actions";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { EntityType } from "../../../lib/entity";
+  import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";

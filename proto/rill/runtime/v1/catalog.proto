@@ -36,6 +36,27 @@ message Source {
   google.protobuf.Struct properties = 3;
   // Detected schema of the source
   StructType schema = 5;
+  // Extract policy for glob connectors
+  message ExtractPolicy {
+    enum Strategy {
+      STRATEGY_UNSPECIFIED = 0;
+      STRATEGY_HEAD = 1;
+      STRATEGY_TAIL = 2;
+    }
+    // strategy for selecting rows in a file
+    Strategy rows_strategy = 1;
+    // could in future add: uint64 rows_limit = n;
+    // limit on data fetched in bytes
+    uint64 rows_limit_bytes = 2;
+    // strategy for selecting files
+    Strategy files_strategy = 3;
+    // limit on number of files
+    uint64 files_limit = 4;
+  }
+  // extraction policy for the source
+  ExtractPolicy policy = 6;
+  // timeout for source ingestion in seconds
+  int32 timeout_seconds = 7;
 }
 
 // Model is the internal representation of a model definition
@@ -53,6 +74,8 @@ message Model {
   Dialect dialect = 3;
   // Detected schema of the model
   StructType schema = 4;
+  // To materialize model or not
+  bool materialize = 5;
 }
 
 // Metrics view is the internal representation of a metrics view definition
@@ -78,8 +101,7 @@ message MetricsView {
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 3;
   // Recommended granularities for rolling up the time dimension.
-  // Should be a valid SQL INTERVAL value.
-  repeated string time_grains = 4;
+  repeated TimeGrain time_grains = 4;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 5;
   // Measures in the metrics view
@@ -88,4 +110,20 @@ message MetricsView {
   string label = 7;
   // Brief description of the dashboard
   string description = 8;
+  // default time grain
+  TimeGrain default_time_grain = 9;
+  // default time range for the dashboard. It should be a valid ISO 8601 duration string
+  string default_time_range = 10;
+}
+
+enum TimeGrain {
+  TIME_GRAIN_UNSPECIFIED = 0;
+  TIME_GRAIN_MILLISECOND = 1;
+  TIME_GRAIN_SECOND = 2;
+  TIME_GRAIN_MINUTE = 3;
+  TIME_GRAIN_HOUR = 4;
+  TIME_GRAIN_DAY = 5;
+  TIME_GRAIN_WEEK = 6;
+  TIME_GRAIN_MONTH = 7;
+  TIME_GRAIN_YEAR = 8;
 }
