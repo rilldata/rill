@@ -83,6 +83,7 @@
     <label for="start-date" style="font-size: 10px;">Start date</label>
     <input
       bind:value={start}
+      on:blur={() => dispatch("close-calendar")}
       type="datetime-local"
       id="start-date"
       name="start-date"
@@ -94,6 +95,7 @@
     <label for="end-date" style="font-size: 10px;">End date</label>
     <input
       bind:value={end}
+      on:blur={() => dispatch("close-calendar")}
       type="datetime-local"
       id="end-date"
       name="end-date"
