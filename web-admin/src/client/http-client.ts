@@ -1,8 +1,9 @@
 import type { AxiosRequestConfig } from "axios";
 import Axios from "axios";
+import { ADMIN_URL } from "../lib/connection";
 
 export const AXIOS_INSTANCE = Axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: ADMIN_URL,
 });
 
 // TODO: use the new client?
