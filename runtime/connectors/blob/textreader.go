@@ -24,7 +24,7 @@ type textExtractOption struct {
 func downloadText(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *textExtractOption, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 
-	rows, err := csvRows(reader, option)
+	rows, err := rows(reader, option)
 	if err != nil {
 		return err
 	}
@@ -33,18 +33,18 @@ func downloadText(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject
 	return err
 }
 
-func csvRows(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
+func rows(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
 	switch option.extractOption.strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return csvRowsHead(reader, option.extractOption)
+		return rowsHead(reader, option.extractOption)
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return csvRowsTail(reader, option)
+		return rowsTail(reader, option)
 	default:
 		panic(fmt.Sprintf("unsupported strategy %s", option.extractOption.strategy))
 	}
 }
 
-func csvRowsTail(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
+func rowsTail(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
 	header := make([]byte, 0)
 	if option.hasCSVHeader {
 		// csv has header, need to read header first
@@ -74,7 +74,7 @@ func csvRowsTail(reader *ObjectReader, option *textExtractOption) ([]byte, error
 	return append(header, p[lastLineIndex+1:]...), nil
 }
 
-func csvRowsHead(reader *ObjectReader, option *extractOption) ([]byte, error) {
+func rowsHead(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
