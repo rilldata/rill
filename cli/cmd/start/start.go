@@ -2,10 +2,9 @@ package start
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
-	"github.com/go-git/go-git/v5"
+	"github.com/rilldata/rill/cli/pkg/github"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
@@ -30,26 +29,21 @@ func StartCmd(ver version.Version) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				projectPath = args[0]
+				if strings.HasSuffix(projectPath, ".git") {
+					repoName, err := github.CloneRepo(projectPath)
+					if err != nil {
+						return fmt.Errorf("clone repo error: %w", err)
+					}
+
+					projectPath = repoName
+				}
+			}
+
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
-			}
-
-			if len(args) > 0 {
-				// Clone the given repository to the given directory/repoName
-				url := args[0]
-				// This can be added as current dir as well instead of repoName
-				repoName := url[strings.LastIndex(url, "/")+1:]
-				projectPath = repoName
-
-				_, err := git.PlainClone(repoName, false, &git.CloneOptions{
-					URL:      url,
-					Progress: os.Stdout,
-				})
-				if err != nil {
-					fmt.Println("git clone error:", err)
-					projectPath = url
-				}
 			}
 
 			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat)
