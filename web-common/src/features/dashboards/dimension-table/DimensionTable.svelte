@@ -4,8 +4,8 @@ ColumnHeaders – sticky column headers. Utilizes the columnVirtualizer (for now
 TableCells – the cell contents.
 -->
 <script lang="ts">
-  import ColumnHeaders from "@rilldata/web-local/lib/components/virtualized-table/sections/ColumnHeaders.svelte";
-  import TableCells from "@rilldata/web-local/lib/components/virtualized-table/sections/TableCells.svelte";
+  import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
+  import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";

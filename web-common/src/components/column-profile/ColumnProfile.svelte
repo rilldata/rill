@@ -4,9 +4,9 @@
     useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { NATIVE_SELECT } from "@rilldata/web-local/lib/util/component-classes";
   import { onMount } from "svelte";
-  import { runtimeStore } from "../../application-state-stores/application-store";
-  import { NATIVE_SELECT } from "../../util/component-classes";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
