@@ -11,6 +11,9 @@ import type { RillIntakeClient } from "./RillIntakeClient";
 import type { CommonFields, MetricsEvent } from "./MetricsTypes";
 import type { BehaviourEventFactory } from "./BehaviourEventFactory";
 import MD5 from "crypto-js/md5";
+import { v4 as uuidv4 } from "uuid";
+
+export const ClientIDStorageKey = "client_id";
 
 /**
  * We have DataModelerStateService as the 1st arg to have a structure for PickActionFunctions
@@ -50,11 +53,15 @@ export class MetricsService
     this.commonFields = {
       app_name: "rill-developer",
       install_id: this.localConfig.install_id,
+      client_id: this.getOrSetClientID(),
       build_id: this.localConfig.build_commit,
       version: this.localConfig.version,
       is_dev: this.localConfig.is_dev,
       project_id: MD5(projectPathParts[projectPathParts.length - 1]).toString(),
       analytics_enabled: this.localConfig.analytics_enabled,
+      mode: this.localConfig.readonly ? "readonly" : "edit",
+      env: this.localConfig.env,
+      access: this.localConfig.public ? "public" : "auth",
     };
   }
 
@@ -74,5 +81,14 @@ export class MetricsService
       ...args
     );
     await this.rillIntakeClient.fireEvent(event);
+  }
+
+  private getOrSetClientID(): string {
+    let clientId = localStorage.getItem(ClientIDStorageKey);
+    if (clientId) return clientId;
+
+    clientId = uuidv4();
+    localStorage.setItem(ClientIDStorageKey, clientId);
+    return clientId;
   }
 }

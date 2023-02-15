@@ -293,6 +293,9 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: localConf.AnalyticsEnabled,
 		Readonly:         readonly,
+		// TODO: find a good way to get this in
+		Env:    "local",
+		Public: true,
 	}
 
 	// Create server logger.
@@ -397,6 +400,8 @@ type localInfo struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
+	Env              string `json:"env"`
+	Public           bool   `json:"public"`
 }
 
 // infoHandler servers the local info struct.

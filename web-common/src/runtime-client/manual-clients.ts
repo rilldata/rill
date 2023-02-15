@@ -12,6 +12,8 @@ export type V1RuntimeGetConfig = {
   is_dev: boolean;
   analytics_enabled: boolean;
   readonly: boolean;
+  env: string;
+  public: boolean;
 };
 export const runtimeServiceGetConfig =
   async (): Promise<V1RuntimeGetConfig> => {
