@@ -18,8 +18,7 @@
     // the await tick will make sure `Calendly.initInlineWidget` runs after the portal
     await tick();
     Calendly.initInlineWidget({
-      // url: "https://calendly.com/marissa-gorlick/rill-closed-beta-discovery?month=2023-02",
-      url: "https://calendly.com/aditya-s-hegde",
+      url: "https://calendly.com/marissa-gorlick/rill-closed-beta-discovery?month=2023-02",
       parentElement: calendlyContainer,
       prefill: {},
       utm: {},
