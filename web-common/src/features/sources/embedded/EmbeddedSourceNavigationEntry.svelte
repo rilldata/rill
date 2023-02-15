@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import { slide } from "svelte/transition";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import EmbeddedSourceEntry from "./EmbeddedSourceEntry.svelte";

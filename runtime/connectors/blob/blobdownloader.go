@@ -29,6 +29,8 @@ var _partialDownloadReaders = map[string]string{
 	".csv":     "csv",
 	".tsv":     "csv",
 	".txt":     "csv",
+	".ndjson":  "json",
+	".json":    "json",
 }
 
 // implements connector.FileIterator
@@ -177,7 +179,9 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			case "parquet":
 				return downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
 			case "csv":
-				return downloadCSV(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
+				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
+			case "json":
+				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
 			default:
 				// should not reach here
 				panic(fmt.Errorf("partial download not supported for extension %q", ext))
