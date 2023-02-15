@@ -179,9 +179,9 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			case "parquet":
 				return downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
 			case "csv":
-				return downloadCSV(grpCtx, it.bucket, obj.obj, &csvExtractOption{extractOption: obj.extractOption, hasHeader: true}, file)
+				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
 			case "json":
-				return downloadCSV(grpCtx, it.bucket, obj.obj, &csvExtractOption{extractOption: obj.extractOption, hasHeader: false}, file)
+				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
 			default:
 				// should not reach here
 				panic(fmt.Errorf("partial download not supported for extension %q", ext))
