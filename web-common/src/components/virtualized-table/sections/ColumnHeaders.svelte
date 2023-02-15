@@ -1,6 +1,6 @@
 <script lang="ts">
+  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createEventDispatcher } from "svelte";
-  import type { VirtualizedTableColumns } from "../../../types";
   import ColumnHeader from "../core/ColumnHeader.svelte";
 
   const dispatch = createEventDispatcher();

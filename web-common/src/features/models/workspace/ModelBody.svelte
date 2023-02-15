@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -24,7 +25,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import ConnectedPreviewTable from "@rilldata/web-local/lib/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,

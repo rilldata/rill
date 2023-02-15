@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
@@ -11,7 +12,6 @@
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import { getContext } from "svelte";
   import { derived, Writable, writable } from "svelte/store";
   import { slide } from "svelte/transition";

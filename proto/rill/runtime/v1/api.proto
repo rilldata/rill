@@ -922,18 +922,6 @@ message EstimateSmallestTimeGrainRequest {
   int32 priority = 4;
 }
 
-enum TimeGrain {
-  TIME_GRAIN_UNSPECIFIED = 0;
-  TIME_GRAIN_MILLISECOND = 1;
-  TIME_GRAIN_SECOND = 2;
-  TIME_GRAIN_MINUTE = 3;
-  TIME_GRAIN_HOUR = 4;
-  TIME_GRAIN_DAY = 5;
-  TIME_GRAIN_WEEK = 6;
-  TIME_GRAIN_MONTH = 7;
-  TIME_GRAIN_YEAR = 8;
-}
-
 // Response for RuntimeService.EstimateSmallestTimeGrain
 message EstimateSmallestTimeGrainResponse {
   TimeGrain time_grain = 1;

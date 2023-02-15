@@ -1711,6 +1711,12 @@ definitions:
   v1MetricsView:
     type: object
     properties:
+      defaultTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: default time grain
+      defaultTimeRange:
+        type: string
+        title: default time range for the dashboard
       description:
         type: string
         title: Brief description of the dashboard
@@ -1739,7 +1745,7 @@ definitions:
       timeGrains:
         type: array
         items:
-          type: string
+          $ref: '#/definitions/v1TimeGrain'
         description: |-
           Recommended granularities for rolling up the time dimension.
           Should be a valid SQL INTERVAL value.
