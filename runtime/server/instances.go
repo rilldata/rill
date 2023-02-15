@@ -42,6 +42,11 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
+	env, err := drivers.Parse(req.Env)
+	if err != nil {
+		return nil, err
+	}
+
 	inst := &drivers.Instance{
 		ID:           req.InstanceId,
 		OLAPDriver:   req.OlapDriver,
@@ -49,9 +54,10 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		RepoDriver:   req.RepoDriver,
 		RepoDSN:      req.RepoDsn,
 		EmbedCatalog: req.EmbedCatalog,
+		Env:          env,
 	}
 
-	err := s.runtime.CreateInstance(ctx, inst)
+	err = s.runtime.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -79,5 +85,6 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		RepoDriver:   inst.RepoDriver,
 		RepoDsn:      inst.RepoDSN,
 		EmbedCatalog: inst.EmbedCatalog,
+		Env:          inst.Env.String(),
 	}
 }

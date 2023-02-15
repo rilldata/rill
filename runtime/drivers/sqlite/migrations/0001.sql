@@ -6,5 +6,6 @@ CREATE TABLE instances (
 	repo_dsn TEXT NOT NULL,	
 	embed_catalog BOOLEAN NOT NULL,
 	created_on TIMESTAMP NOT NULL,
-	updated_on TIMESTAMP NOT NULL
+	updated_on TIMESTAMP NOT NULL,
+	env TEXT NULL
 );

@@ -57,7 +57,7 @@ func (s *Service) getMigrationItems(
 	var item *MigrationItem
 	hasFileObject := false
 
-	catalog, err := artifacts.Read(ctx, s.Repo, s.InstID, repoPath)
+	catalog, err := artifacts.Read(ctx, s.Repo, s.Instance, repoPath)
 	if err != nil {
 		item = s.newMigrationItemFromError(repoPath, err)
 		items = []*MigrationItem{item}

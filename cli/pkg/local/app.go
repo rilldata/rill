@@ -64,7 +64,9 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string,
+	logFormat LogFormat, envVariables map[string]string,
+) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -130,6 +132,7 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		RepoDriver:   "file",
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
+		Env:          envVariables,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {

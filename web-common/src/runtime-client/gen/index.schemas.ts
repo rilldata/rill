@@ -535,6 +535,7 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
+  env?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
@@ -650,6 +651,7 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
+  env?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;

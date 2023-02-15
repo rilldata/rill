@@ -325,6 +325,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
+	// no validation rules for Env
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}
@@ -968,6 +970,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	// no validation rules for RepoDsn
 
 	// no validation rules for EmbedCatalog
+
+	// no validation rules for Env
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)

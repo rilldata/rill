@@ -1480,6 +1480,8 @@ definitions:
     properties:
       embedCatalog:
         type: boolean
+      env:
+        type: string
       instanceId:
         type: string
       olapDriver:
@@ -1642,6 +1644,12 @@ definitions:
         description: |-
           If true, the runtime will store the instance's catalog in its OLAP store instead
           of in the runtime's metadata store. Currently only supported for the duckdb driver.
+      env:
+        type: string
+        title: |-
+          instance specific enviornment variables
+          stored in format key=value with multiple env variable separated by semi-colon
+          example : timeout=300;hive_parition=false
       instanceId:
         type: string
         title: Identifier (UUID)

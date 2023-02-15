@@ -30,7 +30,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, env FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -41,7 +41,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn)
+		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &i.Env)
 		if err != nil {
 			return nil, err
 		}
@@ -63,8 +63,8 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	now := time.Now()
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on) "+
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7)",
+		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, env) "+
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8)",
 		inst.ID,
 		inst.OLAPDriver,
 		inst.OLAPDSN,
@@ -72,6 +72,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		inst.RepoDSN,
 		inst.EmbedCatalog,
 		now,
+		inst.Env,
 	)
 	if err != nil {
 		return err

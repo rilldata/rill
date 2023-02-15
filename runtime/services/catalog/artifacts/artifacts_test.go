@@ -166,7 +166,7 @@ measures:
 			err := artifacts.Write(ctx, repoStore, "test", tt.Catalog)
 			require.NoError(t, err)
 
-			readCatalog, err := artifacts.Read(ctx, repoStore, "test", tt.Catalog.Path)
+			readCatalog, err := artifacts.Read(ctx, repoStore, &drivers.Instance{}, tt.Catalog.Path)
 			require.NoError(t, err)
 			require.Equal(t, readCatalog, tt.Catalog)
 
@@ -210,7 +210,7 @@ func TestReadFailure(t *testing.T) {
 			err := os.WriteFile(path.Join(dir, tt.Path), []byte(tt.Raw), os.ModePerm)
 			require.NoError(t, err)
 
-			_, err = artifacts.Read(ctx, repoStore, "test", tt.Path)
+			_, err = artifacts.Read(ctx, repoStore, &drivers.Instance{}, tt.Path)
 			require.Error(t, err)
 		})
 	}

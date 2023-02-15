@@ -1,11 +1,13 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
+	"text/template"
 	"unicode"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -31,19 +33,25 @@ type Artifact interface {
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, instID, filePath string) (*drivers.CatalogEntry, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, instance *drivers.Instance, filePath string) (*drivers.CatalogEntry, error) {
 	extension := fileutil.FullExt(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
 		return nil, fmt.Errorf("no artifact found for %s", extension)
 	}
 
-	blob, err := repoStore.Get(ctx, instID, filePath)
+	blob, err := repoStore.Get(ctx, instance.ID, filePath)
 	if err != nil {
 		return nil, ErrFileRead
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, filePath, blob)
+	t := template.Must(template.New("source").Parse(blob))
+	bw := new(bytes.Buffer)
+	if err := t.Execute(bw, instance.Env); err != nil {
+		return nil, err
+	}
+
+	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String())
 	if err != nil {
 		return nil, err
 	}

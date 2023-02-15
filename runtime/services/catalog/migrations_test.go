@@ -767,5 +767,5 @@ func getService(t *testing.T) (*catalog.Service, string) {
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
 
-	return catalog.NewService(catalogObject, repo, olap, "test", nil), dir
+	return catalog.NewService(catalogObject, repo, olap, "test", &drivers.Instance{ID: "test"}, nil), dir
 }

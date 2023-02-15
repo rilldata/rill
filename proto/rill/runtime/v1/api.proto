@@ -309,6 +309,10 @@ message Instance {
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
+  // instance specific enviornment variables
+  // stored in format key=value with multiple env variable separated by semi-colon
+  // example : timeout=300;hive_parition=false
+  string env = 7;
 }
 
 // Request message for RuntimeService.ListInstances
@@ -342,6 +346,7 @@ message CreateInstanceRequest {
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
   string repo_dsn = 5;
   bool embed_catalog = 6;
+  string env = 7;
 }
 
 // Response message for RuntimeService.CreateInstance
