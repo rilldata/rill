@@ -2,7 +2,10 @@ package initialize
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/version"
@@ -21,7 +24,25 @@ func InitCmd(ver version.Version) *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				// Clone the given repository to the given directory/repoName
+				url := args[0]
+				// This can be added as current dir as well instead of repoName
+				repoName := url[strings.LastIndex(url, "/")+1:]
+				projectPath = repoName
+
+				_, err := git.PlainClone(repoName, false, &git.CloneOptions{
+					URL:      url,
+					Progress: os.Stdout,
+				})
+				if err != nil {
+					fmt.Println("git clone error:", err)
+					projectPath = url
+				}
+			}
+
 			// List examples and exit
 			if listExamples {
 				fmt.Println("The built-in examples are: ")
@@ -76,7 +97,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 
 			return nil
 		},
-		Args: cobra.ExactArgs(0),
+		// Args: cobra.ExactArgs(0),
 	}
 
 	initCmd.Flags().SortFlags = false
