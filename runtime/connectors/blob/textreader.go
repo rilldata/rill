@@ -14,10 +14,17 @@ import (
 
 var _newLineSeparator = []byte("\n")
 
-func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
+type textExtractOption struct {
+	extractOption *extractOption
+	hasCSVHeader  bool // set if first row is header
+}
+
+// downloadText copies partial data to fw with the assumption that rows are separated by \n
+// the data format doesn't necessarily have to be csv
+func downloadText(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *textExtractOption, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
 
-	rows, err := csvRows(reader, option)
+	rows, err := rows(reader, option)
 	if err != nil {
 		return err
 	}
@@ -26,30 +33,37 @@ func downloadCSV(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject,
 	return err
 }
 
-func csvRows(reader *ObjectReader, option *extractOption) ([]byte, error) {
-	switch option.strategy {
+func rows(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
+	switch option.extractOption.strategy {
 	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
-		return csvRowsHead(reader, option)
+		return rowsHead(reader, option.extractOption)
 	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return csvRowsTail(reader, option)
+		return rowsTail(reader, option)
 	default:
-		panic(fmt.Sprintf("unsupported strategy %s", option.strategy))
+		panic(fmt.Sprintf("unsupported strategy %s", option.extractOption.strategy))
 	}
 }
 
-func csvRowsTail(reader *ObjectReader, option *extractOption) ([]byte, error) {
-	header, err := getHeader(reader)
-	if err != nil {
+func rowsTail(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
+	header := make([]byte, 0)
+	if option.hasCSVHeader {
+		// csv has header, need to read header first
+		headerRow, err := getHeader(reader)
+		if err != nil {
+			return nil, err
+		}
+
+		headerRow = append(headerRow, _newLineSeparator...)
+		header = headerRow
+	}
+
+	bytesToRead := option.extractOption.limitInBytes - uint64(len(header))
+	if _, err := reader.Seek(0-int64(bytesToRead), io.SeekEnd); err != nil {
 		return nil, err
 	}
 
-	remBytes := int64(option.limitInBytes - uint64(len(header)))
-	if _, err := reader.Seek(0-remBytes, io.SeekEnd); err != nil {
-		return nil, err
-	}
-
-	p := make([]byte, remBytes)
-	_, err = reader.Read(p)
+	p := make([]byte, bytesToRead)
+	_, err := reader.Read(p)
 	if err := unsucessfullError(err); err != nil {
 		return nil, err
 	}
@@ -57,11 +71,10 @@ func csvRowsTail(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	lastLineIndex := bytes.Index(p, _newLineSeparator)
 	// remove data before \n since its possibly incomplete
 	// append header at start
-	header = append(header, _newLineSeparator...)
 	return append(header, p[lastLineIndex+1:]...), nil
 }
 
-func csvRowsHead(reader *ObjectReader, option *extractOption) ([]byte, error) {
+func rowsHead(reader *ObjectReader, option *extractOption) ([]byte, error) {
 	if _, err := reader.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
