@@ -3,10 +3,9 @@
     useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { onMount } from "svelte";
-
   import { PreviewTable } from ".";
-  import { runtimeStore } from "../../application-state-stores/application-store";
 
   export let objectName: string;
   export let limit = 150;

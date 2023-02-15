@@ -1,5 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
+  import ExpanderButton from "@rilldata/web-common/components/column-profile/ExpanderButton.svelte";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
@@ -8,9 +10,6 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import ContextButton from "@rilldata/web-local/lib/components/column-profile/ContextButton.svelte";
-  import ExpanderButton from "@rilldata/web-local/lib/components/column-profile/ExpanderButton.svelte";
   import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
   import { currentHref } from "./stores";
 

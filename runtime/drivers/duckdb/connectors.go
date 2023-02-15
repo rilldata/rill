@@ -69,7 +69,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 
 	delimiter := ""
 	if value, ok := source.Properties["csv.delimiter"]; ok {
-		format = value.(string)
+		delimiter = value.(string)
 	}
 
 	hivePartition := 1
@@ -139,6 +139,10 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 func sourceReader(paths []string, csvDelimiter, format string, hivePartition int) (string, error) {
 	if format == "" {
 		format = fileutil.FullExt(paths[0])
+	} else {
+		// users will set format like csv, tsv, parquet
+		// while infering format from file name extensions its better to rely on .csv, .parquet
+		format = fmt.Sprintf(".%s", format)
 	}
 
 	if format == "" {
@@ -147,6 +151,8 @@ func sourceReader(paths []string, csvDelimiter, format string, hivePartition int
 		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
 	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
+	} else if strings.Contains(format, ".json") {
+		return fmt.Sprintf("read_json_objects(['%s'])", strings.Join(paths, "','")), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
