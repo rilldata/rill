@@ -856,6 +856,26 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
 }
 
+func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		TimeStart:       parseTime(t, "2022-01-01T00:00:00Z"),
+		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+		MeasureNames:    []string{"measure_0", "measure_2"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2022-01-01T00:00:00Z"), tr.Data[0].Ts)
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+}
+
 func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
