@@ -11,6 +11,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
+  import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { currentHref } from "./stores";
 
   export let name: string;
