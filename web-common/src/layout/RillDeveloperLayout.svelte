@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import Calendly from "@rilldata/web-common/features/dashboards/Calendly.svelte";
-  import { showCalendlyModal } from "@rilldata/web-common/features/dashboards/dashboard-stores.js";
+  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores.js";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import {
     addReconcilingOverlay,
@@ -99,7 +99,7 @@
     {#if $duplicateSourceName !== null}
       <DuplicateSource />
     {/if}
-    {#if $showCalendlyModal}
+    {#if $calendlyModalStore}
       <Calendly />
     {/if}
 

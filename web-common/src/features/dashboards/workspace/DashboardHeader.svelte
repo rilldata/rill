@@ -5,9 +5,9 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { showCalendlyModal } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -28,7 +28,7 @@
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
 
-    navigationEvent.fireEvent(
+    behaviourEvent.fireNavigationEvent(
       metricViewName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
@@ -42,7 +42,15 @@
   $: isEditableDashboard = $runtimeStore.readOnly === false;
 
   function openCalenderly() {
-    showCalendlyModal.set(true);
+    calendlyModalStore.set(metricViewName);
+    behaviourEvent.firePublishEvent(
+      metricViewName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
+      MetricsEventScreenName.Dashboard,
+      true
+    );
   }
 </script>
 

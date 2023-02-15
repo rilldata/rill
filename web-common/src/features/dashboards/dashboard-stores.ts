@@ -226,4 +226,4 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   ...metricViewReducers,
 };
 
-export const showCalendlyModal: Writable<boolean> = writable(false);
+export const calendlyModalStore: Writable<string> = writable("");

@@ -1,6 +1,12 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/modal/dialog/Dialog.svelte";
-  import { showCalendlyModal } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { onMount, tick } from "svelte";
 
   let calendlyContainer: HTMLElement;
@@ -12,7 +18,8 @@
     // the await tick will make sure `Calendly.initInlineWidget` runs after the portal
     await tick();
     Calendly.initInlineWidget({
-      url: "https://calendly.com/marissa-gorlick/rill-closed-beta-discovery?month=2023-02",
+      // url: "https://calendly.com/marissa-gorlick/rill-closed-beta-discovery?month=2023-02",
+      url: "https://calendly.com/aditya-s-hegde",
       parentElement: calendlyContainer,
       prefill: {},
       utm: {},
@@ -24,9 +31,15 @@
         !e.data?.event?.startsWith("calendly.")
       )
         return;
-      switch (e.data.event) {
-        case "calendly.event_scheduled":
-          break;
+      if (e.data.event === "calendly.event_scheduled") {
+        behaviourEvent.firePublishEvent(
+          $calendlyModalStore,
+          BehaviourEventMedium.Button,
+          MetricsEventSpace.Workspace,
+          MetricsEventScreenName.Dashboard,
+          MetricsEventScreenName.Dashboard,
+          false
+        );
       }
     }
 
@@ -38,7 +51,7 @@
   });
 
   function closeCalendly() {
-    showCalendlyModal.set(false);
+    calendlyModalStore.set("");
   }
 </script>
 

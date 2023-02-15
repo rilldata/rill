@@ -17,7 +17,7 @@
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -77,7 +77,7 @@
         onSuccess: (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          navigationEvent.fireEvent(
+          behaviourEvent.fireNavigationEvent(
             newDashboardName,
             BehaviourEventMedium.Button,
             MetricsEventSpace.RightPanel,
