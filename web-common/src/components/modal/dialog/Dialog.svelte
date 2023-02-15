@@ -9,7 +9,7 @@
 
   export let dark = false;
   export let compact = false; // refers to padding
-  export let size: "sm" | "md" | "lg" = "md";
+  export let size: "sm" | "md" | "lg" | "full" = "md";
   export let yFixed = false;
   export let showCancel = true;
   export let disabled = false;
@@ -21,37 +21,48 @@
     ? "text-white bg-gray-800"
     : "text-gray-800 bg-white";
 
-  $: xDimClasses =
-    size === "sm"
-      ? "w-1/2 md:w-1/3 xl:w-1/4 2xl:w-1/5"
-      : size === "md"
-      ? "w-2/3 md:w-2/3 xl:w-1/3 2xl:w-1/3 max-w-2xl"
-      : size === "lg"
-      ? "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-1/3"
-      : "";
+  let xDimClasses = "";
+  let yDimClasses = "";
+  let width = "";
+  let height = "";
+  $: {
+    switch (size) {
+      case "sm":
+        xDimClasses = "w-1/2 md:w-1/3 xl:w-1/4 2xl:w-1/5";
+        yDimClasses = "h-1/3";
+        break;
 
-  $: yDimClasses =
-    yFixed &&
-    (size === "sm"
-      ? "h-1/3"
-      : size === "md"
-      ? "h-1/2"
-      : size === "lg"
-      ? "h-3/5"
-      : "");
+      case "md":
+        xDimClasses = "w-2/3 md:w-2/3 xl:w-1/3 2xl:w-1/3 max-w-2xl";
+        yDimClasses = "h-1/2";
+        break;
+
+      case "lg":
+        xDimClasses = "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-1/3";
+        yDimClasses = "h-3/5";
+        break;
+
+      case "full":
+        width = "calc(100% - 2*var(--header-height))";
+        height = "calc(100% - 2*var(--header-height))";
+        break;
+    }
+  }
 </script>
 
 <ModalContainer on:cancel>
   <div
+    class="grid place-items-center w-screen h-screen"
     on:click|self={() => {
       dispatch("cancel");
     }}
-    class="grid place-items-center w-screen h-screen"
   >
     <div
       class="{containerClasses} {xDimClasses} {yDimClasses} rounded pointer-events-auto flex flex-col"
-      style:transform={"translateY(-120px)"}
       class:min-w-max={useContentForMinSize}
+      style:height
+      style:transform={yFixed ? "" : "translateY(-120px)"}
+      style:width
     >
       <DialogHeader {compact}>
         <svelte:fragment slot="title"><slot name="title" /></svelte:fragment>
@@ -71,7 +82,9 @@
           {/if}
         </div>
       </DialogHeader>
-      <hr />
+      {#if $$slots.title}
+        <hr />
+      {/if}
       <slot />
       {#if $$slots.body}
         <div
