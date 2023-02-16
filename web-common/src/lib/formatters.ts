@@ -17,7 +17,29 @@ import {
 export function justEnoughPrecision(n: number) {
   if (typeof n !== "number") throw Error("argument must be a number");
   if (n === ~~n) return n.toString();
-  return format(n > 10 ** 4 ? "d" : ".5g")(n);
+  if (n < 10 ** -6) return format(".5g")(n);
+
+  if (n < 10 ** -6) return format(".5g")(n);
+  if (n > 10 ** 4) return format("d")(n);
+
+  const str = n.toString();
+
+  const [left, right] = str.split(".");
+
+  // count the integer side
+  const leftSideDigits = left
+    .split("")
+    .filter((l) => l !== "-") // remove the negative sign
+    .join("").length;
+
+  // calculate the remaining available precision
+  const remainingPrecision = Math.max(0, 5 - leftSideDigits);
+  // take the remaining precision from the floating point side.
+  const remainingFloatingPoints = right.slice(0, remainingPrecision);
+  // format a new string
+  return `${left}${remainingFloatingPoints.length ? "." : ""}${
+    remainingFloatingPoints || ""
+  }`;
 }
 
 const zeroPad = format("02d");
