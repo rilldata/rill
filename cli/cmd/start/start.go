@@ -21,6 +21,8 @@ func StartCmd(ver version.Version) *cobra.Command {
 	var noOpen bool
 	var strict bool
 	var logFormat string
+	var public bool
+	var env string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -50,7 +52,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("reconcile project: %w", err)
 			}
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly)
+			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, public, env)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -71,6 +73,8 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
+	startCmd.Flags().BoolVar(&public, "public", false, "Makes the UI available to the general public")
+	startCmd.Flags().StringVar(&env, "env", "local", "Determines where the runtime is deployed. (options: \"local\", \"cloud\")")
 
 	return startCmd
 }

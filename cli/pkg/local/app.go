@@ -276,7 +276,7 @@ func (a *App) ReconcileSource(sourcePath string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, public bool, env string) error {
 	// Build local info for frontend
 	localConf, err := config()
 	if err != nil {
@@ -293,9 +293,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: localConf.AnalyticsEnabled,
 		Readonly:         readonly,
-		// TODO: find a good way to get this in
-		Env:    "local",
-		Public: true,
+		Env:              env,
+		Public:           public,
 	}
 
 	// Create server logger.
