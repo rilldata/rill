@@ -45,7 +45,11 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instance *drivers.In
 		return nil, ErrFileRead
 	}
 
-	t := template.Must(template.New("source").Parse(blob))
+	t, err := template.New("source").Parse(blob)
+	if err != nil {
+		return nil, err
+	}
+
 	bw := new(bytes.Buffer)
 	if err := t.Execute(bw, instance.Env); err != nil {
 		return nil, err

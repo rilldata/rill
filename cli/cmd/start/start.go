@@ -5,7 +5,6 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/version"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
 )
 
@@ -33,12 +32,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			env, err := drivers.Parse(envVariableString)
-			if err != nil {
-				return err
-			}
-
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, env)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariableString)
 			if err != nil {
 				return err
 			}

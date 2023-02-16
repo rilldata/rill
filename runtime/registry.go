@@ -16,7 +16,7 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 	return r.Registry().FindInstance(ctx, instanceID)
 }
 
-func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
+func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance, envString string) error {
 	// Check OLAP connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	if err != nil {
 		return err
 	}
-	_, ok = repo.RepoStore()
+	repoStore, ok := repo.RepoStore()
 	if !ok {
 		return fmt.Errorf("not a valid repo driver: '%s'", inst.RepoDriver)
 	}
@@ -54,6 +54,17 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	if err != nil {
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
+
+	file, err := repoStore.Get(ctx, inst.ID, "rill.yaml")
+	if err != nil {
+		return err
+	}
+
+	env, err := drivers.NewEnvVariables(ctx, file, envString)
+	if err != nil {
+		return fmt.Errorf("failed to parse env variables %w", err)
+	}
+	inst.Env = env
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)

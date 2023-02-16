@@ -54,7 +54,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 		EmbedCatalog: true,
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(context.Background(), inst, "")
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
@@ -93,7 +93,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 		EmbedCatalog: true,
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(context.Background(), inst, "")
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
