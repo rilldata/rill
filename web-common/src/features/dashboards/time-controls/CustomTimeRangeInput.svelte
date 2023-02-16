@@ -8,7 +8,7 @@
     useRuntimeServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
   } from "../../../runtime-client";
-  import { metricsExplorerStore } from "../dashboard-stores";
+  import { useDashboardStore } from "../dashboard-stores";
 
   export let metricViewName: string;
 
@@ -17,12 +17,13 @@
   let start: string;
   let end: string;
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  const dashboardStore = useDashboardStore(metricViewName);
+
   $: if (!start && !end) {
-    if (metricsExplorer?.selectedTimeRange) {
-      start = getDateFromISOString(metricsExplorer.selectedTimeRange.start);
+    if ($dashboardStore?.selectedTimeRange) {
+      start = getDateFromISOString($dashboardStore.selectedTimeRange.start);
       end = getDateFromISOString(
-        exclusiveToInclusiveEndISOString(metricsExplorer.selectedTimeRange.end)
+        exclusiveToInclusiveEndISOString($dashboardStore.selectedTimeRange.end)
       );
     }
   }
