@@ -33,7 +33,8 @@
     }
   }
 
-  $: disabled = !start || !end;
+  $: error = validateTimeRange(start, end);
+  $: disabled = !start || !end || !!error;
 
   let metricsViewQuery;
   $: if ($runtimeStore?.instanceId) {
@@ -63,6 +64,14 @@
   $: max = $timeRangeQuery.data.timeRangeSummary?.max
     ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
     : undefined;
+
+  function validateTimeRange(start: string, end: string) {
+    if (start > end) {
+      return "Start date must be before end date";
+    } else {
+      return undefined;
+    }
+  }
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC
@@ -104,7 +113,12 @@
       class="cursor-pointer"
     />
   </div>
-  <div class="flex mt-1">
+  <div class="flex mt-1 items-center">
+    {#if error}
+      <div style:font-size="11px" class="text-red-600">
+        {error}
+      </div>
+    {/if}
     <div class="flex-grow" />
     <Button type="primary" submitForm form="custom-time-range-form" {disabled}>
       Apply
