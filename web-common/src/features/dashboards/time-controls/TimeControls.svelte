@@ -154,7 +154,8 @@ We should rename TimeSeriesTimeRange to a better name.
     // Round start time to nearest lower time grain
     const adjustedStart = floorDate(start, timeGrain);
 
-    // Round end time to start of next grain, since end times are exclusive
+    // Round end time to start of next grain
+    // because the runtime uses exlusive end times, whereas user inputs are inclusive
     let adjustedEnd: Date;
     adjustedEnd = addGrains(new Date(end), 1, timeGrain);
     adjustedEnd = floorDate(adjustedEnd, timeGrain);
