@@ -21,7 +21,9 @@
   $: if (!start && !end) {
     if (metricsExplorer?.selectedTimeRange) {
       start = getDateFromISOString(metricsExplorer.selectedTimeRange.start);
-      end = exclusiveToInclusiveEnd(metricsExplorer.selectedTimeRange.end);
+      end = getDateFromISOString(
+        exclusiveToInclusiveEndISOString(metricsExplorer.selectedTimeRange.end)
+      );
     }
   }
 
@@ -60,19 +62,13 @@
     // Currently, we assume UTC
     dispatch("apply", {
       startDate: getISOStringFromDate(start),
-      endDate: inclusiveToExclusiveEnd(getISOStringFromDate(end)),
+      endDate: getISOStringFromDate(end),
     });
   }
 
-  function exclusiveToInclusiveEnd(exclusiveEnd: string): string {
+  function exclusiveToInclusiveEndISOString(exclusiveEnd: string): string {
     const date = new Date(exclusiveEnd);
     date.setDate(date.getDate() - 1);
-    return getDateFromISOString(date.toISOString());
-  }
-
-  function inclusiveToExclusiveEnd(inclusiveEnd: string): string {
-    const date = new Date(inclusiveEnd);
-    date.setDate(date.getDate() + 1);
     return date.toISOString();
   }
 
