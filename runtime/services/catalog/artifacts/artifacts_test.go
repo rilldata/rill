@@ -132,6 +132,7 @@ description: long description for dashboard
 model: Model
 timeseries: time
 smallest_time_grain: day
+default_time_range: P1D
 dimensions:
 - label: Dim0_L
   property: dim0
