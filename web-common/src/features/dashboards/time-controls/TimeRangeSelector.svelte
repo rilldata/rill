@@ -6,10 +6,7 @@
   import { slide } from "svelte/transition";
   import { Menu, MenuItem } from "../../../components/menu";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import { TimeRange, TimeRangeName } from "./time-control-types";
@@ -19,13 +16,11 @@
   } from "./time-range-utils";
 
   export let metricViewName: string;
-  export let activeTimeRange: TimeRange;
   export let allTimeRange: TimeRange;
 
   const dispatch = createEventDispatcher();
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  const dashboardStore = useDashboardStore(metricViewName);
 
   let relativeTimeRangeOptions: TimeRange[];
   let isCustomRangeOpen = false;
@@ -92,11 +87,11 @@
         <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
         <span class="ui-copy-icon"><Calendar size="16px" /></span>
         <span style:transform="translateY(1px)">
-          {activeTimeRange.name ?? "Select a time range"}
+          {$dashboardStore?.selectedTimeRange?.name ?? "Select a time range"}
         </span>
       </div>
       <span style:transform="translateY(1px)">
-        {prettyFormatTimeRange(metricsExplorer?.selectedTimeRange)}
+        {prettyFormatTimeRange($dashboardStore?.selectedTimeRange)}
       </span>
     </div>
     <span class="transition-transform" class:-rotate-180={active}>

@@ -2,14 +2,18 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
+  import { useDashboardStore } from "../dashboard-stores";
   import type { TimeGrain } from "./time-control-types";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
-  export let activeTimeGrain: TimeGrain;
+  export let metricViewName: string;
   export let timeGrainOptions: TimeGrainOption[];
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-grain";
+
+  const dashboardStore = useDashboardStore(metricViewName);
+  $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions.map(({ timeGrain, enabled }) => ({

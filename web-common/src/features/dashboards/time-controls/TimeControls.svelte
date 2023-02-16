@@ -29,10 +29,7 @@ We should rename TimeSeriesTimeRange to a better name.
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { selectTimestampColumnFromSchema } from "../../metrics-views/column-selectors";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
     addGrains,
     checkValidTimeGrain,
@@ -47,29 +44,17 @@ We should rename TimeSeriesTimeRange to a better name.
 
   export let metricViewName: string;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  const dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
-  let activeTimeRange: TimeRange;
-  let activeTimeGrain: TimeGrain;
 
-  $: activeTimeRange = {
-    name: metricsExplorer?.selectedTimeRange?.name,
-    start: new Date(metricsExplorer?.selectedTimeRange?.start),
-    end: new Date(metricsExplorer?.selectedTimeRange?.end),
-  };
-  $: activeTimeGrain = metricsExplorer?.selectedTimeRange?.interval;
-
-  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
-    metricViewName,
-    {
-      query: {
-        enabled: !!$runtimeStore.instanceId,
-      },
-    }
-  );
+  let metricsViewQuery;
+  $: if ($runtimeStore.instanceId) {
+    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+      $runtimeStore.instanceId,
+      metricViewName
+    );
+  }
 
   // once we have the allTimeRange, set the default time range and time grain
   $: if (allTimeRange) {
@@ -132,8 +117,8 @@ We should rename TimeSeriesTimeRange to a better name.
   // activeTimeGrain is valid whenever the baseTimeRange changes
   let timeGrainOptions: TimeGrainOption[];
   $: timeGrainOptions = getTimeGrainOptions(
-    activeTimeRange?.start,
-    activeTimeRange?.end
+    new Date($dashboardStore?.selectedTimeRange?.start),
+    new Date($dashboardStore?.selectedTimeRange?.end)
   );
 
   function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
@@ -142,7 +127,10 @@ We should rename TimeSeriesTimeRange to a better name.
       start: new Date(start),
       end: new Date(end),
     };
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, activeTimeGrain);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      $dashboardStore.selectedTimeRange.interval
+    );
   }
 
   function onSelectTimeGrain(timeGrain: TimeGrain) {
@@ -213,15 +201,14 @@ We should rename TimeSeriesTimeRange to a better name.
   {:else}
     <TimeRangeSelector
       {metricViewName}
-      {activeTimeRange}
       {allTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
+      {metricViewName}
       {timeGrainOptions}
-      {activeTimeGrain}
     />
   {/if}
 </div>
