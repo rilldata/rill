@@ -78,9 +78,12 @@ We should rename TimeSeriesTimeRange to a better name.
 
   // once we have the allTimeRange, set the default time range and time grain
   $: if (allTimeRange) {
-    const timeRange = getDefaultTimeRange(allTimeRange);
-    const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
-    makeTimeSeriesTimeRangeAndUpdateAppState(timeRange, timeGrain);
+    baseTimeRange = getDefaultTimeRange(allTimeRange);
+    const timeGrain = getDefaultTimeGrain(
+      baseTimeRange.start,
+      baseTimeRange.end
+    );
+    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
   }
 
   let timestampColumns: Array<string>;
