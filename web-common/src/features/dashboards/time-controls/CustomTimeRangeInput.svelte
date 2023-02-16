@@ -88,6 +88,7 @@
       name="start-date"
       {min}
       {max}
+      class="cursor-pointer"
     />
   </div>
   <div class="flex flex-col gap-y-1">
@@ -100,6 +101,7 @@
       name="end-date"
       {min}
       {max}
+      class="cursor-pointer"
     />
   </div>
   <div class="flex mt-1">
