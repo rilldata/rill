@@ -19,7 +19,7 @@ export function justEnoughPrecision(n: number) {
   if (n === ~~n) return n.toString();
   if (n < 10 ** -6) return format(".5g")(n);
 
-  if (n < 10 ** -6) return format(".5g")(n);
+  if (n < 10 ** -5) return format(".5g")(n);
   if (n > 10 ** 4) return format("d")(n);
 
   const str = n.toString();
