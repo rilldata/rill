@@ -23,7 +23,7 @@ func TestDownloadCSV(t *testing.T) {
 		ctx    context.Context
 		bucket *blob.Bucket
 		obj    *blob.ListObject
-		option *extractOption
+		option *textExtractOption
 		fw     *os.File
 	}
 	tests := []struct {
@@ -38,7 +38,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size - 5)},
+				option: &textExtractOption{extractOption: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size - 5)}, hasCSVHeader: true},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: testData[:len(testData)-1],
@@ -49,7 +49,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limitInBytes: uint64(object.Size - 5)},
+				option: &textExtractOption{extractOption: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limitInBytes: uint64(object.Size - 5)}, hasCSVHeader: true},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: resultTail,
@@ -57,7 +57,7 @@ func TestDownloadCSV(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := downloadCSV(tt.args.ctx, tt.args.bucket, tt.args.obj, tt.args.option, tt.args.fw); (err != nil) != tt.wantErr {
+			if err := downloadText(tt.args.ctx, tt.args.bucket, tt.args.obj, tt.args.option, tt.args.fw); (err != nil) != tt.wantErr {
 				t.Errorf("DownloadCSV() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -90,7 +90,7 @@ func TestDownloadCSVSingleLineHead(t *testing.T) {
 
 		extractOption := &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size)}
 		fw := getTempFile(t, "temp.csv")
-		err = downloadCSV(ctx, bucket, object, extractOption, fw)
+		err = downloadText(ctx, bucket, object, &textExtractOption{extractOption: extractOption, hasCSVHeader: true}, fw)
 		require.NoError(t, err)
 		fw.Close()
 

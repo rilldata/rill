@@ -3,7 +3,7 @@ import {
   CellConfigInput,
   CellConfigSelector,
   ColumnConfig,
-} from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
+} from "../../components/table-editable/ColumnConfig";
 import { ValidationState } from "./errors";
 import type { MeasureEntity } from "./metrics-internal-store";
 
