@@ -2,37 +2,50 @@
 package duration
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 )
 
+// Duration represents an ISO8601 duration with Rill-specific extensions.
+// See ParseISO8601 for details.
 type Duration struct {
-	Y int
-	M int
-	W int
-	D int
+	// If Inf is true, the other components should be ignored
+	Inf bool
+	// Date component
+	Year  int
+	Month int
+	Week  int
+	Day   int
 	// Time Component
-	TH int
-	TM int
-	TS int
+	Hour   int
+	Minute int
+	Second int
 }
 
-var pattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
+// Regexes used by ParseISO8601
+var (
+	infPattern      = regexp.MustCompile("^(?i)inf$")
+	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
+)
 
-// ParseISO8601 parses an ISO8601 duration string.
+// ParseISO8601 parses an ISO8601 duration as well as some Rill-specific extensions.
+// (Section 3.7 of the standard supposedly allows extensions that do not interfere with the standard.)
+// The only current extension is "inf", for representing an unbounded duration of time.
 func ParseISO8601(from string) (Duration, error) {
-	var match []string
-	var d Duration
-
-	if pattern.MatchString(from) {
-		match = pattern.FindStringSubmatch(from)
-	} else {
-		return d, errors.New("could not parse duration string")
+	// Try parsing for "inf"
+	if infPattern.MatchString(from) {
+		return Duration{Inf: true}, nil
 	}
 
-	for i, name := range pattern.SubexpNames() {
+	// Parse as a regular ISO8601 duration
+	if !durationPattern.MatchString(from) {
+		return Duration{}, fmt.Errorf("string %q is not a valid ISO 8601 duration", from)
+	}
+
+	var d Duration
+	match := durationPattern.FindStringSubmatch(from)
+	for i, name := range durationPattern.SubexpNames() {
 		part := match[i]
 		if i == 0 || name == "" || part == "" {
 			continue
@@ -40,25 +53,25 @@ func ParseISO8601(from string) (Duration, error) {
 
 		val, err := strconv.Atoi(part)
 		if err != nil {
-			return d, err
+			return Duration{}, err
 		}
 		switch name {
 		case "year":
-			d.Y = val
+			d.Year = val
 		case "month":
-			d.M = val
+			d.Month = val
 		case "week":
-			d.W = val
+			d.Week = val
 		case "day":
-			d.D = val
+			d.Day = val
 		case "hour":
-			d.TH = val
+			d.Hour = val
 		case "minute":
-			d.TM = val
+			d.Minute = val
 		case "second":
-			d.TS = val
+			d.Second = val
 		default:
-			return d, fmt.Errorf("unknown field %s", name)
+			return d, fmt.Errorf("unexpected field %q in duration", name)
 		}
 	}
 
