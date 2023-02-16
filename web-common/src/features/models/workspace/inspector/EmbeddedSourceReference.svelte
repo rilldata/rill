@@ -56,8 +56,6 @@
     {#if entry.source}
       {entry.source.connector}
     {/if}
-    <!-- </div>
-                  </div> -->
   </svelte:fragment>
 
   <svelte:fragment slot="tooltip-description">

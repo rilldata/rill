@@ -17,6 +17,7 @@
   import { slide } from "svelte/transition";
   import { getTableReferences } from "../../utils/get-table-references";
   import References from "./References.svelte";
+  import { combineEntryWithReference } from "./utils";
 
   export let modelName: string;
 
@@ -56,15 +57,7 @@
         ...($sources?.data?.entries || []),
         ...($models?.data?.entries || []),
       ]
-        ?.filter((entry) => {
-          // remove entry w/o a matching reference
-          return references.some((ref) => {
-            return (
-              ref.reference === entry.name ||
-              entry?.children?.includes(modelName.toLowerCase())
-            );
-          });
-        })
+        ?.filter(combineEntryWithReference(modelName, references))
         ?.map((entry) => {
           // get the reference that matches this entry
           return [
