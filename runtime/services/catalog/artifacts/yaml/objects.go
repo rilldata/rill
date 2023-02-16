@@ -8,9 +8,9 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rilldata/rill/cli/pkg/duration"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
