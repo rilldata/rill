@@ -592,7 +592,7 @@ func (m *MetricsView) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for DefaultTimeGrain
+	// no validation rules for SmallestTimeGrain
 
 	// no validation rules for DefaultTimeRange
 
