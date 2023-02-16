@@ -14,18 +14,17 @@ We should rename TimeSeriesTimeRange to a better name.
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    useModelAllTimeRange,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-common/features/dashboards/selectors";
+  import type {
     TimeGrain,
     TimeRange,
     TimeRangeName,
     TimeSeriesTimeRange,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTimeRangeSummary,
-    V1GetTimeRangeSummaryResponse,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { selectTimestampColumnFromSchema } from "../../metrics-views/column-selectors";
@@ -56,18 +55,33 @@ We should rename TimeSeriesTimeRange to a better name.
     );
   }
 
+  $: hasTimeSeriesQuery = useModelHasTimeSeries(
+    $runtimeStore.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $hasTimeSeriesQuery?.data;
+
+  let allTimeRangeQuery: UseQueryStoreResult;
+  $: if (
+    hasTimeSeries &&
+    !!$runtimeStore?.instanceId &&
+    !!$metricsViewQuery?.data?.entry?.metricsView?.model &&
+    !!$metricsViewQuery?.data?.entry?.metricsView?.timeDimension
+  ) {
+    allTimeRangeQuery = useModelAllTimeRange(
+      $runtimeStore.instanceId,
+      $metricsViewQuery.data.entry.metricsView.model,
+      $metricsViewQuery.data.entry.metricsView.timeDimension
+    );
+  }
+  $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
+
   // once we have the allTimeRange, set the default time range and time grain
   $: if (allTimeRange) {
     const timeRange = getDefaultTimeRange(allTimeRange);
     const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
     makeTimeSeriesTimeRangeAndUpdateAppState(timeRange, timeGrain);
   }
-
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries?.data;
 
   let timestampColumns: Array<string>;
 
@@ -87,31 +101,6 @@ We should rename TimeSeriesTimeRange to a better name.
   }
 
   $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";
-
-  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
-  $: if (
-    hasTimeSeries &&
-    !!$runtimeStore?.instanceId &&
-    !!$metricsViewQuery?.data?.entry?.metricsView?.model &&
-    !!$metricsViewQuery?.data?.entry?.metricsView?.timeDimension
-  ) {
-    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
-      $runtimeStore.instanceId,
-      $metricsViewQuery.data.entry.metricsView.model,
-      {
-        columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
-      }
-    );
-  }
-
-  let allTimeRange: TimeRange;
-  $: if ($timeRangeQuery?.data?.timeRangeSummary) {
-    allTimeRange = {
-      name: TimeRangeName.AllTime,
-      start: new Date($timeRangeQuery.data.timeRangeSummary.min),
-      end: new Date($timeRangeQuery.data.timeRangeSummary.max),
-    };
-  }
 
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes
