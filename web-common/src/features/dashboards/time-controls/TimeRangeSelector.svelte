@@ -68,7 +68,7 @@
     isCalendarRecentlyClosed = true;
     setTimeout(() => {
       isCalendarRecentlyClosed = false;
-    }, 500);
+    }, 300);
   }
 </script>
 
