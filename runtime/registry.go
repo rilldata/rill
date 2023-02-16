@@ -55,10 +55,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance, en
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
 
-	file, err := repoStore.Get(ctx, inst.ID, "rill.yaml")
-	if err != nil {
-		return err
-	}
+	file, _ := repoStore.Get(ctx, inst.ID, "rill.yaml")
 
 	env, err := drivers.NewEnvVariables(ctx, file, envString)
 	if err != nil {

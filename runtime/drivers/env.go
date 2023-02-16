@@ -44,7 +44,7 @@ func (e *EnviornmentVariables) Scan(val interface{}) error {
 func (e *EnviornmentVariables) String() string {
 	val, err := json.Marshal(e)
 	if err != nil {
-		// do nothing
+		_ = err
 	}
 
 	return string(val)
