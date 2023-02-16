@@ -1,8 +1,8 @@
 <!--
 @component
 Constructs a TimeSeriesTimeRange object – to be used as the filter in MetricsExplorer – by taking as input:
-- the time range name (a semantic understanding of the time range, like "Last 6 Hours" or "Last 30 days")
-- the time grain (e.g., "hour" or "day")
+- a base time range
+- a time grain (e.g., "hour" or "day")
 - the dataset's full time range (so its end time can be used in relative time ranges)
 
 We should rename TimeSeriesTimeRange to a better name.
@@ -50,16 +50,16 @@ We should rename TimeSeriesTimeRange to a better name.
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  // user selections, used to construct TimeSeriesTimeRange
-  let selectedTimeRange: TimeRange;
-  let selectedTimeGrain: TimeGrain;
+  let baseTimeRange: TimeRange;
+  let activeTimeRange: TimeRange;
+  let activeTimeGrain: TimeGrain;
 
-  $: selectedTimeRange = {
+  $: activeTimeRange = {
     name: metricsExplorer?.selectedTimeRange?.name,
     start: new Date(metricsExplorer?.selectedTimeRange?.start),
     end: new Date(metricsExplorer?.selectedTimeRange?.end),
   };
-  $: selectedTimeGrain = metricsExplorer?.selectedTimeRange?.interval;
+  $: activeTimeGrain = metricsExplorer?.selectedTimeRange?.interval;
 
   $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
     $runtimeStore.instanceId,
@@ -74,12 +74,8 @@ We should rename TimeSeriesTimeRange to a better name.
   // once we have the allTimeRange, set the default time range and time grain
   $: if (allTimeRange) {
     const timeRange = getDefaultTimeRange(allTimeRange);
-    selectedTimeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
-    setSelectedTimeRange(
-      timeRange.name,
-      timeRange.start.toISOString(),
-      timeRange.end.toISOString()
-    );
+    const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+    makeTimeSeriesTimeRangeAndUpdateAppState(timeRange, timeGrain);
   }
 
   $: metricTimeSeries = useModelHasTimeSeries(
@@ -136,65 +132,54 @@ We should rename TimeSeriesTimeRange to a better name.
   // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
   let selectableTimeGrains: TimeGrainOption[];
   $: selectableTimeGrains = getSelectableTimeGrains(
-    selectedTimeRange?.start,
-    selectedTimeRange?.end
+    activeTimeRange?.start,
+    activeTimeRange?.end
   );
 
-  function setSelectedTimeRange(
-    name: TimeRangeName,
-    start: string,
-    end: string
-  ) {
-    selectedTimeRange = {
-      name: name,
+  function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
+    baseTimeRange = {
+      name,
       start: new Date(start),
       end: new Date(end),
     };
-    makeTimeSeriesTimeRangeAndUpdateAppState(
-      name,
-      selectedTimeRange.start,
-      selectedTimeRange.end
-    );
+    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, activeTimeGrain);
   }
 
-  function setSelectedTimeGrain(timeGrain: TimeGrain) {
-    selectedTimeGrain = timeGrain;
-    makeTimeSeriesTimeRangeAndUpdateAppState(
-      selectedTimeRange.name,
-      selectedTimeRange.start,
-      selectedTimeRange.end
-    );
+  function onSelectTimeGrain(timeGrain: TimeGrain) {
+    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
-    name: TimeRangeName,
-    start: Date,
-    end: Date
+    timeRange: TimeRange,
+    timeGrain: TimeGrain
   ) {
+    const { name, start, end } = timeRange;
+
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
     selectableTimeGrains = getSelectableTimeGrains(start, end);
     const isValidTimeGrain = checkValidTimeGrain(
-      selectedTimeGrain,
+      timeGrain,
       selectableTimeGrains
     );
     if (!isValidTimeGrain) {
-      selectedTimeGrain = getDefaultTimeGrain(start, end);
+      timeGrain = getDefaultTimeGrain(start, end);
     }
 
     // Round start time to nearest lower time grain
-    const adjustedStart = floorDate(start, selectedTimeGrain);
+    const adjustedStart = floorDate(start, timeGrain);
 
     // Round end time to start of next grain, since end times are exclusive
-    let adjustedEnd = addGrains(new Date(end), 1, selectedTimeGrain);
-    adjustedEnd = floorDate(adjustedEnd, selectedTimeGrain);
+    let adjustedEnd: Date;
+    adjustedEnd = addGrains(new Date(end), 1, timeGrain);
+    adjustedEnd = floorDate(adjustedEnd, timeGrain);
 
     // the adjusted time range
     const newTimeRange: TimeSeriesTimeRange = {
       name: name,
       start: adjustedStart.toISOString(),
       end: adjustedEnd.toISOString(),
-      interval: selectedTimeGrain,
+      interval: timeGrain,
     };
 
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
@@ -232,14 +217,14 @@ We should rename TimeSeriesTimeRange to a better name.
     <TimeRangeSelector
       {metricViewName}
       {allTimeRange}
-      {selectedTimeRange}
+      selectedTimeRange={activeTimeRange}
       on:select-time-range={(e) =>
-        setSelectedTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+        onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
     <TimeGrainSelector
-      on:select-time-grain={(e) => setSelectedTimeGrain(e.detail.timeGrain)}
+      on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
       {selectableTimeGrains}
-      {selectedTimeGrain}
+      selectedTimeGrain={activeTimeGrain}
     />
   {/if}
 </div>
