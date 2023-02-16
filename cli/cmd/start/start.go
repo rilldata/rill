@@ -72,7 +72,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
-	startCmd.Flags().StringVar(&envVariableString, "env", "", "setting any env variables")
+	startCmd.Flags().StringVarP(&envVariableString, "env", "e", "", "setting any env variables")
 
 	return startCmd
 }
