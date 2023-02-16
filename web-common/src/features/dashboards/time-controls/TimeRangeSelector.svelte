@@ -5,6 +5,7 @@
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { Menu, MenuItem } from "../../../components/menu";
+  import Divider from "../../../components/menu/core/Divider.svelte";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
@@ -119,7 +120,7 @@
     >
       {TimeRangeName.AllTime}
     </MenuItem>
-    <hr class="my-2" />
+    <Divider />
     <CustomTimeRangeMenuItem
       open={isCustomRangeOpen}
       on:select={() => (isCustomRangeOpen = !isCustomRangeOpen)}
