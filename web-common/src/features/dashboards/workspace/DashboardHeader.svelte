@@ -41,7 +41,7 @@
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $runtimeStore.readOnly === false;
 
-  function openCalenderly() {
+  function openCalendly() {
     calendlyModalStore.set(metricViewName);
     behaviourEvent.firePublishEvent(
       metricViewName,
@@ -72,9 +72,9 @@
         {displayName || metricViewName}
       </div>
     </h1>
-    <PanelCTA>
-      <!-- top right CTAs -->
-      {#if isEditableDashboard}
+    <!-- top right CTAs -->
+    {#if isEditableDashboard}
+      <PanelCTA side="right">
         <Tooltip distance={8}>
           <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
             Edit Metrics <MetricsIcon size="16px" />
@@ -83,14 +83,14 @@
             Edit this dashboard's metrics & settings
           </TooltipContent>
         </Tooltip>
-      {/if}
-      <Tooltip distance={8}>
-        <Button on:click={openCalenderly} type="primary">Publish</Button>
-        <TooltipContent slot="tooltip-content">
-          Schedule a meeting to talk about publishing this dashboard.
-        </TooltipContent>
-      </Tooltip>
-    </PanelCTA>
+        <Tooltip distance={8}>
+          <Button on:click={openCalendly} type="primary">Publish</Button>
+          <TooltipContent slot="tooltip-content">
+            Schedule a meeting to talk about publishing this dashboard.
+          </TooltipContent>
+        </Tooltip>
+      </PanelCTA>
+    {/if}
   </div>
   <!-- bottom row -->
   <div class="px-2 pt-1">
