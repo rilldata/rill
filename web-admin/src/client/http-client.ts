@@ -1,6 +1,8 @@
 import type { AxiosRequestConfig } from "axios";
 import Axios from "axios";
-import { ADMIN_URL } from "../lib/connection";
+
+const ADMIN_URL =
+  import.meta.env.VITE_RILL_ADMIN_URL || "http://localhost:8080";
 
 export const AXIOS_INSTANCE = Axios.create({
   baseURL: ADMIN_URL,
