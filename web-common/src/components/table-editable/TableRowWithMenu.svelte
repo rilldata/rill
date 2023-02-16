@@ -10,6 +10,7 @@
   import TableHeader from "./TableHeader.svelte";
 
   export let index: number;
+
   const dispatch = createEventDispatcher();
 
   let rowHovered = false;

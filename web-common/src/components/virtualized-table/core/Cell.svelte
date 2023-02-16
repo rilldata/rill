@@ -17,7 +17,7 @@
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataType } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
-  import BarAndLabel from "../../viz/BarAndLabel.svelte";
+  import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
   export let row;

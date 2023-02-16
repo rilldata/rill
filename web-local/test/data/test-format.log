@@ -1,0 +1,9 @@
+id timestamp publisher domain bid_price
+4000 2022-03-05T14:49:50.459Z  msn.com 4.09
+9000 2022-02-09T11:58:12.475Z Yahoo sports.yahoo.com 1.81
+10000 2022-01-23T16:45:21.569Z Google news.google.com 3.09
+11000 2022-01-18T02:06:26.025Z Google news.google.com 4.28
+12000 2022-03-30T12:36:20.221Z Facebook facebook.com 1.96
+13000 2022-01-23T21:39:19.929Z Google news.google.com 3.9
+14000 2022-03-07T13:04:41.958Z Microsoft msn.com 5.47
+15000 2022-02-28T04:33:32.944Z Yahoo news.yahoo.com 4.37
