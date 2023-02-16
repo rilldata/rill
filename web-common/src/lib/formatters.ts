@@ -15,6 +15,8 @@ import {
  * want have "enough resolution to distinguish numbers when they should be distinguishable."
  */
 export function justEnoughPrecision(n: number) {
+  if (typeof n !== "number") throw Error("argument must be a number");
+  if (n === ~~n) return n.toString();
   return format(n > 10 ** 4 ? "d" : ".5g")(n);
 }
 
