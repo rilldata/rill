@@ -105,7 +105,7 @@ We should rename TimeSeriesTimeRange to a better name.
   }
 
   let allTimeRange: TimeRange;
-  $: if (hasTimeSeries && $timeRangeQuery?.data?.timeRangeSummary) {
+  $: if ($timeRangeQuery?.data?.timeRangeSummary) {
     allTimeRange = {
       name: TimeRangeName.AllTime,
       start: new Date($timeRangeQuery.data.timeRangeSummary.min),
