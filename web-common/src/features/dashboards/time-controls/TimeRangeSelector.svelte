@@ -103,14 +103,16 @@
     on:escape={toggleFloatingElement}
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
   >
-    {#each relativeTimeRangeOptions as relativeTimeRange}
-      <MenuItem
-        on:select={() =>
-          onSelectRelativeTimeRange(relativeTimeRange, toggleFloatingElement)}
-      >
-        {relativeTimeRange.name}
-      </MenuItem>
-    {/each}
+    {#if relativeTimeRangeOptions}
+      {#each relativeTimeRangeOptions as relativeTimeRange}
+        <MenuItem
+          on:select={() =>
+            onSelectRelativeTimeRange(relativeTimeRange, toggleFloatingElement)}
+        >
+          {relativeTimeRange.name}
+        </MenuItem>
+      {/each}
+    {/if}
     <MenuItem
       on:select={() =>
         onSelectRelativeTimeRange(allTimeRange, toggleFloatingElement)}
