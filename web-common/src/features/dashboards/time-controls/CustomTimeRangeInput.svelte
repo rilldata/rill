@@ -20,8 +20,8 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: if (!start && !end) {
     if (metricsExplorer?.selectedTimeRange) {
-      start = stripUTCTimezone(metricsExplorer.selectedTimeRange.start);
-      end = stripUTCTimezone(metricsExplorer.selectedTimeRange.end);
+      start = getDateFromISOString(metricsExplorer.selectedTimeRange.start);
+      end = exclusiveToInclusiveEnd(metricsExplorer.selectedTimeRange.end);
     }
   }
 
@@ -49,28 +49,39 @@
     );
   }
 
-  // <input type=datetime-local/> does not accept time zone information
   $: min = $timeRangeQuery.data.timeRangeSummary?.min
-    ? stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.min)
+    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.min)
     : undefined;
   $: max = $timeRangeQuery.data.timeRangeSummary?.max
-    ? stripUTCTimezone($timeRangeQuery.data.timeRangeSummary.max)
+    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
     : undefined;
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC
     dispatch("apply", {
-      startDate: addUTCTimezone(start),
-      endDate: addUTCTimezone(end),
+      startDate: getISOStringFromDate(start),
+      endDate: inclusiveToExclusiveEnd(getISOStringFromDate(end)),
     });
   }
 
-  function stripUTCTimezone(date: string) {
-    return date.replace(/Z$/, "");
+  function exclusiveToInclusiveEnd(exclusiveEnd: string): string {
+    const date = new Date(exclusiveEnd);
+    date.setDate(date.getDate() - 1);
+    return getDateFromISOString(date.toISOString());
   }
 
-  function addUTCTimezone(date: string) {
-    return date + "Z";
+  function inclusiveToExclusiveEnd(inclusiveEnd: string): string {
+    const date = new Date(inclusiveEnd);
+    date.setDate(date.getDate() + 1);
+    return date.toISOString();
+  }
+
+  function getDateFromISOString(isoString: string): string {
+    return isoString.split("T")[0];
+  }
+
+  function getISOStringFromDate(date: string): string {
+    return date + "T00:00:00.000Z";
   }
 </script>
 
@@ -84,7 +95,7 @@
     <input
       bind:value={start}
       on:blur={() => dispatch("close-calendar")}
-      type="datetime-local"
+      type="date"
       id="start-date"
       name="start-date"
       {min}
@@ -96,7 +107,7 @@
     <input
       bind:value={end}
       on:blur={() => dispatch("close-calendar")}
-      type="datetime-local"
+      type="date"
       id="end-date"
       name="end-date"
       {min}
