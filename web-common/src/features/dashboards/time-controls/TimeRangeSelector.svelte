@@ -14,12 +14,12 @@
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import { TimeRange, TimeRangeName } from "./time-control-types";
   import {
-    getSelectableRelativeTimeRanges,
+    getRelativeTimeRangeOptions,
     prettyFormatTimeRange,
   } from "./time-range-utils";
 
   export let metricViewName: string;
-  export let selectedTimeRange: TimeRange;
+  export let activeTimeRange: TimeRange;
   export let allTimeRange: TimeRange;
 
   const dispatch = createEventDispatcher();
@@ -27,13 +27,12 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let selectableRelativeTimeRanges: TimeRange[];
+  let relativeTimeRangeOptions: TimeRange[];
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
   $: if (allTimeRange) {
-    selectableRelativeTimeRanges =
-      getSelectableRelativeTimeRanges(allTimeRange);
+    relativeTimeRangeOptions = getRelativeTimeRangeOptions(allTimeRange);
   }
 
   function onSelectRelativeTimeRange(
@@ -93,7 +92,7 @@
         <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
         <span class="ui-copy-icon"><Calendar size="16px" /></span>
         <span style:transform="translateY(1px)">
-          {selectedTimeRange.name ?? "Select a time range"}
+          {activeTimeRange.name ?? "Select a time range"}
         </span>
       </div>
       <span style:transform="translateY(1px)">
@@ -109,7 +108,7 @@
     on:escape={toggleFloatingElement}
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
   >
-    {#each selectableRelativeTimeRanges as relativeTimeRange}
+    {#each relativeTimeRangeOptions as relativeTimeRange}
       <MenuItem
         on:select={() =>
           onSelectRelativeTimeRange(relativeTimeRange, toggleFloatingElement)}

@@ -1,12 +1,9 @@
 import { TimeGrain } from "./time-control-types";
-import {
-  getDefaultTimeGrain,
-  getSelectableTimeGrains,
-} from "./time-range-utils";
+import { getDefaultTimeGrain, getTimeGrainOptions } from "./time-range-utils";
 
-describe("getSelectableTimeGrains", () => {
+describe("getTimeGrainOptions", () => {
   it("should return an array of available time grains", () => {
-    const timeGrains = getSelectableTimeGrains(
+    const timeGrains = getTimeGrainOptions(
       new Date("2020-03-01"),
       new Date("2020-03-31")
     );

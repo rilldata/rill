@@ -39,7 +39,7 @@ We should rename TimeSeriesTimeRange to a better name.
     floorDate,
     getDefaultTimeGrain,
     getDefaultTimeRange,
-    getSelectableTimeGrains,
+    getTimeGrainOptions,
     TimeGrainOption,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
@@ -128,10 +128,10 @@ We should rename TimeSeriesTimeRange to a better name.
     };
   }
 
-  // we get the selectableTimeGrains so that we can assess whether or not the
-  // existing selectedTimeGrain is valid whenever the selectedTimeRangeName changes
-  let selectableTimeGrains: TimeGrainOption[];
-  $: selectableTimeGrains = getSelectableTimeGrains(
+  // we get the timeGrainOptions so that we can assess whether or not the
+  // activeTimeGrain is valid whenever the baseTimeRange changes
+  let timeGrainOptions: TimeGrainOption[];
+  $: timeGrainOptions = getTimeGrainOptions(
     activeTimeRange?.start,
     activeTimeRange?.end
   );
@@ -157,11 +157,8 @@ We should rename TimeSeriesTimeRange to a better name.
 
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
-    selectableTimeGrains = getSelectableTimeGrains(start, end);
-    const isValidTimeGrain = checkValidTimeGrain(
-      timeGrain,
-      selectableTimeGrains
-    );
+    timeGrainOptions = getTimeGrainOptions(start, end);
+    const isValidTimeGrain = checkValidTimeGrain(timeGrain, timeGrainOptions);
     if (!isValidTimeGrain) {
       timeGrain = getDefaultTimeGrain(start, end);
     }
@@ -216,15 +213,15 @@ We should rename TimeSeriesTimeRange to a better name.
   {:else}
     <TimeRangeSelector
       {metricViewName}
+      {activeTimeRange}
       {allTimeRange}
-      selectedTimeRange={activeTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
-      {selectableTimeGrains}
-      selectedTimeGrain={activeTimeGrain}
+      {timeGrainOptions}
+      {activeTimeGrain}
     />
   {/if}
 </div>

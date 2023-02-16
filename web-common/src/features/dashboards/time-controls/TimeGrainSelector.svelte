@@ -5,14 +5,14 @@
   import type { TimeGrain } from "./time-control-types";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
-  export let selectedTimeGrain: TimeGrain;
-  export let selectableTimeGrains: TimeGrainOption[];
+  export let activeTimeGrain: TimeGrain;
+  export let timeGrainOptions: TimeGrainOption[];
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-grain";
 
-  $: options = selectableTimeGrains
-    ? selectableTimeGrains.map(({ timeGrain, enabled }) => ({
+  $: timeGrains = timeGrainOptions
+    ? timeGrainOptions.map(({ timeGrain, enabled }) => ({
         main: prettyTimeGrain(timeGrain),
         disabled: !enabled,
         key: timeGrain,
@@ -25,12 +25,12 @@
   };
 </script>
 
-{#if selectedTimeGrain && selectableTimeGrains}
+{#if activeTimeGrain && timeGrainOptions}
   <WithSelectMenu
-    {options}
+    options={timeGrains}
     selection={{
-      main: prettyTimeGrain(selectedTimeGrain),
-      key: selectedTimeGrain,
+      main: prettyTimeGrain(activeTimeGrain),
+      key: activeTimeGrain,
     }}
     on:select={(event) => onTimeGrainSelect(event.detail.key)}
     let:toggleMenu
@@ -41,7 +41,7 @@
       on:click={toggleMenu}
     >
       <span class="font-bold"
-        >by {prettyTimeGrain(selectedTimeGrain)} increments</span
+        >by {prettyTimeGrain(activeTimeGrain)} increments</span
       >
       <span class="transition-transform" class:-rotate-180={active}>
         <CaretDownIcon size="16px" />

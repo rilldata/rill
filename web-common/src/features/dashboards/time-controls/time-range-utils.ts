@@ -7,11 +7,11 @@ import {
   TimeSeriesTimeRange,
 } from "./time-control-types";
 
-export function getSelectableRelativeTimeRanges(
+export function getRelativeTimeRangeOptions(
   allTimeRange: TimeRange
 ): TimeRange[] {
   const allTimeRangeDurationMs = getAllTimeRangeDurationMs(allTimeRange);
-  const selectableTimeRanges: TimeRange[] = [];
+  const timeRanges: TimeRange[] = [];
 
   for (const timeRangeName of lastXTimeRangeNames) {
     const timeRangeDurationMs = getLastXTimeRangeDurationMs(timeRangeName);
@@ -20,11 +20,11 @@ export function getSelectableRelativeTimeRanges(
     const showTimeRange = timeRangeDurationMs <= allTimeRangeDurationMs;
     if (showTimeRange) {
       const timeRange = makeRelativeTimeRange(timeRangeName, allTimeRange.end);
-      selectableTimeRanges.push(timeRange);
+      timeRanges.push(timeRange);
     }
   }
 
-  return selectableTimeRanges;
+  return timeRanges;
 }
 
 export function getDefaultTimeRange(allTimeRange: TimeRange): TimeRange {
@@ -37,10 +37,7 @@ export interface TimeGrainOption {
   enabled: boolean;
 }
 
-export function getSelectableTimeGrains(
-  start: Date,
-  end: Date
-): TimeGrainOption[] {
+export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   const timeRangeDurationMs = end.getTime() - start.getTime();
 
   const timeGrains: TimeGrainOption[] = [];
