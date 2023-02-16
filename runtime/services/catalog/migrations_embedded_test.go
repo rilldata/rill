@@ -375,7 +375,7 @@ func addEmbeddedNewModel(t *testing.T, s *catalog.Service) {
 }
 
 func copyService(t *testing.T, s *catalog.Service) (*catalog.Service, *catalog.ReconcileResult) {
-	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.InstID, s.Instance, nil)
+	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.RegistryStore, s.InstID, nil)
 	result, err := sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	return sc, result

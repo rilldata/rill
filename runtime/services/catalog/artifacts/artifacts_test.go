@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 )
@@ -168,7 +169,7 @@ measures:
 			err := artifacts.Write(ctx, repoStore, "test", tt.Catalog)
 			require.NoError(t, err)
 
-			readCatalog, err := artifacts.Read(ctx, repoStore, &drivers.Instance{}, tt.Catalog.Path)
+			readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", tt.Catalog.Path)
 			require.NoError(t, err)
 			require.Equal(t, readCatalog, tt.Catalog)
 
@@ -212,7 +213,7 @@ func TestReadFailure(t *testing.T) {
 			err := os.WriteFile(path.Join(dir, tt.Path), []byte(tt.Raw), os.ModePerm)
 			require.NoError(t, err)
 
-			_, err = artifacts.Read(ctx, repoStore, &drivers.Instance{}, tt.Path)
+			_, err = artifacts.Read(ctx, repoStore, registryStore(t), "test", tt.Path)
 			require.Error(t, err)
 		})
 	}
@@ -259,4 +260,16 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 		panic(err)
 	}
 	return s
+}
+
+func registryStore(t *testing.T) drivers.RegistryStore {
+	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	require.NoError(t, err)
+	store.Migrate(context.Background())
+	registry, _ := store.RegistryStore()
+
+	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test"})
+	require.NoError(t, err)
+
+	return registry
 }

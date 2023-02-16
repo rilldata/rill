@@ -61,7 +61,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance, en
 	if err != nil {
 		return fmt.Errorf("failed to parse env variables %w", err)
 	}
-	inst.Env = env
+	inst.Env = &env
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)

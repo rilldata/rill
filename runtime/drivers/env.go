@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"github.com/go-yaml/yaml"
 )
 
 type EnviornmentVariables map[string]map[string]string
 
-func NewEnvVariables(ctx context.Context, yamlFile, envString string) (*EnviornmentVariables, error) {
+func NewEnvVariables(ctx context.Context, yamlFile, envString string) (EnviornmentVariables, error) {
 	// default env variables from rill.yaml
 	e := &rillYaml{env: make(map[string]string)}
 	if err := yaml.Unmarshal([]byte(yamlFile), e); err != nil {
@@ -30,7 +30,7 @@ func NewEnvVariables(ctx context.Context, yamlFile, envString string) (*Enviornm
 		e.env[key] = value
 	}
 
-	return &EnviornmentVariables{"env": e.env}, nil
+	return EnviornmentVariables{"env": e.env}, nil
 }
 
 func (e *EnviornmentVariables) Value() (driver.Value, error) {
@@ -41,13 +41,22 @@ func (e *EnviornmentVariables) Scan(val interface{}) error {
 	return json.Unmarshal(val.([]byte), e)
 }
 
-func (e *EnviornmentVariables) String() string {
+func (e EnviornmentVariables) String() string {
 	val, err := json.Marshal(e)
 	if err != nil {
 		_ = err
 	}
 
 	return string(val)
+}
+
+func (e EnviornmentVariables) Get(key string) string {
+	env, ok := e["env"]
+	if !ok {
+		return ""
+	}
+
+	return env["key"]
 }
 
 func parse(envString string) (map[string]string, error) {

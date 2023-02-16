@@ -33,16 +33,21 @@ type Artifact interface {
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, instance *drivers.Instance, filePath string) (*drivers.CatalogEntry, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore drivers.RegistryStore, instID, filePath string) (*drivers.CatalogEntry, error) {
 	extension := fileutil.FullExt(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
 		return nil, fmt.Errorf("no artifact found for %s", extension)
 	}
 
-	blob, err := repoStore.Get(ctx, instance.ID, filePath)
+	blob, err := repoStore.Get(ctx, instID, filePath)
 	if err != nil {
 		return nil, ErrFileRead
+	}
+
+	instance, err := registryStore.FindInstance(ctx, instID)
+	if err != nil {
+		return nil, err
 	}
 
 	t, err := template.New("source").Option("missingkey=error").Parse(blob)

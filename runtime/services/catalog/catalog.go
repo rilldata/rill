@@ -11,11 +11,11 @@ import (
 )
 
 type Service struct {
-	Catalog  drivers.CatalogStore
-	Repo     drivers.RepoStore
-	Olap     drivers.OLAPStore
-	InstID   string
-	Instance *drivers.Instance
+	Catalog       drivers.CatalogStore
+	Repo          drivers.RepoStore
+	Olap          drivers.OLAPStore
+	RegistryStore drivers.RegistryStore
+	InstID        string
 
 	// temporary information. should this be persisted into olap?
 	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
@@ -34,19 +34,19 @@ func NewService(
 	catalog drivers.CatalogStore,
 	repo drivers.RepoStore,
 	olap drivers.OLAPStore,
-	instID string, // todo :: remove instId and use instance.Id itself
-	instance *drivers.Instance,
+	registry drivers.RegistryStore,
+	instID string,
 	logger *zap.Logger,
 ) *Service {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 	return &Service{
-		Catalog:  catalog,
-		Repo:     repo,
-		Olap:     olap,
-		InstID:   instID,
-		Instance: instance,
+		Catalog:       catalog,
+		Repo:          repo,
+		Olap:          olap,
+		RegistryStore: registry,
+		InstID:        instID,
 
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),

@@ -18,7 +18,7 @@ func init() {
 
 type modelMigrator struct{}
 
-func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
+func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env drivers.EnviornmentVariables, catalogObj *drivers.CatalogEntry) error {
 	sql := catalogObj.GetModel().Sql
 	materialize := catalogObj.GetModel().Materialize
 	materializeType := getMaterializeType(materialize)
@@ -33,7 +33,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 	})
 }
 
-func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env drivers.EnviornmentVariables, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	if oldCatalogObj.Name != newCatalogObj.Name {
 		// should not happen but just to be sure
 		return errors.New("update is called but model name has changed")
@@ -49,14 +49,14 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 	}
 	// if sql is changed and materialize type is the same then just update the sql
 	if oldModel.Sql != newModel.Sql && oldMaterializeType == newMaterializeType {
-		return m.Create(ctx, olap, repo, newCatalogObj)
+		return m.Create(ctx, olap, repo, env, newCatalogObj)
 	}
 	// else drop the old type and create new materialized type using new sql
 	err := m.Delete(ctx, olap, oldCatalogObj)
 	if err != nil {
 		return err
 	}
-	return m.Create(ctx, olap, repo, newCatalogObj)
+	return m.Create(ctx, olap, repo, env, newCatalogObj)
 }
 
 func getMaterializeType(materialize bool) string {
