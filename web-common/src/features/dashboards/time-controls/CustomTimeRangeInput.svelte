@@ -9,6 +9,11 @@
     V1GetTimeRangeSummaryResponse,
   } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
+  import {
+    exclusiveToInclusiveEndISOString,
+    getDateFromISOString,
+    getISOStringFromDate,
+  } from "./time-range-utils";
 
   export let metricViewName: string;
 
@@ -65,20 +70,6 @@
       startDate: getISOStringFromDate(start),
       endDate: getISOStringFromDate(end),
     });
-  }
-
-  function exclusiveToInclusiveEndISOString(exclusiveEnd: string): string {
-    const date = new Date(exclusiveEnd);
-    date.setDate(date.getDate() - 1);
-    return date.toISOString();
-  }
-
-  function getDateFromISOString(isoString: string): string {
-    return isoString.split("T")[0];
-  }
-
-  function getISOStringFromDate(date: string): string {
-    return date + "T00:00:00.000Z";
   }
 </script>
 

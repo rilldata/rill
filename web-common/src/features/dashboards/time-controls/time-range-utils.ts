@@ -418,3 +418,17 @@ export function makeRelativeTimeRange(
     end: endTime,
   };
 }
+
+export function exclusiveToInclusiveEndISOString(exclusiveEnd: string): string {
+  const date = new Date(exclusiveEnd);
+  date.setDate(date.getDate() - 1);
+  return date.toISOString();
+}
+
+export function getDateFromISOString(isoString: string): string {
+  return isoString.split("T")[0];
+}
+
+export function getISOStringFromDate(date: string): string {
+  return date + "T00:00:00.000Z";
+}
