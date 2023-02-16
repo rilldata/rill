@@ -126,7 +126,7 @@
       on:select={() => (isCustomRangeOpen = !isCustomRangeOpen)}
     />
     {#if isCustomRangeOpen}
-      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {metricViewName}
           on:apply={(e) =>
