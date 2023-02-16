@@ -1,6 +1,7 @@
 package github
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -21,7 +22,7 @@ func PublicKey() (*ssh.PublicKeys, error) {
 
 func CloneRepo(url string) (string, error) {
 	repoName := strings.TrimSuffix(url[strings.LastIndex(url, "/")+1:], ".git")
-
+	fmt.Printf("Cloning Repo URL: {%s}\n", url)
 	if strings.HasPrefix(url, "git@github.com") {
 		auth, keyErr := PublicKey()
 		if keyErr != nil {

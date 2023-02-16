@@ -91,7 +91,6 @@ func InitCmd(ver version.Version) *cobra.Command {
 
 			return nil
 		},
-		// Args: cobra.ExactArgs(0),
 	}
 
 	initCmd.Flags().SortFlags = false
