@@ -61,7 +61,13 @@ export function outline(
   const observer = new MutationObserver(() => {
     clonedElement.setAttribute("x", node.getAttribute("x"));
     clonedElement.setAttribute("y", node.getAttribute("y"));
-    clonedElement.setAttribute("text-anchor", node.getAttribute("text-anchor"));
+    if (node.getAttribute("text-anchor")) {
+      clonedElement.setAttribute(
+        "text-anchor",
+        node.getAttribute("text-anchor")
+      );
+    }
+
     if (node.getAttribute("dx")) {
       clonedElement.setAttribute("dx", node.getAttribute("dx"));
     }
