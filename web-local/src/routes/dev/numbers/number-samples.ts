@@ -78,6 +78,12 @@ const numberListsGen: NumericSampleGen[] = [
   },
 
   {
+    desc: "power law-ish (uniform over magnitudes (e3, e8))",
+    sampleFn: () =>
+      range.map((x) => 10 ** uniform(3, 8)).map((x) => (randu() < 0.2 ? 0 : x)),
+  },
+
+  {
     desc: "-(t-dist)^8 (all neg, with exact zeros)",
     sampleFn: () =>
       range.map((x) => -(tDist(1) ** 8)).map((x) => (randu() < 0.1 ? 0 : x)),
