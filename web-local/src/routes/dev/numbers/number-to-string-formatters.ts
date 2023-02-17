@@ -59,7 +59,7 @@ export type FormatterFactory = (
   options
 ) => NumberFormatter;
 
-export type NumPartPxWidthLookupFn = (str: string, isNumStr: boolean) => number;
+export type NumPartPxWidthLookupFn = (str: string) => number;
 
 let humanizeGroupValuesFormatterFactory: FormatterFactory = (
   sample: number[],

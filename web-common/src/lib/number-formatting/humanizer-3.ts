@@ -12,6 +12,8 @@ export type NumericRange = {
   max: number;
 };
 
+export type PxWidthLookupFn = (str: string) => number;
+
 export type FormatterPxWidths = {
   int: number;
   dot: number;
@@ -61,7 +63,11 @@ export type FormatterFactoryOptions = (
   nonIntHandling: "none" | "trailingDot" | "reserveDigit";
   // method for formatting exact zeros
   zeroHandling: "noSpecial" | "trailingDot" | "zeroOnly";
-  pxWidthLookup: undefined | FormatterPxWidths;
+  pxWidthLookupFn?: PxWidthLookupFn;
+
+  // not actually used for formatting, but needed to calculate the
+  // px sizes of maxWidthsInSample and maxWidthsPossible
+  alignDecimal?: boolean;
 };
 
 export type FormatterFactoryOutput = {
