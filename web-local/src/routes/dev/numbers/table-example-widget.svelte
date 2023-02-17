@@ -42,7 +42,7 @@
   let maxDigitsLeft = 3;
   let maxDigitsRight = 3;
   let minDigitsNonzero = 1;
-  let nonIntegerHandling = "trailingDot";
+  let nonIntegerHandling: "none" | "oneDigit" | "trailingDot" = "trailingDot";
 
   // BARS OPTIONS
   let showBars = false;
@@ -502,28 +502,17 @@
             &nbsp;
           </div>
 
-          <b>Non-integer handling</b>
+          <b>handling of non-ints that truncate to the e0 digit</b>
           <div class="option-box">
             <form>
               <label>
                 <input
                   type="radio"
                   bind:group={nonIntegerHandling}
-                  name="noSpecial"
-                  value={"noSpecial"}
+                  name="none"
+                  value={"none"}
                 />
-                no special treament <br /> ex: 403.35 -> "403"
-              </label>
-              <br />
-
-              <label>
-                <input
-                  type="radio"
-                  bind:group={nonIntegerHandling}
-                  name="oneDigit"
-                  value={"oneDigit"}
-                />
-                reserve one digit after the "." <br /> ex: "403.35" -> "403.6"
+                truncate without trailing "." <br /> ex: 1403.35 -> "1403"
               </label>
               <br />
 
@@ -534,7 +523,19 @@
                   name="trailingDot"
                   value={"trailingDot"}
                 />
-                leave a trailing "." <br /> ex: 403.35 -> "403."
+                leave a trailing "." <br /> ex: 1403.35 -> "1403."
+              </label>
+              <br />
+
+              <label>
+                <input
+                  type="radio"
+                  bind:group={nonIntegerHandling}
+                  name="oneDigit"
+                  value={"oneDigit"}
+                />
+                roll over to next magnitude <br /> ex: in 4 digit budget, "1403.35"
+                -> "1.403 k"
               </label>
             </form>
           </div>

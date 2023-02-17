@@ -7,14 +7,17 @@ export const formatNumWithOrderOfMag2 = (
   x: number,
   newOrder: number,
   fractionDigits: number,
-  padInsignificantZeros = false
+  padInsignificantZeros = false,
+  // Set to `true` to leave a trailing "." in the case
+  // of non-integers formatted to e0 with 0 fraction digits
+  trailingDot = false
 ): NumberStringParts => {
   if (x === Infinity) return { int: "∞", dot: "", frac: "", suffix: "" };
   if (x === -Infinity) return { int: "-∞", dot: "", frac: "", suffix: "" };
   if (Number.isNaN(x)) return { int: "NaN", dot: "", frac: "", suffix: "" };
 
   const suffix = "E" + newOrder;
-  const dot: "." = ".";
+  let dot: "" | "." = ".";
 
   if (x === 0)
     return {
@@ -58,12 +61,22 @@ export const formatNumWithOrderOfMag2 = (
     .replace(/,/g, "")
     .split(".");
 
+  const nonInt = !Number.isInteger(x);
+
+  dot =
+    frac !== undefined || (fractionDigits === 0 && trailingDot && nonInt)
+      ? "."
+      : "";
+
   const splitStr = { int, dot, frac: frac ?? "", suffix };
 
   return splitStr;
 };
 
-const testCases: [[number, number, number, boolean], NumberStringParts][] = [
+const testCases: [
+  [number, number, number, boolean, boolean?],
+  NumberStringParts
+][] = [
   [[Infinity, 3, 4, true], { int: "∞", dot: "", frac: "", suffix: "" }],
   [[-Infinity, 3, 4, true], { int: "-∞", dot: "", frac: "", suffix: "" }],
   [[NaN, 3, 4, true], { int: "NaN", dot: "", frac: "", suffix: "" }],
@@ -74,13 +87,13 @@ const testCases: [[number, number, number, boolean], NumberStringParts][] = [
   [[1, 3, 5, false], { int: "0", dot: ".", frac: "001", suffix: "E3" }],
   [[1, 3, 5, true], { int: "0", dot: ".", frac: "00100", suffix: "E3" }],
 
-  [[1, -3, 5, false], { int: "1000", dot: ".", frac: "", suffix: "E-3" }],
+  [[1, -3, 5, false], { int: "1000", dot: "", frac: "", suffix: "E-3" }],
   [[1, -3, 5, true], { int: "1000", dot: ".", frac: "00000", suffix: "E-3" }],
 
   [[0.001, 0, 5, false], { int: "0", dot: ".", frac: "001", suffix: "E0" }],
   [[0.001, 0, 5, true], { int: "0", dot: ".", frac: "00100", suffix: "E0" }],
 
-  [[0.001, -3, 5, false], { int: "1", dot: ".", frac: "", suffix: "E-3" }],
+  [[0.001, -3, 5, false], { int: "1", dot: "", frac: "", suffix: "E-3" }],
   [[0.001, -3, 5, true], { int: "1", dot: ".", frac: "00000", suffix: "E-3" }],
 
   [
@@ -91,6 +104,27 @@ const testCases: [[number, number, number, boolean], NumberStringParts][] = [
     [710.7237956, 0, 5, false],
     { int: "710", dot: ".", frac: "72380", suffix: "E0" },
   ],
+
+  // yes trailing dot
+  [
+    [710.272337956, 0, 0, true, true],
+    { int: "710", dot: ".", frac: "", suffix: "E0" },
+  ],
+  [
+    [710.272337956, 0, 0, false, true],
+    { int: "710", dot: ".", frac: "", suffix: "E0" },
+  ],
+
+  // no trailing dot
+  [
+    [710.272337956, 0, 0, true, false],
+    { int: "710", dot: "", frac: "", suffix: "E0" },
+  ],
+  [
+    [710.272337956, 0, 0, false, false],
+    { int: "710", dot: "", frac: "", suffix: "E0" },
+  ],
+
   [
     [710.7237956, 0, 2, true],
     { int: "710", dot: ".", frac: "72", suffix: "E0" },

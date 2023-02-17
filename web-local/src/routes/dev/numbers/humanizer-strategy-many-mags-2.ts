@@ -91,26 +91,27 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
       // (b) it's magniture fits within our maxDigitsLeft
       // budget, including handling of a nonInt digit
 
-      // if ()
-
-      // try formatting the number
-      LHSDigits = Math.min(
-        mag + 1,
-        maxTotalDigits - nonIntReserveDigit,
-        maxDigitsLeft
-      );
+      // try formatting the number at e0...
+      LHSDigits = Math.min(mag + 1, maxTotalDigits, maxDigitsLeft);
       RHSDigits = Math.min(maxTotalDigits - LHSDigits, maxDigitsRight);
 
       let ss = formatNumWithOrderOfMag2(
         x,
         0,
         RHSDigits,
-        digitTargetPadWithInsignificantZeros
+        digitTargetPadWithInsignificantZeros,
+        nonIntegerHandling === "trailingDot"
       );
 
-      // at this point, by construction, RHSDigits<= maxDigitsRight;
-      // if the maxDigitsLeft constraint is satisfied, we're done
-      if (ss.int.length <= maxDigitsLeft) return ss;
+      // At this point, by construction, RHSDigits<= maxDigitsRight;
+      // Need to check that
+      // (a) maxDigitsLeft constraint is satisfied
+      // (b) nonIntegerHandling rules satisfied
+      const minRhsDigits = !isInt && nonIntegerHandling === "oneDigit" ? 1 : 0;
+
+      if (ss.int.length <= maxDigitsLeft && ss.frac.length >= minRhsDigits) {
+        return ss;
+      }
 
       // ...otherwise, format with order of mag
       const magE = orderOfMagnitudeEng(x);
