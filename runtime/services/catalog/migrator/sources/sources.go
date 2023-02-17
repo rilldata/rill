@@ -32,9 +32,11 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	env := &connectors.Env{
 		RepoDriver:         repo.Driver(),
 		RepoDSN:            repo.DSN(),
-		UseHostCredentials: strings.ToLower(e.Get("env", "host_credentials")) != "false", // true by default
+		UseHostCredentials: strings.ToLower(e.Get("env", "use_host_credentials")) != "false", // true by default
 		AccessKeyID:        e.Get("env", "access_key_id"),
 		SecretAccessKey:    e.Get("env", "secret_access_key"),
+		SessionToken:       e.Get("env", "session_token"),
+		SecretGlob:         []byte(e.Get("env", "secret_glob")),
 	}
 
 	return olap.Ingest(ctx, env, source)

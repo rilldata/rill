@@ -70,7 +70,7 @@ func (e EnviornmentVariables) Get(kind, key string) string {
 		return ""
 	}
 
-	return env["key"]
+	return env[key]
 }
 
 func parse(envString string) (map[string]string, error) {
