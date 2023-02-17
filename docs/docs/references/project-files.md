@@ -16,7 +16,8 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 **`type`**
  —  the type of connector you are using for the source _(required)_. Possible values include:
   - _`https`_ — public files available on the web.
-  - _`s3`_ — a file available on amazon s3.
+  - _`s3`_ — a file available on amazon s3. 
+    - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
   - _`gcs`_ — a file available on google cloud platform.
   - _`local_file`_ — a locally available file.
 
