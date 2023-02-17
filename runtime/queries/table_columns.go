@@ -66,8 +66,10 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		}()
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query: fmt.Sprintf(`select column_name as name, data_type as type from information_schema.columns 
-		where table_name = '%s' and table_schema = 'temp'`, temporaryTableName),
+			Query: fmt.Sprintf(`
+				SELECT column_name AS name, data_type AS type
+				FROM information_schema.columns
+				WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
 			Priority: priority,
 		})
 		if err != nil {
@@ -85,29 +87,6 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			pcs = append(pcs, &pc)
 			i++
 		}
-
-		// Disabling this for now. we need to move this to a separate API
-		// It adds a lot of response time to getting columns
-		// for _, pc := range pcs[0:i] {
-		//	columnName := EscapeDoubleQuotes(pc.Name)
-		//	rows, err = s.query(ctx, req.InstanceId, &drivers.Statement{
-		//		Query:    fmt.Sprintf(`select max(length("%s")) as max from %s`, columnName, req.TableName),
-		//		Priority: int(req.Priority),
-		//	})
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//	for rows.Next() {
-		//		var max sql.NullInt32
-		//		if err := rows.Scan(&max); err != nil {
-		//			return nil, err
-		//		}
-		//		if max.Valid {
-		//			pc.LargestStringLength = int32(max.Int32)
-		//		}
-		//	}
-		//	rows.Close()
-		//}
 
 		q.Result = pcs[0:i]
 		return nil

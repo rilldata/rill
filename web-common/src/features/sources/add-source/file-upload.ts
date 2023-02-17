@@ -142,7 +142,7 @@ function reportFileErrors(invalidFiles: File[]) {
     message: `${invalidFiles.length} file${
       invalidFiles.length !== 1 ? "s are" : " is"
     } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
-    detail: "Only .parquet, .csv, and .tsv files are supported",
+    detail: "Only .parquet, .csv, .tsv, .json, and .ndjson files are supported",
     options: {
       persisted: true,
     },
@@ -188,7 +188,7 @@ export function openFileUploadDialog(multiple = true) {
     };
     window.addEventListener("focus", focusHandler);
     input.multiple = multiple;
-    input.accept = ".csv,.tsv,.txt,.parquet";
+    input.accept = ".csv,.tsv,.txt,.json,.ndjson,.parquet";
     input.click();
   });
 }

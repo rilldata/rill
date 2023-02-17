@@ -484,7 +484,7 @@ export interface V1MetricsViewColumn {
 }
 
 export interface V1MetricsView {
-  defaultTimeGrain?: V1TimeGrain;
+  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   description?: string;
   dimensions?: MetricsViewDimension[];
@@ -492,9 +492,8 @@ export interface V1MetricsView {
   measures?: MetricsViewMeasure[];
   model?: string;
   name?: string;
+  smallestTimeGrain?: V1TimeGrain;
   timeDimension?: string;
-  /** Recommended granularities for rolling up the time dimension. */
-  timeGrains?: V1TimeGrain[];
 }
 
 export interface V1MapType {
