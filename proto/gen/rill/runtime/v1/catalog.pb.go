@@ -502,7 +502,6 @@ type MetricsView struct {
 	// Name of the primary time dimension, used for rendering time series
 	TimeDimension string `protobuf:"bytes,3,opt,name=time_dimension,json=timeDimension,proto3" json:"time_dimension,omitempty"`
 	// Recommended granularities for rolling up the time dimension.
-	// Should be a valid SQL INTERVAL value.
 	TimeGrains []TimeGrain `protobuf:"varint,4,rep,packed,name=time_grains,json=timeGrains,proto3,enum=rill.runtime.v1.TimeGrain" json:"time_grains,omitempty"`
 	// Dimensions in the metrics view
 	Dimensions []*MetricsView_Dimension `protobuf:"bytes,5,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
@@ -514,7 +513,7 @@ type MetricsView struct {
 	Description string `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
 	// default time grain
 	DefaultTimeGrain TimeGrain `protobuf:"varint,9,opt,name=default_time_grain,json=defaultTimeGrain,proto3,enum=rill.runtime.v1.TimeGrain" json:"default_time_grain,omitempty"`
-	// default time range for the dashboard
+	// default time range for the dashboard. It should be a valid ISO 8601 duration string
 	DefaultTimeRange string `protobuf:"bytes,10,opt,name=default_time_range,json=defaultTimeRange,proto3" json:"default_time_range,omitempty"`
 }
 

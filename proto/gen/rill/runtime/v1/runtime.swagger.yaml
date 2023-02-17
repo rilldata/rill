@@ -1716,7 +1716,7 @@ definitions:
         title: default time grain
       defaultTimeRange:
         type: string
-        title: default time range for the dashboard
+        title: default time range for the dashboard. It should be a valid ISO 8601 duration string
       description:
         type: string
         title: Brief description of the dashboard
@@ -1746,9 +1746,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1TimeGrain'
-        description: |-
-          Recommended granularities for rolling up the time dimension.
-          Should be a valid SQL INTERVAL value.
+        description: Recommended granularities for rolling up the time dimension.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object

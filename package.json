@@ -26,5 +26,9 @@
       "package.json",
       "web-local/package.json"
     ]
+  },
+  "devDependencies": {
+    "@bufbuild/protobuf": "^1.0.0",
+    "@bufbuild/protoc-gen-es": "^1.0.0"
   }
 }
