@@ -13,6 +13,8 @@
   import { onMount } from "svelte";
   import LayeredContainer from "./layered-container.svelte";
   import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
+  import SampleOptions from "./option-menus/sample-options.svelte";
+  import { bind } from "svelte/internal";
 
   // FORMATTER SELECTION
   export let defaultFormatterIndex = 1;
@@ -107,7 +109,7 @@
   };
 
   let samplePreprocessing: "none" | "round" | "currencyRoundCent" = "none";
-  let sortSamples = false;
+  let sortSamples: "none" | "asc" | "desc" = "none";
 
   let magnitudeStrategy:
     | "unlimited"
@@ -186,7 +188,11 @@
       }
     });
 
-    sample = sortSamples ? sample.sort((a, b) => b - a) : sample;
+    sample =
+      sortSamples === "none"
+        ? sample
+        : sample.sort((a, b) => (sortSamples === "desc" ? b - a : a - b));
+
     return {
       sample,
       desc: nl.desc,
@@ -226,46 +232,7 @@
 
 <div class="options-container-row">
   <div style:width="300px">
-    <div>
-      <h2>Sample preprocessing</h2>
-      <form>
-        <label>
-          <input
-            type="radio"
-            bind:group={samplePreprocessing}
-            name="none"
-            value={"none"}
-          />
-          none (samples as described)
-        </label>
-        <br />
-
-        <label>
-          <input
-            type="radio"
-            bind:group={samplePreprocessing}
-            name="round"
-            value={"round"}
-          />
-          round to ints
-        </label>
-        <br />
-        <label>
-          <input
-            type="radio"
-            bind:group={samplePreprocessing}
-            name="currencyRoundCent"
-            value={"currencyRoundCent"}
-          />
-          round to 2 decimal places (like currency)
-        </label>
-      </form>
-
-      <label>
-        <input type="checkbox" bind:checked={sortSamples} />
-        sort samples
-      </label>
-    </div>
+    <SampleOptions bind:samplePreprocessing bind:sortSamples />
 
     <h2>Layout options (applies to all formatters)</h2>
 
