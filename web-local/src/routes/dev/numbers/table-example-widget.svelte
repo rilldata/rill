@@ -66,16 +66,16 @@
   $: {
     if (pxWidthLookupFn !== undefined) {
       if (magnitudeStrategy === "unlimitedDigitTarget") {
-        let int = pxWidthLookupFn("0", true) * maxDigitsRight;
-        let dot = pxWidthLookupFn(".", false);
-        let frac = pxWidthLookupFn("0", true) * maxDigitsLeft;
-        let suffix = pxWidthLookupFn("e-200", false);
+        let int = pxWidthLookupFn("0") * maxDigitsRight;
+        let dot = pxWidthLookupFn(".");
+        let frac = pxWidthLookupFn("0") * maxDigitsLeft;
+        let suffix = pxWidthLookupFn("e-200");
         worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
       } else if (magnitudeStrategy === "largestWithDigitTarget") {
-        let int = pxWidthLookupFn("0", true) * 3;
-        let dot = pxWidthLookupFn(".", false);
-        let frac = pxWidthLookupFn("0", true) * (digitTarget - 3);
-        let suffix = pxWidthLookupFn("e-200", false);
+        let int = pxWidthLookupFn("0") * 3;
+        let dot = pxWidthLookupFn(".");
+        let frac = pxWidthLookupFn("0") * (digitTarget - 3);
+        let suffix = pxWidthLookupFn("e-200");
         console.log({ int, dot, frac, suffix });
         worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
       }
