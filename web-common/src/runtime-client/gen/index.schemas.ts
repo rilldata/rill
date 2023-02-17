@@ -448,14 +448,6 @@ export interface V1NumericSummary {
   numericStatistics?: V1NumericStatistics;
 }
 
-export interface V1Model {
-  dialect?: ModelDialect;
-  materialize?: boolean;
-  name?: string;
-  schema?: V1StructType;
-  sql?: string;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -501,14 +493,18 @@ export interface V1MetricsView {
   model?: string;
   name?: string;
   timeDimension?: string;
-  /** Recommended granularities for rolling up the time dimension.
-Should be a valid SQL INTERVAL value. */
+  /** Recommended granularities for rolling up the time dimension. */
   timeGrains?: V1TimeGrain[];
 }
 
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1ListFilesResponse {
@@ -523,6 +519,8 @@ export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
 
+export type V1InstanceEnv = { [key: string]: string };
+
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
 one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -535,7 +533,7 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
-  env?: string;
+  env?: V1InstanceEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
@@ -543,11 +541,6 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
 }
 
 export interface V1GetTopKResponse {
@@ -645,13 +638,15 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestEnv = { [key: string]: string };
+
 /**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
-  env?: string;
+  env?: V1CreateInstanceRequestEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
@@ -779,6 +774,14 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
+
+export interface V1Model {
+  dialect?: ModelDialect;
+  materialize?: boolean;
+  name?: string;
+  schema?: V1StructType;
+  sql?: string;
+}
 
 export interface MetricsViewMeasure {
   description?: string;

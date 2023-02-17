@@ -117,3 +117,17 @@ func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
 	}
 	return p, nil
 }
+
+func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
+	content, err := c.Repo.Get(ctx, c.InstanceID, "rill.yaml")
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	r := &ProjectConfig{Env: make(map[string]string)}
+	if err := yaml.Unmarshal([]byte(content), r); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}

@@ -270,7 +270,7 @@ func TestReadWithEnvVariables(t *testing.T) {
 			filePath: "sources/Source.yaml",
 			content: `type: s3
 uri: "s3://bucket/file"
-csv.delimiter: {{.env.delimitter}}
+csv.delimiter: '{{.env.delimitter}}'
 format: csv
 region: {{.env.region}}
 `,
@@ -361,8 +361,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	store.Migrate(ctx)
 	registry, _ := store.RegistryStore()
 
-	env, err := drivers.NewEnvVariables(ctx, "", "delimitter='|';region=us-east-2;limit=limit 10")
-	require.NoError(t, err)
+	env := drivers.Env{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
 
 	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Env: &env})
 	require.NoError(t, err)

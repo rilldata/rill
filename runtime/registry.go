@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -17,7 +17,7 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 	return r.Registry().FindInstance(ctx, instanceID)
 }
 
-func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance, envString string) error {
+func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
 	// Check OLAP connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
 	if err != nil {
@@ -56,19 +56,14 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance, en
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
 
-	file, err := repoStore.Get(ctx, inst.ID, "rill.yaml")
-	// ignoring fs.PathError since rill.yaml may not be present for older projects
-	var pathError *fs.PathError
-	if err != nil && !errors.As(err, &pathError) {
+	c := rillv1beta.New(repoStore, inst.ID)
+	proj, err := c.ProjectConfig(ctx)
+	if err != nil {
 		return err
 	}
 
-	env, err := drivers.NewEnvVariables(ctx, file, envString)
-	if err != nil {
-		return fmt.Errorf("failed to parse env variables %w", err)
-	}
-	inst.Env = &env
-
+	env := drivers.Env(proj.Env)
+	inst.ProjectEnv = &env
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)
 	if err != nil {

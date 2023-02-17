@@ -50,6 +50,9 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, err
 	}
 
+	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
+	env := map[string]map[string]string{"env": instance.EnviornmentVariables()}
+
 	// convert templatised artifact
 	t, err := template.New("source").Option("missingkey=error").Parse(blob)
 	if err != nil {
@@ -57,7 +60,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 	}
 
 	bw := new(bytes.Buffer)
-	if err := t.Execute(bw, instance.Env); err != nil {
+	if err := t.Execute(bw, env); err != nil {
 		return nil, err
 	}
 

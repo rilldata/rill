@@ -77,13 +77,9 @@ func (ps PropertySchema) ValidateType(val any) bool {
 // Env contains contextual information for a source, such as the repo it came from
 // and (in the future) secrets configured by the user.
 type Env struct {
-	RepoDriver         string
-	RepoDSN            string
-	UseHostCredentials bool // flag to disable use of host credentials
-	AccessKeyID        string
-	SecretAccessKey    string
-	SessionToken       string
-	SecretGlob         []byte
+	RepoDriver string
+	RepoDSN    string
+	Variables  map[string]string
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).

@@ -18,7 +18,7 @@ func init() {
 
 type modelMigrator struct{}
 
-func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env drivers.EnviornmentVariables, catalogObj *drivers.CatalogEntry) error {
+func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, catalogObj *drivers.CatalogEntry) error {
 	sql := catalogObj.GetModel().Sql
 	materialize := catalogObj.GetModel().Materialize
 	materializeType := getMaterializeType(materialize)
@@ -33,7 +33,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 	})
 }
 
-func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env drivers.EnviornmentVariables, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	if oldCatalogObj.Name != newCatalogObj.Name {
 		// should not happen but just to be sure
 		return errors.New("update is called but model name has changed")
