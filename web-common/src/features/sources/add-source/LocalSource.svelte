@@ -95,7 +95,7 @@
 
 <div class="grid place-items-center h-full">
   <Button on:click={handleOpenFileDialog} type="primary"
-    >Upload a CSV or Parquet file
+    >Upload a CSV, JSON or Parquet file
   </Button>
   {#if errors?.length}
     <div transition:slide={{ duration: LIST_SLIDE_DURATION * 2 }}>

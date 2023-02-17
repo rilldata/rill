@@ -27,7 +27,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 
 	q := `
 		select
-			coalesce(t.table_catalog, '') as "database",
+			coalesce(t.table_catalog, current_database()) as "database",
 			t.table_schema as "schema",
 			t.table_name as "name",
 			t.table_type as "type", 
@@ -64,7 +64,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 
 	q := `
 		select
-			coalesce(t.table_catalog, '') as "database",
+			coalesce(t.table_catalog, current_database()) as "database",
 			t.table_schema as "schema",
 			t.table_name as "name",
 			t.table_type as "type", 
