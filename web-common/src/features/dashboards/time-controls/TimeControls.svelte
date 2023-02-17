@@ -37,7 +37,7 @@ We should rename TimeSeriesTimeRange to a better name.
 
   export let metricViewName: string;
 
-  const dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
 
@@ -71,7 +71,8 @@ We should rename TimeSeriesTimeRange to a better name.
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 
   // once we have the allTimeRange, set the default time range and time grain
-  $: if (allTimeRange) setDefaultTimeControls(allTimeRange);
+  $: if (!$dashboardStore?.selectedTimeRange && allTimeRange)
+    setDefaultTimeControls(allTimeRange);
 
   function setDefaultTimeControls(allTimeRange: TimeRange) {
     baseTimeRange = getDefaultTimeRange(allTimeRange);

@@ -21,7 +21,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   let relativeTimeRangeOptions: TimeRange[];
   let isCustomRangeOpen = false;

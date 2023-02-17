@@ -12,7 +12,7 @@
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-grain";
 
-  const dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
 
   $: timeGrains = timeGrainOptions

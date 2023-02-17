@@ -22,7 +22,7 @@
   let start: string;
   let end: string;
 
-  const dashboardStore = useDashboardStore(metricViewName);
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: if (!start && !end) {
     if ($dashboardStore?.selectedTimeRange) {
