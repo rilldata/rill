@@ -54,6 +54,7 @@ func (e *Env) Scan(val interface{}) error {
 	return json.Unmarshal(val.([]byte), e)
 }
 
+// EnviornmentVariables returns the final resolved env variables
 func (i *Instance) EnviornmentVariables() map[string]string {
 	r := make(map[string]string, len(*i.ProjectEnv))
 	// set ProjectEnv first i.e. Project defaults

@@ -6,19 +6,20 @@ import (
 	"fmt"
 	"os"
 	"path"
-	reflect "reflect"
+	"reflect"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
-	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
+	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 )
 
 func TestSourceReadWrite(t *testing.T) {
