@@ -20,6 +20,7 @@
   export let expandable = true;
   export let tooltipMaxWidth: string = undefined;
   export let maxMenuWidth: string = undefined;
+  export let showContextMenu = true;
 
   const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
@@ -133,50 +134,51 @@
         {/if}
       </div>
     </div>
-
-    <!-- context menu -->
-    <WithTogglableFloatingElement
-      location="right"
-      alignment="start"
-      distance={16}
-      let:toggleFloatingElement
-      bind:active={contextMenuOpen}
-    >
-      <span
-        class="self-center"
-        class:opacity-0={!containerFocused &&
-          !contextMenuOpen &&
-          !isActive &&
-          !contextMenuHovered}
+    {#if showContextMenu}
+      <!-- context menu -->
+      <WithTogglableFloatingElement
+        location="right"
+        alignment="start"
+        distance={16}
+        let:toggleFloatingElement
+        bind:active={contextMenuOpen}
       >
-        <ContextButton
-          id="more-actions-{name}"
-          tooltipText="More actions"
-          suppressTooltip={contextMenuOpen}
-          on:click={(event) => {
-            /** prevent the link click from registering */
-            event.stopPropagation();
-            toggleFloatingElement();
-          }}
-          bind:isHovered={contextMenuHovered}
-          width={24}
-          height={24}
-          border={false}
+        <span
+          class="self-center"
+          class:opacity-0={!containerFocused &&
+            !contextMenuOpen &&
+            !isActive &&
+            !contextMenuHovered}
         >
-          <MoreHorizontal />
-        </ContextButton>
-      </span>
-      <Menu
-        dark
-        maxWidth={maxMenuWidth}
-        on:click-outside={toggleFloatingElement}
-        on:escape={toggleFloatingElement}
-        on:item-select={toggleFloatingElement}
-        slot="floating-element"
-      >
-        <slot name="menu-items" toggleMenu={toggleFloatingElement} />
-      </Menu>
-    </WithTogglableFloatingElement>
+          <ContextButton
+            id="more-actions-{name}"
+            tooltipText="More actions"
+            suppressTooltip={contextMenuOpen}
+            on:click={(event) => {
+              /** prevent the link click from registering */
+              event.stopPropagation();
+              toggleFloatingElement();
+            }}
+            bind:isHovered={contextMenuHovered}
+            width={24}
+            height={24}
+            border={false}
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        </span>
+        <Menu
+          dark
+          maxWidth={maxMenuWidth}
+          on:click-outside={toggleFloatingElement}
+          on:escape={toggleFloatingElement}
+          on:item-select={toggleFloatingElement}
+          slot="floating-element"
+        >
+          <slot name="menu-items" toggleMenu={toggleFloatingElement} />
+        </Menu>
+      </WithTogglableFloatingElement>
+    {/if}
   </a>
   <!-- if tooltip content is present in a slot, render the tooltip -->
   <div slot="tooltip-content" class:hidden={!$$slots["tooltip-content"]}>
