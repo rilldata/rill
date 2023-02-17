@@ -54,21 +54,19 @@
         />
         none
       </label>
-
       <label>
         <input type="radio" bind:group={sortSamples} name="asc" value={"asc"} />
         asc
-
-        <label>
-          <input
-            type="radio"
-            bind:group={sortSamples}
-            name="desc"
-            value={"desc"}
-          />
-          desc
-        </label></label
-      >
+      </label>
+      <label>
+        <input
+          type="radio"
+          bind:group={sortSamples}
+          name="desc"
+          value={"desc"}
+        />
+        desc
+      </label>
     </form>
   </div>
 </div>
