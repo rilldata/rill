@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/examples"
-	"github.com/rilldata/rill/cli/pkg/github"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
@@ -28,7 +28,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 			if len(args) > 0 {
 				projectPath = args[0]
 				if strings.HasSuffix(projectPath, ".git") {
-					repoName, err := github.CloneRepo(projectPath)
+					repoName, err := gitutil.CloneRepo(projectPath)
 					if err != nil {
 						return fmt.Errorf("clone repo error: %w", err)
 					}
