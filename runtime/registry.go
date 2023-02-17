@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -55,7 +56,12 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance, en
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
 
-	file, _ := repoStore.Get(ctx, inst.ID, "rill.yaml")
+	file, err := repoStore.Get(ctx, inst.ID, "rill.yaml")
+	// ignoring fs.PathError since rill.yaml may not be present for older projects
+	var pathError *fs.PathError
+	if err != nil && !errors.As(err, &pathError) {
+		return err
+	}
 
 	env, err := drivers.NewEnvVariables(ctx, file, envString)
 	if err != nil {

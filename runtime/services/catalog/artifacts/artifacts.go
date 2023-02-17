@@ -50,6 +50,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, err
 	}
 
+	// convert templatised artifact
 	t, err := template.New("source").Option("missingkey=error").Parse(blob)
 	if err != nil {
 		return nil, err

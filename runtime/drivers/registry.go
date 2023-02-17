@@ -33,6 +33,6 @@ type Instance struct {
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is when the instance was last updated in the registry
 	UpdatedOn time.Time `db:"updated_on"`
-	// EnviornmentVariables
+	// EnviornmentVariables for the instance
 	Env *EnviornmentVariables `db:"env"`
 }

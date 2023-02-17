@@ -10,48 +10,62 @@ import (
 	"github.com/go-yaml/yaml"
 )
 
+// EnviornmentVariables holds the env variables set at an instance level
+// first level in nested map will correspond to kind of env variable like user defined env, secrets, global etc
+// second level will be name of the key
+// Using a map in place of struct at first level, in order to be able to refer keys by small letters
+// for eg : {{.env.timeout}} instead of {{.Env.timeout}}
+// This places a constraint that env variables need to be flattened
 type EnviornmentVariables map[string]map[string]string
 
+// NewEnvVariables creates a new EnviornmentVariables.
+// Defaults are picked from yamlFile
+// envString correspond to user set values
 func NewEnvVariables(ctx context.Context, yamlFile, envString string) (EnviornmentVariables, error) {
 	// default env variables from rill.yaml
-	e := &rillYaml{env: make(map[string]string)}
-	if err := yaml.Unmarshal([]byte(yamlFile), e); err != nil {
+	defaultEnv := &rillYaml{Env: make(map[string]string)}
+	if err := yaml.Unmarshal([]byte(yamlFile), defaultEnv); err != nil {
 		return nil, err
 	}
 
 	// env variables from rill start command
-	m, err := parse(envString)
+	parsedEnv, err := parse(envString)
 	if err != nil {
 		return nil, err
 	}
 
 	// override defaults
-	for key, value := range m {
-		e.env[key] = value
+	for key, value := range parsedEnv {
+		defaultEnv.Env[key] = value
 	}
 
-	return EnviornmentVariables{"env": e.env}, nil
+	return EnviornmentVariables{"env": defaultEnv.Env}, nil
 }
 
+// Value implements driver.Valuer interface
 func (e *EnviornmentVariables) Value() (driver.Value, error) {
 	return json.Marshal(e)
 }
 
+// Scan implements sql.Scanner interface
 func (e *EnviornmentVariables) Scan(val interface{}) error {
 	return json.Unmarshal(val.([]byte), e)
 }
 
+// String returns string representation of EnviornmentVariables
 func (e EnviornmentVariables) String() string {
+	// ignoring the error since db values will always be serializable
 	val, err := json.Marshal(e)
-	if err != nil {
-		_ = err
-	}
+	_ = err
 
 	return string(val)
 }
 
-func (e EnviornmentVariables) Get(key string) string {
-	env, ok := e["env"]
+// Get fetches the value from env as per key and kind
+// At present only env kind is present which is a straightfwd map lookup
+// Some kind like secrets may require fetching data from some key vault
+func (e EnviornmentVariables) Get(kind, key string) string {
+	env, ok := e[kind]
 	if !ok {
 		return ""
 	}
@@ -64,18 +78,25 @@ func parse(envString string) (map[string]string, error) {
 		return make(map[string]string), nil
 	}
 
+	// split each env variable
 	envs := strings.Split(envString, ";")
 	vars := make(map[string]string, len(envs))
 	for _, env := range envs {
-		keyvalue := strings.Split(env, "=")
-		if len(keyvalue) != 2 {
-			return nil, fmt.Errorf("invalid env string %q", env)
+		if env == "" {
+			// extra semi colon
+			continue
 		}
-		vars[keyvalue[0]] = keyvalue[1]
+		// split into key value pairs
+		key, value, found := strings.Cut(env, "=")
+		// key can't be empty value can be
+		if !found || key == "" {
+			return nil, fmt.Errorf("invalid env token %q", env)
+		}
+		vars[key] = value
 	}
 	return vars, nil
 }
 
 type rillYaml struct {
-	env map[string]string `yaml:"env"`
+	Env map[string]string `yaml:"env,omitempty"`
 }
