@@ -37,7 +37,7 @@ export type NumericRange = {
   max: number;
 };
 
-export type FormatterMaxPxWidths = {
+export type FormatterPxWidths = {
   int: number;
   dot: number;
   frac: number;
@@ -50,7 +50,7 @@ export type RichFormatNumber = {
   splitStr: NumberStringParts;
   spacing: FormatterSpacingMeta;
   range: NumericRange;
-  maxPxWidth: FormatterMaxPxWidths;
+  maxPxWidth: FormatterPxWidths;
 };
 
 export type FormatterFactory = (

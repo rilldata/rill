@@ -1,7 +1,7 @@
 // import type { NumToRawStringFnFactory } from "./number-to-string-formatters";
 
 import type {
-  FormatterMaxPxWidths,
+  FormatterPxWidths,
   NumberStringParts,
   NumPartPxWidthLookupFn,
 } from "./number-to-string-formatters";
@@ -85,7 +85,7 @@ export const getSpacingMetadataForRawStrings = (numericStrings: string[]) => {
 export const getMaxPxWidthsForSplitsStrings = (
   numStrParts: NumberStringParts[],
   pxWidthLookup: NumPartPxWidthLookupFn
-): FormatterMaxPxWidths => {
+): FormatterPxWidths => {
   let maxPxWidths = { int: 0, dot: 0, frac: 0, suffix: 0 };
   const max = Math.max;
   numStrParts.forEach((richNum) => {
