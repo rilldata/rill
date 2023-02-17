@@ -29,7 +29,7 @@
 
   let decimalPoint: "" | ".";
   $: {
-    decimalPoint = frac !== "" ? "." : "";
+    decimalPoint = richNum.splitStr.dot;
     if (richNum.number === 0) {
       if (zeroHandling === "exactZero") {
         decimalPoint = "";
