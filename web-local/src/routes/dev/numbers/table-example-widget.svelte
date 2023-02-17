@@ -3,7 +3,7 @@
   import ColorPicker from "svelte-awesome-color-picker";
   // import { HsvPicker } from "svelte-color-picker";
   // import {  } from "svelte";
-  import { numberLists } from "./number-samples";
+  import { numberLists as numberListsUnprocessed } from "./number-samples";
   import {
     formatterFactories,
     NumberFormatter,
@@ -77,7 +77,6 @@
     } else {
       worstCaseStringWidth = 79 + suffixPadding;
     }
-    console.log({ worstCaseStringWidth });
   }
 
   $: layerContainerWidth =
@@ -92,7 +91,6 @@
     // maximumSignificantDigits,
     magnitudeStrategy,
     digitTarget,
-    digitTargetShowSignificantZeros,
     digitTargetPadWithInsignificantZeros,
     usePlainNumsForThousands,
     usePlainNumsForThousandsOneDecimal,
@@ -108,22 +106,18 @@
     nonIntegerHandling,
   };
 
-  let numberInputType;
+  let samplePreprocessing: "none" | "round" | "currencyRoundCent" = "none";
+  let sortSamples = false;
 
   let magnitudeStrategy:
     | "unlimited"
     | "unlimitedDigitTarget"
     | "largestWithDigitTarget" = "unlimitedDigitTarget";
-  let digitTargetShowSignificantZeros = true;
   let digitTargetPadWithInsignificantZeros = false;
   let digitTarget = 5;
 
   const blue100 = "#dbeafe";
   const grey100 = "#f5f5f5";
-
-  // const numberAlignmentStores = numberLists.map(() =>
-  //   writable({ int: 0, dot: 0, frac: 0, suffix: 0 })
-  // );
 
   let numFormattingWidthLookupKeys = [
     ".",
@@ -180,6 +174,25 @@
   });
   // console.log({ numFormattingWidthLookup });
 
+  $: numberLists = numberListsUnprocessed.map((nl) => {
+    let sample = nl.sample.map((x) => {
+      switch (samplePreprocessing) {
+        case "currencyRoundCent":
+          return Math.round(x * 100) / 100;
+        case "round":
+          return Math.round(x);
+        default:
+          return x;
+      }
+    });
+
+    sample = sortSamples ? sample.sort((a, b) => b - a) : sample;
+    return {
+      sample,
+      desc: nl.desc,
+    };
+  });
+
   $: {
     if (pxWidthLookupFn !== undefined) {
       // window.pxWidthLookupFn = pxWidthLookupFn;
@@ -201,60 +214,6 @@
 </div>
 
 <div>
-  <form>
-    <label>
-      <input
-        type="radio"
-        bind:group={numberInputType}
-        name="number"
-        value={"number"}
-      />
-      real numbers (no special treament)
-    </label>
-
-    <label>
-      <input
-        type="radio"
-        bind:group={numberInputType}
-        name="number"
-        value={"number"}
-      />
-      integers (inputs rounded)
-    </label>
-
-    <label>
-      <input
-        type="radio"
-        bind:group={numberInputType}
-        name="currency"
-        value={"currency"}
-      />
-      treat numbers as currency (no rounding)
-    </label>
-
-    <label>
-      <input
-        type="radio"
-        bind:group={numberInputType}
-        name="currency"
-        value={"currencyRoundCent"}
-      />
-      treat numbers as currency (round fracs to nearest cent)
-    </label>
-
-    <label>
-      <input
-        type="radio"
-        bind:group={numberInputType}
-        name="percentage"
-        value={"percentage"}
-      />
-      display values as percentages
-    </label>
-  </form>
-</div>
-
-<div>
   base formatter
   <select bind:value={selectedFormatter}>
     {#each formatterFactories as formatFactory}
@@ -267,7 +226,48 @@
 
 <div class="options-container-row">
   <div style:width="300px">
-    <h2>Display options (applies to all formatters)</h2>
+    <div>
+      <h2>Sample preprocessing</h2>
+      <form>
+        <label>
+          <input
+            type="radio"
+            bind:group={samplePreprocessing}
+            name="none"
+            value={"none"}
+          />
+          none (samples as described)
+        </label>
+        <br />
+
+        <label>
+          <input
+            type="radio"
+            bind:group={samplePreprocessing}
+            name="round"
+            value={"round"}
+          />
+          round to ints
+        </label>
+        <br />
+        <label>
+          <input
+            type="radio"
+            bind:group={samplePreprocessing}
+            name="currencyRoundCent"
+            value={"currencyRoundCent"}
+          />
+          round to 2 decimal places (like currency)
+        </label>
+      </form>
+
+      <label>
+        <input type="checkbox" bind:checked={sortSamples} />
+        sort samples
+      </label>
+    </div>
+
+    <h2>Layout options (applies to all formatters)</h2>
 
     <div>
       <label>
@@ -369,12 +369,6 @@
     <h2>new humanizer shared options</h2>
 
     <label>
-      <input type="checkbox" bind:checked={digitTargetShowSignificantZeros} />
-      show significant zeros
-    </label>
-    <br />
-
-    <label>
       <input
         type="checkbox"
         bind:checked={digitTargetPadWithInsignificantZeros}
@@ -451,22 +445,6 @@
                 bind:value={digitTarget}
               />
             </label>
-            <!-- <br />
-            <label>
-              <input
-                type="checkbox"
-                bind:checked={digitTargetShowSignificantZeros}
-              />
-              show significant zeros
-            </label>
-            <br />
-            <label>
-              <input
-                type="checkbox"
-                bind:checked={digitTargetPadWithInsignificantZeros}
-              />
-              pad with insignificant zeros (after last significant digit)
-            </label> -->
           </div>
         </div>
       </div>
@@ -718,7 +696,7 @@
       </div>
       <div class="option-box">
         bar container width
-        <input type="range" min="10" max="100" bind:value={barContainerWidth} />
+        <input type="range" min="10" max="300" bind:value={barContainerWidth} />
         {barContainerWidth}px
       </div>
 
