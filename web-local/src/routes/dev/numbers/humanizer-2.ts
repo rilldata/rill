@@ -175,9 +175,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
     // digitTarget digits of the decimal point,
     // use simple formatting without suffix
     let formatter = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: options.digitTargetShowSignificantZeros
-        ? digitTarget
-        : 0,
+      minimumFractionDigits: digitTarget,
       maximumFractionDigits: digitTarget,
     });
     return sample
@@ -194,9 +192,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
   // console.log({ intDigits, fracDigits });
   const splitStrs = sample.map((x) =>
     formatNumWithOrderOfMag(x, maxMagEng, {
-      minimumFractionDigits: options.digitTargetShowSignificantZeros
-        ? fracDigits
-        : 0,
+      minimumFractionDigits: fracDigits,
       maximumFractionDigits: fracDigits,
     })
   );
