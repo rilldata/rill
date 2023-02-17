@@ -64,15 +64,21 @@
 
   let worstCaseStringWidth = 79 + suffixPadding;
   $: {
-    if (
-      pxWidthLookupFn !== undefined &&
-      magnitudeStrategy === "unlimitedDigitTarget"
-    ) {
-      let int = pxWidthLookupFn("0", true) * maxDigitsRight;
-      let dot = pxWidthLookupFn(".", false);
-      let frac = pxWidthLookupFn("0", true) * maxDigitsLeft;
-      let suffix = pxWidthLookupFn("e-15", false);
-      worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
+    if (pxWidthLookupFn !== undefined) {
+      if (magnitudeStrategy === "unlimitedDigitTarget") {
+        let int = pxWidthLookupFn("0", true) * maxDigitsRight;
+        let dot = pxWidthLookupFn(".", false);
+        let frac = pxWidthLookupFn("0", true) * maxDigitsLeft;
+        let suffix = pxWidthLookupFn("e-200", false);
+        worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
+      } else if (magnitudeStrategy === "largestWithDigitTarget") {
+        let int = pxWidthLookupFn("0", true) * 3;
+        let dot = pxWidthLookupFn(".", false);
+        let frac = pxWidthLookupFn("0", true) * (digitTarget - 3);
+        let suffix = pxWidthLookupFn("e-200", false);
+        console.log({ int, dot, frac, suffix });
+        worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
+      }
     } else {
       worstCaseStringWidth = 79 + suffixPadding;
     }
@@ -128,15 +134,13 @@
     "B",
     "T",
     "Q",
+    "e",
+    "E",
   ];
-  for (let i = -79; i < 308; i++) {
-    numFormattingWidthLookupKeys.push("e" + i);
-    numFormattingWidthLookupKeys.push("E" + i);
+  for (let i = 0; i <= 9; i++) {
+    numFormattingWidthLookupKeys.push(i + "");
   }
-  for (let i = 0; i < 20; i++) {
-    let thisManyZerosString = "0".repeat(i);
-    numFormattingWidthLookupKeys.push(thisManyZerosString);
-  }
+
   let numFormattingWidthLookup: { [key: string]: number } = {};
 
   let charMeasuringDiv: HTMLDivElement;
@@ -148,30 +152,18 @@
     numFormattingWidthLookupKeys.forEach((str) => {
       charMeasuringDiv.innerHTML = str;
       let rect = charMeasuringDiv.getBoundingClientRect();
-      // console.log(str, cw);
       numFormattingWidthLookup[str] = rect.right - rect.left;
     });
 
     console.timeEnd("charMeasuringDiv");
 
-    pxWidthLookupFn = (str: string, isNumStr: boolean) => {
-      let out = 0;
-      if (isNumStr) {
-        let len = str.length;
-        if (str !== "" && str[0] === "-") {
-          out =
-            numFormattingWidthLookup["-"] +
-            numFormattingWidthLookup["0".repeat(len - 1)];
-        } else {
-          out = numFormattingWidthLookup["0".repeat(len)];
-        }
-      } else {
-        out = numFormattingWidthLookup[str];
-      }
-      return isNaN(out) ? 0 : out;
+    pxWidthLookupFn = (str: string) => {
+      return str
+        .split("")
+        .map((char) => numFormattingWidthLookup[char])
+        .reduce((a, b) => a + b, 0);
     };
   });
-  // console.log({ numFormattingWidthLookup });
 
   $: numberLists = numberListsUnprocessed.map((nl) => {
     let sample = nl.sample.map((x) => {
