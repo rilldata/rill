@@ -140,6 +140,11 @@ const numberListsGen: NumericSampleGen[] = [
     desc: "uniform(0,1e12)",
     sampleFn: () => range.map((x) => randu() * 1e12),
   },
+
+  {
+    desc: "power law-ish (uniform over magnitudes (e-200, e200))",
+    sampleFn: () => range.map((x) => 10 ** uniform(-200, 200)),
+  },
 ];
 
 export const numberLists: NumericSample[] = numberListsGen.map((g) => {
