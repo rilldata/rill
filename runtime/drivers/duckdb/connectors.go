@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -15,30 +16,37 @@ import (
 )
 
 const (
-	_iteratorBatch           = 8
-	_defaultTimeoutInSeconds = 60 * 5 // 5 minutes
+	_iteratorBatch        = 8
+	_defaultIngestTimeout = 60 * time.Minute
 )
 
 // Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	timeoutInSeconds := _defaultTimeoutInSeconds
+	// Wraps c.ingest with timeout handling
+
+	timeout := _defaultIngestTimeout
 	if source.Timeout > 0 {
-		timeoutInSeconds = int(source.Timeout)
+		timeout = time.Duration(source.Timeout) * time.Second
 	}
 
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(timeoutInSeconds)*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Driver-specific overrides
-	// switch source.Connector {
-	// case "local_file":
-	// 	return c.ingestFile(ctx, env, source)
-	// }
-	if source.Connector == "local_file" {
-		return c.ingestLocalFiles(ctxWithTimeout, env, source)
+	err := c.ingest(ctxWithTimeout, env, source)
+	if err != nil && errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("ingestion timeout exceeded (source=%q, timeout=%s)", source.Name, timeout.String())
 	}
 
-	iterator, err := connectors.ConsumeAsIterator(ctxWithTimeout, env, source)
+	return err
+}
+
+func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+	// Driver-specific overrides
+	if source.Connector == "local_file" {
+		return c.ingestLocalFiles(ctx, env, source)
+	}
+
+	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
 	if err != nil {
 		return err
 	}
@@ -51,7 +59,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 			return err
 		}
 
-		if err := c.ingestFiles(ctxWithTimeout, source, files, appendToTable); err != nil {
+		if err := c.ingestIteratorFiles(ctx, source, files, appendToTable); err != nil {
 			return err
 		}
 
@@ -61,7 +69,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 }
 
 // for files downloaded locally from remote sources
-func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source, filenames []string, appendToTable bool) error {
+func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors.Source, filenames []string, appendToTable bool) error {
 	format := ""
 	if value, ok := source.Properties["format"]; ok {
 		format = value.(string)
@@ -69,7 +77,7 @@ func (c *connection) ingestFiles(ctx context.Context, source *connectors.Source,
 
 	delimiter := ""
 	if value, ok := source.Properties["csv.delimiter"]; ok {
-		format = value.(string)
+		delimiter = value.(string)
 	}
 
 	hivePartition := 1
@@ -139,6 +147,10 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 func sourceReader(paths []string, csvDelimiter, format string, hivePartition int) (string, error) {
 	if format == "" {
 		format = fileutil.FullExt(paths[0])
+	} else {
+		// users will set format like csv, tsv, parquet
+		// while infering format from file name extensions its better to rely on .csv, .parquet
+		format = fmt.Sprintf(".%s", format)
 	}
 
 	if format == "" {
@@ -147,6 +159,8 @@ func sourceReader(paths []string, csvDelimiter, format string, hivePartition int
 		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
 	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
+	} else if strings.Contains(format, ".json") || strings.Contains(format, ".ndjson") {
+		return fmt.Sprintf("read_json_auto(['%s'])", strings.Join(paths, "','")), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}

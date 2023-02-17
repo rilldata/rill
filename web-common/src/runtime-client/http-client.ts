@@ -1,6 +1,5 @@
-import { HttpRequestQueue } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueue";
-import type { RequestQueueEntry } from "@rilldata/web-local/lib/http-request-queue/HttpRequestQueueTypes";
 import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrapper";
+import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
 
 let RuntimeUrl = "";
 try {

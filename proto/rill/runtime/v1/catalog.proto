@@ -100,8 +100,6 @@ message MetricsView {
   string model = 2;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 3;
-  // Recommended granularities for rolling up the time dimension.
-  repeated TimeGrain time_grains = 4;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 5;
   // Measures in the metrics view
@@ -110,9 +108,9 @@ message MetricsView {
   string label = 7;
   // Brief description of the dashboard
   string description = 8;
-  // default time grain
-  TimeGrain default_time_grain = 9;
-  // default time range for the dashboard. It should be a valid ISO 8601 duration string
+  // Smallest time grain to show in the dashboard
+  TimeGrain smallest_time_grain = 9;
+  // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
   string default_time_range = 10;
 }
 

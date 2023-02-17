@@ -1,4 +1,4 @@
-import { Heap } from "@rilldata/web-local/lib/http-request-queue/Heap";
+import { Heap } from "@rilldata/web-common/runtime-client/http-request-queue/Heap";
 import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrapper";
 
 export interface RequestQueueEntry {
