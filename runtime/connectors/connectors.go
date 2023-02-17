@@ -82,6 +82,8 @@ type Env struct {
 	UseHostCredentials bool // flag to disable use of host credentials
 	AccessKeyID        string
 	SecretAccessKey    string
+	SessionToken       string
+	SecretGlob         []byte
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).
