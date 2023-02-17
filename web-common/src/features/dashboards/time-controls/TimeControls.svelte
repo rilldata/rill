@@ -12,7 +12,7 @@ We should rename TimeSeriesTimeRange to a better name.
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import type {
+  import {
     TimeGrain,
     TimeRange,
     TimeRangeName,
@@ -126,8 +126,14 @@ We should rename TimeSeriesTimeRange to a better name.
     // Round end time to start of next grain
     // because the runtime uses exlusive end times, whereas user inputs are inclusive
     let adjustedEnd: Date;
-    adjustedEnd = addGrains(new Date(end), 1, timeGrain);
-    adjustedEnd = floorDate(adjustedEnd, timeGrain);
+    if (timeRange.name === TimeRangeName.Custom) {
+      // Custom Range always snaps to the end of the day
+      adjustedEnd = addGrains(new Date(end), 1, TimeGrain.OneDay);
+      adjustedEnd = floorDate(adjustedEnd, timeGrain);
+    } else {
+      adjustedEnd = addGrains(new Date(end), 1, timeGrain);
+      adjustedEnd = floorDate(adjustedEnd, timeGrain);
+    }
 
     // the adjusted time range
     const newTimeRange: TimeSeriesTimeRange = {
