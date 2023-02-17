@@ -99,7 +99,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
 
-	sess, err := getAwsSessionConfig(ctx, conf, url.Host)
+	sess, err := getAwsSessionConfig(ctx, conf, env, url.Host)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
@@ -121,7 +121,12 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return rillblob.NewIterator(ctx, bucketObj, opts)
 }
 
-func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
+func getAwsSessionConfig(ctx context.Context, conf *Config, env *connectors.Env, bucket string) (*session.Session, error) {
+	creds, err := resolvedCredentials(env)
+	if err != nil {
+		return nil, err
+	}
+
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if len(conf.S3Endpoint) > 0 {
 		region := conf.AWSRegion
@@ -134,26 +139,10 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*ses
 			Region:           aws.String(region),
 			Endpoint:         &conf.S3Endpoint,
 			S3ForcePathStyle: aws.Bool(true),
+			Credentials:      creds,
 		})
 	}
 	// The logic below is AWS-specific, so we ignore it when conf.S3Endpoint is set
-
-	// Find credentials to use.
-	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
-	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
-	// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
-	creds := credentials.NewChainCredentials([]credentials.Provider{
-		&credentials.EnvProvider{},
-		&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
-	})
-	_, err := creds.Get()
-	if err != nil {
-		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
-			return nil, err
-		}
-		creds = credentials.AnonymousCredentials
-	}
-
 	// The complexity below relates to AWS being pretty strict about regions (probably to avoid unexpected cross-region traffic).
 
 	// If the user explicitly set a region, we use that
@@ -191,4 +180,34 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*ses
 	}
 
 	return sess, nil
+}
+
+func resolvedCredentials(env *connectors.Env) (*credentials.Credentials, error) {
+	providers := make([]credentials.Provider, 0)
+	if env.UseHostCredentials {
+		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
+		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})
+	} else {
+		// in case host credential lookup is disabled we need to rely on user provided access keys only
+		staticProvider := &credentials.StaticProvider{}
+		staticProvider.AccessKeyID = env.AccessKeyID
+		staticProvider.SecretAccessKey = env.SecretAccessKey
+		staticProvider.SessionToken = env.SessionToken
+		staticProvider.ProviderName = credentials.StaticProviderName
+		providers = append(providers, staticProvider)
+	}
+
+	// Find credentials to use.
+	creds := credentials.NewChainCredentials(providers)
+
+	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
+	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
+	_, err := creds.Get()
+	if err != nil {
+		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
+			return nil, err
+		}
+		creds = credentials.AnonymousCredentials
+	}
+	return creds, nil
 }
