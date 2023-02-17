@@ -276,7 +276,7 @@ func (a *App) ReconcileSource(sourcePath string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, public bool, env string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
 	// Build local info for frontend
 	localConf, err := config()
 	if err != nil {
@@ -293,8 +293,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, pub
 		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: localConf.AnalyticsEnabled,
 		Readonly:         readonly,
-		Env:              env,
-		Public:           public,
 	}
 
 	// Create server logger.
@@ -399,8 +397,6 @@ type localInfo struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
-	Env              string `json:"env"`
-	Public           bool   `json:"public"`
 }
 
 // infoHandler servers the local info struct.
