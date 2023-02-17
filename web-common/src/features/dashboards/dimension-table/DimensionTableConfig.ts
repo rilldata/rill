@@ -1,4 +1,4 @@
-import type { VirtualizedTableConfig } from "@rilldata/web-local/lib/components/virtualized-table/types";
+import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
 
 export const DimensionTableConfig: VirtualizedTableConfig = {
   defaultColumnWidth: 110,

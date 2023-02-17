@@ -6,8 +6,8 @@
     useRuntimeServiceGetRugHistogram,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+  import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getPriorityForColumn } from "@rilldata/web-local/lib/http-request-queue/priorities";
   import { derived } from "svelte/store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";

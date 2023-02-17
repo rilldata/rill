@@ -101,12 +101,12 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			-- generate a time series column that has the intended range
 			WITH template as (
 			SELECT
-				generate_series as ` + tsAlias + `
+				range as ` + tsAlias + `
 			FROM
-				generate_series(
+				range(
 				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
 				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
-				interval '1 ` + dateTruncSpecifier + `')
+				INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
@@ -225,7 +225,7 @@ func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *ru
 		result = runtimev1.TimeSeriesTimeRange{
 			Interval: r.Interval,
 			Start:    r.Start,
-			End:      r.End,
+			End:      timestamppb.New(addInterval(r.End.AsTime(), r.Interval)),
 		}
 	} else if rtr.Start == nil || rtr.End == nil {
 		q := &ColumnTimeRange{
@@ -241,7 +241,7 @@ func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *ru
 		result = runtimev1.TimeSeriesTimeRange{
 			Interval: rtr.Interval,
 			Start:    tr.Min,
-			End:      tr.Max,
+			End:      timestamppb.New(addInterval(tr.Max.AsTime(), rtr.Interval)),
 		}
 	}
 

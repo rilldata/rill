@@ -2,9 +2,9 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import StickyHeader from "@rilldata/web-local/lib/components/virtualized-table/core/StickyHeader.svelte";
-  import type { VirtualizedTableConfig } from "@rilldata/web-local/lib/components/virtualized-table/types";
+  import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import { getContext } from "svelte";
+  import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
 
   export let totalHeight: number;
   export let virtualRowItems;

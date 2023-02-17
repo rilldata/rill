@@ -3,10 +3,7 @@ display_name: Ad bids (no rows)
 description:
 
 timeseries: timestamp
-default_time_grain: ""
-time_grains:
-  - day
-  - month
+smallest_time_grain: 
 
 dimensions:
   - label: Publisher
