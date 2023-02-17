@@ -1,8 +1,6 @@
 <script lang="ts">
   import AlignedNumber from "./aligned-number.svelte";
   import ColorPicker from "svelte-awesome-color-picker";
-  // import { HsvPicker } from "svelte-color-picker";
-  // import {  } from "svelte";
   import { numberLists as numberListsUnprocessed } from "./number-samples";
   import {
     formatterFactories,
@@ -14,7 +12,6 @@
   import LayeredContainer from "./layered-container.svelte";
   import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
   import SampleOptions from "./option-menus/sample-options.svelte";
-  import { bind } from "svelte/internal";
 
   // FORMATTER SELECTION
   export let defaultFormatterIndex = 1;
@@ -311,25 +308,6 @@
         of magnitude is not relevant to 0)
       </label>
     </div>
-    <!-- <div>
-      significant digits:
-      <label>
-        min
-        <input
-          class="number-input"
-          type="number"
-          bind:value={minimumSignificantDigits}
-        />
-      </label>
-      <label>
-        max
-        <input
-          class="number-input"
-          type="number"
-          bind:value={maximumSignificantDigits}
-        />
-      </label>
-    </div> -->
   </div>
 
   <div style="padding-left: 40px;">
@@ -345,51 +323,6 @@
 
     <h2>new humanizer strategy (and strategy-specific options)</h2>
     <form>
-      <!-- <div class="option-box">
-        <label>
-          <input
-            type="radio"
-            bind:group={magnitudeStrategy}
-            name="largest"
-            value={"largest"}
-          />
-          only use largest magnitude (like current humanizer)
-        </label>
-        <div class:inactive={magnitudeStrategy !== "largest"}>
-          <div class="option-box">
-            <label>
-              <input type="checkbox" bind:checked={usePlainNumsForThousands} />
-              for samples in interval (-1e6,1e6), just show plain number
-            </label>
-            <div class="option-box">
-              <label>
-                <input
-                  type="checkbox"
-                  bind:checked={usePlainNumsForThousandsOneDecimal}
-                />
-                show one digit after the decimal point (to indicate non-integer sample)
-              </label>
-            </div>
-          </div>
-          <div class="option-box">
-            <label>
-              <input type="checkbox" bind:checked={usePlainNumForThousandths} />
-              show a plain number if the largest order of magnitude is thousandths
-            </label>
-
-            <div class="option-box" class:inactive={!usePlainNumForThousandths}>
-              <label>
-                <input
-                  type="checkbox"
-                  bind:checked={usePlainNumForThousandthsPadZeros}
-                />
-                pad with zeros
-              </label>
-            </div>
-          </div>
-        </div>
-      </div> -->
-
       <div class="option-box">
         <label>
           <input
