@@ -66,7 +66,6 @@
     : undefined;
 
   function validateTimeRange(start: string, end: string) {
-    console.log(start, end);
     if (start > end) {
       return "Start date must be before end date";
     } else {
