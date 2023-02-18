@@ -66,6 +66,7 @@
     : undefined;
 
   function validateTimeRange(start: string, end: string) {
+    console.log(start, end);
     if (start > end) {
       return "Start date must be before end date";
     } else {
@@ -85,7 +86,7 @@
 </script>
 
 <form
-  id="custom-time-range-form font-semibold"
+  id="custom-time-range-form"
   class="flex flex-col gap-y-3 mt-3 mb-1 px-3"
   on:submit|preventDefault={applyCustomTimeRange}
 >
