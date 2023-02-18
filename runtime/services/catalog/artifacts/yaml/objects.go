@@ -8,9 +8,9 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rilldata/rill/cli/pkg/duration"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -46,15 +46,14 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label            string `yaml:"display_name"`
-	Description      string
-	Model            string
-	TimeDimension    string   `yaml:"timeseries"`
-	TimeGrains       []string `yaml:"time_grains"`
-	DefaultTimeGrain string   `yaml:"default_time_grain"`
-	DefaultTimeRange string   `yaml:"default_time_range"`
-	Dimensions       []*Dimension
-	Measures         []*Measure
+	Label             string `yaml:"display_name"`
+	Description       string
+	Model             string
+	TimeDimension     string `yaml:"timeseries"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	DefaultTimeRange  string `yaml:"default_time_range"`
+	Dimensions        []*Dimension
+	Measures          []*Measure
 }
 
 type Measure struct {
@@ -125,12 +124,7 @@ func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy,
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
 	err := copier.Copy(metricsArtifact, catalog.Object)
-	var timeGrains []string
-	for _, timeGrainEnum := range catalog.GetMetricsView().TimeGrains {
-		timeGrains = append(timeGrains, getTimeGrainString(timeGrainEnum))
-	}
-	metricsArtifact.TimeGrains = timeGrains
-	metricsArtifact.DefaultTimeGrain = getTimeGrainString(catalog.GetMetricsView().DefaultTimeGrain)
+	metricsArtifact.SmallestTimeGrain = getTimeGrainString(catalog.GetMetricsView().SmallestTimeGrain)
 	metricsArtifact.DefaultTimeRange = catalog.GetMetricsView().DefaultTimeRange
 	if err != nil {
 		return nil, err
@@ -305,7 +299,7 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	if metrics.DefaultTimeRange != "" {
 		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
 		if err != nil {
-			return nil, fmt.Errorf("invalid default_time_grain: %w", err)
+			return nil, fmt.Errorf("invalid default_time_range: %w", err)
 		}
 		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
 	}
@@ -320,18 +314,11 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
-	for _, timeGrain := range metrics.TimeGrains {
-		timeGrainEnum, err := getTimeGrainEnum(timeGrain)
-		if err != nil {
-			return nil, err
-		}
-		apiMetrics.TimeGrains = append(apiMetrics.TimeGrains, timeGrainEnum)
-	}
-	timeGrainEnum, err := getTimeGrainEnum(metrics.DefaultTimeGrain)
+	timeGrainEnum, err := getTimeGrainEnum(metrics.SmallestTimeGrain)
 	if err != nil {
 		return nil, err
 	}
-	apiMetrics.DefaultTimeGrain = timeGrainEnum
+	apiMetrics.SmallestTimeGrain = timeGrainEnum
 
 	name := fileutil.Stem(path)
 	apiMetrics.Name = name
