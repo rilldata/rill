@@ -1,4 +1,5 @@
 <script lang="ts">
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
@@ -31,6 +32,7 @@
 
 {#if activeTimeGrain && timeGrainOptions}
   <WithSelectMenu
+    distance={8}
     options={timeGrains}
     selection={{
       main: prettyTimeGrain(activeTimeGrain),
@@ -41,15 +43,17 @@
     let:active
   >
     <button
-      class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 transition-tranform duration-100"
+      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
       <span class="font-bold"
         >by {prettyTimeGrain(activeTimeGrain)} increments</span
       >
-      <span class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon size="16px" />
-      </span>
+      <IconSpaceFixer pullRight>
+        <div class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon size="16px" />
+        </div>
+      </IconSpaceFixer>
     </button>
   </WithSelectMenu>
 {/if}

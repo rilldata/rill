@@ -148,7 +148,7 @@ We should rename TimeSeriesTimeRange to a better name.
   }
 </script>
 
-<div class="flex flex-row">
+<div class="flex flex-row gap-x-1">
   {#if !hasTimeSeries}
     <NoTimeDimensionCTA
       {metricViewName}

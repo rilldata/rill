@@ -1,4 +1,5 @@
 <script lang="ts">
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -80,14 +81,14 @@
   alignment="start"
 >
   <button
-    class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 transition-tranform duration-100"
+    class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
     on:click={toggleFloatingElement}
   >
     <div class="flex flew-row gap-x-3">
       <div class="font-bold flex flex-row items-center gap-x-3">
-        <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
         <span class="ui-copy-icon"><Calendar size="16px" /></span>
         <span style:transform="translateY(1px)">
+          <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
           {$dashboardStore?.selectedTimeRange?.name ?? "Select a time range"}
         </span>
       </div>
@@ -95,9 +96,11 @@
         {prettyFormatTimeRange($dashboardStore?.selectedTimeRange)}
       </span>
     </div>
-    <span class="transition-transform" class:-rotate-180={active}>
-      <CaretDownIcon size="16px" />
-    </span>
+    <IconSpaceFixer pullRight>
+      <div class="transition-transform" class:-rotate-180={active}>
+        <CaretDownIcon size="16px" />
+      </div>
+    </IconSpaceFixer>
   </button>
   <Menu
     slot="floating-element"
