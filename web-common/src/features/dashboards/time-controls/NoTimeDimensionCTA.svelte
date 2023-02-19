@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { useModelTimestampColumns } from "@rilldata/web-common/features/models/selectors";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import Calendar from "../../../components/icons/Calendar.svelte";
-  import Shortcut from "../../../components/tooltip/Shortcut.svelte";
-  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
-  import { useModelTimestampColumns } from "../../models/selectors";
 
   export let metricViewName: string;
   export let modelName: string;
