@@ -7,7 +7,7 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 )
 
-const _defaultTableHeadLimit = 25
+const _tableHeadDefaultLimit = 25
 
 // Table level profiling APIs.
 func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
@@ -47,7 +47,7 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
 	limit := int(req.Limit)
 	if limit == 0 {
-		limit = _defaultTableHeadLimit
+		limit = _tableHeadDefaultLimit
 	}
 
 	q := &queries.TableHead{

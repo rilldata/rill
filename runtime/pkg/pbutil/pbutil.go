@@ -136,7 +136,7 @@ func ToStructCoerceKeys(v map[any]any) (*structpb.Struct, error) {
 // trimQuotes removes surrounding double quotes from a string, if present.
 // Examples: `"10"` -> `10` and `10` -> `10`.
 func trimQuotes(s string) string {
-	if len(s) > 1 {
+	if len(s) >= 2 {
 		if s[0] == '"' && s[len(s)-1] == '"' {
 			return s[1 : len(s)-1]
 		}
