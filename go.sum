@@ -1137,8 +1137,8 @@ github.com/mailru/easyjson v0.7.0/go.mod h1:KAzv3t3aY1NaHWoQz1+4F1ccyAH66Jk7yos7
 github.com/mailru/easyjson v0.7.6/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0=
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
-github.com/marcboeker/go-duckdb v1.2.0 h1:VHzRrGE3U7VGi4UsHqOErNeYCR5TP39zlW5AxQOjnSs=
-github.com/marcboeker/go-duckdb v1.2.0/go.mod h1:hiESNxIrSFZGzPbAmcWjaVKYlIW8hB4uGz0AgEba5Ck=
+github.com/marcboeker/go-duckdb v1.2.1-0.20230219144401-fdeb27f3e1f9 h1:LGZZkbyO43Pi4whILIjYa/p2dDISNp3Aic8CXi8Xbso=
+github.com/marcboeker/go-duckdb v1.2.1-0.20230219144401-fdeb27f3e1f9/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
 github.com/markbates/oncer v0.0.0-20181203154359-bf2de49a0be2/go.mod h1:Ld9puTsIW75CHf65OeIOkyKbteujpZVXDpWK6YGZbxE=
 github.com/markbates/safe v1.0.1/go.mod h1:nAqgmRi7cY2nqMc92/bSEeQA+R4OheNU2T1kNSCBdG0=
 github.com/marstr/guid v1.1.0/go.mod h1:74gB1z2wpxxInTG6yaqA7KrtM0NZ+RbrcqDvYHefzho=
