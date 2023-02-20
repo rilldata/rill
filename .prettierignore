@@ -13,6 +13,7 @@ admin/
 state/
 static/
 temp/
+proto/
 
 .env
 *.sql
