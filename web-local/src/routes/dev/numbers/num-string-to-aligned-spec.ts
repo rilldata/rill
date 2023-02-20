@@ -89,13 +89,10 @@ export const getMaxPxWidthsForSplitsStrings = (
   let maxPxWidths = { int: 0, dot: 0, frac: 0, suffix: 0 };
   const max = Math.max;
   numStrParts.forEach((richNum) => {
-    maxPxWidths.int = max(pxWidthLookup(richNum.int, true), maxPxWidths.int);
-    maxPxWidths.dot = max(pxWidthLookup(richNum.dot, false), maxPxWidths.dot);
-    maxPxWidths.frac = max(pxWidthLookup(richNum.frac, true), maxPxWidths.frac);
-    maxPxWidths.suffix = max(
-      pxWidthLookup(richNum.suffix, false),
-      maxPxWidths.suffix
-    );
+    maxPxWidths.int = max(pxWidthLookup(richNum.int), maxPxWidths.int);
+    maxPxWidths.dot = max(pxWidthLookup(richNum.dot), maxPxWidths.dot);
+    maxPxWidths.frac = max(pxWidthLookup(richNum.frac), maxPxWidths.frac);
+    maxPxWidths.suffix = max(pxWidthLookup(richNum.suffix), maxPxWidths.suffix);
   });
   return maxPxWidths;
 };
