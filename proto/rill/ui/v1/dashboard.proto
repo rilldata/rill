@@ -6,8 +6,8 @@ import "rill/runtime/v1/api.proto";
 import "rill/runtime/v1/catalog.proto";
 
 message DashboardState {
-  optional google.protobuf.Timestamp time_start = 1;
-  optional google.protobuf.Timestamp time_end = 2;
-  optional rill.runtime.v1.TimeGrain time_granularity = 3;
-  optional rill.runtime.v1.MetricsViewFilter filters = 4;
+  google.protobuf.Timestamp time_start = 1;
+  google.protobuf.Timestamp time_end = 2;
+  rill.runtime.v1.TimeGrain time_granularity = 3;
+  rill.runtime.v1.MetricsViewFilter filters = 4;
 }

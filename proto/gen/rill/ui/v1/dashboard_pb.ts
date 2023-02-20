@@ -13,22 +13,22 @@ import { MetricsViewFilter } from "../../runtime/v1/api_pb.js";
  */
 export class DashboardState extends Message<DashboardState> {
   /**
-   * @generated from field: optional google.protobuf.Timestamp time_start = 1;
+   * @generated from field: google.protobuf.Timestamp time_start = 1;
    */
   timeStart?: Timestamp;
 
   /**
-   * @generated from field: optional google.protobuf.Timestamp time_end = 2;
+   * @generated from field: google.protobuf.Timestamp time_end = 2;
    */
   timeEnd?: Timestamp;
 
   /**
-   * @generated from field: optional rill.runtime.v1.TimeGrain time_granularity = 3;
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 3;
    */
-  timeGranularity?: TimeGrain;
+  timeGranularity = TimeGrain.UNSPECIFIED;
 
   /**
-   * @generated from field: optional rill.runtime.v1.MetricsViewFilter filters = 4;
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 4;
    */
   filters?: MetricsViewFilter;
 
@@ -40,10 +40,10 @@ export class DashboardState extends Message<DashboardState> {
   static readonly runtime = proto3;
   static readonly typeName = "rill.ui.v1.DashboardState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "time_start", kind: "message", T: Timestamp, opt: true },
-    { no: 2, name: "time_end", kind: "message", T: Timestamp, opt: true },
-    { no: 3, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain), opt: true },
-    { no: 4, name: "filters", kind: "message", T: MetricsViewFilter, opt: true },
+    { no: 1, name: "time_start", kind: "message", T: Timestamp },
+    { no: 2, name: "time_end", kind: "message", T: Timestamp },
+    { no: 3, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 4, name: "filters", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
