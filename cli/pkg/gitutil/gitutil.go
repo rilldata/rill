@@ -2,7 +2,6 @@ package gitutil
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -13,7 +12,7 @@ import (
 	exec "golang.org/x/sys/execabs"
 )
 
-func PublicKey() (*ssh.PublicKeys, error) {
+func publicKey() (*ssh.PublicKeys, error) {
 	var publicKey *ssh.PublicKeys
 	sshPath := os.Getenv("HOME") + "/.ssh/id_ed25519"
 	sshKey, _ := os.ReadFile(sshPath)
@@ -24,13 +23,19 @@ func PublicKey() (*ssh.PublicKeys, error) {
 	return publicKey, err
 }
 
-func getAuth(url string) *http.BasicAuth {
+func getAuthCredentials(endpoint *transport.Endpoint) (transport.AuthMethod, error) {
+	if endpoint.Protocol == "ssh" {
+		auth, keyErr := publicKey()
+		return auth, keyErr
+	}
+
+	url := endpoint.String()
 	cmd := exec.Command("git", "credential", "fill")
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("url=%s\n", url))
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		log.Fatalf("'git credential fill' failed: %v\n", err)
+		return nil, fmt.Errorf("'git credential fill' failed: %w", err)
 	}
 
 	var username, password string
@@ -53,7 +58,7 @@ func getAuth(url string) *http.BasicAuth {
 		Password: password,
 	}
 
-	return authOpts
+	return authOpts, nil
 }
 
 func CloneRepo(url string) (string, error) {
@@ -65,22 +70,11 @@ func CloneRepo(url string) (string, error) {
 	repoName := strings.TrimSuffix(endpoint.Path[strings.LastIndex(endpoint.Path, "/")+1:], ".git")
 	fmt.Printf("Cloning into '%s'...\n", endpoint.String())
 
-	if endpoint.Protocol == "ssh" {
-		auth, keyErr := PublicKey()
-		if keyErr != nil {
-			return repoName, keyErr
-		}
-
-		_, err = git.PlainClone(repoName, false, &git.CloneOptions{
-			URL:      endpoint.String(),
-			Progress: os.Stdout,
-			Auth:     auth,
-		})
-
+	auth, err := getAuthCredentials(endpoint)
+	if err != nil {
 		return repoName, err
 	}
 
-	auth := getAuth(endpoint.String())
 	_, err = git.PlainClone(repoName, false, &git.CloneOptions{
 		URL:      endpoint.String(),
 		Progress: os.Stdout,
