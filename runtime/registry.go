@@ -64,6 +64,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 
 	env := drivers.Env(proj.Env)
 	inst.ProjectEnv = &env
+
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)
 	if err != nil {

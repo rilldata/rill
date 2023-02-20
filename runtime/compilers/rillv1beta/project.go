@@ -120,7 +120,12 @@ func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
 
 func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 	content, err := c.Repo.Get(ctx, c.InstanceID, "rill.yaml")
-	if err != nil && !os.IsNotExist(err) {
+	// rill.yaml is not guaranteed to exist in case of older projects
+	if os.IsNotExist(err) {
+		return &ProjectConfig{Env: make(map[string]string)}, nil
+	}
+
+	if err != nil {
 		return nil, err
 	}
 

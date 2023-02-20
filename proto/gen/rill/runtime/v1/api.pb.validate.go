@@ -327,6 +327,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Env
 
+	// no validation rules for ProjectEnv
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}

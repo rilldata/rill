@@ -1650,7 +1650,7 @@ definitions:
         type: object
         additionalProperties:
           type: string
-        title: instance specific enviornment variables
+        title: instance specific environment variables
       instanceId:
         type: string
         title: Identifier (UUID)
@@ -1660,6 +1660,11 @@ definitions:
       olapDsn:
         type: string
         title: DSN for connection to OLAP
+      projectEnv:
+        type: object
+        additionalProperties:
+          type: string
+        title: project defaults
       repoDriver:
         type: string
         description: |-
