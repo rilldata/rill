@@ -17,17 +17,19 @@ func ToValue(v any) (*structpb.Value, error) {
 	switch v := v.(type) {
 	// In addition to the extra supported types, we also override handling for
 	// maps and lists since we need to use valToPB on nested fields.
-	case map[string]interface{}:
+	case map[string]any:
 		v2, err := ToStruct(v)
 		if err != nil {
 			return nil, err
 		}
+
 		return structpb.NewStructValue(v2), nil
-	case []interface{}:
+	case []any:
 		v2, err := ToListValue(v)
 		if err != nil {
 			return nil, err
 		}
+
 		return structpb.NewListValue(v2), nil
 	// Handle types not handled by structpb.NewValue
 	case int8:
@@ -62,12 +64,22 @@ func ToValue(v any) (*structpb.Value, error) {
 		// This is what we should do when frontend supports it:
 		// s := v.String()
 		// return structpb.NewStringValue(s), nil
+	case duckdb.Map:
+		return ToValue(map[any]any(v))
+	case map[any]any:
+		v2, err := ToStructCoerceKeys(v)
+		if err != nil {
+			return nil, err
+		}
+
+		return structpb.NewStructValue(v2), nil
 	case duckdb.Interval:
 		m := map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}
 		v2, err := ToStruct(m)
 		if err != nil {
 			return nil, err
 		}
+
 		return structpb.NewStructValue(v2), nil
 	default:
 		// Default handling for basic types (ints, string, etc.)
@@ -91,6 +103,49 @@ func ToStruct(v map[string]any) (*structpb.Struct, error) {
 		}
 	}
 	return x, nil
+}
+
+// ToStructCoerceKeys converts a map with non-string keys to a google.protobuf.Struct.
+// It attempts to coerce the keys to JSON strings.
+func ToStructCoerceKeys(v map[any]any) (*structpb.Struct, error) {
+	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
+	for k1, v := range v {
+		k2, ok := k1.(string)
+		if !ok {
+			// Encode k1 using ToValue (to correctly coerce time, big numbers, etc.) and then to JSON.
+			// This yields more idiomatic/consistent strings than using fmt.Sprintf("%v", k1).
+			val, err := ToValue(k1)
+			if err != nil {
+				return nil, err
+			}
+
+			data, err := val.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+
+			// Remove surrounding quotes returned by MarshalJSON for strings
+			k2 = trimQuotes(string(data))
+		}
+
+		var err error
+		x.Fields[k2], err = ToValue(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return x, nil
+}
+
+// trimQuotes removes surrounding double quotes from a string, if present.
+// Examples: `"10"` -> `10` and `10` -> `10`.
+func trimQuotes(s string) string {
+	if len(s) >= 2 {
+		if s[0] == '"' && s[len(s)-1] == '"' {
+			return s[1 : len(s)-1]
+		}
+	}
+	return s
 }
 
 // ToListValue converts a map to a google.protobuf.List. It's similar to
