@@ -1002,8 +1002,8 @@ message GenerateTimeSeriesRequest {
 }
 
 message TimeSeriesTimeRange {
-  google.protobuf.Timestamp start = 2 [(validate.rules).timestamp.required = true];
-  google.protobuf.Timestamp end = 3 [(validate.rules).timestamp.required = true];
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
   TimeGrain interval = 4 [(validate.rules).enum.defined_only = true];
 }
 
