@@ -10,7 +10,6 @@
   import { SelectMenu } from "../../../components/menu";
   import {
     getTimeGrainOptions,
-    prettyTimeGrain,
     timeGrainEnumToYamlString,
     TimeGrainOption,
   } from "../../dashboards/time-controls/time-range-utils";
@@ -19,7 +18,7 @@
   export let selectedModel: V1Model;
 
   $: defaultTimeGrainValue =
-    $metricsInternalRep.getMetricKey("default_time_grain") ||
+    $metricsInternalRep.getMetricKey("smallest_time_grain") ||
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
@@ -46,11 +45,20 @@
   }
 
   let selectableTimeGrains: TimeGrainOption[] = [];
+  let maxTimeGrainPossibleIndex = 0;
   $: if (allTimeRange) {
     selectableTimeGrains = getTimeGrainOptions(
       allTimeRange.start,
       allTimeRange.end
     );
+
+    maxTimeGrainPossibleIndex =
+      selectableTimeGrains.length -
+      1 -
+      selectableTimeGrains
+        .slice()
+        .reverse()
+        .findIndex((grain) => grain.enabled);
   }
 
   $: options = [
@@ -60,13 +68,14 @@
       divider: true,
     },
   ].concat(
-    selectableTimeGrains.map((grain) => {
+    selectableTimeGrains.map((grain, i) => {
+      const isGrainPossible = i <= maxTimeGrainPossibleIndex;
       return {
         divider: false,
         key: timeGrainEnumToYamlString(grain.timeGrain),
         main: timeGrainEnumToYamlString(grain.timeGrain),
-        disabled: !grain.enabled,
-        description: !grain.enabled
+        disabled: !isGrainPossible,
+        description: !isGrainPossible
           ? "not valid for this time range"
           : undefined,
       };
@@ -78,11 +87,11 @@
 
     if (selectedTimeGrain === "") {
       $metricsInternalRep.updateMetricsParams({
-        default_time_grain: "",
+        smallest_time_grain: "",
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
-        default_time_grain: timeGrainEnumToYamlString(selectedTimeGrain),
+        smallest_time_grain: timeGrainEnumToYamlString(selectedTimeGrain),
       });
     }
   }

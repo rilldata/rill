@@ -248,8 +248,7 @@ export function initBlankDashboardYAML(dashboardName: string) {
 display_name: ""
 model: ""
 default_time_range: ""
-default_time_grain: ""
-time_grains: []
+smallest_time_grain: ""
 timeseries: ""
 measures: []
 dimensions: []

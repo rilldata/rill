@@ -26,7 +26,7 @@
   function removeTimeseries() {
     $metricsInternalRep.updateMetricsParams({
       timeseries: "",
-      default_time_grain: "",
+      smallest_time_grain: "",
       default_time_range: "",
     });
   }

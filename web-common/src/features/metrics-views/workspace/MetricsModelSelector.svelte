@@ -20,9 +20,8 @@
     $metricsInternalRep.updateMetricsParams({
       model: modelName,
       timeseries: "",
-      default_time_grain: "",
+      smallest_time_grain: "",
       default_time_range: "",
-      time_grains: [],
     });
   }
 
