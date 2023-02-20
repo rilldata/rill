@@ -1,7 +1,8 @@
-package file
+package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -11,7 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
+	doublestar "github.com/bmatcuk/doublestar/v4"
+	gogit "github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -133,5 +135,22 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 }
 
 func (c *connection) Sync(ctx context.Context, instID string) error {
+	repo, err := gogit.PlainOpen("tempdir")
+	if err != nil {
+		return err
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	err = wt.Pull(&gogit.PullOptions{})
+	if errors.Is(err, gogit.NoErrAlreadyUpToDate) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
 	return nil
 }
