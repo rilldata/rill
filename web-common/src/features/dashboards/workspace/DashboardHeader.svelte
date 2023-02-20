@@ -86,7 +86,8 @@
         <Tooltip distance={8}>
           <Button on:click={openCalendly} type="primary">Publish</Button>
           <TooltipContent slot="tooltip-content">
-            Schedule a meeting to talk about publishing this dashboard.
+            Schedule time to chat with Rill about early access to hosted
+            dashboards.
           </TooltipContent>
         </Tooltip>
       </PanelCTA>

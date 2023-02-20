@@ -43,8 +43,8 @@
         break;
 
       case "full":
-        width = "calc(100% - 2*var(--header-height))";
-        height = "calc(100% - 2*var(--header-height))";
+        xDimClasses = "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-2/3";
+        yDimClasses = "h-4/5";
         break;
     }
   }
