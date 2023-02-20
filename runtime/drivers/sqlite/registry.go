@@ -39,21 +39,21 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	}
 	defer rows.Close()
 
-	// sqlite doesn't support maps need to read as bytes and convert to map
-	var env, projectEnv []byte
 	var res []*drivers.Instance
 	for rows.Next() {
+		// sqlite doesn't support maps need to read as bytes and convert to map
+		var env, projectEnv []byte
 		i := &drivers.Instance{}
 		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &env, &projectEnv)
 		if err != nil {
 			return nil, err
 		}
-		i.Env, err = fromJSON(env)
+		i.Env, err = mapFromJSON(env)
 		if err != nil {
 			return nil, err
 		}
 
-		i.ProjectEnv, err = fromJSON(projectEnv)
+		i.ProjectEnv, err = mapFromJSON(projectEnv)
 		if err != nil {
 			return nil, err
 		}
@@ -74,12 +74,12 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	}
 
 	// sqlite doesn't support maps need to convert to json and write as bytes array
-	env, err := toJSON(inst.Env)
+	env, err := mapToJSON(inst.Env)
 	if err != nil {
 		return err
 	}
 
-	projectEnv, err := toJSON(inst.ProjectEnv)
+	projectEnv, err := mapToJSON(inst.ProjectEnv)
 	if err != nil {
 		return err
 	}
@@ -118,12 +118,12 @@ func (c *connection) DeleteInstance(_ context.Context, id string) error {
 	return err
 }
 
-func toJSON(data map[string]string) ([]byte, error) {
+func mapToJSON(data map[string]string) ([]byte, error) {
 	return json.Marshal(data)
 }
 
-func fromJSON(data []byte) (map[string]string, error) {
-	m := make(map[string]string)
+func mapFromJSON(data []byte) (map[string]string, error) {
+	var m map[string]string
 	err := json.Unmarshal(data, &m)
 	return m, err
 }

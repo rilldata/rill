@@ -51,7 +51,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 	}
 
 	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
-	env := map[string]map[string]string{"env": instance.EnviornmentVariables()}
+	env := map[string]map[string]string{"env": instance.EnvironmentVariables()}
 
 	// convert templatised artifact
 	t, err := template.New("source").Option("missingkey=error").Parse(blob)

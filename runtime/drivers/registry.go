@@ -40,8 +40,8 @@ type Instance struct {
 	ProjectEnv map[string]string `db:"project_env"`
 }
 
-// EnviornmentVariables returns the final resolved env variables
-func (i *Instance) EnviornmentVariables() map[string]string {
+// EnvironmentVariables returns the final resolved env variables
+func (i *Instance) EnvironmentVariables() map[string]string {
 	r := make(map[string]string, len(i.ProjectEnv))
 	// set ProjectEnv first i.e. Project defaults
 	for k, v := range i.ProjectEnv {
