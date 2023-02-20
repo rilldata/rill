@@ -1,7 +1,6 @@
 syntax = "proto3";
 package rill.ui.v1;
 
-import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/api.proto";
 import "rill/runtime/v1/catalog.proto";

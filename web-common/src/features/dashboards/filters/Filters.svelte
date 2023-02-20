@@ -11,10 +11,6 @@ The main feature-set component for dashboard filters
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import {
-    fromProto,
-    toProto,
-  } from "@rilldata/web-common/features/dashboards/filters/protoConversions";
-  import {
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -180,12 +176,6 @@ The main feature-set component for dashboard filters
     bgActiveClass: "bg-gray-200 dark:bg-gray-600",
     outlineClass: "outline-gray-400 dark:outline-gray-500",
   };
-
-  $: if (metricsExplorer?.filters) {
-    const message = toProto(metricsExplorer?.filters);
-    const binary = message.toBinary();
-    console.log(binary, fromProto(binary));
-  }
 </script>
 
 <section
