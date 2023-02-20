@@ -364,6 +364,13 @@ export const humanized2FormatterFactory: FormatterFactory = (
 
   splitStrs.forEach((ss, i) => {
     if (ss.suffix === undefined) console.error("bad suffix post", ss);
+    // FIXME: add concept of "prefix" instead of this hack
+    if (options.formattingUnits === "$") {
+      ss.int = ss.int[0] === "-" ? "-$" + ss.int.slice(1) : "$" + ss.int;
+    }
+    if (options.formattingUnits === "%") {
+      ss.suffix += "%";
+    }
   });
 
   let spacing: FormatterSpacingMeta =
