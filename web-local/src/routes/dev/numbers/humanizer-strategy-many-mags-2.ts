@@ -24,6 +24,7 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
     minDigitsNonzero,
     nonIntegerHandling,
     digitTargetPadWithInsignificantZeros,
+    specialDecimalHandling,
   } = options;
 
   let splitStrs: NumberStringParts[] = sample.map((x) => {
@@ -39,19 +40,34 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
     let RHSDigits;
     let LHSDigits;
 
+    let padForE0DecimalHandling = false;
+
     if (mag < 0) {
       // first consider fractional numbers.
 
       // In this case, all  digits will be RHS, so we just need
       // to check whether formatting with E0 allows enough non-zero digits.
 
-      // do the formatting
+      // get the number of RHS digits
       RHSDigits = Math.min(maxTotalDigits - 1, maxDigitsRight); // -1 for leading 0
+
+      // apply special decimal handling for e0
+      if (
+        specialDecimalHandling === "alwaysTwoDigits" ||
+        (minMag === -1 && specialDecimalHandling === "neverOneDigit")
+      ) {
+        RHSDigits = 2;
+        // NOTE: if the E0 RHS digit adjustment is triggered for this number,
+        // then we also need to make sure special padding is applied
+        padForE0DecimalHandling = true;
+      }
+
+      // do the formatting
       let ss = formatNumWithOrderOfMag2(
         x,
         0,
         RHSDigits,
-        digitTargetPadWithInsignificantZeros
+        digitTargetPadWithInsignificantZeros || padForE0DecimalHandling
       );
 
       // see how many signif digits this number has:
@@ -95,11 +111,23 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
       LHSDigits = Math.min(mag + 1, maxTotalDigits, maxDigitsLeft);
       RHSDigits = Math.min(maxTotalDigits - LHSDigits, maxDigitsRight);
 
+      // apply special decimal handling for e0
+      if (
+        specialDecimalHandling === "alwaysTwoDigits" ||
+        (minMag === -1 && specialDecimalHandling === "neverOneDigit")
+      ) {
+        RHSDigits = 2;
+        // NOTE: if the E0 RHS digit adjustment is triggered for this number,
+        // then we also need to make sure special padding is applied
+        padForE0DecimalHandling = true;
+        console.log({ x, RHSDigits });
+      }
+
       let ss = formatNumWithOrderOfMag2(
         x,
         0,
         RHSDigits,
-        digitTargetPadWithInsignificantZeros,
+        digitTargetPadWithInsignificantZeros || padForE0DecimalHandling,
         nonIntegerHandling === "trailingDot"
       );
 

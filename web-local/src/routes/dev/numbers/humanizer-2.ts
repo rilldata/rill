@@ -124,7 +124,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
   sample: number[],
   options
 ): NumberStringParts[] => {
-  const { digitTarget } = options;
+  const { digitTarget, specialDecimalHandling } = options;
   // console.log({ digitTarget });
   const magnitudes = getOrdersOfMagnitude(sample, "scientific");
   const maxMag = Math.max(...magnitudes);
@@ -144,44 +144,102 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
       .map(splitNumStr);
   }
 
-  // non-integer of reasonable size
-  if (0 <= maxMag && maxMag < digitTarget - 1 && !allAreIntegers) {
+  let digitsNeededAfterDecimalForE0 = 1;
+
+  if (
+    specialDecimalHandling === "alwaysTwoDigits" ||
+    specialDecimalHandling === "neverOneDigit"
+  ) {
+    digitsNeededAfterDecimalForE0 = 2;
+    // NOTE: if the E0 RHS digit adjustment is triggered for this number,
+    // then we also need to make sure special padding is applied
+  }
+
+  // numbers that can be shown as E0 within digit budget
+  if (
+    // non-integers of reasonable magnitudes
+    (0 <= maxMag &&
+      maxMag < digitTarget - digitsNeededAfterDecimalForE0 &&
+      !allAreIntegers) ||
+    // fractions of reasonable magnitudes
+    (0 >= maxMag && maxMag >= -digitTarget)
+  ) {
     // if the numbers are not all integers, but the maximum
     // magnitude is such that they'd fit withing the digit
     // target allowing 1 digit after the decimal point,
     // can still use simple formatting, without suffix
     // just need the right number of digits
 
-    let fracDigits = digitTarget - maxMag - 1;
+    let splitStrs = sample.map((x) => {
+      // per-number adjustment for specialDecimalHandling
+      const minMag = smallestPrecisionMagnitude(x);
+      let fracDigits = digitTarget - maxMag - 1;
+      let padForE0DecimalHandling = false;
+      if (
+        specialDecimalHandling === "alwaysTwoDigits" ||
+        (minMag === -1 && specialDecimalHandling === "neverOneDigit")
+      ) {
+        console.log({ x, minMag, specialDecimalHandling });
+        fracDigits = 2;
+        padForE0DecimalHandling = true;
+      }
 
-    let splitStrs = sample.map((x) =>
-      formatNumWithOrderOfMag2(
+      console.log({ x, minMag, specialDecimalHandling, fracDigits });
+
+      return formatNumWithOrderOfMag2(
         x,
         0,
         fracDigits,
-        options.digitTargetPadWithInsignificantZeros
-      )
-    );
+        options.digitTargetPadWithInsignificantZeros || padForE0DecimalHandling
+      );
+    });
     splitStrs.forEach((ss) => {
       ss.suffix = "";
     });
     return splitStrs;
   }
 
-  // FIXME add "minNonzeroDigits" option for this case
-  // fractional number with reasonable number of digits
-  if (0 >= maxMag && maxMag >= -digitTarget) {
-    // if maxMag represents a fraction that can be shown within
-    // digitTarget digits of the decimal point,
-    // use simple formatting without suffix
-    let formatter = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: digitTarget,
-      maximumFractionDigits: digitTarget,
-    });
-    return sample
-      .map((x) => formatter.format(x).replace(",", ""))
-      .map(splitNumStr);
-  }
+  // // FIXME add "minNonzeroDigits" option for this case
+  // // fractional number with reasonable number of digits
+  // if (0 >= maxMag && maxMag >= -digitTarget) {
+  //   // if maxMag represents a fraction that can be shown within
+  //   // digitTarget digits of the decimal point,
+  //   // use simple formatting without suffix
+  //   // let formatter = new Intl.NumberFormat("en-US", {
+  //   //   minimumFractionDigits: digitTarget,
+  //   //   maximumFractionDigits: digitTarget,
+  //   // });
+  //   // return sample
+  //   //   .map((x) => formatter.format(x).replace(",", ""))
+  //   //   .map(splitNumStr);
+
+  //   let splitStrs = sample.map((x) => {
+  //     const minMag = smallestPrecisionMagnitude(x);
+  //     let fracDigits = digitTarget - maxMag - 1;
+  //     let padForE0DecimalHandling = false;
+  //     if (
+  //       specialDecimalHandling === "alwaysTwoDigits" ||
+  //       (minMag === -1 && specialDecimalHandling === "neverOneDigit")
+  //     ) {
+  //       console.log({ x, minMag, specialDecimalHandling });
+  //       fracDigits = 2;
+  //       padForE0DecimalHandling = true;
+  //     }
+
+  //     console.log({ x, minMag, specialDecimalHandling, fracDigits });
+
+  //     return formatNumWithOrderOfMag2(
+  //       x,
+  //       0,
+  //       fracDigits,
+  //       options.digitTargetPadWithInsignificantZeros || padForE0DecimalHandling
+  //     );
+  //   });
+  //   splitStrs.forEach((ss) => {
+  //     ss.suffix = "";
+  //   });
+  //   return splitStrs;
+  // }
 
   // At this point, the largest magnitude represents
   // either a tiny infinitesimal, or a large number.
