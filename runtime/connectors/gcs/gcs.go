@@ -1,18 +1,20 @@
 package gcs
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
-	"gocloud.dev/blob"
-
-	// blank import required for bucket functions
-	_ "gocloud.dev/blob/gcsblob"
+	"gocloud.dev/blob/gcsblob"
+	"gocloud.dev/gcp"
+	"golang.org/x/oauth2/google"
 )
 
 func init() {
@@ -86,10 +88,19 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
 	}
 
-	bucket := fmt.Sprintf("gs://%s", url.Host)
-	bucketObj, err := blob.OpenBucket(ctx, bucket)
+	creds, err := resolvedCredentials(ctx, env)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", bucket, err)
+		return nil, err
+	}
+
+	client, err := gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+	if err != nil {
+		return nil, err
+	}
+
+	bucketObj, err := gcsblob.OpenBucket(ctx, client, url.Host, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
 
 	// prepare fetch configs
@@ -102,4 +113,27 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		ExtractPolicy:         source.ExtractPolicy,
 	}
 	return rillblob.NewIterator(ctx, bucketObj, opts)
+}
+
+func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
+	useHostCred := env.Variables["use_host_credentials"] != "false" // true by default
+	if useHostCred {
+		// use default credentials
+		return gcp.DefaultCredentials(ctx)
+	}
+
+	// use credentials from file given by user
+	secretJSONFile := env.Variables["gs_credentials_file"]
+	r, err := os.Open(secretJSONFile)
+	if err != nil {
+		return nil, err
+	}
+
+	bw := new(bytes.Buffer)
+	_, err = io.Copy(bw, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return google.CredentialsFromJSON(ctx, bw.Bytes(), "https://www.googleapis.com/auth/cloud-platform")
 }

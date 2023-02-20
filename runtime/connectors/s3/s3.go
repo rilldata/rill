@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -184,15 +185,16 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, env *connectors.Env,
 
 func resolvedCredentials(env *connectors.Env) (*credentials.Credentials, error) {
 	providers := make([]credentials.Provider, 0)
-	if env.UseHostCredentials {
+	useHostCred := env.Variables["use_host_credentials"] != "false" // true by default
+	if useHostCred {
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})
 	} else {
 		// in case host credential lookup is disabled we need to rely on user provided access keys only
 		staticProvider := &credentials.StaticProvider{}
-		staticProvider.AccessKeyID = env.AccessKeyID
-		staticProvider.SecretAccessKey = env.SecretAccessKey
-		staticProvider.SessionToken = env.SessionToken
+		staticProvider.AccessKeyID = env.Variables["aws_access_key_id"]
+		staticProvider.SecretAccessKey = env.Variables["aws_secret_access_key"]
+		staticProvider.SessionToken = env.Variables["aws_session_token"]
 		staticProvider.ProviderName = credentials.StaticProviderName
 		providers = append(providers, staticProvider)
 	}
