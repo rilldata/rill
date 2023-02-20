@@ -40,7 +40,7 @@ func AddCmd(ver version.Version) *cobra.Command {
 				dataPath = relPath
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, "")
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, []string{})
 			if err != nil {
 				return err
 			}

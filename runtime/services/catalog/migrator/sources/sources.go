@@ -18,7 +18,7 @@ func init() {
 
 type sourceMigrator struct{}
 
-func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, e drivers.EnviornmentVariables, catalogObj *drivers.CatalogEntry) error {
+func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, e map[string]string, catalogObj *drivers.CatalogEntry) error {
 	apiSource := catalogObj.GetSource()
 
 	source := &connectors.Source{
@@ -30,19 +30,15 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 	}
 
 	env := &connectors.Env{
-		RepoDriver:         repo.Driver(),
-		RepoDSN:            repo.DSN(),
-		UseHostCredentials: strings.ToLower(e.Get("env", "use_host_credentials")) != "false", // true by default
-		AccessKeyID:        e.Get("env", "access_key_id"),
-		SecretAccessKey:    e.Get("env", "secret_access_key"),
-		SessionToken:       e.Get("env", "session_token"),
-		SecretGlob:         []byte(e.Get("env", "secret_glob")),
+		RepoDriver: repo.Driver(),
+		RepoDSN:    repo.DSN(),
+		Variables:  e,
 	}
 
 	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env drivers.EnviornmentVariables, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	return m.Create(ctx, olap, repo, env, newCatalogObj)
 }
 

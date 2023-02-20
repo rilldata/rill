@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -64,9 +65,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string,
-	logFormat LogFormat, envString string,
-) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -124,6 +123,11 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
+	env, err := parse(envVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:           DefaultInstanceID,
@@ -132,8 +136,9 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		RepoDriver:   "file",
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
+		Env:          &env,
 	}
-	err = rt.CreateInstance(ctx, inst, envString)
+	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
 	}
@@ -476,4 +481,18 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	default:
 		return "", false
 	}
+}
+
+func parse(envs []string) (drivers.Env, error) {
+	vars := make(map[string]string, len(envs))
+	for _, env := range envs {
+		// split into key value pairs
+		key, value, found := strings.Cut(env, "=")
+		// key can't be empty value can be
+		if !found || key == "" {
+			return nil, fmt.Errorf("invalid env token %q", env)
+		}
+		vars[key] = value
+	}
+	return vars, nil
 }

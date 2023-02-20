@@ -1481,7 +1481,9 @@ definitions:
       embedCatalog:
         type: boolean
       env:
-        type: string
+        type: object
+        additionalProperties:
+          type: string
       instanceId:
         type: string
       olapDriver:
@@ -1645,11 +1647,10 @@ definitions:
           If true, the runtime will store the instance's catalog in its OLAP store instead
           of in the runtime's metadata store. Currently only supported for the duckdb driver.
       env:
-        type: string
-        title: |-
-          instance specific enviornment variables
-          stored in format key=value with multiple env variable separated by semi-colon
-          example : timeout=300;hive_parition=false
+        type: object
+        additionalProperties:
+          type: string
+        title: instance specific enviornment variables
       instanceId:
         type: string
         title: Identifier (UUID)
@@ -1719,12 +1720,9 @@ definitions:
   v1MetricsView:
     type: object
     properties:
-      defaultTimeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: default time grain
       defaultTimeRange:
         type: string
-        title: default time range for the dashboard
+        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
       description:
         type: string
         title: Brief description of the dashboard
@@ -1747,16 +1745,12 @@ definitions:
       name:
         type: string
         title: Name of the metrics view
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Smallest time grain to show in the dashboard
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
-      timeGrains:
-        type: array
-        items:
-          $ref: '#/definitions/v1TimeGrain'
-        description: |-
-          Recommended granularities for rolling up the time dimension.
-          Should be a valid SQL INTERVAL value.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
