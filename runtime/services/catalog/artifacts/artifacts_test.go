@@ -358,9 +358,8 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	store.Migrate(ctx)
 	registry, _ := store.RegistryStore()
 
-	env := drivers.Env{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
-
-	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Env: &env})
+	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
+	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Env: env})
 	require.NoError(t, err)
 
 	return registry
