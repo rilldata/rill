@@ -1,7 +1,10 @@
 import {
+  StructTypeField,
+  useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceGetFile,
   useRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
+import { TIMESTAMPS } from "../../lib/duckdb-data-types";
 
 export function useModelNames(instanceId: string) {
   return useRuntimeServiceListFiles(
@@ -31,6 +34,20 @@ export function useModelFileIsEmpty(instanceId, modelName) {
       select(data) {
         return data?.blob?.length === 0;
       },
+    },
+  });
+}
+
+export function useModelTimestampColumns(
+  instanceId: string,
+  modelName: string
+) {
+  return useRuntimeServiceGetCatalogEntry(instanceId, modelName, {
+    query: {
+      select: (data) =>
+        data?.entry?.model?.schema?.fields?.filter((field: StructTypeField) =>
+          TIMESTAMPS.has(field.type.code as string)
+        ) ?? [].map((field) => field.name),
     },
   });
 }

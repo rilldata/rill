@@ -204,6 +204,7 @@
         dashboardName
       )}
       <NavigationEntry
+        showContextMenu={!$runtimeStore.readOnly}
         expandable={false}
         name={dashboardName}
         href={`/dashboard/${dashboardName}`}

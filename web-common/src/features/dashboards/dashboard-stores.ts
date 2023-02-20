@@ -3,7 +3,7 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
-import { Readable, Writable, writable } from "svelte/store";
+import { derived, Readable, Writable, writable } from "svelte/store";
 import type { TimeSeriesTimeRange } from "./time-controls/time-control-types";
 
 export interface LeaderboardValue {
@@ -225,5 +225,14 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 
   ...metricViewReducers,
 };
+
+export function useDashboardStore(
+  name: string
+): Readable<MetricsExplorerEntity> {
+  const derivedStore = derived(metricsExplorerStore, ($store) => {
+    return $store.entities[name];
+  });
+  return derivedStore;
+}
 
 export const calendlyModalStore: Writable<string> = writable("");
