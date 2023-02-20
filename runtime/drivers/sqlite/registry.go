@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -38,13 +39,24 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	}
 	defer rows.Close()
 
+	var env, projectEnv []byte
 	var res []*drivers.Instance
 	for rows.Next() {
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &i.Env, &i.ProjectEnv)
+		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &env, &projectEnv)
 		if err != nil {
 			return nil, err
 		}
+		i.Env, err = fromJSON(env)
+		if err != nil {
+			return nil, err
+		}
+
+		i.ProjectEnv, err = fromJSON(projectEnv)
+		if err != nil {
+			return nil, err
+		}
+
 		res = append(res, i)
 	}
 
@@ -60,8 +72,18 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		inst.ID = uuid.NewString()
 	}
 
+	env, err := toJSON(inst.Env)
+	if err != nil {
+		return err
+	}
+
+	projectEnv, err := toJSON(inst.ProjectEnv)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
-	_, err := c.db.ExecContext(
+	_, err = c.db.ExecContext(
 		ctx,
 		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, env, project_env) "+
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9)",
@@ -72,8 +94,8 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		inst.RepoDSN,
 		inst.EmbedCatalog,
 		now,
-		inst.Env,
-		inst.ProjectEnv,
+		env,
+		projectEnv,
 	)
 	if err != nil {
 		return err
@@ -92,4 +114,14 @@ func (c *connection) DeleteInstance(_ context.Context, id string) error {
 
 	_, err := c.db.ExecContext(ctx, "DELETE FROM instances WHERE id=$1", id)
 	return err
+}
+
+func toJSON(data map[string]string) ([]byte, error) {
+	return json.Marshal(data)
+}
+
+func fromJSON(data []byte) (map[string]string, error) {
+	m := make(map[string]string)
+	err := json.Unmarshal(data, &m)
+	return m, err
 }

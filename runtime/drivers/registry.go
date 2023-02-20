@@ -2,8 +2,6 @@ package drivers
 
 import (
 	"context"
-	"database/sql/driver"
-	"encoding/json"
 	"time"
 )
 
@@ -36,34 +34,22 @@ type Instance struct {
 	// UpdatedOn is when the instance was last updated in the registry
 	UpdatedOn time.Time `db:"updated_on"`
 	// Env contains user-provided environment variables
-	Env *Env `db:"env"`
+	Env map[string]string `db:"env"`
 	// ProjectEnv contains default environment variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
-	ProjectEnv *Env `db:"project_env"`
-}
-
-type Env map[string]string
-
-// Value implements driver.Valuer interface
-func (e *Env) Value() (driver.Value, error) {
-	return json.Marshal(e)
-}
-
-// Scan implements sql.Scanner interface
-func (e *Env) Scan(val interface{}) error {
-	return json.Unmarshal(val.([]byte), e)
+	ProjectEnv map[string]string `db:"project_env"`
 }
 
 // EnviornmentVariables returns the final resolved env variables
 func (i *Instance) EnviornmentVariables() map[string]string {
-	r := make(map[string]string, len(*i.ProjectEnv))
+	r := make(map[string]string, len(i.ProjectEnv))
 	// set ProjectEnv first i.e. Project defaults
-	for k, v := range *i.ProjectEnv {
+	for k, v := range i.ProjectEnv {
 		r[k] = v
 	}
 
 	// override with instance env
-	for k, v := range *i.Env {
+	for k, v := range i.Env {
 		r[k] = v
 	}
 	return r
