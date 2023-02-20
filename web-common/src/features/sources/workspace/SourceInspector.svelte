@@ -71,6 +71,8 @@
     const path = source?.properties?.path?.toLowerCase();
     if (path?.includes(".csv")) return "CSV";
     if (path?.includes(".parquet")) return "Parquet";
+    if (path?.includes(".json")) return "JSON";
+    if (path?.includes(".ndjson")) return "JSON";
     return "";
   }
 

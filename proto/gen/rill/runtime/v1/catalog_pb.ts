@@ -465,13 +465,6 @@ export class MetricsView extends Message<MetricsView> {
   timeDimension = "";
 
   /**
-   * Recommended granularities for rolling up the time dimension.
-   *
-   * @generated from field: repeated rill.runtime.v1.TimeGrain time_grains = 4;
-   */
-  timeGrains: TimeGrain[] = [];
-
-  /**
    * Dimensions in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsView.Dimension dimensions = 5;
@@ -500,14 +493,14 @@ export class MetricsView extends Message<MetricsView> {
   description = "";
 
   /**
-   * default time grain
+   * Smallest time grain to show in the dashboard
    *
-   * @generated from field: rill.runtime.v1.TimeGrain default_time_grain = 9;
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 9;
    */
-  defaultTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.UNSPECIFIED;
 
   /**
-   * default time range for the dashboard. It should be a valid ISO 8601 duration string
+   * Default time range for the dashboard. It should be a valid ISO 8601 duration string.
    *
    * @generated from field: string default_time_range = 10;
    */
@@ -524,12 +517,11 @@ export class MetricsView extends Message<MetricsView> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "time_grains", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 5, name: "dimensions", kind: "message", T: MetricsView_Dimension, repeated: true },
     { no: 6, name: "measures", kind: "message", T: MetricsView_Measure, repeated: true },
     { no: 7, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "default_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 9, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 10, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
