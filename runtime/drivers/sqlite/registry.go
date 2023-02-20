@@ -39,6 +39,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	}
 	defer rows.Close()
 
+	// sqlite doesn't support maps need to read as bytes and convert to map
 	var env, projectEnv []byte
 	var res []*drivers.Instance
 	for rows.Next() {
@@ -72,6 +73,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		inst.ID = uuid.NewString()
 	}
 
+	// sqlite doesn't support maps need to convert to json and write as bytes array
 	env, err := toJSON(inst.Env)
 	if err != nil {
 		return err
