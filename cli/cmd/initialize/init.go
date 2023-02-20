@@ -88,7 +88,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	initCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "setting any env variables")
+	initCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
 
 	return initCmd
 }

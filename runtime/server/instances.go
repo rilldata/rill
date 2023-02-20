@@ -82,5 +82,6 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		RepoDsn:      inst.RepoDSN,
 		EmbedCatalog: inst.EmbedCatalog,
 		Env:          *inst.Env,
+		ProjectEnv:   *inst.ProjectEnv,
 	}
 }

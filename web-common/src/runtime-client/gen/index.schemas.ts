@@ -448,6 +448,14 @@ export interface V1NumericSummary {
   numericStatistics?: V1NumericStatistics;
 }
 
+export interface V1Model {
+  dialect?: ModelDialect;
+  materialize?: boolean;
+  name?: string;
+  schema?: V1StructType;
+  sql?: string;
+}
+
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -518,6 +526,8 @@ export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
 
+export type V1InstanceProjectEnv = { [key: string]: string };
+
 export type V1InstanceEnv = { [key: string]: string };
 
 /**
@@ -536,6 +546,7 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
+  projectEnv?: V1InstanceProjectEnv;
   /** Driver for reading/editing code artifacts (options: file, metastore).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
@@ -773,14 +784,6 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
-
-export interface V1Model {
-  dialect?: ModelDialect;
-  materialize?: boolean;
-  name?: string;
-  schema?: V1StructType;
-  sql?: string;
-}
 
 export interface MetricsViewMeasure {
   description?: string;
