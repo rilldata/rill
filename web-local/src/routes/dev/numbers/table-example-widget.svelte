@@ -44,6 +44,12 @@
   let minDigitsNonzero = 1;
   let nonIntegerHandling: "none" | "oneDigit" | "trailingDot" = "trailingDot";
 
+  let formattingUnits: "none" | "$" | "%" = "none";
+  let specialDecimalHandling:
+    | "noSpecial"
+    | "alwaysTwoDigits"
+    | "neverOneDigit" = "noSpecial";
+
   // BARS OPTIONS
   let showBars = false;
   let absoluteValExtentsIfPosAndNeg = true;
@@ -109,6 +115,8 @@
     maxDigitsRight,
     minDigitsNonzero,
     nonIntegerHandling,
+    formattingUnits,
+    specialDecimalHandling,
   };
 
   let samplePreprocessing: "none" | "round" | "currencyRoundCent" = "none";
@@ -304,14 +312,93 @@
 
   <div style="padding-left: 40px;">
     <h2>new humanizer shared options</h2>
+    <div style="padding-left: 20px;">
+      <label>
+        <input
+          type="checkbox"
+          bind:checked={digitTargetPadWithInsignificantZeros}
+        />
+        pad with insignificant zeros (after last significant digit)
+      </label>
 
-    <label>
-      <input
-        type="checkbox"
-        bind:checked={digitTargetPadWithInsignificantZeros}
-      />
-      pad with insignificant zeros (after last significant digit)
-    </label>
+      <div style="display: flex; flex-direction: row;">
+        <b>units</b>
+
+        &nbsp; &nbsp;
+
+        <form>
+          <label>
+            <input
+              type="radio"
+              bind:group={formattingUnits}
+              name="none"
+              value={"none"}
+            />
+            none
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              bind:group={formattingUnits}
+              name="$"
+              value={"$"}
+            />
+            $
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              bind:group={formattingUnits}
+              name="%"
+              value={"%"}
+            />
+            %
+          </label>
+        </form>
+      </div>
+
+      <h3>special decimal handling for e0 numbers (for currency mostly)</h3>
+      <div class="option-box">
+        <form>
+          <div>
+            <label>
+              <input
+                type="radio"
+                bind:group={specialDecimalHandling}
+                name="noSpecial"
+                value={"noSpecial"}
+              />
+              no special handling
+            </label>
+          </div>
+          <div>
+            <label>
+              <input
+                type="radio"
+                bind:group={specialDecimalHandling}
+                name="neverOneDigit"
+                value={"neverOneDigit"}
+              />
+              never leave just one digit after the decimal
+            </label>
+          </div>
+
+          <div>
+            <label>
+              <input
+                type="radio"
+                bind:group={specialDecimalHandling}
+                name="alwaysTwoDigits"
+                value={"alwaysTwoDigits"}
+              />
+              always round to max two digits
+            </label>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <h2>new humanizer strategy (and strategy-specific options)</h2>
     <form>
