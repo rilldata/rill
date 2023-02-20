@@ -20,7 +20,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	// Check OLAP connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
 	if err != nil {
-		return fmt.Errorf("failed to open database, Rill might already be running. DB Error: %w", err)
+		return err
 	}
 	_, ok := olap.OLAPStore()
 	if !ok {

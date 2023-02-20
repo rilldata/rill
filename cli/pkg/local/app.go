@@ -310,15 +310,15 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	group, ctx := errgroup.WithContext(gctx)
 
 	// Check if given gRPC port is open
-	err = scanPort(grpcPort)
+	err = checkPort(grpcPort)
 	if err != nil {
-		return fmt.Errorf("Given GRPCport: %d alreay in use", grpcPort)
+		return fmt.Errorf("grpc port %d is already in use", grpcPort)
 	}
 
 	// Check if given Http port is open
-	err = scanPort(httpPort)
+	err = checkPort(httpPort)
 	if err != nil {
-		return fmt.Errorf("Given HTPPport: %d alreay in use", httpPort)
+		return fmt.Errorf("http port %d is already in use", httpPort)
 	}
 
 	// Create a runtime server
@@ -490,7 +490,7 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	}
 }
 
-func scanPort(port int) error {
+func checkPort(port int) error {
 	conn, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		return err

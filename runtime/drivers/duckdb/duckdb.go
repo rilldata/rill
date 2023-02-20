@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
@@ -48,6 +50,10 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "could not open database") {
+			return nil, fmt.Errorf("failed to open database, Rill might already be running. DB Error: %w", err)
+		}
+
 		return nil, err
 	}
 
