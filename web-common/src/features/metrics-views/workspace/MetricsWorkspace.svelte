@@ -21,8 +21,7 @@
   import { initDimensionColumns } from "../DimensionColumns";
   import { initMeasuresColumns } from "../MeasuresColumns";
   import { createInternalRepresentation } from "../metrics-internal-store";
-  import MetricsAvailableTimeGrains from "./MetricsAvailableTimeGrains.svelte";
-  import MetricsDefaultTimeGrainSelector from "./MetricsDefaultTimeGrainSelector.svelte";
+  import MetricsMinimumTimeGrainSelector from "./MetricsMinimumTimeGrainSelector.svelte";
   import MetricsDefaultTimeRange from "./MetricsDefaultTimeRange.svelte";
   import MetricsDisplayNameInput from "./MetricsDisplayNameInput.svelte";
   import MetricsEntityTable from "./MetricsEntityTable.svelte";
@@ -178,15 +177,11 @@
             {metricsInternalRep}
           />
 
+          <MetricsMinimumTimeGrainSelector
+            selectedModel={model}
+            {metricsInternalRep}
+          />
           <MetricsDefaultTimeRange selectedModel={model} {metricsInternalRep} />
-          <MetricsDefaultTimeGrainSelector
-            selectedModel={model}
-            {metricsInternalRep}
-          />
-          <MetricsAvailableTimeGrains
-            selectedModel={model}
-            {metricsInternalRep}
-          />
         </div>
 
         <div class="ml-auto">

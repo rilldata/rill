@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Cell from "@rilldata/web-local/lib/components/virtualized-table/core/Cell.svelte";
-  import StickyHeader from "@rilldata/web-local/lib/components/virtualized-table/core/StickyHeader.svelte";
-  import type { VirtualizedTableConfig } from "@rilldata/web-local/lib/components/virtualized-table/types";
+  import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
+  import Cell from "../../../components/virtualized-table/core/Cell.svelte";
+  import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
 
   const config: VirtualizedTableConfig = getContext("config");
 

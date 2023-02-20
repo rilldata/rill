@@ -1,10 +1,12 @@
 import {
   useRuntimeServiceGetCatalogEntry,
-  useRuntimeServiceListFiles,
+  useRuntimeServiceGetTimeRangeSummary,
   useRuntimeServiceListCatalogEntries,
+  useRuntimeServiceListFiles,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
+import { TimeRangeName } from "./time-controls/time-control-types";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
@@ -49,6 +51,33 @@ export const useModelHasTimeSeries = (
   instanceId: string,
   metricViewName: string
 ) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+
+export function useModelAllTimeRange(
+  instanceId: string,
+  modelName: string,
+  timeDimension: string
+) {
+  return useRuntimeServiceGetTimeRangeSummary(
+    instanceId,
+    modelName,
+    {
+      columnName: timeDimension,
+    },
+    {
+      query: {
+        select: (data) => {
+          if (!data.timeRangeSummary?.min || !data.timeRangeSummary?.max)
+            return undefined;
+          return {
+            name: TimeRangeName.AllTime,
+            start: new Date(data.timeRangeSummary.min),
+            end: new Date(data.timeRangeSummary.max),
+          };
+        },
+      },
+    }
+  );
+}
 
 export const useMetaMeasure = (
   instanceId: string,

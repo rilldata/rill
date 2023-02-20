@@ -1,33 +1,28 @@
 <script lang="ts">
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
+  import { useDashboardStore } from "../dashboard-stores";
   import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
 
-  export let selectedTimeGrain: V1TimeGrain;
-  export let availableTimeGrains: V1TimeGrain[];
-  export let selectableTimeGrains: TimeGrainOption[];
+  export let metricViewName: string;
+  export let timeGrainOptions: TimeGrainOption[];
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-grain";
 
-  $: options = selectableTimeGrains
-    ? selectableTimeGrains.map(({ timeGrain, enabled }) => {
-        const isTimeGrainAvailable =
-          !availableTimeGrains.length ||
-          availableTimeGrains.includes(timeGrain);
-        return {
-          main: prettyTimeGrain(timeGrain),
-          disabled: !enabled || !isTimeGrainAvailable,
-          key: timeGrain,
-          description: !enabled
-            ? "not valid for this time range"
-            : !isTimeGrainAvailable
-            ? "not available"
-            : undefined,
-        };
-      })
+  $: dashboardStore = useDashboardStore(metricViewName);
+  $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
+
+  $: timeGrains = timeGrainOptions
+    ? timeGrainOptions.map(({ timeGrain, enabled }) => ({
+        main: prettyTimeGrain(timeGrain),
+        disabled: !enabled,
+        key: timeGrain,
+        description: !enabled ? "not valid for this time range" : undefined,
+      }))
     : undefined;
 
   const onTimeGrainSelect = (timeGrain: V1TimeGrain) => {
@@ -35,27 +30,30 @@
   };
 </script>
 
-{#if selectedTimeGrain && selectableTimeGrains}
+{#if activeTimeGrain && timeGrainOptions}
   <WithSelectMenu
-    {options}
+    distance={8}
+    options={timeGrains}
     selection={{
-      main: prettyTimeGrain(selectedTimeGrain),
-      key: selectedTimeGrain,
+      main: prettyTimeGrain(activeTimeGrain),
+      key: activeTimeGrain,
     }}
     on:select={(event) => onTimeGrainSelect(event.detail.key)}
     let:toggleMenu
     let:active
   >
     <button
-      class="px-4 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 transition-tranform duration-100"
+      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
       <span class="font-bold"
-        >by {prettyTimeGrain(selectedTimeGrain)} increments</span
+        >by {prettyTimeGrain(activeTimeGrain)} increments</span
       >
-      <span class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon size="16px" />
-      </span>
+      <IconSpaceFixer pullRight>
+        <div class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon size="16px" />
+        </div>
+      </IconSpaceFixer>
     </button>
   </WithSelectMenu>
 {/if}

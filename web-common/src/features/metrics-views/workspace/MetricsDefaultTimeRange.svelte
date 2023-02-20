@@ -9,7 +9,7 @@
   import Spacer from "../../../components/icons/Spacer.svelte";
   import { SelectMenu } from "../../../components/menu";
   import {
-    getSelectableTimeRanges,
+    getRelativeTimeRangeOptions,
     ISODurationToTimeRange,
     timeRangeToISODuration,
   } from "../../dashboards/time-controls/time-range-utils";
@@ -39,14 +39,14 @@
     !$timeRangeQuery.isRefetching
   ) {
     allTimeRange = {
-      start: $timeRangeQuery.data.timeRangeSummary.min,
-      end: $timeRangeQuery.data.timeRangeSummary.max,
+      start: new Date($timeRangeQuery.data.timeRangeSummary.min),
+      end: new Date($timeRangeQuery.data.timeRangeSummary.max),
     };
   }
 
   let selectableTimeRanges = [];
   $: if (allTimeRange) {
-    selectableTimeRanges = getSelectableTimeRanges(allTimeRange);
+    selectableTimeRanges = getRelativeTimeRangeOptions(allTimeRange);
   }
 
   $: options = [
@@ -67,14 +67,10 @@
     if (timeRangeSelectedValue === "__DEFAULT_VALUE__") {
       $metricsInternalRep.updateMetricsParams({
         default_time_range: "",
-        default_time_grain: "",
-        time_grains: [],
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
         default_time_range: timeRangeSelectedValue,
-        default_time_grain: "",
-        time_grains: [],
       });
     }
   }

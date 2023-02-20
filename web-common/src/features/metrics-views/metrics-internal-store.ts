@@ -15,11 +15,9 @@ export interface MetricsConfig extends MetricsParams {
 }
 export interface MetricsParams {
   display_name: string;
-  description: string;
   timeseries: string;
-  time_grains?: Array<string>;
+  smallest_time_grain?: string;
   default_time_range?: string;
-  default_time_grain?: string;
   model: string;
 }
 export interface MeasureEntity {
