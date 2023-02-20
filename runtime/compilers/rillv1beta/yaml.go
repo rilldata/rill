@@ -7,3 +7,8 @@ type Source struct {
 	Region       string `yaml:"region,omitempty"`
 	CSVDelimiter string `yaml:"csv.delimiter,omitempty"`
 }
+
+type ProjectConfig struct {
+	// environment variables
+	Env map[string]string `yaml:"env,omitempty"`
+}
