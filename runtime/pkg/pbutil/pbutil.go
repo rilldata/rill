@@ -22,12 +22,14 @@ func ToValue(v any) (*structpb.Value, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return structpb.NewStructValue(v2), nil
 	case []any:
 		v2, err := ToListValue(v)
 		if err != nil {
 			return nil, err
 		}
+
 		return structpb.NewListValue(v2), nil
 	// Handle types not handled by structpb.NewValue
 	case int8:
@@ -62,13 +64,6 @@ func ToValue(v any) (*structpb.Value, error) {
 		// This is what we should do when frontend supports it:
 		// s := v.String()
 		// return structpb.NewStringValue(s), nil
-	case duckdb.Interval:
-		m := map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}
-		v2, err := ToStruct(m)
-		if err != nil {
-			return nil, err
-		}
-		return structpb.NewStructValue(v2), nil
 	case duckdb.Map:
 		return ToValue(map[any]any(v))
 	case map[any]any:
@@ -76,6 +71,15 @@ func ToValue(v any) (*structpb.Value, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		return structpb.NewStructValue(v2), nil
+	case duckdb.Interval:
+		m := map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}
+		v2, err := ToStruct(m)
+		if err != nil {
+			return nil, err
+		}
+
 		return structpb.NewStructValue(v2), nil
 	default:
 		// Default handling for basic types (ints, string, etc.)
@@ -106,20 +110,20 @@ func ToStruct(v map[string]any) (*structpb.Struct, error) {
 func ToStructCoerceKeys(v map[any]any) (*structpb.Struct, error) {
 	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
 	for k1, v := range v {
-		// Coerce k1 to a string.
-		k2, ok := k1.(string) // If k1 is a string, we're good
+		k2, ok := k1.(string)
 		if !ok {
-			// k1 is not a string.
-			// First encode it using ToValue (to correctly coerce time, big numbers, etc.)
+			// Encode k1 using ToValue (to correctly coerce time, big numbers, etc.) and then to JSON.
+			// This yields more idiomatic/consistent strings than using fmt.Sprintf("%v", k1).
 			val, err := ToValue(k1)
 			if err != nil {
 				return nil, err
 			}
-			// Then encode it as JSON
+
 			data, err := val.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
+
 			// Remove surrounding quotes returned by MarshalJSON for strings
 			k2 = trimQuotes(string(data))
 		}
