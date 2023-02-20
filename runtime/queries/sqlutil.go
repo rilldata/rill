@@ -3,6 +3,7 @@ package queries
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -69,5 +70,28 @@ func toTimeGrain(val string) runtimev1.TimeGrain {
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
 	default:
 		panic(fmt.Errorf("unconvertable time grain specifier: %v", val))
+	}
+}
+
+func addInterval(t time.Time, timeGrain runtimev1.TimeGrain) time.Time {
+	switch timeGrain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return t.Add(time.Millisecond)
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return t.Add(time.Second)
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return t.Add(time.Minute)
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return t.Add(time.Hour)
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return t.Add(time.Hour * 24)
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return t.Add(time.Hour * 24 * 7)
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return t.AddDate(0, 1, 0)
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return t.AddDate(1, 0, 0)
+	default:
+		return t
 	}
 }

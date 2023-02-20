@@ -13,8 +13,8 @@ export interface MetricsConfig {
   display_name: string;
   description: string;
   timeseries: string;
-  timegrains?: Array<string>;
-  default_timegrain?: Array<string>;
+  smallest_time_grain?: string;
+  default_time_range?: string;
   model: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];

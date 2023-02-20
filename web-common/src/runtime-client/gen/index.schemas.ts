@@ -492,16 +492,16 @@ export interface V1MetricsViewColumn {
 }
 
 export interface V1MetricsView {
+  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
+  defaultTimeRange?: string;
   description?: string;
   dimensions?: MetricsViewDimension[];
   label?: string;
   measures?: MetricsViewMeasure[];
   model?: string;
   name?: string;
+  smallestTimeGrain?: V1TimeGrain;
   timeDimension?: string;
-  /** Recommended granularities for rolling up the time dimension.
-Should be a valid SQL INTERVAL value. */
-  timeGrains?: string[];
 }
 
 export interface V1MapType {

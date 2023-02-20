@@ -10,6 +10,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -31,6 +32,7 @@ type Source struct {
 	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
 	Timeout               int32          `yaml:"timeout,omitempty"`
 	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
+	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -44,14 +46,14 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label            string `yaml:"display_name"`
-	Description      string
-	Model            string
-	TimeDimension    string `yaml:"timeseries"`
-	TimeGrains       []string
-	DefaultTimeGrain string `yaml:"default_timegrain"`
-	Dimensions       []*Dimension
-	Measures         []*Measure
+	Label             string `yaml:"display_name"`
+	Description       string
+	Model             string
+	TimeDimension     string `yaml:"timeseries"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	DefaultTimeRange  string `yaml:"default_time_range"`
+	Dimensions        []*Dimension
+	Measures          []*Measure
 }
 
 type Measure struct {
@@ -122,6 +124,8 @@ func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy,
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
 	metricsArtifact := &MetricsView{}
 	err := copier.Copy(metricsArtifact, catalog.Object)
+	metricsArtifact.SmallestTimeGrain = getTimeGrainString(catalog.GetMetricsView().SmallestTimeGrain)
+	metricsArtifact.DefaultTimeRange = catalog.GetMetricsView().DefaultTimeRange
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +168,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.HivePartition != nil {
 		props["hive_partitioning"] = *source.HivePartition
+	}
+
+	if source.Format != "" {
+		props["format"] = source.Format
 	}
 
 	propsPB, err := structpb.NewStruct(props)
@@ -286,6 +294,16 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	metrics.Dimensions = dimensions
 
 	apiMetrics := &runtimev1.MetricsView{}
+
+	// validate correctness of default time range
+	if metrics.DefaultTimeRange != "" {
+		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("invalid default_time_range: %w", err)
+		}
+		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
+	}
+
 	err := copier.Copy(apiMetrics, metrics)
 	if err != nil {
 		return nil, err
@@ -296,6 +314,12 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		measure.Name = fmt.Sprintf("measure_%d", i)
 	}
 
+	timeGrainEnum, err := getTimeGrainEnum(metrics.SmallestTimeGrain)
+	if err != nil {
+		return nil, err
+	}
+	apiMetrics.SmallestTimeGrain = timeGrainEnum
+
 	name := fileutil.Stem(path)
 	apiMetrics.Name = name
 	return &drivers.CatalogEntry{
@@ -304,4 +328,54 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		Path:   path,
 		Object: apiMetrics,
 	}, nil
+}
+
+// Get TimeGrain enum from string
+func getTimeGrainEnum(timeGrain string) (runtimev1.TimeGrain, error) {
+	switch strings.ToLower(timeGrain) {
+	case "":
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil
+	case "millisecond":
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, nil
+	case "second":
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND, nil
+	case "minute":
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE, nil
+	case "hour":
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR, nil
+	case "day":
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY, nil
+	case "week":
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK, nil
+	case "month":
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH, nil
+	case "year":
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
+	default:
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain: %s", timeGrain)
+	}
+}
+
+// Get TimeGrain string from enum
+func getTimeGrainString(timeGrain runtimev1.TimeGrain) string {
+	switch timeGrain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "millisecond"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "second"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "minute"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "hour"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "day"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "week"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "month"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "year"
+	default:
+		return ""
+	}
 }

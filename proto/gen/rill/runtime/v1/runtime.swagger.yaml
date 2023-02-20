@@ -1711,6 +1711,9 @@ definitions:
   v1MetricsView:
     type: object
     properties:
+      defaultTimeRange:
+        type: string
+        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
       description:
         type: string
         title: Brief description of the dashboard
@@ -1733,16 +1736,12 @@ definitions:
       name:
         type: string
         title: Name of the metrics view
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Smallest time grain to show in the dashboard
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
-      timeGrains:
-        type: array
-        items:
-          type: string
-        description: |-
-          Recommended granularities for rolling up the time dimension.
-          Should be a valid SQL INTERVAL value.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object

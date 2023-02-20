@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -11,7 +12,6 @@
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";

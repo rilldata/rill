@@ -551,10 +551,7 @@ measures:
 	time.Sleep(time.Millisecond * 10)
 	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
-timegrains:
-- 1 day
-- 1 month
-default_timegrain: ""
+smallest_time_grain: 
 dimensions:
 - label: Publisher
   property: publisher
@@ -576,10 +573,7 @@ measures:
 	time.Sleep(time.Millisecond * 10)
 	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
-timegrains:
-- 1 day
-- 1 month
-default_timegrain: ""
+smallest_time_grain: 
 dimensions:
 - label: Publisher
   property: publisher
@@ -722,7 +716,6 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 		Name:          "AdBids_dashboard",
 		Model:         "AdBids_model",
 		TimeDimension: "timestamp",
-		TimeGrains:    []string{"1 day", "1 month"},
 		Dimensions: []*runtimev1.MetricsView_Dimension{
 			{
 				Name:  "publisher",

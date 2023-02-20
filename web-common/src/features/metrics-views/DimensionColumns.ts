@@ -2,7 +2,7 @@ import {
   CellConfigInput,
   CellConfigSelector,
   ColumnConfig,
-} from "../../../../web-local/src/lib/components/table-editable/ColumnConfig";
+} from "../../components/table-editable/ColumnConfig";
 
 export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
   <ColumnConfig<CellConfigInput | CellConfigSelector>[]>[

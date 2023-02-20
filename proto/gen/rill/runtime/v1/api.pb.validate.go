@@ -11441,26 +11441,62 @@ func (m *TimeSeriesTimeRange) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetStart() == nil {
-		err := TimeSeriesTimeRangeValidationError{
-			field:  "Start",
-			reason: "value is required",
+	if all {
+		switch v := interface{}(m.GetStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeSeriesTimeRangeValidationError{
+					field:  "Start",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeSeriesTimeRangeValidationError{
+					field:  "Start",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
 		}
-		if !all {
-			return err
+	} else if v, ok := interface{}(m.GetStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeSeriesTimeRangeValidationError{
+				field:  "Start",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
 		}
-		errors = append(errors, err)
 	}
 
-	if m.GetEnd() == nil {
-		err := TimeSeriesTimeRangeValidationError{
-			field:  "End",
-			reason: "value is required",
+	if all {
+		switch v := interface{}(m.GetEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeSeriesTimeRangeValidationError{
+					field:  "End",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeSeriesTimeRangeValidationError{
+					field:  "End",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
 		}
-		if !all {
-			return err
+	} else if v, ok := interface{}(m.GetEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeSeriesTimeRangeValidationError{
+				field:  "End",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
 		}
-		errors = append(errors, err)
 	}
 
 	if _, ok := TimeGrain_name[int32(m.GetInterval())]; !ok {

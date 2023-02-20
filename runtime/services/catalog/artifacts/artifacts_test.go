@@ -39,12 +39,14 @@ func TestSourceReadWrite(t *testing.T) {
 					Properties: toProtoStruct(map[string]any{
 						"path":          "data/source.csv",
 						"csv.delimiter": "|",
+						"format":        "csv",
 					}),
 				},
 			},
 			`type: local_file
 path: data/source.csv
 csv.delimiter: '|'
+format: csv
 `,
 		},
 		{
@@ -88,10 +90,11 @@ region: us-east-2
 				Path: "dashboards/MetricsView.yaml",
 				Type: drivers.ObjectTypeMetricsView,
 				Object: &runtimev1.MetricsView{
-					Name:          "MetricsView",
-					Model:         "Model",
-					TimeDimension: "time",
-					TimeGrains:    []string{"1 day", "1 month"},
+					Name:              "MetricsView",
+					Model:             "Model",
+					TimeDimension:     "time",
+					SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+					DefaultTimeRange:  "P1D",
 					Dimensions: []*runtimev1.MetricsView_Dimension{
 						{
 							Name:        "dim0",
@@ -128,10 +131,8 @@ region: us-east-2
 description: long description for dashboard
 model: Model
 timeseries: time
-timegrains:
-- 1 day
-- 1 month
-default_timegrain: ""
+smallest_time_grain: day
+default_time_range: P1D
 dimensions:
 - label: Dim0_L
   property: dim0
