@@ -47,6 +47,7 @@ func (r *plannerWithGlobalLimits) planFile(item *blob.ListObject) *objectWithPla
 		obj.extractOption = &extractOption{limitInBytes: r.limitInBytes - r.cumsizeInBytes, strategy: r.strategy}
 		r.full = true
 	}
+	r.cumsizeInBytes += uint64(item.Size)
 	return obj
 }
 

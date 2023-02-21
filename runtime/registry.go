@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -32,7 +33,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	if err != nil {
 		return err
 	}
-	_, ok = repo.RepoStore()
+	repoStore, ok := repo.RepoStore()
 	if !ok {
 		return fmt.Errorf("not a valid repo driver: '%s'", inst.RepoDriver)
 	}
@@ -54,6 +55,13 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	if err != nil {
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
+
+	c := rillv1beta.New(repoStore, inst.ID)
+	proj, err := c.ProjectConfig(ctx)
+	if err != nil {
+		return err
+	}
+	inst.ProjectEnv = proj.Env
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)

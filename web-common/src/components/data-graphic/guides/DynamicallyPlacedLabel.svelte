@@ -37,7 +37,6 @@
     elementHeight = bb.height;
     elementX = bb.x;
     elementY = bb.y;
-
     if (location === "right" && elementX + elementWidth > $config.plotRight) {
       xOffset.set(-elementWidth - buffer);
     } else {
@@ -45,18 +44,29 @@
     }
   }
 
-  let observer;
+  let resize;
+  let mutation;
 
   onMount(() => {
-    observer = new ResizeObserver(() => {
+    // resize if element updates.
+    resize = new ResizeObserver(() => {
       if (element) update();
     });
-    observer.observe(element);
+    // reposition if element DOM parameters change.
+    mutation = new MutationObserver(() => {
+      update();
+    });
+    mutation.observe(element, {
+      attributes: true,
+      childList: true,
+    });
+    resize.observe(element);
     update();
   });
 
   onDestroy(() => {
-    observer.unobserve(element);
+    resize.unobserve(element);
+    mutation.disconnect();
   });
 
   $: trueX = rx || $xScale(x);

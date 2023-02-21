@@ -164,6 +164,9 @@ export function formatDataType(value: any, type: string) {
       .map((entry) => (+entry ? +entry : `'${entry}'`))
       .join(", ")}]`;
   }
+  if (type === "JSON") {
+    return value;
+  }
   // use this for structs, maps, etc
   return JSON.stringify(value).replace(/"/g, "'");
 }

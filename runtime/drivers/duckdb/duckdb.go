@@ -40,9 +40,9 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
 	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
 	// nolint:staticcheck // TODO: remove when go-duckdb implements the driver.ExecerContext interface
-	connector, err := duckdb.NewConnector(cfg.DSN, func(execer driver.Execer) error {
+	connector, err := duckdb.NewConnector(cfg.DSN, func(execer driver.ExecerContext) error {
 		for _, qry := range bootQueries {
-			_, err = execer.Exec(qry, nil)
+			_, err = execer.ExecContext(context.Background(), qry, nil)
 			if err != nil {
 				return err
 			}

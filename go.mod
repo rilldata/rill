@@ -23,7 +23,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
-	github.com/marcboeker/go-duckdb v1.0.8
+	github.com/marcboeker/go-duckdb v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
@@ -186,5 +186,7 @@ require (
 )
 
 replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
+
+replace github.com/marcboeker/go-duckdb v1.2.0 => github.com/marcboeker/go-duckdb v1.2.1-0.20230219144401-fdeb27f3e1f9
 
 exclude modernc.org/sqlite v1.18.1

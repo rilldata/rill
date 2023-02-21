@@ -3,12 +3,7 @@ display_name: Ad bids
 description:
 
 timeseries: date
-default_timegrain: ""
-timegrains:
-  - day
-  - week
-  - month
-  - year
+smallest_time_grain: day
 
 dimensions:
   - property: kind
