@@ -497,7 +497,6 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	}
 }
 
-<<<<<<< HEAD
 func checkPort(port int) error {
 	conn, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
@@ -505,7 +504,8 @@ func checkPort(port int) error {
 	}
 	defer conn.Close()
 	return nil
-=======
+}
+
 func parse(envs []string) (map[string]string, error) {
 	vars := make(map[string]string, len(envs))
 	for _, env := range envs {
@@ -518,5 +518,4 @@ func parse(envs []string) (map[string]string, error) {
 		vars[key] = value
 	}
 	return vars, nil
->>>>>>> origin/main
 }
