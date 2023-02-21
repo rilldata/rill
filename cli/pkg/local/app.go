@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -109,9 +108,8 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		return nil, err
 	}
 
-	split := strings.Split(projectPath, "|")
 	// Get full path to project
-	projectPath, err = filepath.Abs(split[0])
+	projectPath, err = filepath.Abs(projectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -125,15 +123,12 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
-	if len(split) > 1 {
-		projectPath = projectPath + `|` + split[1]
-	}
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:           DefaultInstanceID,
 		OLAPDriver:   olapDriver,
 		OLAPDSN:      olapDSN,
-		RepoDriver:   "git",
+		RepoDriver:   "file",
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
 	}
