@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -316,18 +314,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
-	// Check if given gRPC port is open
-	err = checkPort(grpcPort)
-	if err != nil {
-		return fmt.Errorf("grpc port %d is already in use", grpcPort)
-	}
-
-	// Check if given Http port is open
-	err = checkPort(httpPort)
-	if err != nil {
-		return fmt.Errorf("http port %d is already in use", httpPort)
-	}
-
 	// Create a runtime server
 	opts := &runtimeserver.Options{
 		HTTPPort: httpPort,
@@ -495,15 +481,6 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	default:
 		return "", false
 	}
-}
-
-func checkPort(port int) error {
-	conn, err := net.Listen("tcp", ":"+strconv.Itoa(port))
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	return nil
 }
 
 func parse(envs []string) (map[string]string, error) {
