@@ -150,7 +150,7 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instID string) (*ca
 	}
 	repoStore, _ := repoConn.RepoStore()
 
-	service = catalog.NewService(catalogStore, repoStore, olap, instID, rt.logger)
+	service = catalog.NewService(catalogStore, repoStore, olap, registry, instID, rt.logger)
 	c.cache[key] = service
 	return service, nil
 }
