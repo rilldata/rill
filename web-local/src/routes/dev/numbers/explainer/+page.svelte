@@ -33,15 +33,16 @@
   let numFormattingWidthLookup: { [key: string]: number } = {};
   let charMeasuringDiv: HTMLDivElement;
 
-  onMount(() => {
-    console.time("charMeasuringDiv");
+  const setUpPxWidthLookupFn = () => {
+    console.time("setUpPxWidthLookupFn");
+
     numFormattingWidthLookupKeys.forEach((str) => {
       charMeasuringDiv.innerHTML = str;
       let rect = charMeasuringDiv.getBoundingClientRect();
       numFormattingWidthLookup[str] = rect.right - rect.left;
     });
 
-    console.timeEnd("charMeasuringDiv");
+    console.timeEnd("setUpPxWidthLookupFn");
 
     pxWidthLookupFn = (str: string) => {
       return str
@@ -49,7 +50,33 @@
         .map((char) => numFormattingWidthLookup[char])
         .reduce((a, b) => a + b, 0);
     };
+  };
+
+  onMount(() => {
+    // when fonts are done loading,measure the character sizes
+    if (document.fonts.check("12px Inter")) {
+      setUpPxWidthLookupFn();
+    } else {
+      document.fonts.onloadingdone = setUpPxWidthLookupFn;
+    }
   });
+  // onMount(() => {
+  //   console.time("charMeasuringDiv");
+  //   numFormattingWidthLookupKeys.forEach((str) => {
+  //     charMeasuringDiv.innerHTML = str;
+  //     let rect = charMeasuringDiv.getBoundingClientRect();
+  //     numFormattingWidthLookup[str] = rect.right - rect.left;
+  //   });
+
+  //   console.timeEnd("charMeasuringDiv");
+
+  //   pxWidthLookupFn = (str: string) => {
+  //     return str
+  //       .split("")
+  //       .map((char) => numFormattingWidthLookup[char])
+  //       .reduce((a, b) => a + b, 0);
+  //   };
+  // });
   // END ======== pxWidthLookupFn machinery =========
 
   type FormatterColumnRecipe = [

@@ -155,15 +155,16 @@
 
   let pxWidthLookupFn: NumPartPxWidthLookupFn;
 
-  onMount(() => {
-    console.time("charMeasuringDiv");
+  const setUpPxWidthLookupFn = () => {
+    console.time("setUpPxWidthLookupFn");
+
     numFormattingWidthLookupKeys.forEach((str) => {
       charMeasuringDiv.innerHTML = str;
       let rect = charMeasuringDiv.getBoundingClientRect();
       numFormattingWidthLookup[str] = rect.right - rect.left;
     });
 
-    console.timeEnd("charMeasuringDiv");
+    console.timeEnd("setUpPxWidthLookupFn");
 
     pxWidthLookupFn = (str: string) => {
       return str
@@ -171,6 +172,15 @@
         .map((char) => numFormattingWidthLookup[char])
         .reduce((a, b) => a + b, 0);
     };
+  };
+
+  onMount(() => {
+    // when fonts are done loading,measure the character sizes
+    if (document.fonts.check("12px Inter")) {
+      setUpPxWidthLookupFn();
+    } else {
+      document.fonts.onloadingdone = setUpPxWidthLookupFn;
+    }
   });
 
   $: numberLists = numberListsUnprocessed.map((nl) => {
@@ -428,7 +438,7 @@
         </div>
       </div>
 
-      <div class="option-box">
+      <!-- <div class="option-box">
         <label>
           <input
             type="radio"
@@ -453,7 +463,7 @@
             truncate tiny numbers if sample has any non-tiny numbers
           </label>
         </div>
-      </div>
+      </div> -->
 
       <div class="option-box">
         <label>
@@ -860,6 +870,13 @@
   button {
     outline: 1px solid #ddd;
     background-color: #f2f2f2;
+    padding: 3px;
+    border-radius: 5px;
+  }
+
+  select {
+    outline: 1px solid #ddd;
+    background-color: #ebebeb;
     padding: 3px;
     border-radius: 5px;
   }
