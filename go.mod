@@ -187,6 +187,6 @@ require (
 
 replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
 
-replace github.com/marcboeker/go-duckdb v1.2.0 => github.com/marcboeker/go-duckdb v1.2.1-0.20230219144401-fdeb27f3e1f9
+replace github.com/marcboeker/go-duckdb v1.2.0 => github.com/rakeshsharma14317/go-duckdb v0.0.0-20230221121041-33e82f6976f3
 
 exclude modernc.org/sqlite v1.18.1
