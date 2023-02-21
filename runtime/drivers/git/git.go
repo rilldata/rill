@@ -31,8 +31,7 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		}
 
 		_, err := gogit.PlainClone("tempdir", false, &gogit.CloneOptions{
-			URL:      dsn,
-			Progress: os.Stdout,
+			URL: dsn,
 		})
 		if err != nil {
 			return nil, err

@@ -9,8 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
-	"time"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
 	gogit "github.com/go-git/go-git/v5"
@@ -92,46 +90,17 @@ func (c *connection) Stat(ctx context.Context, instID, filePath string) (*driver
 
 // Put implements drivers.RepoStore.
 func (c *connection) Put(ctx context.Context, instID, filePath string, reader io.Reader) error {
-	filePath = filepath.Join(c.root, filePath)
-
-	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	f, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, reader)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return fmt.Errorf("Put operation is unsupported")
 }
 
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
-	toPath = path.Join(c.root, toPath)
-
-	fromPath = path.Join(c.root, fromPath)
-	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
-		return drivers.ErrFileAlreadyExists
-	}
-	err := os.Rename(fromPath, toPath)
-	if err != nil {
-		return err
-	}
-	return os.Chtimes(toPath, time.Now(), time.Now())
+	return fmt.Errorf("Rename operation is unsupported")
 }
 
 // Delete implements drivers.RepoStore.
 func (c *connection) Delete(ctx context.Context, instID, filePath string) error {
-	filePath = filepath.Join(c.root, filePath)
-	return os.Remove(filePath)
+	return fmt.Errorf("Delete operation is unsupported")
 }
 
 func (c *connection) Sync(ctx context.Context, instID string) error {
