@@ -35,7 +35,7 @@
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
-  import { navigationEvent } from "../../../../web-local/src/lib/metrics/initMetrics";
+  import { behaviourEvent } from "../../../../web-local/src/lib/metrics/initMetrics";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
@@ -110,7 +110,7 @@
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
     goto(`/model/${sourceModelName}`);
-    navigationEvent.fireEvent(
+    behaviourEvent.fireNavigationEvent(
       sourceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
@@ -123,7 +123,7 @@
     goto(`/dashboard/${dashboardName}/edit`);
 
     const previousActiveEntity = $appStore?.activeEntity?.type;
-    navigationEvent.fireEvent(
+    behaviourEvent.fireNavigationEvent(
       dashboardName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
@@ -155,7 +155,7 @@
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
 
-        navigationEvent.fireEvent(
+        behaviourEvent.fireNavigationEvent(
           sourceModelName,
           BehaviourEventMedium.Menu,
           MetricsEventSpace.LeftPanel,
