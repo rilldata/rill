@@ -127,6 +127,21 @@ const numberListsGen: NumericSampleGen[] = [
         .map((x) => -(10 ** uniform(-3, 6)))
         .map((x) => (randu() < 0.3 ? 0 : x)),
   },
+  {
+    desc: "pos & neg, power law-ish",
+    sampleFn: () =>
+      range
+        .map((x) => 10 ** uniform(-9, 11))
+        .map((x) => x * (randu() < 0.5 ? -1 : 1)),
+  },
+  {
+    desc: "pos & neg, power law-ish, zero inflated",
+    sampleFn: () =>
+      range
+        .map((x) => 10 ** uniform(-9, 11))
+        .map((x) => (randu() < 0.2 ? 0 : x))
+        .map((x) => x * (randu() < 0.5 ? -1 : 1)),
+  },
 
   {
     desc: "pos & neg, power law-ish, zero inflated 2",
@@ -150,6 +165,11 @@ const numberListsGen: NumericSampleGen[] = [
   {
     desc: "power law-ish (uniform over magnitudes (e-200, e200))",
     sampleFn: () => range.map((x) => 10 ** uniform(-200, 200)),
+  },
+
+  {
+    desc: "power law-ish (uniform over magnitudes (e1, e8))",
+    sampleFn: () => range.map((x) => 10 ** uniform(1, 8)),
   },
 ];
 
