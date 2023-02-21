@@ -1,13 +1,32 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   let container;
   let pxWidth: number;
 
-  onMount(() => {
+  let observer: ResizeObserver;
+
+  const measureSpan = () => {
     let rect = container.getBoundingClientRect();
     // pxWidth = Math.ceil(rect.right - rect.left);
     pxWidth = rect.right - rect.left;
+    console.log({ pxWidth });
+  };
+
+  onMount(() => {
+    const observer = new ResizeObserver(() => {
+      measureSpan();
+    });
+    // measureSpan();
+    observer.observe(container);
+
+    document.fonts.onloadingdone = () => {
+      measureSpan();
+    };
+  });
+
+  onDestroy(() => {
+    observer?.disconnect();
   });
 </script>
 
