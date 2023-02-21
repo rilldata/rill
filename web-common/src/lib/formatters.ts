@@ -1,11 +1,12 @@
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
-import type { Interval } from "./duckdb-data-types";
 import {
   CATEGORICALS,
   FLOATS,
   INTEGERS,
+  Interval,
   INTERVALS,
+  isMap,
   PreviewRollupInterval,
   TIMESTAMPS,
 } from "./duckdb-data-types";
@@ -158,6 +159,11 @@ export function formatDataType(value: any, type: string) {
   } else if (INTERVALS.has(type)) {
     return intervalToTimestring(value);
   }
+  // maps should be handled like structs, but needs to be checked
+  // before the others, since it often contains nested types.
+  if (isMap(type)) {
+    return JSON.stringify(value).replace(/"/g, "'");
+  }
   // list type
   if (type.includes("[]")) {
     return `[${value
@@ -167,7 +173,7 @@ export function formatDataType(value: any, type: string) {
   if (type === "JSON") {
     return value;
   }
-  // use this for structs, maps, etc
+  // use this for structs
   return JSON.stringify(value).replace(/"/g, "'");
 }
 

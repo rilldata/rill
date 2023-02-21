@@ -62,11 +62,15 @@ export const TIMESTAMPS = new Set([
 export const INTERVALS = new Set(["INTERVAL"]);
 export const NESTED = new Set(["STRUCT", "MAP", "LIST"]);
 
-export function isList(type) {
+export function isList(type: string) {
   return type.includes("[]");
 }
 
-export function isNested(type) {
+export function isMap(type: string) {
+  return type.startsWith("MAP(");
+}
+
+export function isNested(type: string) {
   return (
     type === "JSON" ||
     [...NESTED].some((typeDef) => type.startsWith(typeDef)) ||
