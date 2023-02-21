@@ -79,7 +79,19 @@ func (ps PropertySchema) ValidateType(val any) bool {
 type Env struct {
 	RepoDriver string
 	RepoDSN    string
-	Variables  map[string]string
+	// user provided env variables
+	// following env variables are used in connectors :
+	// use_host_credentials - disable/enable use of host credentials :
+	//
+	// gcs specific variables :
+	// gcs_credentials_file : file where credentials are stored in json format
+	// gcs_credentials : credential file content in json format
+	//
+	// s3 specific variables :
+	// aws_access_key_id
+	// aws_secret_access_key
+	// aws_session_token
+	Variables map[string]string
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).
