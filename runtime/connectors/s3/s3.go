@@ -106,7 +106,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, err
 	}
 
-	bucketObj, err := fetchBucketObj(ctx, conf, url.Host, creds)
+	bucketObj, err := openBucket(ctx, conf, url.Host, creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
@@ -120,13 +120,13 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobPattern:           url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
 	}
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
 
+	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
 	if gcerrors.Code(err) == gcerrors.PermissionDenied && creds != credentials.AnonymousCredentials {
 		// s3 throws permission denied error in case we are trying to access public buckets and passing some credentials
 		// we try again with anonymous credentials in case bucket is public
 		creds = credentials.AnonymousCredentials
-		bucketObj, err := fetchBucketObj(ctx, conf, url.Host, creds)
+		bucketObj, err := openBucket(ctx, conf, url.Host, creds)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 		}
@@ -136,7 +136,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return it, err
 }
 
-func fetchBucketObj(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
+func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
 	sess, err := getAwsSessionConfig(ctx, conf, bucket, creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
