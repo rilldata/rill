@@ -136,7 +136,7 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		RepoDriver:   "file",
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
-		Env:          &env,
+		Env:          env,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -483,7 +483,7 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	}
 }
 
-func parse(envs []string) (drivers.Env, error) {
+func parse(envs []string) (map[string]string, error) {
 	vars := make(map[string]string, len(envs))
 	for _, env := range envs {
 		// split into key value pairs
