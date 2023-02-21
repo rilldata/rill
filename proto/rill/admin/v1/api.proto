@@ -72,7 +72,6 @@ service AdminService {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/projects/{name}",
       body: "*"
-    
     };
   }
 }

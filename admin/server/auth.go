@@ -19,12 +19,6 @@ import (
 
 const authSessionName = "auth"
 
-var (
-	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
-	key   = []byte("super-secret-key")
-	store = sessions.NewCookieStore(key)
-)
-
 // Authenticator is used to authenticate our users.
 // Refereance link - https://auth0.com/docs/quickstart/webapp/golang/01-login for sample auth setup.
 type Authenticator struct {
@@ -76,7 +70,7 @@ func (s *Server) authLogin(w http.ResponseWriter, req *http.Request, pathParams 
 		return
 	}
 
-	sess, err := store.Get(req, authSessionName)
+	sess, err := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
@@ -93,19 +87,19 @@ func (s *Server) authLogin(w http.ResponseWriter, req *http.Request, pathParams 
 }
 
 func (s *Server) callback(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	sess, err := store.Get(req, authSessionName)
+	sess, err := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
 
-	if req.FormValue("state") != sess.Values["state"] {
+	if req.URL.Query().Get("state") != sess.Values["state"] {
 		http.Error(w, fmt.Sprintf("Invalid state parameter: %s", err), http.StatusBadRequest)
 		return
 	}
 
 	// Exchange an authorization code for a token.
-	token, err := s.auth.Exchange(req.Context(), req.FormValue("code"))
+	token, err := s.auth.Exchange(req.Context(), req.URL.Query().Get("code"))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to convert an authorization code into a token: %s", err), http.StatusUnauthorized)
 		return
@@ -167,7 +161,7 @@ func (s *Server) logout(w http.ResponseWriter, req *http.Request, pathParams map
 }
 
 func (s *Server) logoutCallback(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	sess, _ := store.Get(req, authSessionName)
+	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
 
 	sess.Values["access_token"] = nil
 	sess.Values["profile"] = nil
@@ -181,7 +175,7 @@ func (s *Server) logoutCallback(w http.ResponseWriter, req *http.Request, pathPa
 }
 
 func (s *Server) user(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	sess, _ := store.Get(req, authSessionName)
+	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
 
 	var profiles map[string]interface{}
 	if sess.Values["profile"] == nil {
@@ -195,7 +189,11 @@ func (s *Server) user(w http.ResponseWriter, req *http.Request, pathParams map[s
 		return
 	}
 
-	fmt.Fprintf(w, "UserInfo: %s\n", profiles)
+	err = json.NewEncoder(w).Encode(profiles)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func generateRandomState() (string, error) {
@@ -227,9 +225,9 @@ func IsAuthenticated(next echo.HandlerFunc) echo.HandlerFunc {
 
 // IsAuthenticated is a middleware that checks if
 // the user has already been authenticated previously.
-func IsAuthenticated1(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) IsAuthenticated1(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess, err := store.Get(r, authSessionName)
+		sess, err := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(r, authSessionName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

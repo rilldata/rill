@@ -20,7 +20,6 @@ type Config struct {
 	Env              string `default:"development"`
 	DatabaseDriver   string `default:"postgres" split_words:"true"`
 	DatabaseURL      string `split_words:"true"`
-	Port             int    `default:"8080"`
 	HTTPPort         int    `default:"8080" split_words:"true"`
 	GRPCPort         int    `default:"9090" split_words:"true"`
 	SessionsSecret   string `split_words:"true"`
@@ -41,7 +40,6 @@ func main() {
 		fmt.Printf("Failed to load config: %s", err.Error())
 		os.Exit(1)
 	}
-	fmt.Println("Config is", conf)
 
 	// Init logger
 	var logger *zap.Logger
@@ -68,7 +66,6 @@ func main() {
 	}
 
 	srvConf := server.Config{
-		Port:             conf.Port,
 		HTTPPort:         conf.HTTPPort,
 		GRPCPort:         conf.GRPCPort,
 		AuthDomain:       conf.AuthDomain,

@@ -38,7 +38,6 @@ type Server struct {
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 type Config struct {
-	Port             int
 	HTTPPort         int
 	GRPCPort         int
 	AuthDomain       string
