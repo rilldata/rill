@@ -1,9 +1,8 @@
 swagger: "2.0"
 info:
-  title: rill/admin/v1/api.proto
+  title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
-  - name: AdminService
   - name: RuntimeService
 consumes:
   - application/json
@@ -1093,263 +1092,6 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/organizations:
-    get:
-      summary: findOrganizations lists all the organizations currently managed by the admin
-      operationId: AdminService_FindOrganizations
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1FindOrganizationsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: CreateOrganization creates a new organization
-      operationId: AdminService_CreateOrganization
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateOrganizationResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1CreateOrganizationRequest'
-      tags:
-        - AdminService
-  /v1/organizations/{name}:
-    get:
-      summary: FindOrganization returns information about a specific organization
-      operationId: AdminService_FindOrganization
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1FindOrganizationResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    delete:
-      summary: DeleteOrganization deletes an organizations
-      operationId: AdminService_DeleteOrganization
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteOrganizationResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    put:
-      summary: UpdateOrganization deletes an organizations
-      operationId: AdminService_UpdateOrganization
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateOrganizationResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              description:
-                type: string
-            title: Request message for AdminService.UpdateOrganization
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/projects:
-    get:
-      summary: FindProjects lists all the projects currently available for given organizations
-      operationId: AdminService_FindProjects
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1FindProjectsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: CreateProject creates a new project
-      operationId: AdminService_CreateProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              createdOn:
-                type: string
-                format: date-time
-              description:
-                type: string
-              id:
-                type: string
-              name:
-                type: string
-              updatedOn:
-                type: string
-                format: date-time
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/projects/{name}:
-    get:
-      summary: FindProject returns information about a specific project
-      operationId: AdminService_FindProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1FindProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    delete:
-      summary: DeleteProject deletes an project
-      operationId: AdminService_DeleteProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    put:
-      summary: UpdateProject update a project
-      operationId: AdminService_UpdateProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              description:
-                type: string
-            title: Request message for AdminService.UpdateOrganization
-      tags:
-        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the runtime
@@ -1358,7 +1100,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rillruntimev1PingResponse'
+            $ref: '#/definitions/v1PingResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1608,28 +1350,6 @@ definitions:
        The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
-  rilladminv1PingResponse:
-    type: object
-    properties:
-      time:
-        type: string
-        format: date-time
-        title: Admin server time
-      version:
-        type: string
-        title: Admin version
-    title: Response message for AdminService.Ping
-  rillruntimev1PingResponse:
-    type: object
-    properties:
-      time:
-        type: string
-        format: date-time
-        title: Runtime server time
-      version:
-        type: string
-        title: Runtime version
-    title: Response message for RuntimeService.Ping
   rpcStatus:
     type: object
     properties:
@@ -1752,33 +1472,6 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.CreateInstance
-  v1CreateOrganizationRequest:
-    type: object
-    properties:
-      createdOn:
-        type: string
-        format: date-time
-      description:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      updatedOn:
-        type: string
-        format: date-time
-  v1CreateOrganizationResponse:
-    type: object
-    properties:
-      organization:
-        $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.CreateOrganization
-  v1CreateProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.CreateOrganization
   v1DeleteFileAndReconcileRequest:
     type: object
     properties:
@@ -1821,18 +1514,6 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DeleteOrganizationResponse:
-    type: object
-    properties:
-      name:
-        type: string
-    title: Response message for AdminService.DeleteOrganization
-  v1DeleteProjectResponse:
-    type: object
-    properties:
-      name:
-        type: string
-    title: Response message for AdminService.DeleteOrganization
   v1EstimateRollupIntervalResponse:
     type: object
     properties:
@@ -1850,38 +1531,6 @@ definitions:
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
     title: Response for RuntimeService.EstimateSmallestTimeGrain
-  v1FindOrganizationResponse:
-    type: object
-    properties:
-      organization:
-        $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.GetInstance
-  v1FindOrganizationsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      organization:
-        type: array
-        items:
-          $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.FindOrganizations
-  v1FindProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.FindProject
-  v1FindProjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      projects:
-        type: array
-        items:
-          $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.FindProjects
   v1GenerateTimeSeriesResponse:
     type: object
     properties:
@@ -2213,24 +1862,17 @@ definitions:
       - OBJECT_TYPE_METRICS_VIEW
     default: OBJECT_TYPE_UNSPECIFIED
     title: ObjectType represents the different kinds of catalog objects
-  v1Organization:
+  v1PingResponse:
     type: object
     properties:
-      createdOn:
+      time:
         type: string
         format: date-time
-      description:
+        title: Runtime server time
+      version:
         type: string
-        title: Short description for the organization
-      id:
-        type: string
-        title: Identifier (UUID)
-      name:
-        type: string
-        title: Organization name
-      updatedOn:
-        type: string
-        format: date-time
+        title: Runtime version
+    title: Response message for RuntimeService.Ping
   v1ProfileColumn:
     type: object
     properties:
@@ -2248,24 +1890,6 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1ProfileColumn'
-  v1Project:
-    type: object
-    properties:
-      createdOn:
-        type: string
-        format: date-time
-      description:
-        type: string
-        title: Short description for the project
-      id:
-        type: string
-        title: Identifier (UUID)
-      name:
-        type: string
-        title: project name
-      updatedOn:
-        type: string
-        format: date-time
   v1PutFileAndReconcileRequest:
     type: object
     properties:
@@ -2639,15 +2263,3 @@ definitions:
       - CODE_UUID
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
-  v1UpdateOrganizationResponse:
-    type: object
-    properties:
-      organization:
-        $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.UpdateOrganization
-  v1UpdateProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.UpdateOrganization
