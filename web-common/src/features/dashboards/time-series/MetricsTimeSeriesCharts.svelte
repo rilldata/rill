@@ -32,6 +32,7 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricViewName;
+  export let workspaceWidth: number;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -151,7 +152,7 @@
   value={mouseoverValue?.x}
   let:point
 >
-  <TimeSeriesChartContainer start={startValue} end={endValue}>
+  <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
     <!-- mouseover date elements-->
     <div class="bg-white sticky left-0 top-0" />
     <div class="bg-white sticky left-0 top-0">
