@@ -309,6 +309,10 @@ message Instance {
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
+  // instance specific environment variables
+  map<string, string> env = 7;
+  // project defaults
+  map<string, string> project_env = 8;
 }
 
 // Request message for RuntimeService.ListInstances
@@ -342,6 +346,7 @@ message CreateInstanceRequest {
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
   string repo_dsn = 5;
   bool embed_catalog = 6;
+  map<string, string> env = 7;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -920,18 +925,6 @@ message EstimateSmallestTimeGrainRequest {
   string table_name = 2;
   string column_name = 3;
   int32 priority = 4;
-}
-
-enum TimeGrain {
-  TIME_GRAIN_UNSPECIFIED = 0;
-  TIME_GRAIN_MILLISECOND = 1;
-  TIME_GRAIN_SECOND = 2;
-  TIME_GRAIN_MINUTE = 3;
-  TIME_GRAIN_HOUR = 4;
-  TIME_GRAIN_DAY = 5;
-  TIME_GRAIN_WEEK = 6;
-  TIME_GRAIN_MONTH = 7;
-  TIME_GRAIN_YEAR = 8;
 }
 
 // Response for RuntimeService.EstimateSmallestTimeGrain

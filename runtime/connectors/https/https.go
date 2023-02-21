@@ -3,6 +3,7 @@ package https
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -49,7 +50,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -78,7 +79,37 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 	if err != nil {
 		return nil, err
 	}
-	return []string{file}, nil
+	return &iterator{ctx: ctx, files: []string{file}}, nil
+}
+
+// implements connector.FileIterator
+type iterator struct {
+	ctx   context.Context
+	files []string
+	index int
+}
+
+func (i *iterator) Close() error {
+	fileutil.ForceRemoveFiles(i.files)
+	return nil
+}
+
+func (i *iterator) NextBatch(n int) ([]string, error) {
+	if !i.HasNext() {
+		return nil, io.EOF
+	}
+
+	start := i.index
+	end := i.index + n
+	if end > len(i.files) {
+		end = len(i.files)
+	}
+	i.index = end
+	return i.files[start:end], nil
+}
+
+func (i *iterator) HasNext() bool {
+	return i.index < len(i.files)
 }
 
 func urlExtension(path string) (string, error) {

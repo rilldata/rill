@@ -3,10 +3,7 @@ display_name: Ad bids
 description:
 
 timeseries: timestamp name with spaces
-default_timegrain: ""
-timegrains:
-  - 1 day
-  - 1 month
+smallest_time_grain: 
 
 dimensions:
   - label: Publisher

@@ -14,7 +14,9 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
+	"gocloud.dev/gcerrors"
 )
 
 func init() {
@@ -61,6 +63,7 @@ type Config struct {
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	S3Endpoint            string `mapstructure:"endpoint"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -83,7 +86,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) ([]string, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -98,43 +101,67 @@ func (c connector) ConsumeAsFiles(ctx context.Context, env *connectors.Env, sour
 		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
 
-	sess, err := getAwsSessionConfig(ctx, conf, url.Host)
+	creds, err := getCredentials()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start session: %w", err)
+		return nil, err
 	}
 
-	bucketObj, err := s3blob.OpenBucket(ctx, sess, url.Host, nil)
+	bucketObj, err := openBucket(ctx, conf, url.Host, creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
-	defer bucketObj.Close()
 
-	fetchConfigs := rillblob.FetchConfigs{
+	// prepare fetch configs
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
+		GlobPattern:           url.Path,
+		ExtractPolicy:         source.ExtractPolicy,
 	}
-	return rillblob.FetchFileNames(ctx, bucketObj, fetchConfigs, url.Path, url.Host)
+
+	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	if gcerrors.Code(err) == gcerrors.PermissionDenied && creds != credentials.AnonymousCredentials {
+		// s3 throws permission denied error in case we are trying to access public buckets and passing some credentials
+		// we try again with anonymous credentials in case bucket is public
+		creds = credentials.AnonymousCredentials
+		bucketObj, err := openBucket(ctx, conf, url.Host, creds)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		}
+		return rillblob.NewIterator(ctx, bucketObj, opts)
+	}
+
+	return it, err
 }
 
-func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*session.Session, error) {
-	// Find credentials to use.
-	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
-	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
-	// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
-	creds := credentials.NewChainCredentials([]credentials.Provider{
-		&credentials.EnvProvider{},
-		&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
-	})
-	_, err := creds.Get()
+func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
+	sess, err := getAwsSessionConfig(ctx, conf, bucket, creds)
 	if err != nil {
-		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
-			return nil, err
-		}
-		creds = credentials.AnonymousCredentials
+		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
 
+	return s3blob.OpenBucket(ctx, sess, bucket, nil)
+}
+
+func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*session.Session, error) {
+	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
+	if len(conf.S3Endpoint) > 0 {
+		region := conf.AWSRegion
+		if region == "" {
+			// Set the default region for bwd compatibility reasons
+			// cloudflare and minio ignore if us-east-1 is set, not tested for others
+			region = "us-east-1"
+		}
+		return session.NewSession(&aws.Config{
+			Region:           aws.String(region),
+			Endpoint:         &conf.S3Endpoint,
+			S3ForcePathStyle: aws.Bool(true),
+			Credentials:      creds,
+		})
+	}
+	// The logic below is AWS-specific, so we ignore it when conf.S3Endpoint is set
 	// The complexity below relates to AWS being pretty strict about regions (probably to avoid unexpected cross-region traffic).
 
 	// If the user explicitly set a region, we use that
@@ -172,4 +199,24 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string) (*ses
 	}
 
 	return sess, nil
+}
+
+func getCredentials() (*credentials.Credentials, error) {
+	// Find credentials to use.
+	// If no local credentials are found, we fallback to AnonymousCredentials.
+	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
+	// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
+	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.EnvProvider{},
+		&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
+	})
+	_, err := creds.Get()
+	if err != nil {
+		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
+			return nil, err
+		}
+		creds = credentials.AnonymousCredentials
+	}
+
+	return creds, nil
 }

@@ -133,3 +133,44 @@ func TestCSVDelimiter(t *testing.T) {
 	require.Len(t, cols, 2)
 	require.NoError(t, rows.Close())
 }
+
+func TestFileFormatAndDelimiter(t *testing.T) {
+	ctx := context.Background()
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
+	require.NoError(t, err)
+	olap, _ := conn.OLAPStore()
+
+	testdataPathAbs, err := filepath.Abs("../../../web-local/test/data")
+	require.NoError(t, err)
+	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-format.log")
+
+	err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver: "file",
+		RepoDSN:    ".",
+	}, &connectors.Source{
+		Name:      "foo",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path":          testDelimiterCsvPath,
+			"format":        "csv",
+			"csv.delimiter": " ",
+		},
+	})
+	require.NoError(t, err)
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	// 5 columns in file
+	require.Len(t, cols, 5)
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(timestamp) FROM foo"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 8)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+}

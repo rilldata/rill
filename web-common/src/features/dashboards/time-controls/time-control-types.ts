@@ -1,3 +1,9 @@
+export interface TimeRange {
+  name: TimeRangeName;
+  start: Date;
+  end: Date;
+}
+
 export enum TimeRangeName {
   LastHour = "Last hour",
   Last6Hours = "Last 6 hours",
@@ -11,10 +17,10 @@ export enum TimeRangeName {
   AllTime = "All time",
   // Today = "Today",
   // MonthToDate = "Month to date",
-  // CustomRange = "Custom range",
+  Custom = "Custom range",
 }
 
-export const lastXTimeRanges: TimeRangeName[] = [
+export const lastXTimeRangeNames: TimeRangeName[] = [
   TimeRangeName.LastHour,
   TimeRangeName.Last6Hours,
   TimeRangeName.LastDay,
