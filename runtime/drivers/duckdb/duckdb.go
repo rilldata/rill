@@ -52,11 +52,11 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	if err != nil {
 		// Adding check if using old database files with upgraded version
 		if strings.Contains(err.Error(), "Trying to read a database file with version number") {
-			return nil, fmt.Errorf("The database file was created with an old version of Rill. Please remove %q and restart", cfg.DSN)
+			return nil, fmt.Errorf("database file %q was created with an older, incompatible version of Rill (please remove it and try again)", cfg.DSN)
 		}
 
 		if strings.Contains(err.Error(), "Could not set lock on file") {
-			return nil, fmt.Errorf("failed to open database, Rill might already be running. DB Error: %w", err)
+			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
 		}
 
 		return nil, err
