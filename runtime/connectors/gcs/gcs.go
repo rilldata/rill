@@ -118,22 +118,31 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
 	useHostCred := env.Variables["use_host_credentials"] != "false" // true by default
 	if useHostCred {
-		// use default credentials
+		// use host credentials
 		return gcp.DefaultCredentials(ctx)
 	}
 
-	// use credentials from file given by user
-	secretJSONFile := env.Variables["gs_credentials_file"]
-	r, err := os.Open(secretJSONFile)
-	if err != nil {
-		return nil, err
+	secretJSONFile := env.Variables["gcs_credentials_file"]
+	var jsonData []byte
+	if secretJSONFile != "" {
+		// use credentials from file given by user
+		r, err := os.Open(secretJSONFile)
+		if err != nil {
+			return nil, err
+		}
+
+		bw := new(bytes.Buffer)
+		_, err = io.Copy(bw, r)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonData = bw.Bytes()
+	} else {
+		// use credentials from json string provided by user
+		secretJSON := env.Variables["gcs_credentials"]
+		jsonData = []byte(secretJSON)
 	}
 
-	bw := new(bytes.Buffer)
-	_, err = io.Copy(bw, r)
-	if err != nil {
-		return nil, err
-	}
-
-	return google.CredentialsFromJSON(ctx, bw.Bytes(), "https://www.googleapis.com/auth/cloud-platform")
+	return google.CredentialsFromJSON(ctx, jsonData, "https://www.googleapis.com/auth/cloud-platform")
 }
