@@ -1,11 +1,11 @@
 <script lang="ts">
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Readable } from "svelte/store";
-  import Spacer from "../../../components/icons/Spacer.svelte";
-  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
-  import type { MetricsInternalRepresentation } from "../metrics-internal-store";
+  import type { MetricsInternalRepresentation } from "../../metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 

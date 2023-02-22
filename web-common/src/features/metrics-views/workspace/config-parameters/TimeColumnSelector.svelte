@@ -2,11 +2,15 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { selectTimestampColumnFromSchema } from "@rilldata/web-common/features/metrics-views/column-selectors";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { SelectMenu } from "../../../components/menu";
-  import { selectTimestampColumnFromSchema } from "../column-selectors";
+  import {
+    CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES,
+    CONFIG_TOP_LEVEL_LABEL_CLASSES,
+  } from "../styles";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
@@ -53,11 +57,9 @@
     }) || [];
 </script>
 
-<div class="w-80 flex items-center">
+<div class={CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES}>
   <Tooltip alignment="middle" distance={8} location="bottom">
-    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Timestamp
-    </div>
+    <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Timestamp</div>
 
     <TooltipContent maxWidth="400px" slot="tooltip-content">
       Select a timestamp column to see the time series charts on the dashboard.

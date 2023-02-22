@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Callout } from "@rilldata/web-common/components/callout";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -21,14 +20,9 @@
   import { initDimensionColumns } from "../DimensionColumns";
   import { initMeasuresColumns } from "../MeasuresColumns";
   import { createInternalRepresentation } from "../metrics-internal-store";
-  import MetricsMinimumTimeGrainSelector from "./MetricsMinimumTimeGrainSelector.svelte";
-  import MetricsDefaultTimeRange from "./MetricsDefaultTimeRange.svelte";
-  import MetricsDisplayNameInput from "./MetricsDisplayNameInput.svelte";
+  import ConfigParameters from "./config-parameters/ConfigParameters.svelte";
   import MetricsEntityTable from "./MetricsEntityTable.svelte";
-  import MetricsGenerateButton from "./MetricsGenerateButton.svelte";
   import LayoutManager from "./MetricsLayoutManager.svelte";
-  import MetricsModelSelector from "./MetricsModelSelector.svelte";
-  import MetricsTimeColumnSelector from "./MetricsTimeColumnSelector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
 
   // the runtime yaml string
@@ -150,11 +144,6 @@
   $: metricsSourceSelectionError = nonStandardError
     ? nonStandardError
     : MetricsSourceSelectionError(errors);
-
-  let gridTemplate = "repeat(3, 45px)";
-  $: metricsConfigWidth = $observedNode?.offsetWidth || 0;
-  $: gridTemplate =
-    metricsConfigWidth < 1400 ? "repeat(3, 35px)" : "repeat(2, 40px)";
 </script>
 
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
@@ -165,7 +154,14 @@
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
-      <div class="flex-none flex flex-row">
+      <ConfigParameters
+        workspaceWidth={$observedNode?.offsetWidth}
+        {metricsInternalRep}
+        {model}
+        {metricsSourceSelectionError}
+        updateRuntime={callPutAndMigrate}
+      />
+      <!-- <div class="flex-none flex flex-row">
         <div
           style:grid-template-rows={gridTemplate}
           class="grid grid-flow-col gap-y-2 gap-x-5"
@@ -197,7 +193,7 @@
             />
           {/if}
         </div>
-      </div>
+      </div> -->
 
       <div
         style="display: flex; flex-direction:column; overflow:hidden;"

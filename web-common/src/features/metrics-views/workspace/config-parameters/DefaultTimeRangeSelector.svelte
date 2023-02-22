@@ -1,20 +1,23 @@
 <script lang="ts">
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    useRuntimeServiceGetTimeRangeSummary,
-    V1Model,
-    V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import Spacer from "../../../components/icons/Spacer.svelte";
-  import { SelectMenu } from "../../../components/menu";
   import {
     getRelativeTimeRangeOptions,
     ISODurationToTimeRange,
     timeGrainStringToEnum,
     timeRangeToISODuration,
-  } from "../../dashboards/time-controls/time-range-utils";
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
+  import {
+    useRuntimeServiceGetTimeRangeSummary,
+    V1Model,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import {
+    CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES,
+    CONFIG_TOP_LEVEL_LABEL_CLASSES,
+  } from "../styles";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
@@ -97,11 +100,9 @@
   }
 </script>
 
-<div class="w-80 flex items-center">
+<div class={CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES}>
   <Tooltip alignment="middle" distance={8} location="bottom">
-    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Default Time Range
-    </div>
+    <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Default Time Range</div>
 
     <TooltipContent slot="tooltip-content">
       Select a default time range for the time series charts
@@ -119,7 +120,7 @@
         {options}
         disabled={dropdownDisabled}
         selection={timeRangeSelectedValue}
-        tailwindClasses="overflow-hidden px-2 py-2 rounded"
+        tailwindClasses="w-full overflow-hidden px-2 py-2 rounded"
         alignment="start"
         on:select={handleDefaultTimeRangeUpdate}
       >

@@ -1,18 +1,22 @@
 <script lang="ts">
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    getTimeGrainOptions,
+    timeGrainEnumToYamlString,
+    TimeGrainOption,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
   import {
     useRuntimeServiceGetTimeRangeSummary,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import Spacer from "../../../components/icons/Spacer.svelte";
-  import { SelectMenu } from "../../../components/menu";
   import {
-    getTimeGrainOptions,
-    timeGrainEnumToYamlString,
-    TimeGrainOption,
-  } from "../../dashboards/time-controls/time-range-utils";
+    CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES,
+    CONFIG_TOP_LEVEL_LABEL_CLASSES,
+  } from "../styles";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
@@ -112,14 +116,13 @@
   }
 </script>
 
-<div class="w-80 flex items-center">
-  <Tooltip alignment="middle" distance={8} location="bottom">
-    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Min Time Grain
-    </div>
+<div class={CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES}>
+  <Tooltip alignment="start" distance={8} location="bottom">
+    <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Smallest Time Grain</div>
 
-    <TooltipContent maxWidth="400px" slot="tooltip-content">
-      Select the minimum time grain which will be supported by the dashboard
+    <TooltipContent maxWidth="280px" slot="tooltip-content">
+      The smallest allowable time unit that can be displayed on the dashboard
+      line charts
     </TooltipContent>
   </Tooltip>
   <div class="grow">
