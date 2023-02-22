@@ -249,13 +249,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	if rng < ticks {
 		ticks = rng
 	}
-	niceResult := NiceAndStep(min, max, ticks)
-	startTick := niceResult[0]
-	endTick := niceResult[1]
-	gap := niceResult[2]
-	if gap < 0.0 {
-		gap = 1 / -gap
-	}
+	startTick, endTick, gap := NiceAndStep(min, max, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
 
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)

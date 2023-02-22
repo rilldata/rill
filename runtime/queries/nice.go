@@ -34,12 +34,15 @@ func tickIncrement(start, stop, count float64) float64 {
 	return -math.Pow(10, -power) / e
 }
 
-func NiceAndStep(start, stop, count float64) []float64 {
+func NiceAndStep(start, stop, count float64) (float64, float64, float64) {
 	var prestep float64
 	for {
 		step := tickIncrement(start, stop, count)
 		if step == prestep || step == 0 || math.IsInf(step, 0) || math.IsNaN(step) {
-			return []float64{start, stop, prestep}
+			if prestep < 0.0 {
+				prestep = 1 / -prestep
+			}
+			return start, stop, prestep
 		} else if step > 0 {
 			start = math.Floor(start/step) * step
 			stop = math.Ceil(stop/step) * step
