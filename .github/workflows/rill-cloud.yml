@@ -34,7 +34,8 @@ jobs:
 
       - name: Trigger Rill Cloud deployment
         run: |-
+          set -e
           curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
-          --data '{"event_type": "Deploying Tag: "'"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
+          --data '{"event_type": "Deploying Tag: '"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
