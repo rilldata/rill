@@ -64,7 +64,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	}
 	inst.ProjectEnv = proj.Env
 	// this is a hack to set allow_host_credentials
-	// ideally the runtime should propogate this flag to connectors.Env
+	// ideally the runtime should propagate this flag to connectors.Env
 	if inst.Env == nil {
 		inst.Env = make(map[string]string)
 	}
