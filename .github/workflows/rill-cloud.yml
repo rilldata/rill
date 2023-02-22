@@ -1,0 +1,35 @@
+# This workflow triggers deployment with Rill Cloud helm charts
+# Each merge to main branch is build with github sha tag and published to Rill Cloud.
+name: CD for Rill Cloud
+on:
+  push:
+    tags:
+      - "**"
+    branches:
+      - main
+      - cd
+jobs:
+  release:
+    name: Release rill-developer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+
+      - name: Build & Publish Rill docker image
+        run: |-
+          go build -o rill cli/main.go
+          docker build -t rilldata/rill:${GITHUB_SHA} .
+          docker push rilldata/rill:${GITHUB_SHA}
+
+      - name: Trigger Rill Cloud deployment
+        run: |-
+          curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
+          --data '{"event_type": "Deploying Tag: ${{ env.IMAGE_TAG }}", "client_payload": { "image_tag": "${{ env.IMAGE_TAG }}", "release": "'"${PUBLISH_RELEASE}"'"}}'

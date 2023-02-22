@@ -24,7 +24,6 @@ on:
     # Trigger a rill cloud deployment
     branches:
       - main
-      - cd
   # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
@@ -32,11 +31,7 @@ on:
   workflow_dispatch:
 
 env:
-  # PUBLISH_RELEASE/PUBLISH_NIGHTLY becomes a string with values 'true' or 'false'
   PUBLISH_NIGHTLY: ${{ contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
-  PUBLISH_RELEASE: ${{ contains('refs/tags', github.ref_name) }}
-  # Tag image with sha or release tag
-  IMAGE_TAG: ${{ fromJSON('["${{ github.sha }}", "${{ github.ref_name }}"]')[contains('refs/tags', github.ref_name)] }}
 
 jobs:
   release:
@@ -80,7 +75,7 @@ jobs:
           echo '${{ github.ref_name }}' >> latest.txt
 
           if [[ ${{ env.PUBLISH_RELEASE }} == 'false' ]]; then
-            export NON_RELEASE="--snapshot"
+            export NIGHTLY="--snapshot"
           fi
 
           docker run \
@@ -94,21 +89,7 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release ${NON_RELEASE}
-
-      - name: Publish docker image
-        run: |-
-          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
-
-          docker tag rilldata/rill:latest rilldata/rill:'${{ env.IMAGE_TAG }}'
-          docker push rilldata/rill:'${{ env.IMAGE_TAG }}'
-
-      - name: Trigger Rill Cloud deployment
-        run: |-
-          curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
-          -H "Accept: application/vnd.github.everest-preview+json" \
-          -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
-          --data '{"event_type": "Deploying Tag: ${{ env.IMAGE_TAG }}", "client_payload": { "image_tag": "${{ env.IMAGE_TAG }}", "release": "'"${PUBLISH_RELEASE}"'"}}'
+              release ${NIGHTLY}
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
