@@ -145,6 +145,15 @@ export class MetricsInternalRepresentation {
     this.regenerateInternalYAML();
   }
 
+  updateMetricKeys<K extends keyof MetricsConfig>(
+    metrics: Record<K, MetricsConfig[K]>
+  ) {
+    for (const key in metrics) {
+      this.internalRepresentationDocument.set(key, metrics[key]);
+    }
+    this.regenerateInternalYAML();
+  }
+
   updateErrors(errors: Array<V1ReconcileError>) {
     // set errors for measures and dimensions
     for (const error of errors) {
