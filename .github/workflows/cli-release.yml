@@ -68,16 +68,17 @@ jobs:
       - name: Build and embed static UI
         run: make cli.prepare
 
-      - name: Set up release environment
+      - name: Build Rill using Goreleaser
         run: |-
           echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+
           echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
           echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
           echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
 
-      - name: Build Rill using Goreleaser
-        run: |-
+          echo '${{ github.ref_name }}' >> latest.txt
+
           if [[ ${{ env.PUBLISH_RELEASE }} == 'false' ]]; then
             export NON_RELEASE="--snapshot"
           fi
@@ -99,8 +100,8 @@ jobs:
         run: |-
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
 
-          docker tag rilldata/rill:latest rilldata/rill:${{ env.IMAGE_TAG }}
-          docker push rilldata/rill:${{ env.IMAGE_TAG }}
+          docker tag rilldata/rill:latest rilldata/rill:'${{ env.IMAGE_TAG }}'
+          docker push rilldata/rill:'${{ env.IMAGE_TAG }}'
 
       - name: Trigger Rill Cloud deployment
         run: |-
@@ -109,7 +110,6 @@ jobs:
           -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
           --data '{"event_type": "Deploying Tag: ${{ env.IMAGE_TAG }}", "client_payload": { "image_tag": "${{ env.IMAGE_TAG }}", "release": "'"${PUBLISH_RELEASE}"'"}}'
 
-      # Release or Nightly
       - name: Authenticate GCS
         uses: google-github-actions/auth@v0
         if: env.PUBLISH_RELEASE == 'true' || env.PUBLISH_NIGHTLY == 'true'
@@ -120,14 +120,7 @@ jobs:
         uses: 'google-github-actions/setup-gcloud@v1'
         if: env.PUBLISH_RELEASE == 'true' || env.PUBLISH_NIGHTLY == 'true'
 
-
-      # Release Process
-      - name: Create latest version file for releases
-        if: env.PUBLISH_RELEASE == 'true'
-        run: |-
-          echo '${{ github.ref_name }}' >> latest.txt
-
-      - name: Upload latest version file to CDN bucket
+      - name: Release - Upload latest version file to CDN bucket
         if: env.PUBLISH_RELEASE == 'true'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
@@ -136,7 +129,7 @@ jobs:
           headers: |-
             cache-control: no-store
 
-      - name: Upload install script to CDN bucket
+      - name: Release - Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v1
         if: env.PUBLISH_RELEASE == 'true'
         with:
@@ -145,15 +138,14 @@ jobs:
           headers: |-
             cache-control: no-store
 
-      # Nightly
-      - name: Prepare for nightly GCS upload
+      - name: Nightly - Prepare for nightly GCS upload
         if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
           mkdir nightly
           cp dist/*.zip nightly/
           cp dist/checksums.txt nightly/
 
-      - name: Upload nightly to CDN bucket
+      - name: Nightly - Upload nightly to CDN bucket
         if: env.PUBLISH_NIGHTLY == 'true'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
@@ -162,8 +154,7 @@ jobs:
           headers: |-
             cache-control: no-store
 
-      # Invalidate CDN
-      - name: Explicitly invalidate the old artifacts from CDN cache
+      - name: CDN - Explicitly invalidate the old artifacts from CDN cache
         if: env.PUBLISH_RELEASE == 'true' || env.PUBLISH_NIGHTLY == 'true'
         run: |-
           gcloud compute url-maps invalidate-cdn-cache prod --path "/install.sh" --async
