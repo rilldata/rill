@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	_ "github.com/rilldata/rill/admin/database/postgres"
 )
@@ -19,7 +20,8 @@ type Config struct {
 	Env              string `default:"development"`
 	DatabaseDriver   string `default:"postgres" split_words:"true"`
 	DatabaseURL      string `split_words:"true"`
-	Port             int    `default:"8080" split_words:"true"`
+	HTTPPort         int    `default:"8080" split_words:"true"`
+	GRPCPort         int    `default:"9090" split_words:"true"`
 	SessionsSecret   string `split_words:"true"`
 	AuthDomain       string `split_words:"true"`
 	AuthClientID     string `split_words:"true"`
@@ -29,7 +31,7 @@ type Config struct {
 
 func main() {
 	// Load .env (note: fails silently if .env has errors)
-	_ = godotenv.Load()
+	_ = godotenv.Load("../.env")
 
 	// Init config
 	var conf Config
@@ -64,7 +66,8 @@ func main() {
 	}
 
 	srvConf := server.Config{
-		Port:             conf.Port,
+		HTTPPort:         conf.HTTPPort,
+		GRPCPort:         conf.GRPCPort,
 		AuthDomain:       conf.AuthDomain,
 		AuthClientID:     conf.AuthClientID,
 		AuthClientSecret: conf.AuthClientSecret,
@@ -79,12 +82,13 @@ func main() {
 	}
 
 	// Run server
-	logger.Info("serving http", zap.Int("port", conf.Port))
-
 	ctx := graceful.WithCancelOnTerminate(context.Background())
-	err = s.Serve(ctx, conf.Port)
+	group, cctx := errgroup.WithContext(ctx)
+	group.Go(func() error { return s.ServeGRPC(cctx) })
+	group.Go(func() error { return s.ServeHTTP(cctx) })
+	err = group.Wait()
 	if err != nil {
-		logger.Error("server crashed", zap.Error(err))
+		logger.Fatal("server crashed", zap.Error(err))
 	}
 
 	logger.Info("server shutdown gracefully")

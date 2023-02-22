@@ -16,4 +16,6 @@ cli.prepare:
 .PHONY: proto.generate
 proto.generate:
 	cd proto && buf generate
+	cd proto && buf generate --template buf.gen.openapi-admin.yaml --path rill/admin
+	cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
 	npm run generate:runtime-client -w web-common

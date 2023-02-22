@@ -255,6 +255,20 @@ export class Instance extends Message<Instance> {
    */
   embedCatalog = false;
 
+  /**
+   * instance specific environment variables
+   *
+   * @generated from field: map<string, string> env = 7;
+   */
+  env: { [key: string]: string } = {};
+
+  /**
+   * project defaults
+   *
+   * @generated from field: map<string, string> project_env = 8;
+   */
+  projectEnv: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -269,6 +283,8 @@ export class Instance extends Message<Instance> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 8, name: "project_env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -493,6 +509,11 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
    */
   embedCatalog = false;
 
+  /**
+   * @generated from field: map<string, string> env = 7;
+   */
+  env: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -507,6 +528,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {

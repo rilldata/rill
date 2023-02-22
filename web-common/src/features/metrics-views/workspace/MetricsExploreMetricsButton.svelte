@@ -4,7 +4,7 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/Explore.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -23,7 +23,7 @@
   const viewDashboard = () => {
     goto(`/dashboard/${metricsDefName}`);
 
-    navigationEvent.fireEvent(
+    behaviourEvent.fireNavigationEvent(
       metricsDefName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
