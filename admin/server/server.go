@@ -44,7 +44,7 @@ type Config struct {
 	AuthClientID     string
 	AuthClientSecret string
 	AuthCallbackURL  string
-	SessionsSecret   string
+	SessionSecret    string
 }
 
 func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {

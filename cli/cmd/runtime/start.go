@@ -27,8 +27,8 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
-// Config describes runtime config keys derived from environment variables.
-// Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to PascalCase.
+// Config describes runtime server config derived from environment variables.
+// Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
 	HTTPPort            int           `default:"8080" split_words:"true"`
