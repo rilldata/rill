@@ -35,7 +35,8 @@ env:
   # PUBLISH_RELEASE/PUBLISH_NIGHTLY becomes a string with values 'true' or 'false'
   PUBLISH_NIGHTLY: ${{ contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
   PUBLISH_RELEASE: ${{ contains('refs/tags', github.ref_name) }}
-  IMAGE_TAG: ${{ fromJSON('["nightly", "${{ github.ref_name }}}"]')[contains('refs/tags', github.ref_name)] }}
+  # Tag image with sha or release tag
+  IMAGE_TAG: ${{ fromJSON('["'"${GITHUB_SHA}"'", "${{ github.ref_name }}}"]')[contains('refs/tags', github.ref_name)] }}
 
 jobs:
   release:
@@ -97,9 +98,6 @@ jobs:
       - name: Publish docker image
         run: |-
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
-
-          docker tag rilldata/rill:latest rilldata/rill:${GITHUB_SHA}
-          docker push rilldata/rill:${GITHUB_SHA}
 
           docker tag rilldata/rill:latest rilldata/rill:${{ env.IMAGE_TAG }}
           docker push rilldata/rill:${{ env.IMAGE_TAG }}
