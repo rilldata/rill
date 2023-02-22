@@ -58,7 +58,9 @@ func StartCmd(ver version.Version) *cobra.Command {
 			}
 
 			// Init logger
-			logger, err := zap.NewProduction(zap.IncreaseLevel(conf.LogLevel))
+			cfg := zap.NewProductionConfig()
+			cfg.Level.SetLevel(conf.LogLevel)
+			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)

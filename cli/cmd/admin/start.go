@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
 	// Load database drivers for admin
@@ -23,15 +24,16 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver   string `default:"postgres" split_words:"true"`
-	DatabaseURL      string `split_words:"true"`
-	HTTPPort         int    `default:"8080" split_words:"true"`
-	GRPCPort         int    `default:"9090" split_words:"true"`
-	SessionSecret    string `split_words:"true"`
-	AuthDomain       string `split_words:"true"`
-	AuthClientID     string `split_words:"true"`
-	AuthClientSecret string `split_words:"true"`
-	AuthCallbackURL  string `split_words:"true"`
+	DatabaseDriver   string        `default:"postgres" split_words:"true"`
+	DatabaseURL      string        `split_words:"true"`
+	HTTPPort         int           `default:"8080" split_words:"true"`
+	GRPCPort         int           `default:"9090" split_words:"true"`
+	LogLevel         zapcore.Level `default:"info" split_words:"true"`
+	SessionSecret    string        `split_words:"true"`
+	AuthDomain       string        `split_words:"true"`
+	AuthClientID     string        `split_words:"true"`
+	AuthClientSecret string        `split_words:"true"`
+	AuthCallbackURL  string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -47,14 +49,16 @@ func StartCmd(ver version.Version) *cobra.Command {
 			var conf Config
 			err := envconfig.Process("rill_admin", &conf)
 			if err != nil {
-				fmt.Printf("Failed to load config: %s", err.Error())
+				fmt.Printf("failed to load config: %s", err.Error())
 				os.Exit(1)
 			}
 
 			// Init logger
-			logger, err := zap.NewProduction()
+			cfg := zap.NewProductionConfig()
+			cfg.Level.SetLevel(conf.LogLevel)
+			logger, err := cfg.Build()
 			if err != nil {
-				fmt.Printf("Error creating logger: %s", err.Error())
+				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)
 			}
 
