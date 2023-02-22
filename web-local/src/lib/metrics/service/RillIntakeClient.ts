@@ -1,4 +1,3 @@
-import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
 import type { MetricsEvent } from "./MetricsTypes";
 
 const RillIntakeUser = "data-modeler";
