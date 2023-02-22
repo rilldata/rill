@@ -80,15 +80,6 @@ type Env struct {
 	RepoDriver string
 	RepoDSN    string
 	// user provided env variables kept with keys converted to uppercase
-	//
-	// following env variables are used in connectors :
-	// gcs specific variables :
-	// - GCS_CREDENTIALS : credential file content in json format
-	//
-	// s3 specific variables :
-	// - AWS_ACCESS_KEY_ID
-	// - AWS_SECRET_ACCESS_KEY
-	// - AWS_SESSION_TOKEN
 	Variables            map[string]string
 	AllowHostCredentials bool
 }

@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -17,6 +18,8 @@ import (
 func init() {
 	connectors.Register("gcs", connector{})
 }
+
+var errNoCredentials = errors.New("empty credentials: set gcs_credentials env variable")
 
 var spec = connectors.Spec{
 	DisplayName: "Google Cloud Storage",
@@ -88,12 +91,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
 	}
 
-	creds, err := resolvedCredentials(ctx, env)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+	client, err := createClient(ctx, env)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +113,23 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return rillblob.NewIterator(ctx, bucketObj, opts)
 }
 
+func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, error) {
+	creds, err := resolvedCredentials(ctx, env)
+	if err != nil {
+		if !errors.Is(err, errNoCredentials) {
+			return nil, err
+		}
+
+		// no credentials set, we try with a anonymous client in case user is trying to access public buckets
+		return gcp.NewAnonymousHTTPClient(gcp.DefaultTransport()), nil
+	}
+	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
+	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+}
+
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
-	if secretJSON, ok := env.Variables["GCS_CREDENTIALS"]; ok {
+	if secretJSON := env.Variables["GCS_CREDENTIALS"]; secretJSON != "" {
 		// gcs_credentials is set, use credentials from json string provided by user
-		// should we check for non empty strings only and fallback to hostcredentials otherwise ??
 		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
 	}
 	// gcs_credentials is not set
@@ -126,5 +137,5 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 		// use host credentials
 		return gcp.DefaultCredentials(ctx)
 	}
-	return nil, fmt.Errorf("empty credentials: set gcs_credentials env variable")
+	return nil, errNoCredentials
 }

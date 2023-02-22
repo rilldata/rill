@@ -130,16 +130,19 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
-	errCode := gcerrors.Code(err)
-	if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
-		// s3 throws error in case we are trying to access public buckets and passing some credentials
+	if err != nil {
+		// s3 throws error (possibly inconsistent) in case we are trying to access public buckets and passing some credentials
+		// go cdk wraps some s3's errors into gcerrors.Unknown
 		// we try again with anonymous credentials in case bucket is public
-		creds = credentials.AnonymousCredentials
-		bucketObj, err := openBucket(ctx, conf, url.Host, creds)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		errCode := gcerrors.Code(err)
+		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
+			creds = credentials.AnonymousCredentials
+			bucketObj, err := openBucket(ctx, conf, url.Host, creds)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+			}
+			return rillblob.NewIterator(ctx, bucketObj, opts)
 		}
-		return rillblob.NewIterator(ctx, bucketObj, opts)
 	}
 
 	return it, err
