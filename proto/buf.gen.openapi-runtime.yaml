@@ -1,0 +1,14 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/rilldata/rill
+plugins:
+  - remote: buf.build/grpc-ecosystem/plugins/openapiv2:v2.13.0-1
+    out: gen
+    opt:
+      - logtostderr=true
+      - output_format=yaml
+      - allow_merge=true,merge_file_name=rill/runtime/v1/runtime
+      # - openapi_naming_strategy=simple # Removes "V1" prefix from types
+      # - simple_operation_ids=true # Removes "RuntimeService_" prefix from operations

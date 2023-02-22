@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/jinzhu/copier v0.3.5
-	github.com/joho/godotenv v1.3.0
+	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/marcboeker/go-duckdb v1.2.0
