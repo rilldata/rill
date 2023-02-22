@@ -26,13 +26,13 @@ jobs:
         with:
           go-version: 1.19.2
 
-      - name: Set up GCloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up GCloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
       - name: Build & Publish Rill docker image
         run: |-
