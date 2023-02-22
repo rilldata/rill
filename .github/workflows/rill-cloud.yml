@@ -1,6 +1,6 @@
 # This workflow triggers deployment with Rill Cloud helm charts
 # Each merge to main branch is build with github sha tag and published to Rill Cloud.
-name: CD for Rill Cloud
+name: Deploy to Rill Cloud
 on:
   push:
     tags:
@@ -10,7 +10,7 @@ on:
       - cd
 jobs:
   release:
-    name: Release rill-developer
+    name: Deploy to Rill Cloud
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,6 +24,8 @@ jobs:
       - name: Build & Publish Rill docker image
         run: |-
           go build -o rill cli/main.go
+
+          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
           docker build -t rilldata/rill:${GITHUB_SHA} .
           docker push rilldata/rill:${GITHUB_SHA}
 
