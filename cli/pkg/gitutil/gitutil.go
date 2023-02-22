@@ -1,11 +1,11 @@
 package gitutil
 
 import (
+	"fmt"
 	"os"
-	"strings"
 
-	// "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	exec "golang.org/x/sys/execabs"
 )
 
@@ -15,7 +15,8 @@ func CloneRepo(url string) (string, error) {
 		return "", err
 	}
 
-	repoName := strings.TrimSuffix(endpoint.Path[strings.LastIndex(endpoint.Path, "/")+1:], ".git")
+	repoName := fileutil.Stem(endpoint.Path)
+	fmt.Println("repo name is", repoName)
 	cmd := exec.Command("git", "clone", url)
 	cmd.Stderr = os.Stderr
 	_, err = cmd.Output()
