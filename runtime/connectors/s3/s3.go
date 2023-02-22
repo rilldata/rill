@@ -86,6 +86,14 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
+// ConsumeAsIterator returns a file iterator over objects stored in gcs.
+//
+// The credentials are read from following env variables
+//   - AWS_ACCESS_KEY_ID
+//   - AWS_SECRET_ACCESS_KEY
+//   - AWS_SESSION_TOKEN
+//
+// Additionally in case env.AllowHostCredentials is true it looks for credentials stored on host machine as well
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
@@ -101,7 +109,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
 
-	creds, err := getCredentials()
+	creds, err := getCredentials(env)
 	if err != nil {
 		return nil, err
 	}
@@ -122,15 +130,19 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
-	if gcerrors.Code(err) == gcerrors.PermissionDenied && creds != credentials.AnonymousCredentials {
-		// s3 throws permission denied error in case we are trying to access public buckets and passing some credentials
+	if err != nil {
+		// s3 throws error (possibly inconsistent) in case we are trying to access public buckets and passing some credentials
+		// go cdk wraps some s3's errors into gcerrors.Unknown
 		// we try again with anonymous credentials in case bucket is public
-		creds = credentials.AnonymousCredentials
-		bucketObj, err := openBucket(ctx, conf, url.Host, creds)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		errCode := gcerrors.Code(err)
+		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
+			creds = credentials.AnonymousCredentials
+			bucketObj, err := openBucket(ctx, conf, url.Host, creds)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+			}
+			return rillblob.NewIterator(ctx, bucketObj, opts)
 		}
-		return rillblob.NewIterator(ctx, bucketObj, opts)
 	}
 
 	return it, err
@@ -201,20 +213,31 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string, creds
 	return sess, nil
 }
 
-func getCredentials() (*credentials.Credentials, error) {
+func getCredentials(env *connectors.Env) (*credentials.Credentials, error) {
+	providers := make([]credentials.Provider, 0)
+
+	staticProvider := &credentials.StaticProvider{}
+	staticProvider.AccessKeyID = env.Variables["AWS_ACCESS_KEY_ID"]
+	staticProvider.SecretAccessKey = env.Variables["AWS_SECRET_ACCESS_KEY"]
+	staticProvider.SessionToken = env.Variables["AWS_SESSION_TOKEN"]
+	staticProvider.ProviderName = credentials.StaticProviderName
+	// in case user doesn't set access key id and secret access key the credentials retreival will fail
+	// the credential lookup will proceed to next provider in chain
+	providers = append(providers, staticProvider)
+
+	if env.AllowHostCredentials {
+		// allowed to access host credentials so we add them in chain
+		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
+		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})
+	}
 	// Find credentials to use.
-	// If no local credentials are found, we fallback to AnonymousCredentials.
-	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
-	// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
-	creds := credentials.NewChainCredentials([]credentials.Provider{
-		&credentials.EnvProvider{},
-		&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
-	})
-	_, err := creds.Get()
-	if err != nil {
+	creds := credentials.NewChainCredentials(providers)
+	if _, err := creds.Get(); err != nil {
 		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
 			return nil, err
 		}
+		// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
+		// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
 		creds = credentials.AnonymousCredentials
 	}
 

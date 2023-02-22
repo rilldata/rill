@@ -105,6 +105,7 @@
     on:focus={onFocus}
     on:blur={onBlur}
     on:click={onSelectItem}
+    on:keydown
     class="
       {positionStatic ? 'static' : 'absolute'}
       z-9 

@@ -9,10 +9,11 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize int
-	MetastoreDriver     string
-	MetastoreDSN        string
-	QueryCacheSize      int
+	ConnectionCacheSize  int
+	MetastoreDriver      string
+	MetastoreDSN         string
+	QueryCacheSize       int
+	AllowHostCredentials bool
 }
 
 type Runtime struct {
