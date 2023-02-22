@@ -1,11 +1,8 @@
 package gcs
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -73,6 +70,9 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
+// ConsumeAsIterator returns a file iterator over objects stored in gcs.
+// The credential json is read from a env variable GCS_CREDENTIALS.
+// Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
@@ -116,33 +116,15 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 }
 
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
-	useHostCred := env.Variables["use_host_credentials"] != "false" // true by default
-	if useHostCred {
+	if secretJSON, ok := env.Variables["GCS_CREDENTIALS"]; ok {
+		// gcs_credentials is set, use credentials from json string provided by user
+		// should we check for non empty strings only and fallback to hostcredentials otherwise ??
+		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
+	}
+	// gcs_credentials is not set
+	if env.AllowHostCredentials {
 		// use host credentials
 		return gcp.DefaultCredentials(ctx)
 	}
-
-	secretJSONFile := env.Variables["gcs_credentials_file"]
-	var jsonData []byte
-	if secretJSONFile != "" {
-		// use credentials from file given by user
-		r, err := os.Open(secretJSONFile)
-		if err != nil {
-			return nil, err
-		}
-
-		bw := new(bytes.Buffer)
-		_, err = io.Copy(bw, r)
-		if err != nil {
-			return nil, err
-		}
-
-		jsonData = bw.Bytes()
-	} else {
-		// use credentials from json string provided by user
-		secretJSON := env.Variables["gcs_credentials"]
-		jsonData = []byte(secretJSON)
-	}
-
-	return google.CredentialsFromJSON(ctx, jsonData, "https://www.googleapis.com/auth/cloud-platform")
+	return nil, fmt.Errorf("empty credentials: set gcs_credentials env variable")
 }

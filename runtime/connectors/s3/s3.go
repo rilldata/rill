@@ -14,7 +14,9 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
+	"gocloud.dev/gcerrors"
 )
 
 func init() {
@@ -84,6 +86,14 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
+// ConsumeAsIterator returns a file iterator over objects stored in gcs.
+//
+// The credentials are read from following env variables
+//   - AWS_ACCESS_KEY_ID
+//   - AWS_SECRET_ACCESS_KEY
+//   - AWS_SESSION_TOKEN
+//
+// Additionally in case env.AllowHostCredentials is true it looks for credentials stored on host machine as well
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
@@ -99,12 +109,12 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
 
-	sess, err := getAwsSessionConfig(ctx, conf, env, url.Host)
+	creds, err := getCredentials(env)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start session: %w", err)
+		return nil, err
 	}
 
-	bucketObj, err := s3blob.OpenBucket(ctx, sess, url.Host, nil)
+	bucketObj, err := openBucket(ctx, conf, url.Host, creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
 	}
@@ -118,15 +128,32 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobPattern:           url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
 	}
-	return rillblob.NewIterator(ctx, bucketObj, opts)
-}
 
-func getAwsSessionConfig(ctx context.Context, conf *Config, env *connectors.Env, bucket string) (*session.Session, error) {
-	creds, err := resolvedCredentials(env)
-	if err != nil {
-		return nil, err
+	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	if gcerrors.Code(err) == gcerrors.PermissionDenied && creds != credentials.AnonymousCredentials {
+		// s3 throws permission denied error in case we are trying to access public buckets and passing some credentials
+		// we try again with anonymous credentials in case bucket is public
+		creds = credentials.AnonymousCredentials
+		bucketObj, err := openBucket(ctx, conf, url.Host, creds)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		}
+		return rillblob.NewIterator(ctx, bucketObj, opts)
 	}
 
+	return it, err
+}
+
+func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
+	sess, err := getAwsSessionConfig(ctx, conf, bucket, creds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start session: %w", err)
+	}
+
+	return s3blob.OpenBucket(ctx, sess, bucket, nil)
+}
+
+func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*session.Session, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if len(conf.S3Endpoint) > 0 {
 		region := conf.AWSRegion
@@ -182,33 +209,33 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, env *connectors.Env,
 	return sess, nil
 }
 
-func resolvedCredentials(env *connectors.Env) (*credentials.Credentials, error) {
+func getCredentials(env *connectors.Env) (*credentials.Credentials, error) {
 	providers := make([]credentials.Provider, 0)
-	useHostCred := env.Variables["use_host_credentials"] != "false" // true by default
-	if useHostCred {
+
+	staticProvider := &credentials.StaticProvider{}
+	staticProvider.AccessKeyID = env.Variables["AWS_ACCESS_KEY_ID"]
+	staticProvider.SecretAccessKey = env.Variables["AWS_SECRET_ACCESS_KEY"]
+	staticProvider.SessionToken = env.Variables["AWS_SESSION_TOKEN"]
+	staticProvider.ProviderName = credentials.StaticProviderName
+	// in case user doesn't set access key id and secret access key the credentials retreival will fail
+	// the credential lookup will proceed to next provider in chain
+	providers = append(providers, staticProvider)
+
+	if env.AllowHostCredentials {
+		// allowed to access host credentials so we add them in chain
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})
-	} else {
-		// in case host credential lookup is disabled we need to rely on user provided access keys only
-		staticProvider := &credentials.StaticProvider{}
-		staticProvider.AccessKeyID = env.Variables["aws_access_key_id"]
-		staticProvider.SecretAccessKey = env.Variables["aws_secret_access_key"]
-		staticProvider.SessionToken = env.Variables["aws_session_token"]
-		staticProvider.ProviderName = credentials.StaticProviderName
-		providers = append(providers, staticProvider)
 	}
-
 	// Find credentials to use.
 	creds := credentials.NewChainCredentials(providers)
-
-	// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
-	// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
-	_, err := creds.Get()
-	if err != nil {
+	if _, err := creds.Get(); err != nil {
 		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
 			return nil, err
 		}
+		// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
+		// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
 		creds = credentials.AnonymousCredentials
 	}
+
 	return creds, nil
 }
