@@ -79,7 +79,7 @@ jobs:
       - name: Build Rill using Goreleaser
         run: |-
           if [[ ${{ env.PUBLISH_RELEASE }} == 'false' ]]; then
-            export NIGHTLY="--snapshot"
+            export NON_RELEASE="--snapshot"
           fi
 
           docker run \
@@ -93,7 +93,7 @@ jobs:
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
               goreleaser/goreleaser-cross:v1.19.2 \
-              release ${NIGHTLY}
+              release ${NON_RELEASE}
 
       - name: Publish docker image
         run: |-
