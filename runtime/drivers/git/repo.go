@@ -14,7 +14,6 @@ import (
 	doublestar "github.com/bmatcuk/doublestar/v4"
 	"github.com/eapache/go-resiliency/retrier"
 	gogit "github.com/go-git/go-git/v5"
-	"github.com/hashicorp/go-multierror"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
