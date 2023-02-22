@@ -55,6 +55,7 @@ see more button
         label,
       });
     }}
+    on:keydown
     on:shift-click={async () => {
       await navigator.clipboard.writeText(label);
       let truncatedLabel = label?.toString();
