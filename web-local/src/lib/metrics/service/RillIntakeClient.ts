@@ -16,14 +16,15 @@ export class RillIntakeClient {
 
   public async fireEvent(event: MetricsEvent) {
     try {
-      await fetchWrapper({
-        url: `${RILL_RUNTIME_URL}/local/track`,
+      const resp = await fetch(`${RILL_RUNTIME_URL}/local/track`, {
         method: "POST",
-        data: event,
+        body: JSON.stringify(event),
         headers: {
           Authorization: this.authHeader,
         },
       });
+      if (!resp.ok)
+        console.error(`Failed to send ${event.event_type}. ${resp.statusText}`);
     } catch (err) {
       console.error(`Failed to send ${event.event_type}. ${err.message}`);
     }
