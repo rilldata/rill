@@ -54,7 +54,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 			return err
 		}
 	} else {
-		panic(fmt.Sprintf("Unknown histogram method %v", q.Method))
+		return fmt.Errorf("Unknown histogram method %v", q.Method)
 	}
 
 	return nil
