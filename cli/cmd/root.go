@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 
+	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/initialize"
+	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
@@ -40,6 +42,8 @@ func runCmd(ctx context.Context, ver version.Version) error {
 	rootCmd.AddCommand(start.StartCmd(ver))
 	rootCmd.AddCommand(build.BuildCmd(ver))
 	rootCmd.AddCommand(source.SourceCmd(ver))
+	rootCmd.AddCommand(admin.AdminCmd(ver))
+	rootCmd.AddCommand(runtime.RuntimeCmd(ver))
 	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())

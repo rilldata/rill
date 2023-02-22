@@ -70,7 +70,7 @@ func (s *Server) authLogin(w http.ResponseWriter, req *http.Request, pathParams 
 		return
 	}
 
-	sess, err := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
+	sess, err := sessions.NewCookieStore([]byte(s.conf.SessionSecret)).Get(req, authSessionName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
@@ -87,7 +87,7 @@ func (s *Server) authLogin(w http.ResponseWriter, req *http.Request, pathParams 
 }
 
 func (s *Server) callback(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	sess, err := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
+	sess, err := sessions.NewCookieStore([]byte(s.conf.SessionSecret)).Get(req, authSessionName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
@@ -161,7 +161,7 @@ func (s *Server) logout(w http.ResponseWriter, req *http.Request, pathParams map
 }
 
 func (s *Server) logoutCallback(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
+	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionSecret)).Get(req, authSessionName)
 
 	sess.Values["access_token"] = nil
 	sess.Values["profile"] = nil
@@ -175,7 +175,7 @@ func (s *Server) logoutCallback(w http.ResponseWriter, req *http.Request, pathPa
 }
 
 func (s *Server) user(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(req, authSessionName)
+	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionSecret)).Get(req, authSessionName)
 
 	var profiles map[string]interface{}
 	if sess.Values["profile"] == nil {
@@ -227,7 +227,7 @@ func IsAuthenticated(next echo.HandlerFunc) echo.HandlerFunc {
 // the user has already been authenticated previously.
 func (s *Server) IsAuthenticated1(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess, err := sessions.NewCookieStore([]byte(s.conf.SessionsSecret)).Get(r, authSessionName)
+		sess, err := sessions.NewCookieStore([]byte(s.conf.SessionSecret)).Get(r, authSessionName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
