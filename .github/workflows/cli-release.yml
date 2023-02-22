@@ -18,7 +18,7 @@ on:
   # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
-  # Trigger a rill cloud deployment or nightly release manually
+  # Trigger a nightly release manually
   workflow_dispatch:
 
 env:
@@ -88,14 +88,6 @@ jobs:
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      - name: Release - Upload latest version file to CDN bucket
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v1
-        with:
-          path: latest.txt
-          destination: prod-cdn.rilldata.com/rill/
-          headers: |-
-            cache-control: no-store
 
       - name: Release - Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v1
@@ -103,6 +95,15 @@ jobs:
         with:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
+          headers: |-
+            cache-control: no-store
+
+      - name: Release - Upload latest version file to CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: latest.txt
+          destination: prod-cdn.rilldata.com/rill/
           headers: |-
             cache-control: no-store
 
