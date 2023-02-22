@@ -42,6 +42,24 @@ func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
 	return nil
 }
 
+func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+	if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD {
+		err := q.calculateFDMethod(ctx, rt, instanceID, priority)
+		if err != nil {
+			return err
+		}
+	} else if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_DIAGNOSTIC {
+		err := q.calculateDiagnosticMethod(ctx, rt, instanceID, priority)
+		if err != nil {
+			return err
+		}
+	} else {
+		panic(fmt.Sprintf("Unknown histogram method %v", q.Method))
+	}
+
+	return nil
+}
+
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
 	querySQL := fmt.Sprintf(
@@ -345,24 +363,6 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 
 	q.Result = histogramBins
-
-	return nil
-}
-
-func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD {
-		err := q.calculateFDMethod(ctx, rt, instanceID, priority)
-		if err != nil {
-			return err
-		}
-	} else if q.Method == runtimev1.HistogramMethod_HISTOGRAM_METHOD_DIAGNOSTIC {
-		err := q.calculateDiagnosticMethod(ctx, rt, instanceID, priority)
-		if err != nil {
-			return err
-		}
-	} else {
-		panic(fmt.Sprintf("Unknown histogram method %v", q.Method))
-	}
 
 	return nil
 }
