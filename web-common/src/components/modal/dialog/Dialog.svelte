@@ -29,22 +29,22 @@
     switch (size) {
       case "sm":
         xDimClasses = "w-1/2 md:w-1/3 xl:w-1/4 2xl:w-1/5";
-        yDimClasses = "h-1/3";
+        yDimClasses = yFixed ? "h-1/3" : "";
         break;
 
       case "md":
         xDimClasses = "w-2/3 md:w-2/3 xl:w-1/3 2xl:w-1/3 max-w-2xl";
-        yDimClasses = "h-1/2";
+        yDimClasses = yFixed ? "h-1/2" : "";
         break;
 
       case "lg":
         xDimClasses = "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-1/3";
-        yDimClasses = "h-3/5";
+        yDimClasses = yFixed ? "h-3/5" : "";
         break;
 
       case "full":
         xDimClasses = "w-4/5 md:w-3/5 xl:w-1/2 2xl:w-2/3";
-        yDimClasses = "h-4/5";
+        yDimClasses = yFixed ? "h-4/5" : "";
         break;
     }
   }
