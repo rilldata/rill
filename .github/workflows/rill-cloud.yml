@@ -8,6 +8,9 @@ on:
     branches:
       - main
       - cd
+env:
+  RELEASE: ${{ contains('refs/tags', github.ref_name) }}
+
 jobs:
   release:
     name: Deploy to Rill Cloud
@@ -26,12 +29,12 @@ jobs:
           go build -o rill cli/main.go
 
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
-          docker build -t rilldata/rill:${GITHUB_SHA} .
-          docker push rilldata/rill:${GITHUB_SHA}
+          docker build -t rilldata/rill-headless:${GITHUB_SHA} .
+          docker push rilldata/rill-headless:${GITHUB_SHA}
 
       - name: Trigger Rill Cloud deployment
         run: |-
           curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
-          --data '{"event_type": "Deploying Tag: ${{ env.IMAGE_TAG }}", "client_payload": { "image_tag": "${{ env.IMAGE_TAG }}", "release": "'"${PUBLISH_RELEASE}"'"}}'
+          --data '{"event_type": "Deploying Tag: "'"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
