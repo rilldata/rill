@@ -32,6 +32,7 @@ We should rename TimeSeriesTimeRange to a better name.
     getDefaultTimeGrain,
     getDefaultTimeRange,
     getTimeGrainOptions,
+    ISODurationToTimeRange,
     TimeGrainOption,
     timeRangeToISODuration,
   } from "./time-range-utils";
@@ -43,6 +44,8 @@ We should rename TimeSeriesTimeRange to a better name.
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
+  let defaultTimeRange: TimeRangeName;
+  let minTimeGrain: V1TimeGrain;
 
   let metricsViewQuery;
   $: if ($runtimeStore.instanceId) {
@@ -70,6 +73,11 @@ We should rename TimeSeriesTimeRange to a better name.
       $metricsViewQuery.data.entry.metricsView.model,
       $metricsViewQuery.data.entry.metricsView.timeDimension
     );
+
+    defaultTimeRange = ISODurationToTimeRange(
+      $metricsViewQuery.data.entry.metricsView?.defaultTimeRange
+    );
+    minTimeGrain = $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain;
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 

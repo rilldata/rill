@@ -106,7 +106,7 @@ export const timeRangeToISODuration = (
     case TimeRangeName.Last60Days:
       return "P60D";
     case TimeRangeName.AllTime:
-      return "P9999Y";
+      return "inf";
     default:
       return undefined;
   }
@@ -132,7 +132,7 @@ export const ISODurationToTimeRange = (isoDuration: string): TimeRangeName => {
       return TimeRangeName.Last30Days;
     case "P60D":
       return TimeRangeName.Last60Days;
-    case "P9999Y":
+    case "inf":
       return TimeRangeName.AllTime;
     default:
       return TimeRangeName.AllTime;
