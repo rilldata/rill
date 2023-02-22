@@ -2,11 +2,12 @@ package git
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"strings"
+	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	gogit "github.com/go-git/go-git/v5"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 )
@@ -18,34 +19,53 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
-	c := &connection{root: dsn}
-	if err := c.checkRoot(); err != nil {
-		err = os.RemoveAll("tempdir")
+	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
+
+	var c *connection
+	err := r.Run(func() error {
+		tempdir, err := os.MkdirTemp("", "git_repo_driver")
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		split := strings.Split(dsn, "|")
-		if len(split) > 1 {
-			dsn = split[1]
-		}
+		c = &connection{root: dsn, tempdir: tempdir}
 
-		_, err := gogit.PlainClone("tempdir", false, &gogit.CloneOptions{
+		_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
 			URL: dsn,
 		})
 		if err != nil {
-			return nil, err
+			removeError := os.RemoveAll(tempdir)
+			if removeError != nil {
+				var combinedError error
+				combinedError = multierror.Append(combinedError, err)
+				combinedError = multierror.Append(combinedError, removeError)
+				return combinedError
+			}
+
+			return err
 		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
 	return c, nil
 }
 
 type connection struct {
-	root string
+	root    string
+	tempdir string
 }
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	err := os.RemoveAll(c.tempdir)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -77,26 +97,4 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
-}
-
-// checkPath checks that the connection's root is a valid directory.
-func (c *connection) checkRoot() error {
-	info, err := os.Stat("tempdir")
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("repo: directory does not exist at '%s'", c.root)
-		}
-		return err
-	}
-
-	if !info.IsDir() {
-		return fmt.Errorf("repo: file is not a directory '%s'", c.root)
-	}
-
-	_, err = gogit.PlainOpen("tempdir")
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
