@@ -36,7 +36,7 @@ env:
   PUBLISH_NIGHTLY: ${{ contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
   PUBLISH_RELEASE: ${{ contains('refs/tags', github.ref_name) }}
   # Tag image with sha or release tag
-  IMAGE_TAG: ${{ fromJSON('["'${GITHUB_SHA}'", "${{ github.ref_name }}"]')[contains('refs/tags', github.ref_name)] }}
+  IMAGE_TAG: ${{ fromJSON('["${{ github.sha }}", "${{ github.ref_name }}"]')[contains('refs/tags', github.ref_name)] }}
 
 jobs:
   release:
