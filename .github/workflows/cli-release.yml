@@ -12,9 +12,6 @@ on:
     # Trigger a full release on new Git tag
     tags:
       - "**"
-    # Trigger a rill cloud deployment
-    branches:
-      - main
   # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'

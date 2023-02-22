@@ -36,7 +36,7 @@ jobs:
 
       - name: Build & Publish Rill docker image
         run: |-
-          go build -o rill cli/main.go
+          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version={{.Version}} -X main.Commit=${{.ShortCommit}} -X main.BuildDate={{.Date}}" cli/main.go
 
           gcloud auth configure-docker
 
