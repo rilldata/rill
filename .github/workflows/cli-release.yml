@@ -72,7 +72,7 @@ jobs:
           echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
           echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
 
-      - name: Release Publish
+      - name: Build Rill using Goreleaser
         run: |-
           if [[ ${{ env.PUBLISH_RELEASE }} == 'false' ]]; then
             export NIGHTLY="--snapshot"
@@ -98,9 +98,9 @@ jobs:
 
       - name: Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v1
+        if: env.PUBLISH_RELEASE == 'true'
         with:
           path: scripts/install.sh
-          if: env.PUBLISH_RELEASE == 'true'
           destination: prod-cdn.rilldata.com/
           headers: |-
             cache-control: no-store
@@ -134,9 +134,9 @@ jobs:
       - name: Trigger Rill Cloud deployment
         run: |-
           curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.GORELEASER_ACCESS_TOKEN }} \
-          --data '{"event_type": "Trigger Workflow", "client_payload": { "repository": "'"${GITHUB_REPOSITORY}"'", "ref": "test-rd", "inputs": { "image_tag": "'"${GITHUB_SHA}"'" }}'
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
+          --data '{"event_type": "Trigger Workflow", "client_payload": { "repository": "'"${GITHUB_REPOSITORY}"'", "ref": "main", "inputs": { "image_tag": "'"${GITHUB_SHA}"'" }}'
 
       - name: Prepare for nightly GCS upload
         if: env.PUBLISH_NIGHTLY == 'true'
@@ -156,6 +156,7 @@ jobs:
 
       - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v1'
+        if: env.PUBLISH_RELEASE == 'true' || env.PUBLISH_NIGHTLY == 'true'
 
       - name: Explicitly invalidate the old artifacts from CDN cache
         if: env.PUBLISH_RELEASE == 'true' || env.PUBLISH_NIGHTLY == 'true'
