@@ -8,6 +8,8 @@ on:
     branches:
       - main
       - cd
+  workflow_dispatch:
+
 env:
   RELEASE: ${{ contains('refs/tags', github.ref_name) }}
 
@@ -24,13 +26,18 @@ jobs:
         with:
           go-version: 1.19.2
 
+      - name: Authenticate GCS
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
       - name: Build & Publish Rill docker image
         run: |-
           go build -o rill cli/main.go
 
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
-          docker build -t rilldata/rill-headless:${GITHUB_SHA} .
-          docker push rilldata/rill-headless:${GITHUB_SHA}
+          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
+          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
 
       - name: Trigger Rill Cloud deployment
         run: |-
