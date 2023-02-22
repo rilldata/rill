@@ -1,10 +1,12 @@
 package artifacts_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -15,6 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
 )
@@ -164,7 +167,7 @@ measures:
 			err := artifacts.Write(ctx, repoStore, "test", tt.Catalog)
 			require.NoError(t, err)
 
-			readCatalog, err := artifacts.Read(ctx, repoStore, "test", tt.Catalog.Path)
+			readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", tt.Catalog.Path)
 			require.NoError(t, err)
 			require.Equal(t, readCatalog, tt.Catalog)
 
@@ -208,7 +211,7 @@ func TestReadFailure(t *testing.T) {
 			err := os.WriteFile(path.Join(dir, tt.Path), []byte(tt.Raw), os.ModePerm)
 			require.NoError(t, err)
 
-			_, err = artifacts.Read(ctx, repoStore, "test", tt.Path)
+			_, err = artifacts.Read(ctx, repoStore, registryStore(t), "test", tt.Path)
 			require.Error(t, err)
 		})
 	}
@@ -249,10 +252,115 @@ func TestSanitizedName(t *testing.T) {
 	}
 }
 
+func TestReadWithEnvVariables(t *testing.T) {
+	repoStore := repoStore(t)
+	registryStore := registryStore(t)
+	tests := []struct {
+		name     string
+		filePath string
+		content  string
+		want     *drivers.CatalogEntry
+		wantErr  bool
+	}{
+		{
+			name:     "valid source yaml",
+			filePath: "sources/Source.yaml",
+			content: `type: s3
+uri: "s3://bucket/file"
+csv.delimiter: '{{.env.delimitter}}'
+format: csv
+region: {{.env.region}}
+`,
+			want: &drivers.CatalogEntry{
+				Name: "Source",
+				Path: "sources/Source.yaml",
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
+					Name:      "Source",
+					Connector: "s3",
+					Properties: toProtoStruct(map[string]any{
+						"path":          "s3://bucket/file",
+						"csv.delimiter": "|",
+						"format":        "csv",
+						"region":        "us-east-2",
+					}),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "invalid source yaml no env defined",
+			filePath: "sources/Source.yaml",
+			content: `type: s3
+uri: "s3://bucket/file"
+csv.delimiter: {{.env.delimitter}}
+format: {{.env.format}}
+region: {{.env.region}}
+`,
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:     "Model",
+			filePath: "models/Model.sql",
+			content:  "select * from A {{.env.limit}}",
+			want: &drivers.CatalogEntry{
+				Name: "Model",
+				Path: "models/Model.sql",
+				Type: drivers.ObjectTypeModel,
+				Object: &runtimev1.Model{
+					Name:    "Model",
+					Sql:     "select * from A limit 10",
+					Dialect: runtimev1.Model_DIALECT_DUCKDB,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, repoStore.Put(context.Background(), "test", tt.filePath, bytes.NewReader([]byte(tt.content))))
+			got, err := artifacts.Read(context.Background(), repoStore, registryStore, "test", tt.filePath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Read() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func repoStore(t *testing.T) drivers.RepoStore {
+	dir := t.TempDir()
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	require.NoError(t, err)
+
+	repoStore, ok := fileStore.RepoStore()
+	require.True(t, ok)
+
+	return repoStore
+}
+
 func toProtoStruct(obj map[string]any) *structpb.Struct {
 	s, err := structpb.NewStruct(obj)
 	if err != nil {
 		panic(err)
 	}
 	return s
+}
+
+func registryStore(t *testing.T) drivers.RegistryStore {
+	ctx := context.Background()
+	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	require.NoError(t, err)
+	store.Migrate(ctx)
+	registry, _ := store.RegistryStore()
+
+	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
+	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Env: env})
+	require.NoError(t, err)
+
+	return registry
 }

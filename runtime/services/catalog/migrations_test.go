@@ -760,5 +760,17 @@ func getService(t *testing.T) (*catalog.Service, string) {
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
 
-	return catalog.NewService(catalogObject, repo, olap, "test", nil), dir
+	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil), dir
+}
+
+func registryStore(t *testing.T) drivers.RegistryStore {
+	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	store.Migrate(context.Background())
+	require.NoError(t, err)
+	registry, _ := store.RegistryStore()
+
+	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test"})
+	require.NoError(t, err)
+
+	return registry
 }

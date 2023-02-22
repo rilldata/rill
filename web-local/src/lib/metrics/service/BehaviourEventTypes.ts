@@ -3,6 +3,8 @@ import type { MetricsEventScreenName, MetricsEventSpace } from "./MetricsTypes";
 
 export enum BehaviourEventAction {
   Navigate = "navigate",
+  PublishStart = "publish-start",
+  PublishSuccess = "publish-success",
 }
 
 export enum BehaviourEventMedium {

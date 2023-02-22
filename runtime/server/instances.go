@@ -49,6 +49,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		RepoDriver:   req.RepoDriver,
 		RepoDSN:      req.RepoDsn,
 		EmbedCatalog: req.EmbedCatalog,
+		Env:          req.Env,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -79,5 +80,7 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		RepoDriver:   inst.RepoDriver,
 		RepoDsn:      inst.RepoDSN,
 		EmbedCatalog: inst.EmbedCatalog,
+		Env:          inst.Env,
+		ProjectEnv:   inst.ProjectEnv,
 	}
 }

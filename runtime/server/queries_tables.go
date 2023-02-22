@@ -2,13 +2,12 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
-	"google.golang.org/protobuf/types/known/structpb"
 )
+
+const _tableHeadDefaultLimit = 25
 
 // Table level profiling APIs.
 func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
@@ -46,21 +45,22 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 }
 
 func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
-	rows, err := s.query(ctx, req.InstanceId, &drivers.Statement{
-		Query:    fmt.Sprintf("select * from %q limit %d", req.TableName, req.Limit),
-		Priority: int(req.Priority),
-	})
-	if err != nil {
-		return nil, err
+	limit := int(req.Limit)
+	if limit == 0 {
+		limit = _tableHeadDefaultLimit
 	}
-	defer rows.Close()
 
-	var data []*structpb.Struct
-	if data, err = rowsToData(rows); err != nil {
+	q := &queries.TableHead{
+		TableName: req.TableName,
+		Limit:     limit,
+	}
+
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
 		return nil, err
 	}
 
 	return &runtimev1.GetTableRowsResponse{
-		Data: data,
+		Data: q.Result,
 	}, nil
 }

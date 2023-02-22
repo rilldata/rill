@@ -79,6 +79,7 @@ func (ps PropertySchema) ValidateType(val any) bool {
 type Env struct {
 	RepoDriver string
 	RepoDSN    string
+	Variables  map[string]string
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).
