@@ -6,7 +6,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { error, redirect } from "@sveltejs/kit";
-import * as url from "url";
 import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
 export const ssr = false;

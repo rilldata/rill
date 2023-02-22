@@ -34,7 +34,4 @@ plugins:
       # - openapi_naming_strategy=simple # Removes "V1" prefix from types
       # - simple_operation_ids=true # Removes "RuntimeService_" prefix from operations
 
-  - name: es
-    path: ../node_modules/.bin/protoc-gen-es
-    opt: target=ts
-    out: gen
+
