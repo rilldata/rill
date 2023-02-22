@@ -4,6 +4,7 @@
   import {
     useRuntimeServiceGetTimeRangeSummary,
     V1Model,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import Spacer from "../../../components/icons/Spacer.svelte";
@@ -11,6 +12,7 @@
   import {
     getRelativeTimeRangeOptions,
     ISODurationToTimeRange,
+    timeGrainStringToEnum,
     timeRangeToISODuration,
   } from "../../dashboards/time-controls/time-range-utils";
 
@@ -22,6 +24,9 @@
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
+  $: smallestTimeGrain = $metricsInternalRep.getMetricKey(
+    "smallest_time_grain"
+  );
 
   let timeRangeQuery;
   $: if (selectedModel?.name && timeColumn) {
@@ -46,7 +51,10 @@
 
   let selectableTimeRanges = [];
   $: if (allTimeRange) {
-    selectableTimeRanges = getRelativeTimeRangeOptions(allTimeRange);
+    selectableTimeRanges = getRelativeTimeRangeOptions(
+      allTimeRange,
+      timeGrainStringToEnum(smallestTimeGrain)
+    );
   }
 
   $: options = [

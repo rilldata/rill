@@ -8,6 +8,7 @@
   import { Menu, MenuItem } from "../../../components/menu";
   import Divider from "../../../components/menu/core/Divider.svelte";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
@@ -19,6 +20,7 @@
 
   export let metricViewName: string;
   export let allTimeRange: TimeRange;
+  export let minTimeGrain: V1TimeGrain;
 
   const dispatch = createEventDispatcher();
 
@@ -29,7 +31,10 @@
   let isCalendarRecentlyClosed = false;
 
   $: if (allTimeRange) {
-    relativeTimeRangeOptions = getRelativeTimeRangeOptions(allTimeRange);
+    relativeTimeRangeOptions = getRelativeTimeRangeOptions(
+      allTimeRange,
+      minTimeGrain
+    );
   }
 
   function onSelectRelativeTimeRange(
@@ -132,6 +137,7 @@
       <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {metricViewName}
+          {minTimeGrain}
           on:apply={(e) =>
             onSelectCustomTimeRange(
               e.detail.startDate,

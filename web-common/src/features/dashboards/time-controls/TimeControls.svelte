@@ -33,8 +33,9 @@ We should rename TimeSeriesTimeRange to a better name.
     getDefaultTimeRange,
     getTimeGrainOptions,
     ISODurationToTimeRange,
+    makeRelativeTimeRange,
+    supportedTimeGrainEnums,
     TimeGrainOption,
-    timeRangeToISODuration,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
@@ -77,7 +78,9 @@ We should rename TimeSeriesTimeRange to a better name.
     defaultTimeRange = ISODurationToTimeRange(
       $metricsViewQuery.data.entry.metricsView?.defaultTimeRange
     );
-    minTimeGrain = $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain;
+    minTimeGrain =
+      $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain ||
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 
@@ -86,7 +89,10 @@ We should rename TimeSeriesTimeRange to a better name.
     setDefaultTimeControls(allTimeRange);
 
   function setDefaultTimeControls(allTimeRange: TimeRange) {
-    baseTimeRange = getDefaultTimeRange(allTimeRange);
+    baseTimeRange =
+      makeRelativeTimeRange(defaultTimeRange, allTimeRange) ||
+      getDefaultTimeRange(allTimeRange);
+
     const timeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
       baseTimeRange.end
@@ -127,9 +133,29 @@ We should rename TimeSeriesTimeRange to a better name.
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
     timeGrainOptions = getTimeGrainOptions(start, end);
-    const isValidTimeGrain = checkValidTimeGrain(timeGrain, timeGrainOptions);
+    const isValidTimeGrain = checkValidTimeGrain(
+      timeGrain,
+      timeGrainOptions,
+      minTimeGrain
+    );
     if (!isValidTimeGrain) {
-      timeGrain = getDefaultTimeGrain(start, end);
+      const defaultTimeGrain = getDefaultTimeGrain(start, end);
+      const timeGrainEnums = supportedTimeGrainEnums();
+
+      const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
+      timeGrain = defaultTimeGrain;
+      let i = defaultGrainIndex;
+      // loop through time grains until we find a valid one
+      while (!checkValidTimeGrain(timeGrain, timeGrainOptions, minTimeGrain)) {
+        timeGrain = timeGrainEnums[i + 1] as V1TimeGrain;
+        i = i == timeGrainEnums.length - 1 ? -1 : i + 1;
+        if (i == defaultGrainIndex) {
+          // if we've looped through all the time grains and haven't found
+          // a valid one, use default
+          timeGrain = defaultTimeGrain;
+          break;
+        }
+      }
     }
 
     // Round start time to nearest lower time grain
@@ -169,6 +195,7 @@ We should rename TimeSeriesTimeRange to a better name.
     <TimeRangeSelector
       {metricViewName}
       {allTimeRange}
+      {minTimeGrain}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
@@ -176,6 +203,7 @@ We should rename TimeSeriesTimeRange to a better name.
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
       {metricViewName}
       {timeGrainOptions}
+      {minTimeGrain}
     />
   {/if}
 </div>

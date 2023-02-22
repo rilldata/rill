@@ -88,10 +88,12 @@
     if (selectedTimeGrain === "") {
       $metricsInternalRep.updateMetricsParams({
         smallest_time_grain: "",
+        default_time_range: "",
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
         smallest_time_grain: timeGrainEnumToYamlString(selectedTimeGrain),
+        default_time_range: "",
       });
     }
   }

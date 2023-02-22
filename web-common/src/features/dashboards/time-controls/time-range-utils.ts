@@ -24,8 +24,30 @@ export const supportedTimeGrainEnums = () => {
   return supportedEnums;
 };
 
+export function validateTimeRange(
+  start: Date,
+  end: Date,
+  minTimeGrain: V1TimeGrain
+): string {
+  const timeRangeDurationMs = end.getTime() - start.getTime();
+
+  const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
+  const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
+
+  const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain);
+
+  if (start > end) {
+    return "Start date must be before end date";
+  } else if (!isGrainPossible) {
+    return "Range is smaller than min time grain";
+  } else {
+    return undefined;
+  }
+}
+
 export function getRelativeTimeRangeOptions(
-  allTimeRange: TimeRange
+  allTimeRange: TimeRange,
+  minTimeGrain: V1TimeGrain
 ): TimeRange[] {
   const allTimeRangeDurationMs = getAllTimeRangeDurationMs(allTimeRange);
   const timeRanges: TimeRange[] = [];
@@ -33,10 +55,15 @@ export function getRelativeTimeRangeOptions(
   for (const timeRangeName of lastXTimeRangeNames) {
     const timeRangeDurationMs = getLastXTimeRangeDurationMs(timeRangeName);
 
-    // only show a time range if it is within the time range of the data
+    // only show a time range if it is within the time range of the data and supports minTimeGrain
     const showTimeRange = timeRangeDurationMs <= allTimeRangeDurationMs;
-    if (showTimeRange) {
-      const timeRange = makeRelativeTimeRange(timeRangeName, allTimeRange.end);
+
+    const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
+    const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
+    const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain);
+
+    if (showTimeRange && isGrainPossible) {
+      const timeRange = makeRelativeTimeRange(timeRangeName, allTimeRange);
       timeRanges.push(timeRange);
     }
   }
@@ -139,20 +166,59 @@ export const ISODurationToTimeRange = (isoDuration: string): TimeRangeName => {
   }
 };
 
+export function isGrainBigger(
+  grain1: V1TimeGrain,
+  grain2: V1TimeGrain
+): boolean {
+  if (grain1 === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) return false;
+  return getTimeGrainDurationMs(grain1) > getTimeGrainDurationMs(grain2);
+}
+
+export function getAllowedTimeGrains(timeRangeDurationMs) {
+  if (timeRangeDurationMs < 2 * 60 * 60 * 1000) {
+    return [V1TimeGrain.TIME_GRAIN_MINUTE];
+  } else if (timeRangeDurationMs <= 6 * 60 * 60 * 1000) {
+    return [V1TimeGrain.TIME_GRAIN_MINUTE, V1TimeGrain.TIME_GRAIN_HOUR];
+  } else if (timeRangeDurationMs <= 24 * 60 * 60 * 1000) {
+    return [V1TimeGrain.TIME_GRAIN_HOUR];
+  } else if (timeRangeDurationMs <= 14 * 24 * 60 * 60 * 1000) {
+    return [V1TimeGrain.TIME_GRAIN_HOUR, V1TimeGrain.TIME_GRAIN_DAY];
+  } else if (timeRangeDurationMs <= 30 * 24 * 60 * 60 * 1000) {
+    return [
+      V1TimeGrain.TIME_GRAIN_HOUR,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      V1TimeGrain.TIME_GRAIN_WEEK,
+    ];
+  } else if (timeRangeDurationMs <= 90 * 24 * 60 * 60 * 1000) {
+    return [V1TimeGrain.TIME_GRAIN_DAY, V1TimeGrain.TIME_GRAIN_WEEK];
+  } else if (timeRangeDurationMs <= 3 * 365 * 24 * 60 * 60 * 1000) {
+    return [
+      V1TimeGrain.TIME_GRAIN_DAY,
+      V1TimeGrain.TIME_GRAIN_WEEK,
+      V1TimeGrain.TIME_GRAIN_MONTH,
+    ];
+  } else {
+    return [
+      V1TimeGrain.TIME_GRAIN_WEEK,
+      V1TimeGrain.TIME_GRAIN_MONTH,
+      V1TimeGrain.TIME_GRAIN_YEAR,
+    ];
+  }
+}
+
 export function getDefaultTimeGrain(start: Date, end: Date): V1TimeGrain {
   const timeRangeDurationMs = end.getTime() - start.getTime();
+
   if (timeRangeDurationMs <= 2 * 60 * 60 * 1000) {
     return V1TimeGrain.TIME_GRAIN_MINUTE;
-  } else if (timeRangeDurationMs <= 14 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs <= 7 * 24 * 60 * 60 * 1000) {
     return V1TimeGrain.TIME_GRAIN_HOUR;
-  } else if (timeRangeDurationMs <= 60 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs <= 90 * 24 * 60 * 60 * 1000) {
     return V1TimeGrain.TIME_GRAIN_DAY;
-  } else if (timeRangeDurationMs <= 365 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs <= 3 * 365 * 24 * 60 * 60 * 1000) {
     return V1TimeGrain.TIME_GRAIN_WEEK;
-  } else if (timeRangeDurationMs <= 20 * 365 * 24 * 60 * 60 * 1000) {
-    return V1TimeGrain.TIME_GRAIN_MONTH;
   } else {
-    return V1TimeGrain.TIME_GRAIN_YEAR;
+    return V1TimeGrain.TIME_GRAIN_MONTH;
   }
 }
 
@@ -301,6 +367,25 @@ export const formatDateByInterval = (
       });
     default:
       throw new Error(`Unknown interval: ${interval}`);
+  }
+};
+
+export const timeGrainStringToEnum = (timeGrain: string): V1TimeGrain => {
+  switch (timeGrain) {
+    case "minute":
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
+    case "hour":
+      return V1TimeGrain.TIME_GRAIN_HOUR;
+    case "day":
+      return V1TimeGrain.TIME_GRAIN_DAY;
+    case "week":
+      return V1TimeGrain.TIME_GRAIN_WEEK;
+    case "month":
+      return V1TimeGrain.TIME_GRAIN_MONTH;
+    case "year":
+      return V1TimeGrain.TIME_GRAIN_YEAR;
+    default:
+      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
 };
 
@@ -463,25 +548,28 @@ export function addGrains(date: Date, units: number, grain: V1TimeGrain): Date {
 
 export function checkValidTimeGrain(
   timeGrain: V1TimeGrain,
-  timeGrainOptions: TimeGrainOption[]
+  timeGrainOptions: TimeGrainOption[],
+  minTimeGrain: V1TimeGrain
 ): boolean {
   const timeGrainOption = timeGrainOptions.find(
     (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
   );
-  return timeGrainOption?.enabled;
+  const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
+  return timeGrainOption?.enabled && isGrainPossible;
 }
 
 export function makeRelativeTimeRange(
   timeRangeName: TimeRangeName,
-  endTime: Date
+  allTimeRange: TimeRange
 ): TimeRange {
+  if (timeRangeName === TimeRangeName.AllTime) return allTimeRange;
   const startTime = new Date(
-    endTime.getTime() - getLastXTimeRangeDurationMs(timeRangeName)
+    allTimeRange.end.getTime() - getLastXTimeRangeDurationMs(timeRangeName)
   );
   return {
     name: timeRangeName,
     start: startTime,
-    end: endTime,
+    end: allTimeRange.end,
   };
 }
 
