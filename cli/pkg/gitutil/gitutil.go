@@ -16,7 +16,6 @@ func CloneRepo(url string) (string, error) {
 	}
 
 	repoName := fileutil.Stem(endpoint.Path)
-	fmt.Println("repo name is", repoName)
 	cmd := exec.Command("git", "clone", url)
 	cmd.Stderr = os.Stderr
 	_, err = cmd.Output()
