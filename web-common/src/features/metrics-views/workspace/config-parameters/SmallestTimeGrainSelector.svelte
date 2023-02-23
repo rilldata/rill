@@ -91,7 +91,7 @@
   function handleDefaultTimeGrainUpdate(event) {
     const selectedTimeGrain = event.detail?.key;
 
-    if (selectedTimeGrain === "") {
+    if (selectedTimeGrain === "" || selectedTimeGrain === "__DEFAULT_VALUE__") {
       $metricsInternalRep.updateMetricsParams({
         smallest_time_grain: "",
         default_time_range: "",
