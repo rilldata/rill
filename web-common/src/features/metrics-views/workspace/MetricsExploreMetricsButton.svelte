@@ -24,7 +24,7 @@
   $: dimensions = $metricsInternalRep.getDimensions();
 
   let buttonDisabled = true;
-  let buttonStatus = "OK";
+  let buttonStatus;
 
   const viewDashboard = () => {
     goto(`/dashboard/${metricsDefName}`);
@@ -40,7 +40,7 @@
 
   $: if ($metricsInternalRep.getMetricKey("model") === "") {
     buttonDisabled = true;
-    buttonStatus = "Select a model before exploring metrics";
+    buttonStatus = ["Select a model before exploring metrics"];
   } else if (
     // check if all the measures have a valid expression
     measures?.filter((measure) => measure?.expression?.length)?.length === 0 ||
@@ -48,12 +48,14 @@
     dimensions?.filter((dimension) => dimension?.property?.length)?.length === 0
   ) {
     buttonDisabled = true;
-    buttonStatus = "Add measures and dimensions before exploring metrics";
-  } else if ($metricsConfigErrorStore.smallestTimeGrain) {
+    buttonStatus = ["Add measures and dimensions before exploring metrics"];
+  } else if (Object.values($metricsConfigErrorStore).some((error) => error)) {
     buttonDisabled = true;
-    buttonStatus = "Smallest time grain is not valid";
+    buttonStatus = Object.values($metricsConfigErrorStore).filter(
+      (error) => error
+    );
   } else {
-    buttonStatus = "Explore the metrics dashboard";
+    buttonStatus = ["Explore the metrics dashboard"];
     buttonDisabled = false;
   }
 </script>
@@ -68,8 +70,8 @@
     Go to Dashboard <ExploreIcon size="16px" />
   </Button>
   <TooltipContent slot="tooltip-content">
-    <div>
-      {buttonStatus}
-    </div>
+    {#each buttonStatus as status}
+      <div>{status}</div>
+    {/each}
   </TooltipContent>
 </Tooltip>

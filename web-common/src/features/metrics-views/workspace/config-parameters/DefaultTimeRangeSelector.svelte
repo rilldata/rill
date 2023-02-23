@@ -14,6 +14,8 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
   import { supportedTimeRangeEnums } from "../../../dashboards/time-controls/time-control-types";
   import {
     CONFIG_SELECTOR,
@@ -25,6 +27,10 @@
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
+
+  let metricsConfigErrorStore = getContext(
+    "rill:metrics-config:errors"
+  ) as Writable<any>;
 
   $: timeRangeSelectedValue =
     $metricsInternalRep.getMetricKey("default_time_range") ||
@@ -80,10 +86,15 @@
   $: level = isValidTimeRange && hasValidTimeRangeForGrain ? "" : "error";
 
   $: errorMenuDescription = !isValidTimeRange
-    ? "time range is not valid"
+    ? "default time range is not valid"
     : !hasValidTimeRangeForGrain
-    ? "selected but not valid for the selected smallest time grain"
+    ? "default time range not valid for the selected smallest time grain"
     : undefined;
+
+  $: metricsConfigErrorStore.update((errors) => {
+    errors.defaultTimeRange = level === "error" ? errorMenuDescription : null;
+    return errors;
+  });
 
   $: timeRangeName = !isValidTimeRange
     ? timeRangeSelectedValue

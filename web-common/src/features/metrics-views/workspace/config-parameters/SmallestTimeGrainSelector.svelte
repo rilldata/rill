@@ -86,7 +86,8 @@
   $: level = isValidTimeGrain ? "" : "error";
 
   $: metricsConfigErrorStore.update((errors) => {
-    errors.smallestTimeGrain = level === "error" ? "Invalid time grain" : null;
+    errors.smallestTimeGrain =
+      level === "error" ? "Invalid smallest time grain" : null;
     return errors;
   });
 
