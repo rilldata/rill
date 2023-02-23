@@ -181,6 +181,7 @@
       <Tooltip location="bottom" distance={8} suppress={active}>
         <IconButton
           compact
+          rounded
           marginClasses="ml-1"
           on:click={() => {
             if (timeColumnSelectedValue !== "__DEFAULT_VALUE__")
@@ -191,11 +192,15 @@
           }}
         >
           <!-- <CancelCircle color="gray" size="16px" /> -->
-          {#if !timeColumnEmpty}
-            <CancelCircle color="gray" size="16px" />
-          {:else}
-            <InfoCircle color="gray" size="16px" />
-          {/if}
+          <span class="text-gray-600">
+            {#if !timeColumnEmpty}
+              <span class={level === "error" ? "text-red-800" : ""}>
+                <CancelCircle size="16px" />
+              </span>
+            {:else}
+              <InfoCircle size="16px" />
+            {/if}
+          </span>
         </IconButton>
         <TooltipContent slot="tooltip-content" maxWidth="300px">
           {#if !timeColumnEmpty}

@@ -30,11 +30,7 @@
   >
     <DisplayNameInput {metricsInternalRep} />
     <ModelSelector {metricsInternalRep} />
-    <TimeColumnSelector
-      selectedModel={model}
-      {metricsInternalRep}
-      {timeColumnIsInModel}
-    />
+    <TimeColumnSelector selectedModel={model} {metricsInternalRep} />
     {#if timeColumn && timeColumnIsInModel}
       <SmallestTimeGrainSelector selectedModel={model} {metricsInternalRep} />
       <DefaultTimeRangeSelector selectedModel={model} {metricsInternalRep} />
