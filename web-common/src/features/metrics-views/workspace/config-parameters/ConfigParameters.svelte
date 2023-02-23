@@ -9,24 +9,18 @@
   import QuickStartButton from "./QuickStartButton.svelte";
   import SmallestTimeGrainSelector from "./SmallestTimeGrainSelector.svelte";
   import TimeColumnSelector from "./TimeColumnSelector.svelte";
-  export let workspaceWidth: number;
 
   export let metricsSourceSelectionError;
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
   export let model: V1Model;
-  export let updateRuntime: () => void;
-
-  let gridTemplate = "repeat(3, 45px)";
-  $: metricsConfigWidth = workspaceWidth || 0;
-  $: gridTemplate =
-    metricsConfigWidth < 1400 ? "repeat(3, 35px)" : "repeat(2, 40px)";
+  export let updateRuntime: (internalYamlString: any) => Promise<void>;
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
 </script>
 
 <div class="flex-none flex flex-row">
   <div
-    style:grid-template-rows={gridTemplate}
+    style:grid-template-rows="repeat(3, 40px)"
     class="grid grid-flow-col gap-y-2 gap-x-8"
   >
     <DisplayNameInput {metricsInternalRep} />

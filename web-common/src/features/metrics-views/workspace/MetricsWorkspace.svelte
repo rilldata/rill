@@ -155,7 +155,6 @@
       style:height="calc(100vh - var(--header-height))"
     >
       <ConfigParameters
-        workspaceWidth={$observedNode?.offsetWidth}
         {metricsInternalRep}
         {model}
         {metricsSourceSelectionError}
