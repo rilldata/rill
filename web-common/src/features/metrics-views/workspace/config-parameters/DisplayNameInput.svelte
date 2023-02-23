@@ -67,7 +67,8 @@
         bind:value={$form["newDisplayName"]}
         on:keydown={handleKeydown}
         on:blur={handleSubmit}
-        class="{SELECTOR_BUTTON_TEXT_CLASSES} bg-white w-full hover:bg-gray-200 rounded border border-6 border-gray-200 hover:border-gray-300  hover:text-gray-900 px-2 py-1 h-[34px] {CONFIG_SELECTOR.focus}"
+        placeholder={"Inferred from model"}
+        class="{SELECTOR_BUTTON_TEXT_CLASSES} placeholder:font-normal placeholder:text-gray-600 font-semibold bg-white w-full hover:bg-gray-200 rounded border border-6 border-gray-200 hover:border-gray-300  hover:text-gray-900 px-2 py-1 h-[34px] {CONFIG_SELECTOR.focus}"
       />
     </form>
   </div>

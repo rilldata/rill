@@ -21,7 +21,9 @@ export const CONFIG_SELECTOR = {
   base: "overflow-hidden px-2 py-2 rounded bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 focus:outline-none focus:shadow-md",
   active: activeSelectorClasses,
   focus: focusSelectorClasses,
-  error: "bg-red-50 border-red-400",
+  error: "bg-red-100 ring-1 ring-red-400 text-red-600 hover:bg-red-200",
+  activeError:
+    "shadow-md outline-none ring-1 ring-red-400 bg-red-100 hover:bg-red-200",
   distance: 8,
 };
 

@@ -154,7 +154,9 @@
         tailwindClasses="{CONFIG_SELECTOR.base} {level === 'error'
           ? CONFIG_SELECTOR.error
           : ''}"
-        activeTailwindClasses={CONFIG_SELECTOR.active}
+        activeTailwindClasses={level === "error"
+          ? CONFIG_SELECTOR.activeError
+          : CONFIG_SELECTOR.active}
         distance={CONFIG_SELECTOR.distance}
         alignment="start"
         on:select={(evt) => {
