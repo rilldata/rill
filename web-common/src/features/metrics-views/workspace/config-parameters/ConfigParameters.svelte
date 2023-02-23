@@ -5,9 +5,9 @@
   import type { MetricsInternalRepresentation } from "../../metrics-internal-store";
   import DefaultTimeRangeSelector from "./DefaultTimeRangeSelector.svelte";
   import DisplayNameInput from "./DisplayNameInput.svelte";
-  import MinimumTimeGrainSelector from "./MinimumTimeGrainSelector.svelte";
   import ModelSelector from "./ModelSelector.svelte";
   import QuickStartButton from "./QuickStartButton.svelte";
+  import SmallestTimeGrainSelector from "./SmallestTimeGrainSelector.svelte";
   import TimeColumnSelector from "./TimeColumnSelector.svelte";
   export let workspaceWidth: number;
 
@@ -20,20 +20,23 @@
   $: metricsConfigWidth = workspaceWidth || 0;
   $: gridTemplate =
     metricsConfigWidth < 1400 ? "repeat(3, 35px)" : "repeat(2, 40px)";
+
+  $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
 </script>
 
 <div class="flex-none flex flex-row">
   <div
     style:grid-template-rows={gridTemplate}
-    class="grid grid-flow-col gap-y-2 gap-x-5"
+    class="grid grid-flow-col gap-y-2 gap-x-8"
   >
     <DisplayNameInput {metricsInternalRep} />
     <ModelSelector {metricsInternalRep} />
     <TimeColumnSelector selectedModel={model} {metricsInternalRep} />
-    <MinimumTimeGrainSelector selectedModel={model} {metricsInternalRep} />
-    <DefaultTimeRangeSelector selectedModel={model} {metricsInternalRep} />
+    {#if timeColumn}
+      <SmallestTimeGrainSelector selectedModel={model} {metricsInternalRep} />
+      <DefaultTimeRangeSelector selectedModel={model} {metricsInternalRep} />
+    {/if}
   </div>
-
   <div class="ml-auto">
     {#if metricsSourceSelectionError}
       <Callout level="error">

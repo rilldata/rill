@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -7,6 +6,13 @@
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { Readable } from "svelte/store";
   import type { MetricsInternalRepresentation } from "../../metrics-internal-store";
+  import {
+    CONFIG_SELECTOR,
+    CONFIG_TOP_LEVEL_LABEL_CLASSES,
+    INPUT_ELEMENT_CONTAINER,
+    SELECTOR_BUTTON_TEXT_CLASSES,
+    SELECTOR_CONTAINER,
+  } from "../styles";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
@@ -34,23 +40,26 @@
     }) || [];
 </script>
 
-<div class="w-80 flex items-center">
+<div
+  class={INPUT_ELEMENT_CONTAINER.classes}
+  style={INPUT_ELEMENT_CONTAINER.style}
+>
   <Tooltip alignment="middle" distance={8} location="bottom">
-    <div class="text-gray-500 font-medium" style="width:10em; font-size:11px;">
-      Model
-    </div>
+    <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Model</div>
 
     <TooltipContent slot="tooltip-content">
       Assign a model for the dashboard
     </TooltipContent>
   </Tooltip>
 
-  <div class="grow">
+  <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <SelectMenu
       block
       {options}
       selection={sourceModelDisplayValue}
-      tailwindClasses="overflow-hidden px-2 py-2 rounded"
+      tailwindClasses={CONFIG_SELECTOR.base}
+      activeTailwindClasses={CONFIG_SELECTOR.active}
+      distance={CONFIG_SELECTOR.distance}
       alignment="start"
       on:select={(evt) => {
         updateMetricsDefinitionHandler(evt.detail?.key);
@@ -59,11 +68,10 @@
       {#if sourceModelDisplayValue === "__DEFAULT_VALUE__"}
         <span class="text-gray-500">Select a model...</span>
       {:else}
-        <span style:max-width="14em" class="font-bold truncate"
+        <span style:max-width="14em" class={SELECTOR_BUTTON_TEXT_CLASSES}
           >{sourceModelDisplayValue}</span
         >
       {/if}
     </SelectMenu>
   </div>
-  <Spacer size="24px" />
 </div>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -14,8 +13,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
-    CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES,
+    CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
+    INPUT_ELEMENT_CONTAINER,
+    SELECTOR_BUTTON_TEXT_CLASSES,
+    SELECTOR_CONTAINER,
   } from "../styles";
 
   export let metricsInternalRep;
@@ -114,9 +116,14 @@
     tooltipText = undefined;
     dropdownDisabled = false;
   }
+
+  let active = false;
 </script>
 
-<div class={CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES}>
+<div
+  class={INPUT_ELEMENT_CONTAINER.classes}
+  style={INPUT_ELEMENT_CONTAINER.style}
+>
   <Tooltip alignment="start" distance={8} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Smallest Time Grain</div>
 
@@ -125,7 +132,7 @@
       line charts
     </TooltipContent>
   </Tooltip>
-  <div class="grow">
+  <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <Tooltip
       alignment="middle"
       distance={8}
@@ -133,18 +140,21 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        bind:active
         block
         {options}
         disabled={dropdownDisabled}
         selection={defaultTimeGrainValue}
-        tailwindClasses="overflow-hidden px-2 py-2 rounded"
+        tailwindClasses={CONFIG_SELECTOR.base}
+        activeTailwindClasses={CONFIG_SELECTOR.active}
+        distance={CONFIG_SELECTOR.distance}
         alignment="start"
         on:select={handleDefaultTimeGrainUpdate}
       >
         {#if dropdownDisabled}
           <span>Select a timestamp</span>
         {:else}
-          <span style:max-width="14em" class="font-bold truncate"
+          <span style:max-width="14em" class={SELECTOR_BUTTON_TEXT_CLASSES}
             >{defaultTimeGrainValue === "__DEFAULT_VALUE__"
               ? "Infer from data"
               : defaultTimeGrainValue}</span
@@ -157,5 +167,4 @@
       </TooltipContent>
     </Tooltip>
   </div>
-  <Spacer size="24px" />
 </div>

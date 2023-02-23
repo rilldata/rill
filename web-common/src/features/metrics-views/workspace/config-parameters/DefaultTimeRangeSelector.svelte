@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -15,8 +14,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
-    CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES,
+    CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
+    INPUT_ELEMENT_CONTAINER,
+    SELECTOR_BUTTON_TEXT_CLASSES,
+    SELECTOR_CONTAINER,
   } from "../styles";
 
   export let metricsInternalRep;
@@ -100,7 +102,10 @@
   }
 </script>
 
-<div class={CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES}>
+<div
+  class={INPUT_ELEMENT_CONTAINER.classes}
+  style={INPUT_ELEMENT_CONTAINER.style}
+>
   <Tooltip alignment="middle" distance={8} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Default Time Range</div>
 
@@ -108,7 +113,7 @@
       Select a default time range for the time series charts
     </TooltipContent>
   </Tooltip>
-  <div class="grow">
+  <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <Tooltip
       alignment="middle"
       distance={16}
@@ -120,14 +125,16 @@
         {options}
         disabled={dropdownDisabled}
         selection={timeRangeSelectedValue}
-        tailwindClasses="w-full overflow-hidden px-2 py-2 rounded"
+        tailwindClasses={CONFIG_SELECTOR.base}
+        activeTailwindClasses={CONFIG_SELECTOR.active}
+        distance={CONFIG_SELECTOR.distance}
         alignment="start"
         on:select={handleDefaultTimeRangeUpdate}
       >
         {#if dropdownDisabled}
           <span>Select a timestamp</span>
         {:else}
-          <span style:max-width="14em" class="font-bold truncate"
+          <span style:max-width="14em" class={SELECTOR_BUTTON_TEXT_CLASSES}
             >{timeRangeSelectedValue === "__DEFAULT_VALUE__"
               ? "Infer from data"
               : ISODurationToTimeRange(timeRangeSelectedValue)}</span
@@ -140,5 +147,4 @@
       </TooltipContent>
     </Tooltip>
   </div>
-  <Spacer size="24px" />
 </div>

@@ -8,8 +8,11 @@
   import { selectTimestampColumnFromSchema } from "@rilldata/web-common/features/metrics-views/column-selectors";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
   import {
-    CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES,
+    CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
+    INPUT_ELEMENT_CONTAINER,
+    SELECTOR_BUTTON_TEXT_CLASSES,
+    SELECTOR_CONTAINER,
   } from "../styles";
 
   export let metricsInternalRep;
@@ -57,7 +60,10 @@
     }) || [];
 </script>
 
-<div class={CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES}>
+<div
+  class={INPUT_ELEMENT_CONTAINER.classes}
+  style={INPUT_ELEMENT_CONTAINER.style}
+>
   <Tooltip alignment="middle" distance={8} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Timestamp</div>
 
@@ -65,7 +71,7 @@
       Select a timestamp column to see the time series charts on the dashboard.
     </TooltipContent>
   </Tooltip>
-  <div class="grow">
+  <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <Tooltip
       alignment="middle"
       distance={16}
@@ -77,7 +83,9 @@
         {options}
         disabled={dropdownDisabled}
         selection={timeColumnSelectedValue}
-        tailwindClasses="overflow-hidden px-2 py-2 rounded"
+        tailwindClasses={CONFIG_SELECTOR.base}
+        activeTailwindClasses={CONFIG_SELECTOR.active}
+        distance={CONFIG_SELECTOR.distance}
         alignment="start"
         on:select={(evt) => {
           $metricsInternalRep.updateMetricsParams({
@@ -88,7 +96,7 @@
         {#if timeColumnSelectedValue === "__DEFAULT_VALUE__"}
           <span class="text-gray-500">Select a time column</span>
         {:else}
-          <span style:max-width="14em" class="font-bold truncate"
+          <span class={SELECTOR_BUTTON_TEXT_CLASSES}
             >{timeColumnSelectedValue}</span
           >
         {/if}
@@ -98,31 +106,32 @@
         {tooltipText}
       </TooltipContent>
     </Tooltip>
+
+    {#if timeColumnSelectedValue !== "__DEFAULT_VALUE__"}
+      <Tooltip location="bottom" distance={8}>
+        <IconButton
+          compact
+          marginClasses="ml-1"
+          on:click={() => {
+            removeTimeseries();
+          }}
+        >
+          <CancelCircle color="gray" size="16px" />
+        </IconButton>
+        <TooltipContent slot="tooltip-content" maxWidth="300px">
+          Remove the timestamp column to remove the time series charts on the
+          dashboard.
+        </TooltipContent>
+      </Tooltip>
+    {:else}
+      <Tooltip location="bottom" distance={8}>
+        <IconButton compact marginClasses="ml-1" disabled>
+          <InfoCircle color="gray" size="16px" />
+        </IconButton>
+        <TooltipContent slot="tooltip-content" maxWidth="300px">
+          Select a column to see the time series charts on the dashboard.
+        </TooltipContent>
+      </Tooltip>
+    {/if}
   </div>
-  {#if timeColumnSelectedValue !== "__DEFAULT_VALUE__"}
-    <Tooltip location="bottom" distance={8}>
-      <IconButton
-        compact
-        marginClasses="ml-1"
-        on:click={() => {
-          removeTimeseries();
-        }}
-      >
-        <CancelCircle color="gray" size="16px" />
-      </IconButton>
-      <TooltipContent slot="tooltip-content" maxWidth="300px">
-        Remove the timestamp column to remove the time series charts on the
-        dashboard.
-      </TooltipContent>
-    </Tooltip>
-  {:else}
-    <Tooltip location="bottom" distance={8}>
-      <IconButton compact marginClasses="ml-1" disabled>
-        <InfoCircle color="gray" size="16px" />
-      </IconButton>
-      <TooltipContent slot="tooltip-content" maxWidth="300px">
-        Select a column to see the time series charts on the dashboard.
-      </TooltipContent>
-    </Tooltip>
-  {/if}
 </div>

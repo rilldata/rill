@@ -1,11 +1,17 @@
 <script lang="ts">
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Readable } from "svelte/store";
   import type { MetricsInternalRepresentation } from "../../metrics-internal-store";
+  import {
+    CONFIG_SELECTOR,
+    CONFIG_TOP_LEVEL_LABEL_CLASSES,
+    INPUT_ELEMENT_CONTAINER,
+    SELECTOR_BUTTON_TEXT_CLASSES,
+    SELECTOR_CONTAINER,
+  } from "../styles";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
@@ -43,29 +49,26 @@
   $: updateFormWithNewDisplayName(displayName);
 </script>
 
-<div class="w-80 flex items-center">
+<div
+  class={INPUT_ELEMENT_CONTAINER.classes}
+  style={INPUT_ELEMENT_CONTAINER.style}
+>
   <Tooltip alignment="middle" distance={8} location="bottom">
-    <div
-      class="text-gray-500 font-medium"
-      style="min-width:10em; font-size:11px;"
-    >
-      Display Name
-    </div>
+    <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Display Name</div>
 
     <TooltipContent slot="tooltip-content">
       Add a title to your dashboard
     </TooltipContent>
   </Tooltip>
-  <div class="grow">
+  <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <form id="display-name-form" autocomplete="off">
       <input
         type="text"
         bind:value={$form["newDisplayName"]}
         on:keydown={handleKeydown}
         on:blur={handleSubmit}
-        class="bg-white w-full hover:bg-gray-100 rounded border border-6 border-gray-200 hover:border-gray-300 px-1 py-1"
+        class="{SELECTOR_BUTTON_TEXT_CLASSES} bg-white w-full hover:bg-gray-100 rounded border border-6 border-gray-200 hover:border-gray-300 px-2 py-1 h-[34px] {CONFIG_SELECTOR.focus}"
       />
     </form>
   </div>
-  <Spacer size="24px" />
 </div>

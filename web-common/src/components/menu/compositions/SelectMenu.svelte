@@ -14,6 +14,7 @@ A slot is provided to change the text within the button.
   export let options;
   export let selection;
   export let tailwindClasses = undefined;
+  export let activeTailwindClasses = undefined;
   /** When true, will make the trigger element a block-level element.
    * This is most useful when embedding a select menu in a table or wherever
    * a block-level treatment is needed.
@@ -58,6 +59,7 @@ A slot is provided to change the text within the button.
   <SelectButton
     on:click={toggleMenu}
     {tailwindClasses}
+    {activeTailwindClasses}
     {active}
     {block}
     {disabled}

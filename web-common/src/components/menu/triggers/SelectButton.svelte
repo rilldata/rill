@@ -6,6 +6,7 @@
   export let block = false;
   export let disabled: boolean;
   export let tailwindClasses: string = undefined;
+  export let activeTailwindClasses: string = undefined;
   export let active = false;
   export let level: undefined | "error" = undefined;
 
@@ -43,7 +44,9 @@
 {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
   items-center gap-x-2 justify-between 
   {classes[level]}
-  {tailwindClasses}"
+  {tailwindClasses}
+  {active ? activeTailwindClasses : ''}
+  "
   on:click
 >
   <slot />
