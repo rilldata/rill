@@ -10,9 +10,15 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
 
   export let metricsInternalRep;
   export let metricsDefName;
+
+  let metricsConfigErrorStore = getContext(
+    "rill:metrics-config:errors"
+  ) as Writable<any>;
 
   $: measures = $metricsInternalRep.getMeasures();
   $: dimensions = $metricsInternalRep.getDimensions();
@@ -34,7 +40,7 @@
 
   $: if ($metricsInternalRep.getMetricKey("model") === "") {
     buttonDisabled = true;
-    buttonStatus = "MISSING_MODEL";
+    buttonStatus = "Select a model before exploring metrics";
   } else if (
     // check if all the measures have a valid expression
     measures?.filter((measure) => measure?.expression?.length)?.length === 0 ||
@@ -42,9 +48,12 @@
     dimensions?.filter((dimension) => dimension?.property?.length)?.length === 0
   ) {
     buttonDisabled = true;
-    buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
+    buttonStatus = "Add measures and dimensions before exploring metrics";
+  } else if ($metricsConfigErrorStore.smallestTimeGrain) {
+    buttonDisabled = true;
+    buttonStatus = "Smallest time grain is not valid";
   } else {
-    buttonStatus = "NO_ERROR";
+    buttonStatus = "Explore the metrics dashboard";
     buttonDisabled = false;
   }
 </script>
@@ -60,13 +69,7 @@
   </Button>
   <TooltipContent slot="tooltip-content">
     <div>
-      {#if buttonStatus === "MISSING_MODEL"}
-        Select a model before exploring metrics
-      {:else if buttonStatus === "MISSING_MEASURES_OR_DIMENSIONS"}
-        Add measures and dimensions before exploring metrics
-      {:else}
-        Explore the metrics dashboard
-      {/if}
+      {buttonStatus}
     </div>
   </TooltipContent>
 </Tooltip>

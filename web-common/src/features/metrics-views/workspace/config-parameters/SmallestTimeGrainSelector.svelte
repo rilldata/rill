@@ -4,14 +4,18 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     getTimeGrainOptions,
+    supportedTimeGrainEnums,
     timeGrainEnumToYamlString,
     TimeGrainOption,
+    timeGrainStringToEnum,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
   import {
     useRuntimeServiceGetTimeRangeSummary,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
   import {
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
@@ -22,6 +26,12 @@
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
+
+  let metricsConfigErrorStore = getContext(
+    "rill:metrics-config:errors"
+  ) as Writable<any>;
+
+  let supportedTimeGrains = supportedTimeGrainEnums();
 
   $: defaultTimeGrainValue =
     $metricsInternalRep.getMetricKey("smallest_time_grain") ||
@@ -67,14 +77,36 @@
         .findIndex((grain) => grain.enabled);
   }
 
+  $: selectedMinGrain = timeGrainStringToEnum(defaultTimeGrainValue);
+
+  $: isValidTimeGrain =
+    defaultTimeGrainValue === "__DEFAULT_VALUE__" ||
+    supportedTimeGrains.includes(selectedMinGrain);
+
+  $: level = isValidTimeGrain ? "" : "error";
+
+  $: metricsConfigErrorStore.update((errors) => {
+    errors.smallestTimeGrain = level === "error" ? "Invalid time grain" : null;
+    return errors;
+  });
+
   $: options = [
     {
       key: "__DEFAULT_VALUE__",
       main: "Infer from data",
       divider: true,
     },
-  ].concat(
-    selectableTimeGrains.map((grain, i) => {
+    ...(!isValidTimeGrain
+      ? [
+          {
+            key: defaultTimeGrainValue,
+            description: "selected time grain is not valid",
+            main: defaultTimeGrainValue,
+            divider: false,
+          },
+        ]
+      : []),
+    ...(selectableTimeGrains.map((grain, i) => {
       const isGrainPossible = i <= maxTimeGrainPossibleIndex;
       return {
         divider: false,
@@ -85,8 +117,8 @@
           ? "not valid for this time range"
           : undefined,
       };
-    }) as any[]
-  );
+    }) as any[]),
+  ];
 
   function handleDefaultTimeGrainUpdate(event) {
     const selectedTimeGrain = event.detail?.key;
@@ -148,8 +180,12 @@
         {options}
         disabled={dropdownDisabled}
         selection={defaultTimeGrainValue}
-        tailwindClasses="{CONFIG_SELECTOR.base} {CONFIG_SELECTOR.info}"
-        activeTailwindClasses={CONFIG_SELECTOR.active}
+        tailwindClasses="{CONFIG_SELECTOR.base} {level === 'error'
+          ? CONFIG_SELECTOR.error
+          : CONFIG_SELECTOR.info}"
+        activeTailwindClasses={level === "error"
+          ? CONFIG_SELECTOR.activeError
+          : CONFIG_SELECTOR.active}
         distance={CONFIG_SELECTOR.distance}
         alignment="start"
         on:select={handleDefaultTimeGrainUpdate}

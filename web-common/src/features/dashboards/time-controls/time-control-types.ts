@@ -33,6 +33,11 @@ export const lastXTimeRangeNames: TimeRangeName[] = [
   TimeRangeName.Last60Days,
 ];
 
+export const supportedTimeRangeEnums: TimeRangeName[] = [
+  ...lastXTimeRangeNames,
+  TimeRangeName.AllTime,
+];
+
 // The start and end times are rounded to the time grain (interval) such that start is inclusive and end is exclusive.
 export interface TimeSeriesTimeRange {
   name?: TimeRangeName;

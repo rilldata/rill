@@ -15,6 +15,8 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { setContext } from "svelte";
+  import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
   import { initDimensionColumns } from "../DimensionColumns";
@@ -29,6 +31,14 @@
   export let yaml: string;
   export let metricsDefName: string;
   export let nonStandardError;
+
+  // this store is used to store errors that are not related to the reconciliation/runtime
+  // used to prevent the user from going to the dashboard
+  let configurationErrorStore = writable({
+    defaultTimeRange: null,
+    smallestTimeGrain: null,
+  });
+  setContext("rill:metrics-config:errors", configurationErrorStore);
 
   const queryClient = useQueryClient();
   const { observedNode, listenToNodeResize } =

@@ -36,6 +36,7 @@ We should rename TimeSeriesTimeRange to a better name.
     makeRelativeTimeRange,
     supportedTimeGrainEnums,
     TimeGrainOption,
+    timeRangeToISODuration,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";

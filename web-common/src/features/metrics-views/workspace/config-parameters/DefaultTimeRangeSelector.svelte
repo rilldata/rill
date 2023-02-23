@@ -5,6 +5,7 @@
   import {
     getRelativeTimeRangeOptions,
     ISODurationToTimeRange,
+    isTimeRangeValidForTimeGrain,
     timeGrainStringToEnum,
     timeRangeToISODuration,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
@@ -13,6 +14,7 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { supportedTimeRangeEnums } from "../../../dashboards/time-controls/time-control-types";
   import {
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
@@ -29,9 +31,13 @@
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
-  $: smallestTimeGrain = $metricsInternalRep.getMetricKey(
-    "smallest_time_grain"
+  $: smallestTimeGrain = timeGrainStringToEnum(
+    $metricsInternalRep.getMetricKey("smallest_time_grain")
   );
+
+  $: selectedTimeRangeName =
+    ISODurationToTimeRange(timeRangeSelectedValue, false) ||
+    timeRangeSelectedValue;
 
   let timeRangeQuery;
   $: if (selectedModel?.name && timeColumn) {
@@ -58,21 +64,52 @@
   $: if (allTimeRange) {
     selectableTimeRanges = getRelativeTimeRangeOptions(
       allTimeRange,
-      timeGrainStringToEnum(smallestTimeGrain)
+      smallestTimeGrain
     );
   }
 
+  $: isValidTimeRange =
+    timeRangeSelectedValue === "__DEFAULT_VALUE__" ||
+    supportedTimeRangeEnums.includes(selectedTimeRangeName);
+
+  $: hasValidTimeRangeForGrain =
+    isValidTimeRange &&
+    (timeRangeSelectedValue === "__DEFAULT_VALUE__" ||
+      isTimeRangeValidForTimeGrain(smallestTimeGrain, selectedTimeRangeName));
+
+  $: level = isValidTimeRange && hasValidTimeRangeForGrain ? "" : "error";
+
+  $: errorMenuDescription = !isValidTimeRange
+    ? "time range is not valid"
+    : !hasValidTimeRangeForGrain
+    ? "selected but not valid for the selected smallest time grain"
+    : undefined;
+
+  $: timeRangeName = !isValidTimeRange
+    ? timeRangeSelectedValue
+    : selectedTimeRangeName;
+
   $: options = [
     { key: "__DEFAULT_VALUE__", main: "Infer from data", divider: true },
-  ].concat(
-    selectableTimeRanges.map((range) => {
+    ...(level === "error"
+      ? [
+          {
+            key: timeRangeSelectedValue,
+            description: errorMenuDescription,
+            main: timeRangeName,
+            divider: false,
+          },
+        ]
+      : []),
+
+    ...selectableTimeRanges.map((range) => {
       return {
         divider: false,
         key: timeRangeToISODuration(range.name),
         main: range.name,
       };
-    })
-  );
+    }),
+  ];
 
   function handleDefaultTimeRangeUpdate(event) {
     const timeRangeSelectedValue = event.detail?.key;
@@ -127,8 +164,12 @@
         {options}
         disabled={dropdownDisabled}
         selection={timeRangeSelectedValue}
-        tailwindClasses="{CONFIG_SELECTOR.base} {CONFIG_SELECTOR.info}"
-        activeTailwindClasses={CONFIG_SELECTOR.active}
+        tailwindClasses="{CONFIG_SELECTOR.base} {level === 'error'
+          ? CONFIG_SELECTOR.error
+          : CONFIG_SELECTOR.info}"
+        activeTailwindClasses={level === "error"
+          ? CONFIG_SELECTOR.activeError
+          : CONFIG_SELECTOR.active}
         distance={CONFIG_SELECTOR.distance}
         alignment="start"
         on:select={handleDefaultTimeRangeUpdate}
@@ -136,7 +177,7 @@
         <FormattedSelectorText
           value={timeRangeSelectedValue === "__DEFAULT_VALUE__"
             ? "Infer from data"
-            : ISODurationToTimeRange(timeRangeSelectedValue)}
+            : timeRangeName}
           selected={timeRangeSelectedValue !== "__DEFAULT_VALUE__"}
         />
       </SelectMenu>

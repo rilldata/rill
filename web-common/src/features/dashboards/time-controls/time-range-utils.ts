@@ -88,6 +88,25 @@ export interface TimeGrainOption {
   enabled: boolean;
 }
 
+export function isTimeRangeValidForTimeGrain(
+  minTimeGrain: V1TimeGrain,
+  timeRange: TimeRangeName
+): boolean {
+  const timeGrainEnums = supportedTimeGrainEnums();
+  if (!timeGrainEnums.includes(minTimeGrain)) {
+    return true;
+  }
+  if (!timeRange || timeRange === TimeRangeName.AllTime) {
+    return true;
+  }
+
+  const timeRangeDurationMs = getLastXTimeRangeDurationMs(timeRange);
+
+  const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
+  const maxAllowedTimeGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
+  return !isGrainBigger(minTimeGrain, maxAllowedTimeGrain);
+}
+
 export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   const timeRangeDurationMs = end.getTime() - start.getTime();
 
@@ -146,7 +165,10 @@ export const timeRangeToISODuration = (
   }
 };
 
-export const ISODurationToTimeRange = (isoDuration: string): TimeRangeName => {
+export const ISODurationToTimeRange = (
+  isoDuration: string,
+  defaultToAllTime = true
+): TimeRangeName => {
   switch (isoDuration) {
     case "PT1H":
       return TimeRangeName.LastHour;
@@ -169,7 +191,7 @@ export const ISODurationToTimeRange = (isoDuration: string): TimeRangeName => {
     case "inf":
       return TimeRangeName.AllTime;
     default:
-      return TimeRangeName.AllTime;
+      return defaultToAllTime ? TimeRangeName.AllTime : undefined;
   }
 };
 
