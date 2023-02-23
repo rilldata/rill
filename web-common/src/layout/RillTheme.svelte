@@ -1,6 +1,6 @@
 <script>
-  import "@rilldata/web-local/app.css";
-  import "@rilldata/web-local/fonts.css";
+  import "@rilldata/web-common/app.css";
+  import "@rilldata/web-common/fonts.css";
 </script>
 
 <slot />
