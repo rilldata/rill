@@ -212,7 +212,7 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	_, _, gap := queries.NiceAndStep(1, 5, 5)
+	start, _, gap := queries.NiceAndStep(1, 5, 5)
 
 	res, err := server.GetNumericHistogram(
 		context.Background(),
@@ -231,13 +231,13 @@ func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	require.Equal(t, 4, len(bins))
 
 	require.Equal(t, int32(0), bins[0].Bucket)
-	require.Equal(t, niceResult[0], bins[0].Low)
-	require.Equal(t, niceResult[0]+gap, bins[0].High)
+	require.Equal(t, start, bins[0].Low)
+	require.Equal(t, start+gap, bins[0].High)
 	require.Equal(t, 3.0, bins[0].Count)
 
 	require.Equal(t, int32(1), bins[1].Bucket)
-	require.Equal(t, niceResult[0]+gap, bins[1].Low)
-	require.Equal(t, niceResult[0]+gap*2, bins[1].High)
+	require.Equal(t, start+gap, bins[1].Low)
+	require.Equal(t, start+gap*2, bins[1].High)
 	require.Equal(t, 0.0, bins[1].Count)
 
 	require.Equal(t, 1.0, bins[2].Count)
