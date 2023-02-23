@@ -1,0 +1,231 @@
+syntax = "proto3";
+package rill.admin.v1;
+
+import "google/api/annotations.proto";
+// import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+// import "validate/validate.proto";
+
+service AdminService {
+  // Ping returns information about the admin
+  rpc Ping(PingRequest) returns (PingResponse) {
+    option (google.api.http) = {get: "/v1/ping"};
+  }
+
+  // findOrganizations lists all the organizations currently managed by the admin
+  rpc FindOrganizations(FindOrganizationsRequest) returns (FindOrganizationsResponse) {
+    option (google.api.http) = {get: "/v1/organizations"};
+  }
+
+  // FindOrganization returns information about a specific organization
+  rpc FindOrganization(FindOrganizationRequest) returns (FindOrganizationResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{name}"};
+  }
+
+  // CreateOrganization creates a new organization
+  rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations",
+      body: "*"
+    };
+  }
+
+  // DeleteOrganization deletes an organizations
+  rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{name}"};
+  }
+
+  // UpdateOrganization deletes an organizations
+  rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{name}",
+      body: "*"
+    
+    };
+  }
+
+  // FindProjects lists all the projects currently available for given organizations
+  rpc FindProjects(FindProjectsRequest) returns (FindProjectsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects"};
+  }
+
+  // FindProject returns information about a specific project
+  rpc FindProject(FindProjectRequest) returns (FindProjectResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{name}"};
+  }
+
+  // CreateProject creates a new project
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects",
+      body: "*"
+    };
+  }
+
+  // DeleteProject deletes an project
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{name}"};
+  }
+
+  // UpdateProject update a project
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/projects/{name}",
+      body: "*"
+    };
+  }
+}
+
+// Request message for AdminService.Ping
+message PingRequest {}
+
+// Response message for AdminService.Ping
+message PingResponse {
+  // Admin version
+  string version = 1;
+
+  // Admin server time
+  google.protobuf.Timestamp time = 2;
+}
+
+// Request message for AdminService.FindOrganizations
+message FindOrganizationsRequest {
+  uint32 page_size = 1;
+  string page_token = 2;
+}
+
+// Response message for AdminService.FindOrganizations
+message FindOrganizationsResponse {
+  repeated Organization organization = 1;
+  string next_page_token = 2;
+}
+
+// Request message for AdminService.GetInstance
+message FindOrganizationRequest {
+  string name = 1;
+}
+
+// Response message for AdminService.GetInstance
+message FindOrganizationResponse {
+  Organization organization = 1;
+}
+
+
+message Organization {
+  // Identifier (UUID)
+  string id = 1;
+  // Organization name
+  string name = 2;
+  //Short description for the organization
+  string description = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
+}
+
+message Project {
+  // Identifier (UUID)
+  string id = 1;
+  // project name
+  string name = 2;
+  //Short description for the project
+  string description = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
+}
+
+message CreateOrganizationRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
+}
+
+// Response message for AdminService.CreateOrganization
+message CreateOrganizationResponse {
+  Organization organization = 1;
+}
+
+// Request message for AdminService.DeleteOrganization
+message DeleteOrganizationRequest {
+  string name = 1;
+}
+
+// Response message for AdminService.DeleteOrganization
+message DeleteOrganizationResponse {
+  string name = 1;
+}
+
+// Request message for AdminService.UpdateOrganization
+message UpdateOrganizationRequest {
+  string name = 1;
+  string description = 2;
+}
+
+// Response message for AdminService.UpdateOrganization
+message UpdateOrganizationResponse {
+  Organization organization = 1;
+}
+
+
+// Request message for AdminService.FindProjects
+message FindProjectsRequest {
+  string organization =1;
+  uint32 page_size = 2;
+  string page_token = 3;
+}
+
+// Response message for AdminService.FindProjects
+message FindProjectsResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+// Request message for AdminService.FindProject
+message FindProjectRequest {
+  string organization = 1;
+  string name = 2;
+}
+
+// Response message for AdminService.FindProject
+message FindProjectResponse {
+  Project project = 1;
+}
+
+
+message CreateProjectRequest {
+  string organization = 1;
+  string id = 2;
+  string name = 3;
+  string description = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+// Response message for AdminService.CreateOrganization
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+// Request message for AdminService.DeleteOrganization
+message DeleteProjectRequest {
+  string organization = 1;
+  string name = 2;
+}
+
+// Response message for AdminService.DeleteOrganization
+message DeleteProjectResponse {
+  string name = 1;
+}
+
+// Request message for AdminService.UpdateOrganization
+message UpdateProjectRequest {
+  string organization = 1;
+  string name = 2;
+  string description = 3;
+}
+
+// Response message for AdminService.UpdateOrganization
+message UpdateProjectResponse {
+  Project project = 1;
+}

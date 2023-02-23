@@ -1,98 +1,112 @@
 package server
 
 import (
-	"net/http"
+	"context"
+	"errors"
 
-	"github.com/deepmap/oapi-codegen/pkg/types"
-	"github.com/labstack/echo/v4"
-	"github.com/rilldata/rill/admin/api"
 	"github.com/rilldata/rill/admin/database"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// FindProjects implements AdminService.
 // (GET /v1/organizations/{organization}/projects)
-func (s *Server) FindProjects(ctx echo.Context, organization string) error {
-	projs, err := s.db.FindProjects(ctx.Request().Context(), organization)
+func (s *Server) FindProjects(ctx context.Context, req *adminv1.FindProjectsRequest) (*adminv1.FindProjectsResponse, error) {
+	projs, err := s.db.FindProjects(ctx, req.Organization)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	dtos := make([]*api.Project, len(projs))
+	dtos := make([]*adminv1.Project, len(projs))
 	for i, proj := range projs {
 		dtos[i] = projToDTO(proj)
 	}
 
-	return ctx.JSON(http.StatusOK, dtos)
+	return &adminv1.FindProjectsResponse{Projects: dtos}, nil
 }
 
 // (GET /v1/organizations/{organization}/project/{name})
-func (s *Server) FindProject(ctx echo.Context, organization, name string) error {
-	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
+func (s *Server) FindProject(ctx context.Context, req *adminv1.FindProjectRequest) (*adminv1.FindProjectResponse, error) {
+	proj, err := s.db.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return ctx.JSON(http.StatusOK, projToDTO(proj))
+	return &adminv1.FindProjectResponse{
+		Project: projToDTO(proj),
+	}, nil
 }
 
 // (POST /v1/organizations/{organization}/projects)
-func (s *Server) CreateProject(ctx echo.Context, organization string) error {
-	org, err := s.db.FindOrganizationByName(ctx.Request().Context(), organization)
+func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	org, err := s.db.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var dto api.CreateProjectJSONBody
-	err = ctx.Bind(&dto)
+	proj, err := s.db.CreateProject(ctx, org.ID, req.Name, req.Description)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, "invalid body format")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.db.CreateProject(ctx.Request().Context(), org.ID, dto.Name, stringFromPtr(dto.Description))
-	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
-	}
-	return ctx.JSON(http.StatusCreated, projToDTO(proj))
+	return &adminv1.CreateProjectResponse{
+		Project: projToDTO(proj),
+	}, nil
 }
 
 // (DELETE /v1/organizations/{organization}/project/{name})
-func (s *Server) DeleteProject(ctx echo.Context, organization, name string) error {
-	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
+func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
+	proj, err := s.db.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.db.DeleteProject(ctx.Request().Context(), proj.ID)
+	err = s.db.DeleteProject(ctx, proj.ID)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return ctx.NoContent(http.StatusOK)
+
+	return &adminv1.DeleteProjectResponse{
+		Name: proj.Name,
+	}, nil
 }
 
 // (PUT /v1/organizations/{organization}/project/{name})
-func (s *Server) UpdateProject(ctx echo.Context, organization, name string) error {
-	var dto api.UpdateProjectJSONBody
-	err := ctx.Bind(&dto)
+func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
+	proj, err := s.db.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, "invalid body format")
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.db.FindProjectByName(ctx.Request().Context(), organization, name)
+	proj, err = s.db.UpdateProject(ctx, proj.ID, req.Description)
 	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err = s.db.UpdateProject(ctx.Request().Context(), proj.ID, stringFromPtr(dto.Description))
-	if err != nil {
-		return sendError(ctx, http.StatusBadRequest, err.Error())
-	}
-	return ctx.JSON(http.StatusOK, projToDTO(proj))
+	return &adminv1.UpdateProjectResponse{
+		Project: projToDTO(proj),
+	}, nil
 }
 
-func projToDTO(p *database.Project) *api.Project {
-	return &api.Project{
+func projToDTO(p *database.Project) *adminv1.Project {
+	return &adminv1.Project{
 		Id:          p.ID,
 		Name:        p.Name,
-		Description: stringToPtr(p.Description),
-		CreatedOn:   types.Date{Time: p.CreatedOn},
-		UpdatedOn:   types.Date{Time: p.CreatedOn},
+		Description: p.Description,
+		CreatedOn:   timestamppb.New(p.CreatedOn),
+		UpdatedOn:   timestamppb.New(p.CreatedOn),
 	}
 }
