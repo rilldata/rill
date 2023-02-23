@@ -13,7 +13,6 @@ const config = {
       assets: "../web-common/static",
     },
   },
-
 };
 
 export default config;
