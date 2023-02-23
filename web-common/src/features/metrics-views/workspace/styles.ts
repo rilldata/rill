@@ -18,10 +18,12 @@ const activeSelectorClasses =
 const focusSelectorClasses =
   "focus:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-white focus:hover:bg-white";
 export const CONFIG_SELECTOR = {
-  base: "overflow-hidden px-2 py-2 rounded bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 focus:outline-none focus:shadow-md",
+  base: "overflow-hidden px-2 py-2 rounded border focus:outline-none focus:shadow-md",
   active: activeSelectorClasses,
   focus: focusSelectorClasses,
-  error: "bg-red-100 ring-1 ring-red-400 text-red-600 hover:bg-red-200",
+  info: "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
+  // FIXME: we should probably redo how we're handling these styles.
+  error: "bg-red-100  border-red-500  text-red-600 hover:bg-red-200",
   activeError:
     "shadow-md outline-none ring-1 ring-red-400 bg-red-100 hover:bg-red-200",
   distance: 8,

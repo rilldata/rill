@@ -153,7 +153,7 @@
         selection={timeColumnSelectedValue}
         tailwindClasses="{CONFIG_SELECTOR.base} {level === 'error'
           ? CONFIG_SELECTOR.error
-          : ''}"
+          : CONFIG_SELECTOR.info}"
         activeTailwindClasses={level === "error"
           ? CONFIG_SELECTOR.activeError
           : CONFIG_SELECTOR.active}

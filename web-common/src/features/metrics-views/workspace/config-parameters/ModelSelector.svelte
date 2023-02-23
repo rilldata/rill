@@ -59,7 +59,7 @@
       paddingBottom={1}
       {options}
       selection={sourceModelDisplayValue}
-      tailwindClasses={CONFIG_SELECTOR.base}
+      tailwindClasses="{CONFIG_SELECTOR.base} {CONFIG_SELECTOR.info}"
       activeTailwindClasses={CONFIG_SELECTOR.active}
       distance={CONFIG_SELECTOR.distance}
       alignment="start"
