@@ -20,6 +20,8 @@ and the menu closes.
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
+  export let paddingTop: number = undefined;
+  export let paddingBottom: number = undefined;
 
   export let active = false;
 
@@ -86,6 +88,8 @@ and the menu closes.
   <slot {active} {handleClose} toggleMenu={toggleFloatingElement} />
 
   <Menu
+    {paddingTop}
+    {paddingBottom}
     slot="floating-element"
     {dark}
     on:click-outside={() => {

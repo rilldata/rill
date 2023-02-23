@@ -10,9 +10,9 @@
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
     INPUT_ELEMENT_CONTAINER,
-    SELECTOR_BUTTON_TEXT_CLASSES,
     SELECTOR_CONTAINER,
   } from "../styles";
+  import FormattedSelectorText from "./FormattedSelectorText.svelte";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
@@ -55,6 +55,8 @@
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <SelectMenu
       block
+      paddingTop={1}
+      paddingBottom={1}
       {options}
       selection={sourceModelDisplayValue}
       tailwindClasses={CONFIG_SELECTOR.base}
@@ -65,13 +67,12 @@
         updateMetricsDefinitionHandler(evt.detail?.key);
       }}
     >
-      {#if sourceModelDisplayValue === "__DEFAULT_VALUE__"}
-        <span class="text-gray-500">Select a model...</span>
-      {:else}
-        <span style:max-width="14em" class={SELECTOR_BUTTON_TEXT_CLASSES}
-          >{sourceModelDisplayValue}</span
-        >
-      {/if}
+      <FormattedSelectorText
+        value={sourceModelDisplayValue === "__DEFAULT_VALUE__"
+          ? "Select a model"
+          : sourceModelDisplayValue}
+        selected={sourceModelDisplayValue !== "__DEFAULT_VALUE__"}
+      />
     </SelectMenu>
   </div>
 </div>

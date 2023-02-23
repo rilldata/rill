@@ -16,9 +16,9 @@
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
     INPUT_ELEMENT_CONTAINER,
-    SELECTOR_BUTTON_TEXT_CLASSES,
     SELECTOR_CONTAINER,
   } from "../styles";
+  import FormattedSelectorText from "./FormattedSelectorText.svelte";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
@@ -106,6 +106,7 @@
 
   let tooltipText = "";
   let dropdownDisabled = true;
+  // FIXME: we won't show this element if there's no time column
   $: if (selectedModel?.name === undefined) {
     tooltipText = "Select a model before selecting a time grain";
     dropdownDisabled = true;
@@ -140,6 +141,8 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        paddingTop={1}
+        paddingBottom={1}
         bind:active
         block
         {options}
@@ -151,15 +154,12 @@
         alignment="start"
         on:select={handleDefaultTimeGrainUpdate}
       >
-        {#if dropdownDisabled}
-          <span>Select a timestamp</span>
-        {:else}
-          <span style:max-width="14em" class={SELECTOR_BUTTON_TEXT_CLASSES}
-            >{defaultTimeGrainValue === "__DEFAULT_VALUE__"
-              ? "Infer from data"
-              : defaultTimeGrainValue}</span
-          >
-        {/if}
+        <FormattedSelectorText
+          value={defaultTimeGrainValue === "__DEFAULT_VALUE__"
+            ? "Infer from data"
+            : defaultTimeGrainValue}
+          selected={defaultTimeGrainValue !== "__DEFAULT_VALUE__"}
+        />
       </SelectMenu>
 
       <TooltipContent slot="tooltip-content">

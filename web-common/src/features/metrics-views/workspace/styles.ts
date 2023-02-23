@@ -18,13 +18,17 @@ const activeSelectorClasses =
 const focusSelectorClasses =
   "focus:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-white focus:hover:bg-white";
 export const CONFIG_SELECTOR = {
-  base: "overflow-hidden px-2 py-2 rounded bg-white border border-gray-200 focus:outline-none focus:shadow-md",
+  base: "overflow-hidden px-2 py-2 rounded bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 focus:outline-none focus:shadow-md",
   active: activeSelectorClasses,
   focus: focusSelectorClasses,
+  error: "bg-red-50 border-red-400",
   distance: 8,
 };
 
-export const SELECTOR_BUTTON_TEXT_CLASSES = `font-semibold truncate`;
+export const SELECTOR_BUTTON_TEXT_CLASSES = {
+  selected: `font-semibold truncate`,
+  unselected: `text-gray-600 truncate`,
+};
 export const SELECTOR_CONTAINER = {
   classes: "grow grid items-center",
   style: "grid-template-columns: 200px 24px",

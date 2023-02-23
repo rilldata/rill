@@ -31,6 +31,9 @@ A slot is provided to change the text within the button.
   export let distance = 16;
   export let active = false;
 
+  export let paddingTop: number = 1;
+  export let paddingBottom: number = 1;
+
   if (dark) {
     setContext("rill:menu:dark", dark);
   }
@@ -40,6 +43,8 @@ A slot is provided to change the text within the button.
 
 <!-- wrap a WithSelectMenu with a SelectButton -->
 <WithSelectMenu
+  {paddingTop}
+  {paddingBottom}
   {dark}
   {location}
   {alignment}
@@ -57,7 +62,12 @@ A slot is provided to change the text within the button.
   let:active
 >
   <SelectButton
-    on:click={toggleMenu}
+    on:click={() => {
+      if (!disabled) {
+        console.log("hmm");
+        toggleMenu();
+      }
+    }}
     {tailwindClasses}
     {activeTailwindClasses}
     {active}

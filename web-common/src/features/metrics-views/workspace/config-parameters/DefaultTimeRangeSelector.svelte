@@ -17,9 +17,9 @@
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
     INPUT_ELEMENT_CONTAINER,
-    SELECTOR_BUTTON_TEXT_CLASSES,
     SELECTOR_CONTAINER,
   } from "../styles";
+  import FormattedSelectorText from "./FormattedSelectorText.svelte";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
@@ -122,6 +122,8 @@
     >
       <SelectMenu
         block
+        paddingTop={1}
+        paddingBottom={1}
         {options}
         disabled={dropdownDisabled}
         selection={timeRangeSelectedValue}
@@ -131,15 +133,12 @@
         alignment="start"
         on:select={handleDefaultTimeRangeUpdate}
       >
-        {#if dropdownDisabled}
-          <span>Select a timestamp</span>
-        {:else}
-          <span style:max-width="14em" class={SELECTOR_BUTTON_TEXT_CLASSES}
-            >{timeRangeSelectedValue === "__DEFAULT_VALUE__"
-              ? "Infer from data"
-              : ISODurationToTimeRange(timeRangeSelectedValue)}</span
-          >
-        {/if}
+        <FormattedSelectorText
+          value={timeRangeSelectedValue === "__DEFAULT_VALUE__"
+            ? "Infer from data"
+            : ISODurationToTimeRange(timeRangeSelectedValue)}
+          selected={timeRangeSelectedValue !== "__DEFAULT_VALUE__"}
+        />
       </SelectMenu>
 
       <TooltipContent slot="tooltip-content">

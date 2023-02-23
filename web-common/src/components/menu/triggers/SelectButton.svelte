@@ -45,9 +45,10 @@
   items-center gap-x-2 justify-between 
   {classes[level]}
   {tailwindClasses}
-  {active ? activeTailwindClasses : ''}
+  {active && !disabled ? activeTailwindClasses : ''}
   "
   on:click
+  {disabled}
 >
   <slot />
   <span

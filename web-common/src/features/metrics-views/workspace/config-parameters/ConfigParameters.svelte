@@ -16,6 +16,11 @@
   export let updateRuntime: (internalYamlString: any) => Promise<void>;
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
+  // check to see if this is valid.
+  $: console.log("model", model);
+  $: timeColumnIsInModel = model?.schema?.fields?.some(
+    (field) => field.name === timeColumn
+  );
 </script>
 
 <div class="flex-none flex flex-row">
@@ -25,8 +30,12 @@
   >
     <DisplayNameInput {metricsInternalRep} />
     <ModelSelector {metricsInternalRep} />
-    <TimeColumnSelector selectedModel={model} {metricsInternalRep} />
-    {#if timeColumn}
+    <TimeColumnSelector
+      selectedModel={model}
+      {metricsInternalRep}
+      {timeColumnIsInModel}
+    />
+    {#if timeColumn && timeColumnIsInModel}
       <SmallestTimeGrainSelector selectedModel={model} {metricsInternalRep} />
       <DefaultTimeRangeSelector selectedModel={model} {metricsInternalRep} />
     {/if}

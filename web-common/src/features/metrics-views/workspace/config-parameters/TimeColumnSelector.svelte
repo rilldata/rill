@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { IconButton } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
@@ -11,17 +12,22 @@
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
     INPUT_ELEMENT_CONTAINER,
-    SELECTOR_BUTTON_TEXT_CLASSES,
     SELECTOR_CONTAINER,
   } from "../styles";
+  import FormattedSelectorText from "./FormattedSelectorText.svelte";
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
 
-  let selection;
+  $: currentTimestampColumn = $metricsInternalRep.getMetricKey("timeseries");
+  $: timeColumnEmpty = currentTimestampColumn === "";
+  $: timeColumnIsInModel =
+    currentTimestampColumn !== "" &&
+    selectedModel?.schema?.fields?.some(
+      (field) => field.name === currentTimestampColumn
+    );
 
-  $: timeColumnSelectedValue =
-    $metricsInternalRep.getMetricKey("timeseries") || "__DEFAULT_VALUE__";
+  $: timeColumnSelectedValue = currentTimestampColumn || "__DEFAULT_VALUE__";
 
   let timestampColumns: Array<string>;
   $: if (selectedModel) {
@@ -39,34 +45,93 @@
   }
 
   let tooltipText = "";
-  let dropdownDisabled = true;
-  $: if (selectedModel?.name === undefined) {
+
+  $: modelSelected = selectedModel?.name !== undefined;
+
+  $: if (!modelSelected) {
     tooltipText = "Select a model before selecting a timestamp column";
-    dropdownDisabled = true;
+  } else if (!timeColumnIsInModel) {
   } else if (timestampColumns.length === 0) {
     tooltipText = "The selected model has no timestamp columns";
-    dropdownDisabled = true;
   } else {
     tooltipText = undefined;
-    dropdownDisabled = false;
   }
 
-  $: options =
-    timestampColumns.map((columnName) => {
+  /** state model
+   * - field is empty –
+   *   - has column options – show dropdown
+   *   - doesn't have column options – disable dropdown and say there isn't a timestamp column
+   * - field is not empty –
+   *   - if field exists in model, show dropdown with field selected
+   *   - if field doesn't exist in model,
+   *     - show error state
+   *     - if timestamp columns present, enable dropdown
+   *     - if no timestamp columns present, dont enable dropdown
+   */
+  let fieldText: string;
+  let level: "error" | undefined = undefined;
+  let disabled = false;
+  let selectable = true;
+  $: if (timeColumnEmpty) {
+    if (timestampColumns.length > 0) {
+      fieldText = "Select a time column";
+      tooltipText = "Select a time column";
+      disabled = false;
+      level = undefined;
+      selectable = true;
+    } else {
+      fieldText = "No time columns";
+      tooltipText = "The selected model has no time columns";
+      disabled = true;
+      selectable = false;
+      level = undefined;
+    }
+  } else {
+    fieldText = currentTimestampColumn;
+    if (!timeColumnIsInModel) {
+      level = "error";
+      fieldText = currentTimestampColumn;
+      selectable = false;
+      tooltipText =
+        "the time column in the configuration is not a time column in this model";
+    } else {
+      level = undefined;
+      disabled = false;
+      selectable = true;
+    }
+  }
+
+  /** combine options.*/
+  $: options = [
+    ...(!timeColumnIsInModel && !timeColumnEmpty
+      ? [
+          {
+            key: currentTimestampColumn,
+            description: "not in model",
+            main: fieldText,
+            divider: true,
+          },
+        ]
+      : []),
+    // actual existing timestamp options
+    ...(timestampColumns.map((columnName) => {
       return {
         key: columnName,
         main: columnName,
       };
-    }) || [];
+    }) || []),
+  ];
+
+  let active = false;
 </script>
 
 <div
+  class:hidden={!modelSelected}
   class={INPUT_ELEMENT_CONTAINER.classes}
   style={INPUT_ELEMENT_CONTAINER.style}
 >
   <Tooltip alignment="middle" distance={8} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Timestamp</div>
-
     <TooltipContent maxWidth="400px" slot="tooltip-content">
       Select a timestamp column to see the time series charts on the dashboard.
     </TooltipContent>
@@ -79,11 +144,16 @@
       suppress={tooltipText === undefined}
     >
       <SelectMenu
+        bind:active
         block
+        paddingTop={1}
+        paddingBottom={1}
         {options}
-        disabled={dropdownDisabled}
+        {disabled}
         selection={timeColumnSelectedValue}
-        tailwindClasses={CONFIG_SELECTOR.base}
+        tailwindClasses="{CONFIG_SELECTOR.base} {level === 'error'
+          ? CONFIG_SELECTOR.error
+          : ''}"
         activeTailwindClasses={CONFIG_SELECTOR.active}
         distance={CONFIG_SELECTOR.distance}
         alignment="start"
@@ -93,13 +163,11 @@
           });
         }}
       >
-        {#if timeColumnSelectedValue === "__DEFAULT_VALUE__"}
-          <span class="text-gray-500">Select a time column</span>
-        {:else}
-          <span class={SELECTOR_BUTTON_TEXT_CLASSES}
-            >{timeColumnSelectedValue}</span
-          >
-        {/if}
+        <FormattedSelectorText
+          value={fieldText}
+          selected={timeColumnSelectedValue !== "__DEFAULT_VALUE__" &&
+            selectable}
+        />
       </SelectMenu>
 
       <TooltipContent slot="tooltip-content">
@@ -107,31 +175,36 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if timeColumnSelectedValue !== "__DEFAULT_VALUE__"}
-      <Tooltip location="bottom" distance={8}>
+    <Tooltip>
+      <Tooltip location="bottom" distance={8} suppress={active}>
         <IconButton
           compact
           marginClasses="ml-1"
           on:click={() => {
-            removeTimeseries();
+            if (timeColumnSelectedValue !== "__DEFAULT_VALUE__")
+              removeTimeseries();
+            else if (timeColumnEmpty && !timestampColumns?.length)
+              goto(`/model/${selectedModel.name}`);
+            else active = true;
           }}
         >
-          <CancelCircle color="gray" size="16px" />
+          <!-- <CancelCircle color="gray" size="16px" /> -->
+          {#if !timeColumnEmpty}
+            <CancelCircle color="gray" size="16px" />
+          {:else}
+            <InfoCircle color="gray" size="16px" />
+          {/if}
         </IconButton>
         <TooltipContent slot="tooltip-content" maxWidth="300px">
-          Remove the timestamp column to remove the time series charts on the
-          dashboard.
+          {#if !timeColumnEmpty}
+            remove the selected timestamp column
+          {:else if timestampColumns?.length}
+            select a timestamp column
+          {:else}
+            go to the model and create a timestamp column
+          {/if}
         </TooltipContent>
       </Tooltip>
-    {:else}
-      <Tooltip location="bottom" distance={8}>
-        <IconButton compact marginClasses="ml-1" disabled>
-          <InfoCircle color="gray" size="16px" />
-        </IconButton>
-        <TooltipContent slot="tooltip-content" maxWidth="300px">
-          Select a column to see the time series charts on the dashboard.
-        </TooltipContent>
-      </Tooltip>
-    {/if}
+    </Tooltip>
   </div>
 </div>
