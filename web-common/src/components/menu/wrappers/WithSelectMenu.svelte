@@ -133,7 +133,7 @@ and the menu closes.
         </svelte:fragment>
       </MenuItem>
       {#if divider}
-        <Divider marginTop={0} marginBottom={0.5} />
+        <Divider marginTop={1} marginBottom={1} />
       {/if}
     {/each}
   </Menu>
