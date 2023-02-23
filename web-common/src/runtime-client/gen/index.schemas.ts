@@ -32,6 +32,16 @@ export type RuntimeServiceGetTopKBody = {
   priority?: number;
 };
 
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  filters?: V1MetricsViewFilter;
+  measures?: GenerateTimeSeriesRequestBasicMeasure[];
+  pixels?: number;
+  priority?: number;
+  sampleSize?: number;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
+
 export type RuntimeServiceGetTimeRangeSummaryParams = {
   columnName?: string;
   priority?: number;
@@ -216,16 +226,6 @@ export interface V1TimeSeriesTimeRange {
   interval?: V1TimeGrain;
   start?: string;
 }
-
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasure[];
-  pixels?: number;
-  priority?: number;
-  sampleSize?: number;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
 
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
