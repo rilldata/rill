@@ -6,19 +6,9 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
-
-func TestServer_Database(t *testing.T) {
-	server, instanceId := getTableTestServer(t)
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from test",
-	})
-	require.NoError(t, err)
-	require.Equal(t, 1, getSingleValue(t, result.Rows))
-}
 
 func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTableTestServer(t)

@@ -28,7 +28,7 @@ func DropCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("not a valid source name: %s", sourceName)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, nil)
 			if err != nil {
 				return err
 			}

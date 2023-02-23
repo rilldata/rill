@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 
 	"google.golang.org/grpc"
 )
@@ -12,6 +13,9 @@ import (
 func ServeGRPC(ctx context.Context, server *grpc.Server, port int) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
+		if strings.Contains(err.Error(), "address already in use") {
+			return fmt.Errorf("grpc port %d is already in use", port)
+		}
 		return err
 	}
 

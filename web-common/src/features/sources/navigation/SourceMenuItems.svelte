@@ -26,7 +26,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -103,7 +103,7 @@
         $createFileMutation
       );
 
-      navigationEvent.fireEvent(
+      behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
@@ -138,7 +138,7 @@
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
           const previousActiveEntity = $appStore?.activeEntity?.type;
-          navigationEvent.fireEvent(
+          behaviourEvent.fireNavigationEvent(
             newDashboardName,
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,

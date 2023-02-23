@@ -137,7 +137,11 @@
         ui-copy
         {textColor}
     "
-  style:grid-template-columns="{icon ? "max-content" : ""} auto max-content"
+  style:grid-template-columns="{icon ? "max-content" : ""} auto {$$slots[
+    "right"
+  ]
+    ? "max-content"
+    : ""}"
   class:recently-clicked={justClicked}
   class:selected
   class:cursor-not-allowed={disabled}
@@ -177,9 +181,11 @@
       <slot name="description" />
     </div>
   </div>
-  <div class="text-right ui-copy-muted">
-    <slot name="right" {focused} />
-  </div>
+  {#if $$slots["right"]}
+    <div class="text-right ui-copy-muted">
+      <slot name="right" {focused} />
+    </div>
+  {/if}
 </button>
 
 <style>

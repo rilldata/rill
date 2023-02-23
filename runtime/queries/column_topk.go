@@ -7,7 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/server/pbutil"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 )
 
 type ColumnTopK struct {

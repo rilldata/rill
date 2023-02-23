@@ -33,4 +33,24 @@ type Instance struct {
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is when the instance was last updated in the registry
 	UpdatedOn time.Time `db:"updated_on"`
+	// Env contains user-provided environment variables
+	Env map[string]string `db:"env"`
+	// ProjectEnv contains default environment variables from rill.yaml
+	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
+	ProjectEnv map[string]string `db:"project_env"`
+}
+
+// EnvironmentVariables returns the final resolved env variables
+func (i *Instance) EnvironmentVariables() map[string]string {
+	r := make(map[string]string, len(i.ProjectEnv))
+	// set ProjectEnv first i.e. Project defaults
+	for k, v := range i.ProjectEnv {
+		r[k] = v
+	}
+
+	// override with instance env
+	for k, v := range i.Env {
+		r[k] = v
+	}
+	return r
 }

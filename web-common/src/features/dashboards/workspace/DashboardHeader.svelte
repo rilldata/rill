@@ -2,10 +2,12 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -26,7 +28,7 @@
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
 
-    navigationEvent.fireEvent(
+    behaviourEvent.fireNavigationEvent(
       metricViewName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace,
@@ -38,6 +40,18 @@
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $runtimeStore.readOnly === false;
+
+  function openCalendly() {
+    calendlyModalStore.set(metricViewName);
+    behaviourEvent.firePublishEvent(
+      metricViewName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.Dashboard,
+      MetricsEventScreenName.Dashboard,
+      true
+    );
+  }
 </script>
 
 <section
@@ -49,8 +63,8 @@
     title and call to action
   -->
   <div
-    style:height="var(--header-height)"
     class="flex items-center justify-between w-full pl-1 pr-4"
+    style:height="var(--header-height)"
   >
     <!-- title element -->
     <h1 style:line-height="1.1" style:margin-top="-1px">
@@ -60,7 +74,7 @@
     </h1>
     <!-- top right CTAs -->
     {#if isEditableDashboard}
-      <div style="flex-shrink: 0;">
+      <PanelCTA side="right">
         <Tooltip distance={8}>
           <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
             Edit Metrics <MetricsIcon size="16px" />
@@ -69,7 +83,14 @@
             Edit this dashboard's metrics & settings
           </TooltipContent>
         </Tooltip>
-      </div>
+        <Tooltip distance={8}>
+          <Button on:click={openCalendly} type="primary">Publish</Button>
+          <TooltipContent slot="tooltip-content">
+            Schedule time to chat with Rill about early access to hosted
+            dashboards.
+          </TooltipContent>
+        </Tooltip>
+      </PanelCTA>
     {/if}
   </div>
   <!-- bottom row -->

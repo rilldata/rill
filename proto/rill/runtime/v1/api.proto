@@ -319,6 +319,10 @@ message Instance {
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
+  // instance specific environment variables
+  map<string, string> env = 7;
+  // project defaults
+  map<string, string> project_env = 8;
 }
 
 // Request message for RuntimeService.ListInstances
@@ -365,6 +369,7 @@ message CreateInstanceRequest {
   }];
   string repo_dsn = 5;
   bool embed_catalog = 6;
+  map<string, string> env = 7;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -720,10 +725,10 @@ message QueryResponse {
 
 // Request message for RuntimeService.MetricsViewToplist
 message MetricsViewToplistRequest {
-  string instance_id = 1;
-  string metrics_view_name = 2;
-  string dimension_name = 3;
-  repeated string measure_names = 4;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  string dimension_name = 3 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 4 [(validate.rules).repeated.unique = true];
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
   int64 limit = 7;
@@ -741,9 +746,9 @@ message MetricsViewToplistResponse {
 
 // Request message for RuntimeService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
-  string instance_id = 1;
-  string metrics_view_name = 2;
-  repeated string measure_names = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 3 [(validate.rules).repeated.unique = true];
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
@@ -759,9 +764,9 @@ message MetricsViewTimeSeriesResponse {
 
 // Request message for RuntimeService.MetricsViewTotals
 message MetricsViewTotalsRequest {
-  string instance_id = 1;
-  string metrics_view_name = 2;
-  repeated string measure_names = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 3 [(validate.rules).repeated.unique = true];
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   MetricsViewFilter filter = 7;
@@ -803,9 +808,9 @@ message MetricsViewColumn {
 // **********
 
 message EstimateRollupIntervalRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -889,9 +894,9 @@ message NumericOutliers {
 
 // Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
 message GetTopKRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   string agg = 4; // default is count(*)
   int32 k = 5; // default is 50
   int32 priority = 6;
@@ -907,9 +912,9 @@ message TopK {
 
 // Request for RuntimeService.GetNullCount. Returns the null count for a given column for table table_name
 message GetNullCountRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -920,9 +925,9 @@ message GetNullCountResponse {
 
 // Request for RuntimeService.GetGetDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
 message GetDescriptiveStatisticsRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -939,22 +944,10 @@ message NumericStatistics {
 
 // Request for RuntimeService.EstimateSmallestTimeGrainRequest
 message EstimateSmallestTimeGrainRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
-}
-
-enum TimeGrain {
-  TIME_GRAIN_UNSPECIFIED = 0;
-  TIME_GRAIN_MILLISECOND = 1;
-  TIME_GRAIN_SECOND = 2;
-  TIME_GRAIN_MINUTE = 3;
-  TIME_GRAIN_HOUR = 4;
-  TIME_GRAIN_DAY = 5;
-  TIME_GRAIN_WEEK = 6;
-  TIME_GRAIN_MONTH = 7;
-  TIME_GRAIN_YEAR = 8;
 }
 
 // Response for RuntimeService.EstimateSmallestTimeGrain
@@ -970,9 +963,9 @@ enum HistogramMethod {
 
 // Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
 message GetNumericHistogramRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   HistogramMethod histogram_method = 4;
   int32 priority = 5;
 }
@@ -991,31 +984,31 @@ message NumericHistogramBins {
 
 // Request for RuntimeService.GetRugHistogram
 message GetRugHistogramRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
 // Request for RuntimeService.GetTimeRangeSummary
 message GetTimeRangeSummaryRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
 // Request for RuntimeService.GetCardinalityOfColumn. Returns the cardinality for a given column for table table_name
 message GetCardinalityOfColumnRequest {
-  string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
 message GenerateTimeSeriesRequest {
-  string instance_id = 1;
-  string table_name = 2;
+  string instance_id = 1 [(validate.rules).string = {min_len : 1, pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
   repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
   TimeSeriesTimeRange time_range = 5;
@@ -1084,8 +1077,8 @@ enum DatabaseObjectType {
 }
 
 message GetTableCardinalityRequest {
-  string instance_id = 1;
-  string table_name = 2;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
 
@@ -1094,8 +1087,8 @@ message GetTableCardinalityResponse {
 }
 
 message ProfileColumnsRequest {
-  string instance_id = 1;
-  string table_name = 2;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
 
@@ -1110,8 +1103,8 @@ message ProfileColumn {
 }
 
 message GetTableRowsRequest {
-  string instance_id = 1;
-  string table_name = 2;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 limit = 3;
   int32 priority = 4;
 }
