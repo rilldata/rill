@@ -122,12 +122,6 @@
         </MenuItem>
       {/each}
     {/if}
-    <MenuItem
-      on:select={() =>
-        onSelectRelativeTimeRange(allTimeRange, toggleFloatingElement)}
-    >
-      {TimeRangeName.AllTime}
-    </MenuItem>
     <Divider />
     <CustomTimeRangeMenuItem
       open={isCustomRangeOpen}

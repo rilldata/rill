@@ -68,6 +68,13 @@ export function getRelativeTimeRangeOptions(
     }
   }
 
+  // All time is always an option
+  timeRanges.push({
+    name: TimeRangeName.AllTime,
+    start: allTimeRange.start,
+    end: allTimeRange.end,
+  });
+
   return timeRanges;
 }
 
