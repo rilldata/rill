@@ -12,7 +12,10 @@
   onMount(async () => {
     await tick();
     const state = new URL(location.href).searchParams.get("state");
-    const [filters, selectedTimeRage] = fromProto(base64ToProto(state));
+    if (!state) return;
+    const [filters, selectedTimeRage] = fromProto(
+      base64ToProto(decodeURIComponent(state))
+    );
     metricsExplorerStore.create(metricViewName, filters, selectedTimeRage);
   });
 </script>

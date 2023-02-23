@@ -18,5 +18,5 @@ proto.generate:
 	cd proto && buf generate --exclude-path rill/ui
 	cd proto && buf generate --template buf.gen.openapi-admin.yaml --path rill/admin
 	cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
-	cd proto && buf generate --template buf.gen.ui.yaml
+	cd proto && buf generate --template buf.gen.ui.yaml --output ../web-common/src/proto
 	npm run generate:runtime-client -w web-common

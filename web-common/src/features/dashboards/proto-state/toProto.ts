@@ -6,16 +6,16 @@ import {
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { TimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import {
+  MetricsViewFilter,
+  MetricsViewFilter_Cond,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import {
-  MetricsViewFilter,
-  MetricsViewFilter_Cond,
-} from "../../../../../proto/gen/rill/runtime/v1/api_pb";
-import { TimeGrain as TimeGrainProto } from "../../../../../proto/gen/rill/runtime/v1/catalog_pb";
-import { DashboardState } from "../../../../../proto/gen/rill/ui/v1/dashboard_pb";
+import { TimeGrain as TimeGrainProto } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 
 export function toProto(metrics: MetricsExplorerEntity) {
   const data: PartialMessage<DashboardState> = {};

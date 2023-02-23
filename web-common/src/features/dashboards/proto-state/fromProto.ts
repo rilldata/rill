@@ -1,10 +1,10 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import { TimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
-import type { MetricsViewFilter_Cond } from "proto/gen/rill/runtime/v1/api_pb";
-import { TimeGrain as TimeGrainProto } from "../../../../../proto/gen/rill/runtime/v1/catalog_pb";
-import { DashboardState } from "../../../../../proto/gen/rill/ui/v1/dashboard_pb";
+import { TimeGrain as TimeGrainProto } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 
 export function fromProto(
   binary: Uint8Array
@@ -48,7 +48,9 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
   return conditions.map((condition) => ({
     name: condition.name,
     like: condition.like,
-    in: condition.in.map((v) => v.kind.value),
+    in: condition.in.map((v) =>
+      v.kind.case === "nullValue" ? null : v.kind.value
+    ),
   }));
 }
 
