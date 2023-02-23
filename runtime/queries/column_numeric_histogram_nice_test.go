@@ -12,10 +12,10 @@ import (
 )
 
 func nice(start, stop, count float64) []float64 {
-	return niceAndStep(start, stop, count)[:2]
+	return niceAndStepArray(start, stop, count)[:2]
 }
 
-func niceAndStep(start, stop, count float64) []float64 {
+func niceAndStepArray(start, stop, count float64) []float64 {
 	x, x1, x2 := NiceAndStep(start, stop, count)
 	return []float64{x, x1, x2}
 }
@@ -68,35 +68,35 @@ func TestNice_InfinityCount(t *testing.T) {
 }
 
 func TestNice_ExpectedValues(t *testing.T) {
-	Equal(t, []float64{0.132, 0.876, -1000}, niceAndStep(0.132, 0.876, 1000))
-	Equal(t, []float64{0.13, 0.88, -100}, niceAndStep(0.132, 0.876, 100))
-	Equal(t, []float64{0.12, 0.88, -50}, niceAndStep(0.132, 0.876, 30))
-	Equal(t, []float64{0.1, 0.9, -10}, niceAndStep(0.132, 0.876, 10))
-	Equal(t, []float64{0.1, 0.9, -10}, niceAndStep(0.132, 0.876, 6))
-	Equal(t, []float64{0, 1, -5}, niceAndStep(0.132, 0.876, 5))
-	Equal(t, []float64{0, 1, -5}, niceAndStep(0.132, 0.876, 4))
-	Equal(t, []float64{0, 1, -2}, niceAndStep(0.132, 0.876, 3))
-	Equal(t, []float64{0, 1, -2}, niceAndStep(0.132, 0.876, 2))
-	Equal(t, []float64{0, 1, 1}, niceAndStep(0.132, 0.876, 1))
-	Equal(t, []float64{0.132, 0.876, 0}, niceAndStep(0.132, 0.876, 0))
-	Equal(t, []float64{0.132, 0.876, 0}, niceAndStep(0.132, 0.876, -1))
+	Equal(t, []float64{0.132, 0.876, 1 / 1000.0}, niceAndStepArray(0.132, 0.876, 1000))
+	Equal(t, []float64{0.13, 0.88, 1 / 100.0}, niceAndStepArray(0.132, 0.876, 100))
+	Equal(t, []float64{0.12, 0.88, 1 / 50.0}, niceAndStepArray(0.132, 0.876, 30))
+	Equal(t, []float64{0.1, 0.9, 1 / 10.0}, niceAndStepArray(0.132, 0.876, 10))
+	Equal(t, []float64{0.1, 0.9, 1 / 10.0}, niceAndStepArray(0.132, 0.876, 6))
+	Equal(t, []float64{0, 1, 1 / 5.0}, niceAndStepArray(0.132, 0.876, 5))
+	Equal(t, []float64{0, 1, 1 / 5.0}, niceAndStepArray(0.132, 0.876, 4))
+	Equal(t, []float64{0, 1, 1 / 2.0}, niceAndStepArray(0.132, 0.876, 3))
+	Equal(t, []float64{0, 1, 1 / 2.0}, niceAndStepArray(0.132, 0.876, 2))
+	Equal(t, []float64{0, 1, 1}, niceAndStepArray(0.132, 0.876, 1))
+	Equal(t, []float64{0.132, 0.876, 0}, niceAndStepArray(0.132, 0.876, 0))
+	Equal(t, []float64{0.132, 0.876, 0}, niceAndStepArray(0.132, 0.876, -1))
 
-	Equal(t, []float64{132, 876, -1}, niceAndStep(132, 876, 1000))
-	Equal(t, []float64{130, 880, 10}, niceAndStep(132, 876, 100))
-	Equal(t, []float64{120, 880, 20}, niceAndStep(132, 876, 30))
-	Equal(t, []float64{100, 900, 100}, niceAndStep(132, 876, 10))
-	Equal(t, []float64{100, 900, 100}, niceAndStep(132, 876, 6))
-	Equal(t, []float64{0, 1000, 200}, niceAndStep(132, 876, 5))
-	Equal(t, []float64{0, 1000, 200}, niceAndStep(132, 876, 4))
-	Equal(t, []float64{0, 1000, 500}, niceAndStep(132, 876, 3))
-	Equal(t, []float64{0, 1000, 500}, niceAndStep(132, 876, 2))
-	Equal(t, []float64{0, 1000, 1000}, niceAndStep(132, 876, 1))
-	Equal(t, []float64{132, 876, 0}, niceAndStep(132, 876, 0))
-	Equal(t, []float64{132, 876, 0}, niceAndStep(132, 876, -1))
+	Equal(t, []float64{132, 876, 1}, niceAndStepArray(132, 876, 1000))
+	Equal(t, []float64{130, 880, 10}, niceAndStepArray(132, 876, 100))
+	Equal(t, []float64{120, 880, 20}, niceAndStepArray(132, 876, 30))
+	Equal(t, []float64{100, 900, 100}, niceAndStepArray(132, 876, 10))
+	Equal(t, []float64{100, 900, 100}, niceAndStepArray(132, 876, 6))
+	Equal(t, []float64{0, 1000, 200}, niceAndStepArray(132, 876, 5))
+	Equal(t, []float64{0, 1000, 200}, niceAndStepArray(132, 876, 4))
+	Equal(t, []float64{0, 1000, 500}, niceAndStepArray(132, 876, 3))
+	Equal(t, []float64{0, 1000, 500}, niceAndStepArray(132, 876, 2))
+	Equal(t, []float64{0, 1000, 1000}, niceAndStepArray(132, 876, 1))
+	Equal(t, []float64{132, 876, 0}, niceAndStepArray(132, 876, 0))
+	Equal(t, []float64{132, 876, 0}, niceAndStepArray(132, 876, -1))
 
-	Equal(t, []float64{0.132, 0.876, 0}, niceAndStep(0.132, 0.876, math.NaN()))
-	Equal(t, []float64{0.132, 0.876, 0}, niceAndStep(0.132, 0.876, math.Inf(1)))
-	Equal(t, []float64{0.132, 0.876, 0}, niceAndStep(0.132, 0.876, math.Inf(-1)))
+	Equal(t, []float64{0.132, 0.876, 0}, niceAndStepArray(0.132, 0.876, math.NaN()))
+	Equal(t, []float64{0.132, 0.876, 0}, niceAndStepArray(0.132, 0.876, math.Inf(1)))
+	Equal(t, []float64{0.132, 0.876, 0}, niceAndStepArray(0.132, 0.876, math.Inf(-1)))
 }
 
 func Equal(t *testing.T, expected []float64, actual []float64) {

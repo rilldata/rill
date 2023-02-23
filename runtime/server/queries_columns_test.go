@@ -212,11 +212,7 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	niceResult := queries.NiceAndStep(1, 5, 5)
-	gap := niceResult[2]
-	if niceResult[2] < 0 {
-		gap = 1 / -niceResult[2]
-	}
+	_, _, gap := queries.NiceAndStep(1, 5, 5)
 
 	res, err := server.GetNumericHistogram(
 		context.Background(),

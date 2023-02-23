@@ -34,11 +34,17 @@ func tickIncrement(start, stop, count float64) float64 {
 	return -math.Pow(10, -power) / e
 }
 
+// Returns a new interval with nicer looking bounds covering the given interval and the step relative to the number of ticks (`count` parameter).
+// The new bounds are guaranteed to align with the human-friendly gap between ticks.
+// The gap is a rounded value that is a power of 10 multiplied by 1, 2 or 5.
+// This approach is inspired by d3.js, see d3.nice() function.
 func NiceAndStep(start, stop, count float64) (float64, float64, float64) {
 	var prestep float64
+	iterations := 0
 	for {
+		iterations++
 		step := tickIncrement(start, stop, count)
-		if step == prestep || step == 0 || math.IsInf(step, 0) || math.IsNaN(step) {
+		if step == prestep || step == 0 || math.IsInf(step, 0) || math.IsNaN(step) || iterations > 10 {
 			if prestep < 0.0 {
 				prestep = 1 / -prestep
 			}
