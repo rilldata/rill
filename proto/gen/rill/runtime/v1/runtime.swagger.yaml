@@ -115,7 +115,7 @@ paths:
           type: string
       tags:
         - RuntimeService
-    delete:
+    post:
       summary: DeleteInstance deletes an instance
       operationId: RuntimeService_DeleteInstance
       responses:
@@ -132,6 +132,57 @@ paths:
           in: path
           required: true
           type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dropDb:
+                type: boolean
+            title: Request message for RuntimeService.DeleteInstance
+      tags:
+        - RuntimeService
+    put:
+      summary: CreateInstance creates a new instance
+      operationId: RuntimeService_EditInstance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              embedCatalog:
+                type: boolean
+              env:
+                type: object
+                additionalProperties:
+                  type: string
+              olapDriver:
+                type: string
+              olapDsn:
+                type: string
+              repoDriver:
+                type: string
+              repoDsn:
+                type: string
+            description: |-
+              Request message for RuntimeService.EditInstance.
+              See message Instance for field descriptions.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/catalog:
@@ -1545,6 +1596,12 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1EditInstanceResponse:
+    type: object
+    properties:
+      instance:
+        $ref: '#/definitions/v1Instance'
+    title: Response message for RuntimeService.CreateInstance
   v1EstimateRollupIntervalResponse:
     type: object
     properties:

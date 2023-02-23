@@ -27,6 +27,7 @@ type CatalogStore interface {
 	CreateEntry(ctx context.Context, instanceID string, entry *CatalogEntry) error
 	UpdateEntry(ctx context.Context, instanceID string, entry *CatalogEntry) error
 	DeleteEntry(ctx context.Context, instanceID string, name string) error
+	DeleteInstanceEntries(ctx context.Context, instanceID string) error
 }
 
 // CatalogEntry represents one object in the catalog, such as a source.

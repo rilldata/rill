@@ -32,16 +32,6 @@ export type RuntimeServiceGetTopKBody = {
   priority?: number;
 };
 
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasure[];
-  pixels?: number;
-  priority?: number;
-  sampleSize?: number;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
-
 export type RuntimeServiceGetTimeRangeSummaryParams = {
   columnName?: string;
   priority?: number;
@@ -151,6 +141,25 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceBodyEnv = { [key: string]: string };
+
+/**
+ * Request message for RuntimeService.EditInstance.
+See message Instance for field descriptions.
+ */
+export type RuntimeServiceEditInstanceBody = {
+  embedCatalog?: boolean;
+  env?: RuntimeServiceEditInstanceBodyEnv;
+  olapDriver?: string;
+  olapDsn?: string;
+  repoDriver?: string;
+  repoDsn?: string;
+};
+
+export type RuntimeServiceDeleteInstanceBody = {
+  dropDb?: boolean;
+};
+
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -215,6 +224,16 @@ export interface V1TimeSeriesTimeRange {
   interval?: V1TimeGrain;
   start?: string;
 }
+
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  filters?: V1MetricsViewFilter;
+  measures?: GenerateTimeSeriesRequestBasicMeasure[];
+  pixels?: number;
+  priority?: number;
+  sampleSize?: number;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
 
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
@@ -616,6 +635,10 @@ export interface V1EstimateRollupIntervalResponse {
   end?: string;
   interval?: V1TimeGrain;
   start?: string;
+}
+
+export interface V1EditInstanceResponse {
+  instance?: V1Instance;
 }
 
 export interface V1DeleteInstanceResponse {

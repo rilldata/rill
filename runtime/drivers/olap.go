@@ -25,6 +25,7 @@ type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
 	InformationSchema() InformationSchema
+	Drop(ctx context.Context) error
 }
 
 // Statement wraps a query to execute against an OLAP driver.

@@ -155,3 +155,7 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
 	return err
 }
+
+func (c *connection) DeleteInstanceEntries(ctx context.Context, instanceID string) error {
+	return nil
+}

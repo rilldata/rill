@@ -24,6 +24,9 @@ import type {
   V1CreateInstanceRequest,
   V1GetInstanceResponse,
   V1DeleteInstanceResponse,
+  RuntimeServiceDeleteInstanceBody,
+  V1EditInstanceResponse,
+  RuntimeServiceEditInstanceBody,
   V1ListCatalogEntriesResponse,
   RuntimeServiceListCatalogEntriesParams,
   V1GetCatalogEntryResponse,
@@ -382,17 +385,23 @@ export const useRuntimeServiceGetInstance = <
 /**
  * @summary DeleteInstance deletes an instance
  */
-export const runtimeServiceDeleteInstance = (instanceId: string) => {
+export const runtimeServiceDeleteInstance = (
+  instanceId: string,
+  runtimeServiceDeleteInstanceBody: RuntimeServiceDeleteInstanceBody
+) => {
   return httpClient<V1DeleteInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
-    method: "delete",
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceDeleteInstanceBody,
   });
 };
 
 export type RuntimeServiceDeleteInstanceMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>
 >;
-
+export type RuntimeServiceDeleteInstanceMutationBody =
+  RuntimeServiceDeleteInstanceBody;
 export type RuntimeServiceDeleteInstanceMutationError = RpcStatus;
 
 export const useRuntimeServiceDeleteInstance = <
@@ -402,7 +411,7 @@ export const useRuntimeServiceDeleteInstance = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
     TError,
-    { instanceId: string },
+    { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
     TContext
   >;
 }) => {
@@ -410,17 +419,68 @@ export const useRuntimeServiceDeleteInstance = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
-    { instanceId: string }
+    { instanceId: string; data: RuntimeServiceDeleteInstanceBody }
   > = (props) => {
-    const { instanceId } = props ?? {};
+    const { instanceId, data } = props ?? {};
 
-    return runtimeServiceDeleteInstance(instanceId);
+    return runtimeServiceDeleteInstance(instanceId, data);
   };
 
   return useMutation<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
     TError,
-    { instanceId: string },
+    { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateInstance creates a new instance
+ */
+export const runtimeServiceEditInstance = (
+  instanceId: string,
+  runtimeServiceEditInstanceBody: RuntimeServiceEditInstanceBody
+) => {
+  return httpClient<V1EditInstanceResponse>({
+    url: `/v1/instances/${instanceId}`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceEditInstanceBody,
+  });
+};
+
+export type RuntimeServiceEditInstanceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceEditInstance>>
+>;
+export type RuntimeServiceEditInstanceMutationBody =
+  RuntimeServiceEditInstanceBody;
+export type RuntimeServiceEditInstanceMutationError = RpcStatus;
+
+export const useRuntimeServiceEditInstance = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceEditInstanceBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
+    { instanceId: string; data: RuntimeServiceEditInstanceBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceEditInstance(instanceId, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceEditInstanceBody },
     TContext
   >(mutationFn, mutationOptions);
 };

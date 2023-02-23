@@ -36,9 +36,20 @@ service RuntimeService {
     };
   }
 
+  // CreateInstance creates a new instance
+  rpc EditInstance(EditInstanceRequest) returns (EditInstanceResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}",
+      body: "*"
+    };
+  }
+
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
-    option (google.api.http) = {delete: "/v1/instances/{instance_id}"};
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}",
+      body: "*"
+    };
   }
 
   // Repos
@@ -357,10 +368,28 @@ message CreateInstanceResponse {
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool drop_db = 2;
 }
 
 // Response message for RuntimeService.DeleteInstance
 message DeleteInstanceResponse {}
+
+// Request message for RuntimeService.EditInstance.
+// See message Instance for field descriptions.
+message EditInstanceRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
+  string olap_dsn = 3 [(validate.rules).string = {pattern: "[\\S\\s]+[\\S]+"}]; 
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
+  string repo_dsn = 5 [(validate.rules).string = {pattern: "[\\S\\s]+[\\S]+"}]; 
+  bool embed_catalog = 6;
+  map<string, string> env = 7;
+}
+
+// Response message for RuntimeService.CreateInstance
+message EditInstanceResponse {
+  Instance instance = 1;
+}
 
 // **********
 // Repos
