@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { ConnectedPreviewTable } from "@rilldata/web-local/lib/components/preview-table";
   import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import SourceWorkspaceErrorStates from "./SourceWorkspaceErrorStates.svelte";
 

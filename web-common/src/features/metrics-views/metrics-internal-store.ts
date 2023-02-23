@@ -13,8 +13,8 @@ export interface MetricsConfig {
   display_name: string;
   description: string;
   timeseries: string;
-  timegrains?: Array<string>;
-  default_timegrain?: Array<string>;
+  smallest_time_grain?: string;
+  default_time_range?: string;
   model: string;
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
@@ -142,6 +142,15 @@ export class MetricsInternalRepresentation {
     value: MetricsConfig[K]
   ) {
     this.internalRepresentationDocument.set(key, value);
+    this.regenerateInternalYAML();
+  }
+
+  updateMetricKeys<K extends keyof MetricsConfig>(
+    metrics: Record<K, MetricsConfig[K]>
+  ) {
+    for (const key in metrics) {
+      this.internalRepresentationDocument.set(key, metrics[key]);
+    }
     this.regenerateInternalYAML();
   }
 

@@ -2,9 +2,9 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import BarAndLabel from "@rilldata/web-local/lib/components/viz/BarAndLabel.svelte";
   import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
+  import BarAndLabel from "../../../components/BarAndLabel.svelte";
 
   export let value: number; // should be between 0 and 1.
   export let color = "bg-blue-200 dark:bg-blue-600";
