@@ -104,6 +104,13 @@ jobs:
           headers: |-
             cache-control: no-store
 
+      - name: Publish nightly docker image
+        if: env.PUBLISH_NIGHTLY == 'true'
+        run: |-
+          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
+          docker tag rilldata/rill:latest rilldata/rill:nightly
+          docker push rilldata/rill:nightly
+
       - name: Nightly - Prepare for nightly GCS upload
         if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
