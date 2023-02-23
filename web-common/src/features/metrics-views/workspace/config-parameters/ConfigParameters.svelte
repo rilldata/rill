@@ -20,7 +20,7 @@
 
 <div class="flex-none flex flex-row">
   <div
-    style:grid-template-rows="repeat(3, 40px)"
+    style:grid-template-rows="repeat(3, 35px)"
     class="grid grid-flow-col gap-y-2 gap-x-8"
   >
     <DisplayNameInput {metricsInternalRep} />
