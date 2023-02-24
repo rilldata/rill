@@ -138,17 +138,63 @@ Otherwise, the page will jump around as the data is fetched.
               stroke-dasharray="2,2"
               shape-rendering="crispEdges"
             />
+            <!-- show mouseover support shapes -->
             {#if point}
-              <rect
-                x={xScale(point.low)}
-                y={config.plotTop}
-                width={xScale(point.high) - xScale(point.low)}
-                height={config.plotBottom - config.plotTop}
-                class="fill-gray-700"
-                opacity={0.2}
-              />
+              <g
+                transition:fade={{ duration: 50 }}
+                shape-rendering="crispEdges"
+              >
+                <rect
+                  x={xScale(point.low)}
+                  y={config.plotTop}
+                  width={xScale(point.high) - xScale(point.low)}
+                  height={config.plotBottom - config.plotTop}
+                  class="fill-gray-700"
+                  opacity={0.2}
+                />
+                <rect
+                  x={xScale(point.low)}
+                  y={yScale(point.count)}
+                  width={xScale(point.high) - xScale(point.low)}
+                  height={config.plotBottom - yScale(point.count)}
+                  class="fill-red-200"
+                />
+                <line
+                  x1={xScale(point.low)}
+                  x2={xScale(point.low)}
+                  y1={yScale(0)}
+                  y2={yScale(point.count)}
+                  class="stroke-red-500"
+                  stroke-width="2"
+                />
+                <line
+                  x1={xScale(point.high)}
+                  x2={xScale(point.high)}
+                  y1={yScale(0)}
+                  y2={yScale(point.count)}
+                  class="stroke-red-500"
+                  stroke-width="2"
+                />
+                <line
+                  x1={xScale(point.low)}
+                  x2={xScale(point.high)}
+                  y1={yScale(point.count)}
+                  y2={yScale(point.count)}
+                  class="stroke-red-500"
+                  stroke-width="2"
+                />
+                <line
+                  x1={xScale(point.low)}
+                  x2={xScale(point.high)}
+                  y1={yScale(0) - 0.5}
+                  y2={yScale(0) - 0.5}
+                  class="stroke-red-500"
+                  stroke-width={1}
+                />
+              </g>
             {/if}
 
+            <!-- mouseovers -->
             {#if point?.low !== undefined}
               <g
                 in:fly={{ duration: 200, x: -16 }}
@@ -171,6 +217,7 @@ Otherwise, the page will jump around as the data is fetched.
                   opacity={0.8}
                 >
                   {formatInteger(~~point.count)} row{#if point.count !== 1}s{/if}
+                  ({((point.count / totalRows) * 100).toFixed(2)}%)
                 </text>
               </g>
             {/if}
