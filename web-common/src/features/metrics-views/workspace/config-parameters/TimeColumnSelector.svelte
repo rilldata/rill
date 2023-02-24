@@ -8,6 +8,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { selectTimestampColumnFromSchema } from "@rilldata/web-common/features/metrics-views/column-selectors";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
   import {
     CONFIG_SELECTOR,
     CONFIG_TOP_LEVEL_LABEL_CLASSES,
@@ -18,6 +20,10 @@
 
   export let metricsInternalRep;
   export let selectedModel: V1Model;
+
+  let metricsConfigErrorStore = getContext(
+    "rill:metrics-config:errors"
+  ) as Writable<any>;
 
   $: currentTimestampColumn = $metricsInternalRep.getMetricKey("timeseries");
   $: timeColumnEmpty = currentTimestampColumn === "";
@@ -72,6 +78,11 @@
   let level: "error" | undefined = undefined;
   let disabled = false;
   let selectable = true;
+
+  const TOOLTIP_WIDTH = "300px";
+  const DEFAULT_TOOLTIP_TEXT =
+    "Select a timestamp column to see the time series charts on the dashboard";
+
   $: if (timeColumnEmpty) {
     if (timestampColumns.length > 0) {
       fieldText = "Select a time column";
@@ -98,8 +109,14 @@
       level = undefined;
       disabled = false;
       selectable = true;
+      tooltipText = DEFAULT_TOOLTIP_TEXT;
     }
   }
+
+  $: metricsConfigErrorStore.update((errors) => {
+    errors.smallestTimeGrain = level === "error" ? tooltipText : null;
+    return errors;
+  });
 
   /** combine options.*/
   $: options = [
@@ -130,19 +147,14 @@
   class={INPUT_ELEMENT_CONTAINER.classes}
   style={INPUT_ELEMENT_CONTAINER.style}
 >
-  <Tooltip alignment="middle" distance={8} location="bottom">
+  <Tooltip alignment="start" distance={16} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Timestamp</div>
-    <TooltipContent maxWidth="400px" slot="tooltip-content">
-      Select a timestamp column to see the time series charts on the dashboard.
+    <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
+      {DEFAULT_TOOLTIP_TEXT}
     </TooltipContent>
   </Tooltip>
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
-    <Tooltip
-      alignment="middle"
-      distance={16}
-      location="right"
-      suppress={tooltipText === undefined}
-    >
+    <Tooltip alignment="start" distance={8} location="bottom" suppress={active}>
       <SelectMenu
         bind:active
         block
@@ -172,46 +184,44 @@
         />
       </SelectMenu>
 
-      <TooltipContent slot="tooltip-content">
+      <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
         {tooltipText}
       </TooltipContent>
     </Tooltip>
 
-    <Tooltip>
-      <Tooltip location="bottom" distance={8} suppress={active}>
-        <IconButton
-          compact
-          rounded
-          marginClasses="ml-1"
-          on:click={() => {
-            if (timeColumnSelectedValue !== "__DEFAULT_VALUE__")
-              removeTimeseries();
-            else if (timeColumnEmpty && !timestampColumns?.length)
-              goto(`/model/${selectedModel.name}`);
-            else active = true;
-          }}
-        >
-          <!-- <CancelCircle color="gray" size="16px" /> -->
-          <span class="text-gray-600">
-            {#if !timeColumnEmpty}
-              <span class={level === "error" ? "text-red-800" : ""}>
-                <CancelCircle size="16px" />
-              </span>
-            {:else}
-              <InfoCircle size="16px" />
-            {/if}
-          </span>
-        </IconButton>
-        <TooltipContent slot="tooltip-content" maxWidth="300px">
+    <Tooltip location="right" distance={8} suppress={active}>
+      <IconButton
+        compact
+        rounded
+        marginClasses="ml-1"
+        on:click={() => {
+          if (timeColumnSelectedValue !== "__DEFAULT_VALUE__")
+            removeTimeseries();
+          else if (timeColumnEmpty && !timestampColumns?.length)
+            goto(`/model/${selectedModel.name}`);
+          else active = true;
+        }}
+      >
+        <!-- <CancelCircle color="gray" size="16px" /> -->
+        <span class="text-gray-600">
           {#if !timeColumnEmpty}
-            remove the selected timestamp column
-          {:else if timestampColumns?.length}
-            select a timestamp column
+            <span class={level === "error" ? "text-red-800" : ""}>
+              <CancelCircle size="16px" />
+            </span>
           {:else}
-            go to the model and create a timestamp column
+            <InfoCircle size="16px" />
           {/if}
-        </TooltipContent>
-      </Tooltip>
+        </span>
+      </IconButton>
+      <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
+        {#if !timeColumnEmpty}
+          remove the selected timestamp column
+        {:else if timestampColumns?.length}
+          select a timestamp column
+        {:else}
+          go to the model and create a timestamp column
+        {/if}
+      </TooltipContent>
     </Tooltip>
   </div>
 </div>

@@ -33,16 +33,23 @@
   export let nonStandardError;
 
   // this store is used to store errors that are not related to the reconciliation/runtime
-  // used to prevent the user from going to the dashboard
+  // used to prevent the user from going to the dashboard.
+  // Ultimately, the runtime should be catching the different errors we encounter with regards to
+  // mismatches between the fields. For now, this is a very simple to use solution.
   let configurationErrorStore = writable({
     defaultTimeRange: null,
     smallestTimeGrain: null,
+    model: null,
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
+  $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
+    instanceId,
+    metricsDefName
+  );
+
   const queryClient = useQueryClient();
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
+  const { listenToNodeResize } = createResizeListenerActionFactory();
 
   $: instanceId = $runtimeStore.instanceId;
 
@@ -170,39 +177,6 @@
         {metricsSourceSelectionError}
         updateRuntime={callPutAndMigrate}
       />
-      <!-- <div class="flex-none flex flex-row">
-        <div
-          style:grid-template-rows={gridTemplate}
-          class="grid grid-flow-col gap-y-2 gap-x-5"
-        >
-          <MetricsDisplayNameInput {metricsInternalRep} />
-          <MetricsModelSelector {metricsInternalRep} />
-          <MetricsTimeColumnSelector
-            selectedModel={model}
-            {metricsInternalRep}
-          />
-
-          <MetricsMinimumTimeGrainSelector
-            selectedModel={model}
-            {metricsInternalRep}
-          />
-          <MetricsDefaultTimeRange selectedModel={model} {metricsInternalRep} />
-        </div>
-
-        <div class="ml-auto">
-          {#if metricsSourceSelectionError}
-            <Callout level="error">
-              {metricsSourceSelectionError}
-            </Callout>
-          {:else}
-            <MetricsGenerateButton
-              handlePutAndMigrate={callPutAndMigrate}
-              selectedModel={model}
-              {metricsInternalRep}
-            />
-          {/if}
-        </div>
-      </div> -->
 
       <div
         style="display: flex; flex-direction:column; overflow:hidden;"

@@ -17,7 +17,6 @@
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
   // check to see if this is valid.
-  $: console.log("model", model);
   $: timeColumnIsInModel = model?.schema?.fields?.some(
     (field) => field.name === timeColumn
   );

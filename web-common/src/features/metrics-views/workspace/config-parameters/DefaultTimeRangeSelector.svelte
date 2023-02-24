@@ -32,6 +32,7 @@
     "rill:metrics-config:errors"
   ) as Writable<any>;
 
+  // this is the value that is selected in the dropdown.
   $: timeRangeSelectedValue =
     $metricsInternalRep.getMetricKey("default_time_range") ||
     "__DEFAULT_VALUE__";
@@ -96,6 +97,7 @@
     return errors;
   });
 
+  // currently selected display label.
   $: timeRangeName = !isValidTimeRange
     ? timeRangeSelectedValue
     : selectedTimeRangeName;
@@ -138,27 +140,38 @@
 
   let tooltipText = "";
   let dropdownDisabled = true;
+  const MAIN_TOOLTIP = "default time range for the time series charts";
+  const TOOLTIP_WIDTH = "300px";
   $: if (selectedModel?.name === undefined) {
     tooltipText = "Select a model before selecting a time range";
     dropdownDisabled = true;
   } else if (!timeColumn) {
     tooltipText = "The selected model has no timestamp columns";
     dropdownDisabled = true;
+  } else if (!isValidTimeRange) {
+    tooltipText = "The selected time range is not valid";
+    dropdownDisabled = false;
+  } else if (!hasValidTimeRangeForGrain) {
+    tooltipText =
+      "The selected time range is not valid for the selected time grain";
+    dropdownDisabled = false;
   } else {
-    tooltipText = undefined;
+    tooltipText = MAIN_TOOLTIP;
     dropdownDisabled = false;
   }
+
+  let active = false;
 </script>
 
 <div
   class={INPUT_ELEMENT_CONTAINER.classes}
   style={INPUT_ELEMENT_CONTAINER.style}
 >
-  <Tooltip alignment="middle" distance={8} location="bottom">
+  <Tooltip alignment="start" distance={16} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Default Time Range</div>
 
-    <TooltipContent slot="tooltip-content">
-      Select a default time range for the time series charts
+    <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
+      {MAIN_TOOLTIP}
     </TooltipContent>
   </Tooltip>
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
@@ -166,9 +179,10 @@
       alignment="middle"
       distance={16}
       location="right"
-      suppress={tooltipText === undefined}
+      suppress={active}
     >
       <SelectMenu
+        bind:active
         block
         paddingTop={1}
         paddingBottom={1}
@@ -193,7 +207,7 @@
         />
       </SelectMenu>
 
-      <TooltipContent slot="tooltip-content">
+      <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
         {tooltipText}
       </TooltipContent>
     </Tooltip>

@@ -17,6 +17,8 @@
 
   $: displayName = $metricsInternalRep.getMetricKey("display_name");
 
+  $: innerDisplayName = displayName;
+
   const { form, handleSubmit } = createForm({
     initialValues: {
       newDisplayName: displayName || "",
@@ -46,7 +48,7 @@
   }
 
   // This kicks in when the user changes the display name via code artifact
-  $: updateFormWithNewDisplayName(displayName);
+  $: updateFormWithNewDisplayName(innerDisplayName);
 </script>
 
 <div

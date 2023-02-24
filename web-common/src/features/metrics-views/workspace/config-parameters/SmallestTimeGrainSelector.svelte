@@ -137,6 +137,10 @@
     }
   }
 
+  const TOOLTIP_WIDTH = "280px";
+  const DEFAULT_TOOLTIP_TEXT =
+    "The smallest allowable time unit that can be displayed on the dashboard line charts";
+
   let tooltipText = "";
   let dropdownDisabled = true;
   // FIXME: we won't show this element if there's no time column
@@ -146,8 +150,11 @@
   } else if (!timeColumn) {
     tooltipText = "The selected model has no timestamp columns";
     dropdownDisabled = true;
+  } else if (!isValidTimeGrain) {
+    tooltipText = "The selected time grain is not valid";
+    dropdownDisabled = false;
   } else {
-    tooltipText = undefined;
+    tooltipText = DEFAULT_TOOLTIP_TEXT;
     dropdownDisabled = false;
   }
 
@@ -158,21 +165,15 @@
   class={INPUT_ELEMENT_CONTAINER.classes}
   style={INPUT_ELEMENT_CONTAINER.style}
 >
-  <Tooltip alignment="start" distance={8} location="bottom">
+  <Tooltip alignment="start" distance={16} location="bottom">
     <div class={CONFIG_TOP_LEVEL_LABEL_CLASSES}>Smallest Time Grain</div>
 
-    <TooltipContent maxWidth="280px" slot="tooltip-content">
-      The smallest allowable time unit that can be displayed on the dashboard
-      line charts
+    <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
+      {DEFAULT_TOOLTIP_TEXT}
     </TooltipContent>
   </Tooltip>
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
-    <Tooltip
-      alignment="middle"
-      distance={8}
-      location="right"
-      suppress={tooltipText === undefined}
-    >
+    <Tooltip alignment="start" distance={16} location="right" suppress={active}>
       <SelectMenu
         paddingTop={1}
         paddingBottom={1}
@@ -199,7 +200,7 @@
         />
       </SelectMenu>
 
-      <TooltipContent slot="tooltip-content">
+      <TooltipContent maxWidth={TOOLTIP_WIDTH} slot="tooltip-content">
         {tooltipText}
       </TooltipContent>
     </Tooltip>
