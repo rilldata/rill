@@ -1461,16 +1461,7 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_EditInstanceRequest_OlapDsn_Pattern.MatchString(m.GetOlapDsn()) {
-		err := EditInstanceRequestValidationError{
-			field:  "OlapDsn",
-			reason: "value does not match regex pattern \"[\\\\S\\\\s]+[\\\\S]+\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for OlapDsn
 
 	if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
 		err := EditInstanceRequestValidationError{
@@ -1483,16 +1474,7 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_EditInstanceRequest_RepoDsn_Pattern.MatchString(m.GetRepoDsn()) {
-		err := EditInstanceRequestValidationError{
-			field:  "RepoDsn",
-			reason: "value does not match regex pattern \"[\\\\S\\\\s]+[\\\\S]+\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for RepoDsn
 
 	// no validation rules for EmbedCatalog
 
@@ -1585,14 +1567,10 @@ var _EditInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
 	"druid":  {},
 }
 
-var _EditInstanceRequest_OlapDsn_Pattern = regexp.MustCompile("[\\S\\s]+[\\S]+")
-
 var _EditInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
 	"file":      {},
 	"metastore": {},
 }
-
-var _EditInstanceRequest_RepoDsn_Pattern = regexp.MustCompile("[\\S\\s]+[\\S]+")
 
 // Validate checks the field values on EditInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are

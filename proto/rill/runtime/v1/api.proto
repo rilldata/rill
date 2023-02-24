@@ -379,9 +379,9 @@ message DeleteInstanceResponse {}
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
-  string olap_dsn = 3 [(validate.rules).string = {pattern: "[\\S\\s]+[\\S]+"}]; 
+  string olap_dsn = 3; 
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
-  string repo_dsn = 5 [(validate.rules).string = {pattern: "[\\S\\s]+[\\S]+"}]; 
+  string repo_dsn = 5; 
   bool embed_catalog = 6;
   map<string, string> env = 7;
 }
