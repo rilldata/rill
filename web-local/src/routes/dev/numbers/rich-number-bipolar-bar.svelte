@@ -14,24 +14,64 @@
   export let absoluteValExtentsIfPosAndNeg = true;
   export let absoluteValExtentsAlways = false;
 
-  $: symmetricExtents =
-    absoluteValExtentsAlways ||
-    (absoluteValExtentsIfPosAndNeg &&
-      richNum.range.min < 0 &&
-      richNum.range.max > 0);
+  export let reflectNegativeBars = false;
 
-  $: absExtent = symmetricExtents
-    ? Math.max(-richNum.range.min, richNum.range.max)
-    : 0;
+  let symmetricExtents: boolean;
+  let absExtent: number;
+  let validMin: number;
+  let validMax: number;
+  let barLeft: number;
+  let barRight: number;
 
-  // if all the value are positive, the min for the range is 0
-  $: validMin = Math.min(richNum.range.min, -absExtent);
+  $: {
+    if (reflectNegativeBars) {
+      // the min for the range is 0
+      validMin = 0;
+      // since reflecting, max is either true max or negative of min
+      validMax = Math.max(-richNum.range.min, richNum.range.max);
 
-  // if all the values are negative, the max for the range is 0
-  $: validMax = Math.max(richNum.range.max, absExtent);
+      barLeft = 0;
+      barRight = Math.abs(richNum.number);
+    } else {
+      symmetricExtents =
+        absoluteValExtentsAlways ||
+        (absoluteValExtentsIfPosAndNeg &&
+          richNum.range.min < 0 &&
+          richNum.range.max > 0);
 
-  $: barLeft = richNum.number < 0 ? richNum.number : 0;
-  $: barRight = richNum.number < 0 ? 0 : richNum.number;
+      absExtent = symmetricExtents
+        ? Math.max(-richNum.range.min, richNum.range.max)
+        : 0;
+
+      // if all the value are positive, the min for the range is 0
+      validMin = Math.min(richNum.range.min, -absExtent);
+
+      // if all the values are negative, the max for the range is 0
+      validMax = Math.max(richNum.range.max, absExtent);
+
+      barLeft = richNum.number < 0 ? richNum.number : 0;
+      barRight = richNum.number < 0 ? 0 : richNum.number;
+    }
+  }
+
+  // $: symmetricExtents =
+  //   absoluteValExtentsAlways ||
+  //   (absoluteValExtentsIfPosAndNeg &&
+  //     richNum.range.min < 0 &&
+  //     richNum.range.max > 0);
+
+  // $: absExtent = symmetricExtents
+  //   ? Math.max(-richNum.range.min, richNum.range.max)
+  //   : 0;
+
+  // // if all the value are positive, the min for the range is 0
+  // $: validMin = Math.min(richNum.range.min, -absExtent);
+
+  // // if all the values are negative, the max for the range is 0
+  // $: validMax = Math.max(richNum.range.max, absExtent);
+
+  // $: barLeft = richNum.number < 0 ? richNum.number : 0;
+  // $: barRight = richNum.number < 0 ? 0 : richNum.number;
 
   const pctWithinExtents = (x, min, max) => 100 * ((x - min) / (max - min));
 

@@ -711,6 +711,7 @@
                         {barBackgroundColor}
                         {absoluteValExtentsIfPosAndNeg}
                         {absoluteValExtentsAlways}
+                        {reflectNegativeBars}
                       />
                     {/if}
                   </div>
