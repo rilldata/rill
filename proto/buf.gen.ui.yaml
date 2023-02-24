@@ -6,4 +6,4 @@ managed:
 plugins:
   - plugin: buf.build/bufbuild/es
     opt: target=ts
-    out: gen
+    out: ../web-common/src/proto/gen
