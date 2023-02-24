@@ -32,6 +32,8 @@
 {#if fontsReady}
   <TableExampleWidget defaultFormatterIndex={2} />
 
+  <div style="height: 80px;" />
+
   <TableExampleWidget
     alignDecimalPoints={false}
     alignSuffixes={false}
