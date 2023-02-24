@@ -46,7 +46,7 @@
           xHighAccessor="high"
           yAccessor="count"
           lineThickness={0.5}
-          separator={0}
+          separator={data.length < 20 ? 0.25 : 0}
           color="currentColor"
           stopOpacity={0.5}
         />

@@ -117,7 +117,7 @@ Otherwise, the page will jump around as the data is fetched.
             xLowAccessor="low"
             xHighAccessor="high"
             yAccessor="count"
-            separator={0}
+            separator={data.length < 20 ? 1 : 0}
           />
 
           <!-- support topK mouseover effect on graphs -->
@@ -153,7 +153,7 @@ Otherwise, the page will jump around as the data is fetched.
       </SimpleDataGraphic>
       <SimpleDataGraphic top={0} bottom={0} height={16}>
         {#if rug}
-          <Rug xAccessor="low" densityAccessor="count" data={rug} />
+          <Rug xAccessor="high" densityAccessor="count" data={rug} />
         {/if}
       </SimpleDataGraphic>
       <!-- we'll prefill the height of the summary such that if the data hasn't been fetched yet,

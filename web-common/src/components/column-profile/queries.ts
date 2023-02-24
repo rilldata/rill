@@ -1,4 +1,5 @@
 import {
+  RuntimeServiceGetNumericHistogramHistogramMethod,
   useRuntimeServiceEstimateRollupInterval,
   useRuntimeServiceEstimateSmallestTimeGrain,
   useRuntimeServiceGenerateTimeSeries,
@@ -7,11 +8,10 @@ import {
   useRuntimeServiceGetNumericHistogram,
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
-  RuntimeServiceGetNumericHistogramHistogramMethod,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
-import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
@@ -207,7 +207,7 @@ export function getNumericHistogram(
     {
       columnName,
       histogramMethod:
-        RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+        RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
       priority: getPriorityForColumn("numeric-histogram", active),
     },
     {
