@@ -28,8 +28,11 @@ import (
 )
 
 type Options struct {
-	HTTPPort int
-	GRPCPort int
+	HTTPPort        int
+	GRPCPort        int
+	AuthEnabled     bool
+	AuthIssuerURL   string
+	AuthAudienceURL string
 }
 
 type Server struct {
@@ -37,16 +40,38 @@ type Server struct {
 	runtime *runtime.Runtime
 	opts    *Options
 	logger  *zap.Logger
+	aud     *jwt.Audience
 }
 
 var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
 
 func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
-	return &Server{
+	srv := &Server{
 		opts:    opts,
 		runtime: rt,
 		logger:  logger,
-	}, nil
+	}
+
+	if opts.AuthEnabled {
+		aud, err := jwt.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
+		if err != nil {
+			return nil, err
+		}
+		srv.aud = aud
+	}
+
+	return srv, nil
+}
+
+// Close should be called when the server is done
+func (s *Server) Close() error {
+	// TODO: This should probably trigger a server shutdown
+
+	if s.aud != nil {
+		s.aud.Close()
+	}
+
+	return nil
 }
 
 // ServeGRPC Starts the gRPC server.
@@ -58,7 +83,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
-			jwt.StreamServerInterceptor,
+			jwt.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
@@ -66,7 +91,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
-			jwt.UnaryServerInterceptor,
+			jwt.UnaryServerInterceptor(s.aud),
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)

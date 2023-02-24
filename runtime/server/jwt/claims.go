@@ -6,30 +6,35 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var ErrForbidden = errors.New("not allowed")
-
+// Permission represents runtime access permissions.
 type Permission int
 
 const (
-	// System permissions
+	// System-level permissions
 	ManageInstances Permission = 0x00
-	// Instance permissions
-	ReadInstance    Permission = 0x11
-	EditInstance    Permission = 0x12
-	ReadRepo        Permission = 0x13
-	EditRepo        Permission = 0x14
-	ReadOLAP        Permission = 0x15
-	ReadMetrics     Permission = 0x16
-	ReadObjects     Permission = 0x17
-	ReadObjectState Permission = 0x18
+
+	// Instance-level permissions
+	ReadInstance Permission = 0x11
+	EditInstance Permission = 0x12
+	ReadRepo     Permission = 0x13
+	EditRepo     Permission = 0x14
+	ReadOLAP     Permission = 0x15
+	ReadMetrics  Permission = 0x16
+	ReadObjects  Permission = 0x17
 )
 
+// Claims resolves permissions for a requester.
 type Claims interface {
+	// Can resolves system-level permissions. It returns ErrForbidden if the action is not allowed.
 	Can(p Permission) error
+	// CanInstance resolves instance-level permissions. It returns ErrForbidden if the action is not allowed.
 	CanInstance(instanceID string, p Permission) error
 }
 
-// jwtClaims represents the payload of a JWT
+// ErrForbidden is returned by Claims when an action is not allowed.
+var ErrForbidden = errors.New("not allowed")
+
+// jwtClaims implements Claims and resolve permissions based on a JWT payload.
 type jwtClaims struct {
 	jwt.RegisteredClaims
 	System    []Permission
@@ -54,7 +59,8 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) error {
 	return c.Can(p)
 }
 
-// openClaims allows all actions. It's used for servers with auth disabled.
+// openClaims implements Claims and allows all actions.
+// It should be used for servers with auth disabled.
 type openClaims struct{}
 
 func (c *openClaims) Can(p Permission) error {

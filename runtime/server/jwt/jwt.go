@@ -12,20 +12,19 @@ import (
 	"go.uber.org/zap"
 )
 
-// Issuer
+// Issuer creates JWTs with claims for an Audience.
+// The Issuer is used by the admin server to create JWTs for the runtimes it manages based on a user's control-plane permissions.
 type Issuer struct {
 	issuerURL string
 	jwks      *keyfunc.JWKS
 }
 
-// NewIssuer
+// NewIssuer creates an issuer from a JWKS. The JWKS must contain private keys.
 func NewIssuer(issuerURL, jwksJSON string) (*Issuer, error) {
 	jwks, err := keyfunc.NewJSON([]byte(jwksJSON))
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO
 
 	return &Issuer{
 		issuerURL: issuerURL,
@@ -34,7 +33,7 @@ func NewIssuer(issuerURL, jwksJSON string) (*Issuer, error) {
 }
 
 func (i *Issuer) NewToken(audienceURL string, systemPerms []Permission, instancePerms map[string][]Permission) string {
-	// TODO
+	// TODO: Create JWT
 	return ""
 }
 
@@ -46,12 +45,14 @@ func (i *Issuer) NewInstanceToken(audienceURL, instanceID string, perms []Permis
 	return i.NewToken(audienceURL, nil, map[string][]Permission{instanceID: perms})
 }
 
-// WellKnownHandler should be served on {issuerURL}/.well-known/jwks.json
+// WellKnownHandleFunc serves the public key part of the Issuer's JWKS.
+// The Audience expects it to be mounted on {issuerURL}/.well-known/jwks.json.
 func (i *Issuer) WellKnownHandleFunc(writer http.ResponseWriter, request *http.Request) {
-	// TODO
+	// TODO: Serve public JWKS
 }
 
 // Audience represents a receiver of tokens from Issuer.
+// The Audience is used by the runtime to parse claims from a JWT.
 // It parses and validates tokens and resolves permissions.
 // It refreshes its JWKS in the background from {issuerURL}/.well-known/jwks.json.
 type Audience struct {
