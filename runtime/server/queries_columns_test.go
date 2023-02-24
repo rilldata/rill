@@ -228,7 +228,7 @@ func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	for i := 0; i < len(bins); i++ {
 		fmt.Printf("%d %f %f %f\n", bins[i].Bucket, bins[i].Low, bins[i].High, bins[i].Count)
 	}
-	require.Equal(t, 4, len(bins))
+	require.Equal(t, 5, len(bins))
 
 	require.Equal(t, int32(0), bins[0].Bucket)
 	require.Equal(t, start, bins[0].Low)
