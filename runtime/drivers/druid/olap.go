@@ -245,7 +245,3 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 
 	return t, nil
 }
-
-func (c *connection) Drop(ctx context.Context) error {
-	return nil
-}

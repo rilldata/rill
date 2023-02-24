@@ -9,6 +9,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/util"
 )
 
 func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -22,6 +23,7 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
 	// Check OLAP connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
+	defer olap.Close()
 	if err != nil {
 		return err
 	}
@@ -32,6 +34,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 
 	// Check repo connection
 	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, r.logger)
+	defer repo.Close()
 	if err != nil {
 		return err
 	}
@@ -85,10 +88,26 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	if err != nil {
 		return err
 	}
+
 	svc, err1 := r.catalogCache.get(ctx, r, instanceID)
-	// drop tables and instance related data
+	var dropErrors []error
+	if dropDB {
+		// drop all ingested data
+		// NOTE : Database file does not free space when tables are dropped issue #1099 in duckdb
+		entries := svc.Catalog.FindEntries(ctx, inst.ID, drivers.ObjectTypeUnspecified)
+		for _, entry := range entries {
+			if entry.Type == drivers.ObjectTypeTable {
+				table := entry.GetTable()
+				if table.Managed {
+					dropErrors = append(dropErrors, svc.Olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE %s", table.Name)}))
+				}
+			}
+		}
+		// drop rill schema
+		dropErrors = append(dropErrors, svc.Olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP schema rill CASCADE")}))
+	}
+	// delete instance related data
 	err2 := svc.Catalog.DeleteInstanceEntries(ctx, instanceID)
-	err3 := svc.Olap.Drop(ctx)
 
 	// evict and close exisiting connection
 	r.connCache.evict(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
@@ -98,9 +117,9 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	r.catalogCache.evict(ctx, instanceID)
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
 
-	// delete instances
+	// delete instance
 	err4 := r.Registry().DeleteInstance(ctx, instanceID)
-	return returnFirstErr(err1, err2, err3, err4)
+	return util.ReturnFirstErr(util.ReturnFirstErr(err1, err2, err4), util.ReturnFirstErr(dropErrors...))
 }
 
 func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {
@@ -117,6 +136,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		r.connCache.evict(ctx, olderInstance.ID, olderInstance.OLAPDriver, olderInstance.OLAPDSN)
 		// Check OLAP connection
 		olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
+		defer olap.Close()
 		if err != nil {
 			return err
 		}
@@ -153,9 +173,10 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	repoChanged := inst.RepoDriver != olderInstance.RepoDriver || inst.RepoDSN != olderInstance.RepoDSN
 	if repoChanged {
 		// evict exisiting connection
-		r.connCache.evict(ctx, inst.ID, inst.RepoDriver, inst.RepoDSN)
+		r.connCache.evict(ctx, olderInstance.ID, olderInstance.RepoDriver, olderInstance.RepoDSN)
 		// Check repo connection
 		repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, r.logger)
+		defer repo.Close()
 		if err != nil {
 			return err
 		}
@@ -184,13 +205,4 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	}
 	// update the entire instance for now to avoid building complex queries
 	return r.Registry().EditInstance(ctx, olderInstance)
-}
-
-func returnFirstErr(errs ...error) error {
-	for _, r := range errs {
-		if r != nil {
-			return r
-		}
-	}
-	return nil
 }

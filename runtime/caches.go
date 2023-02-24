@@ -98,6 +98,7 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn str
 	if ok {
 		// closing this would mean that any running query might also fail
 		conn.(drivers.Connection).Close()
+		c.cache.Remove(key)
 	}
 	return ok
 }

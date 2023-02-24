@@ -92,18 +92,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return res, nil
 }
 
-func (c *connection) Drop(ctx context.Context) error {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = release() }()
-
-	// Create rill schema if it doesn't exist
-	_, err = conn.ExecContext(ctx, "drop schema rill CASCADE")
-	return err
-}
-
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
