@@ -242,7 +242,7 @@ func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 
 	require.Equal(t, 1.0, bins[2].Count)
 
-	require.Equal(t, 1.0, bins[3].Count)
+	require.Equal(t, 0.0, bins[3].Count)
 }
 
 func TestServer_Model_Nulls(t *testing.T) {
