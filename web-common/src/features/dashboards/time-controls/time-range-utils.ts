@@ -228,10 +228,6 @@ export const prettyTimeGrain = (timeGrain: TimeGrain): string => {
   switch (timeGrain) {
     case TimeGrain.OneMinute:
       return "minute";
-    // case TimeGrain.FiveMinutes:
-    //   return "5 minute";
-    // case TimeGrain.FifteenMinutes:
-    //   return "15 minute";
     case TimeGrain.OneHour:
       return "hourly";
     case TimeGrain.OneDay:
@@ -256,24 +252,15 @@ function getAllTimeRangeDurationMs(allTimeRange: TimeRange): number {
 
 const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
   switch (name) {
-    case TimeRangeName.LastHour:
-      return 60 * 60 * 1000;
     case TimeRangeName.Last6Hours:
       return 6 * 60 * 60 * 1000;
     case TimeRangeName.LastDay:
       return 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last2Days:
-      return 2 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last5Days:
-      return 5 * 24 * 60 * 60 * 1000;
     case TimeRangeName.LastWeek:
       return 7 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last2Weeks:
-      return 2 * 7 * 24 * 60 * 60 * 1000;
     case TimeRangeName.Last30Days:
       return 30 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last60Days:
-      return 60 * 24 * 60 * 60 * 1000;
+
     default:
       throw new Error(`Unknown last X time range name: ${name}`);
   }
@@ -331,14 +318,6 @@ export const floorDate = (
       const interval = 60 * 1000;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
-    // case TimeGrain.FiveMinutes: {
-    //   const interval = 5 * 60 * 1000;
-    //   return new Date(Math.round(date.getTime() / interval) * interval);
-    // }
-    // case TimeGrain.FifteenMinutes: {
-    //   const interval = 15 * 60 * 1000;
-    //   return new Date(Math.floor(date.getTime() / interval) * interval);
-    // }
     case TimeGrain.OneHour: {
       const interval = 60 * 60 * 1000;
       return new Date(Math.floor(date.getTime() / interval) * interval);
