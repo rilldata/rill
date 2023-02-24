@@ -8,7 +8,7 @@ import (
 )
 
 func CreateCmd(ver version.Version) *cobra.Command {
-	var token string
+	var displayName string
 
 	createCmd := &cobra.Command{
 		Use:   "create",
@@ -19,7 +19,7 @@ func CreateCmd(ver version.Version) *cobra.Command {
 		},
 	}
 	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&token, "display-name", "noname", "Display name")
+	createCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
 
 	return createCmd
 }

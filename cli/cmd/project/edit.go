@@ -1,4 +1,4 @@
-package org
+package project
 
 import (
 	"fmt"
@@ -8,7 +8,8 @@ import (
 )
 
 func EditCmd(ver version.Version) *cobra.Command {
-	var displayName string
+	var name, displayName, prodBranch string
+	var public bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -18,8 +19,13 @@ func EditCmd(ver version.Version) *cobra.Command {
 			fmt.Println("not implemented")
 		},
 	}
+
 	editCmd.Flags().SortFlags = false
+
+	editCmd.Flags().StringVar(&name, "name", "noname", "Name")
 	editCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
+	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
+	editCmd.Flags().BoolVar(&public, "public", false, "Public")
 
 	return editCmd
 }

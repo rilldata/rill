@@ -10,10 +10,10 @@ import (
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
+	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
-
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
@@ -52,6 +52,7 @@ func runCmd(ctx context.Context, ver version.Version) error {
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 	rootCmd.AddCommand(auth.AuthCmd(ver))
 	rootCmd.AddCommand(org.OrgCmd(ver))
+	rootCmd.AddCommand(project.ProjectCmd(ver))
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
