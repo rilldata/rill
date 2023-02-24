@@ -1,4 +1,15 @@
 <script lang="ts">
+  // export const ssr = false;
+  if (globalThis.document !== undefined) {
+    document.fonts.onloadingdone = () => {
+      fontsReady = true;
+      console.log("onloadingdone", {
+        fn: document.fonts.onloadingdone,
+        fontsReady,
+      });
+    };
+  }
+
   import TableExampleWidget from "./table-example-widget.svelte";
   import SpanMeasurer from "./span-measurer.svelte";
   import { runTestsmallestPrecisionMagnitude } from "./smallest-precision-magnitude";
@@ -8,10 +19,6 @@
   runTest_formatNumWithOrderOfMag2();
 
   let fontsReady = false;
-  // document.fonts.onloadingdone = () => {
-  //   console.log("onloadingdone", { fontsReady });
-  //   fontsReady = true;
-  // };
 
   onMount(() => {
     fontsReady = fontsReady || document.fonts.check("12px Inter");
@@ -87,3 +94,7 @@
     }
   </style>
 {/if}
+
+<div style="position: absolute; top: -500px;" class="ui-copy-number">
+  "000.000e-00"
+</div>
