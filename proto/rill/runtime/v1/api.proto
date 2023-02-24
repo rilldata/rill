@@ -36,7 +36,7 @@ service RuntimeService {
     };
   }
 
-  // CreateInstance creates a new instance
+  // EditInstance edits an existing instance
   rpc EditInstance(EditInstanceRequest) returns (EditInstanceResponse) {
     option (google.api.http) = {
       put: "/v1/instances/{instance_id}",
@@ -386,7 +386,7 @@ message EditInstanceRequest {
   map<string, string> env = 7;
 }
 
-// Response message for RuntimeService.CreateInstance
+// Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
   Instance instance = 1;
 }

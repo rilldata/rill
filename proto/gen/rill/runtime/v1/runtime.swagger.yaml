@@ -144,7 +144,7 @@ paths:
       tags:
         - RuntimeService
     put:
-      summary: CreateInstance creates a new instance
+      summary: EditInstance edits an existing instance
       operationId: RuntimeService_EditInstance
       responses:
         "200":
@@ -1601,7 +1601,7 @@ definitions:
     properties:
       instance:
         $ref: '#/definitions/v1Instance'
-    title: Response message for RuntimeService.CreateInstance
+    title: Response message for RuntimeService.EditInstance
   v1EstimateRollupIntervalResponse:
     type: object
     properties:

@@ -434,7 +434,7 @@ export const useRuntimeServiceDeleteInstance = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary CreateInstance creates a new instance
+ * @summary EditInstance edits an existing instance
  */
 export const runtimeServiceEditInstance = (
   instanceId: string,

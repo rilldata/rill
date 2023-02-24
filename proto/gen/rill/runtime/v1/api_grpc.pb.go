@@ -30,7 +30,7 @@ type RuntimeServiceClient interface {
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error)
 	// CreateInstance creates a new instance
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
-	// CreateInstance creates a new instance
+	// EditInstance edits an existing instance
 	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
@@ -474,7 +474,7 @@ type RuntimeServiceServer interface {
 	GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error)
 	// CreateInstance creates a new instance
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
-	// CreateInstance creates a new instance
+	// EditInstance edits an existing instance
 	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)

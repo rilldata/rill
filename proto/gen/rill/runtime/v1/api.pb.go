@@ -1031,7 +1031,7 @@ func (x *EditInstanceRequest) GetEnv() map[string]string {
 	return nil
 }
 
-// Response message for RuntimeService.CreateInstance
+// Response message for RuntimeService.EditInstance
 type EditInstanceResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

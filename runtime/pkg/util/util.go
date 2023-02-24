@@ -1,4 +1,4 @@
-// Package util provides general purpose utility functions 
+// Package util provides general purpose utility functions
 package util
 
 // ReturnFirstErr returns first non nil error from a variable list of errors
