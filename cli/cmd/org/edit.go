@@ -11,9 +11,9 @@ func EditCmd(ver version.Version) *cobra.Command {
 	var token string
 
 	editCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "edit",
 		Args:  cobra.ExactArgs(1),
-		Short: "Create",
+		Short: "Edit",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("not implemented")
 		},
