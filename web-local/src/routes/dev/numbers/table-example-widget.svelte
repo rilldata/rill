@@ -12,6 +12,7 @@
   import LayeredContainer from "./layered-container.svelte";
   import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
   import SampleOptions from "./option-menus/sample-options.svelte";
+  import BarOptions from "./option-menus/bar-options.svelte";
 
   // FORMATTER SELECTION
   export let defaultFormatterIndex = 1;
@@ -51,19 +52,18 @@
     | "neverOneDigit" = "noSpecial";
 
   // BARS OPTIONS
-  let showBars = false;
-  let absoluteValExtentsIfPosAndNeg = true;
-  let absoluteValExtentsAlways = false;
-  let barPosition: "left" | "behind" | "right" = "right";
-  let barContainerWidth = 30;
-  let barOffset = 10;
-
-  let negativeColor = "#c5deff";
-  let positiveColor = "#c5deff";
-  let barBackgroundColor = "#f8f8f8";
-
-  let showBaseline = true;
-  let baselineColor = "#e2e2e2";
+  let showBars;
+  let absoluteValExtentsIfPosAndNeg;
+  let absoluteValExtentsAlways;
+  let reflectNegativeBars;
+  let barPosition: "left" | "behind" | "right";
+  let barContainerWidth;
+  let barOffset;
+  let negativeColor;
+  let positiveColor;
+  let barBackgroundColor;
+  let showBaseline;
+  let baselineColor;
 
   // TABLE FORMAT OPTIONS
   let tableGutterWidth = 30;
@@ -128,7 +128,6 @@
     | "largestWithDigitTarget" = "unlimitedDigitTarget";
   let digitTargetPadWithInsignificantZeros = false;
   let digitTarget = 5;
-
   const blue100 = "#dbeafe";
   const grey100 = "#f5f5f5";
 
@@ -633,97 +632,20 @@
     </form>
   </div>
 
-  <div style="padding-left: 10px;">
-    bar options
-
-    <div class="option-box">
-      <label>
-        <input type="checkbox" bind:checked={showBars} />
-        show bars
-      </label>
-      <div class="option-box">
-        <label>
-          <input type="checkbox" bind:checked={absoluteValExtentsIfPosAndNeg} />
-          use symmetric extent if a sample has pos and neg values
-        </label>
-        <div class="option-box">
-          <label>
-            <input type="checkbox" bind:checked={absoluteValExtentsAlways} />
-            always use symmetric extents
-          </label>
-        </div>
-
-        <form>
-          <label>
-            <input
-              type="radio"
-              bind:group={barPosition}
-              name="left"
-              value={"left"}
-            />
-            left
-          </label>
-          <label>
-            <input
-              type="radio"
-              bind:group={barPosition}
-              name="behind"
-              value={"behind"}
-            />
-            behind numbers
-          </label>
-
-          <label>
-            <input
-              type="radio"
-              bind:group={barPosition}
-              name="right"
-              value={"right"}
-            />
-            right
-          </label>
-        </form>
-      </div>
-      <div class="option-box">
-        bar container width
-        <input type="range" min="10" max="300" bind:value={barContainerWidth} />
-        {barContainerWidth}px
-      </div>
-
-      <div class="option-box">
-        bar offset (if left or right)
-        <input type="range" min="0" max="100" bind:value={barOffset} />
-        {barOffset}px
-      </div>
-
-      <div class="option-box">
-        <ColorPicker bind:hex={negativeColor} label="negative bar color" />
-        <ColorPicker bind:hex={positiveColor} label="positive bar color" />
-
-        <ColorPicker
-          bind:hex={barBackgroundColor}
-          label="bar background color"
-        />
-        set positive bar color
-        <button on:click={() => (positiveColor = blue100)}
-          >blue-100 (like `main`)</button
-        >
-        &nbsp;
-        <button on:click={() => (positiveColor = grey100)}>grey-100</button>
-        &nbsp;
-        <button on:click={() => (positiveColor = "#eeeeee")}>grey-200</button>
-      </div>
-      <div class="option-box">
-        <label>
-          <input type="checkbox" bind:checked={showBaseline} />
-          show baseline
-        </label>
-        <div class="option-box">
-          <ColorPicker bind:hex={baselineColor} label="baseline color" />
-        </div>
-      </div>
-    </div>
-  </div>
+  <BarOptions
+    bind:showBars
+    bind:absoluteValExtentsIfPosAndNeg
+    bind:absoluteValExtentsAlways
+    bind:reflectNegativeBars
+    bind:barPosition
+    bind:barContainerWidth
+    bind:barOffset
+    bind:negativeColor
+    bind:positiveColor
+    bind:barBackgroundColor
+    bind:showBaseline
+    bind:baselineColor
+  />
 
   <div style="padding-left: 40px;">
     table options
