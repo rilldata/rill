@@ -69,8 +69,19 @@ export type RuntimeServiceEstimateRollupIntervalBody = {
   priority?: number;
 };
 
+export type RuntimeServiceGetNumericHistogramHistogramMethod =
+  typeof RuntimeServiceGetNumericHistogramHistogramMethod[keyof typeof RuntimeServiceGetNumericHistogramHistogramMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RuntimeServiceGetNumericHistogramHistogramMethod = {
+  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
+  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
+  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+} as const;
+
 export type RuntimeServiceGetNumericHistogramParams = {
   columnName?: string;
+  histogramMethod?: RuntimeServiceGetNumericHistogramHistogramMethod;
   priority?: number;
 };
 
@@ -553,6 +564,16 @@ This enables virtualizing a file system in a cloud setting. */
   repoDsn?: string;
 }
 
+export type V1HistogramMethod =
+  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1HistogramMethod = {
+  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
+  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
+  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+} as const;
+
 export interface V1GetTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
@@ -775,6 +796,7 @@ export interface NumericHistogramBinsBin {
   count?: number;
   high?: number;
   low?: number;
+  midpoint?: number;
 }
 
 export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];

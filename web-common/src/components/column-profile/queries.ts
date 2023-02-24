@@ -7,6 +7,7 @@ import {
   useRuntimeServiceGetNumericHistogram,
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
+  RuntimeServiceGetNumericHistogramHistogramMethod,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
@@ -203,7 +204,12 @@ export function getNumericHistogram(
   return useRuntimeServiceGetNumericHistogram(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("numeric-histogram", active) },
+    {
+      columnName,
+      histogramMethod:
+        RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      priority: getPriorityForColumn("numeric-histogram", active),
+    },
     {
       query: {
         select(query) {
