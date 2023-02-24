@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -15,6 +16,10 @@ import (
 
 // ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
+		return nil, ErrForbidden
+	}
+
 	glob := req.Glob
 	if glob == "" {
 		glob = "**"
@@ -30,6 +35,10 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 
 // GetFile implements RuntimeService.
 func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
+		return nil, ErrForbidden
+	}
+
 	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -40,6 +49,10 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 
 // PutFile implements RuntimeService.
 func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -50,6 +63,10 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 
 // DeleteFile implements RuntimeService.
 func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -60,6 +77,10 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 
 // RenameFile implements RuntimeService.
 func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

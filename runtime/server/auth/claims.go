@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"errors"
-
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -14,25 +12,23 @@ const (
 	ManageInstances Permission = 0x00
 
 	// Instance-level permissions
-	ReadInstance Permission = 0x11
-	EditInstance Permission = 0x12
-	ReadRepo     Permission = 0x13
-	EditRepo     Permission = 0x14
-	ReadOLAP     Permission = 0x15
-	ReadMetrics  Permission = 0x16
-	ReadObjects  Permission = 0x17
+	ReadInstance  Permission = 0x11
+	EditInstance  Permission = 0x12
+	ReadRepo      Permission = 0x13
+	EditRepo      Permission = 0x14
+	ReadObjects   Permission = 0x15
+	ReadOLAP      Permission = 0x16
+	ReadMetrics   Permission = 0x17
+	ReadProfiling Permission = 0x18
 )
 
 // Claims resolves permissions for a requester.
 type Claims interface {
-	// Can resolves system-level permissions. It returns ErrForbidden if the action is not allowed.
-	Can(p Permission) error
-	// CanInstance resolves instance-level permissions. It returns ErrForbidden if the action is not allowed.
-	CanInstance(instanceID string, p Permission) error
+	// Can resolves system-level permissions.
+	Can(p Permission) bool
+	// CanInstance resolves instance-level permissions.
+	CanInstance(instanceID string, p Permission) bool
 }
-
-// ErrForbidden is returned by Claims when an action is not allowed.
-var ErrForbidden = errors.New("not allowed")
 
 // jwtClaims implements Claims and resolve permissions based on a JWT payload.
 type jwtClaims struct {
@@ -41,19 +37,19 @@ type jwtClaims struct {
 	Instances map[string][]Permission
 }
 
-func (c *jwtClaims) Can(p Permission) error {
+func (c *jwtClaims) Can(p Permission) bool {
 	for _, p2 := range c.System {
 		if p2 == p {
-			return nil
+			return true
 		}
 	}
-	return ErrForbidden
+	return false
 }
 
-func (c *jwtClaims) CanInstance(instanceID string, p Permission) error {
+func (c *jwtClaims) CanInstance(instanceID string, p Permission) bool {
 	for _, p2 := range c.Instances[instanceID] {
 		if p2 == p {
-			return nil
+			return true
 		}
 	}
 	return c.Can(p)
@@ -63,10 +59,10 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) error {
 // It should be used for servers with auth disabled.
 type openClaims struct{}
 
-func (c *openClaims) Can(p Permission) error {
-	return nil
+func (c *openClaims) Can(p Permission) bool {
+	return true
 }
 
-func (c *openClaims) CanInstance(instanceID string, p Permission) error {
-	return nil
+func (c *openClaims) CanInstance(instanceID string, p Permission) bool {
+	return true
 }

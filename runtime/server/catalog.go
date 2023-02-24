@@ -15,9 +15,8 @@ import (
 
 // ListCatalogEntries implements RuntimeService.
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
-	err := auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects)
-	if err != nil {
-		return nil, err
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
 	}
 
 	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
@@ -39,6 +38,10 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 
 // GetCatalogEntry implements RuntimeService.
 func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
 	entry, err := s.runtime.GetCatalogEntry(ctx, req.InstanceId, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
@@ -54,6 +57,10 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 // Reconcile implements RuntimeService.
 func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
 	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.ForcedPaths, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -67,6 +74,11 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 
 // PutFileAndReconcile implements RuntimeService.
 func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -86,6 +98,11 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 
 // RenameFileAndReconcile implements RuntimeService.
 func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -105,6 +122,11 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 
 // DeleteFileAndReconcile implements RuntimeService.
 func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -124,6 +146,10 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 
 // RefreshAndReconcile implements RuntimeService.
 func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
 	changedPaths := []string{req.Path}
 	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, changedPaths, req.Dry, req.Strict)
 	if err != nil {
@@ -138,6 +164,10 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 
 // TriggerRefresh implements RuntimeService.
 func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())

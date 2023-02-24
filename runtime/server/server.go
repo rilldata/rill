@@ -27,6 +27,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
+
 type Options struct {
 	HTTPPort        int
 	GRPCPort        int
