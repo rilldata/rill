@@ -34,8 +34,8 @@ func TestTimeseries_normaliseTimeRange_Specified1(t *testing.T) {
 
 	r, err := q.resolveNormaliseTimeRange(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
-	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), r.Start)
-	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z").AsTime(), r.Start.AsTime())
+	require.Equal(t, parseTime(t, "2020-01-01T00:00:00.000Z").AsTime(), r.End.AsTime())
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
