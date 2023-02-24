@@ -33,7 +33,7 @@
     appQueryStatusStore,
     runtimeStore,
   } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { navigationEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
+  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -96,7 +96,7 @@
       embedded ? `"${path}"` : sourceName,
       $createModelMutation
     );
-    navigationEvent.fireEvent(
+    behaviourEvent.fireNavigationEvent(
       modelName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
@@ -127,7 +127,7 @@
         onSuccess: async (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          navigationEvent.fireEvent(
+          behaviourEvent.fireNavigationEvent(
             newDashboardName,
             BehaviourEventMedium.Button,
             MetricsEventSpace.RightPanel,
@@ -232,10 +232,10 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
-    editable={!embedded}
-    width={headerWidth}
-    let:width
     appRunning={$appQueryStatusStore}
+    editable={!embedded}
+    let:width
+    width={headerWidth}
   >
     <svelte:fragment slot="icon">
       <Source />

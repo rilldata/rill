@@ -121,6 +121,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNume
 	q := &queries.ColumnNumericHistogram{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
+		Method:     req.HistogramMethod,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

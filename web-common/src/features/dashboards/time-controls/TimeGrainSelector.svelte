@@ -3,12 +3,17 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
+  import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
-  import type { TimeGrain } from "./time-control-types";
-  import { prettyTimeGrain, TimeGrainOption } from "./time-range-utils";
+  import {
+    isGrainBigger,
+    prettyTimeGrain,
+    TimeGrainOption,
+  } from "./time-range-utils";
 
   export let metricViewName: string;
   export let timeGrainOptions: TimeGrainOption[];
+  export let minTimeGrain: V1TimeGrain;
 
   const dispatch = createEventDispatcher();
   const EVENT_NAME = "select-time-grain";
@@ -17,15 +22,22 @@
   $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
 
   $: timeGrains = timeGrainOptions
-    ? timeGrainOptions.map(({ timeGrain, enabled }) => ({
-        main: prettyTimeGrain(timeGrain),
-        disabled: !enabled,
-        key: timeGrain,
-        description: !enabled ? "not valid for this time range" : undefined,
-      }))
+    ? timeGrainOptions.map(({ timeGrain, enabled }) => {
+        const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
+        return {
+          main: prettyTimeGrain(timeGrain),
+          disabled: !enabled || !isGrainPossible,
+          key: timeGrain,
+          description: !enabled
+            ? "not valid for this time range"
+            : !isGrainPossible
+            ? "bigger than min time grain"
+            : undefined,
+        };
+      })
     : undefined;
 
-  const onTimeGrainSelect = (timeGrain: TimeGrain) => {
+  const onTimeGrainSelect = (timeGrain: V1TimeGrain) => {
     dispatch(EVENT_NAME, { timeGrain });
   };
 </script>

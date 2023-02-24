@@ -13,9 +13,9 @@ see more button
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher } from "svelte";
-  import { TOOLTIP_STRING_LIMIT } from "../../../layout/config";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;
@@ -55,10 +55,15 @@ see more button
         label,
       });
     }}
+    on:keydown
     on:shift-click={async () => {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(label);
+      let truncatedLabel = label?.toString();
+      if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
+        truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
+      }
       notifications.send({
-        message: `copied column name "${value}" to clipboard`,
+        message: `copied dimension value "${truncatedLabel}" to clipboard`,
       });
     }}
   >
@@ -88,17 +93,12 @@ see more button
           {#if atLeastOneActive}
             <div>
               {excluded ? "Include" : "Exclude"}
-              <span class="italic">{label}</span>
-              {excluded ? "in" : "from"} output
+              this dimension value
             </div>
           {:else}
             <div class="text-ellipsis overflow-hidden whitespace-nowrap">
               Filter {filterExcludeMode ? "out" : "on"}
-              <span class="italic"
-                >{label?.length > TOOLTIP_STRING_LIMIT
-                  ? label?.slice(0, TOOLTIP_STRING_LIMIT)?.trim() + "..."
-                  : label}</span
-              >
+              this dimension value
             </div>
           {/if}
           <Shortcut>Click</Shortcut>
@@ -106,7 +106,7 @@ see more button
         <TooltipShortcutContainer>
           <div>
             <StackingWord key="shift">Copy</StackingWord>
-            {value} to clipboard
+            this dimension value to clipboard
           </div>
           <Shortcut>
             <span style="font-family: var(--system);">⇧</span> + Click

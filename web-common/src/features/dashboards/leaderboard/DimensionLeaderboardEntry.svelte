@@ -76,7 +76,7 @@
     </div>
   </LeaderboardListItem>
   <TooltipContent slot="tooltip-content">
-    <div style:max-width="480px">
+    <div style:max-width="300px">
       <slot name="tooltip" />
     </div>
   </TooltipContent>

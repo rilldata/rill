@@ -5706,11 +5706,70 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for MetricsViewName
+	if !_MetricsViewToplistRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DimensionName
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDimensionName()) < 1 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "DimensionName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_MetricsViewToplistRequest_MeasureNames_Unique := make(map[string]struct{}, len(m.GetMeasureNames()))
+
+	for idx, item := range m.GetMeasureNames() {
+		_, _ = idx, item
+
+		if _, exists := _MetricsViewToplistRequest_MeasureNames_Unique[item]; exists {
+			err := MetricsViewToplistRequestValidationError{
+				field:  fmt.Sprintf("MeasureNames[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_MetricsViewToplistRequest_MeasureNames_Unique[item] = struct{}{}
+		}
+
+		// no validation rules for MeasureNames[idx]
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -5919,6 +5978,8 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewToplistRequestValidationError{}
 
+var _MetricsViewToplistRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on MetricsViewToplistResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -6111,9 +6172,59 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for MetricsViewName
+	if !_MetricsViewTimeSeriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_MetricsViewTimeSeriesRequest_MeasureNames_Unique := make(map[string]struct{}, len(m.GetMeasureNames()))
+
+	for idx, item := range m.GetMeasureNames() {
+		_, _ = idx, item
+
+		if _, exists := _MetricsViewTimeSeriesRequest_MeasureNames_Unique[item]; exists {
+			err := MetricsViewTimeSeriesRequestValidationError{
+				field:  fmt.Sprintf("MeasureNames[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_MetricsViewTimeSeriesRequest_MeasureNames_Unique[item] = struct{}{}
+		}
+
+		// no validation rules for MeasureNames[idx]
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -6286,6 +6397,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewTimeSeriesRequestValidationError{}
+
+var _MetricsViewTimeSeriesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on MetricsViewTimeSeriesResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -6480,9 +6593,59 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := MetricsViewTotalsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for MetricsViewName
+	if !_MetricsViewTotalsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := MetricsViewTotalsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewTotalsRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_MetricsViewTotalsRequest_MeasureNames_Unique := make(map[string]struct{}, len(m.GetMeasureNames()))
+
+	for idx, item := range m.GetMeasureNames() {
+		_, _ = idx, item
+
+		if _, exists := _MetricsViewTotalsRequest_MeasureNames_Unique[item]; exists {
+			err := MetricsViewTotalsRequestValidationError{
+				field:  fmt.Sprintf("MeasureNames[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_MetricsViewTotalsRequest_MeasureNames_Unique[item] = struct{}{}
+		}
+
+		// no validation rules for MeasureNames[idx]
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -6652,6 +6815,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewTotalsRequestValidationError{}
+
+var _MetricsViewTotalsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on MetricsViewTotalsResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -7222,11 +7387,38 @@ func (m *EstimateRollupIntervalRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_EstimateRollupIntervalRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := EstimateRollupIntervalRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := EstimateRollupIntervalRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := EstimateRollupIntervalRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -7310,6 +7502,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EstimateRollupIntervalRequestValidationError{}
+
+var _EstimateRollupIntervalRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on EstimateRollupIntervalResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -9225,11 +9419,49 @@ func (m *GetTopKRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GetTopKRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GetTopKRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTopKRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetTopKRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetTopKRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Agg
 
@@ -9314,6 +9546,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTopKRequestValidationError{}
+
+var _GetTopKRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on TopK with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
@@ -9469,11 +9703,49 @@ func (m *GetNullCountRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GetNullCountRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GetNullCountRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetNullCountRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetNullCountRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetNullCountRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -9556,6 +9828,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetNullCountRequestValidationError{}
+
+var _GetNullCountRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on GetNullCountResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9683,11 +9957,49 @@ func (m *GetDescriptiveStatisticsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GetDescriptiveStatisticsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GetDescriptiveStatisticsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetDescriptiveStatisticsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetDescriptiveStatisticsRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetDescriptiveStatisticsRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -9771,6 +10083,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetDescriptiveStatisticsRequestValidationError{}
+
+var _GetDescriptiveStatisticsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on NumericStatistics with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -9911,11 +10225,49 @@ func (m *EstimateSmallestTimeGrainRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := EstimateSmallestTimeGrainRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_EstimateSmallestTimeGrainRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := EstimateSmallestTimeGrainRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := EstimateSmallestTimeGrainRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := EstimateSmallestTimeGrainRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -10000,6 +10352,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EstimateSmallestTimeGrainRequestValidationError{}
+
+var _EstimateSmallestTimeGrainRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on EstimateSmallestTimeGrainResponse with
 // the rules defined in the proto definition for this message. If any rules
@@ -10130,11 +10484,40 @@ func (m *GetNumericHistogramRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetNumericHistogramRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetNumericHistogramRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetNumericHistogramRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetNumericHistogramRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for HistogramMethod
 
 	// no validation rules for Priority
 
@@ -10217,6 +10600,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetNumericHistogramRequestValidationError{}
+
+var _GetNumericHistogramRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on NumericHistogramBins with the rules
 // defined in the proto definition for this message. If any rules are
@@ -10376,11 +10761,49 @@ func (m *GetRugHistogramRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GetRugHistogramRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GetRugHistogramRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetRugHistogramRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetRugHistogramRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetRugHistogramRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -10464,6 +10887,8 @@ var _ interface {
 	ErrorName() string
 } = GetRugHistogramRequestValidationError{}
 
+var _GetRugHistogramRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on GetTimeRangeSummaryRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10486,11 +10911,49 @@ func (m *GetTimeRangeSummaryRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GetTimeRangeSummaryRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GetTimeRangeSummaryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTimeRangeSummaryRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetTimeRangeSummaryRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetTimeRangeSummaryRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -10574,6 +11037,8 @@ var _ interface {
 	ErrorName() string
 } = GetTimeRangeSummaryRequestValidationError{}
 
+var _GetTimeRangeSummaryRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on GetCardinalityOfColumnRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10596,11 +11061,49 @@ func (m *GetCardinalityOfColumnRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GetCardinalityOfColumnRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GetCardinalityOfColumnRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetCardinalityOfColumnRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetCardinalityOfColumnRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := GetCardinalityOfColumnRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -10685,6 +11188,8 @@ var _ interface {
 	ErrorName() string
 } = GetCardinalityOfColumnRequestValidationError{}
 
+var _GetCardinalityOfColumnRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
 // Validate checks the field values on GenerateTimeSeriesRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10707,9 +11212,38 @@ func (m *GenerateTimeSeriesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if utf8.RuneCountInString(m.GetInstanceId()) < 1 {
+		err := GenerateTimeSeriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if !_GenerateTimeSeriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateTimeSeriesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GenerateTimeSeriesRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetMeasures() {
 		_, _ = idx, item
@@ -10890,6 +11424,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GenerateTimeSeriesRequestValidationError{}
+
+var _GenerateTimeSeriesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on TimeSeriesTimeRange with the rules
 // defined in the proto definition for this message. If any rules are
@@ -11576,9 +12112,27 @@ func (m *GetTableCardinalityRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetTableCardinalityRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTableCardinalityRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetTableCardinalityRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -11661,6 +12215,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTableCardinalityRequestValidationError{}
+
+var _GetTableCardinalityRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on GetTableCardinalityResponse with the
 // rules defined in the proto definition for this message. If any rules are
@@ -11789,9 +12345,27 @@ func (m *ProfileColumnsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_ProfileColumnsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ProfileColumnsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ProfileColumnsRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -11874,6 +12448,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ProfileColumnsRequestValidationError{}
+
+var _ProfileColumnsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on ProfileColumnsResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -12139,9 +12715,27 @@ func (m *GetTableRowsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_GetTableRowsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetTableRowsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := GetTableRowsRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Limit
 
@@ -12226,6 +12820,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTableRowsRequestValidationError{}
+
+var _GetTableRowsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on GetTableRowsResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -13360,6 +13956,8 @@ func (m *NumericHistogramBins_Bin) validate(all bool) error {
 	// no validation rules for Bucket
 
 	// no validation rules for Low
+
+	// no validation rules for Midpoint
 
 	// no validation rules for High
 

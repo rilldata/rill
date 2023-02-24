@@ -24,16 +24,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-
-	// Load infra drivers and connectors for local
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/https"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
-	_ "github.com/rilldata/rill/runtime/drivers/druid"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/postgres"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
 type LogFormat string
@@ -98,10 +88,11 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
-		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
-		QueryCacheSize:      10000,
+		ConnectionCacheSize:  100,
+		MetastoreDriver:      "sqlite",
+		MetastoreDSN:         "file:rill?mode=memory&cache=shared",
+		QueryCacheSize:       10000,
+		AllowHostCredentials: true,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {

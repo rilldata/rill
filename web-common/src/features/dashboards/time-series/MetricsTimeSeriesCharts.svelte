@@ -30,7 +30,6 @@
   import {
     addGrains,
     formatDateByInterval,
-    toV1TimeGrain,
   } from "../time-controls/time-range-utils";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -88,9 +87,7 @@
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
         // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: toV1TimeGrain(
-          metricsExplorer.selectedTimeRange?.interval
-        ),
+        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
       }
     );
   }
