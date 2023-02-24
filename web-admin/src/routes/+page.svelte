@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { useFindOrganizations } from "../client";
+  import { useAdminServiceFindOrganizations } from "../client";
 
-  const orgs = useFindOrganizations();
+  const orgs = useAdminServiceFindOrganizations();
 </script>
 
 <svelte:head>
@@ -14,9 +14,9 @@
     <span>Loading...</span>
   {:else if $orgs.isError}
     <span>Error: {$orgs.error}</span>
-  {:else if $orgs.data}
+  {:else if $orgs.data && $orgs.data.organization}
     <ul>
-      {#each $orgs.data as org}
+      {#each $orgs.data.organization as org}
         <li><a href="/{org.name}">{org.name}</a></li>
       {/each}
     </ul>
