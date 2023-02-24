@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,12 +16,6 @@ type jwtContextKey struct{}
 
 // JWT secret for signing and verifying tokens
 var jwtSecret = []byte("secret")
-
-// Claims represents the payload of a JWT
-type Claims struct {
-	InstanceID string `json:"instance_id"`
-	jwt.StandardClaims
-}
 
 // UnaryServerInterceptor is a middleware for parsing and extracting JWT from metadata
 func UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -65,7 +59,7 @@ func parseJWTAndPopulateContextWithClaims(ctx context.Context) (context.Context,
 		return nil, status.Error(codes.Unauthenticated, "no bearer token found in authorization header")
 	}
 
-	token, err := jwt.ParseWithClaims(bearerToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(bearerToken, &jwtClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, status.Errorf(codes.InvalidArgument, "unexpected signing method: %v", token.Header["alg"])
 		}
@@ -79,7 +73,7 @@ func parseJWTAndPopulateContextWithClaims(ctx context.Context) (context.Context,
 		return nil, status.Error(codes.PermissionDenied, "invalid token")
 	}
 
-	claims, ok := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*jwtClaims)
 	if !ok {
 		return nil, status.Error(codes.Internal, "failed to parse JWT claims")
 	}
@@ -91,11 +85,11 @@ func parseJWTAndPopulateContextWithClaims(ctx context.Context) (context.Context,
 }
 
 // GetJWTFromContext is a helper function for getting JWT payload from context
-func GetJWTFromContext(ctx context.Context) *Claims {
-	jwtClaims, ok := ctx.Value(jwtContextKey{}).(*Claims)
+func GetClaims(ctx context.Context) Claims {
+	claims, ok := ctx.Value(jwtContextKey{}).(Claims)
 	if !ok {
 		return nil
 	}
 
-	return jwtClaims
+	return claims
 }
