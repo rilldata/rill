@@ -10,27 +10,27 @@ describe("getTimeGrainOptions", () => {
     expect(timeGrains).toEqual([
       {
         enabled: false,
-        timeGrain: "minute",
+        timeGrain: V1TimeGrain.TIME_GRAIN_MINUTE,
       },
       {
         enabled: true,
-        timeGrain: "hour",
+        timeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
       },
       {
         enabled: true,
-        timeGrain: "day",
+        timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
       },
       {
         enabled: true,
-        timeGrain: "week",
+        timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
       },
       {
         enabled: false,
-        timeGrain: "month",
+        timeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
       },
       {
         enabled: false,
-        timeGrain: "year",
+        timeGrain: V1TimeGrain.TIME_GRAIN_YEAR,
       },
     ]);
   });
