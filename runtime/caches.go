@@ -86,7 +86,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 }
 
 // evict removes the connection from cache and closes the connection
-// evicting the connectioncache should be coupled with evicting catalogCache
+// if evicting the connectioncache, evict the catalog cache as well
 func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn string) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()

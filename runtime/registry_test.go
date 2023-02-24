@@ -96,6 +96,30 @@ func TestRuntime_EditInstance(t *testing.T) {
 			},
 			clearCache: true,
 		},
+		{
+			name: "invalid olap driver",
+			inst: &drivers.Instance{
+				OLAPDriver:   "file",
+				OLAPDSN:      "",
+				RepoDriver:   "file",
+				RepoDSN:      t.TempDir(),
+				EmbedCatalog: false,
+				Env:          map[string]string{"host": "localhost"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid repo driver",
+			inst: &drivers.Instance{
+				OLAPDriver:   "duckdb",
+				OLAPDSN:      "",
+				RepoDriver:   "duckdb",
+				RepoDSN:      t.TempDir(),
+				EmbedCatalog: false,
+				Env:          map[string]string{"host": "localhost"},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

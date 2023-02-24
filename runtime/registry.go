@@ -111,7 +111,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 // EditInstance edits exisiting instance.
 // Confirming to put api specs, it is expected to send entire existing instance data.
-// The API compares and only evicts caches if relevant drivers or dsn is changed.
+// The API compares and only evicts caches drivers or dsn is changed.
 // This is done to ensure that db handlers are not unnecessarily closed
 func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {
 	olderInstance, err := r.Registry().FindInstance(ctx, inst.ID)
@@ -194,7 +194,6 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 }
 
 func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connection, drivers.RepoStore, error) {
-	// Check repo connection
 	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, r.logger)
 	if err != nil {
 		return nil, nil, err
@@ -208,7 +207,6 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connectio
 }
 
 func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connection, drivers.OLAPStore, error) {
-	// Check repo connection
 	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
 	if err != nil {
 		return nil, nil, err
