@@ -81,7 +81,6 @@ and the menu closes.
   {location}
   {alignment}
   {distance}
-  {disabled}
   let:handleClose
   let:toggleFloatingElement
 >

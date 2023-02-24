@@ -4,7 +4,6 @@
 
   import { FloatingElement } from "./index";
   import Portal from "../Portal.svelte";
-  export let disabled = false;
   export let location = "bottom";
   export let alignment = "middle";
   export let relationship = "parent";
@@ -26,11 +25,7 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div
-  class="contents"
-  class:active:pointer-events-none={disabled}
-  bind:this={parent}
->
+<div class="contents" bind:this={parent}>
   <slot
     {active}
     handleClose={() => {
