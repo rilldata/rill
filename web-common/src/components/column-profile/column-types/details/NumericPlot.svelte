@@ -8,9 +8,11 @@ Otherwise, the page will jump around as the data is fetched.
 -->
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
+  import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
   import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { WithParentClientRect } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
   import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import {
     HistogramPrimitive,
@@ -18,6 +20,7 @@ Otherwise, the page will jump around as the data is fetched.
   } from "@rilldata/web-common/components/data-graphic/marks";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
+  import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import type {
     NumericHistogramBinsBin,
     NumericOutliersOutlier,
@@ -25,7 +28,7 @@ Otherwise, the page will jump around as the data is fetched.
     V1NumericStatistics,
   } from "@rilldata/web-common/runtime-client";
   import { cubicOut } from "svelte/easing";
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
 
@@ -100,66 +103,109 @@ Otherwise, the page will jump around as the data is fetched.
       xType="number"
       yType="number"
     >
-      <SimpleDataGraphic let:config let:xScale let:yScale>
-        {#if data}
-          <g class="text-red-400">
-            <line
-              x1={config.plotLeft}
-              x2={config.plotRight}
-              y1={config.plotBottom}
-              y2={config.plotBottom}
-              stroke="currentColor"
-              stroke-width={1}
-            />
-          </g>
-          <HistogramPrimitive
-            {data}
-            xLowAccessor="low"
-            xHighAccessor="high"
-            yAccessor="count"
-            separator={data.length < 20 ? 1 : 0}
-          />
-          <!-- zero line -->
-          <line
-            x1={xScale(0)}
-            x2={xScale(0)}
-            y1={yScale(0)}
-            y2={config.plotTop}
-            class="stroke-gray-400"
-            stroke-dasharray="2,2"
-            shape-rendering="crispEdges"
-          />
-
-          <!-- support topK mouseover effect on graphs -->
-          {#if focusPoint && topK && summaryMode === "topk"}
-            <g transition:fade|local={{ duration: 200 }}>
-              <WithTween
-                value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
-                let:output
-                tweenProps={{ duration: 200, easing: cubicOut }}
-              >
-                <line
-                  x1={output[0]}
-                  x2={output[0]}
-                  y1={config.plotTop}
-                  y2={config.plotBottom}
-                  stroke="gray"
-                  stroke-width={1}
-                  opacity={0.7}
-                />
-                <line
-                  x1={output[0]}
-                  x2={output[0]}
-                  y1={output[1]}
-                  y2={config.plotBottom}
-                  stroke="gray"
-                  stroke-width={6}
-                  opacity={0.7}
-                />
-              </WithTween>
+      <SimpleDataGraphic let:config let:xScale let:yScale let:mouseoverValue>
+        <WithBisector
+          data={data || []}
+          callback={(dt) => (dt.high + dt.low) / 2}
+          value={mouseoverValue?.x}
+          let:point
+        >
+          {#if data}
+            <g class="text-red-400">
+              <line
+                x1={config.plotLeft}
+                x2={config.plotRight}
+                y1={config.plotBottom}
+                y2={config.plotBottom}
+                stroke="currentColor"
+                stroke-width={1}
+              />
             </g>
+            <HistogramPrimitive
+              {data}
+              xLowAccessor="low"
+              xHighAccessor="high"
+              yAccessor="count"
+              separator={data.length < 20 ? 1 : 0}
+            />
+            <!-- zero line -->
+            <line
+              x1={xScale(0)}
+              x2={xScale(0)}
+              y1={yScale(0)}
+              y2={config.plotTop}
+              class="stroke-gray-400"
+              stroke-dasharray="2,2"
+              shape-rendering="crispEdges"
+            />
+            {#if point}
+              <rect
+                x={xScale(point.low)}
+                y={config.plotTop}
+                width={xScale(point.high) - xScale(point.low)}
+                height={config.plotBottom - config.plotTop}
+                class="fill-gray-700"
+                opacity={0.2}
+              />
+            {/if}
+
+            {#if point?.low !== undefined}
+              <g
+                in:fly={{ duration: 200, x: -16 }}
+                out:fly={{ duration: 200, x: -16 }}
+                font-size={config.fontSize}
+                style:user-select={"none"}
+              >
+                <text
+                  use:outline
+                  x={config.plotLeft}
+                  y={config.plotTop + 12}
+                  class="fill-gray-500"
+                  opacity={0.8}>({point?.low}, {point?.high}]</text
+                >
+                <text
+                  use:outline
+                  x={config.plotLeft}
+                  y={config.plotTop + 24}
+                  class="fill-gray-500"
+                  opacity={0.8}
+                >
+                  {formatInteger(~~point.count)} row{#if point.count !== 1}s{/if}
+                </text>
+              </g>
+            {/if}
+
+            <!-- support topK mouseover effect on graphs -->
+            {#if focusPoint && topK && summaryMode === "topk"}
+              <g transition:fade|local={{ duration: 200 }}>
+                <WithTween
+                  value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
+                  let:output
+                  tweenProps={{ duration: 200, easing: cubicOut }}
+                >
+                  <line
+                    x1={output[0]}
+                    x2={output[0]}
+                    y1={config.plotTop}
+                    y2={config.plotBottom}
+                    stroke="gray"
+                    stroke-width={1}
+                    opacity={0.7}
+                  />
+                  <line
+                    x1={output[0]}
+                    x2={output[0]}
+                    y1={output[1]}
+                    y2={config.plotBottom}
+                    stroke="gray"
+                    stroke-width={6}
+                    opacity={0.7}
+                  />
+                </WithTween>
+              </g>
+            {/if}
           {/if}
-        {/if}
+        </WithBisector>
       </SimpleDataGraphic>
       <SimpleDataGraphic top={0} bottom={0} height={16}>
         {#if rug}
