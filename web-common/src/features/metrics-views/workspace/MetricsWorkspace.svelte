@@ -15,7 +15,7 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { setContext } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
@@ -40,6 +40,7 @@
     defaultTimeRange: null,
     smallestTimeGrain: null,
     model: null,
+    timeColumn: null,
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
@@ -62,7 +63,7 @@
   $: switchToMetrics(metricsDefName);
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
-  async function callPutAndMigrate(internalYamlString) {
+  async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
@@ -83,11 +84,19 @@
   // create initial internal representation
   let metricsInternalRep = createInternalRepresentation(
     yaml,
-    callPutAndMigrate
+    callReconcileAndUpdateYaml
   );
 
+  onMount(() => {
+    // Reconcile on mount
+    callReconcileAndUpdateYaml(yaml);
+  });
+
   function updateInternalRep() {
-    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    metricsInternalRep = createInternalRepresentation(
+      yaml,
+      callReconcileAndUpdateYaml
+    );
     if (errors) $metricsInternalRep.updateErrors(errors);
   }
 
@@ -175,7 +184,7 @@
         {metricsInternalRep}
         {model}
         {metricsSourceSelectionError}
-        updateRuntime={callPutAndMigrate}
+        updateRuntime={callReconcileAndUpdateYaml}
       />
 
       <div

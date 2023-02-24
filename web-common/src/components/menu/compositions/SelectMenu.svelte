@@ -64,7 +64,6 @@ A slot is provided to change the text within the button.
   <SelectButton
     on:click={() => {
       if (!disabled) {
-        console.log("hmm");
         toggleMenu();
       }
     }}

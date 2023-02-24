@@ -114,7 +114,7 @@
   }
 
   $: metricsConfigErrorStore.update((errors) => {
-    errors.smallestTimeGrain = level === "error" ? tooltipText : null;
+    errors.timeColumn = level === "error" ? tooltipText : null;
     return errors;
   });
 

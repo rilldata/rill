@@ -24,7 +24,7 @@ export const CONFIG_SELECTOR = {
   info: "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
   // FIXME: we should probably redo how we're handling these styles.
   error:
-    "bg-red-100  border-red-500 text-red-600 hover:bg-red-200 hover:border-red-600",
+    "bg-red-100 border-red-500 text-red-800 hover:bg-red-200 hover:border-red-600",
   activeError:
     "shadow-md outline-none ring-1 ring-red-400 bg-red-100 hover:bg-red-200",
   distance: 8,
