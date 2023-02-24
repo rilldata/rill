@@ -119,6 +119,16 @@ Otherwise, the page will jump around as the data is fetched.
             yAccessor="count"
             separator={data.length < 20 ? 1 : 0}
           />
+          <!-- zero line -->
+          <line
+            x1={xScale(0)}
+            x2={xScale(0)}
+            y1={yScale(0)}
+            y2={config.plotTop}
+            class="stroke-gray-400"
+            stroke-dasharray="2,2"
+            shape-rendering="crispEdges"
+          />
 
           <!-- support topK mouseover effect on graphs -->
           {#if focusPoint && topK && summaryMode === "topk"}
