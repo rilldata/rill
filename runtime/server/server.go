@@ -18,7 +18,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
-	"github.com/rilldata/rill/runtime/server/jwt"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -40,7 +40,7 @@ type Server struct {
 	runtime *runtime.Runtime
 	opts    *Options
 	logger  *zap.Logger
-	aud     *jwt.Audience
+	aud     *auth.Audience
 }
 
 var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
@@ -53,7 +53,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}
 
 	if opts.AuthEnabled {
-		aud, err := jwt.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
+		aud, err := auth.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
-			jwt.StreamServerInterceptor(s.aud),
+			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
@@ -91,7 +91,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
-			jwt.UnaryServerInterceptor(s.aud),
+			auth.UnaryServerInterceptor(s.aud),
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)

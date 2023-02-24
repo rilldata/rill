@@ -7,7 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/server/jwt"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -15,7 +15,7 @@ import (
 
 // ListCatalogEntries implements RuntimeService.
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
-	err := jwt.GetClaims(ctx).CanInstance(req.InstanceId, jwt.ReadObjects)
+	err := auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects)
 	if err != nil {
 		return nil, err
 	}
