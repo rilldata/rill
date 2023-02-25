@@ -2,7 +2,9 @@ package start
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
@@ -21,17 +23,31 @@ func StartCmd(ver version.Version) *cobra.Command {
 	var noOpen bool
 	var strict bool
 	var logFormat string
+	var envVariables []string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				projectPath = args[0]
+				if strings.HasSuffix(projectPath, ".git") {
+					repoName, err := gitutil.CloneRepo(projectPath)
+					if err != nil {
+						return fmt.Errorf("clone repo error: %w", err)
+					}
+
+					projectPath = repoName
+				}
+			}
+
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariables)
 			if err != nil {
 				return err
 			}
@@ -71,6 +87,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
+	startCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
 
 	return startCmd
 }

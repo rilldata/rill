@@ -69,8 +69,19 @@ export type RuntimeServiceEstimateRollupIntervalBody = {
   priority?: number;
 };
 
+export type RuntimeServiceGetNumericHistogramHistogramMethod =
+  typeof RuntimeServiceGetNumericHistogramHistogramMethod[keyof typeof RuntimeServiceGetNumericHistogramHistogramMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RuntimeServiceGetNumericHistogramHistogramMethod = {
+  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
+  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
+  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+} as const;
+
 export type RuntimeServiceGetNumericHistogramParams = {
   columnName?: string;
+  histogramMethod?: RuntimeServiceGetNumericHistogramHistogramMethod;
   priority?: number;
 };
 
@@ -509,6 +520,11 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
+}
+
 export interface V1ListFilesResponse {
   paths?: string[];
 }
@@ -520,6 +536,10 @@ export interface V1ListConnectorsResponse {
 export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
+
+export type V1InstanceProjectEnv = { [key: string]: string };
+
+export type V1InstanceEnv = { [key: string]: string };
 
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
@@ -533,19 +553,26 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
+  env?: V1InstanceEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
+  projectEnv?: V1InstanceProjectEnv;
   /** Driver for reading/editing code artifacts (options: file, metastore).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
+export type V1HistogramMethod =
+  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1HistogramMethod = {
+  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
+  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
+  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+} as const;
 
 export interface V1GetTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
@@ -642,12 +669,15 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestEnv = { [key: string]: string };
+
 /**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
+  env?: V1CreateInstanceRequestEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
@@ -766,6 +796,7 @@ export interface NumericHistogramBinsBin {
   count?: number;
   high?: number;
   low?: number;
+  midpoint?: number;
 }
 
 export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];

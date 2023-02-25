@@ -1,4 +1,4 @@
-import { TimeGrain } from "./time-control-types";
+import { V1TimeGrain } from "../../../runtime-client";
 import { getDefaultTimeGrain, getTimeGrainOptions } from "./time-range-utils";
 
 describe("getTimeGrainOptions", () => {
@@ -10,52 +10,52 @@ describe("getTimeGrainOptions", () => {
     expect(timeGrains).toEqual([
       {
         enabled: false,
-        timeGrain: "minute",
+        timeGrain: V1TimeGrain.TIME_GRAIN_MINUTE,
       },
       {
         enabled: true,
-        timeGrain: "hour",
+        timeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
       },
       {
         enabled: true,
-        timeGrain: "day",
+        timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
       },
       {
         enabled: true,
-        timeGrain: "week",
+        timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
       },
       {
         enabled: false,
-        timeGrain: "month",
+        timeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
       },
       {
         enabled: false,
-        timeGrain: "year",
+        timeGrain: V1TimeGrain.TIME_GRAIN_YEAR,
       },
     ]);
   });
 });
 
 describe("getDefaultTimeGrain", () => {
-  it("should return the default time grain (for a LastX time range)", () => {
+  it("should return the default time grain (for a 5 day time range)", () => {
+    const timeGrain = getDefaultTimeGrain(
+      new Date("2020-03-01"),
+      new Date("2020-03-05")
+    );
+    expect(timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_HOUR);
+  });
+  it("should return the default time grain (for a 30 day time range)", () => {
     const timeGrain = getDefaultTimeGrain(
       new Date("2020-03-01"),
       new Date("2020-03-31")
     );
-    expect(timeGrain).toEqual(TimeGrain.OneDay);
+    expect(timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_DAY);
   });
   it("should return the default time grain (for an AllTime time range", () => {
     const timeGrain = getDefaultTimeGrain(
       new Date("2010-03-01"),
       new Date("2020-03-31")
     );
-    expect(timeGrain).toEqual(TimeGrain.OneMonth);
-  });
-  it("should return the default time grain (for an AllTime time range", () => {
-    const timeGrain = getDefaultTimeGrain(
-      new Date("2010-03-01"),
-      new Date("2030-03-31")
-    );
-    expect(timeGrain).toEqual(TimeGrain.OneYear);
+    expect(timeGrain).toEqual(V1TimeGrain.TIME_GRAIN_MONTH);
   });
 });

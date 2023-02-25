@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -23,17 +24,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-
-	// Load infra drivers and connectors for local
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/https"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
-	_ "github.com/rilldata/rill/runtime/drivers/druid"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/git"
-	_ "github.com/rilldata/rill/runtime/drivers/postgres"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
 type LogFormat string
@@ -65,7 +55,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat) (*App, error) {
+func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -98,10 +88,11 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
-		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
-		QueryCacheSize:      10000,
+		ConnectionCacheSize:  100,
+		MetastoreDriver:      "sqlite",
+		MetastoreDSN:         "file:rill?mode=memory&cache=shared",
+		QueryCacheSize:       10000,
+		AllowHostCredentials: true,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {
@@ -123,6 +114,11 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
+	env, err := parse(envVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:           DefaultInstanceID,
@@ -131,6 +127,7 @@ func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, 
 		RepoDriver:   "file",
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
+		Env:          env,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -475,4 +472,18 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	default:
 		return "", false
 	}
+}
+
+func parse(envs []string) (map[string]string, error) {
+	vars := make(map[string]string, len(envs))
+	for _, env := range envs {
+		// split into key value pairs
+		key, value, found := strings.Cut(env, "=")
+		// key can't be empty value can be
+		if !found || key == "" {
+			return nil, fmt.Errorf("invalid env token %q", env)
+		}
+		vars[key] = value
+	}
+	return vars, nil
 }

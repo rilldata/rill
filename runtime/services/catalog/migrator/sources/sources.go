@@ -18,7 +18,7 @@ func init() {
 
 type sourceMigrator struct{}
 
-func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, catalogObj *drivers.CatalogEntry) error {
+func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, e map[string]string, catalogObj *drivers.CatalogEntry) error {
 	apiSource := catalogObj.GetSource()
 
 	source := &connectors.Source{
@@ -29,16 +29,19 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 		Timeout:       apiSource.GetTimeoutSeconds(),
 	}
 
+	variables := convertUpper(e)
 	env := &connectors.Env{
-		RepoDriver: repo.Driver(),
-		RepoDSN:    repo.DSN(),
+		RepoDriver:           repo.Driver(),
+		RepoDSN:              repo.DSN(),
+		Variables:            variables,
+		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
 	}
 
 	return olap.Ingest(ctx, env, source)
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
-	return m.Create(ctx, olap, repo, newCatalogObj)
+func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+	return m.Create(ctx, olap, repo, env, newCatalogObj)
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
@@ -115,4 +118,12 @@ func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStor
 		return false, err
 	}
 	return true, nil
+}
+
+func convertUpper(in map[string]string) map[string]string {
+	m := make(map[string]string, len(in))
+	for key, value := range in {
+		m[strings.ToUpper(key)] = value
+	}
+	return m
 }

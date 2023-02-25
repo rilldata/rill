@@ -892,10 +892,14 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 func TestServer_RangeSanity(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	result, err := server.query(context.Background(), instanceID, &drivers.Statement{
+	olap, err := server.runtime.OLAP(context.Background(), instanceID)
+	require.NoError(t, err)
+
+	result, err := olap.Execute(context.Background(), &drivers.Statement{
 		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",
 	})
 	require.NoError(t, err)
+
 	var min, max time.Time
 	var r duckdb.Interval
 	result.Next()

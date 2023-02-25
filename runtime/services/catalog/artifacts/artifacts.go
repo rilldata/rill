@@ -1,13 +1,16 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
+	"text/template"
 	"unicode"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -31,7 +34,7 @@ type Artifact interface {
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
-func Read(ctx context.Context, repoStore drivers.RepoStore, instID, filePath string) (*drivers.CatalogEntry, error) {
+func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore drivers.RegistryStore, instID, filePath string) (*drivers.CatalogEntry, error) {
 	extension := fileutil.FullExt(filePath)
 	artifact, ok := Artifacts[extension]
 	if !ok {
@@ -43,7 +46,32 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, instID, filePath str
 		return nil, ErrFileRead
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, filePath, blob)
+	instance, err := registryStore.FindInstance(ctx, instID)
+	if err != nil {
+		return nil, err
+	}
+
+	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
+	env := map[string]map[string]string{"env": instance.EnvironmentVariables()}
+
+	// Add Sprig template functions (removing functions that leak host info)
+	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
+	funcMap := sprig.TxtFuncMap()
+	delete(funcMap, "env")
+	delete(funcMap, "expandenv")
+
+	// convert templatised artifact
+	t, err := template.New("source").Funcs(funcMap).Option("missingkey=error").Parse(blob)
+	if err != nil {
+		return nil, err
+	}
+
+	bw := new(bytes.Buffer)
+	if err := t.Execute(bw, env); err != nil {
+		return nil, err
+	}
+
+	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String())
 	if err != nil {
 		return nil, err
 	}

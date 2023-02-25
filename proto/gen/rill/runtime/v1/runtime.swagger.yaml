@@ -675,6 +675,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: histogramMethod
+          in: query
+          required: false
+          type: string
+          enum:
+            - HISTOGRAM_METHOD_UNSPECIFIED
+            - HISTOGRAM_METHOD_FD
+            - HISTOGRAM_METHOD_DIAGNOSTIC
+          default: HISTOGRAM_METHOD_UNSPECIFIED
         - name: priority
           in: query
           required: false
@@ -1286,6 +1295,9 @@ definitions:
       low:
         type: number
         format: double
+      midpoint:
+        type: number
+        format: double
   NumericOutliersOutlier:
     type: object
     properties:
@@ -1480,6 +1492,10 @@ definitions:
     properties:
       embedCatalog:
         type: boolean
+      env:
+        type: object
+        additionalProperties:
+          type: string
       instanceId:
         type: string
       olapDriver:
@@ -1634,6 +1650,13 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1HistogramMethod:
+    type: string
+    enum:
+      - HISTOGRAM_METHOD_UNSPECIFIED
+      - HISTOGRAM_METHOD_FD
+      - HISTOGRAM_METHOD_DIAGNOSTIC
+    default: HISTOGRAM_METHOD_UNSPECIFIED
   v1Instance:
     type: object
     properties:
@@ -1642,6 +1665,11 @@ definitions:
         description: |-
           If true, the runtime will store the instance's catalog in its OLAP store instead
           of in the runtime's metadata store. Currently only supported for the duckdb driver.
+      env:
+        type: object
+        additionalProperties:
+          type: string
+        title: instance specific environment variables
       instanceId:
         type: string
         title: Identifier (UUID)
@@ -1651,6 +1679,11 @@ definitions:
       olapDsn:
         type: string
         title: DSN for connection to OLAP
+      projectEnv:
+        type: object
+        additionalProperties:
+          type: string
+        title: project defaults
       repoDriver:
         type: string
         description: |-

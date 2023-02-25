@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
@@ -48,6 +50,15 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil
 	})
 	if err != nil {
+		// Adding check if using old database files with upgraded version
+		if strings.Contains(err.Error(), "Trying to read a database file with version number") {
+			return nil, fmt.Errorf("database file %q was created with an older, incompatible version of Rill (please remove it and try again)", cfg.DSN)
+		}
+
+		if strings.Contains(err.Error(), "Could not set lock on file") {
+			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
+		}
+
 		return nil, err
 	}
 

@@ -9,10 +9,11 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize int
-	MetastoreDriver     string
-	MetastoreDSN        string
-	QueryCacheSize      int
+	ConnectionCacheSize  int
+	MetastoreDriver      string
+	MetastoreDSN         string
+	QueryCacheSize       int
+	AllowHostCredentials bool
 }
 
 type Runtime struct {
@@ -52,5 +53,10 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 }
 
 func (r *Runtime) Close() error {
-	return r.connCache.Close()
+	err1 := r.metastore.Close()
+	err2 := r.connCache.Close()
+	if err1 != nil {
+		return err1
+	}
+	return err2
 }
