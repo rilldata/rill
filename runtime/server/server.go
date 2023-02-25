@@ -32,7 +32,7 @@ var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 type Options struct {
 	HTTPPort        int
 	GRPCPort        int
-	AuthEnabled     bool
+	AuthEnable      bool
 	AuthIssuerURL   string
 	AuthAudienceURL string
 }
@@ -54,7 +54,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 		logger:  logger,
 	}
 
-	if opts.AuthEnabled {
+	if opts.AuthEnable {
 		aud, err := auth.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
 		if err != nil {
 			return nil, err
@@ -152,13 +152,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// One-off REST-only path for multipart file upload
-	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.HTTPMiddleware(s.aud, s.UploadMultipartFile))
 	if err != nil {
 		panic(err)
 	}
 
 	// One-off REST-only path for file export
-	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.HTTPMiddleware(s.aud, s.ExportTable))
 	if err != nil {
 		panic(err)
 	}

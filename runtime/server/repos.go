@@ -92,6 +92,11 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
 // It's mounted only on as a REST API and enables upload of large files (such as data files).
 func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	if !auth.GetClaims(req.Context()).CanInstance(pathParams["instance_id"], auth.EditRepo) {
+		http.Error(w, "action not allowed", http.StatusUnauthorized)
+		return
+	}
+
 	ctx := context.Background()
 	if err := req.ParseForm(); err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)

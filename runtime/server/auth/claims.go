@@ -56,7 +56,7 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) bool {
 }
 
 // openClaims implements Claims and allows all actions.
-// It should be used for servers with auth disabled.
+// It is used for servers with auth disabled.
 type openClaims struct{}
 
 func (c *openClaims) Can(p Permission) bool {
@@ -65,4 +65,16 @@ func (c *openClaims) Can(p Permission) bool {
 
 func (c *openClaims) CanInstance(instanceID string, p Permission) bool {
 	return true
+}
+
+// anonClaims imeplements Claims with no permissions.
+// It is used for unauthorized requests when auth is enabled.
+type anonClaims struct{}
+
+func (c *anonClaims) Can(p Permission) bool {
+	return false
+}
+
+func (c *anonClaims) CanInstance(instanceID string, p Permission) bool {
+	return false
 }
