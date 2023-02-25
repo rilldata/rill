@@ -44,6 +44,19 @@
     <input type="checkbox" bind:checked={showBars} />
     show bars
   </label>
+
+  <button
+    on:click={() => {
+      barPosition = "behind";
+      barContainerWidth = 300;
+    }}>leaderboard-ish</button
+  >
+  &nbsp;<button
+    on:click={() => {
+      barPosition = "right";
+      barContainerWidth = 35;
+    }}>tabular</button
+  >
   <h3>bar position</h3>
 
   <div class="option-box">
