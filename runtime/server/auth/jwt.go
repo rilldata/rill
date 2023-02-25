@@ -2,6 +2,11 @@ package auth
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,45 +15,134 @@ import (
 	"github.com/MicahParks/keyfunc"
 	"github.com/golang-jwt/jwt/v4"
 	"go.uber.org/zap"
+	"gopkg.in/square/go-jose.v2"
 )
 
 // Issuer creates JWTs with claims for an Audience.
 // The Issuer is used by the admin server to create JWTs for the runtimes it manages based on a user's control-plane permissions.
 type Issuer struct {
-	issuerURL string
-	jwks      *keyfunc.JWKS
+	issuerURL  string
+	signingKey jose.JSONWebKey
+	publicJWKS []byte
 }
 
 // NewIssuer creates an issuer from a JWKS. The JWKS must contain private keys.
-func NewIssuer(issuerURL, jwksJSON string) (*Issuer, error) {
-	jwks, err := keyfunc.NewJSON([]byte(jwksJSON))
+// The key identified by signingKeyID will be used to sign new JWTs.
+func NewIssuer(issuerURL, signingKeyID string, jwksJSON []byte) (*Issuer, error) {
+	// Parse the private JWKS
+	var jwks jose.JSONWebKeySet
+	err := json.Unmarshal(jwksJSON, &jwks)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWKS: %w", err)
+	}
+
+	// Extract signing key (must be a valid, private key)
+	var signingKey jose.JSONWebKey
+	for i := 0; i < len(jwks.Keys); i++ {
+		if jwks.Keys[i].KeyID == signingKeyID {
+			signingKey = jwks.Keys[i]
+			break
+		}
+	}
+	if !signingKey.Valid() || signingKey.IsPublic() {
+		return nil, fmt.Errorf("invalid signing key %q", signingKeyID)
+	}
+
+	// Map JWKS to public keys and serialize to JSON
+	var publicJWKS jose.JSONWebKeySet
+	for i := 0; i < len(jwks.Keys); i++ {
+		publicKey := publicJWKS.Keys[i].Public()
+		if !publicKey.Valid() {
+			return nil, fmt.Errorf("invalid signing key in JWKS")
+		}
+		publicJWKS.Keys = append(publicJWKS.Keys, publicKey)
+	}
+	publicJSON, err := json.Marshal(publicJWKS)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Issuer{
-		issuerURL: issuerURL,
-		jwks:      jwks,
+		issuerURL:  issuerURL,
+		signingKey: signingKey,
+		publicJWKS: publicJSON,
 	}, nil
 }
 
-func (i *Issuer) NewToken(audienceURL string, systemPerms []Permission, instancePerms map[string][]Permission) string {
-	// TODO: Create JWT
-	return ""
+// NewEphemeralIssuer creates an Issuer using a generated JWKS.
+// It is useful for development and testing, but should not be used in production.
+func NewEphemeralIssuer(issuerURL string) (*Issuer, error) {
+	// NOTE: JWKS generation based on: https://github.com/go-jose/go-jose/blob/v3/jose-util/generate.go
+
+	// Generate RSA private key
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create JWK
+	jwk := jose.JSONWebKey{
+		Key:       rsaKey,
+		Algorithm: string(jose.RS256),
+		Use:       "sig",
+	}
+
+	// Set key ID based on JWK thumbprint
+	thumb, err := jwk.Thumbprint(crypto.SHA256)
+	if err != nil {
+		return nil, err
+	}
+	jwk.KeyID = base64.URLEncoding.EncodeToString(thumb)
+
+	// Create JWKS JSON
+	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{jwk}}
+	jwksJSON, err := json.Marshal(jwks)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewIssuer(issuerURL, jwk.KeyID, jwksJSON)
 }
 
-func (i *Issuer) NewSystemToken(audienceURL string, perms []Permission) string {
-	return i.NewToken(audienceURL, perms, nil)
+// TokenOptions provides options for Issuer.NewToken.
+type TokenOptions struct {
+	AudienceURL         string
+	Subject             string
+	TTL                 time.Duration
+	SystemPermissions   []Permission
+	InstancePermissions map[string][]Permission
 }
 
-func (i *Issuer) NewInstanceToken(audienceURL, instanceID string, perms []Permission) string {
-	return i.NewToken(audienceURL, nil, map[string][]Permission{instanceID: perms})
+// NewToken issues a new JWT based on the provided options.
+func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
+	now := time.Now()
+	claims := &jwtClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(opts.TTL)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    i.issuerURL,
+			Subject:   opts.Subject,
+			Audience:  []string{opts.AudienceURL},
+		},
+		System:    opts.SystemPermissions,
+		Instances: opts.InstancePermissions,
+	}
+
+	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
+	res, err := token.SignedString(i.signingKey.Key)
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
 }
 
-// WellKnownHandleFunc serves the public key part of the Issuer's JWKS.
+// WellKnownHandleFunc serves the public keys of the Issuer's JWKS.
 // The Audience expects it to be mounted on {issuerURL}/.well-known/jwks.json.
-func (i *Issuer) WellKnownHandleFunc(writer http.ResponseWriter, request *http.Request) {
-	// TODO: Serve public JWKS
+func (i *Issuer) WellKnownHandleFunc(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(i.publicJWKS)
 }
 
 // Audience represents a receiver of tokens from Issuer.

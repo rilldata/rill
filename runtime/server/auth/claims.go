@@ -33,8 +33,8 @@ type Claims interface {
 // jwtClaims implements Claims and resolve permissions based on a JWT payload.
 type jwtClaims struct {
 	jwt.RegisteredClaims
-	System    []Permission
-	Instances map[string][]Permission
+	System    []Permission            `json:"sys,omitempty"`
+	Instances map[string][]Permission `json:"ins,omitempty"`
 }
 
 func (c *jwtClaims) Can(p Permission) bool {
