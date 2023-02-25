@@ -64,6 +64,16 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 }
 
 func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) error {
+	repo, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	err = repo.Sync(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
 	cat, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return err
