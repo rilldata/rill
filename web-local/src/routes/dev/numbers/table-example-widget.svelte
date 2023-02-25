@@ -67,6 +67,7 @@
 
   // TABLE FORMAT OPTIONS
   let tableGutterWidth = 30;
+  let tableRowHeight = 20;
 
   let worstCaseStringWidth = 79 + suffixPadding;
   $: {
@@ -90,10 +91,20 @@
     }
   }
 
-  $: layerContainerWidth =
-    worstCaseStringWidth +
-    (showBars && barPosition != "behind" ? barContainerWidth + barOffset : 0);
+  let layerContainerWidth: number;
+  $: {
+    const barContainerWidthFinal = showBars ? barContainerWidth : 0;
 
+    if (barPosition === "behind") {
+      layerContainerWidth = Math.max(
+        worstCaseStringWidth,
+        barContainerWidthFinal
+      );
+    } else {
+      layerContainerWidth =
+        worstCaseStringWidth + barContainerWidthFinal + barOffset;
+    }
+  }
   $: usePlainNumForThousandthsPadZeros =
     usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
 
@@ -648,11 +659,16 @@
   />
 
   <div style="padding-left: 40px;">
-    table options
+    <h3>table options</h3>
     <div class="option-box">
-      table gutter width
+      gutter width
       <input type="range" min="10" max="100" bind:value={tableGutterWidth} />
       {tableGutterWidth}px
+    </div>
+    <div class="option-box">
+      row height
+      <input type="range" min="12" max="30" bind:value={tableRowHeight} />
+      {tableRowHeight}px
     </div>
   </div>
 </div>
@@ -675,11 +691,11 @@
             {@const richNum = selectedFormatterForSamples[desc](sample[i])}
 
             <td
-              style="padding-left: {tableGutterWidth}px; width: {layerContainerWidth}px; min-width: {layerContainerWidth}px;"
+              style="padding-left: {tableGutterWidth}px; width: {layerContainerWidth}px; min-width: {layerContainerWidth}px; height:{tableRowHeight}px"
               class="table-body"
               title={sample[i].toString()}
             >
-              <div class="align-content-right">
+              <div class="align-content-right" style="height:100%;">
                 <LayeredContainer
                   containerWidth={layerContainerWidth}
                   {barPosition}
