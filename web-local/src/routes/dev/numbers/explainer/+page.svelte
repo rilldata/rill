@@ -285,6 +285,59 @@
       ],
     },
 
+    {
+      title: "showing approximation when truncating to the e0 magnitude",
+
+      sampleName: "orders of mag e4 to e7, 2 digits precision, some rounded",
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "multiple magnitudes, no trailing dot",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 5,
+            minDigitsNonzero: 1,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+
+            nonIntegerHandling: "none",
+          },
+        ],
+
+        [
+          "new humanizer",
+          "multiple magnitudes, trailing dot",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 5,
+            minDigitsNonzero: 1,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+
+            nonIntegerHandling: "trailingDot",
+          },
+        ],
+
+        [
+          "new humanizer",
+          "multiple magnitudes, roll over to next magnitude",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 5,
+            minDigitsNonzero: 1,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+            nonIntegerHandling: "oneDigit",
+          },
+        ],
+      ],
+    },
+
     { title: "Indications of approximation" },
   ];
 
