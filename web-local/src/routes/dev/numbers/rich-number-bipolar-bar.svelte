@@ -95,7 +95,7 @@
   <div class="bar-container" style="width: {containerWidth}px;">
     <div
       class="baseline"
-      style="left:{baselineLeftPct}%; background-color:{baselineColor};"
+      style="left:calc({baselineLeftPct}% - 0.5px); background-color:{baselineColor};"
     />
   </div>
 {/if}
