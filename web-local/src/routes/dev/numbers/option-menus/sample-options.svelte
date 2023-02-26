@@ -1,7 +1,8 @@
 <script lang="ts">
   export let samplePreprocessing: "none" | "round" | "currencyRoundCent" =
     "none";
-  export let sortSamples: "none" | "asc" | "desc" = "none";
+  export let sortSamples: "none" | "asc" | "desc" | "abs_asc" | "abs_desc" =
+    "none";
 </script>
 
 <h2>Sample preprocessing</h2>
@@ -40,9 +41,10 @@
   </form>
 
   <div style="display: flex; flex-direction: row;">
-    <b>sort</b>
+    <b>Sort</b>
 
     &nbsp; &nbsp;
+    <br />
 
     <form>
       <label>
@@ -66,6 +68,25 @@
           value={"desc"}
         />
         desc
+      </label>
+      <br />
+      <label>
+        <input
+          type="radio"
+          bind:group={sortSamples}
+          name="abs_asc"
+          value={"abs_asc"}
+        />
+        abs asc
+      </label>
+      <label>
+        <input
+          type="radio"
+          bind:group={sortSamples}
+          name="abs_desc"
+          value={"abs_desc"}
+        />
+        abs desc
       </label>
     </form>
   </div>
