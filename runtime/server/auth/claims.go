@@ -4,26 +4,10 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// Permission represents runtime access permissions.
-type Permission int
-
-const (
-	// System-level permissions
-	ManageInstances Permission = 0x00
-
-	// Instance-level permissions
-	ReadInstance  Permission = 0x11
-	EditInstance  Permission = 0x12
-	ReadRepo      Permission = 0x13
-	EditRepo      Permission = 0x14
-	ReadObjects   Permission = 0x15
-	ReadOLAP      Permission = 0x16
-	ReadMetrics   Permission = 0x17
-	ReadProfiling Permission = 0x18
-)
-
 // Claims resolves permissions for a requester.
 type Claims interface {
+	// Subject returns the token subject if present (usually a user or service ID)
+	Subject() string
 	// Can resolves system-level permissions.
 	Can(p Permission) bool
 	// CanInstance resolves instance-level permissions.
@@ -35,6 +19,10 @@ type jwtClaims struct {
 	jwt.RegisteredClaims
 	System    []Permission            `json:"sys,omitempty"`
 	Instances map[string][]Permission `json:"ins,omitempty"`
+}
+
+func (c *jwtClaims) Subject() string {
+	return c.RegisteredClaims.Subject
 }
 
 func (c *jwtClaims) Can(p Permission) bool {
@@ -59,11 +47,15 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) bool {
 // It is used for servers with auth disabled.
 type openClaims struct{}
 
-func (c *openClaims) Can(p Permission) bool {
+func (c openClaims) Subject() string {
+	return ""
+}
+
+func (c openClaims) Can(p Permission) bool {
 	return true
 }
 
-func (c *openClaims) CanInstance(instanceID string, p Permission) bool {
+func (c openClaims) CanInstance(instanceID string, p Permission) bool {
 	return true
 }
 
@@ -71,10 +63,14 @@ func (c *openClaims) CanInstance(instanceID string, p Permission) bool {
 // It is used for unauthorized requests when auth is enabled.
 type anonClaims struct{}
 
-func (c *anonClaims) Can(p Permission) bool {
+func (c anonClaims) Subject() string {
+	return ""
+}
+
+func (c anonClaims) Can(p Permission) bool {
 	return false
 }
 
-func (c *anonClaims) CanInstance(instanceID string, p Permission) bool {
+func (c anonClaims) CanInstance(instanceID string, p Permission) bool {
 	return false
 }

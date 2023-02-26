@@ -51,7 +51,7 @@ func NewIssuer(issuerURL, signingKeyID string, jwksJSON []byte) (*Issuer, error)
 	// Map JWKS to public keys and serialize to JSON
 	var publicJWKS jose.JSONWebKeySet
 	for i := 0; i < len(jwks.Keys); i++ {
-		publicKey := publicJWKS.Keys[i].Public()
+		publicKey := jwks.Keys[i].Public()
 		if !publicKey.Valid() {
 			return nil, fmt.Errorf("invalid signing key in JWKS")
 		}
@@ -130,6 +130,7 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
+	token.Header["kid"] = i.signingKey.KeyID
 	res, err := token.SignedString(i.signingKey.Key)
 	if err != nil {
 		return "", err
@@ -190,8 +191,9 @@ func OpenAudience(logger *zap.Logger, issuerURL, audienceURL string) (*Audience,
 	}
 
 	return &Audience{
-		issuerURL: issuerURL,
-		jwks:      jwks,
+		issuerURL:   issuerURL,
+		audienceURL: audienceURL,
+		jwks:        jwks,
 	}, nil
 }
 
