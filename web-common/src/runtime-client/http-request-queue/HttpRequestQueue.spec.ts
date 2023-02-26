@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, it } from "@jest/globals";
 import {
   runtimeServiceGetCardinalityOfColumn,
   runtimeServiceGetNumericHistogram,
+  RuntimeServiceGetNumericHistogramHistogramMethod,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { UrlExtractorRegex } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueue";
@@ -239,7 +240,11 @@ function getProfilingQueries(table: string, cols: number) {
     ...Array(cols)
       .fill(0)
       .map((_, i) =>
-        runtimeServiceGetNumericHistogram("i", table, { columnName: `c${i}` })
+        runtimeServiceGetNumericHistogram("i", table, {
+          columnName: `c${i}`,
+          histogramMethod:
+            RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+        })
       ),
     ...Array(cols)
       .fill(0)

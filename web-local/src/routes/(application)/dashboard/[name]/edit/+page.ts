@@ -32,7 +32,6 @@ export async function load({ params }) {
 
   try {
     await runtimeServiceGetCatalogEntry(config.instance_id, params.name);
-
     return {
       metricsDefName: params.name,
     };

@@ -82,6 +82,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
+			defer rt.Close()
 
 			// Init server
 			srvOpts := &server.Options{
