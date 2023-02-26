@@ -131,7 +131,7 @@
   };
 
   let samplePreprocessing: "none" | "round" | "currencyRoundCent" = "none";
-  let sortSamples: "none" | "asc" | "desc" = "none";
+  let sortSamples: "none" | "asc" | "desc" | "abs_asc" | "abs_desc" = "none";
 
   let magnitudeStrategy:
     | "unlimited"
@@ -208,7 +208,16 @@
     sample =
       sortSamples === "none"
         ? sample
-        : sample.sort((a, b) => (sortSamples === "desc" ? b - a : a - b));
+        : sample.sort((a, b) => {
+            const [a1, b1] =
+              sortSamples === "abs_asc" || sortSamples === "abs_desc"
+                ? [Math.abs(a), Math.abs(b)]
+                : [a, b];
+
+            return sortSamples === "desc" || sortSamples === "abs_desc"
+              ? b1 - a1
+              : a1 - b1;
+          });
 
     return {
       sample,

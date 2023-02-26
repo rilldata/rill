@@ -88,6 +88,7 @@
   type ExplainerStoryRecipe = {
     title: string;
     sampleName?: string;
+    sampleSorted?: boolean;
     blurb?: string;
     formatterColRecipes?: FormatterColumnRecipe[];
   };
@@ -286,6 +287,62 @@
     },
 
     {
+      title: "Decimal alignment when sorted",
+
+      sampleName: "pos & neg, power law-ish, zero inflated 2",
+      sampleSorted: true,
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+        [
+          "new humanizer",
+          "new humanizer, largest magnitude",
+          { magnitudeStrategy: "largestWithDigitTarget" },
+        ],
+        [
+          "new humanizer",
+          "multiple magnitudes (aligned)",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 5,
+            maxDigitsRight: 5,
+            minDigitsNonzero: 0,
+
+            alignDecimalPoints: true,
+            alignSuffixes: true,
+          },
+        ],
+
+        [
+          "new humanizer",
+          "multiple magnitudes (not aligned)",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 5,
+            maxDigitsRight: 5,
+            minDigitsNonzero: 0,
+
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+
+        [
+          "new humanizer",
+          "multiple magnitudes (suffixes not aligned)",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 5,
+            maxDigitsRight: 5,
+            minDigitsNonzero: 0,
+
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+      ],
+    },
+
+    {
       title: "showing approximation when truncating to the e0 magnitude",
 
       sampleName: "orders of mag e4 to e7, 2 digits precision, some rounded",
@@ -350,10 +407,13 @@
         .filter((recipe) => recipe.formatterColRecipes && recipe.sampleName)
         .map((recipe) => {
           console.log({ recipe });
-          const sample = numberListsUnprocessed.find(
+          let sample = numberListsUnprocessed.find(
             (nl) => nl.desc === recipe.sampleName
           ).sample;
 
+          if (recipe?.sampleSorted) {
+            sample.sort((a, b) => b - a);
+          }
           // console.log({ formatterRecipes });
 
           formattersDescriptionsAndOptions = recipe.formatterColRecipes.map(
