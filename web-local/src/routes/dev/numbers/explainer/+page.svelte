@@ -395,7 +395,72 @@
       ],
     },
 
-    { title: "Indications of approximation" },
+    {
+      title: "zero handling",
+
+      sampleName: "all negative, power law-ish, zero inflated",
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "largest magnitudes, no special zero handling",
+          {
+            magnitudeStrategy: "largestWithDigitTarget",
+            digitTargetPadWithInsignificantZeros: true,
+            zeroHandling: "noSpecial",
+          },
+        ],
+        [
+          "new humanizer",
+          "largest magnitudes, use exact zero",
+          {
+            magnitudeStrategy: "largestWithDigitTarget",
+            digitTargetPadWithInsignificantZeros: true,
+            zeroHandling: "exactZero",
+          },
+        ],
+        [
+          "new humanizer",
+          "largest magnitudes, use trailing dot",
+          {
+            magnitudeStrategy: "largestWithDigitTarget",
+            digitTargetPadWithInsignificantZeros: true,
+            zeroHandling: "zeroDot",
+          },
+        ],
+        [
+          "new humanizer",
+          "largest magnitudes, no special zero handling",
+          {
+            magnitudeStrategy: "largestWithDigitTarget",
+            digitTargetPadWithInsignificantZeros: true,
+            zeroHandling: "noSpecial",
+            showMagSuffixForZero: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "largest magnitudes, use exact zero",
+          {
+            magnitudeStrategy: "largestWithDigitTarget",
+            digitTargetPadWithInsignificantZeros: true,
+            zeroHandling: "exactZero",
+            showMagSuffixForZero: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "largest magnitudes, use trailing dot",
+          {
+            magnitudeStrategy: "largestWithDigitTarget",
+            digitTargetPadWithInsignificantZeros: true,
+            zeroHandling: "zeroDot",
+            showMagSuffixForZero: true,
+          },
+        ],
+      ],
+    },
   ];
 
   let explainerDefs: ExplainerStoryOut[];
