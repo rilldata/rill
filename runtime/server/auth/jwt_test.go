@@ -10,30 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestAuth(t *testing.T) {
-	// Create Issuer and serve on a test server
-	iss, err := NewEphemeralIssuer("")
-	require.NoError(t, err)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/.well-known/jwks.json", iss.WellKnownHandleFunc)
-
-	srv := httptest.NewServer(mux)
-	defer srv.Close()
-
-	iss.issuerURL = srv.URL
-
-	// Create Audience
-	audienceURL := "http://example.org"
-	aud, err := OpenAudience(zap.NewNop(), srv.URL, audienceURL)
-	require.NoError(t, err)
-	defer aud.Close()
-
-	// Run tests
+func TestTokens(t *testing.T) {
+	iss, aud, close := newTestIssuerAndAudience(t)
+	defer close()
 
 	t.Run("Simple", func(t *testing.T) {
 		token, err := iss.NewToken(TokenOptions{
-			AudienceURL:         audienceURL,
+			AudienceURL:         aud.audienceURL,
 			Subject:             "alice",
 			TTL:                 time.Duration(time.Hour),
 			SystemPermissions:   []Permission{ManageInstances},
@@ -52,7 +35,7 @@ func TestAuth(t *testing.T) {
 
 	t.Run("Expired", func(t *testing.T) {
 		token, err := iss.NewToken(TokenOptions{
-			AudienceURL:         audienceURL,
+			AudienceURL:         aud.audienceURL,
 			Subject:             "alice",
 			TTL:                 time.Duration(time.Millisecond),
 			SystemPermissions:   []Permission{ManageInstances},
@@ -75,21 +58,23 @@ func TestAuth(t *testing.T) {
 		_, err = aud.ParseAndValidate(token)
 		require.Error(t, err)
 	})
+}
 
-	t.Run("Anon middleware", func(t *testing.T) {
-		handler := HTTPMiddleware(aud, func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-			claims := GetClaims(r.Context())
-			require.NotNil(t, claims)
-			require.Equal(t, "", claims.Subject())
-			require.False(t, claims.Can(ManageInstances))
-		})
+func newTestIssuerAndAudience(t *testing.T) (*Issuer, *Audience, func()) {
+	// Create Issuer and serve on a test server
+	iss, err := NewEphemeralIssuer("")
+	require.NoError(t, err)
 
-		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			handler(w, r, nil)
-		})
+	mux := http.NewServeMux()
+	mux.HandleFunc("/.well-known/jwks.json", iss.WellKnownHandleFunc)
 
-		req := httptest.NewRequest("GET", "/", nil)
-		httpHandler.ServeHTTP(httptest.NewRecorder(), req)
-	})
+	srv := httptest.NewServer(mux)
+	iss.issuerURL = srv.URL
 
+	// Create Audience
+	audienceURL := "http://example.org"
+	aud, err := OpenAudience(zap.NewNop(), srv.URL, audienceURL)
+	require.NoError(t, err)
+
+	return iss, aud, func() { srv.Close(); aud.Close() }
 }
