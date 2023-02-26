@@ -107,3 +107,9 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
 	return ctx, nil
 }
+
+// WithOpen wraps a context with open claims. It's used for testing.
+// NOTE: We should remove this when the server tests support interceptors.
+func WithOpen(ctx context.Context) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, openClaims{})
+}
