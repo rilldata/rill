@@ -36,7 +36,9 @@ jobs:
 
       - name: Build & Publish Rill docker image
         run: |-
-          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags --abbrev=0)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          git fetch --all --tags
+
+          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
 
           gcloud auth configure-docker
 
