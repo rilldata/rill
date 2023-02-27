@@ -8,7 +8,6 @@ import (
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/util"
 )
 
 func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -75,43 +74,40 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB bool) error {
 	inst, err := r.Registry().FindInstance(ctx, instanceID)
 	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			// ideally this should be bad request
+			return nil
+		}
 		return err
 	}
 
-	svc, err1 := r.catalogCache.get(ctx, r, instanceID)
-	var dropErrors []error
-	if dropDB {
-		// drop all ingested data
-		// should we insert complete data in one schema so it will be easy to drop the schema ?
-		// NOTE : Database file does not free space when tables are dropped issue #1099 in duckdb
-		entries := svc.Catalog.FindEntries(ctx, inst.ID, drivers.ObjectTypeUnspecified)
-		for _, entry := range entries {
-			if entry.Type == drivers.ObjectTypeTable {
-				table := entry.GetTable()
-				if table.Managed {
-					dropErrors = append(dropErrors, svc.Olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE %s", table.Name)}))
-				}
-			}
-		}
-		// drop rill schema which deletes embedded catalog as well
-		dropErrors = append(dropErrors, svc.Olap.Exec(ctx, &drivers.Statement{Query: "DROP schema rill CASCADE"}))
+	svc, err := r.catalogCache.get(ctx, r, instanceID)
+	if err != nil { // return error if db handlers can't be opened
+		return err
 	}
+
 	// delete instance related data if catalog is not embedded
 	if !inst.EmbedCatalog {
-		dropErrors = append(dropErrors, svc.Catalog.DeleteInstanceEntries(ctx, instanceID))
+		err := svc.Catalog.DeleteEntries(ctx, instanceID)
+		if err != nil {
+			return err
+		}
 	}
 
-	// evict caches
+	if dropDB {
+		// ignoring the dropDB error since if db is already dropped it may not be possible to retry
+		// also the only error that os.remove returns is patherror which should be ignored as well
+		_ = svc.Olap.DropDB()
+	}
+	//evict all caches
 	r.evictCaches(ctx, inst)
-
 	// delete instance
-	err4 := r.Registry().DeleteInstance(ctx, instanceID)
-	return util.ReturnFirstErr(util.ReturnFirstErr(err1, err4), util.ReturnFirstErr(dropErrors...))
+	return r.Registry().DeleteInstance(ctx, instanceID)
 }
 
 // EditInstance edits exisiting instance.
 // Confirming to put api specs, it is expected to send entire existing instance data.
-// The API compares and only evicts caches drivers or dsn is changed.
+// The API compares and only evicts caches if drivers or dsn is changed.
 // This is done to ensure that db handlers are not unnecessarily closed
 func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {
 	olderInstance, err := r.Registry().FindInstance(ctx, inst.ID)
@@ -120,7 +116,6 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	}
 
 	// 1. changes in olap driver or olap dsn
-	var olapConn drivers.Connection
 	olapChanged := olderInstance.OLAPDriver != inst.OLAPDriver || olderInstance.OLAPDSN != inst.OLAPDSN
 	if olapChanged {
 		// Check OLAP connection
@@ -134,17 +129,13 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		if err != nil {
 			return fmt.Errorf("failed to prepare instance: %w", err)
 		}
-		olapConn = olap
 	}
 
 	// 2. embedCatalog disabled previously but enabled now
 	if inst.EmbedCatalog {
-		if olapConn == nil {
-			// getting exisiting connection
-			olapConn, err = r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
-			if err != nil {
-				return err
-			}
+		olapConn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		if err != nil {
+			return err
 		}
 		_, ok := olapConn.CatalogStore()
 		if !ok {

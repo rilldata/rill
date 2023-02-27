@@ -134,7 +134,7 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 	return err
 }
 
-func (c *connection) DeleteInstanceEntries(ctx context.Context, instanceID string) error {
+func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error {
 	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ?", instanceID)
 	return err
 }

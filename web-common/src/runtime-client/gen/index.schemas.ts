@@ -32,6 +32,16 @@ export type RuntimeServiceGetTopKBody = {
   priority?: number;
 };
 
+export type RuntimeServiceGenerateTimeSeriesBody = {
+  filters?: V1MetricsViewFilter;
+  measures?: GenerateTimeSeriesRequestBasicMeasure[];
+  pixels?: number;
+  priority?: number;
+  sampleSize?: number;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
+
 export type RuntimeServiceGetTimeRangeSummaryParams = {
   columnName?: string;
   priority?: number;
@@ -235,16 +245,6 @@ export interface V1TimeSeriesTimeRange {
   interval?: V1TimeGrain;
   start?: string;
 }
-
-export type RuntimeServiceGenerateTimeSeriesBody = {
-  filters?: V1MetricsViewFilter;
-  measures?: GenerateTimeSeriesRequestBasicMeasure[];
-  pixels?: number;
-  priority?: number;
-  sampleSize?: number;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
 
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
@@ -539,11 +539,6 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
 export interface V1ListFilesResponse {
   paths?: string[];
 }
@@ -581,6 +576,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export type V1HistogramMethod =

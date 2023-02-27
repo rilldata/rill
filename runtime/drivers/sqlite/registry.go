@@ -123,16 +123,16 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE instances set olap_driver = $1, olap_dsn = $2, repo_driver = $3, repo_dsn = $4, embed_catalog = $5, updated_on = $6, env = $7 "+
-			"where id = $8",
+		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, env = $7, updated_on = $8 "+
+			"WHERE id = $1",
+		inst.ID,
 		inst.OLAPDriver,
 		inst.OLAPDSN,
 		inst.RepoDriver,
 		inst.RepoDSN,
 		inst.EmbedCatalog,
-		now,
 		env,
-		inst.ID,
+		now,
 	)
 	if err != nil {
 		return err

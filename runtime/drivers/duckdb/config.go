@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 const poolSizeKey = "rill_pool_size"
@@ -14,6 +15,8 @@ type config struct {
 	DSN string
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int
+	// DBFilePath is the path where database is stored
+	DBFilePath string
 }
 
 func newConfig(dsn string) (*config, error) {
@@ -46,10 +49,13 @@ func newConfig(dsn string) (*config, error) {
 	uri.RawQuery = qry.Encode()
 	dsn = uri.String()
 
+	// db file path is everything before ? if it exists
+	filepath, _, _ := strings.Cut(dsn, "?")
 	// Return config
 	cfg := &config{
-		DSN:      dsn,
-		PoolSize: poolSize,
+		DSN:        dsn,
+		PoolSize:   poolSize,
+		DBFilePath: filepath,
 	}
 	return cfg, nil
 }

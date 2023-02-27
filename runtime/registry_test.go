@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -173,7 +174,6 @@ func TestRuntime_EditInstance(t *testing.T) {
 func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	rt := NewTestRunTime(t)
-
 	tests := []struct {
 		name       string
 		instanceID string
@@ -182,16 +182,16 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 	}{
 		{"delete valid no drop", "default", false, false},
 		{"delete valid drop", "default", true, false},
-		{"delete invalid", "default1", true, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create test data
 			ctx := context.Background()
+			dbFile := filepath.Join(t.TempDir(), "test.db")
 			inst := &drivers.Instance{
 				ID:           "default",
 				OLAPDriver:   "duckdb",
-				OLAPDSN:      filepath.Join(t.TempDir(), "test.db"),
+				OLAPDSN:      dbFile,
 				RepoDriver:   "file",
 				RepoDSN:      repodsn,
 				EmbedCatalog: true,
@@ -234,30 +234,9 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
 
-			if tt.dropDB {
-				// get a new connection to verify db schema and ingested data is dropped
-				olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, rt.logger)
-				require.NoError(t, err)
-				olapStore, _ := olap.OLAPStore()
-
-				// verify rillschema is dropped
-				rows, err := olapStore.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM information_schema.schemata WHERE schema_name = 'rill'"})
-				require.NoError(t, err)
-				var count int
-				require.True(t, rows.Next())
-				require.NoError(t, rows.Scan(&count))
-				require.Equal(t, 0, count)
-				require.NoError(t, rows.Close())
-
-				// verify ingested data is dropped
-				rows, err = olapStore.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM information_schema.tables WHERE table_name = 'data'"})
-				require.NoError(t, err)
-				require.True(t, rows.Next())
-				require.NoError(t, rows.Scan(&count))
-				require.Equal(t, 0, count)
-				require.NoError(t, rows.Close())
-
-			}
+			// verify db file is dropped if requested
+			_, err = os.Stat(dbFile)
+			require.Equal(t, tt.dropDB, os.IsNotExist(err))
 		})
 	}
 }

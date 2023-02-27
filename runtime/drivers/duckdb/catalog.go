@@ -156,16 +156,16 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 	return err
 }
 
-// DeleteInstanceEntries deletes the entire catalog table.
-// This will be handled by dropping the entire rill schema when deleting instance.
+// DeleteEntries deletes the entire catalog table.
+// This will be handled by dropping the entire rill db file when deleting instance.
 // But implementing this from completeness pov.
-func (c *connection) DeleteInstanceEntries(ctx context.Context, instanceID string) error {
+func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = release() }()
 
-	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog ")
+	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog")
 	return err
 }
