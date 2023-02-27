@@ -77,6 +77,10 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 // EditInstance implements RuntimeService.
 func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
 	inst := &drivers.Instance{
 		ID:           req.InstanceId,
 		OLAPDriver:   req.OlapDriver,
