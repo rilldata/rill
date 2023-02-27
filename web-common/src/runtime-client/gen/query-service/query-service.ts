@@ -134,7 +134,7 @@ export const useQueryServiceColumnCardinality = <
 };
 
 /**
- * @summary TableColumns (TODO: add description)
+ * @summary TableColumns returns column profiles
  */
 export const queryServiceTableColumns = (
   instanceId: string,
@@ -735,7 +735,7 @@ export const useQueryServiceColumnNumericHistogram = <
 };
 
 /**
- * @summary ColumnRollupInterval (TODO: add description)
+ * @summary ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
  */
 export const queryServiceColumnRollupInterval = (
   instanceId: string,
@@ -823,7 +823,7 @@ export const useQueryServiceColumnRollupInterval = <
 };
 
 /**
- * @summary TableRows (TODO: add description)
+ * @summary TableRows returns table rows
  */
 export const queryServiceTableRows = (
   instanceId: string,
@@ -1066,7 +1066,7 @@ export const useQueryServiceColumnTimeGrain = <
 };
 
 /**
- * @summary TableCardinality (TODO: add description)
+ * @summary TableCardinality returns row count
  */
 export const queryServiceTableCardinality = (
   instanceId: string,
@@ -1228,7 +1228,7 @@ export const useQueryServiceColumnTimeRange = <
 };
 
 /**
- * @summary Generate time series
+ * @summary Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
  */
 export const queryServiceColumnTimeSeries = (
   instanceId: string,

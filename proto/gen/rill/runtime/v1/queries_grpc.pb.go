@@ -33,7 +33,7 @@ type QueryServiceClient interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
-	// ColumnRollupInterval (TODO: add description)
+	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
 	// agg function and k are optional, defaults are count(*) and 50 respectively
@@ -52,13 +52,13 @@ type QueryServiceClient interface {
 	ColumnTimeRange(ctx context.Context, in *ColumnTimeRangeRequest, opts ...grpc.CallOption) (*ColumnTimeRangeResponse, error)
 	// Get cardinality for a column
 	ColumnCardinality(ctx context.Context, in *ColumnCardinalityRequest, opts ...grpc.CallOption) (*ColumnCardinalityResponse, error)
-	// Generate time series
+	// Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
 	ColumnTimeSeries(ctx context.Context, in *ColumnTimeSeriesRequest, opts ...grpc.CallOption) (*ColumnTimeSeriesResponse, error)
-	// TableCardinality (TODO: add description)
+	// TableCardinality returns row count
 	TableCardinality(ctx context.Context, in *TableCardinalityRequest, opts ...grpc.CallOption) (*TableCardinalityResponse, error)
-	// TableColumns (TODO: add description)
+	// TableColumns returns column profiles
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
-	// TableRows (TODO: add description)
+	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
 }
 
@@ -238,7 +238,7 @@ type QueryServiceServer interface {
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
-	// ColumnRollupInterval (TODO: add description)
+	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
 	// agg function and k are optional, defaults are count(*) and 50 respectively
@@ -257,13 +257,13 @@ type QueryServiceServer interface {
 	ColumnTimeRange(context.Context, *ColumnTimeRangeRequest) (*ColumnTimeRangeResponse, error)
 	// Get cardinality for a column
 	ColumnCardinality(context.Context, *ColumnCardinalityRequest) (*ColumnCardinalityResponse, error)
-	// Generate time series
+	// Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
 	ColumnTimeSeries(context.Context, *ColumnTimeSeriesRequest) (*ColumnTimeSeriesResponse, error)
-	// TableCardinality (TODO: add description)
+	// TableCardinality returns row count
 	TableCardinality(context.Context, *TableCardinalityRequest) (*TableCardinalityResponse, error)
-	// TableColumns (TODO: add description)
+	// TableColumns returns column profiles
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
-	// TableRows (TODO: add description)
+	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
 	mustEmbedUnimplementedQueryServiceServer()
 }

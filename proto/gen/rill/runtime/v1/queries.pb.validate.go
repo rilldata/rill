@@ -2140,170 +2140,54 @@ var _ interface {
 	ErrorName() string
 } = ColumnRollupIntervalResponseValidationError{}
 
-// Validate checks the field values on ProfileColumnSummary with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ProfileColumnSummary) Validate() error {
+// Validate checks the field values on ColumnTopKRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTopKRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ProfileColumnSummary with the rules
+// ValidateAll checks the field values on ColumnTopKRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ProfileColumnSummaryMultiError, or nil if none found.
-func (m *ProfileColumnSummary) ValidateAll() error {
+// ColumnTopKRequestMultiError, or nil if none found.
+func (m *ColumnTopKRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ProfileColumnSummary) validate(all bool) error {
+func (m *ColumnTopKRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	switch v := m.Case.(type) {
-	case *ProfileColumnSummary_CategoricalSummary:
-		if v == nil {
-			err := ProfileColumnSummaryValidationError{
-				field:  "Case",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	// no validation rules for InstanceId
 
-		if all {
-			switch v := interface{}(m.GetCategoricalSummary()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ProfileColumnSummaryValidationError{
-						field:  "CategoricalSummary",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ProfileColumnSummaryValidationError{
-						field:  "CategoricalSummary",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ProfileColumnSummaryValidationError{
-					field:  "CategoricalSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
+	// no validation rules for TableName
 
-	case *ProfileColumnSummary_NumericSummary:
-		if v == nil {
-			err := ProfileColumnSummaryValidationError{
-				field:  "Case",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	// no validation rules for ColumnName
 
-		if all {
-			switch v := interface{}(m.GetNumericSummary()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ProfileColumnSummaryValidationError{
-						field:  "NumericSummary",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ProfileColumnSummaryValidationError{
-						field:  "NumericSummary",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ProfileColumnSummaryValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
+	// no validation rules for Agg
 
-	case *ProfileColumnSummary_TimeRangeSummary:
-		if v == nil {
-			err := ProfileColumnSummaryValidationError{
-				field:  "Case",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	// no validation rules for K
 
-		if all {
-			switch v := interface{}(m.GetTimeRangeSummary()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ProfileColumnSummaryValidationError{
-						field:  "TimeRangeSummary",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ProfileColumnSummaryValidationError{
-						field:  "TimeRangeSummary",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTimeRangeSummary()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ProfileColumnSummaryValidationError{
-					field:  "TimeRangeSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
+	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return ProfileColumnSummaryMultiError(errors)
+		return ColumnTopKRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ProfileColumnSummaryMultiError is an error wrapping multiple validation
-// errors returned by ProfileColumnSummary.ValidateAll() if the designated
-// constraints aren't met.
-type ProfileColumnSummaryMultiError []error
+// ColumnTopKRequestMultiError is an error wrapping multiple validation errors
+// returned by ColumnTopKRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ColumnTopKRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ProfileColumnSummaryMultiError) Error() string {
+func (m ColumnTopKRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2312,11 +2196,11 @@ func (m ProfileColumnSummaryMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ProfileColumnSummaryMultiError) AllErrors() []error { return m }
+func (m ColumnTopKRequestMultiError) AllErrors() []error { return m }
 
-// ProfileColumnSummaryValidationError is the validation error returned by
-// ProfileColumnSummary.Validate if the designated constraints aren't met.
-type ProfileColumnSummaryValidationError struct {
+// ColumnTopKRequestValidationError is the validation error returned by
+// ColumnTopKRequest.Validate if the designated constraints aren't met.
+type ColumnTopKRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2324,24 +2208,24 @@ type ProfileColumnSummaryValidationError struct {
 }
 
 // Field function returns field value.
-func (e ProfileColumnSummaryValidationError) Field() string { return e.field }
+func (e ColumnTopKRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ProfileColumnSummaryValidationError) Reason() string { return e.reason }
+func (e ColumnTopKRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ProfileColumnSummaryValidationError) Cause() error { return e.cause }
+func (e ColumnTopKRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ProfileColumnSummaryValidationError) Key() bool { return e.key }
+func (e ColumnTopKRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ProfileColumnSummaryValidationError) ErrorName() string {
-	return "ProfileColumnSummaryValidationError"
+func (e ColumnTopKRequestValidationError) ErrorName() string {
+	return "ColumnTopKRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ProfileColumnSummaryValidationError) Error() string {
+func (e ColumnTopKRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2353,14 +2237,14 @@ func (e ProfileColumnSummaryValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sProfileColumnSummary.%s: %s%s",
+		"invalid %sColumnTopKRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ProfileColumnSummaryValidationError{}
+var _ error = ColumnTopKRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -2368,7 +2252,138 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ProfileColumnSummaryValidationError{}
+} = ColumnTopKRequestValidationError{}
+
+// Validate checks the field values on ColumnTopKResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTopKResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnTopKResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTopKResponseMultiError, or nil if none found.
+func (m *ColumnTopKResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnTopKResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetCategoricalSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnTopKResponseValidationError{
+					field:  "CategoricalSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnTopKResponseValidationError{
+					field:  "CategoricalSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnTopKResponseValidationError{
+				field:  "CategoricalSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnTopKResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnTopKResponseMultiError is an error wrapping multiple validation errors
+// returned by ColumnTopKResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ColumnTopKResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnTopKResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnTopKResponseMultiError) AllErrors() []error { return m }
+
+// ColumnTopKResponseValidationError is the validation error returned by
+// ColumnTopKResponse.Validate if the designated constraints aren't met.
+type ColumnTopKResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnTopKResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnTopKResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnTopKResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnTopKResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnTopKResponseValidationError) ErrorName() string {
+	return "ColumnTopKResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnTopKResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnTopKResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnTopKResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnTopKResponseValidationError{}
 
 // Validate checks the field values on CategoricalSummary with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2529,1459 +2544,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CategoricalSummaryValidationError{}
-
-// Validate checks the field values on ColumnCardinalityResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ColumnCardinalityResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnCardinalityResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ColumnCardinalityResponseMultiError, or nil if none found.
-func (m *ColumnCardinalityResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnCardinalityResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetCategoricalSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnCardinalityResponseValidationError{
-					field:  "CategoricalSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnCardinalityResponseValidationError{
-					field:  "CategoricalSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnCardinalityResponseValidationError{
-				field:  "CategoricalSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnCardinalityResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnCardinalityResponseMultiError is an error wrapping multiple validation
-// errors returned by ColumnCardinalityResponse.ValidateAll() if the
-// designated constraints aren't met.
-type ColumnCardinalityResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnCardinalityResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnCardinalityResponseMultiError) AllErrors() []error { return m }
-
-// ColumnCardinalityResponseValidationError is the validation error returned by
-// ColumnCardinalityResponse.Validate if the designated constraints aren't met.
-type ColumnCardinalityResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnCardinalityResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnCardinalityResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnCardinalityResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnCardinalityResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnCardinalityResponseValidationError) ErrorName() string {
-	return "ColumnCardinalityResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnCardinalityResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnCardinalityResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnCardinalityResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnCardinalityResponseValidationError{}
-
-// Validate checks the field values on ColumnTopKResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ColumnTopKResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnTopKResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ColumnTopKResponseMultiError, or nil if none found.
-func (m *ColumnTopKResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnTopKResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetCategoricalSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnTopKResponseValidationError{
-					field:  "CategoricalSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnTopKResponseValidationError{
-					field:  "CategoricalSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnTopKResponseValidationError{
-				field:  "CategoricalSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnTopKResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnTopKResponseMultiError is an error wrapping multiple validation errors
-// returned by ColumnTopKResponse.ValidateAll() if the designated constraints
-// aren't met.
-type ColumnTopKResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnTopKResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnTopKResponseMultiError) AllErrors() []error { return m }
-
-// ColumnTopKResponseValidationError is the validation error returned by
-// ColumnTopKResponse.Validate if the designated constraints aren't met.
-type ColumnTopKResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnTopKResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnTopKResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnTopKResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnTopKResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnTopKResponseValidationError) ErrorName() string {
-	return "ColumnTopKResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnTopKResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnTopKResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnTopKResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnTopKResponseValidationError{}
-
-// Validate checks the field values on NumericSummary with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *NumericSummary) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NumericSummary with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in NumericSummaryMultiError,
-// or nil if none found.
-func (m *NumericSummary) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NumericSummary) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	switch v := m.Case.(type) {
-	case *NumericSummary_NumericHistogramBins:
-		if v == nil {
-			err := NumericSummaryValidationError{
-				field:  "Case",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetNumericHistogramBins()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NumericSummaryValidationError{
-						field:  "NumericHistogramBins",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NumericSummaryValidationError{
-						field:  "NumericHistogramBins",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetNumericHistogramBins()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NumericSummaryValidationError{
-					field:  "NumericHistogramBins",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *NumericSummary_NumericStatistics:
-		if v == nil {
-			err := NumericSummaryValidationError{
-				field:  "Case",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetNumericStatistics()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NumericSummaryValidationError{
-						field:  "NumericStatistics",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NumericSummaryValidationError{
-						field:  "NumericStatistics",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetNumericStatistics()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NumericSummaryValidationError{
-					field:  "NumericStatistics",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *NumericSummary_NumericOutliers:
-		if v == nil {
-			err := NumericSummaryValidationError{
-				field:  "Case",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetNumericOutliers()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NumericSummaryValidationError{
-						field:  "NumericOutliers",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NumericSummaryValidationError{
-						field:  "NumericOutliers",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetNumericOutliers()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NumericSummaryValidationError{
-					field:  "NumericOutliers",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
-
-	if len(errors) > 0 {
-		return NumericSummaryMultiError(errors)
-	}
-
-	return nil
-}
-
-// NumericSummaryMultiError is an error wrapping multiple validation errors
-// returned by NumericSummary.ValidateAll() if the designated constraints
-// aren't met.
-type NumericSummaryMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NumericSummaryMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NumericSummaryMultiError) AllErrors() []error { return m }
-
-// NumericSummaryValidationError is the validation error returned by
-// NumericSummary.Validate if the designated constraints aren't met.
-type NumericSummaryValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NumericSummaryValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NumericSummaryValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NumericSummaryValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NumericSummaryValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NumericSummaryValidationError) ErrorName() string { return "NumericSummaryValidationError" }
-
-// Error satisfies the builtin error interface
-func (e NumericSummaryValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNumericSummary.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NumericSummaryValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NumericSummaryValidationError{}
-
-// Validate checks the field values on ColumnRugHistogramResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ColumnRugHistogramResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnRugHistogramResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ColumnRugHistogramResponseMultiError, or nil if none found.
-func (m *ColumnRugHistogramResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnRugHistogramResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetNumericSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnRugHistogramResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnRugHistogramResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnRugHistogramResponseValidationError{
-				field:  "NumericSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnRugHistogramResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnRugHistogramResponseMultiError is an error wrapping multiple
-// validation errors returned by ColumnRugHistogramResponse.ValidateAll() if
-// the designated constraints aren't met.
-type ColumnRugHistogramResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnRugHistogramResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnRugHistogramResponseMultiError) AllErrors() []error { return m }
-
-// ColumnRugHistogramResponseValidationError is the validation error returned
-// by ColumnRugHistogramResponse.Validate if the designated constraints aren't met.
-type ColumnRugHistogramResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnRugHistogramResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnRugHistogramResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnRugHistogramResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnRugHistogramResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnRugHistogramResponseValidationError) ErrorName() string {
-	return "ColumnRugHistogramResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnRugHistogramResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnRugHistogramResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnRugHistogramResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnRugHistogramResponseValidationError{}
-
-// Validate checks the field values on ColumnNumericHistogramResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ColumnNumericHistogramResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnNumericHistogramResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// ColumnNumericHistogramResponseMultiError, or nil if none found.
-func (m *ColumnNumericHistogramResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnNumericHistogramResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetNumericSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnNumericHistogramResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnNumericHistogramResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnNumericHistogramResponseValidationError{
-				field:  "NumericSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnNumericHistogramResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnNumericHistogramResponseMultiError is an error wrapping multiple
-// validation errors returned by ColumnNumericHistogramResponse.ValidateAll()
-// if the designated constraints aren't met.
-type ColumnNumericHistogramResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnNumericHistogramResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnNumericHistogramResponseMultiError) AllErrors() []error { return m }
-
-// ColumnNumericHistogramResponseValidationError is the validation error
-// returned by ColumnNumericHistogramResponse.Validate if the designated
-// constraints aren't met.
-type ColumnNumericHistogramResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnNumericHistogramResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnNumericHistogramResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnNumericHistogramResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnNumericHistogramResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnNumericHistogramResponseValidationError) ErrorName() string {
-	return "ColumnNumericHistogramResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnNumericHistogramResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnNumericHistogramResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnNumericHistogramResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnNumericHistogramResponseValidationError{}
-
-// Validate checks the field values on ColumnDescriptiveStatisticsResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *ColumnDescriptiveStatisticsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnDescriptiveStatisticsResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// ColumnDescriptiveStatisticsResponseMultiError, or nil if none found.
-func (m *ColumnDescriptiveStatisticsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnDescriptiveStatisticsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetNumericSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnDescriptiveStatisticsResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnDescriptiveStatisticsResponseValidationError{
-					field:  "NumericSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnDescriptiveStatisticsResponseValidationError{
-				field:  "NumericSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnDescriptiveStatisticsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnDescriptiveStatisticsResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// ColumnDescriptiveStatisticsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ColumnDescriptiveStatisticsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnDescriptiveStatisticsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnDescriptiveStatisticsResponseMultiError) AllErrors() []error { return m }
-
-// ColumnDescriptiveStatisticsResponseValidationError is the validation error
-// returned by ColumnDescriptiveStatisticsResponse.Validate if the designated
-// constraints aren't met.
-type ColumnDescriptiveStatisticsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnDescriptiveStatisticsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnDescriptiveStatisticsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnDescriptiveStatisticsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnDescriptiveStatisticsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnDescriptiveStatisticsResponseValidationError) ErrorName() string {
-	return "ColumnDescriptiveStatisticsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnDescriptiveStatisticsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnDescriptiveStatisticsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnDescriptiveStatisticsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnDescriptiveStatisticsResponseValidationError{}
-
-// Validate checks the field values on ColumnTimeRangeResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ColumnTimeRangeResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnTimeRangeResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ColumnTimeRangeResponseMultiError, or nil if none found.
-func (m *ColumnTimeRangeResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnTimeRangeResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetTimeRangeSummary()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnTimeRangeResponseValidationError{
-					field:  "TimeRangeSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnTimeRangeResponseValidationError{
-					field:  "TimeRangeSummary",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetTimeRangeSummary()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnTimeRangeResponseValidationError{
-				field:  "TimeRangeSummary",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnTimeRangeResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnTimeRangeResponseMultiError is an error wrapping multiple validation
-// errors returned by ColumnTimeRangeResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ColumnTimeRangeResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnTimeRangeResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnTimeRangeResponseMultiError) AllErrors() []error { return m }
-
-// ColumnTimeRangeResponseValidationError is the validation error returned by
-// ColumnTimeRangeResponse.Validate if the designated constraints aren't met.
-type ColumnTimeRangeResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnTimeRangeResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnTimeRangeResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnTimeRangeResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnTimeRangeResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnTimeRangeResponseValidationError) ErrorName() string {
-	return "ColumnTimeRangeResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnTimeRangeResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnTimeRangeResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnTimeRangeResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnTimeRangeResponseValidationError{}
-
-// Validate checks the field values on TimeRangeSummary with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *TimeRangeSummary) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TimeRangeSummary with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// TimeRangeSummaryMultiError, or nil if none found.
-func (m *TimeRangeSummary) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TimeRangeSummary) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetMin()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, TimeRangeSummaryValidationError{
-					field:  "Min",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, TimeRangeSummaryValidationError{
-					field:  "Min",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetMin()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return TimeRangeSummaryValidationError{
-				field:  "Min",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetMax()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, TimeRangeSummaryValidationError{
-					field:  "Max",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, TimeRangeSummaryValidationError{
-					field:  "Max",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetMax()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return TimeRangeSummaryValidationError{
-				field:  "Max",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetInterval()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, TimeRangeSummaryValidationError{
-					field:  "Interval",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, TimeRangeSummaryValidationError{
-					field:  "Interval",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetInterval()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return TimeRangeSummaryValidationError{
-				field:  "Interval",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return TimeRangeSummaryMultiError(errors)
-	}
-
-	return nil
-}
-
-// TimeRangeSummaryMultiError is an error wrapping multiple validation errors
-// returned by TimeRangeSummary.ValidateAll() if the designated constraints
-// aren't met.
-type TimeRangeSummaryMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TimeRangeSummaryMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TimeRangeSummaryMultiError) AllErrors() []error { return m }
-
-// TimeRangeSummaryValidationError is the validation error returned by
-// TimeRangeSummary.Validate if the designated constraints aren't met.
-type TimeRangeSummaryValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e TimeRangeSummaryValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e TimeRangeSummaryValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e TimeRangeSummaryValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e TimeRangeSummaryValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e TimeRangeSummaryValidationError) ErrorName() string { return "TimeRangeSummaryValidationError" }
-
-// Error satisfies the builtin error interface
-func (e TimeRangeSummaryValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sTimeRangeSummary.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = TimeRangeSummaryValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = TimeRangeSummaryValidationError{}
-
-// Validate checks the field values on NumericOutliers with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *NumericOutliers) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NumericOutliers with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// NumericOutliersMultiError, or nil if none found.
-func (m *NumericOutliers) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NumericOutliers) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetOutliers() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NumericOutliersValidationError{
-						field:  fmt.Sprintf("Outliers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NumericOutliersValidationError{
-						field:  fmt.Sprintf("Outliers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NumericOutliersValidationError{
-					field:  fmt.Sprintf("Outliers[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return NumericOutliersMultiError(errors)
-	}
-
-	return nil
-}
-
-// NumericOutliersMultiError is an error wrapping multiple validation errors
-// returned by NumericOutliers.ValidateAll() if the designated constraints
-// aren't met.
-type NumericOutliersMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NumericOutliersMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NumericOutliersMultiError) AllErrors() []error { return m }
-
-// NumericOutliersValidationError is the validation error returned by
-// NumericOutliers.Validate if the designated constraints aren't met.
-type NumericOutliersValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NumericOutliersValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NumericOutliersValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NumericOutliersValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NumericOutliersValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NumericOutliersValidationError) ErrorName() string { return "NumericOutliersValidationError" }
-
-// Error satisfies the builtin error interface
-func (e NumericOutliersValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNumericOutliers.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NumericOutliersValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NumericOutliersValidationError{}
-
-// Validate checks the field values on ColumnTopKRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ColumnTopKRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnTopKRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ColumnTopKRequestMultiError, or nil if none found.
-func (m *ColumnTopKRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnTopKRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for TableName
-
-	// no validation rules for ColumnName
-
-	// no validation rules for Agg
-
-	// no validation rules for K
-
-	// no validation rules for Priority
-
-	if len(errors) > 0 {
-		return ColumnTopKRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnTopKRequestMultiError is an error wrapping multiple validation errors
-// returned by ColumnTopKRequest.ValidateAll() if the designated constraints
-// aren't met.
-type ColumnTopKRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnTopKRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnTopKRequestMultiError) AllErrors() []error { return m }
-
-// ColumnTopKRequestValidationError is the validation error returned by
-// ColumnTopKRequest.Validate if the designated constraints aren't met.
-type ColumnTopKRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnTopKRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnTopKRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnTopKRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnTopKRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnTopKRequestValidationError) ErrorName() string {
-	return "ColumnTopKRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnTopKRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnTopKRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnTopKRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnTopKRequestValidationError{}
 
 // Validate checks the field values on TopK with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
@@ -4442,6 +3004,504 @@ var _ interface {
 	ErrorName() string
 } = ColumnDescriptiveStatisticsRequestValidationError{}
 
+// Validate checks the field values on ColumnDescriptiveStatisticsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ColumnDescriptiveStatisticsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnDescriptiveStatisticsResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ColumnDescriptiveStatisticsResponseMultiError, or nil if none found.
+func (m *ColumnDescriptiveStatisticsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnDescriptiveStatisticsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetNumericSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnDescriptiveStatisticsResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnDescriptiveStatisticsResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnDescriptiveStatisticsResponseValidationError{
+				field:  "NumericSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnDescriptiveStatisticsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnDescriptiveStatisticsResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// ColumnDescriptiveStatisticsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnDescriptiveStatisticsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnDescriptiveStatisticsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnDescriptiveStatisticsResponseMultiError) AllErrors() []error { return m }
+
+// ColumnDescriptiveStatisticsResponseValidationError is the validation error
+// returned by ColumnDescriptiveStatisticsResponse.Validate if the designated
+// constraints aren't met.
+type ColumnDescriptiveStatisticsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnDescriptiveStatisticsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnDescriptiveStatisticsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnDescriptiveStatisticsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnDescriptiveStatisticsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnDescriptiveStatisticsResponseValidationError) ErrorName() string {
+	return "ColumnDescriptiveStatisticsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnDescriptiveStatisticsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnDescriptiveStatisticsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnDescriptiveStatisticsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnDescriptiveStatisticsResponseValidationError{}
+
+// Validate checks the field values on NumericSummary with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *NumericSummary) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on NumericSummary with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in NumericSummaryMultiError,
+// or nil if none found.
+func (m *NumericSummary) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *NumericSummary) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Case.(type) {
+	case *NumericSummary_NumericHistogramBins:
+		if v == nil {
+			err := NumericSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetNumericHistogramBins()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, NumericSummaryValidationError{
+						field:  "NumericHistogramBins",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, NumericSummaryValidationError{
+						field:  "NumericHistogramBins",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetNumericHistogramBins()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return NumericSummaryValidationError{
+					field:  "NumericHistogramBins",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *NumericSummary_NumericStatistics:
+		if v == nil {
+			err := NumericSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetNumericStatistics()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, NumericSummaryValidationError{
+						field:  "NumericStatistics",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, NumericSummaryValidationError{
+						field:  "NumericStatistics",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetNumericStatistics()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return NumericSummaryValidationError{
+					field:  "NumericStatistics",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *NumericSummary_NumericOutliers:
+		if v == nil {
+			err := NumericSummaryValidationError{
+				field:  "Case",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetNumericOutliers()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, NumericSummaryValidationError{
+						field:  "NumericOutliers",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, NumericSummaryValidationError{
+						field:  "NumericOutliers",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetNumericOutliers()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return NumericSummaryValidationError{
+					field:  "NumericOutliers",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return NumericSummaryMultiError(errors)
+	}
+
+	return nil
+}
+
+// NumericSummaryMultiError is an error wrapping multiple validation errors
+// returned by NumericSummary.ValidateAll() if the designated constraints
+// aren't met.
+type NumericSummaryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m NumericSummaryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m NumericSummaryMultiError) AllErrors() []error { return m }
+
+// NumericSummaryValidationError is the validation error returned by
+// NumericSummary.Validate if the designated constraints aren't met.
+type NumericSummaryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NumericSummaryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NumericSummaryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NumericSummaryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NumericSummaryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NumericSummaryValidationError) ErrorName() string { return "NumericSummaryValidationError" }
+
+// Error satisfies the builtin error interface
+func (e NumericSummaryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNumericSummary.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NumericSummaryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NumericSummaryValidationError{}
+
+// Validate checks the field values on NumericHistogramBins with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *NumericHistogramBins) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on NumericHistogramBins with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// NumericHistogramBinsMultiError, or nil if none found.
+func (m *NumericHistogramBins) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *NumericHistogramBins) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetBins() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, NumericHistogramBinsValidationError{
+						field:  fmt.Sprintf("Bins[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, NumericHistogramBinsValidationError{
+						field:  fmt.Sprintf("Bins[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return NumericHistogramBinsValidationError{
+					field:  fmt.Sprintf("Bins[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return NumericHistogramBinsMultiError(errors)
+	}
+
+	return nil
+}
+
+// NumericHistogramBinsMultiError is an error wrapping multiple validation
+// errors returned by NumericHistogramBins.ValidateAll() if the designated
+// constraints aren't met.
+type NumericHistogramBinsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m NumericHistogramBinsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m NumericHistogramBinsMultiError) AllErrors() []error { return m }
+
+// NumericHistogramBinsValidationError is the validation error returned by
+// NumericHistogramBins.Validate if the designated constraints aren't met.
+type NumericHistogramBinsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NumericHistogramBinsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NumericHistogramBinsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NumericHistogramBinsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NumericHistogramBinsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NumericHistogramBinsValidationError) ErrorName() string {
+	return "NumericHistogramBinsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e NumericHistogramBinsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNumericHistogramBins.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NumericHistogramBinsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NumericHistogramBinsValidationError{}
+
 // Validate checks the field values on NumericStatistics with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -4557,6 +3617,140 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = NumericStatisticsValidationError{}
+
+// Validate checks the field values on NumericOutliers with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *NumericOutliers) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on NumericOutliers with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// NumericOutliersMultiError, or nil if none found.
+func (m *NumericOutliers) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *NumericOutliers) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetOutliers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, NumericOutliersValidationError{
+						field:  fmt.Sprintf("Outliers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, NumericOutliersValidationError{
+						field:  fmt.Sprintf("Outliers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return NumericOutliersValidationError{
+					field:  fmt.Sprintf("Outliers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return NumericOutliersMultiError(errors)
+	}
+
+	return nil
+}
+
+// NumericOutliersMultiError is an error wrapping multiple validation errors
+// returned by NumericOutliers.ValidateAll() if the designated constraints
+// aren't met.
+type NumericOutliersMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m NumericOutliersMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m NumericOutliersMultiError) AllErrors() []error { return m }
+
+// NumericOutliersValidationError is the validation error returned by
+// NumericOutliers.Validate if the designated constraints aren't met.
+type NumericOutliersValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NumericOutliersValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NumericOutliersValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NumericOutliersValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NumericOutliersValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NumericOutliersValidationError) ErrorName() string { return "NumericOutliersValidationError" }
+
+// Error satisfies the builtin error interface
+func (e NumericOutliersValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNumericOutliers.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NumericOutliersValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NumericOutliersValidationError{}
 
 // Validate checks the field values on ColumnTimeGrainRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -4885,76 +4079,71 @@ var _ interface {
 	ErrorName() string
 } = ColumnNumericHistogramRequestValidationError{}
 
-// Validate checks the field values on NumericHistogramBins with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ColumnNumericHistogramResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *NumericHistogramBins) Validate() error {
+func (m *ColumnNumericHistogramResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on NumericHistogramBins with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// NumericHistogramBinsMultiError, or nil if none found.
-func (m *NumericHistogramBins) ValidateAll() error {
+// ValidateAll checks the field values on ColumnNumericHistogramResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ColumnNumericHistogramResponseMultiError, or nil if none found.
+func (m *ColumnNumericHistogramResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *NumericHistogramBins) validate(all bool) error {
+func (m *ColumnNumericHistogramResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	for idx, item := range m.GetBins() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NumericHistogramBinsValidationError{
-						field:  fmt.Sprintf("Bins[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NumericHistogramBinsValidationError{
-						field:  fmt.Sprintf("Bins[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NumericHistogramBinsValidationError{
-					field:  fmt.Sprintf("Bins[%v]", idx),
+	if all {
+		switch v := interface{}(m.GetNumericSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnNumericHistogramResponseValidationError{
+					field:  "NumericSummary",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnNumericHistogramResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnNumericHistogramResponseValidationError{
+				field:  "NumericSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
-		return NumericHistogramBinsMultiError(errors)
+		return ColumnNumericHistogramResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// NumericHistogramBinsMultiError is an error wrapping multiple validation
-// errors returned by NumericHistogramBins.ValidateAll() if the designated
-// constraints aren't met.
-type NumericHistogramBinsMultiError []error
+// ColumnNumericHistogramResponseMultiError is an error wrapping multiple
+// validation errors returned by ColumnNumericHistogramResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ColumnNumericHistogramResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m NumericHistogramBinsMultiError) Error() string {
+func (m ColumnNumericHistogramResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -4963,11 +4152,12 @@ func (m NumericHistogramBinsMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m NumericHistogramBinsMultiError) AllErrors() []error { return m }
+func (m ColumnNumericHistogramResponseMultiError) AllErrors() []error { return m }
 
-// NumericHistogramBinsValidationError is the validation error returned by
-// NumericHistogramBins.Validate if the designated constraints aren't met.
-type NumericHistogramBinsValidationError struct {
+// ColumnNumericHistogramResponseValidationError is the validation error
+// returned by ColumnNumericHistogramResponse.Validate if the designated
+// constraints aren't met.
+type ColumnNumericHistogramResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -4975,24 +4165,24 @@ type NumericHistogramBinsValidationError struct {
 }
 
 // Field function returns field value.
-func (e NumericHistogramBinsValidationError) Field() string { return e.field }
+func (e ColumnNumericHistogramResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e NumericHistogramBinsValidationError) Reason() string { return e.reason }
+func (e ColumnNumericHistogramResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e NumericHistogramBinsValidationError) Cause() error { return e.cause }
+func (e ColumnNumericHistogramResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e NumericHistogramBinsValidationError) Key() bool { return e.key }
+func (e ColumnNumericHistogramResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e NumericHistogramBinsValidationError) ErrorName() string {
-	return "NumericHistogramBinsValidationError"
+func (e ColumnNumericHistogramResponseValidationError) ErrorName() string {
+	return "ColumnNumericHistogramResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e NumericHistogramBinsValidationError) Error() string {
+func (e ColumnNumericHistogramResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5004,14 +4194,14 @@ func (e NumericHistogramBinsValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sNumericHistogramBins.%s: %s%s",
+		"invalid %sColumnNumericHistogramResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = NumericHistogramBinsValidationError{}
+var _ error = ColumnNumericHistogramResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -5019,7 +4209,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = NumericHistogramBinsValidationError{}
+} = ColumnNumericHistogramResponseValidationError{}
 
 // Validate checks the field values on ColumnRugHistogramRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -5131,6 +4321,137 @@ var _ interface {
 	ErrorName() string
 } = ColumnRugHistogramRequestValidationError{}
 
+// Validate checks the field values on ColumnRugHistogramResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnRugHistogramResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnRugHistogramResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnRugHistogramResponseMultiError, or nil if none found.
+func (m *ColumnRugHistogramResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnRugHistogramResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetNumericSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnRugHistogramResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnRugHistogramResponseValidationError{
+					field:  "NumericSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetNumericSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnRugHistogramResponseValidationError{
+				field:  "NumericSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnRugHistogramResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnRugHistogramResponseMultiError is an error wrapping multiple
+// validation errors returned by ColumnRugHistogramResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ColumnRugHistogramResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnRugHistogramResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnRugHistogramResponseMultiError) AllErrors() []error { return m }
+
+// ColumnRugHistogramResponseValidationError is the validation error returned
+// by ColumnRugHistogramResponse.Validate if the designated constraints aren't met.
+type ColumnRugHistogramResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnRugHistogramResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnRugHistogramResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnRugHistogramResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnRugHistogramResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnRugHistogramResponseValidationError) ErrorName() string {
+	return "ColumnRugHistogramResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnRugHistogramResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnRugHistogramResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnRugHistogramResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnRugHistogramResponseValidationError{}
+
 // Validate checks the field values on ColumnTimeRangeRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -5241,6 +4562,324 @@ var _ interface {
 	ErrorName() string
 } = ColumnTimeRangeRequestValidationError{}
 
+// Validate checks the field values on ColumnTimeRangeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTimeRangeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnTimeRangeResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTimeRangeResponseMultiError, or nil if none found.
+func (m *ColumnTimeRangeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnTimeRangeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetTimeRangeSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnTimeRangeResponseValidationError{
+					field:  "TimeRangeSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnTimeRangeResponseValidationError{
+					field:  "TimeRangeSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeRangeSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnTimeRangeResponseValidationError{
+				field:  "TimeRangeSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnTimeRangeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnTimeRangeResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeRangeResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnTimeRangeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnTimeRangeResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnTimeRangeResponseMultiError) AllErrors() []error { return m }
+
+// ColumnTimeRangeResponseValidationError is the validation error returned by
+// ColumnTimeRangeResponse.Validate if the designated constraints aren't met.
+type ColumnTimeRangeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnTimeRangeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnTimeRangeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnTimeRangeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnTimeRangeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnTimeRangeResponseValidationError) ErrorName() string {
+	return "ColumnTimeRangeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnTimeRangeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnTimeRangeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnTimeRangeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnTimeRangeResponseValidationError{}
+
+// Validate checks the field values on TimeRangeSummary with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *TimeRangeSummary) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TimeRangeSummary with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TimeRangeSummaryMultiError, or nil if none found.
+func (m *TimeRangeSummary) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TimeRangeSummary) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetMin()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeRangeSummaryValidationError{
+					field:  "Min",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeRangeSummaryValidationError{
+					field:  "Min",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMin()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeRangeSummaryValidationError{
+				field:  "Min",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetMax()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeRangeSummaryValidationError{
+					field:  "Max",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeRangeSummaryValidationError{
+					field:  "Max",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMax()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeRangeSummaryValidationError{
+				field:  "Max",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetInterval()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeRangeSummaryValidationError{
+					field:  "Interval",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeRangeSummaryValidationError{
+					field:  "Interval",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetInterval()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeRangeSummaryValidationError{
+				field:  "Interval",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return TimeRangeSummaryMultiError(errors)
+	}
+
+	return nil
+}
+
+// TimeRangeSummaryMultiError is an error wrapping multiple validation errors
+// returned by TimeRangeSummary.ValidateAll() if the designated constraints
+// aren't met.
+type TimeRangeSummaryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TimeRangeSummaryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TimeRangeSummaryMultiError) AllErrors() []error { return m }
+
+// TimeRangeSummaryValidationError is the validation error returned by
+// TimeRangeSummary.Validate if the designated constraints aren't met.
+type TimeRangeSummaryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TimeRangeSummaryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TimeRangeSummaryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TimeRangeSummaryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TimeRangeSummaryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TimeRangeSummaryValidationError) ErrorName() string { return "TimeRangeSummaryValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TimeRangeSummaryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTimeRangeSummary.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TimeRangeSummaryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TimeRangeSummaryValidationError{}
+
 // Validate checks the field values on ColumnCardinalityRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -5350,6 +4989,137 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ColumnCardinalityRequestValidationError{}
+
+// Validate checks the field values on ColumnCardinalityResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnCardinalityResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnCardinalityResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnCardinalityResponseMultiError, or nil if none found.
+func (m *ColumnCardinalityResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnCardinalityResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetCategoricalSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnCardinalityResponseValidationError{
+					field:  "CategoricalSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnCardinalityResponseValidationError{
+					field:  "CategoricalSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCategoricalSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnCardinalityResponseValidationError{
+				field:  "CategoricalSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnCardinalityResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnCardinalityResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnCardinalityResponse.ValidateAll() if the
+// designated constraints aren't met.
+type ColumnCardinalityResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnCardinalityResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnCardinalityResponseMultiError) AllErrors() []error { return m }
+
+// ColumnCardinalityResponseValidationError is the validation error returned by
+// ColumnCardinalityResponse.Validate if the designated constraints aren't met.
+type ColumnCardinalityResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnCardinalityResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnCardinalityResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnCardinalityResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnCardinalityResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnCardinalityResponseValidationError) ErrorName() string {
+	return "ColumnCardinalityResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnCardinalityResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnCardinalityResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnCardinalityResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnCardinalityResponseValidationError{}
 
 // Validate checks the field values on ColumnTimeSeriesRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -5556,6 +5326,137 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ColumnTimeSeriesRequestValidationError{}
+
+// Validate checks the field values on ColumnTimeSeriesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ColumnTimeSeriesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ColumnTimeSeriesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ColumnTimeSeriesResponseMultiError, or nil if none found.
+func (m *ColumnTimeSeriesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ColumnTimeSeriesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetRollup()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ColumnTimeSeriesResponseValidationError{
+					field:  "Rollup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ColumnTimeSeriesResponseValidationError{
+					field:  "Rollup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRollup()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ColumnTimeSeriesResponseValidationError{
+				field:  "Rollup",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ColumnTimeSeriesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ColumnTimeSeriesResponseMultiError is an error wrapping multiple validation
+// errors returned by ColumnTimeSeriesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ColumnTimeSeriesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ColumnTimeSeriesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ColumnTimeSeriesResponseMultiError) AllErrors() []error { return m }
+
+// ColumnTimeSeriesResponseValidationError is the validation error returned by
+// ColumnTimeSeriesResponse.Validate if the designated constraints aren't met.
+type ColumnTimeSeriesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ColumnTimeSeriesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ColumnTimeSeriesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ColumnTimeSeriesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ColumnTimeSeriesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ColumnTimeSeriesResponseValidationError) ErrorName() string {
+	return "ColumnTimeSeriesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ColumnTimeSeriesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sColumnTimeSeriesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ColumnTimeSeriesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ColumnTimeSeriesResponseValidationError{}
 
 // Validate checks the field values on TimeSeriesTimeRange with the rules
 // defined in the proto definition for this message. If any rules are
@@ -5928,137 +5829,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TimeSeriesResponseValidationError{}
-
-// Validate checks the field values on ColumnTimeSeriesResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ColumnTimeSeriesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ColumnTimeSeriesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ColumnTimeSeriesResponseMultiError, or nil if none found.
-func (m *ColumnTimeSeriesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ColumnTimeSeriesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetRollup()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnTimeSeriesResponseValidationError{
-					field:  "Rollup",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnTimeSeriesResponseValidationError{
-					field:  "Rollup",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetRollup()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnTimeSeriesResponseValidationError{
-				field:  "Rollup",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ColumnTimeSeriesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ColumnTimeSeriesResponseMultiError is an error wrapping multiple validation
-// errors returned by ColumnTimeSeriesResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ColumnTimeSeriesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ColumnTimeSeriesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ColumnTimeSeriesResponseMultiError) AllErrors() []error { return m }
-
-// ColumnTimeSeriesResponseValidationError is the validation error returned by
-// ColumnTimeSeriesResponse.Validate if the designated constraints aren't met.
-type ColumnTimeSeriesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ColumnTimeSeriesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ColumnTimeSeriesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ColumnTimeSeriesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ColumnTimeSeriesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ColumnTimeSeriesResponseValidationError) ErrorName() string {
-	return "ColumnTimeSeriesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ColumnTimeSeriesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sColumnTimeSeriesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ColumnTimeSeriesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ColumnTimeSeriesResponseValidationError{}
 
 // Validate checks the field values on TimeSeriesValue with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -7164,226 +6934,6 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewFilter_CondValidationError{}
 
-// Validate checks the field values on TimeRangeSummary_Interval with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *TimeRangeSummary_Interval) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TimeRangeSummary_Interval with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// TimeRangeSummary_IntervalMultiError, or nil if none found.
-func (m *TimeRangeSummary_Interval) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TimeRangeSummary_Interval) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Months
-
-	// no validation rules for Days
-
-	// no validation rules for Micros
-
-	if len(errors) > 0 {
-		return TimeRangeSummary_IntervalMultiError(errors)
-	}
-
-	return nil
-}
-
-// TimeRangeSummary_IntervalMultiError is an error wrapping multiple validation
-// errors returned by TimeRangeSummary_Interval.ValidateAll() if the
-// designated constraints aren't met.
-type TimeRangeSummary_IntervalMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TimeRangeSummary_IntervalMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TimeRangeSummary_IntervalMultiError) AllErrors() []error { return m }
-
-// TimeRangeSummary_IntervalValidationError is the validation error returned by
-// TimeRangeSummary_Interval.Validate if the designated constraints aren't met.
-type TimeRangeSummary_IntervalValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e TimeRangeSummary_IntervalValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e TimeRangeSummary_IntervalValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e TimeRangeSummary_IntervalValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e TimeRangeSummary_IntervalValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e TimeRangeSummary_IntervalValidationError) ErrorName() string {
-	return "TimeRangeSummary_IntervalValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e TimeRangeSummary_IntervalValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sTimeRangeSummary_Interval.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = TimeRangeSummary_IntervalValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = TimeRangeSummary_IntervalValidationError{}
-
-// Validate checks the field values on NumericOutliers_Outlier with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *NumericOutliers_Outlier) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NumericOutliers_Outlier with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// NumericOutliers_OutlierMultiError, or nil if none found.
-func (m *NumericOutliers_Outlier) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NumericOutliers_Outlier) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Bucket
-
-	// no validation rules for Low
-
-	// no validation rules for High
-
-	// no validation rules for Present
-
-	// no validation rules for Count
-
-	if len(errors) > 0 {
-		return NumericOutliers_OutlierMultiError(errors)
-	}
-
-	return nil
-}
-
-// NumericOutliers_OutlierMultiError is an error wrapping multiple validation
-// errors returned by NumericOutliers_Outlier.ValidateAll() if the designated
-// constraints aren't met.
-type NumericOutliers_OutlierMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NumericOutliers_OutlierMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NumericOutliers_OutlierMultiError) AllErrors() []error { return m }
-
-// NumericOutliers_OutlierValidationError is the validation error returned by
-// NumericOutliers_Outlier.Validate if the designated constraints aren't met.
-type NumericOutliers_OutlierValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NumericOutliers_OutlierValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NumericOutliers_OutlierValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NumericOutliers_OutlierValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NumericOutliers_OutlierValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NumericOutliers_OutlierValidationError) ErrorName() string {
-	return "NumericOutliers_OutlierValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e NumericOutliers_OutlierValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNumericOutliers_Outlier.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NumericOutliers_OutlierValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NumericOutliers_OutlierValidationError{}
-
 // Validate checks the field values on TopK_Entry with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -7625,6 +7175,226 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = NumericHistogramBins_BinValidationError{}
+
+// Validate checks the field values on NumericOutliers_Outlier with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *NumericOutliers_Outlier) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on NumericOutliers_Outlier with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// NumericOutliers_OutlierMultiError, or nil if none found.
+func (m *NumericOutliers_Outlier) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *NumericOutliers_Outlier) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Bucket
+
+	// no validation rules for Low
+
+	// no validation rules for High
+
+	// no validation rules for Present
+
+	// no validation rules for Count
+
+	if len(errors) > 0 {
+		return NumericOutliers_OutlierMultiError(errors)
+	}
+
+	return nil
+}
+
+// NumericOutliers_OutlierMultiError is an error wrapping multiple validation
+// errors returned by NumericOutliers_Outlier.ValidateAll() if the designated
+// constraints aren't met.
+type NumericOutliers_OutlierMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m NumericOutliers_OutlierMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m NumericOutliers_OutlierMultiError) AllErrors() []error { return m }
+
+// NumericOutliers_OutlierValidationError is the validation error returned by
+// NumericOutliers_Outlier.Validate if the designated constraints aren't met.
+type NumericOutliers_OutlierValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NumericOutliers_OutlierValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NumericOutliers_OutlierValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NumericOutliers_OutlierValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NumericOutliers_OutlierValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NumericOutliers_OutlierValidationError) ErrorName() string {
+	return "NumericOutliers_OutlierValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e NumericOutliers_OutlierValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNumericOutliers_Outlier.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NumericOutliers_OutlierValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NumericOutliers_OutlierValidationError{}
+
+// Validate checks the field values on TimeRangeSummary_Interval with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TimeRangeSummary_Interval) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TimeRangeSummary_Interval with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TimeRangeSummary_IntervalMultiError, or nil if none found.
+func (m *TimeRangeSummary_Interval) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TimeRangeSummary_Interval) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Months
+
+	// no validation rules for Days
+
+	// no validation rules for Micros
+
+	if len(errors) > 0 {
+		return TimeRangeSummary_IntervalMultiError(errors)
+	}
+
+	return nil
+}
+
+// TimeRangeSummary_IntervalMultiError is an error wrapping multiple validation
+// errors returned by TimeRangeSummary_Interval.ValidateAll() if the
+// designated constraints aren't met.
+type TimeRangeSummary_IntervalMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TimeRangeSummary_IntervalMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TimeRangeSummary_IntervalMultiError) AllErrors() []error { return m }
+
+// TimeRangeSummary_IntervalValidationError is the validation error returned by
+// TimeRangeSummary_Interval.Validate if the designated constraints aren't met.
+type TimeRangeSummary_IntervalValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TimeRangeSummary_IntervalValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TimeRangeSummary_IntervalValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TimeRangeSummary_IntervalValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TimeRangeSummary_IntervalValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TimeRangeSummary_IntervalValidationError) ErrorName() string {
+	return "TimeRangeSummary_IntervalValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TimeRangeSummary_IntervalValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTimeRangeSummary_Interval.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TimeRangeSummary_IntervalValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TimeRangeSummary_IntervalValidationError{}
 
 // Validate checks the field values on ColumnTimeSeriesRequest_BasicMeasure
 // with the rules defined in the proto definition for this message. If any

@@ -3,8 +3,8 @@ info:
   title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
-  - name: QueryService
   - name: RuntimeService
+  - name: QueryService
 consumes:
   - application/json
 produces:
@@ -399,7 +399,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
     post:
-      summary: 'TableColumns (TODO: add description)'
+      summary: TableColumns returns column profiles
       operationId: QueryService_TableColumns
       responses:
         "200":
@@ -694,7 +694,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
-      summary: 'ColumnRollupInterval (TODO: add description)'
+      summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
       operationId: QueryService_ColumnRollupInterval
       responses:
         "200":
@@ -729,7 +729,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
     get:
-      summary: 'TableRows (TODO: add description)'
+      summary: TableRows returns table rows
       operationId: QueryService_TableRows
       responses:
         "200":
@@ -829,7 +829,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}:
     get:
-      summary: 'TableCardinality (TODO: add description)'
+      summary: TableCardinality returns row count
       operationId: QueryService_TableCardinality
       responses:
         "200":
@@ -891,7 +891,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/timeseries/tables/{tableName}:
     post:
-      summary: Generate time series
+      summary: Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
       operationId: QueryService_ColumnTimeSeries
       responses:
         "200":
@@ -1463,6 +1463,7 @@ definitions:
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
+    title: Response for QueryService.ColumnNumericHistogram
   v1ColumnRollupIntervalResponse:
     type: object
     properties:
@@ -1814,7 +1815,6 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/NumericHistogramBinsBin'
-    title: Response for QueryService.ColumnNumericHistogram
   v1NumericOutliers:
     type: object
     properties:
