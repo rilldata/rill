@@ -128,8 +128,6 @@
     );
     endValue = removeTimezoneOffset(endValue);
   }
-
-  $: console.log(metricsExplorer.selectedTimeRange?.interval);
 </script>
 
 <WithBisector
