@@ -37,6 +37,7 @@ export interface SimpleDataGraphicConfigurationArguments {
   yMax: (number | Date);
   bodyBuffer: number;
   marginBuffer: number;
+  pixelDeviceRation: number;
 }
 
 export interface SimpleGraphicConfigurationDerivations {
