@@ -144,12 +144,10 @@ export const timeRangeToISODuration = (
       return "PT6H";
     case TimeRangeName.LastDay:
       return "P1D";
-      return "P5D";
     case TimeRangeName.LastWeek:
       return "P7D";
     case TimeRangeName.Last30Days:
       return "P30D";
-
     case TimeRangeName.AllTime:
       return "inf";
     default:
