@@ -131,3 +131,7 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 	filePath = filepath.Join(c.root, filePath)
 	return os.Remove(filePath)
 }
+
+func (c *connection) Sync(ctx context.Context, instID string) error {
+	return nil
+}

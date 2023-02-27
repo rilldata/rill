@@ -10805,6 +10805,8 @@ func (m *GetNumericHistogramRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for HistogramMethod
+
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
@@ -14242,6 +14244,8 @@ func (m *NumericHistogramBins_Bin) validate(all bool) error {
 	// no validation rules for Bucket
 
 	// no validation rules for Low
+
+	// no validation rules for Midpoint
 
 	// no validation rules for High
 

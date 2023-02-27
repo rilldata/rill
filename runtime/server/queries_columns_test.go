@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -186,10 +188,18 @@ func TestServer_EstimateSmallestTimeGrain_EmptyModel(t *testing.T) {
 	require.Equal(t, "TIME_GRAIN_UNSPECIFIED", res.TimeGrain.String())
 }
 
-func TestServer_GetNumericHistogram(t *testing.T) {
+func TestServer_GetNumericHistogram_FD(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3, len(res.NumericSummary.GetNumericHistogramBins().Bins))
@@ -197,6 +207,42 @@ func TestServer_GetNumericHistogram(t *testing.T) {
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Low)
 	require.Equal(t, 2.333333333333333, res.NumericSummary.GetNumericHistogramBins().Bins[0].High)
 	require.Equal(t, 3.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
+}
+
+func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
+	server, instanceId := getColumnTestServer(t)
+
+	start, _, gap := queries.NiceAndStep(1, 5, 5)
+
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_DIAGNOSTIC,
+		})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	bins := res.NumericSummary.GetNumericHistogramBins().Bins
+	for i := 0; i < len(bins); i++ {
+		fmt.Printf("%d %f %f %f\n", bins[i].Bucket, bins[i].Low, bins[i].High, bins[i].Count)
+	}
+	require.Equal(t, 5, len(bins))
+
+	require.Equal(t, int32(0), bins[0].Bucket)
+	require.Equal(t, start, bins[0].Low)
+	require.Equal(t, start+gap, bins[0].High)
+	require.Equal(t, 3.0, bins[0].Count)
+
+	require.Equal(t, int32(1), bins[1].Bucket)
+	require.Equal(t, start+gap, bins[1].Low)
+	require.Equal(t, start+gap*2, bins[1].High)
+	require.Equal(t, 0.0, bins[1].Count)
+
+	require.Equal(t, 1.0, bins[2].Count)
+
+	require.Equal(t, 0.0, bins[3].Count)
 }
 
 func TestServer_Model_Nulls(t *testing.T) {
@@ -214,7 +260,15 @@ func TestServer_GetNumericHistogram_2rows_all_nulls(t *testing.T) {
 	`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
-	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 0, len(res.NumericSummary.GetNumericHistogramBins().Bins))
@@ -228,7 +282,15 @@ func TestServer_GetNumericHistogram_2rows_single_null(t *testing.T) {
 	`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
-	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 0, len(res.NumericSummary.GetNumericHistogramBins().Bins))
@@ -244,7 +306,15 @@ func TestServer_GetNumericHistogram_2rows(t *testing.T) {
 	`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 3)
 
-	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	bins := res.NumericSummary.GetNumericHistogramBins().Bins
@@ -263,7 +333,15 @@ func TestServer_GetNumericHistogram_2rows(t *testing.T) {
 func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
-	res, err := server.GetNumericHistogram(context.Background(), &runtimev1.GetNumericHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.GetNumericHistogram(
+		context.Background(),
+		&runtimev1.GetNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Nil(t, res.NumericSummary.GetNumericHistogramBins().Bins)

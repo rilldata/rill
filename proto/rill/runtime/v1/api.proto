@@ -309,12 +309,22 @@ message Instance {
   // Identifier (UUID)
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   // Driver to connect to for OLAP (options: duckdb, druid)
-  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
+  string olap_driver = 2 [(validate.rules).string = {
+    in: [
+      "duckdb",
+      "druid"
+    ]
+  }];
   // DSN for connection to OLAP
   string olap_dsn = 3;
   // Driver for reading/editing code artifacts (options: file, metastore).
   // This enables virtualizing a file system in a cloud setting.
-  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
+  string repo_driver = 4 [(validate.rules).string = {
+    in: [
+      "file",
+      "metastore"
+    ]
+  }];
   // DSN for connecting to repo
   string repo_dsn = 5;
   // If true, the runtime will store the instance's catalog in its OLAP store instead
@@ -351,10 +361,23 @@ message GetInstanceResponse {
 // Request message for RuntimeService.CreateInstance.
 // See message Instance for field descriptions.
 message CreateInstanceRequest {
-  string instance_id = 1 [(validate.rules).string = {ignore_empty: true, pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
+  string instance_id = 1 [(validate.rules).string = {
+    ignore_empty: true,
+    pattern: "^[_\\-a-zA-Z0-9]+$"
+  }];
+  string olap_driver = 2 [(validate.rules).string = {
+    in: [
+      "duckdb",
+      "druid"
+    ]
+  }];
   string olap_dsn = 3;
-  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
+  string repo_driver = 4 [(validate.rules).string = {
+    in: [
+      "file",
+      "metastore"
+    ]
+  }];
   string repo_dsn = 5;
   bool embed_catalog = 6;
   map<string, string> env = 7;
@@ -961,12 +984,19 @@ message EstimateSmallestTimeGrainResponse {
   TimeGrain time_grain = 1;
 }
 
+enum HistogramMethod {
+  HISTOGRAM_METHOD_UNSPECIFIED = 0;
+  HISTOGRAM_METHOD_FD = 1;
+  HISTOGRAM_METHOD_DIAGNOSTIC = 2;
+}
+
 // Request for RuntimeService.GetNumericHistogram. Returns the histogram for a given column for table table_name
 message GetNumericHistogramRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string table_name = 2 [(validate.rules).string.min_len = 1];
   string column_name = 3 [(validate.rules).string.min_len = 1];
-  int32 priority = 4;
+  HistogramMethod histogram_method = 4;
+  int32 priority = 5;
 }
 
 // Response for RuntimeService.GetNumericHistogram
@@ -974,8 +1004,9 @@ message NumericHistogramBins {
   message Bin {
     int32 bucket = 1;
     double low = 2;
-    double high = 3;
-    double count = 4;
+    double midpoint = 3;
+    double high = 4;
+    double count = 5;
   }
   repeated Bin bins = 1;
 }

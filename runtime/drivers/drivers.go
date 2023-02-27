@@ -26,7 +26,7 @@ func Register(name string, driver Driver) {
 func Open(driver, dsn string, logger *zap.Logger) (Connection, error) {
 	d, ok := Drivers[driver]
 	if !ok {
-		return nil, fmt.Errorf("unknown database driver: %s", driver)
+		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
 	conn, err := d.Open(dsn, logger)
