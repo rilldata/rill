@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestServer_PutFileAndReconcile(t *testing.T) {
-	ctx := context.Background()
+	ctx := testCtx()
 	rt, instanceID := testruntime.NewInstance(t)
 	srv, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)
