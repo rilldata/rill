@@ -4,6 +4,7 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
@@ -357,18 +358,6 @@ message ColumnTimeGrainRequest {
 // Response for QueryService.ColumnTimeGrain
 message ColumnTimeGrainResponse {
   TimeGrain time_grain = 1;
-}
-
-enum TimeGrain {
-  TIME_GRAIN_UNSPECIFIED = 0;
-  TIME_GRAIN_MILLISECOND = 1;
-  TIME_GRAIN_SECOND = 2;
-  TIME_GRAIN_MINUTE = 3;
-  TIME_GRAIN_HOUR = 4;
-  TIME_GRAIN_DAY = 5;
-  TIME_GRAIN_WEEK = 6;
-  TIME_GRAIN_MONTH = 7;
-  TIME_GRAIN_YEAR = 8;
 }
 
 // Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name

@@ -32,6 +32,16 @@ export type QueryServiceColumnTopKBody = {
   priority?: number;
 };
 
+export type QueryServiceColumnTimeSeriesBody = {
+  filters?: V1MetricsViewFilter;
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  pixels?: number;
+  priority?: number;
+  sampleSize?: number;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
+};
+
 export type QueryServiceColumnTimeRangeParams = {
   columnName?: string;
   priority?: number;
@@ -53,7 +63,6 @@ export type QueryServiceTableRowsParams = { limit?: number; priority?: number };
 
 export type QueryServiceColumnRollupIntervalBody = {
   columnName?: string;
-  histogramMethod?: RuntimeServiceGetNumericHistogramHistogramMethod;
   priority?: number;
 };
 
@@ -215,16 +224,6 @@ export interface V1TimeSeriesTimeRange {
   start?: string;
 }
 
-export type QueryServiceColumnTimeSeriesBody = {
-  filters?: V1MetricsViewFilter;
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  pixels?: number;
-  priority?: number;
-  sampleSize?: number;
-  timeRange?: V1TimeSeriesTimeRange;
-  timestampColumnName?: string;
-};
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   sampleSize?: number;
@@ -299,16 +298,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
@@ -371,6 +360,16 @@ It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export interface V1ReconcileResponse {
@@ -477,6 +476,11 @@ export interface V1Model {
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
+export interface V1MetricsViewTotalsResponse {
+  data?: V1MetricsViewTotalsResponseData;
+  meta?: V1MetricsViewColumn[];
+}
+
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewToplistResponse {
@@ -503,11 +507,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
-}
-
-export interface V1MetricsViewTotalsResponse {
-  data?: V1MetricsViewTotalsResponseData;
-  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {
@@ -572,33 +571,6 @@ This enables virtualizing a file system in a cloud setting. */
   repoDsn?: string;
 }
 
-export type V1HistogramMethod =
-  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1HistogramMethod = {
-  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
-  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
-  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
-} as const;
-
-export interface V1GetTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
-export interface V1GetTimeRangeSummaryResponse {
-  timeRangeSummary?: V1TimeRangeSummary;
-}
-
-export type V1GetTableRowsResponseDataItem = { [key: string]: any };
-
-export interface V1GetTableRowsResponse {
-  data?: V1GetTableRowsResponseDataItem[];
-}
-
-export interface V1GetTableCardinalityResponse {
-  cardinality?: string;
-}
 export type V1HistogramMethod =
   typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
 
@@ -850,12 +822,6 @@ export interface MetricsViewDimension {
   description?: string;
   label?: string;
   name?: string;
-}
-
-export interface GenerateTimeSeriesRequestBasicMeasure {
-  expression?: string;
-  id?: string;
-  sqlName?: string;
 }
 
 export type ExtractPolicyStrategy =
