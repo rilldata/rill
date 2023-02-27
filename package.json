@@ -15,7 +15,7 @@
     "dev-web": "npm run dev -w web-local",
     "dev-runtime": "go run cli/main.go start --no-ui --project dev-project",
     "clean": "rm -rf dev-project",
-    "test": "npm run test -w web-local"
+    "test": "npm run test -w web-common && npm run test -w web-local"
   },
   "pkg": {
     "scripts": "web-local/dist/**/*.js",
@@ -26,5 +26,10 @@
       "package.json",
       "web-local/package.json"
     ]
+  },
+  "dependencies": {
+    "d3-interpolate-path": "^2.3.0",
+    "d3-line-chunked": "^1.5.1",
+    "d3-selection": "^3.0.0"
   }
 }

@@ -77,6 +77,8 @@
       <div class="whitespace-nowrap">Dimension Leaders by</div>
 
       <SelectMenu
+        paddingTop={2}
+        paddingBottom={2}
         {options}
         {selection}
         tailwindClasses="overflow-hidden"

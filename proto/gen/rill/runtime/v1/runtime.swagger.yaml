@@ -4,7 +4,6 @@ info:
   version: version not set
 tags:
   - name: RuntimeService
-  - name: QueryService
 consumes:
   - application/json
 produces:
@@ -364,48 +363,17 @@ paths:
             title: Request message for RuntimeService.RenameFile
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
-    get:
-      summary: Get cardinality for a column
-      operationId: QueryService_ColumnCardinality
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ColumnCardinalityResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: query
-          required: false
-          type: string
-        - name: priority
-          in: query
-          required: false
-          type: integer
-          format: int32
-      tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
+  /v1/instances/{instanceId}/metrics-views/{metricsViewName}/timeseries:
     post:
-      summary: TableColumns returns column profiles
-      operationId: QueryService_TableColumns
+      summary: |-
+        MetricsViewTimeSeries returns time series for the measures in the metrics view.
+        It's a convenience API for querying a metrics view.
+      operationId: RuntimeService_MetricsViewTimeSeries
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TableColumnsResponse'
+            $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -415,56 +383,42 @@ paths:
           in: path
           required: true
           type: string
-        - name: tableName
+        - name: metricsViewName
           in: path
           required: true
           type: string
-        - name: priority
-          in: query
-          required: false
-          type: integer
-          format: int32
-      tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
-    get:
-      summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
-      operationId: QueryService_ColumnDescriptiveStatistics
-      responses:
-        "200":
-          description: A successful response.
+        - name: body
+          in: body
+          required: true
           schema:
-            $ref: '#/definitions/v1ColumnDescriptiveStatisticsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: tableName
-          in: path
-          required: true
-          type: string
-        - name: columnName
-          in: query
-          required: false
-          type: string
-        - name: priority
-          in: query
-          required: false
-          type: integer
-          format: int32
+            type: object
+            properties:
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              measureNames:
+                type: array
+                items:
+                  type: string
+              priority:
+                type: integer
+                format: int32
+              timeEnd:
+                type: string
+                format: date-time
+              timeGranularity:
+                $ref: '#/definitions/v1TimeGrain'
+              timeStart:
+                type: string
+                format: date-time
+            title: Request message for RuntimeService.MetricsViewTimeSeries
       tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/metric-views/{metricsViewName}/toplist:
+        - RuntimeService
+  /v1/instances/{instanceId}/metrics-views/{metricsViewName}/toplist:
     post:
       summary: |-
         MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
         It's a convenience API for querying a metrics view.
-      operationId: QueryService_MetricsViewToplist
+      operationId: RuntimeService_MetricsViewToplist
       responses:
         "200":
           description: A successful response.
@@ -516,65 +470,15 @@ paths:
               timeStart:
                 type: string
                 format: date-time
-            title: Request message for QueryService.MetricsViewToplist
+            title: Request message for RuntimeService.MetricsViewToplist
       tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
-    post:
-      summary: |-
-        MetricsViewTimeSeries returns time series for the measures in the metrics view.
-        It's a convenience API for querying a metrics view.
-      operationId: QueryService_MetricsViewTimeSeries
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: metricsViewName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
-              measureNames:
-                type: array
-                items:
-                  type: string
-              priority:
-                type: integer
-                format: int32
-              timeEnd:
-                type: string
-                format: date-time
-              timeGranularity:
-                $ref: '#/definitions/v1TimeGrain'
-              timeStart:
-                type: string
-                format: date-time
-            title: Request message for QueryService.MetricsViewTimeSeries
-      tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
+        - RuntimeService
+  /v1/instances/{instanceId}/metrics-views/{metricsViewName}/totals:
     post:
       summary: |-
         MetricsViewTotals returns totals over a time period for the measures in a metrics view.
         It's a convenience API for querying a metrics view.
-      operationId: QueryService_MetricsViewTotals
+      operationId: RuntimeService_MetricsViewTotals
       responses:
         "200":
           description: A successful response.
@@ -614,18 +518,18 @@ paths:
               timeStart:
                 type: string
                 format: date-time
-            title: Request message for QueryService.MetricsViewTotals
+            title: Request message for RuntimeService.MetricsViewTotals
       tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
-      summary: Get the number of nulls in a column
-      operationId: QueryService_ColumnNullCount
+      summary: Get cardinality for a column
+      operationId: RuntimeService_GetCardinalityOfColumn
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnNullCountResponse'
+            $ref: '#/definitions/v1GetCardinalityOfColumnResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -649,16 +553,111 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
-  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}:
-    get:
-      summary: Get the histogram for values in a column
-      operationId: QueryService_ColumnNumericHistogram
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
+    post:
+      summary: 'ProfileColumns (TODO: add description)'
+      operationId: RuntimeService_ProfileColumns
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnNumericHistogramResponse'
+            $ref: '#/definitions/v1ProfileColumnsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
+    get:
+      summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
+      operationId: RuntimeService_GetDescriptiveStatistics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDescriptiveStatisticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
+    get:
+      summary: Get the number of nulls in a column
+      operationId: RuntimeService_GetNullCount
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetNullCountResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}:
+    get:
+      summary: Get the histogram for values in a column
+      operationId: RuntimeService_GetNumericHistogram
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetNumericHistogramResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -691,16 +690,16 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
-      summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
-      operationId: QueryService_ColumnRollupInterval
+      summary: 'EstimateRollupInterval (TODO: add description)'
+      operationId: RuntimeService_EstimateRollupInterval
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnRollupIntervalResponse'
+            $ref: '#/definitions/v1EstimateRollupIntervalResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -726,16 +725,16 @@ paths:
                 type: integer
                 format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
     get:
-      summary: TableRows returns table rows
-      operationId: QueryService_TableRows
+      summary: 'TableRows (TODO: add description)'
+      operationId: RuntimeService_GetTableRows
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TableRowsResponse'
+            $ref: '#/definitions/v1GetTableRowsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -760,16 +759,16 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}:
     get:
       summary: Get outliers for a numeric column
-      operationId: QueryService_ColumnRugHistogram
+      operationId: RuntimeService_GetRugHistogram
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnRugHistogramResponse'
+            $ref: '#/definitions/v1GetRugHistogramResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -793,16 +792,16 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}:
     get:
       summary: Estimates the smallest time grain present in the column
-      operationId: QueryService_ColumnTimeGrain
+      operationId: RuntimeService_EstimateSmallestTimeGrain
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnTimeGrainResponse'
+            $ref: '#/definitions/v1EstimateSmallestTimeGrainResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -826,16 +825,16 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}:
     get:
-      summary: TableCardinality returns row count
-      operationId: QueryService_TableCardinality
+      summary: 'TableCardinality (TODO: add description)'
+      operationId: RuntimeService_GetTableCardinality
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1TableCardinalityResponse'
+            $ref: '#/definitions/v1GetTableCardinalityResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -855,16 +854,16 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}:
     get:
       summary: Get the time range summaries (min, max) for a column
-      operationId: QueryService_ColumnTimeRange
+      operationId: RuntimeService_GetTimeRangeSummary
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnTimeRangeResponse'
+            $ref: '#/definitions/v1GetTimeRangeSummaryResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -888,16 +887,16 @@ paths:
           type: integer
           format: int32
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/timeseries/tables/{tableName}:
     post:
-      summary: Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
-      operationId: QueryService_ColumnTimeSeries
+      summary: Generate time series
+      operationId: RuntimeService_GenerateTimeSeries
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnTimeSeriesResponse'
+            $ref: '#/definitions/v1GenerateTimeSeriesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -922,7 +921,7 @@ paths:
               measures:
                 type: array
                 items:
-                  $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
+                  $ref: '#/definitions/GenerateTimeSeriesRequestBasicMeasure'
               pixels:
                 type: integer
                 format: int32
@@ -937,18 +936,18 @@ paths:
               timestampColumnName:
                 type: string
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
     post:
       summary: |-
         Get TopK elements from a table for a column given an agg function
         agg function and k are optional, defaults are count(*) and 50 respectively
-      operationId: QueryService_ColumnTopK
+      operationId: RuntimeService_GetTopK
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ColumnTopKResponse'
+            $ref: '#/definitions/v1GetTopKResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -980,13 +979,13 @@ paths:
               priority:
                 type: integer
                 format: int32
-            description: Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
+            description: Request for RuntimeService.GetTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/query:
     post:
       summary: Query runs a SQL query against the instance's OLAP datastore.
-      operationId: QueryService_Query
+      operationId: RuntimeService_Query
       responses:
         "200":
           description: A successful response.
@@ -1022,9 +1021,9 @@ paths:
               sql:
                 type: string
                 title: SELECT statement
-            title: Request message for QueryService.Query
+            title: Request message for RuntimeService.Query
       tags:
-        - QueryService
+        - RuntimeService
   /v1/instances/{instanceId}/reconcile:
     post:
       summary: |-
@@ -1182,17 +1181,6 @@ paths:
       tags:
         - RuntimeService
 definitions:
-  ColumnTimeSeriesRequestBasicMeasure:
-    type: object
-    properties:
-      expression:
-        type: string
-        title: mandatory user defined metadata
-      id:
-        type: string
-      sqlName:
-        type: string
-        title: optional user defined metadata
   ConnectorProperty:
     type: object
     properties:
@@ -1231,6 +1219,24 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
+  ExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
+  GenerateTimeSeriesRequestBasicMeasure:
+    type: object
+    properties:
+      expression:
+        type: string
+        title: mandatory user defined metadata
+      id:
+        type: string
+      sqlName:
+        type: string
+        title: optional user defined metadata
   MetricsViewDimension:
     type: object
     properties:
@@ -1319,6 +1325,26 @@ definitions:
         type: integer
         format: int64
     title: CharLocation is a line and column in a code artifact
+  SourceExtractPolicy:
+    type: object
+    properties:
+      filesLimit:
+        type: string
+        format: uint64
+        title: limit on number of files
+      filesStrategy:
+        $ref: '#/definitions/ExtractPolicyStrategy'
+        title: strategy for selecting files
+      rowsLimitBytes:
+        type: string
+        format: uint64
+        title: |-
+          could in future add: uint64 rows_limit = n;
+          limit on data fetched in bytes
+      rowsStrategy:
+        $ref: '#/definitions/ExtractPolicyStrategy'
+        title: strategy for selecting rows in a file
+    title: Extract policy for glob connectors
   StructTypeField:
     type: object
     properties:
@@ -1440,67 +1466,7 @@ definitions:
         format: double
       topK:
         $ref: '#/definitions/v1TopK'
-    description: Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
-  v1ColumnCardinalityResponse:
-    type: object
-    properties:
-      categoricalSummary:
-        $ref: '#/definitions/v1CategoricalSummary'
-  v1ColumnDescriptiveStatisticsResponse:
-    type: object
-    properties:
-      numericSummary:
-        $ref: '#/definitions/v1NumericSummary'
-  v1ColumnNullCountResponse:
-    type: object
-    properties:
-      count:
-        type: number
-        format: double
-    title: Response for QueryService.ColumnNullCount
-  v1ColumnNumericHistogramResponse:
-    type: object
-    properties:
-      numericSummary:
-        $ref: '#/definitions/v1NumericSummary'
-    title: Response for QueryService.ColumnNumericHistogram
-  v1ColumnRollupIntervalResponse:
-    type: object
-    properties:
-      end:
-        type: string
-        format: date-time
-      interval:
-        $ref: '#/definitions/v1TimeGrain'
-      start:
-        type: string
-        format: date-time
-  v1ColumnRugHistogramResponse:
-    type: object
-    properties:
-      numericSummary:
-        $ref: '#/definitions/v1NumericSummary'
-  v1ColumnTimeGrainResponse:
-    type: object
-    properties:
-      timeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-    title: Response for QueryService.ColumnTimeGrain
-  v1ColumnTimeRangeResponse:
-    type: object
-    properties:
-      timeRangeSummary:
-        $ref: '#/definitions/v1TimeRangeSummary'
-  v1ColumnTimeSeriesResponse:
-    type: object
-    properties:
-      rollup:
-        $ref: '#/definitions/v1TimeSeriesResponse'
-  v1ColumnTopKResponse:
-    type: object
-    properties:
-      categoricalSummary:
-        $ref: '#/definitions/v1CategoricalSummary'
+    description: Response for RuntimeService.GetTopK and RuntimeService.GetCardinalityOfColumn. Message will have either topK or cardinality set.
   v1Connector:
     type: object
     properties:
@@ -1526,6 +1492,10 @@ definitions:
     properties:
       embedCatalog:
         type: boolean
+      env:
+        type: object
+        additionalProperties:
+          type: string
       instanceId:
         type: string
       olapDriver:
@@ -1587,12 +1557,44 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1EstimateRollupIntervalResponse:
+    type: object
+    properties:
+      end:
+        type: string
+        format: date-time
+      interval:
+        $ref: '#/definitions/v1TimeGrain'
+      start:
+        type: string
+        format: date-time
+  v1EstimateSmallestTimeGrainResponse:
+    type: object
+    properties:
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+    title: Response for RuntimeService.EstimateSmallestTimeGrain
+  v1GenerateTimeSeriesResponse:
+    type: object
+    properties:
+      rollup:
+        $ref: '#/definitions/v1TimeSeriesResponse'
+  v1GetCardinalityOfColumnResponse:
+    type: object
+    properties:
+      categoricalSummary:
+        $ref: '#/definitions/v1CategoricalSummary'
   v1GetCatalogEntryResponse:
     type: object
     properties:
       entry:
         $ref: '#/definitions/v1CatalogEntry'
     title: Response message for RuntimeService.GetCatalogEntry
+  v1GetDescriptiveStatisticsResponse:
+    type: object
+    properties:
+      numericSummary:
+        $ref: '#/definitions/v1NumericSummary'
   v1GetFileResponse:
     type: object
     properties:
@@ -1608,6 +1610,46 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.GetInstance
+  v1GetNullCountResponse:
+    type: object
+    properties:
+      count:
+        type: number
+        format: double
+    title: Response for RuntimeService.GetNullCount
+  v1GetNumericHistogramResponse:
+    type: object
+    properties:
+      numericSummary:
+        $ref: '#/definitions/v1NumericSummary'
+  v1GetRugHistogramResponse:
+    type: object
+    properties:
+      numericSummary:
+        $ref: '#/definitions/v1NumericSummary'
+  v1GetTableCardinalityResponse:
+    type: object
+    properties:
+      cardinality:
+        type: string
+        format: int64
+  v1GetTableRowsResponse:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          type: object
+  v1GetTimeRangeSummaryResponse:
+    type: object
+    properties:
+      timeRangeSummary:
+        $ref: '#/definitions/v1TimeRangeSummary'
+  v1GetTopKResponse:
+    type: object
+    properties:
+      categoricalSummary:
+        $ref: '#/definitions/v1CategoricalSummary'
   v1HistogramMethod:
     type: string
     enum:
@@ -1623,6 +1665,11 @@ definitions:
         description: |-
           If true, the runtime will store the instance's catalog in its OLAP store instead
           of in the runtime's metadata store. Currently only supported for the duckdb driver.
+      env:
+        type: object
+        additionalProperties:
+          type: string
+        title: instance specific environment variables
       instanceId:
         type: string
         title: Identifier (UUID)
@@ -1632,6 +1679,11 @@ definitions:
       olapDsn:
         type: string
         title: DSN for connection to OLAP
+      projectEnv:
+        type: object
+        additionalProperties:
+          type: string
+        title: project defaults
       repoDriver:
         type: string
         description: |-
@@ -1692,6 +1744,9 @@ definitions:
   v1MetricsView:
     type: object
     properties:
+      defaultTimeRange:
+        type: string
+        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
       description:
         type: string
         title: Brief description of the dashboard
@@ -1714,16 +1769,12 @@ definitions:
       name:
         type: string
         title: Name of the metrics view
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Smallest time grain to show in the dashboard
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
-      timeGrains:
-        type: array
-        items:
-          type: string
-        description: |-
-          Recommended granularities for rolling up the time dimension.
-          Should be a valid SQL INTERVAL value.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
@@ -1766,7 +1817,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
-    title: Response message for QueryService.MetricsViewTimeSeries
+    title: Response message for RuntimeService.MetricsViewTimeSeries
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -1778,7 +1829,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
-    title: Response message for QueryService.MetricsViewToplist
+    title: Response message for RuntimeService.MetricsViewToplist
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -1788,7 +1839,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
-    title: Response message for QueryService.MetricsViewTotals
+    title: Response message for RuntimeService.MetricsViewTotals
   v1Model:
     type: object
     properties:
@@ -1815,6 +1866,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/NumericHistogramBinsBin'
+    title: Response for RuntimeService.GetNumericHistogram
   v1NumericOutliers:
     type: object
     properties:
@@ -1846,7 +1898,7 @@ definitions:
       sd:
         type: number
         format: double
-    title: Response for QueryService.ColumnDescriptiveStatistics
+    title: Response for RuntimeService.GetDescriptiveStatistics
   v1NumericSummary:
     type: object
     properties:
@@ -1857,7 +1909,7 @@ definitions:
       numericStatistics:
         $ref: '#/definitions/v1NumericStatistics'
     description: |-
-      Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
+      Response for RuntimeService.GetNumericHistogram, RuntimeService.GetDescriptiveStatistics and RuntimeService.GetCardinalityOfColumn.
       Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
   v1ObjectType:
     type: string
@@ -1890,6 +1942,13 @@ definitions:
         type: string
       type:
         type: string
+  v1ProfileColumnsResponse:
+    type: object
+    properties:
+      profileColumns:
+        type: array
+        items:
+          $ref: '#/definitions/v1ProfileColumn'
   v1PutFileAndReconcileRequest:
     type: object
     properties:
@@ -1955,7 +2014,7 @@ definitions:
       meta:
         $ref: '#/definitions/v1StructType'
         title: Schema of result data
-    title: Response message for QueryService.Query
+    title: Response message for RuntimeService.Query
   v1ReconcileError:
     type: object
     properties:
@@ -2112,12 +2171,19 @@ definitions:
       name:
         type: string
         title: Name of the source
+      policy:
+        $ref: '#/definitions/SourceExtractPolicy'
+        title: extraction policy for the source
       properties:
         type: object
         title: Connector properties assigned in the source
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
+      timeoutSeconds:
+        type: integer
+        format: int32
+        title: timeout for source ingestion in seconds
     title: Source is the internal representation of a source definition
   v1StructType:
     type: object
@@ -2145,26 +2211,6 @@ definitions:
       Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
       scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
       have managed = false.
-  v1TableCardinalityResponse:
-    type: object
-    properties:
-      cardinality:
-        type: string
-        format: int64
-  v1TableColumnsResponse:
-    type: object
-    properties:
-      profileColumns:
-        type: array
-        items:
-          $ref: '#/definitions/v1ProfileColumn'
-  v1TableRowsResponse:
-    type: object
-    properties:
-      data:
-        type: array
-        items:
-          type: object
   v1TimeGrain:
     type: string
     enum:

@@ -1,28 +1,17 @@
 package server
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
 
-func TestServer_Database(t *testing.T) {
-	server, instanceId := getTableTestServer(t)
-	result, err := server.query(context.Background(), instanceId, &drivers.Statement{
-		Query: "select count(*) from test",
-	})
-	require.NoError(t, err)
-	require.Equal(t, 1, getSingleValue(t, result.Rows))
-}
-
 func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.TableCardinality(context.Background(), &runtimev1.TableCardinalityRequest{
+	cr, err := server.TableCardinality(testCtx(), &runtimev1.TableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -32,7 +21,7 @@ func TestServer_TableCardinality(t *testing.T) {
 
 func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.TableCardinality(context.Background(), &runtimev1.TableCardinalityRequest{
+	cr, err := server.TableCardinality(testCtx(), &runtimev1.TableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -42,7 +31,7 @@ func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 
 func TestServer_TableColumns(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.TableColumns(context.Background(), &runtimev1.TableColumnsRequest{
+	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -59,7 +48,7 @@ func TestServer_TableColumns(t *testing.T) {
 
 func TestServer_TableColumns_DuplicateNames(t *testing.T) {
 	server, instanceId := getTableTestServerWithSql(t, "select * from (select 1 as a) a join (select 1 as a) b on a.a = b.a")
-	cr, err := server.TableColumns(context.Background(), &runtimev1.TableColumnsRequest{
+	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -74,7 +63,7 @@ func TestServer_TableColumns_DuplicateNames(t *testing.T) {
 
 func TestServer_TableColumns_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.TableColumns(context.Background(), &runtimev1.TableColumnsRequest{
+	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -91,7 +80,7 @@ func TestServer_TableColumns_EmptyModel(t *testing.T) {
 
 func TestServer_TableRows(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.TableRows(context.Background(), &runtimev1.TableRowsRequest{
+	cr, err := server.TableRows(testCtx(), &runtimev1.TableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,
@@ -102,7 +91,7 @@ func TestServer_TableRows(t *testing.T) {
 
 func TestServer_TableRows_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.TableRows(context.Background(), &runtimev1.TableRowsRequest{
+	cr, err := server.TableRows(testCtx(), &runtimev1.TableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,

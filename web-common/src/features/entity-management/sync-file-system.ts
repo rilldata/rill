@@ -26,7 +26,7 @@ import {
 const SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS = 60000;
 const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;
 
-export function syncFileSystemPeriodically(
+export async function syncFileSystemPeriodically(
   queryClient: QueryClient,
   runtimeStore: Writable<RuntimeState>,
   page: Readable<Page<Record<string, string>, string>>,
@@ -39,6 +39,7 @@ export function syncFileSystemPeriodically(
   afterNavigate(async () => {
     // on first page load, afterNavigate races against the async onMount, which sets the runtimeInstanceId
     const runtimeInstanceId = await waitForRuntimeInstanceId(runtimeStore);
+    if (get(runtimeStore).readOnly) return;
 
     // on first page load, afterNavigate runs twice, but we only want to run the below code once
     if (afterNavigateRanOnce) return;

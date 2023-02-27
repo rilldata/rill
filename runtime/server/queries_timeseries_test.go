@@ -1,7 +1,7 @@
 package server
 
 import (
-	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -16,7 +16,7 @@ import (
 func TestServer_Timeseries_EmptyModel(t *testing.T) {
 	server, instanceID := getTimeseriesTestServerWithEmptyModel(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -36,7 +36,7 @@ func TestServer_Timeseries_EmptyModel(t *testing.T) {
 func TestServer_Timeseries(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -48,7 +48,7 @@ func TestServer_Timeseries(t *testing.T) {
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			End:      parseTime(t, "2019-12-02T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -70,7 +70,7 @@ func TestServer_Timeseries(t *testing.T) {
 func TestServer_Timeseries_Spark_NoParams(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId:          instanceID,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
@@ -85,7 +85,7 @@ func TestServer_Timeseries_Spark_NoParams(t *testing.T) {
 func TestServer_Timeseries_nulls_for_empty_intervals(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -101,7 +101,7 @@ func TestServer_Timeseries_nulls_for_empty_intervals(t *testing.T) {
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-01T01:00:00Z"),
+			End:      parseTime(t, "2019-01-01T02:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		},
 	})
@@ -125,7 +125,7 @@ func isNull(v *structpb.Value) bool {
 func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -157,7 +157,7 @@ func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
 func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -189,7 +189,7 @@ func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
 func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -221,7 +221,7 @@ func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
 func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -253,7 +253,7 @@ func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -285,7 +285,7 @@ func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
 func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -318,7 +318,7 @@ func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 func TestServer_Timeseries_numeric_dim(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -350,7 +350,7 @@ func TestServer_Timeseries_numeric_dim(t *testing.T) {
 func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -382,7 +382,7 @@ func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
 func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -415,13 +415,13 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
-				SqlName:    mx,
+				SqlName:    "max",
 			},
 		},
 		TimestampColumnName: "time",
@@ -438,6 +438,10 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
+	for i, v := range response.GetRollup().Results {
+		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
+	}
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, response.Rollup.TimeRange.GetInterval())
 	require.Equal(t, 25, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
 }
@@ -446,7 +450,7 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -470,10 +474,37 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
 }
 
+func TestServer_Timeseries_TimeEnd_exclusive(t *testing.T) {
+	server, instanceID := getTimeseriesTestServer(t)
+
+	response, err := server.GenerateTimeSeries(testCtx(), &runtimev1.GenerateTimeSeriesRequest{
+		InstanceId: instanceID,
+		TableName:  "timeseries",
+		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    "max",
+			},
+		},
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
+			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		},
+		Filters: new(runtimev1.MetricsViewFilter),
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
+}
+
 func TestServer_Timeseries_No_Measures(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId:          instanceID,
 		TableName:           "timeseries",
 		Measures:            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{},
@@ -495,7 +526,7 @@ func TestServer_Timeseries_No_Measures(t *testing.T) {
 func TestServer_Timeseries_Nil_Measures(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId:          instanceID,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
@@ -518,7 +549,7 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 
 	mx := "max"
 	sm := "sum"
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -558,7 +589,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
 	sm := "sum"
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -592,7 +623,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 func TestServer_Timeseries_1dim_null(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -624,7 +655,7 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -659,7 +690,7 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -697,7 +728,7 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 func TestServer_Timeseries_1dim_2like(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -732,7 +763,7 @@ func TestServer_Timeseries_1dim_2like(t *testing.T) {
 func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -772,13 +803,13 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 func TestServer_Timeseries_no_measures(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId:          instanceID,
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			End:      parseTime(t, "2019-01-03T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 	})
@@ -793,7 +824,7 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -805,7 +836,7 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			End:      parseTime(t, "2019-01-03T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -827,7 +858,7 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
 	cnt := "count"
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -839,7 +870,7 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			End:      parseTime(t, "2019-01-03T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -861,10 +892,14 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 func TestServer_RangeSanity(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	result, err := server.query(context.Background(), instanceID, &drivers.Statement{
+	olap, err := server.runtime.OLAP(testCtx(), instanceID)
+	require.NoError(t, err)
+
+	result, err := olap.Execute(testCtx(), &drivers.Statement{
 		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",
 	})
 	require.NoError(t, err)
+
 	var min, max time.Time
 	var r duckdb.Interval
 	result.Next()
@@ -877,7 +912,7 @@ func TestServer_RangeSanity(t *testing.T) {
 func TestServer_Timeseries_Spark(t *testing.T) {
 	server, instanceID := getSparkTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -891,6 +926,10 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	})
 
 	require.NoError(t, err)
+	for i, v := range response.GetRollup().Results {
+		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
+	}
+	require.Equal(t, parseTime(t, "2019-01-10T00:00:00Z").AsTime(), response.GetRollup().TimeRange.End.AsTime())
 	results := response.GetRollup().Results
 	require.Equal(t, 9, len(results))
 	require.Equal(t, 12, len(response.Rollup.Spark))
@@ -899,7 +938,7 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 func TestServer_Timeseries_Spark_no_count(t *testing.T) {
 	server, instanceID := getSparkTimeseriesTestServer(t)
 
-	response, err := server.ColumnTimeSeries(context.Background(), &runtimev1.ColumnTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -972,7 +1011,7 @@ func getSparkTimeseriesTestServer(t *testing.T) (*Server, string) {
 func TestServer_EstimateRollupInterval_timestamp(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	r, err := server.ColumnRollupInterval(context.Background(), &runtimev1.ColumnRollupIntervalRequest{
+	r, err := server.ColumnRollupInterval(testCtx(), &runtimev1.ColumnRollupIntervalRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		ColumnName: "time",
@@ -987,7 +1026,7 @@ func TestServer_EstimateRollupInterval_timestamp(t *testing.T) {
 func TestServer_EstimateRollupInterval_date(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	r, err := server.ColumnRollupInterval(context.Background(), &runtimev1.ColumnRollupIntervalRequest{
+	r, err := server.ColumnRollupInterval(testCtx(), &runtimev1.ColumnRollupIntervalRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
 		ColumnName: "day",

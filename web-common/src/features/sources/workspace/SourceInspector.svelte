@@ -1,4 +1,9 @@
 <script lang="ts">
+  import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import {
+    ColumnSummary,
+    getSummaries,
+  } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
@@ -15,11 +20,6 @@
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import ColumnProfile from "@rilldata/web-local/lib/components/column-profile/ColumnProfile.svelte";
-  import {
-    ColumnSummary,
-    getSummaries,
-  } from "@rilldata/web-local/lib/components/column-profile/queries";
   import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
@@ -71,6 +71,8 @@
     const path = source?.properties?.path?.toLowerCase();
     if (path?.includes(".csv")) return "CSV";
     if (path?.includes(".parquet")) return "Parquet";
+    if (path?.includes(".json")) return "JSON";
+    if (path?.includes(".ndjson")) return "JSON";
     return "";
   }
 

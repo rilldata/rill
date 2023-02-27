@@ -9,15 +9,16 @@ import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
-export interface MetricsConfig {
-  display_name: string;
-  description: string;
-  timeseries: string;
-  timegrains?: Array<string>;
-  default_timegrain?: Array<string>;
-  model: string;
+export interface MetricsConfig extends MetricsParams {
   measures: MeasureEntity[];
   dimensions: DimensionEntity[];
+}
+export interface MetricsParams {
+  display_name: string;
+  timeseries: string;
+  smallest_time_grain?: string;
+  default_time_range?: string;
+  model: string;
 }
 export interface MeasureEntity {
   label?: string;
@@ -137,11 +138,10 @@ export class MetricsInternalRepresentation {
     return this.internalRepresentation[key];
   }
 
-  updateMetricKey<K extends keyof MetricsConfig>(
-    key: K,
-    value: MetricsConfig[K]
-  ) {
-    this.internalRepresentationDocument.set(key, value);
+  updateMetricsParams(params: Partial<MetricsParams>) {
+    for (const param in params) {
+      this.internalRepresentationDocument.set(param, params[param]);
+    }
     this.regenerateInternalYAML();
   }
 
@@ -247,6 +247,8 @@ export function initBlankDashboardYAML(dashboardName: string) {
 
 display_name: ""
 model: ""
+default_time_range: ""
+smallest_time_grain: ""
 timeseries: ""
 measures: []
 dimensions: []

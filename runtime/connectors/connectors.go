@@ -3,6 +3,8 @@ package connectors
 import (
 	"context"
 	"fmt"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -25,7 +27,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsFiles(ctx context.Context, env *Env, source *Source) ([]string, error)
+	ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
@@ -77,14 +79,18 @@ func (ps PropertySchema) ValidateType(val any) bool {
 type Env struct {
 	RepoDriver string
 	RepoDSN    string
+	// user provided env variables kept with keys converted to uppercase
+	Variables            map[string]string
+	AllowHostCredentials bool
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).
 type Source struct {
-	Name         string
-	Connector    string
-	SamplePolicy *SamplePolicy
-	Properties   map[string]any
+	Name          string
+	Connector     string
+	ExtractPolicy *runtimev1.Source_ExtractPolicy
+	Properties    map[string]any
+	Timeout       int32
 }
 
 // SamplePolicy tells the connector to only ingest a sample of data from the source.
@@ -93,6 +99,18 @@ type SamplePolicy struct {
 	Strategy string
 	Sample   float32
 	Limit    int
+}
+
+// FileIterator provides ways to iteratively ingest files downloaded from external sources
+// Clients should call close once they are done with iterator to release any resources
+type FileIterator interface {
+	// Close do cleanup and release resources
+	Close() error
+	// NextBatch returns a list of file downloaded from external sources
+	// NextBatch cleanups file created in previous batch
+	NextBatch(limit int) ([]string, error)
+	// HasNext can be utlisied to check if iterator has more elements left
+	HasNext() bool
 }
 
 // Validate checks the source's properties against its connector's spec.
@@ -119,12 +137,12 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsFiles(ctx context.Context, env *Env, source *Source) ([]string, error) {
+func ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-	return connector.ConsumeAsFiles(ctx, env, source)
+	return connector.ConsumeAsIterator(ctx, env, source)
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

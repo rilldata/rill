@@ -27,6 +27,7 @@
   $: switchToMetrics(metricViewName);
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+
   $: if ($metaQuery.data) {
     if (!$metaQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
@@ -48,7 +49,7 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: gridConfig = hasTimeSeries
-    ? "560px minmax(355px, auto)"
+    ? "calc(560px + 1rem) minmax(355px, auto)"
     : "max-content minmax(355px, auto)";
 </script>
 

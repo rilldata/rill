@@ -9,20 +9,18 @@
   } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceListCatalogEntries,
     useQueryServiceTableCardinality,
     useQueryServiceTableColumns,
     V1TableCardinalityResponse,
     V1Model,
-    V1ProfileColumn,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { derived, get } from "svelte/store";
+  import { derived } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
-  import {
-    getMatchingCatalogReference,
-    getTableReferences,
-  } from "../../utils/get-table-references";
+  import { getTableReferences } from "../../utils/get-table-references";
+  import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -52,27 +50,43 @@
   let cardinalityQueries: Array<UseQueryStoreResult<number>> = [];
   let sourceProfileColumns: Array<UseQueryStoreResult<number>> = [];
 
+  $: getAllSources = useRuntimeServiceListCatalogEntries(
+    $runtimeStore?.instanceId,
+    { type: "OBJECT_TYPE_SOURCE" }
+  );
+
+  $: getAllModels = useRuntimeServiceListCatalogEntries(
+    $runtimeStore?.instanceId,
+    { type: "OBJECT_TYPE_MODEL" }
+  );
+
+  // for each reference, match to an existing model or source,
+  $: referencedThings = getMatchingReferencesAndEntries(
+    modelName,
+    sourceTableReferences,
+    [
+      ...($getAllSources?.data?.entries || []),
+      ...($getAllModels?.data?.entries || []),
+    ]
+  );
   $: if (sourceTableReferences?.length) {
-    cardinalityQueries = sourceTableReferences.map((table) => {
+    // first, pull out all references that are in the catalog.
+
+    // then get the cardinalities.
+    cardinalityQueries = referencedThings?.map(([entity, reference]) => {
       return useQueryServiceTableCardinality(
         $runtimeStore?.instanceId,
-        getMatchingCatalogReference(
-          table,
-          $embeddedSources?.data,
-          $fileArtifactsStore.entities
-        ),
+        entity.name,
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
     });
-    sourceProfileColumns = sourceTableReferences.map((table) => {
+
+    // then we'll get the total number of columns for comparison.
+    sourceProfileColumns = referencedThings?.map(([entity]) => {
       return useQueryServiceTableColumns(
         $runtimeStore?.instanceId,
-        getMatchingCatalogReference(
-          table,
-          $embeddedSources?.data,
-          $fileArtifactsStore.entities
-        ),
+        entity.name,
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
@@ -80,9 +94,10 @@
   }
 
   // get input table cardinalities. We use this to determine the rollup factor.
-  $: inputCardinalities = derived(cardinalityQueries, (cardinalities) => {
-    return cardinalities
-      .map((c) => c.data)
+
+  $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {
+    return $cardinalities
+      .map((c: { data: number }) => c?.data)
       .reduce((total: number, cardinality: number) => total + cardinality, 0);
   });
 
@@ -147,9 +162,9 @@
               {#if containerWidth > COLUMN_PROFILE_CONFIG.hideRight}count{:else}ct.{/if}
             {/if}
           {:else if rollup === Infinity}
-            &nbsp; {formatInteger(outputRowCardinalityValue)} row
-            {#if outputRowCardinalityValue !== 1}s{/if}
-            selected
+            {`${formatInteger(outputRowCardinalityValue)} row${
+              outputRowCardinalityValue !== 1 ? "s" : ""
+            } selected`}
           {/if}
         </div>
 
@@ -167,9 +182,11 @@
       class:font-normal={modelHasError}
       class:text-gray-500={modelHasError}
     >
-      {#if $inputCardinalities > 0}
-        {formatInteger(~~outputRowCardinalityValue)} row{#if $inputCardinalities !== 1}s{/if}
-      {:else if $inputCardinalities === 0}
+      {#if outputRowCardinalityValue > 0}
+        {`${formatInteger(outputRowCardinalityValue)} row${
+          outputRowCardinalityValue !== 1 ? "s" : ""
+        }`}
+      {:else if outputRowCardinalityValue === 0}
         No rows selected
       {:else}
         &nbsp;
@@ -185,11 +202,13 @@
         class:text-gray-500={modelHasError}
       >
         {#if columnDelta > 0}
-          {formatInteger(columnDelta)} column
-          {#if columnDelta !== 1}s{/if} added
+          {`${formatInteger(columnDelta)} column${
+            columnDelta !== 1 ? "s" : ""
+          } added`}
         {:else if columnDelta < 0}
-          {formatInteger(-columnDelta)} column
-          {#if -columnDelta !== 1}s{/if} dropped
+          {`${formatInteger(-columnDelta)} column${
+            -columnDelta !== 1 ? "s" : ""
+          } dropped`}
         {:else if columnDelta === 0}
           No change in column count
         {:else}

@@ -2,8 +2,10 @@ package initialize
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
@@ -17,11 +19,25 @@ func InitCmd(ver version.Version) *cobra.Command {
 	var exampleName string
 	var listExamples bool
 	var verbose bool
+	var envVariables []string
 
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				projectPath = args[0]
+				if strings.HasSuffix(projectPath, ".git") {
+					repoName, err := gitutil.CloneRepo(projectPath)
+					if err != nil {
+						return fmt.Errorf("clone repo error: %w", err)
+					}
+
+					projectPath = repoName
+				}
+			}
+
 			// List examples and exit
 			if listExamples {
 				fmt.Println("The built-in examples are: ")
@@ -40,7 +56,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole)
+			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
 			if err != nil {
 				return err
 			}
@@ -76,7 +92,6 @@ func InitCmd(ver version.Version) *cobra.Command {
 
 			return nil
 		},
-		Args: cobra.ExactArgs(0),
 	}
 
 	initCmd.Flags().SortFlags = false
@@ -87,6 +102,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	initCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
 
 	return initCmd
 }

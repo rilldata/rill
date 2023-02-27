@@ -158,6 +158,17 @@ export function formatDataType(value: any, type: string) {
   } else if (INTERVALS.has(type)) {
     return intervalToTimestring(value);
   }
+  // list type
+  if (type.includes("[]")) {
+    return `[${value
+      .map((entry) => (+entry ? +entry : `'${entry}'`))
+      .join(", ")}]`;
+  }
+  if (type === "JSON") {
+    return value;
+  }
+  // use this for structs, maps, etc
+  return JSON.stringify(value).replace(/"/g, "'");
 }
 
 /** These will be used in the string */

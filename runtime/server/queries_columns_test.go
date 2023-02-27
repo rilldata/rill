@@ -20,7 +20,8 @@ func TestServer_GetTopK_HugeInt(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric, 'a' as dim", 1)
 
 	res, err := server.ColumnTopK(
-		context.Background(),
+    testCtx(),
+		testCtx(),
 		&runtimev1.ColumnTopKRequest{
 			InstanceId: instanceId,
 			TableName:  "test",
@@ -40,7 +41,7 @@ func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric", 1)
 
 	res, err := server.ColumnTopK(
-		context.Background(),
+    testCtx(),
 		&runtimev1.ColumnTopKRequest{
 			InstanceId: instanceId,
 			TableName:  "test",
@@ -73,7 +74,7 @@ func TestServer_GetTopK(t *testing.T) {
 	)
 
 	res, err := server.ColumnTopK(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnTopKRequest{
 			InstanceId: instanceId,
 			TableName:  "test",
@@ -94,7 +95,7 @@ func TestServer_GetTopK(t *testing.T) {
 	require.Equal(t, 1, int(topk.Entries[3].Count))
 
 	agg := "sum(val)"
-	res, err = server.ColumnTopK(context.Background(), &runtimev1.ColumnTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: agg})
+	res, err = server.ColumnTopK(testCtx(), &runtimev1.ColumnTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", Agg: agg})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 4, len(res.CategoricalSummary.GetTopK().Entries))
@@ -108,7 +109,7 @@ func TestServer_GetTopK(t *testing.T) {
 	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[3].Count))
 
 	k := int32(1)
-	res, err = server.ColumnTopK(context.Background(), &runtimev1.ColumnTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: k})
+	res, err = server.ColumnTopK(testCtx(), &runtimev1.ColumnTopKRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col", K: k})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 1, len(res.CategoricalSummary.GetTopK().Entries))
@@ -119,12 +120,12 @@ func TestServer_GetTopK(t *testing.T) {
 func TestServer_ColumnNullCount(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	res, err := server.ColumnNullCount(context.Background(), &runtimev1.ColumnNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
+	res, err := server.ColumnNullCount(testCtx(), &runtimev1.ColumnNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	require.Equal(t, 1.0, res.Count)
 
-	res, err = server.ColumnNullCount(context.Background(), &runtimev1.ColumnNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	res, err = server.ColumnNullCount(testCtx(), &runtimev1.ColumnNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 0.0, res.Count)
@@ -133,13 +134,13 @@ func TestServer_ColumnNullCount(t *testing.T) {
 func TestServer_ColumnDescriptiveStatistics(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	_, err := server.ColumnDescriptiveStatistics(context.Background(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
+	_, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	if err != nil {
 		// "col" is a varchar column, so this should fail
 		require.ErrorContains(t, err, "No function matches the given name and argument types 'approx_quantile(VARCHAR, DECIMAL(3,2))'")
 	}
 
-	res, err := server.ColumnDescriptiveStatistics(context.Background(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericStatistics().Min)
@@ -154,7 +155,7 @@ func TestServer_ColumnDescriptiveStatistics(t *testing.T) {
 func TestServer_ColumnDescriptiveStatistics_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
-	res, err := server.ColumnDescriptiveStatistics(context.Background(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Nil(t, res.NumericSummary.GetNumericStatistics())
@@ -163,12 +164,12 @@ func TestServer_ColumnDescriptiveStatistics_EmptyModel(t *testing.T) {
 func TestServer_ColumnTimeGrain(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	_, err := server.ColumnTimeGrain(context.Background(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	_, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		// "val" is a numeric column, so this should fail
 		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
 	}
-	res, err := server.ColumnTimeGrain(context.Background(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	res, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, "TIME_GRAIN_DAY", res.TimeGrain.String())
@@ -177,12 +178,12 @@ func TestServer_ColumnTimeGrain(t *testing.T) {
 func TestServer_ColumnTimeGrain_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
-	_, err := server.ColumnTimeGrain(context.Background(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	_, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	if err != nil {
 		// "val" is a numeric column, so this should fail
 		require.ErrorContains(t, err, "Binder Error: No function matches the given name and argument types 'date_part(VARCHAR, INTEGER)'")
 	}
-	res, err := server.ColumnTimeGrain(context.Background(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	res, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, "TIME_GRAIN_UNSPECIFIED", res.TimeGrain.String())
@@ -192,7 +193,7 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.ColumnNumericHistogram(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnNumericHistogramRequest{
 			InstanceId:      instanceId,
 			TableName:       "test",
@@ -212,14 +213,10 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	niceResult := queries.NiceAndStep(1, 5, 5)
-	gap := niceResult[2]
-	if niceResult[2] < 0 {
-		gap = 1 / -niceResult[2]
-	}
+	start, _, gap := queries.NiceAndStep(1, 5, 5)
 
 	res, err := server.ColumnNumericHistogram(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnNumericHistogramRequest{
 			InstanceId:      instanceId,
 			TableName:       "test",
@@ -232,21 +229,21 @@ func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	for i := 0; i < len(bins); i++ {
 		fmt.Printf("%d %f %f %f\n", bins[i].Bucket, bins[i].Low, bins[i].High, bins[i].Count)
 	}
-	require.Equal(t, 4, len(bins))
+	require.Equal(t, 5, len(bins))
 
 	require.Equal(t, int32(0), bins[0].Bucket)
-	require.Equal(t, niceResult[0], bins[0].Low)
-	require.Equal(t, niceResult[0]+gap, bins[0].High)
+	require.Equal(t, start, bins[0].Low)
+	require.Equal(t, start+gap, bins[0].High)
 	require.Equal(t, 3.0, bins[0].Count)
 
 	require.Equal(t, int32(1), bins[1].Bucket)
-	require.Equal(t, niceResult[0]+gap, bins[1].Low)
-	require.Equal(t, niceResult[0]+gap*2, bins[1].High)
+	require.Equal(t, start+gap, bins[1].Low)
+	require.Equal(t, start+gap*2, bins[1].High)
 	require.Equal(t, 0.0, bins[1].Count)
 
 	require.Equal(t, 1.0, bins[2].Count)
 
-	require.Equal(t, 1.0, bins[3].Count)
+	require.Equal(t, 0.0, bins[3].Count)
 }
 
 func TestServer_Model_Nulls(t *testing.T) {
@@ -265,7 +262,7 @@ func TestServer_GetNumericHistogram_2rows_all_nulls(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
 	res, err := server.ColumnNumericHistogram(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnNumericHistogramRequest{
 			InstanceId:      instanceId,
 			TableName:       "test",
@@ -287,7 +284,7 @@ func TestServer_GetNumericHistogram_2rows_single_null(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
 	res, err := server.ColumnNumericHistogram(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnNumericHistogramRequest{
 			InstanceId:      instanceId,
 			TableName:       "test",
@@ -311,7 +308,7 @@ func TestServer_GetNumericHistogram_2rows(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, sql, 3)
 
 	res, err := server.ColumnNumericHistogram(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnNumericHistogramRequest{
 			InstanceId:      instanceId,
 			TableName:       "test",
@@ -338,7 +335,7 @@ func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	res, err := server.ColumnNumericHistogram(
-		context.Background(),
+		testCtx(),
 		&runtimev1.ColumnNumericHistogramRequest{
 			InstanceId:      instanceId,
 			TableName:       "test",
@@ -354,7 +351,7 @@ func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 func TestServer_GetRugHistogram(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
-	res, err := server.ColumnRugHistogram(context.Background(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	outliers := res.NumericSummary.GetNumericOutliers().Outliers
@@ -366,7 +363,7 @@ func TestServer_GetRugHistogram(t *testing.T) {
 	require.True(t, outliers[0].Count > 0)
 
 	// works only with numeric columns
-	_, err = server.ColumnRugHistogram(context.Background(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	_, err = server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.ErrorContains(t, err, "Conversion Error: Unimplemented type for cast (TIMESTAMP -> DOUBLE)")
 }
 
@@ -378,7 +375,7 @@ func TestServer_GetRugHistogram_all_nulls(t *testing.T) {
 	`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
-	res, err := server.ColumnRugHistogram(context.Background(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	outliers := res.NumericSummary.GetNumericOutliers().Outliers
@@ -393,7 +390,7 @@ func TestServer_GetRugHistogram_2rows_null(t *testing.T) {
 	`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 2)
 
-	res, err := server.ColumnRugHistogram(context.Background(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 500, len(res.NumericSummary.GetNumericOutliers().Outliers))
@@ -409,7 +406,7 @@ func TestServer_GetRugHistogram_3rows_null(t *testing.T) {
 	`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 3)
 
-	res, err := server.ColumnRugHistogram(context.Background(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	outliers := res.NumericSummary.GetNumericOutliers().Outliers
@@ -419,7 +416,7 @@ func TestServer_GetRugHistogram_3rows_null(t *testing.T) {
 func TestServer_GetCategoricalHistogram_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
-	res, err := server.ColumnRugHistogram(context.Background(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 0, len(res.NumericSummary.GetNumericOutliers().Outliers))
@@ -429,7 +426,7 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
 	// Get Time Range Summary works with timestamp columns
-	res, err := server.ColumnTimeRange(context.Background(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.TimeRangeSummary.Min)
@@ -443,7 +440,7 @@ func TestServer_GetTimeRangeSummary_EmptyModel(t *testing.T) {
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	// Get Time Range Summary works with timestamp columns
-	res, err := server.ColumnTimeRange(context.Background(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Nil(t, res.TimeRangeSummary.Max)
@@ -455,7 +452,7 @@ func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
 	// Test Get Time Range Summary with Date type column
-	res, err := server.ColumnTimeRange(context.Background(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
+	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min)
@@ -475,17 +472,17 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	server, instanceId := getColumnTestServer(t)
 
 	// Get Cardinality of Column works with all columns
-	res, err := server.ColumnCardinality(context.Background(), &runtimev1.ColumnCardinalityRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
+	res, err := server.ColumnCardinality(testCtx(), &runtimev1.ColumnCardinalityRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 
-	res, err = server.ColumnCardinality(context.Background(), &runtimev1.ColumnCardinalityRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
+	res, err = server.ColumnCardinality(testCtx(), &runtimev1.ColumnCardinalityRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 
-	res, err = server.ColumnCardinality(context.Background(), &runtimev1.ColumnCardinalityRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
+	res, err = server.ColumnCardinality(testCtx(), &runtimev1.ColumnCardinalityRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
@@ -520,10 +517,10 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*S
 	server, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)
 
-	olap, err := rt.OLAP(context.Background(), instanceID)
+	olap, err := rt.OLAP(testCtx(), instanceID)
 	require.NoError(t, err)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
+	res, err := olap.Execute(testCtx(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
 	require.NoError(t, err)
 	defer res.Close()
 

@@ -53,6 +53,7 @@ export type QueryServiceTableRowsParams = { limit?: number; priority?: number };
 
 export type QueryServiceColumnRollupIntervalBody = {
   columnName?: string;
+  histogramMethod?: RuntimeServiceGetNumericHistogramHistogramMethod;
   priority?: number;
 };
 
@@ -288,8 +289,10 @@ export type V1SourceProperties = { [key: string]: any };
 export interface V1Source {
   connector?: string;
   name?: string;
+  policy?: SourceExtractPolicy;
   properties?: V1SourceProperties;
   schema?: V1StructType;
+  timeoutSeconds?: number;
 }
 
 export interface V1RenameFileResponse {
@@ -508,16 +511,16 @@ export interface V1MetricsViewTotalsResponse {
 }
 
 export interface V1MetricsView {
+  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
+  defaultTimeRange?: string;
   description?: string;
   dimensions?: MetricsViewDimension[];
   label?: string;
   measures?: MetricsViewMeasure[];
   model?: string;
   name?: string;
+  smallestTimeGrain?: V1TimeGrain;
   timeDimension?: string;
-  /** Recommended granularities for rolling up the time dimension.
-Should be a valid SQL INTERVAL value. */
-  timeGrains?: string[];
 }
 
 export interface V1MapType {
@@ -542,6 +545,10 @@ export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
 
+export type V1InstanceProjectEnv = { [key: string]: string };
+
+export type V1InstanceEnv = { [key: string]: string };
+
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
 one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -554,15 +561,44 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
+  env?: V1InstanceEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
+  projectEnv?: V1InstanceProjectEnv;
   /** Driver for reading/editing code artifacts (options: file, metastore).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
 }
 
+export type V1HistogramMethod =
+  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1HistogramMethod = {
+  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
+  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
+  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+} as const;
+
+export interface V1GetTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1GetTimeRangeSummaryResponse {
+  timeRangeSummary?: V1TimeRangeSummary;
+}
+
+export type V1GetTableRowsResponseDataItem = { [key: string]: any };
+
+export interface V1GetTableRowsResponse {
+  data?: V1GetTableRowsResponseDataItem[];
+}
+
+export interface V1GetTableCardinalityResponse {
+  cardinality?: string;
+}
 export type V1HistogramMethod =
   typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
 
@@ -612,12 +648,15 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestEnv = { [key: string]: string };
+
 /**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
+  env?: V1CreateInstanceRequestEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
@@ -757,6 +796,13 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
+export interface SourceExtractPolicy {
+  filesLimit?: string;
+  filesStrategy?: ExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  rowsStrategy?: ExtractPolicyStrategy;
+}
+
 export interface ReconcileErrorCharLocation {
   column?: number;
   line?: number;
@@ -805,6 +851,22 @@ export interface MetricsViewDimension {
   label?: string;
   name?: string;
 }
+
+export interface GenerateTimeSeriesRequestBasicMeasure {
+  expression?: string;
+  id?: string;
+  sqlName?: string;
+}
+
+export type ExtractPolicyStrategy =
+  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
 
 export type ConnectorPropertyType =
   typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];

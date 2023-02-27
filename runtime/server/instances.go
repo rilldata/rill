@@ -6,12 +6,17 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // ListInstances implements RuntimeService.
 func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
 	instances, err := s.runtime.FindInstances(ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -27,6 +32,10 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 // GetInstance implements RuntimeService.
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	inst, err := s.runtime.FindInstance(ctx, req.InstanceId)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
@@ -42,6 +51,10 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
 	inst := &drivers.Instance{
 		ID:           req.InstanceId,
 		OLAPDriver:   req.OlapDriver,
@@ -49,6 +62,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		RepoDriver:   req.RepoDriver,
 		RepoDSN:      req.RepoDsn,
 		EmbedCatalog: req.EmbedCatalog,
+		Env:          req.Env,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -63,6 +77,10 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 // DeleteInstance implements RuntimeService.
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
 	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -79,5 +97,7 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		RepoDriver:   inst.RepoDriver,
 		RepoDsn:      inst.RepoDSN,
 		EmbedCatalog: inst.EmbedCatalog,
+		Env:          inst.Env,
+		ProjectEnv:   inst.ProjectEnv,
 	}
 }

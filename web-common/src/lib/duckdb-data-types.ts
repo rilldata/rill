@@ -60,6 +60,20 @@ export const TIMESTAMPS = new Set([
   ...DATES,
 ]);
 export const INTERVALS = new Set(["INTERVAL"]);
+export const NESTED = new Set(["STRUCT", "MAP", "LIST"]);
+
+export function isList(type) {
+  return type.includes("[]");
+}
+
+export function isNested(type) {
+  return (
+    type === "JSON" ||
+    [...NESTED].some((typeDef) => type.startsWith(typeDef)) ||
+    isList(type)
+  );
+}
+
 export const STRING_LIKES = new Set([
   // Go Types
   "CODE_STRING",
@@ -127,6 +141,13 @@ export const TIMESTAMP_TOKENS: ColorTokens = {
   vizStrokeClass: "stroke-teal-500",
 };
 
+export const NESTED_TOKENS: ColorTokens = {
+  textClass: "text-gray-800 dark:text-gray-200",
+  bgClass: "bg-gray-200 dark:bg-gray-600",
+  vizFillClass: "fill-gray-800 dark:fill-gray-200",
+  vizStrokeClass: "stroke-gray-800 dark:stroke-gray-200",
+};
+
 export const INTERVAL_TOKENS: ColorTokens = TIMESTAMP_TOKENS;
 
 function setTypeTailwindStyles(
@@ -146,6 +167,7 @@ export const DATA_TYPE_COLORS = {
   ...setTypeTailwindStyles(Array.from(TIMESTAMPS), TIMESTAMP_TOKENS),
   ...setTypeTailwindStyles(Array.from(INTERVALS), INTERVAL_TOKENS),
   ...setTypeTailwindStyles(Array.from(BOOLEANS), CATEGORICAL_TOKENS),
+  ...setTypeTailwindStyles(Array.from(NESTED), NESTED_TOKENS),
 };
 
 /**

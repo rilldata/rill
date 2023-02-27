@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
@@ -38,9 +40,9 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
 	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
 	// nolint:staticcheck // TODO: remove when go-duckdb implements the driver.ExecerContext interface
-	connector, err := duckdb.NewConnector(cfg.DSN, func(execer driver.Execer) error {
+	connector, err := duckdb.NewConnector(cfg.DSN, func(execer driver.ExecerContext) error {
 		for _, qry := range bootQueries {
-			_, err = execer.Exec(qry, nil)
+			_, err = execer.ExecContext(context.Background(), qry, nil)
 			if err != nil {
 				return err
 			}
@@ -48,6 +50,15 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil
 	})
 	if err != nil {
+		// Adding check if using old database files with upgraded version
+		if strings.Contains(err.Error(), "Trying to read a database file with version number") {
+			return nil, fmt.Errorf("database file %q was created with an older, incompatible version of Rill (please remove it and try again)", cfg.DSN)
+		}
+
+		if strings.Contains(err.Error(), "Could not set lock on file") {
+			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
+		}
+
 		return nil, err
 	}
 

@@ -28,3 +28,7 @@ To re-generate the client, run:
 ```script
 npm run generate:client -w web-admin
 ```
+
+## Building for production
+
+1. Set the `VITE_RILL_ADMIN_URL` environment variable to the URL of the control plane server (e.g. `https://admin.rilldata.com`)
