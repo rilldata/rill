@@ -49,6 +49,9 @@
     flex-wrap: nowrap;
     white-space: nowrap;
     overflow: hidden; */
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
     position: relative;
     /* z-index: 10; */
     /* outline: 1px solid black; */
