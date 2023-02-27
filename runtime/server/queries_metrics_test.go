@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -22,7 +21,7 @@ func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
 func TestServer_MetricsViewTotals(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -35,7 +34,7 @@ func TestServer_MetricsViewTotals(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_exclude(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -58,7 +57,7 @@ func TestServer_MetricsViewTotals_row_null_exclude(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_exclude_null(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -81,7 +80,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_null(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_exclude_all(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -105,7 +104,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_all(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_include(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -128,7 +127,7 @@ func TestServer_MetricsViewTotals_row_null_include(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_include_null(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -151,7 +150,7 @@ func TestServer_MetricsViewTotals_row_null_include_null(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_include_all(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -175,7 +174,7 @@ func TestServer_MetricsViewTotals_row_null_include_all(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_exclude_like(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -196,7 +195,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_like(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_exclude_like_and_null(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -220,7 +219,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_like_and_null(t *testing.T) {
 func TestServer_MetricsViewTotals_row_null_exclude_like_doesntexist(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -241,7 +240,7 @@ func TestServer_MetricsViewTotals_row_null_exclude_like_doesntexist(t *testing.T
 func TestServer_MetricsViewTotals_timestamp_name_with_spaces(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics_garbled",
 		MeasureNames:    []string{"measure_0"},
@@ -255,7 +254,7 @@ func TestServer_MetricsViewTotals_timestamp_name_with_spaces(t *testing.T) {
 func TestServer_MetricsViewTotals_EmptyModel(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "no_rows_metrics",
 		MeasureNames:    []string{"measure_0", "measure_1"},
@@ -268,7 +267,7 @@ func TestServer_MetricsViewTotals_EmptyModel(t *testing.T) {
 
 func TestServer_MetricsViewTotals_2measures(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0", "measure_1"},
@@ -282,7 +281,7 @@ func TestServer_MetricsViewTotals_2measures(t *testing.T) {
 func TestServer_MetricsViewTotals_TimeStart(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -296,7 +295,7 @@ func TestServer_MetricsViewTotals_TimeStart(t *testing.T) {
 func TestServer_MetricsViewTotals_TimeEnd(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -310,7 +309,7 @@ func TestServer_MetricsViewTotals_TimeEnd(t *testing.T) {
 func TestServer_MetricsViewTotals_TimeStart_TimeEnd(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -325,7 +324,7 @@ func TestServer_MetricsViewTotals_TimeStart_TimeEnd(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -348,7 +347,7 @@ func TestServer_MetricsViewTotals_1dim(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_special_symbol_values(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -371,7 +370,7 @@ func TestServer_MetricsViewTotals_1dim_special_symbol_values(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_2In(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -395,7 +394,7 @@ func TestServer_MetricsViewTotals_1dim_2In(t *testing.T) {
 func TestServer_MetricsViewTotals_2dim(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -424,7 +423,7 @@ func TestServer_MetricsViewTotals_2dim(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -445,7 +444,7 @@ func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -469,7 +468,7 @@ func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -490,7 +489,7 @@ func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -519,7 +518,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_null(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -542,7 +541,7 @@ func TestServer_MetricsViewTotals_1dim_null(t *testing.T) {
 func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTotals(context.Background(), &runtimev1.MetricsViewTotalsRequest{
+	tr, err := server.MetricsViewTotals(testCtx(), &runtimev1.MetricsViewTotalsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
@@ -575,7 +574,7 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 func TestServer_MetricsViewToplist(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -602,7 +601,7 @@ func TestServer_MetricsViewToplist(t *testing.T) {
 func TestServer_MetricsViewToplist_quotes(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "ad words",
@@ -625,7 +624,7 @@ func TestServer_MetricsViewToplist_quotes(t *testing.T) {
 func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "numeric_dim",
@@ -643,7 +642,7 @@ func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
 func Ignore_TestServer_MetricsViewToplist_HugeInt(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "id",
@@ -670,7 +669,7 @@ func Ignore_TestServer_MetricsViewToplist_HugeInt(t *testing.T) {
 func TestServer_MetricsViewToplist_asc(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -698,7 +697,7 @@ func TestServer_MetricsViewToplist_asc(t *testing.T) {
 func TestServer_MetricsViewToplist_nulls_last(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -722,7 +721,7 @@ func TestServer_MetricsViewToplist_nulls_last(t *testing.T) {
 	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
 	require.Equal(t, structpb.NullValue(0), tr.Data[1].Fields["measure_3"].GetNullValue())
 
-	tr, err = server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err = server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -751,7 +750,7 @@ func TestServer_MetricsViewToplist_nulls_last(t *testing.T) {
 func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -775,7 +774,7 @@ func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
 func TestServer_MetricsViewToplist_2measures(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -807,7 +806,7 @@ func TestServer_MetricsViewToplist_2measures(t *testing.T) {
 func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewToplist(context.Background(), &runtimev1.MetricsViewToplistRequest{
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -837,7 +836,7 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
+	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -859,7 +858,7 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
+	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -879,7 +878,7 @@ func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
 func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewTimeSeries(context.Background(), &runtimev1.MetricsViewTimeSeriesRequest{
+	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,

@@ -75,7 +75,6 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	inst, err := r.Registry().FindInstance(ctx, instanceID)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
-			// ideally this should be bad request
 			return nil
 		}
 		return err
@@ -99,7 +98,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 		// also the only error that os.remove returns is patherror which should be ignored as well
 		_ = svc.Olap.DropDB()
 	}
-	//evict all caches
+
 	r.evictCaches(ctx, inst)
 	// delete instance
 	return r.Registry().DeleteInstance(ctx, instanceID)
