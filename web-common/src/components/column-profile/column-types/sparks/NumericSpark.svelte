@@ -4,10 +4,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
+  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
   import type { NumericHistogramBinsBin } from "@rilldata/web-common/runtime-client";
 
   export let compact = false;
   export let data: NumericHistogramBinsBin[];
+  export let type: string;
 
   $: summaryWidthSize =
     COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
@@ -46,7 +48,7 @@
           xHighAccessor="high"
           yAccessor="count"
           lineThickness={0.5}
-          separator={data.length < 20 ? 0.25 : 0}
+          separator={data.length < 20 && INTEGERS.has(type) ? 0.25 : 0}
           color="currentColor"
           stopOpacity={0.5}
         />

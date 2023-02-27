@@ -20,6 +20,7 @@ Otherwise, the page will jump around as the data is fetched.
   } from "@rilldata/web-common/components/data-graphic/marks";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
+  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatInteger } from "@rilldata/web-common/lib/formatters";
   import type {
     NumericHistogramBinsBin,
@@ -126,7 +127,7 @@ Otherwise, the page will jump around as the data is fetched.
               xLowAccessor="low"
               xHighAccessor="high"
               yAccessor="count"
-              separator={data.length < 20 ? 1 : 0}
+              separator={data.length < 20 && INTEGERS.has(type) ? 1 : 0}
             />
             <!-- zero line -->
             <line
@@ -207,7 +208,10 @@ Otherwise, the page will jump around as the data is fetched.
                   x={config.plotLeft}
                   y={config.plotTop + 12}
                   class="fill-gray-500"
-                  opacity={0.8}>({point?.low}, {point?.high}]</text
+                  opacity={0.8}
+                  >({point?.low}, {point?.high}{point?.high === data.at(-1).high
+                    ? ")"
+                    : "]"}</text
                 >
                 <text
                   use:outline

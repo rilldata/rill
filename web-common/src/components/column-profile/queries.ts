@@ -199,6 +199,7 @@ export function getNumericHistogram(
   instanceId: string,
   objectName: string,
   columnName: string,
+  histogramMethod: RuntimeServiceGetNumericHistogramHistogramMethod,
   active = false
 ) {
   return useRuntimeServiceGetNumericHistogram(
@@ -206,8 +207,7 @@ export function getNumericHistogram(
     objectName,
     {
       columnName,
-      histogramMethod:
-        RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
+      histogramMethod,
       priority: getPriorityForColumn("numeric-histogram", active),
     },
     {

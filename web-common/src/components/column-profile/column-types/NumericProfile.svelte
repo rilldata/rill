@@ -1,7 +1,11 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
+    INTEGERS,
+    INTERVALS,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
+  import {
+    RuntimeServiceGetNumericHistogramHistogramMethod,
     useRuntimeServiceGetDescriptiveStatistics,
     useRuntimeServiceGetRugHistogram,
   } from "@rilldata/web-common/runtime-client";
@@ -43,6 +47,9 @@
     $runtimeStore?.instanceId,
     objectName,
     columnName,
+    INTEGERS.has(type)
+      ? RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC
+      : RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
     active
   );
   $: rug = useRuntimeServiceGetRugHistogram(
@@ -98,7 +105,12 @@
   <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
+  <NumericSpark
+    {type}
+    {compact}
+    data={$numericHistogram?.data}
+    slot="summary"
+  />
   <NullPercentageSpark
     isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
