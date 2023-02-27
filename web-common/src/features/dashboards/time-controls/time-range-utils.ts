@@ -140,24 +140,14 @@ export const timeRangeToISODuration = (
   timeRangeName: TimeRangeName
 ): string => {
   switch (timeRangeName) {
-    case TimeRangeName.LastHour:
-      return "PT1H";
     case TimeRangeName.Last6Hours:
       return "PT6H";
     case TimeRangeName.LastDay:
       return "P1D";
-    case TimeRangeName.Last2Days:
-      return "P2D";
-    case TimeRangeName.Last5Days:
-      return "P5D";
     case TimeRangeName.LastWeek:
       return "P7D";
-    case TimeRangeName.Last2Weeks:
-      return "P14D";
     case TimeRangeName.Last30Days:
       return "P30D";
-    case TimeRangeName.Last60Days:
-      return "P60D";
     case TimeRangeName.AllTime:
       return "inf";
     default:
@@ -170,24 +160,14 @@ export const ISODurationToTimeRange = (
   defaultToAllTime = true
 ): TimeRangeName => {
   switch (isoDuration) {
-    case "PT1H":
-      return TimeRangeName.LastHour;
     case "PT6H":
       return TimeRangeName.Last6Hours;
     case "P1D":
       return TimeRangeName.LastDay;
-    case "P2D":
-      return TimeRangeName.Last2Days;
-    case "P5D":
-      return TimeRangeName.Last5Days;
     case "P7D":
       return TimeRangeName.LastWeek;
-    case "P14D":
-      return TimeRangeName.Last2Weeks;
     case "P30D":
       return TimeRangeName.Last30Days;
-    case "P60D":
-      return TimeRangeName.Last60Days;
     case "inf":
       return TimeRangeName.AllTime;
     default:
@@ -467,24 +447,15 @@ function getAllTimeRangeDurationMs(allTimeRange: TimeRange): number {
 
 const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
   switch (name) {
-    case TimeRangeName.LastHour:
-      return 60 * 60 * 1000;
     case TimeRangeName.Last6Hours:
       return 6 * 60 * 60 * 1000;
     case TimeRangeName.LastDay:
       return 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last2Days:
-      return 2 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last5Days:
-      return 5 * 24 * 60 * 60 * 1000;
     case TimeRangeName.LastWeek:
       return 7 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last2Weeks:
-      return 2 * 7 * 24 * 60 * 60 * 1000;
     case TimeRangeName.Last30Days:
       return 30 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last60Days:
-      return 60 * 24 * 60 * 60 * 1000;
+
     default:
       throw new Error(`Unknown last X time range name: ${name}`);
   }
