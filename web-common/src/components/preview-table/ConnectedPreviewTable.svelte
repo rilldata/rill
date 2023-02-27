@@ -3,22 +3,22 @@
     useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { onMount } from "svelte";
   import { PreviewTable } from ".";
+  import { runtime } from "../../runtime-client/runtime-store";
 
   export let objectName: string;
   export let limit = 150;
 
   $: profileColumnsQuery = useRuntimeServiceProfileColumns(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     {}
   );
   $: profileColumns = $profileColumnsQuery?.data?.profileColumns;
 
   $: tableQuery = useRuntimeServiceGetTableRows(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     { limit }
   );

@@ -1,6 +1,7 @@
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import { Readable, writable } from "svelte/store";
+import { getHttpRequestQueueForHost } from "@rilldata/web-common/runtime-client/http-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { get, Readable, writable } from "svelte/store";
 
 export interface ActiveEntity {
   type: EntityType;
@@ -26,6 +27,7 @@ const appStoreReducers = {
   setActiveEntity(name: string, type: EntityType) {
     update((state) => {
       if (state.previousActiveEntity) {
+        const httpRequestQueue = getHttpRequestQueueForHost(get(runtime).host);
         httpRequestQueue.inactiveByName(state.previousActiveEntity.name);
       }
       state.activeEntity = {

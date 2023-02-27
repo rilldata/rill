@@ -12,11 +12,11 @@
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import {
@@ -36,7 +36,7 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);

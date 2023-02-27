@@ -4,9 +4,9 @@
     useRuntimeServiceGetTableRows,
     useRuntimeServiceProfileColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { NATIVE_SELECT } from "@rilldata/web-local/lib/util/component-classes";
   import { onMount } from "svelte";
+  import { runtime } from "../../runtime-client/runtime-store";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
@@ -31,7 +31,7 @@
   // get all column profiles.
   let profileColumns;
   $: profileColumns = useRuntimeServiceProfileColumns(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     {},
     { query: { keepPreviousData: true } }
@@ -40,7 +40,7 @@
   /** get single example */
   let exampleValue;
   $: exampleValue = useRuntimeServiceGetTableRows(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     { limit: 1 }
   );
@@ -49,7 +49,7 @@
   $: if ($profileColumns?.data?.profileColumns) {
     nestedColumnProfileQuery = getSummaries(
       objectName,
-      $runtimeStore?.instanceId,
+      $runtime?.instanceId,
       $profileColumns?.data?.profileColumns
     );
   }

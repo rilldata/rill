@@ -11,11 +11,11 @@
     useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import EmbeddedSourceReference from "./EmbeddedSourceReference.svelte";
   import { getMatchingReferencesAndEntries } from "./utils";
@@ -29,20 +29,18 @@
   const queryHighlight = getContext("rill:app:query-highlight");
 
   $: getModelFile = useRuntimeServiceGetFile(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
 
-  $: getAllSources = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_SOURCE" }
-  );
+  $: getAllSources = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+    type: "OBJECT_TYPE_SOURCE",
+  });
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_MODEL" }
-  );
+  $: getAllModels = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+    type: "OBJECT_TYPE_MODEL",
+  });
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(modelName, references, [
@@ -58,7 +56,7 @@
           writable($thing),
           writable(ref),
           useRuntimeServiceGetTableCardinality(
-            $runtimeStore?.instanceId,
+            $runtime?.instanceId,
             $thing.name
           ),
         ],

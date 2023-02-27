@@ -19,16 +19,16 @@
     V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import ReferenceModels from "./ReferenceModels.svelte";
 
   export let sourceName: string;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
 
   $: getSource = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
@@ -80,7 +80,7 @@
   $: fileExtension = getFileExtension(sourceCatalog);
 
   $: cardinalityQuery = useRuntimeServiceGetTableCardinality(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     sourceName
   );
   $: cardinality = $cardinalityQuery?.data?.cardinality
@@ -104,7 +104,7 @@
   /** total % null cells */
 
   $: profileColumns = useRuntimeServiceProfileColumns(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     sourceName,
     {},
     { query: { keepPreviousData: true } }
@@ -113,7 +113,7 @@
   let summaries: Readable<Array<ColumnSummary>>;
   $: summaries = getSummaries(
     sourceName,
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     $profileColumns?.data?.profileColumns
   );
 

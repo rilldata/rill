@@ -15,10 +15,10 @@
     V1GetTableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
@@ -27,7 +27,7 @@
   export let containerWidth = 0;
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     modelName
   );
   let model: V1Model;
@@ -44,21 +44,19 @@
     sourceTableReferences = getTableReferences(model.sql);
   }
 
-  $: embeddedSources = useEmbeddedSources($runtimeStore.instanceId);
+  $: embeddedSources = useEmbeddedSources($runtime.instanceId);
 
   // get the cardinalitie & table information.
   let cardinalityQueries: Array<UseQueryStoreResult<number>> = [];
   let sourceProfileColumns: Array<UseQueryStoreResult<number>> = [];
 
-  $: getAllSources = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_SOURCE" }
-  );
+  $: getAllSources = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+    type: "OBJECT_TYPE_SOURCE",
+  });
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_MODEL" }
-  );
+  $: getAllModels = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+    type: "OBJECT_TYPE_MODEL",
+  });
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(
@@ -75,7 +73,7 @@
     // then get the cardinalities.
     cardinalityQueries = referencedThings?.map(([entity, reference]) => {
       return useRuntimeServiceGetTableCardinality(
-        $runtimeStore?.instanceId,
+        $runtime?.instanceId,
         entity.name,
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
@@ -85,7 +83,7 @@
     // then we'll get the total number of columns for comparison.
     sourceProfileColumns = referencedThings?.map(([entity]) => {
       return useRuntimeServiceProfileColumns(
-        $runtimeStore?.instanceId,
+        $runtime?.instanceId,
         entity.name,
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
@@ -115,7 +113,7 @@
   let modelCardinalityQuery: UseQueryStoreResult<V1GetTableCardinalityResponse>;
   $: if (model?.name)
     modelCardinalityQuery = useRuntimeServiceGetTableCardinality(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       model?.name
     );
   let outputRowCardinalityValue: number;

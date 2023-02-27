@@ -18,7 +18,7 @@
     useRuntimeServiceMetricsViewToplist,
     useRuntimeServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -36,7 +36,7 @@
 
   let searchText = "";
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
   $: addNull = "null".includes(searchText);
 
   $: metaQuery = useMetaQuery(instanceId, metricViewName);

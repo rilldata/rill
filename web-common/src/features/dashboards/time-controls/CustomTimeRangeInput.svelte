@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
@@ -8,6 +7,7 @@
     useRuntimeServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
   } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
   import {
     exclusiveToInclusiveEndISOString,
@@ -37,20 +37,20 @@
   $: disabled = !start || !end || !!error;
 
   let metricsViewQuery;
-  $: if ($runtimeStore?.instanceId) {
+  $: if ($runtime?.instanceId) {
     metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       metricViewName
     );
   }
   let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
   $: if (
-    $runtimeStore?.instanceId &&
+    $runtime?.instanceId &&
     $metricsViewQuery?.data?.entry?.metricsView?.model &&
     $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
     timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       {
         columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,

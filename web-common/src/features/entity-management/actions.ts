@@ -5,13 +5,15 @@ import type {
   V1DeleteFileAndReconcileResponse,
   V1RenameFileAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
-import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+import { getHttpRequestQueueForHost } from "@rilldata/web-common/runtime-client/http-client";
 import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-stores/app-store";
 import {
   invalidateAfterReconcile,
   removeEntityQueries,
 } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { get } from "svelte/store";
+import { runtime } from "../../runtime-client/runtime-store";
 import {
   getFilePathFromNameAndType,
   getLabel,
@@ -38,6 +40,7 @@ export async function renameFileArtifact(
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
+  const httpRequestQueue = getHttpRequestQueueForHost(get(runtime).host);
   httpRequestQueue.removeByName(fromName);
   notifications.send({
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
@@ -71,6 +74,7 @@ export async function deleteFileArtifact(
     });
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
+    const httpRequestQueue = getHttpRequestQueueForHost(get(runtime).host);
     httpRequestQueue.removeByName(name);
     if (showNotification) {
       notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });

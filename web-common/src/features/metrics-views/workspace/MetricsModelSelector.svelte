@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { Readable } from "svelte/store";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import type { MetricsInternalRepresentation } from "../metrics-internal-store";
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
@@ -9,7 +9,7 @@
   $: sourceModelDisplayValue =
     $metricsInternalRep.getMetricKey("model") || "__DEFAULT_VALUE__";
 
-  $: allModels = useModelNames($runtimeStore.instanceId);
+  $: allModels = useModelNames($runtime.instanceId);
   function updateMetricsDefinitionHandler(sourceModelName) {
     // Reset timeseries as some models might not have a timeseries
     $metricsInternalRep.updateMetricKeys({

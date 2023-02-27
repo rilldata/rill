@@ -20,10 +20,10 @@ The main feature-set component for dashboard filters
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -40,7 +40,7 @@ The main feature-set component for dashboard filters
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
 
@@ -63,7 +63,7 @@ The main feature-set component for dashboard filters
   let activeDimensionName;
 
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -104,7 +104,7 @@ The main feature-set component for dashboard filters
       // Use topList API to fetch the dimension names
       // We prune the measure values and use the dimension labels for the filter
       topListQuery = useRuntimeServiceMetricsViewToplist(
-        $runtimeStore.instanceId,
+        $runtime.instanceId,
         metricViewName,
         topListParams
       );
