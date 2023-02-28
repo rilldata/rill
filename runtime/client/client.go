@@ -4,22 +4,22 @@ import (
 	"context"
 	"net/url"
 
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Client connects to an admin server.
-// It's a thin wrapper around the generated gRPC client for proto/rill/admin/v1.
+// Client connects to a runtime server.
+// It's a thin wrapper around the generated gRPC client for proto/rill/runtime/v1.
 type Client struct {
-	adminv1.AdminServiceClient
+	runtimev1.RuntimeServiceClient
 	conn *grpc.ClientConn
 }
 
 // New creates a new Client and opens a connection. You must call Close() when done with the client.
-func New(adminHost, bearerToken string) (*Client, error) {
-	uri, err := url.Parse(adminHost)
+func New(runtimeHost, bearerToken string) (*Client, error) {
+	uri, err := url.Parse(runtimeHost)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func New(adminHost, bearerToken string) (*Client, error) {
 	}
 
 	return &Client{
-		AdminServiceClient: adminv1.NewAdminServiceClient(conn),
-		conn:               conn,
+		RuntimeServiceClient: runtimev1.NewRuntimeServiceClient(conn),
+		conn:                 conn,
 	}, nil
 }
 
