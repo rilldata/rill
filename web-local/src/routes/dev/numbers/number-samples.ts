@@ -144,7 +144,7 @@ const numberListsGen: NumericSampleGen[] = [
   },
 
   {
-    desc: "pos & neg, power law-ish, zero inflated 2",
+    desc: "pos & neg, power law-ish 2",
     sampleFn: () =>
       shuffler(
         range.map((i) => (i % 2 === 0 ? -1 : 1) * randu() * 10 ** (i * 0.6 - 3))
@@ -178,6 +178,14 @@ const numberListsGen: NumericSampleGen[] = [
       range
         .map((x) => 10 ** uniform(4, 7))
         .map((x) => (randu() < 0.4 ? Math.round(x) : x)),
+  },
+
+  {
+    desc: "shuffled mags e-5 to e7",
+    sampleFn: () =>
+      shuffler(
+        range.map((i) => 0.69 * i - 5 + randu() / 3).map((p) => 10 ** p)
+      ),
   },
 ];
 

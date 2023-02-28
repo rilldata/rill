@@ -12,10 +12,14 @@ export type FormatterOptionsV1 = {
   truncateThousandths: boolean;
   truncateTinyOrdersIfBigOrderExists: boolean;
   zeroHandling: "exactZero" | "noSpecial" | "zeroDot";
+
   maxTotalDigits: number;
   maxDigitsLeft: number;
   maxDigitsRight: number;
   minDigitsNonzero: number;
+  useMaxDigitsRightIfSuffix: boolean;
+  maxDigitsRightIfSuffix: number;
+
   nonIntegerHandling: "none" | "oneDigit" | "trailingDot";
   formattingUnits: "none" | "$" | "%";
   specialDecimalHandling: "noSpecial" | "alwaysTwoDigits" | "neverOneDigit";
