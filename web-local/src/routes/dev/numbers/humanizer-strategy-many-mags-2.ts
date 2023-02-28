@@ -22,6 +22,8 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
     maxDigitsLeft,
     maxDigitsRight,
     minDigitsNonzero,
+    useMaxDigitsRightIfSuffix,
+    maxDigitsRightIfSuffix,
     nonIntegerHandling,
     digitTargetPadWithInsignificantZeros,
     specialDecimalHandling,
@@ -85,7 +87,11 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
       // ...otherwise, format with order of mag
       const magE = orderOfMagnitudeEng(x);
       LHSDigits = mag - magE + 1;
-      RHSDigits = Math.min(maxTotalDigits - LHSDigits, maxDigitsRight);
+      if (useMaxDigitsRightIfSuffix) {
+        RHSDigits = maxDigitsRightIfSuffix;
+      } else {
+        RHSDigits = Math.min(maxTotalDigits - LHSDigits, maxDigitsRight);
+      }
       return formatNumWithOrderOfMag2(
         x,
         magE,
@@ -144,7 +150,11 @@ export const splitStrsForMagStratMultipleMagsNoAlign = (
       // ...otherwise, format with order of mag
       const magE = orderOfMagnitudeEng(x);
       LHSDigits = mag - magE + 1;
-      RHSDigits = Math.min(maxTotalDigits - LHSDigits, maxDigitsRight);
+      if (useMaxDigitsRightIfSuffix) {
+        RHSDigits = maxDigitsRightIfSuffix;
+      } else {
+        RHSDigits = Math.min(maxTotalDigits - LHSDigits, maxDigitsRight);
+      }
       return formatNumWithOrderOfMag2(
         x,
         magE,

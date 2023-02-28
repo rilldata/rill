@@ -44,6 +44,8 @@
   let maxDigitsRight = 3;
   let minDigitsNonzero = 1;
   let nonIntegerHandling: "none" | "oneDigit" | "trailingDot" = "trailingDot";
+  let useMaxDigitsRightIfSuffix = true;
+  let maxDigitsRightIfSuffix = 1;
 
   let formattingUnits: "none" | "$" | "%" = "none";
   let specialDecimalHandling:
@@ -125,6 +127,8 @@
     maxDigitsLeft,
     maxDigitsRight,
     minDigitsNonzero,
+    useMaxDigitsRightIfSuffix,
+    maxDigitsRightIfSuffix,
     nonIntegerHandling,
     formattingUnits,
     specialDecimalHandling,
@@ -566,6 +570,22 @@
 
           <br />
 
+          <label>
+            <input type="checkbox" bind:checked={useMaxDigitsRightIfSuffix} />
+            separate RHS digit limit when suffix
+          </label>
+          <div class="option-box">
+            <label>
+              max RHS digits when suffixed
+              <input
+                class="number-input"
+                type="number"
+                min="0"
+                max="12"
+                bind:value={maxDigitsRightIfSuffix}
+              />
+            </label>
+          </div>
           <b>Presets</b>
           <div class="option-box">
             <button

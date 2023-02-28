@@ -134,6 +134,8 @@
     maxDigitsLeft: 3,
     maxDigitsRight: 3,
     minDigitsNonzero: 1,
+    useMaxDigitsRightIfSuffix: false,
+    maxDigitsRightIfSuffix: 1,
     nonIntegerHandling: "trailingDot",
     formattingUnits: "none",
     specialDecimalHandling: "noSpecial",
@@ -145,6 +147,160 @@
   };
 
   let explainerRecipes: ExplainerStoryRecipe[] = [
+    {
+      title:
+        "Digit limit for non-suffixed nums when using fixed RHS limit for suffixed nums; plain: (e-3,e6); dots not aligned",
+
+      sampleName: "shuffled mags e-5 to e7",
+      sampleSorted: true,
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "plain: (e-2,e6), always 2 digits RHS",
+          {
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "plain: (e-4,e6), 6 digit budget",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "plain: (e-4,e6), 6 digit budget",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+      ],
+    },
+    {
+      title:
+        "Digit limit for non-suffixed nums when using fixed RHS limit for suffixed nums; plain: (e-3,e6); no alignment",
+
+      sampleName: "shuffled mags e-5 to e7",
+      sampleSorted: true,
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "plain: (e-2,e6), always 2 digits RHS",
+          {
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+        [
+          "new humanizer",
+          "plain: (e-4,e6), 6 digit budget",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+        [
+          "new humanizer",
+          "plain: (e-4,e6), 6 digit budget",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+      ],
+    },
+    {
+      title:
+        "Digit limit for non-suffixed nums when using fixed RHS limit for suffixed nums; plain: (e-3,e6)",
+
+      sampleName: "shuffled mags e-5 to e7",
+      sampleSorted: true,
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "plain: (e-2,e6), always 2 digits RHS",
+          {
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+          },
+        ],
+        [
+          "new humanizer",
+          "plain: (e-4,e6), 6 digit budget",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+          },
+        ],
+        [
+          "new humanizer",
+          "plain: (e-4,e6), 6 digit budget",
+          {
+            maxTotalDigits: 6,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+          },
+        ],
+      ],
+    },
+
     {
       title: "Generality",
 
@@ -289,7 +445,7 @@
     {
       title: "Decimal alignment when sorted",
 
-      sampleName: "pos & neg, power law-ish, zero inflated 2",
+      sampleName: "pos & neg, power law-ish 2",
       sampleSorted: true,
       formatterColRecipes: [
         ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
