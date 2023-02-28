@@ -39,21 +39,15 @@ func Execute(ctx context.Context, ver config.Version) {
 }
 
 func runCmd(ctx context.Context, ver config.Version) error {
-	// Load/build CLI config
-	cfg := &config.Config{
-		Version: ver,
-	}
-
-	rootCmd.PersistentFlags().StringVar(&cfg.AdminURL, "admin-url", "https://admin.rilldata.com", "Base URL for admin API")
-	_ = rootCmd.Flags().MarkHidden("admin-url")
-
-	rootCmd.PersistentFlags().StringVar(&cfg.AdminToken, "admin-token", "", "Token for authenticating with the admin API")
-	_ = rootCmd.Flags().MarkHidden("admin-token")
-
 	// Cobra config
 	rootCmd.Version = ver.String()
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version")  // Adds option to get version by passing --version or -v
+
+	// Build CLI config
+	cfg := &config.Config{
+		Version: ver,
+	}
 
 	// Add sub-commands
 	rootCmd.AddCommand(initialize.InitCmd(cfg))
@@ -65,9 +59,19 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(auth.AuthCmd(cfg))
-	rootCmd.AddCommand(org.OrgCmd(cfg))
-	rootCmd.AddCommand(project.ProjectCmd(cfg))
+
+	// Add sub-commands for admin
+	// (This allows us to add persistent flags that apply only to the admin-related commands.)
+	adminCmds := []*cobra.Command{
+		auth.AuthCmd(cfg),
+		org.OrgCmd(cfg),
+		project.ProjectCmd(cfg),
+	}
+	for _, cmd := range adminCmds {
+		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminToken, "api-token", "", "Token for authenticating with the admin API")
+		rootCmd.AddCommand(cmd)
+	}
 
 	return rootCmd.ExecuteContext(ctx)
 }

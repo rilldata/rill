@@ -25,9 +25,10 @@ docker-compose -f admin/docker-compose.yml up
 ```
 go run ./cli admin start
 ```
-4. Call the admin server from the CLI by overriding the admin URL:
+
+You can now call the local admin server from the CLI by overriding the admin API URL. For example:
 ```
-go run ./cli org create foo --admin-url http://localhost:9090
+go run ./cli org create foo --api-url http://localhost:9090
 ```
 
 ## Adding endpoints
