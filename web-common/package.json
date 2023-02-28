@@ -5,7 +5,8 @@
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "generate:runtime-client": "orval",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "npm run test -- --watch"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.27.0",
