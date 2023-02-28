@@ -3,11 +3,11 @@ package org
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func InviteCmd(ver version.Version) *cobra.Command {
+func InviteCmd(cfg *config.Config) *cobra.Command {
 	inviteCmd := &cobra.Command{
 		Use:   "invite",
 		Args:  cobra.ExactArgs(1),

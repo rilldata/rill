@@ -3,12 +3,12 @@ package build
 import (
 	"fmt"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
-func BuildCmd(ver version.Version) *cobra.Command {
+func BuildCmd(cfg *config.Config) *cobra.Command {
 	var projectPath string
 	var olapDriver string
 	var olapDSN string
@@ -19,7 +19,7 @@ func BuildCmd(ver version.Version) *cobra.Command {
 		Use:   "build",
 		Short: "Build project without starting web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
 			if err != nil {
 				return err
 			}

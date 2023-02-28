@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 // InitCmd represents the init command
-func InitCmd(ver version.Version) *cobra.Command {
+func InitCmd(cfg *config.Config) *cobra.Command {
 	var projectPath string
 	var olapDriver string
 	var olapDSN string
@@ -56,7 +56,7 @@ func InitCmd(ver version.Version) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
 			if err != nil {
 				return err
 			}
