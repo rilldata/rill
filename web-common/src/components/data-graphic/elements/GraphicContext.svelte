@@ -7,7 +7,7 @@ for any of its children.
 -->
 <script lang="ts">
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
-  import { getContext, hasContext } from "svelte";
+  import { getContext, hasContext, onMount } from "svelte";
   import { contexts } from "../constants";
   import {
     cascadingContextStore,
@@ -52,6 +52,11 @@ for any of its children.
 
   const id = guidGenerator();
 
+  let devicePixelRatio = 1;
+  onMount(() => {
+    devicePixelRatio = window.devicePixelRatio;
+  });
+
   const DEFAULTS = hasContext(contexts.config)
     ? {}
     : {
@@ -65,6 +70,7 @@ for any of its children.
         textGap: 4,
         bodyBuffer: 4,
         marginBuffer: 4,
+        devicePixelRatio,
       };
   let parameters = {
     ...DEFAULTS,
@@ -77,6 +83,7 @@ for any of its children.
       right,
       fontSize,
       textGap,
+      devicePixelRatio,
       xType,
       yType,
       xMin,
@@ -109,6 +116,7 @@ for any of its children.
       bodyBuffer,
       marginBuffer,
       id,
+      devicePixelRatio,
     }),
   };
 

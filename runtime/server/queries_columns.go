@@ -5,11 +5,16 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	agg := "count(*)"
 	if req.Agg != "" {
 		agg = req.Agg
@@ -42,6 +47,10 @@ func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*r
 }
 
 func (s *Server) GetNullCount(ctx context.Context, req *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnNullCount{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
@@ -58,6 +67,10 @@ func (s *Server) GetNullCount(ctx context.Context, req *runtimev1.GetNullCountRe
 }
 
 func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnDescriptiveStatistics{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
@@ -104,6 +117,10 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.Ge
  */
 
 func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, req *runtimev1.EstimateSmallestTimeGrainRequest) (*runtimev1.EstimateSmallestTimeGrainResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnTimeGrain{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
@@ -118,6 +135,10 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, req *runtimev1.E
 }
 
 func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnNumericHistogram{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
@@ -139,6 +160,10 @@ func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNume
 }
 
 func (s *Server) GetRugHistogram(ctx context.Context, req *runtimev1.GetRugHistogramRequest) (*runtimev1.GetRugHistogramResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnRugHistogram{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
@@ -159,6 +184,10 @@ func (s *Server) GetRugHistogram(ctx context.Context, req *runtimev1.GetRugHisto
 }
 
 func (s *Server) GetTimeRangeSummary(ctx context.Context, req *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnTimeRange{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,
@@ -173,6 +202,10 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, req *runtimev1.GetTime
 }
 
 func (s *Server) GetCardinalityOfColumn(ctx context.Context, req *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.ColumnCardinality{
 		TableName:  req.TableName,
 		ColumnName: req.ColumnName,

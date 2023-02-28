@@ -6,6 +6,7 @@ to the props.
   import { getContext } from "svelte";
 
   import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
+  import { createScrubAction } from "../actions/scrub-action-factory";
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
@@ -15,17 +16,52 @@ to the props.
   const { coordinates, mousePositionToDomain } =
     mousePositionToDomainActionFactory();
 
+  const scrubActionObject = createScrubAction({
+    plotLeft: $config?.plotLeft,
+    plotRight: $config?.plotRight,
+    plotTop: $config?.plotTop,
+    plotBottom: $config?.plotBottom,
+    startEventName: "scrub-start",
+    moveEventName: "scrub-move",
+    endEventName: "scrub-end",
+  });
+
+  // pull out the scrub action to be attached to the svg element
+  const scrub = scrubActionObject.scrubAction;
+  const scrubCoordinates = scrubActionObject.coordinates;
+
+  // make sure to reactively update the action store
+  $: scrubActionObject.updatePlotBounds({
+    plotLeft: $config?.plotLeft,
+    plotRight: $config?.plotRight,
+    plotTop: $config?.plotTop,
+    plotBottom: $config?.plotBottom,
+  });
+
   export let mouseoverValue = undefined;
+  export let hovered = undefined;
+  export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
+
+  $: hovered = $coordinates.x !== undefined;
 </script>
 
-<svg use:mousePositionToDomain width={$config.width} height={$config.height}>
+<svg
+  style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
+  use:scrub
+  on:scrub-start
+  on:scrub-end
+  on:scrub-move
+  use:mousePositionToDomain
+  width={$config.width}
+  height={$config.height}
+>
   <slot
     config={$config}
     xScale={$xScale}
     yScale={$yScale}
     {mouseoverValue}
-    hovered={$coordinates.x !== undefined}
+    {hovered}
   />
 </svg>

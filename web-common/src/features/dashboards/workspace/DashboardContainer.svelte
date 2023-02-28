@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
 
   export let gridConfig: string;
   export let exploreContainerWidth;
+  export let width;
 
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
@@ -14,22 +15,27 @@
     createResizeListenerActionFactory();
 
   $: exploreContainerWidth = $observedNode?.offsetWidth || 0;
+
+  $: width = $observedNode?.getBoundingClientRect()?.width;
+
+  $: leftSide = `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 </script>
 
 <section
   use:listenToNodeResize
   class="grid items-stretch leaderboard-layout surface"
   style:grid-template-columns={gridConfig}
+  style:padding-left={leftSide}
 >
   <div class="explore-header">
     <slot name="header" />
   </div>
-  <hr class="pb-3 pt-1 ui-divider" />
-  <div
-    class="explore-metrics mb-8"
-    style:padding-left="calc({$navigationVisibilityTween * 24}px + 1.25rem)"
-  >
-    <slot name="metrics" />
+  <hr class="pb-3 pt-1 ui-divider -ml-12" />
+  <div class="explore-metrics mb-8">
+    <slot
+      name="metrics"
+      width={$observedNode?.getBoundingClientRect()?.width}
+    />
   </div>
   <div class="explore-leaderboards pr-4 pb-8">
     <slot name="leaderboards" />
