@@ -20,7 +20,6 @@ func TestServer_GetTopK_HugeInt(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric, 'a' as dim", 1)
 
 	res, err := server.ColumnTopK(
-    testCtx(),
 		testCtx(),
 		&runtimev1.ColumnTopKRequest{
 			InstanceId: instanceId,
@@ -41,7 +40,7 @@ func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
 	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric", 1)
 
 	res, err := server.ColumnTopK(
-    testCtx(),
+		testCtx(),
 		&runtimev1.ColumnTopKRequest{
 			InstanceId: instanceId,
 			TableName:  "test",
