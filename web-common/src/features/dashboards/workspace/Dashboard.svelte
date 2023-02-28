@@ -28,6 +28,7 @@
   $: switchToMetrics(metricViewName);
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+
   $: if ($metaQuery.data) {
     if (!$metaQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);

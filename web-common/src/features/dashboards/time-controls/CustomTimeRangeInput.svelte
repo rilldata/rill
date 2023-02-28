@@ -13,9 +13,11 @@
     exclusiveToInclusiveEndISOString,
     getDateFromISOString,
     getISOStringFromDate,
+    validateTimeRange,
   } from "./time-range-utils";
 
   export let metricViewName: string;
+  export let minTimeGrain: string;
 
   const dispatch = createEventDispatcher();
 
@@ -33,7 +35,7 @@
     }
   }
 
-  $: error = validateTimeRange(start, end);
+  $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
   $: disabled = !start || !end || !!error;
 
   let metricsViewQuery;
@@ -64,14 +66,6 @@
   $: max = $timeRangeQuery.data.timeRangeSummary?.max
     ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
     : undefined;
-
-  function validateTimeRange(start: string, end: string) {
-    if (start > end) {
-      return "Start date must be before end date";
-    } else {
-      return undefined;
-    }
-  }
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC

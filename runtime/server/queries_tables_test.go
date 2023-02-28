@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -12,7 +11,7 @@ import (
 
 func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
+	cr, err := server.GetTableCardinality(testCtx(), &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -22,7 +21,7 @@ func TestServer_TableCardinality(t *testing.T) {
 
 func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
+	cr, err := server.GetTableCardinality(testCtx(), &runtimev1.GetTableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -32,7 +31,7 @@ func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 
 func TestServer_ProfileColumns(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+	cr, err := server.ProfileColumns(testCtx(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -49,7 +48,7 @@ func TestServer_ProfileColumns(t *testing.T) {
 
 func TestServer_ProfileColumns_DuplicateNames(t *testing.T) {
 	server, instanceId := getTableTestServerWithSql(t, "select * from (select 1 as a) a join (select 1 as a) b on a.a = b.a")
-	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+	cr, err := server.ProfileColumns(testCtx(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -64,7 +63,7 @@ func TestServer_ProfileColumns_DuplicateNames(t *testing.T) {
 
 func TestServer_ProfileColumns_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+	cr, err := server.ProfileColumns(testCtx(), &runtimev1.ProfileColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -81,7 +80,7 @@ func TestServer_ProfileColumns_EmptyModel(t *testing.T) {
 
 func TestServer_TableRows(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
+	cr, err := server.GetTableRows(testCtx(), &runtimev1.GetTableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,
@@ -92,7 +91,7 @@ func TestServer_TableRows(t *testing.T) {
 
 func TestServer_TableRows_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
+	cr, err := server.GetTableRows(testCtx(), &runtimev1.GetTableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,

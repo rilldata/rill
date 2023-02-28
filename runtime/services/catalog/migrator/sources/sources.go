@@ -29,10 +29,12 @@ func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, rep
 		Timeout:       apiSource.GetTimeoutSeconds(),
 	}
 
+	variables := convertUpper(e)
 	env := &connectors.Env{
-		RepoDriver: repo.Driver(),
-		RepoDSN:    repo.DSN(),
-		Variables:  e,
+		RepoDriver:           repo.Driver(),
+		RepoDSN:              repo.DSN(),
+		Variables:            variables,
+		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
 	}
 
 	return olap.Ingest(ctx, env, source)
@@ -116,4 +118,12 @@ func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStor
 		return false, err
 	}
 	return true, nil
+}
+
+func convertUpper(in map[string]string) map[string]string {
+	m := make(map[string]string, len(in))
+	for key, value := range in {
+		m[strings.ToUpper(key)] = value
+	}
+	return m
 }

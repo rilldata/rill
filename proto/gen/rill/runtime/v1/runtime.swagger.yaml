@@ -675,6 +675,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: histogramMethod
+          in: query
+          required: false
+          type: string
+          enum:
+            - HISTOGRAM_METHOD_UNSPECIFIED
+            - HISTOGRAM_METHOD_FD
+            - HISTOGRAM_METHOD_DIAGNOSTIC
+          default: HISTOGRAM_METHOD_UNSPECIFIED
         - name: priority
           in: query
           required: false
@@ -1286,6 +1295,9 @@ definitions:
       low:
         type: number
         format: double
+      midpoint:
+        type: number
+        format: double
   NumericOutliersOutlier:
     type: object
     properties:
@@ -1638,6 +1650,13 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1HistogramMethod:
+    type: string
+    enum:
+      - HISTOGRAM_METHOD_UNSPECIFIED
+      - HISTOGRAM_METHOD_FD
+      - HISTOGRAM_METHOD_DIAGNOSTIC
+    default: HISTOGRAM_METHOD_UNSPECIFIED
   v1Instance:
     type: object
     properties:

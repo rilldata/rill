@@ -18,7 +18,7 @@ type TableHead struct {
 var _ runtime.Query = &TableHead{}
 
 func (q *TableHead) Key() string {
-	return fmt.Sprintf("TableHead:%s", q.TableName)
+	return fmt.Sprintf("TableHead:%s:%d", q.TableName, q.Limit)
 }
 
 func (q *TableHead) Deps() []string {

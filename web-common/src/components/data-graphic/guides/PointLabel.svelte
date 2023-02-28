@@ -1,96 +1,127 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { outline } from "../actions/outline";
-  import { contexts } from "../constants";
-  import { WithSimpleLinearScale, WithTween } from "../functional-components";
-  import type { PointLabelVariant } from "./types";
+  import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
+  import {
+    WithGraphicContexts,
+    WithTween,
+  } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
+  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
+  export let point;
+  export let xAccessor: string;
+  export let yAccessor: string;
+  export let location: "left" | "right" = "right";
+  export let showText = true;
+  export let showPoint = true;
+  export let showReferenceLine = true;
+  export let showDistanceFromZero = true;
+  export let format = justEnoughPrecision;
 
-  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
+  let lastAvailablePoint;
 
-  export let variant: PointLabelVariant = "fixed";
-  export let x;
-  export let y;
-  export let format = (v: any) => v;
+  /**
+   * If the point is null, we want to use the last available point to
+   * calculate the y position of the label. This is so that the label
+   * doesn't jump around when the data is null.
+   */
+  $: if (point[yAccessor]) {
+    lastAvailablePoint = { ...point };
+  }
 
-  export let line = true;
-  export let lineColor = "stroke-gray-400 dark:stroke-gray-500";
-  export let lineDasharray: string = undefined;
-  export let lineThickness: number | "scale" = 1;
+  function scaleFromOrigin(
+    node,
+    {
+      delay = 0,
+      duration = 1000,
+      easing = cubicOut,
+      start = 0,
+      opacity = 0,
+    } = {}
+  ) {
+    const style = getComputedStyle(node);
+    const target_opacity = +style.opacity;
+    const transform = style.transform === "none" ? "" : style.transform;
 
-  export let showMovingPoint = true;
+    const sd = 1 - start;
+    const od = target_opacity * (1 - opacity);
 
-  export let tweenProps = { duration: 0 };
-
-  type LinePositionChoices =
-    | "graphicBottom"
-    | "bodyBottom"
-    | "graphicTop"
-    | "bodyTop"
-    | "bodyBottom"
-    | "plotTop"
-    | "plotBottom"
-    | "point";
-  export let lineStart: LinePositionChoices = "plotBottom";
-  export let lineEnd: LinePositionChoices = "plotTop";
-
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
-  const yScale = getContext(contexts.scale("y")) as ScaleStore;
-  const config = getContext(contexts.config) as SimpleConfigurationStore;
-
-  $: input = { x: $xScale(x), y: $yScale(y) };
+    return {
+      delay,
+      duration,
+      easing,
+      css: (_t, u) => `
+      transform-box: fill-box;
+      transform-origin: 100% 100%;
+			transform: ${transform} scale(${1 - sd * u});
+			opacity: ${target_opacity - od * u}
+		`,
+    };
+  }
 </script>
 
-{#if x !== undefined && y !== undefined}
-  <WithSimpleLinearScale
-    domain={$yScale.domain()}
-    range={[0, 12]}
-    let:scale={diameterScale}
+<WithGraphicContexts let:xScale let:yScale let:config>
+  {@const isNull = point[yAccessor] == null}
+  {@const x = xScale(point[xAccessor])}
+  {@const y = !isNull
+    ? yScale(point[yAccessor])
+    : lastAvailablePoint
+    ? yScale(lastAvailablePoint[yAccessor])
+    : (config.plotBottom - config.plotTop) / 2}
+  <WithTween
+    value={{ x, y, dy: point?.[yAccessor] || 0 }}
+    tweenProps={{ duration: 50 }}
+    let:output
   >
-    <WithTween {tweenProps} value={input} let:output>
-      {#if line && output?.x}
-        <line
-          x1={output.x}
-          x2={output.x}
-          y1={lineStart === "point" ? output.y : $config[lineStart]}
-          y2={lineEnd === "point" ? output.y : $config[lineEnd]}
-          class={lineColor}
-          stroke-dasharray={lineDasharray}
-          stroke-width={lineThickness === "scale"
-            ? diameterScale(y)
-            : lineThickness}
-        />
-      {/if}
-      <text
+    {@const text = isNull
+      ? "no data"
+      : format
+      ? format(point[yAccessor])
+      : point[yAccessor]}
+    {#if showReferenceLine}
+      <line
+        transition:fade|local={{ duration: 100 }}
         x1={output.x}
         x2={output.x}
-        y1={0}
-        y2={$config.height}
-        stroke="gray"
+        y1={config.plotTop}
+        y2={config.plotBottom}
+        stroke-width="1"
+        class="stroke-gray-400"
+        stroke-dasharray="2,1"
       />
-      {#if showMovingPoint}
-        <circle fill="hsl(217, 50%, 50%)" cx={output.x} cy={output.y} r={3} />
-      {/if}
-      {#if variant === "moving" && showMovingPoint}
-        <text
-          use:outline={{ color: "rgba(255,255,255,.7)" }}
-          dy=".35em"
-          x={output.x + 16}
-          y={output.y}>{format(y)}</text
-        >
-      {/if}
-    </WithTween>
-    {#if variant === "fixed"}
-      <circle
-        fill="hsl(217, 50%, 50%)"
-        r={4}
-        cx={$config.bodyLeft + 2}
-        cy={$config.bodyTop + 2}
-      />
-      <text
-        use:outline={{ color: "rgba(255,255,255,.7)" }}
-        x={$config.bodyLeft + 16}
-        y={$config.bodyTop + 6}>{format(y)}</text
-      >
     {/if}
-  </WithSimpleLinearScale>
-{/if}
+    {#if showText}
+      <text
+        class:fill-gray-400={isNull}
+        class:italic={isNull}
+        use:outline
+        x={output.x}
+        y={output.y}
+        text-anchor={location === "left" ? "end" : "start"}
+        dx={8 * (location === "left" ? -1 : 1)}
+        dy=".35em"
+      >
+        {text}
+      </text>
+    {/if}
+    {#if !isNull && showDistanceFromZero}
+      <line
+        transition:fade|local={{ duration: 100 }}
+        x1={output.x}
+        x2={output.x}
+        y1={yScale.range().at(0)}
+        y2={output.y}
+        stroke-width="4"
+        class="stroke-blue-300"
+      />
+    {/if}
+    {#if !isNull && showPoint}
+      <circle
+        transition:scaleFromOrigin|local
+        cx={output.x}
+        cy={output.y}
+        r="3"
+        fill="blue"
+      />
+    {/if}
+  </WithTween>
+</WithGraphicContexts>

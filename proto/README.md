@@ -31,3 +31,13 @@ npm run generate:runtime-client -w web-common
 ```
 
 (This is not automated as the frontend may currently be pinned to an older version of the runtime.)
+
+### Understanding the `buf.gen.yaml` files
+
+We use the gRPC gateway OpenAPI plugin to generate OpenAPI specs for the `admin` and `runtime` services (which the frontend consumes to generate `svelte-query` clients).
+
+To get clean OpenAPI specs, we use the `allow_merge=true` plugin option. Unfortunately, this means we need to separately generate the `admin` and `runtime` OpenAPI specs – hence the `buf.gen.openapi-SERVICE.yaml` files (using multiple `buf.gen.yaml` files is recommended by Buf when you need more granular builds). The `Makefile` invokes them using:
+```
+cd proto && buf generate --template buf.gen.openapi-admin.yaml --path rill/admin
+cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
+```

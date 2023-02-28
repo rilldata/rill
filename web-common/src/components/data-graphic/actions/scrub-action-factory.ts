@@ -28,6 +28,10 @@ function mouseEvents(event: MouseEvent) {
     movementY: event.movementY,
     clientX: event.clientX,
     clientY: event.clientY,
+    ctrlKey: event.ctrlKey,
+    altKey: event.altKey,
+    shiftKey: event.shiftKey,
+    metaKey: event.metaKey,
   };
 }
 
@@ -40,9 +44,11 @@ interface ScrubActionFactoryArguments {
   /** the name of the events we declare for start, move, end.
    * Typically mousedown, mousemove, and mouseup.
    */
+
   startEvent?: string;
   endEvent?: string;
   moveEvent?: string;
+  startEventName?: string;
   /** the dispatched move event name for the scrub move effect, to be
    * passed up to the parent element when the scrub move has happened.
    * e.g.
@@ -89,6 +95,7 @@ export function createScrubAction({
   plotTop,
   plotBottom,
   startEvent = "mousedown",
+  startEventName = undefined,
   startPredicate = undefined,
   endEvent = "mouseup",
   endPredicate = undefined,
@@ -151,6 +158,16 @@ export function createScrubAction({
           stop: DEFAULT_COORDINATES,
         });
         isScrubbing.set(true);
+        if (startEventName) {
+          node.dispatchEvent(
+            new CustomEvent(startEventName, {
+              detail: {
+                ...get(coordinates),
+                ...mouseEvents(event),
+              },
+            })
+          );
+        }
       }
 
       function onScrub(event: MouseEvent) {

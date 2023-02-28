@@ -17,21 +17,21 @@
   $: exploreContainerWidth = $observedNode?.offsetWidth || 0;
 
   $: width = $observedNode?.getBoundingClientRect()?.width;
+
+  $: leftSide = `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 </script>
 
 <section
   use:listenToNodeResize
   class="grid items-stretch leaderboard-layout surface"
   style:grid-template-columns={gridConfig}
+  style:padding-left={leftSide}
 >
   <div class="explore-header">
     <slot name="header" />
   </div>
-  <hr class="pb-3 pt-1 ui-divider" />
-  <div
-    class="explore-metrics mb-8"
-    style:padding-left="calc({$navigationVisibilityTween * 24}px + 1.25rem)"
-  >
+  <hr class="pb-3 pt-1 ui-divider -ml-12" />
+  <div class="explore-metrics mb-8">
     <slot
       name="metrics"
       width={$observedNode?.getBoundingClientRect()?.width}
