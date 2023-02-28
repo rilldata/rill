@@ -28,9 +28,11 @@ export type RichFormatNumber = {
 
 export type FormatterFactoryOptions = (
   | {
+      // options specific to the largestMagnitude strategy
       strategy: "largestMagnitude";
     }
   | {
+      // options specific to the multipleMagnitudes strategy
       strategy: "multipleMagnitudes";
       maxDigitsLeft: number;
       maxDigitsRight: number;
@@ -39,7 +41,7 @@ export type FormatterFactoryOptions = (
 ) & {
   // Options common to all strategies
 
-  //
+  // max number of digits to be shown for formatted numbers
   maxTotalDigits: number;
 
   // (Not recommended)
@@ -61,8 +63,16 @@ export type FormatterFactoryOptions = (
   // Ex: 21379.23 with max 5 digits would require an order of mag
   // suffix, e.g. "21.379 k"; or with max 6 digits "21379.2"
   nonIntHandling: "none" | "trailingDot" | "reserveDigit";
+
   // method for formatting exact zeros
-  zeroHandling: "noSpecial" | "trailingDot" | "zeroOnly";
+  // "none": don't do anything special.
+  // Ex: If the general option padWithInSignificantZeros is used such
+  // that e.g. a 0 is rendered as "0.000", then if
+  // this option is "none", the trailing zeros will be retained
+  // "trailingDot": add a trailing decimal point to exact zeros "0."
+  // "zeroOnly": render exact zeros as "0"
+  zeroHandling: "none" | "trailingDot" | "zeroOnly";
+
   pxWidthLookupFn?: PxWidthLookupFn;
 
   // not actually used for formatting, but needed to calculate the
@@ -75,17 +85,17 @@ export type FormatterFactoryOutput = {
   options: FormatterFactoryOptions;
 
   // Maximum formatted widths in this sample.
-  // Will be `undefined` if a pixel with lookup
-  // function is not given in the options.
+  // Will be `undefined` if a pxWidthLookupFn
+  // is not given in the options.
   maxWidthsInSample?: FormatterPxWidths;
   // Maximum possible formatted widths given the options used.
   // It is possible that no actual number in the sample
   // will be this wide, but this is the upper limit on the width
-  // that can be reached given these formatting options. This44
+  // that can be reached given these formatting options. This
   // may be useful if additional numbers will be added to a sample
   // later and as in the column would be undesirable.
-  // Will be `undefined` if a pixel with lookup
-  // function is not given in the options.
+  // Will be `undefined` if a pxWidthLookupFn
+  // is not given in the options.
   maxWidthPossible?: FormatterPxWidths;
 
   // the largest order of magnitude of any number in this data set
