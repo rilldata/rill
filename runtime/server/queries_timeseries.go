@@ -9,7 +9,7 @@ import (
 )
 
 // Metrics/Timeseries APIs
-func (s *Server) ColumnRollupInterval(ctx context.Context, request *runtimev1.ColumnRollupIntervalRequest) (*runtimev1.ColumnRollupIntervalResponse, error) {
+func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.ColumnRollupIntervalRequest) (*runtimev1.ColumnRollupIntervalResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -26,7 +26,7 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, request *runtimev1.Co
 	return q.Result, nil
 }
 
-func (s *Server) ColumnTimeSeries(ctx context.Context, request *runtimev1.ColumnTimeSeriesRequest) (*runtimev1.ColumnTimeSeriesResponse, error) {
+func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTimeSeriesRequest) (*runtimev1.ColumnTimeSeriesResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
