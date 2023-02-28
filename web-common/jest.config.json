@@ -1,0 +1,24 @@
+{
+  "transform": {
+    "^.+\\.svelte$": "svelte-jester",
+    "^.+\\.[tj]s?$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^\\@rilldata\\/web-local(.*)$": "<rootDir>/src/$1",
+    "^\\@rilldata\\/web-common(.*)$": "<rootDir>/../web-common/src/$1",
+    "^\\$app(.*)$": [
+      "<rootDir>/.svelte-kit/dev/runtime/app$1",
+      "<rootDir>/.svelte-kit/build/runtime/app$1"
+    ],
+    "^d3-(.*)$": "d3-$1/dist/d3-$1"
+  },
+  "extensionsToTreatAsEsm": [".svelte"],
+  "moduleFileExtensions": ["ts", "js", "svelte"],
+  "setupFilesAfterEnv": [
+    "@testing-library/jest-dom/extend-expect",
+    "<rootDir>../web-local/test/global-test-setup.ts"
+  ],
+  "modulePathIgnorePatterns": ["<rootDir>/dist/", "<rootDir>/web-admin/"],
+  "testEnvironment": "node",
+  "testTimeout": 250000
+}
