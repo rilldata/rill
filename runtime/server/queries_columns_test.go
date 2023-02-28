@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
