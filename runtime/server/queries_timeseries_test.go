@@ -414,7 +414,6 @@ func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	mx := "max"
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
@@ -477,10 +476,10 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 func TestServer_Timeseries_TimeEnd_exclusive(t *testing.T) {
 	server, instanceID := getTimeseriesTestServer(t)
 
-	response, err := server.GenerateTimeSeries(testCtx(), &runtimev1.GenerateTimeSeriesRequest{
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
 		InstanceId: instanceID,
 		TableName:  "timeseries",
-		Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 			{
 				Expression: "max(clicks)",
 				SqlName:    "max",
