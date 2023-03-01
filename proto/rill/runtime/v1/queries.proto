@@ -1,0 +1,511 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/schema.proto";
+import "validate/validate.proto";
+
+service QueryService {
+  // Query runs a SQL query against the instance's OLAP datastore.
+  rpc Query(QueryRequest) returns (QueryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query",
+      body: "*"
+    };
+  }
+
+  // Explore APIs
+
+  // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+  // It's a convenience API for querying a metrics view.
+  rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metric-views/{metrics_view_name}/toplist",
+      body: "*"
+    };
+  }
+
+  // MetricsViewTimeSeries returns time series for the measures in the metrics view.
+  // It's a convenience API for querying a metrics view.
+  rpc MetricsViewTimeSeries(MetricsViewTimeSeriesRequest) returns (MetricsViewTimeSeriesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/timeseries",
+      body: "*"
+    };
+  }
+
+  // MetricsViewTotals returns totals over a time period for the measures in a metrics view.
+  // It's a convenience API for querying a metrics view.
+  rpc MetricsViewTotals(MetricsViewTotalsRequest) returns (MetricsViewTotalsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/totals",
+      body: "*"
+    };
+  }
+
+  // Profiling APIs
+
+  // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
+  rpc ColumnRollupInterval(ColumnRollupIntervalRequest) returns (ColumnRollupIntervalResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
+      body: "*"
+    };
+  }
+
+  // Get TopK elements from a table for a column given an agg function
+  // agg function and k are optional, defaults are count(*) and 50 respectively
+  rpc ColumnTopK(ColumnTopKRequest) returns (ColumnTopKResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}",
+      body: "*"
+    };
+  }
+
+  // Get the number of nulls in a column
+  rpc ColumnNullCount(ColumnNullCountRequest) returns (ColumnNullCountResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}"};
+  }
+
+  // Get basic stats for a numeric column like min, max, mean, stddev, etc
+  rpc ColumnDescriptiveStatistics(ColumnDescriptiveStatisticsRequest) returns (ColumnDescriptiveStatisticsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}"};
+  }
+
+  // Estimates the smallest time grain present in the column
+  rpc ColumnTimeGrain(ColumnTimeGrainRequest) returns (ColumnTimeGrainResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}"};
+  }
+
+  // Get the histogram for values in a column
+  rpc ColumnNumericHistogram(ColumnNumericHistogramRequest) returns (ColumnNumericHistogramResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}"};
+  }
+
+  // Get outliers for a numeric column
+  rpc ColumnRugHistogram(ColumnRugHistogramRequest) returns (ColumnRugHistogramResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}"};
+  }
+
+  // Get the time range summaries (min, max) for a column
+  rpc ColumnTimeRange(ColumnTimeRangeRequest) returns (ColumnTimeRangeResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}"};
+  }
+
+  // Get cardinality for a column
+  rpc ColumnCardinality(ColumnCardinalityRequest) returns (ColumnCardinalityResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/column-cardinality/tables/{table_name}"};
+  }
+
+  // Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
+  rpc ColumnTimeSeries(ColumnTimeSeriesRequest) returns (ColumnTimeSeriesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}",
+      body: "*"
+    };
+  }
+
+  // Tablewide profiling APIs
+
+  // TableCardinality returns row count
+  rpc TableCardinality(TableCardinalityRequest) returns (TableCardinalityResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/table-cardinality/tables/{table_name}"};
+  }
+
+  // TableColumns returns column profiles
+  rpc TableColumns(TableColumnsRequest) returns (TableColumnsResponse) {
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"};
+  }
+
+  // TableRows returns table rows
+  rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
+  }
+}
+
+// Request message for QueryService.Query
+message QueryRequest {
+  // Instance to query
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // SELECT statement
+  string sql = 2;
+  // Args to interpolate into the statement
+  repeated google.protobuf.Value args = 3;
+  // Query priority (not supported by all backends)
+  int32 priority = 4;
+  // If true, will only validate the query, not execute it
+  bool dry_run = 5;
+}
+
+// Response message for QueryService.Query
+message QueryResponse {
+  // Schema of result data
+  StructType meta = 1;
+  // Result data
+  repeated google.protobuf.Struct data = 2;
+}
+
+// **********
+// Explore APIs
+// **********
+
+// Request message for QueryService.MetricsViewToplist
+message MetricsViewToplistRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  string dimension_name = 3;
+  repeated string measure_names = 4;
+  google.protobuf.Timestamp time_start = 5;
+  google.protobuf.Timestamp time_end = 6;
+  int64 limit = 7;
+  int64 offset = 8;
+  repeated MetricsViewSort sort = 9;
+  MetricsViewFilter filter = 10;
+  int32 priority = 11;
+}
+
+// Response message for QueryService.MetricsViewToplist
+message MetricsViewToplistResponse {
+  repeated MetricsViewColumn meta = 1;
+  repeated google.protobuf.Struct data = 2;
+}
+
+// Request message for QueryService.MetricsViewTimeSeries
+message MetricsViewTimeSeriesRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  repeated string measure_names = 3;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
+  TimeGrain time_granularity = 6;
+  MetricsViewFilter filter = 7;
+  int32 priority = 8;
+}
+
+// Response message for QueryService.MetricsViewTimeSeries
+message MetricsViewTimeSeriesResponse {
+  repeated MetricsViewColumn meta = 1;
+  repeated TimeSeriesValue data = 2;
+}
+
+// Request message for QueryService.MetricsViewTotals
+message MetricsViewTotalsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  repeated string measure_names = 3;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
+  MetricsViewFilter filter = 7;
+  int32 priority = 8;
+}
+
+// Response message for QueryService.MetricsViewTotals
+message MetricsViewTotalsResponse {
+  repeated MetricsViewColumn meta = 1;
+  google.protobuf.Struct data = 2;
+}
+
+// Sort clause for metrics view requests
+message MetricsViewSort {
+  string name = 1;
+  bool ascending = 2;
+}
+
+// Filter clause for metrics view requests
+message MetricsViewFilter {
+  message Cond {
+    string name = 1;
+    repeated google.protobuf.Value in = 2;
+    repeated string like = 3;
+  }
+  repeated Cond include = 2;
+  repeated Cond exclude = 3;
+}
+
+// MetricsViewColumn represents a column in a metrics view
+message MetricsViewColumn {
+  string name = 1;
+  string type = 2;
+  bool nullable = 3;
+}
+
+// **********
+// Profiling APIs
+// **********
+
+message ColumnRollupIntervalRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+message ColumnRollupIntervalResponse {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+  TimeGrain interval = 3;
+}
+
+// Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
+message ColumnTopKRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  string agg = 4; // default is count(*)
+  int32 k = 5; // default is 50
+  int32 priority = 6;
+}
+
+message ColumnTopKResponse {
+  CategoricalSummary categorical_summary = 1;
+}
+
+// Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
+message CategoricalSummary {
+  oneof case {
+    TopK top_k = 1;
+    double cardinality = 2;
+  }
+}
+
+message TopK {
+  repeated Entry entries = 1;
+  message Entry {
+    google.protobuf.Value value = 1;
+    double count = 2;
+  }
+}
+
+// Request for QueryService.ColumnNullCount. Returns the null count for a given column for table table_name
+message ColumnNullCountRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+// Response for QueryService.ColumnNullCount
+message ColumnNullCountResponse {
+  double count = 1;
+}
+
+// Request for QueryService.GetColumnDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
+message ColumnDescriptiveStatisticsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+message ColumnDescriptiveStatisticsResponse {
+  NumericSummary numeric_summary = 1;
+}
+
+// Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
+// Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+message NumericSummary {
+  oneof case {
+    NumericHistogramBins numeric_histogram_bins = 1;
+    NumericStatistics numeric_statistics = 2;
+    NumericOutliers numeric_outliers = 3;
+  }
+}
+
+message NumericHistogramBins {
+  message Bin {
+    int32 bucket = 1;
+    double low = 2;
+    double midpoint = 3;
+    double high = 4;
+    double count = 5;
+  }
+  repeated Bin bins = 1;
+}
+
+// Response for QueryService.ColumnDescriptiveStatistics
+message NumericStatistics {
+  double min = 1;
+  double max = 2;
+  double mean = 3;
+  double q25 = 4;
+  double q50 = 5;
+  double q75 = 6;
+  double sd = 7;
+}
+
+message NumericOutliers {
+  message Outlier {
+    int32 bucket = 1;
+    double low = 2;
+    double high = 3;
+    bool present = 4;
+    int32 count = 5;
+  }
+  repeated Outlier outliers = 1;
+}
+
+// Request for QueryService.ColumnTimeGrainRequest
+message ColumnTimeGrainRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+// Response for QueryService.ColumnTimeGrain
+message ColumnTimeGrainResponse {
+  TimeGrain time_grain = 1;
+}
+
+// Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name
+message ColumnNumericHistogramRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  HistogramMethod histogram_method = 4;
+  int32 priority = 5;
+}
+
+// Response for QueryService.ColumnNumericHistogram
+message ColumnNumericHistogramResponse {
+  NumericSummary numeric_summary = 1;
+}
+
+enum HistogramMethod {
+  HISTOGRAM_METHOD_UNSPECIFIED = 0;
+  HISTOGRAM_METHOD_FD = 1;
+  HISTOGRAM_METHOD_DIAGNOSTIC = 2;
+}
+
+// Request for QueryService.ColumnRugHistogram
+message ColumnRugHistogramRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+message ColumnRugHistogramResponse {
+  NumericSummary numeric_summary = 1;
+}
+
+// Request for QueryService.ColumnTimeRange
+message ColumnTimeRangeRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+message ColumnTimeRangeResponse {
+  TimeRangeSummary time_range_summary = 1;
+}
+
+message TimeRangeSummary {
+  google.protobuf.Timestamp min = 1;
+  google.protobuf.Timestamp max = 2;
+  message Interval {
+    int32 months = 1;
+    int32 days = 2;
+    int64 micros = 3;
+  }
+  Interval interval = 3;
+}
+
+// Request for QueryService.ColumnCardinality. Returns the cardinality for a given column for table table_name
+message ColumnCardinalityRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 priority = 4;
+}
+
+message ColumnCardinalityResponse {
+  CategoricalSummary categorical_summary = 1;
+}
+
+message ColumnTimeSeriesRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  repeated BasicMeasure measures = 3;
+  string timestamp_column_name = 4;
+  TimeSeriesTimeRange time_range = 5;
+  MetricsViewFilter filters = 6;
+  int32 pixels = 7;
+  int32 sample_size = 8;
+  int32 priority = 9;
+  message BasicMeasure {
+    string id = 1;
+    // mandatory user defined metadata
+    string expression = 2;
+    // optional user defined metadata
+    string sql_name = 3;
+  }
+}
+
+message ColumnTimeSeriesResponse {
+  TimeSeriesResponse rollup = 1;
+}
+
+message TimeSeriesTimeRange {
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
+  TimeGrain interval = 4 [(validate.rules).enum.defined_only = true];
+}
+
+message TimeSeriesResponse {
+  repeated TimeSeriesValue results = 1;
+  repeated TimeSeriesValue spark = 2;
+  TimeSeriesTimeRange time_range = 3;
+  int32 sample_size = 4;
+}
+
+message TimeSeriesValue {
+  google.protobuf.Timestamp ts = 1;
+  double bin = 2;
+  google.protobuf.Struct records = 3;
+}
+
+// **********
+// Tablewide profiling API
+// **********
+
+message TableCardinalityRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  int32 priority = 3;
+}
+
+message TableCardinalityResponse {
+  int64 cardinality = 1;
+}
+
+message TableColumnsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  int32 priority = 3;
+}
+
+message TableColumnsResponse {
+  repeated ProfileColumn profile_columns = 1;
+}
+
+message ProfileColumn {
+  string name = 1;
+  string type = 2;
+  int32 largest_string_length = 3;
+}
+
+message TableRowsRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  int32 limit = 3;
+  int32 priority = 4;
+}
+
+message TableRowsResponse {
+  repeated google.protobuf.Struct data = 1;
+}

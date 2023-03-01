@@ -6,8 +6,8 @@
     isFloat,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    RuntimeServiceGetNumericHistogramHistogramMethod,
-    useRuntimeServiceGetDescriptiveStatistics,
+    QueryServiceColumnNumericHistogramHistogramMethod,
+    useQueryServiceColumnDescriptiveStatistics,
     useRuntimeServiceGetRugHistogram,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
@@ -49,7 +49,7 @@
     $runtimeStore?.instanceId,
     objectName,
     columnName,
-    RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
+    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     active
   );
   let fdHistogram;
@@ -58,7 +58,7 @@
       $runtimeStore?.instanceId,
       objectName,
       columnName,
-      RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
       active
     );
   }
@@ -89,7 +89,7 @@
   $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
 
   $: summary = derived(
-    useRuntimeServiceGetDescriptiveStatistics(
+    useQueryServiceColumnDescriptiveStatistics(
       $runtimeStore?.instanceId,
       objectName,
       {

@@ -39,13 +39,17 @@ type Options struct {
 
 type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
+	runtimev1.UnsafeQueryServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
 	logger  *zap.Logger
 	aud     *auth.Audience
 }
 
-var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
+var (
+	_ runtimev1.RuntimeServiceServer = (*Server)(nil)
+	_ runtimev1.QueryServiceServer   = (*Server)(nil)
+)
 
 func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	srv := &Server{
@@ -97,6 +101,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)
+	runtimev1.RegisterQueryServiceServer(server, s)
 	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -147,6 +152,11 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}

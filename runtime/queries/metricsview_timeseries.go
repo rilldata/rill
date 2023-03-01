@@ -102,13 +102,13 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func toMeasures(measures []*runtimev1.MetricsView_Measure, measureNames []string) ([]*runtimev1.GenerateTimeSeriesRequest_BasicMeasure, error) {
-	var res []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure
+func toMeasures(measures []*runtimev1.MetricsView_Measure, measureNames []string) ([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, error) {
+	var res []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure
 	for _, n := range measureNames {
 		found := false
 		for _, m := range measures {
 			if m.Name == n {
-				res = append(res, &runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+				res = append(res, &runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 					SqlName:    m.Name,
 					Expression: m.Expression,
 				})

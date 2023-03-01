@@ -19,6 +19,8 @@ We should rename TimeSeriesTimeRange to a better name.
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
   import {
     useRuntimeServiceGetCatalogEntry,
+    useQueryServiceColumnTimeRange,
+    V1ColumnTimeRangeResponse,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";

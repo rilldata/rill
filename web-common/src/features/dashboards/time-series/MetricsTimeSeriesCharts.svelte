@@ -15,8 +15,8 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
-    useRuntimeServiceMetricsViewTimeSeries,
-    useRuntimeServiceMetricsViewTotals,
+    useQueryServiceMetricsViewTimeSeries,
+    useQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -34,6 +34,7 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   export let metricViewName;
+  export let workspaceWidth: number;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -60,7 +61,7 @@
       timeEnd: metricsExplorer.selectedTimeRange?.end,
     };
 
-    totalsQuery = useRuntimeServiceMetricsViewTotals(
+    totalsQuery = useQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams
@@ -78,7 +79,7 @@
     !$metaQuery.isRefetching &&
     metricsExplorer.selectedTimeRange
   ) {
-    timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(
+    timeSeriesQuery = useQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
@@ -136,7 +137,7 @@
   value={mouseoverValue?.x}
   let:point
 >
-  <TimeSeriesChartContainer start={startValue} end={endValue}>
+  <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
     <!-- mouseover date elements-->
     <div class="bg-white sticky left-0 top-0" />
     <div class="bg-white sticky left-0 top-0">

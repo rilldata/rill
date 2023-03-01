@@ -1,13 +1,8 @@
 import {
-  RuntimeServiceGetNumericHistogramHistogramMethod,
-  useRuntimeServiceEstimateRollupInterval,
-  useRuntimeServiceEstimateSmallestTimeGrain,
-  useRuntimeServiceGenerateTimeSeries,
-  useRuntimeServiceGetCardinalityOfColumn,
-  useRuntimeServiceGetNullCount,
-  useRuntimeServiceGetNumericHistogram,
-  useRuntimeServiceGetTableCardinality,
-  useRuntimeServiceGetTopK,
+  QueryServiceColumnNumericHistogramHistogramMethod,
+  useQueryServiceColumnCardinality,
+  useQueryServiceColumnNullCount,
+  useQueryServiceColumnNumericHistogram,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
@@ -36,7 +31,7 @@ export function getSummaries(
       return derived(
         [
           writable(column),
-          useRuntimeServiceGetNullCount(
+          useQueryServiceColumnNullCount(
             instanceId,
             objectName,
             { columnName: column.name },
@@ -44,7 +39,7 @@ export function getSummaries(
               query: { keepPreviousData: true },
             }
           ),
-          useRuntimeServiceGetCardinalityOfColumn(
+          useQueryServiceColumnCardinality(
             instanceId,
             objectName,
             { columnName: column.name },
@@ -73,10 +68,10 @@ export function getNullPercentage(
   objectName: string,
   columnName: string
 ) {
-  const nullQuery = useRuntimeServiceGetNullCount(instanceId, objectName, {
+  const nullQuery = useQueryServiceColumnNullCount(instanceId, objectName, {
     columnName,
   });
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
+  const totalRowsQuery = useQueryServiceTableCardinality(
     instanceId,
     objectName
   );
@@ -94,13 +89,13 @@ export function getCountDistinct(
   objectName: string,
   columnName: string
 ) {
-  const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
+  const cardinalityQuery = useQueryServiceColumnCardinality(
     instanceId,
     objectName,
     { columnName }
   );
 
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
+  const totalRowsQuery = useQueryServiceTableCardinality(
     instanceId,
     objectName
   );
@@ -123,7 +118,7 @@ export function getTopK(
   columnName: string,
   active = false
 ) {
-  const topKQuery = useRuntimeServiceGetTopK(instanceId, objectName, {
+  const topKQuery = useQueryServiceColumnTopK(instanceId, objectName, {
     columnName: columnName,
     agg: "count(*)",
     k: 75,
@@ -140,7 +135,7 @@ export function getTimeSeriesAndSpark(
   columnName: string,
   active = false
 ) {
-  const query = useRuntimeServiceGenerateTimeSeries(
+  const query = useQueryServiceColumnTimeSeries(
     instanceId,
     objectName,
     // FIXME: convert pixel back to number once the API
@@ -150,13 +145,13 @@ export function getTimeSeriesAndSpark(
       priority: getPriorityForColumn("timeseries", active),
     }
   );
-  const estimatedInterval = useRuntimeServiceEstimateRollupInterval(
+  const estimatedInterval = useQueryServiceColumnRollupInterval(
     instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rollup-interval", active) }
   );
 
-  const smallestTimeGrain = useRuntimeServiceEstimateSmallestTimeGrain(
+  const smallestTimeGrain = useQueryServiceColumnTimeGrain(
     instanceId,
     objectName,
     {
@@ -199,10 +194,10 @@ export function getNumericHistogram(
   instanceId: string,
   objectName: string,
   columnName: string,
-  histogramMethod: RuntimeServiceGetNumericHistogramHistogramMethod,
+  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
   active = false
 ) {
-  return useRuntimeServiceGetNumericHistogram(
+  return useQueryServiceColumnNumericHistogram(
     instanceId,
     objectName,
     {

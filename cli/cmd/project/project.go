@@ -1,21 +1,21 @@
 package project
 
 import (
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func ProjectCmd(ver version.Version) *cobra.Command {
+func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd := &cobra.Command{
 		Use:    "project",
-		Hidden: !ver.IsDev(),
+		Hidden: !cfg.IsDev(),
 		Short:  "Manage projects",
 	}
-	projectCmd.AddCommand(ShowCmd(ver))
-	projectCmd.AddCommand(StatusCmd(ver))
-	projectCmd.AddCommand(ConnectCmd(ver))
-	projectCmd.AddCommand(EditCmd(ver))
-	projectCmd.AddCommand(DeleteCmd(ver))
+	projectCmd.AddCommand(ShowCmd(cfg))
+	projectCmd.AddCommand(StatusCmd(cfg))
+	projectCmd.AddCommand(ConnectCmd(cfg))
+	projectCmd.AddCommand(EditCmd(cfg))
+	projectCmd.AddCommand(DeleteCmd(cfg))
 
 	return projectCmd
 }

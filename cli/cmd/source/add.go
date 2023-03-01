@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/version"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -16,7 +16,7 @@ import (
 )
 
 // addCmd represents the add command, it requires min 1 args as source name
-func AddCmd(ver version.Version) *cobra.Command {
+func AddCmd(cfg *config.Config) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string
@@ -40,7 +40,7 @@ func AddCmd(ver version.Version) *cobra.Command {
 				dataPath = relPath
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, nil)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, nil)
 			if err != nil {
 				return err
 			}

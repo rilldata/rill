@@ -5,7 +5,7 @@
   import { Button } from "../../../components/button";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTimeRangeSummary,
+    useQueryServiceColumnTimeRange,
     V1GetTimeRangeSummaryResponse,
   } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
@@ -51,7 +51,7 @@
     $metricsViewQuery?.data?.entry?.metricsView?.model &&
     $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
-    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+    timeRangeQuery = useQueryServiceColumnTimeRange(
       $runtimeStore.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       {
