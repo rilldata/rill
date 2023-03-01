@@ -49,13 +49,11 @@ func newConfig(dsn string) (*config, error) {
 	uri.RawQuery = qry.Encode()
 	dsn = uri.String()
 
-	// db file path is everything before ? if it exists
-	filepath, _, _ := strings.Cut(dsn, "?")
 	// Return config
 	cfg := &config{
 		DSN:        dsn,
 		PoolSize:   poolSize,
-		DBFilePath: filepath,
+		DBFilePath: uri.Path,
 	}
 	return cfg, nil
 }

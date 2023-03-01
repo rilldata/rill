@@ -125,5 +125,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func (c *connection) DropDB() error {
+	// ignoring close error
+	c.Close()
 	return os.Remove(c.config.DBFilePath)
 }

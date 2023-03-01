@@ -8,6 +8,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -95,8 +96,8 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	if dropDB {
 		// ignoring the dropDB error since if db is already dropped it may not be possible to retry
-		// also the only error that os.remove returns is patherror which should be ignored as well
-		_ = svc.Olap.DropDB()
+		err = svc.Olap.DropDB()
+		r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID))
 	}
 
 	r.evictCaches(ctx, inst)
