@@ -151,7 +151,7 @@ Otherwise, the page will jump around as the data is fetched.
                 <rect
                   x={xScale(point.low)}
                   y={config.plotTop}
-                  width={xScale(point.high) - xScale(point.low)}
+                  width={Math.abs(xScale(point.high) - xScale(point.low))}
                   height={config.plotBottom - config.plotTop}
                   class="fill-gray-700"
                   opacity={0.2}
@@ -159,7 +159,7 @@ Otherwise, the page will jump around as the data is fetched.
                 <rect
                   x={xScale(point.low)}
                   y={yScale(point.count)}
-                  width={xScale(point.high) - xScale(point.low)}
+                  width={Math.abs(xScale(point.high) - xScale(point.low))}
                   height={config.plotBottom - yScale(point.count)}
                   class="fill-red-200"
                 />

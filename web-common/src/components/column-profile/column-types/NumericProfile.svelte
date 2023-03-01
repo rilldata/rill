@@ -63,7 +63,9 @@
     );
   }
 
-  /** for now, if we have a floating-point column, let's choose between
+  /**
+   * We have two choices of histogram method: diagnostic and freedman-diaconis.
+   * For integers, we go with diagnostic. For floating points, let's choose between
    * the most viable of diagnostic and freedman-diaconis. We'll remove
    * this once we've refactored floating-point columns toward a KDE plot.
    */
@@ -110,6 +112,41 @@
   $: fetchingSummaries = FLOATS.has(type)
     ? isFetching($nulls, $diagnosticHistogram, $fdHistogram)
     : isFetching($nulls, $diagnosticHistogram);
+
+  /** if we have a singleton where all summary information is the same, let's construct a single bin. */
+  $: if (
+    $summary?.min !== undefined &&
+    $summary?.min === $summary?.max &&
+    $nulls?.totalRows !== undefined
+  ) {
+    const boundaries = 10;
+    histogramData = [
+      // add 4 more empty bins
+      ...Array.from({ length: boundaries }).map((_, i) => {
+        return {
+          bucket: -boundaries + i,
+          count: 0,
+          high: $summary?.min - (boundaries - i - 1),
+          low: $summary?.min - (boundaries - i),
+        };
+      }),
+      {
+        bucket: boundaries,
+        count: $nulls?.totalRows,
+        low: $summary?.min,
+        high: $summary?.min + 1,
+      },
+      // add more empty bins
+      ...Array.from({ length: boundaries }).map((_, i) => {
+        return {
+          bucket: boundaries + i + 1,
+          count: 0,
+          low: $summary?.min + i,
+          high: $summary?.min + i + 1,
+        };
+      }),
+    ];
+  }
 </script>
 
 <ProfileContainer
