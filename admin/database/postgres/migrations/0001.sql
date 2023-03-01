@@ -17,9 +17,9 @@ CREATE TABLE projects (
 	description TEXT,
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
 	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL,
-	git_url TEXT UNIQUE,
-	github_app_install_id BIGINT, 
-	production_branch TEXT
+	git_url TEXT UNIQUE NOT NULL, 
+	github_app_install_id BIGINT NOT NULL,  
+	production_branch TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX projects_name_idx ON projects (organization_id, name);

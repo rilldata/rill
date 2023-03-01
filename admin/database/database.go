@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -74,9 +73,9 @@ type Project struct {
 	OrganizationID     string `db:"organization_id"`
 	Name               string
 	Description        string
-	GitURL             sql.NullString `db:"git_url"`
-	GithubAppInstallID sql.NullInt64  `db:"github_app_install_id"`
-	ProductionBranch   sql.NullString `db:"production_branch"`
-	CreatedOn          time.Time      `db:"created_on"`
-	UpdatedOn          time.Time      `db:"updated_on"`
+	GitURL             string    `db:"git_url"`
+	GithubAppInstallID int64     `db:"github_app_install_id"`
+	ProductionBranch   string    `db:"production_branch"`
+	CreatedOn          time.Time `db:"created_on"`
+	UpdatedOn          time.Time `db:"updated_on"`
 }

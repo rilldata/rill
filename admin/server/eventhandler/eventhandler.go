@@ -2,7 +2,6 @@ package eventhandler
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strings"
 
@@ -64,15 +63,15 @@ func (g *githubHandler) processPushEvent(ctx context.Context, event *github.Push
 		return ErrInvalidEvent
 	}
 	_, branch, found := strings.Cut(ref, "refs/heads/")
-	if !found || branch != project.ProductionBranch.String {
+	if !found || branch != project.ProductionBranch {
 		// a tag push or a push on another branch
 		return nil
 	}
 
 	installID := event.GetInstallation().GetID()
-	if installID != 0 && project.GithubAppInstallID.Valid && project.GithubAppInstallID.Int64 != event.GetInstallation().GetID() {
+	if installID != 0 && project.GithubAppInstallID != 0 && project.GithubAppInstallID != event.GetInstallation().GetID() {
 		// missed install event, update installation ID
-		project.GithubAppInstallID = sql.NullInt64{Int64: installID, Valid: true}
+		project.GithubAppInstallID = installID
 		_, err = g.db.UpdateProject(ctx, project)
 		if err != nil {
 			return err

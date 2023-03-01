@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/rilldata/rill/admin/database"
@@ -56,9 +55,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		OrganizationID:     org.ID,
 		Name:               req.Name,
 		Description:        req.Description,
-		GitURL:             sql.NullString{String: req.GitUrl, Valid: true},
-		GithubAppInstallID: sql.NullInt64{Int64: req.GithubAppInstallId, Valid: true},
-		ProductionBranch:   sql.NullString{String: req.ProductionBranch, Valid: true},
+		GitURL:             req.GitUrl,
+		GithubAppInstallID: req.GithubAppInstallId,
+		ProductionBranch:   req.ProductionBranch,
 	}
 	proj, err := s.db.CreateProject(ctx, org.ID, project)
 	if err != nil {
