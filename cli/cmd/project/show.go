@@ -3,11 +3,11 @@ package project
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func ShowCmd(ver version.Version) *cobra.Command {
+func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:   "show",
 		Args:  cobra.ExactArgs(1),

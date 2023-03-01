@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 // StartCmd represents the start command
-func StartCmd(ver version.Version) *cobra.Command {
+func StartCmd(cfg *config.Config) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string
@@ -47,7 +47,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariables)
 			if err != nil {
 				return err
 			}

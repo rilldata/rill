@@ -3,11 +3,11 @@ package project
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func StatusCmd(ver version.Version) *cobra.Command {
+func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status",
 		Args:  cobra.ExactArgs(1),

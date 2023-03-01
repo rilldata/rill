@@ -9,10 +9,10 @@
   } from "@rilldata/web-common/lib/formatters";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
-    useRuntimeServiceProfileColumns,
-    V1GetTableCardinalityResponse,
+    useQueryServiceTableCardinality,
+    useQueryServiceTableColumns,
+    V1TableCardinalityResponse,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -74,7 +74,7 @@
 
     // then get the cardinalities.
     cardinalityQueries = referencedThings?.map(([entity, reference]) => {
-      return useRuntimeServiceGetTableCardinality(
+      return useQueryServiceTableCardinality(
         $runtimeStore?.instanceId,
         entity.name,
         {},
@@ -84,7 +84,7 @@
 
     // then we'll get the total number of columns for comparison.
     sourceProfileColumns = referencedThings?.map(([entity]) => {
-      return useRuntimeServiceProfileColumns(
+      return useQueryServiceTableColumns(
         $runtimeStore?.instanceId,
         entity.name,
         {},
@@ -112,9 +112,9 @@
     0
   );
 
-  let modelCardinalityQuery: UseQueryStoreResult<V1GetTableCardinalityResponse>;
+  let modelCardinalityQuery: UseQueryStoreResult<V1TableCardinalityResponse>;
   $: if (model?.name)
-    modelCardinalityQuery = useRuntimeServiceGetTableCardinality(
+    modelCardinalityQuery = useQueryServiceTableCardinality(
       $runtimeStore.instanceId,
       model?.name
     );

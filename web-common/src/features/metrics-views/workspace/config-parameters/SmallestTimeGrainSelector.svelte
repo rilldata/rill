@@ -10,7 +10,7 @@
     timeGrainStringToEnum,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
   import {
-    useRuntimeServiceGetTimeRangeSummary,
+    useQueryServiceColumnTimeRange,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -41,7 +41,7 @@
 
   let timeRangeQuery;
   $: if (selectedModel?.name && timeColumn) {
-    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+    timeRangeQuery = useQueryServiceColumnTimeRange(
       $runtimeStore.instanceId,
       selectedModel.name,
       { columnName: timeColumn }

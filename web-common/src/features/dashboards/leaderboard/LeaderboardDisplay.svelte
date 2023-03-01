@@ -6,7 +6,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     MetricsViewDimension,
-    useRuntimeServiceMetricsViewTotals,
+    useQueryServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -72,7 +72,7 @@
         },
       };
     }
-    totalsQuery = useRuntimeServiceMetricsViewTotals(
+    totalsQuery = useQueryServiceMetricsViewTotals(
       $runtimeStore.instanceId,
       metricViewName,
       totalsQueryParams
