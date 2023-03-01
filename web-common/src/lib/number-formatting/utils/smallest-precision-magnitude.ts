@@ -1,5 +1,3 @@
-import type { NumberStringParts } from "./humanizer-types";
-
 // returns the smallest order of magnitude to which a number
 // has precision -- basically, the smallest OoM that has a non-zero
 // digit. Returm NaN if number is NaN or infinite

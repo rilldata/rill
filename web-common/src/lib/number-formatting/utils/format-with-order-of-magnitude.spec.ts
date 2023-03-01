@@ -1,10 +1,9 @@
-import type { NumberStringParts } from "./humanizer-types";
+import type { NumberStringParts } from "../humanizer-types";
 import { formatNumWithOrderOfMag } from "./format-with-order-of-magnitude";
 
-const testCases: [
-  [number, number, number, boolean, boolean?],
-  NumberStringParts
-][] = [
+type TestArgs = [number, number, number, boolean, boolean?];
+
+const testCases: [TestArgs, NumberStringParts][] = [
   [[Infinity, 3, 4, true], { int: "∞", dot: "", frac: "", suffix: "" }],
   [[-Infinity, 3, 4, true], { int: "-∞", dot: "", frac: "", suffix: "" }],
   [[NaN, 3, 4, true], { int: "NaN", dot: "", frac: "", suffix: "" }],
@@ -106,6 +105,17 @@ const testCases: [
   ],
 ];
 
+const integerTestCases: [TestArgs, NumberStringParts][] = [
+  [[710, 0, 0, true, true], { int: "710", dot: "", frac: "", suffix: "E0" }],
+  [[710, 0, 0, false, true], { int: "710", dot: "", frac: "", suffix: "E0" }],
+
+  [
+    [710, 0, 5, true, true],
+    { int: "710", dot: ".", frac: "00000", suffix: "E0" },
+  ],
+  [[710, 0, 5, false, true], { int: "710", dot: "", frac: "", suffix: "E0" }],
+];
+
 describe("formatNumWithOrderOfMag", () => {
   it("throw on non-numbers", () => {
     expect(() => formatNumWithOrderOfMag("asdf" as any, -3, 5, true)).toThrow();
@@ -114,6 +124,12 @@ describe("formatNumWithOrderOfMag", () => {
 
   testCases.forEach(([input, output]) => {
     it(`returns the correct split string in case: ${input}`, () => {
+      expect(formatNumWithOrderOfMag(...input)).toEqual(output);
+    });
+  });
+
+  integerTestCases.forEach(([input, output]) => {
+    it(`should have correct "dot" and padding for int input targeting e0: ${input}`, () => {
       expect(formatNumWithOrderOfMag(...input)).toEqual(output);
     });
   });
