@@ -19,6 +19,7 @@ import type {
   NumPartPxWidthLookupFn,
 } from "./number-to-string-formatters";
 import { splitStrsForMagStratMultipleMagsNoAlign } from "./humanizer-strategy-many-mags-2";
+import { humanizeDefaultStrategy } from "./humanizer-strategy-many-mags-3";
 
 const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
   0: "",
@@ -413,6 +414,11 @@ export const humanized2FormatterFactory: FormatterFactory = (
 
     case "unlimitedDigitTarget":
       splitStrs = splitStrsForMagStratMultipleMagsNoAlign(sample, options);
+      // console.log("splitStrs", splitStrs);
+      break;
+
+    case "defaultStrategy":
+      splitStrs = humanizeDefaultStrategy(sample, options);
       // console.log("splitStrs", splitStrs);
       break;
 

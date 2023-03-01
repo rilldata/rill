@@ -440,6 +440,16 @@
           <input
             type="radio"
             bind:group={magnitudeStrategy}
+            name="defaultStrategy"
+            value={"defaultStrategy"}
+          />
+          <b>proposed default strategy</b>
+        </label>
+        <br />
+        <label>
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
             name="largestWithDigitTarget"
             value={"largestWithDigitTarget"}
           />

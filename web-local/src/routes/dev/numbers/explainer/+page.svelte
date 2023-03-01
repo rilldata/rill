@@ -148,6 +148,224 @@
 
   let explainerRecipes: ExplainerStoryRecipe[] = [
     {
+      title: "default strategy, 2023-03-02 (sorted)",
+
+      sampleName: "shuffled mags e-5 to e7",
+      sampleSorted: true,
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "proposed default, dots aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: true,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, suffixes aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, right justified",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+      ],
+    },
+    {
+      title: "default strategy, 2023-03-02 (unsorted)",
+      sampleName: "shuffled mags e-5 to e7",
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "proposed default, dots aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: true,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, suffixes aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, right justified",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+      ],
+    },
+
+    {
+      title: "default strategy, 2023-03-02 (sorted, exact zeros)",
+
+      sampleName: "shuffled mags e-5 to e7, exact zeros",
+      sampleSorted: true,
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "proposed default, dots aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: true,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, suffixes aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, right justified",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+      ],
+    },
+    {
+      title: "default strategy, 2023-03-02 (unsorted, exact zeros)",
+      sampleName: "shuffled mags e-5 to e7, exact zeros",
+      formatterColRecipes: [
+        ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
+
+        [
+          "new humanizer",
+          "proposed default, dots aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: true,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, suffixes aligned",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: true,
+          },
+        ],
+        [
+          "new humanizer",
+          "proposed default, right justified",
+          {
+            magnitudeStrategy: "defaultStrategy",
+            maxTotalDigits: 10,
+            maxDigitsLeft: 6,
+            maxDigitsRight: 3,
+            minDigitsNonzero: 1,
+            useMaxDigitsRightIfSuffix: true,
+            maxDigitsRightIfSuffix: 2,
+            alignDecimalPoints: false,
+            alignSuffixes: false,
+          },
+        ],
+      ],
+    },
+
+    {
       title:
         "Digit limit for non-suffixed nums when using fixed RHS limit for suffixed nums; plain: (e-3,e6); dots not aligned",
 
@@ -628,9 +846,9 @@
         .filter((recipe) => recipe.formatterColRecipes && recipe.sampleName)
         .map((recipe) => {
           console.log({ recipe });
-          let sample = numberListsUnprocessed.find(
-            (nl) => nl.desc === recipe.sampleName
-          ).sample;
+          const sample = numberListsUnprocessed
+            .find((nl) => nl.desc === recipe.sampleName)
+            .sample.slice();
 
           if (recipe?.sampleSorted) {
             sample.sort((a, b) => b - a);
