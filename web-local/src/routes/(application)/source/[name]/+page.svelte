@@ -12,7 +12,7 @@
   import { onMount } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
 
-  const sourceName: string = $page.params.name;
+  $: sourceName = $page.params.name;
 
   onMount(() => {
     if ($featureFlags.readOnly) {
@@ -21,7 +21,7 @@
   });
 
   // try to get the catalog entry.
-  const catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     sourceName,
     {
@@ -35,7 +35,7 @@
   $: embedded = $catalogQuery.data?.entry?.embedded;
   $: path = $catalogQuery.data?.entry?.source.properties.path;
 
-  const fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table),
     {

@@ -9,10 +9,10 @@
   import { onMount } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
 
-  const modelName: string = $page.params.name;
+  $: modelName = $page.params.name;
 
   /** If ?focus, tell the page to focus the editor as soon as available */
-  const focusEditor = $page.url.searchParams.get("focus") === "";
+  $: focusEditor = $page.url.searchParams.get("focus") === "";
 
   onMount(() => {
     if ($featureFlags.readOnly) {
@@ -20,7 +20,7 @@
     }
   });
 
-  const fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model),
     {

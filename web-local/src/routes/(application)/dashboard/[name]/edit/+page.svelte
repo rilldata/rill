@@ -13,7 +13,7 @@
   import { featureFlags } from "../../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
-  const metricViewName: string = $page.params.name;
+  $: metricViewName = $page.params.name;
 
   onMount(() => {
     if ($featureFlags.readOnly) {
@@ -21,7 +21,7 @@
     }
   });
 
-  const fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
@@ -40,7 +40,7 @@
   $: yaml = $fileQuery.data?.blob || "";
 
   let nonStandardError: string | undefined;
-  const catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {
