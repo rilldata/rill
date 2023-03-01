@@ -187,6 +187,17 @@ const numberListsGen: NumericSampleGen[] = [
         range.map((i) => 0.69 * i - 5 + randu() / 3).map((p) => 10 ** p)
       ),
   },
+
+  {
+    desc: "shuffled mags e-5 to e7, exact zeros",
+    sampleFn: () =>
+      shuffler(
+        range
+          .map((i) => 0.69 * i - 5 + randu() / 3)
+          .map((p) => 10 ** p)
+          .map((x) => (randu() < 0.2 ? 0 : x))
+      ),
+  },
 ];
 
 export const numberLists: NumericSample[] = numberListsGen.map((g) => {
