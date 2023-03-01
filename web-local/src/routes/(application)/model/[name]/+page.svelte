@@ -4,7 +4,6 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { ModelWorkspace } from "@rilldata/web-common/features/models";
   import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
@@ -21,7 +20,6 @@
   });
 
   const fileQuery = useRuntimeServiceGetFile(
-    $runtime.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model),
     {
       query: {

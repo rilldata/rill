@@ -7,7 +7,6 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
@@ -21,22 +20,17 @@
   });
 
   // try to get the catalog entry.
-  const catalogQuery = useRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    sourceName,
-    {
-      query: {
-        onError: () => {
-          // no-op. we'll try to get the file below.
-        },
+  const catalogQuery = useRuntimeServiceGetCatalogEntry(sourceName, {
+    query: {
+      onError: () => {
+        // no-op. we'll try to get the file below.
       },
-    }
-  );
+    },
+  });
   $: embedded = $catalogQuery.data?.entry?.embedded;
   $: path = $catalogQuery.data?.entry?.source.properties.path;
 
   const fileQuery = useRuntimeServiceGetFile(
-    $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table),
     {
       query: {

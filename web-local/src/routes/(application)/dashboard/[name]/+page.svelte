@@ -7,7 +7,6 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error, redirect } from "@sveltejs/kit";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
@@ -15,7 +14,6 @@
   const metricViewName: string = $page.params.name;
 
   const fileQuery = useRuntimeServiceGetFile(
-    $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
       query: {
@@ -30,22 +28,18 @@
     }
   );
 
-  const catalogQuery = useRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      query: {
-        onError: () => {
-          // When the catalog entry doesn't exist, the dashboard config is invalid
-          if ($featureFlags.readOnly) {
-            throw error(400, "Invalid dashboard");
-          }
+  const catalogQuery = useRuntimeServiceGetCatalogEntry(metricViewName, {
+    query: {
+      onError: () => {
+        // When the catalog entry doesn't exist, the dashboard config is invalid
+        if ($featureFlags.readOnly) {
+          throw error(400, "Invalid dashboard");
+        }
 
-          throw redirect(307, `/dashboard/${metricViewName}/edit`);
-        },
+        throw redirect(307, `/dashboard/${metricViewName}/edit`);
       },
-    }
-  );
+    },
+  });
 </script>
 
 <svelte:head>

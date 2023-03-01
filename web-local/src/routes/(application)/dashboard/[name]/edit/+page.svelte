@@ -7,7 +7,6 @@
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
   import { featureFlags } from "../../../../../lib/application-state-stores/application-store";
@@ -22,7 +21,6 @@
   });
 
   const fileQuery = useRuntimeServiceGetFile(
-    $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
       query: {
@@ -40,24 +38,20 @@
   $: yaml = $fileQuery.data?.blob || "";
 
   let nonStandardError: string | undefined;
-  const catalogQuery = useRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      query: {
-        onError: async (err) => {
-          // If the catalog entry doesn't exist, the dashboard config is invalid
-          // The component should render the specific error
-          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-            nonStandardError = err.message;
-          }
+  const catalogQuery = useRuntimeServiceGetCatalogEntry(metricViewName, {
+    query: {
+      onError: async (err) => {
+        // If the catalog entry doesn't exist, the dashboard config is invalid
+        // The component should render the specific error
+        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
+          nonStandardError = err.message;
+        }
 
-          // Throw all other errors
-          throw error(err.response?.status || 500, err.message);
-        },
+        // Throw all other errors
+        throw error(err.response?.status || 500, err.message);
       },
-    }
-  );
+    },
+  });
 </script>
 
 <svelte:head>
