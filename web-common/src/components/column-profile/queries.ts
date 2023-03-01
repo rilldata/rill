@@ -3,6 +3,11 @@ import {
   useQueryServiceColumnCardinality,
   useQueryServiceColumnNullCount,
   useQueryServiceColumnNumericHistogram,
+  useQueryServiceColumnRollupInterval,
+  useQueryServiceColumnTimeGrain,
+  useQueryServiceColumnTimeSeries,
+  useQueryServiceColumnTopK,
+  useQueryServiceTableCardinality,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";

@@ -8,7 +8,7 @@
   import {
     QueryServiceColumnNumericHistogramHistogramMethod,
     useQueryServiceColumnDescriptiveStatistics,
-    useRuntimeServiceGetRugHistogram,
+    useQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
@@ -74,7 +74,7 @@
       )
     : $diagnosticHistogram?.data;
 
-  $: rug = useRuntimeServiceGetRugHistogram(
+  $: rug = useQueryServiceColumnRugHistogram(
     $runtimeStore?.instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rug-histogram", active) },
