@@ -115,7 +115,7 @@ func BenchmarkColumnTimeseries(b *testing.B) {
 		q := &ColumnTimeseries{
 			TableName:           "ad_bids",
 			TimestampColumnName: "timestamp",
-			Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 				{
 					Expression: "avg(bid_price)",
 					SqlName:    "avg_bid_price",
@@ -139,7 +139,7 @@ func BenchmarkColumnTimeseriesSpark(b *testing.B) {
 		q := &ColumnTimeseries{
 			TableName:           "ad_bids",
 			TimestampColumnName: "timestamp",
-			Measures: []*runtimev1.GenerateTimeSeriesRequest_BasicMeasure{
+			Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
 				{
 					Expression: "avg(bid_price)",
 					SqlName:    "avg_bid_price",

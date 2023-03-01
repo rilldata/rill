@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*runtimev1.GetTopKResponse, error) {
+func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -37,7 +37,7 @@ func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*r
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	return &runtimev1.GetTopKResponse{
+	return &runtimev1.ColumnTopKResponse{
 		CategoricalSummary: &runtimev1.CategoricalSummary{
 			Case: &runtimev1.CategoricalSummary_TopK{
 				TopK: q.Result,
@@ -46,7 +46,7 @@ func (s *Server) GetTopK(ctx context.Context, req *runtimev1.GetTopKRequest) (*r
 	}, nil
 }
 
-func (s *Server) GetNullCount(ctx context.Context, req *runtimev1.GetNullCountRequest) (*runtimev1.GetNullCountResponse, error) {
+func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -61,12 +61,12 @@ func (s *Server) GetNullCount(ctx context.Context, req *runtimev1.GetNullCountRe
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	return &runtimev1.GetNullCountResponse{
+	return &runtimev1.ColumnNullCountResponse{
 		Count: q.Result,
 	}, nil
 }
 
-func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.GetDescriptiveStatisticsRequest) (*runtimev1.GetDescriptiveStatisticsResponse, error) {
+func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -85,7 +85,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.Ge
 			NumericStatistics: q.Result,
 		},
 	}
-	return &runtimev1.GetDescriptiveStatisticsResponse{
+	return &runtimev1.ColumnDescriptiveStatisticsResponse{
 		NumericSummary: resp,
 	}, nil
 }
@@ -116,7 +116,7 @@ func (s *Server) GetDescriptiveStatistics(ctx context.Context, req *runtimev1.Ge
  * we've thrown at it.
  */
 
-func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, req *runtimev1.EstimateSmallestTimeGrainRequest) (*runtimev1.EstimateSmallestTimeGrainResponse, error) {
+func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -129,12 +129,12 @@ func (s *Server) EstimateSmallestTimeGrain(ctx context.Context, req *runtimev1.E
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.EstimateSmallestTimeGrainResponse{
+	return &runtimev1.ColumnTimeGrainResponse{
 		TimeGrain: q.Result,
 	}, nil
 }
 
-func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNumericHistogramRequest) (*runtimev1.GetNumericHistogramResponse, error) {
+func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -148,7 +148,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNume
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.GetNumericHistogramResponse{
+	return &runtimev1.ColumnNumericHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericHistogramBins{
 				NumericHistogramBins: &runtimev1.NumericHistogramBins{
@@ -159,7 +159,7 @@ func (s *Server) GetNumericHistogram(ctx context.Context, req *runtimev1.GetNume
 	}, nil
 }
 
-func (s *Server) GetRugHistogram(ctx context.Context, req *runtimev1.GetRugHistogramRequest) (*runtimev1.GetRugHistogramResponse, error) {
+func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -172,7 +172,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, req *runtimev1.GetRugHisto
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.GetRugHistogramResponse{
+	return &runtimev1.ColumnRugHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericOutliers{
 				NumericOutliers: &runtimev1.NumericOutliers{
@@ -183,7 +183,7 @@ func (s *Server) GetRugHistogram(ctx context.Context, req *runtimev1.GetRugHisto
 	}, nil
 }
 
-func (s *Server) GetTimeRangeSummary(ctx context.Context, req *runtimev1.GetTimeRangeSummaryRequest) (*runtimev1.GetTimeRangeSummaryResponse, error) {
+func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -196,12 +196,12 @@ func (s *Server) GetTimeRangeSummary(ctx context.Context, req *runtimev1.GetTime
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.GetTimeRangeSummaryResponse{
+	return &runtimev1.ColumnTimeRangeResponse{
 		TimeRangeSummary: q.Result,
 	}, nil
 }
 
-func (s *Server) GetCardinalityOfColumn(ctx context.Context, req *runtimev1.GetCardinalityOfColumnRequest) (*runtimev1.GetCardinalityOfColumnResponse, error) {
+func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -214,7 +214,7 @@ func (s *Server) GetCardinalityOfColumn(ctx context.Context, req *runtimev1.GetC
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.GetCardinalityOfColumnResponse{
+	return &runtimev1.ColumnCardinalityResponse{
 		CategoricalSummary: &runtimev1.CategoricalSummary{
 			Case: &runtimev1.CategoricalSummary_Cardinality{
 				Cardinality: q.Result,

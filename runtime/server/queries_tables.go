@@ -11,7 +11,7 @@ import (
 const _tableHeadDefaultLimit = 25
 
 // Table level profiling APIs.
-func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
+func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardinalityRequest) (*runtimev1.TableCardinalityResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -23,7 +23,7 @@ func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTabl
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.GetTableCardinalityResponse{
+	return &runtimev1.TableCardinalityResponse{
 		Cardinality: q.Result,
 	}, nil
 }
@@ -34,7 +34,7 @@ type ColumnInfo struct {
 	Unknown int
 }
 
-func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
+func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRequest) (*runtimev1.TableColumnsResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -48,12 +48,12 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 		return nil, err
 	}
 
-	return &runtimev1.ProfileColumnsResponse{
+	return &runtimev1.TableColumnsResponse{
 		ProfileColumns: q.Result,
 	}, nil
 }
 
-func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
+func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest) (*runtimev1.TableRowsResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -73,7 +73,7 @@ func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRe
 		return nil, err
 	}
 
-	return &runtimev1.GetTableRowsResponse{
+	return &runtimev1.TableRowsResponse{
 		Data: q.Result,
 	}, nil
 }
