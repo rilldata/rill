@@ -10,8 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Credentials struct{}
-
 type Config struct {
 	entries map[string]any
 }
