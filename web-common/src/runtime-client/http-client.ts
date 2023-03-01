@@ -2,6 +2,7 @@ import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrap
 import { get } from "svelte/store";
 import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
 import { runtime } from "./runtime-store";
+import { INSTANCE_ID_PLACEHOLDER } from "./openapi-transformer";
 
 /**
  * Runtime base URL
@@ -18,6 +19,10 @@ export const httpClient = async <T>(
   config: FetchWrapperOptions
 ): Promise<T> => {
   // naive request interceptor
+  config.url = config.url.replace(
+    INSTANCE_ID_PLACEHOLDER,
+    get(runtime).instanceId
+  );
   const host = get(runtime).host;
   const interceptedConfig = { ...config, baseUrl: host };
 

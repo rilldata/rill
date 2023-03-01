@@ -1,6 +1,7 @@
 // This files contains clients that are not written through GRPC
 
 import httpClient from "@rilldata/web-common/runtime-client/http-client";
+import { INSTANCE_ID_PLACEHOLDER } from "./openapi-transformer";
 
 export type V1RuntimeGetConfig = {
   instance_id: string;
@@ -22,12 +23,11 @@ export const runtimeServiceGetConfig =
   };
 
 export const runtimeServiceFileUpload = async (
-  instanceId: string,
   filePath: string,
   formData: FormData
 ) => {
   return httpClient({
-    url: `/v1/instances/${instanceId}/files/upload/-/${filePath}`,
+    url: `/v1/instances/${INSTANCE_ID_PLACEHOLDER}/files/upload/-/${filePath}`,
     method: "POST",
     data: formData,
     headers: {},

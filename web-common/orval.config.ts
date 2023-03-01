@@ -1,8 +1,14 @@
 import { defineConfig } from "orval";
+import transformer from "./src/runtime-client/openapi-transformer";
 
 export default defineConfig({
   api: {
-    input: "../proto/gen/rill/runtime/v1/runtime.swagger.yaml",
+    input: {
+      target: "../proto/gen/rill/runtime/v1/runtime.swagger.yaml",
+      override: {
+        transformer: transformer,
+      },
+    },
     output: {
       workspace: "./src/runtime-client/",
       target: "gen/index.ts",
