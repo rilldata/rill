@@ -13,6 +13,10 @@ const onlyIntegers = [
   { input: 1234, output: "1234" },
   { input: 12345, output: "12345" },
   { input: 123456, output: "123456" },
+  { input: 1234567, output: "1234567" },
+  { input: 12345678, output: "12345678" },
+  { input: 123456789, output: "123456789" },
+  { input: 1234567890000000, output: "1234567890000000" },
 ];
 
 const zeros = [

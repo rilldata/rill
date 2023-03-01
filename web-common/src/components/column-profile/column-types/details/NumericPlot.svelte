@@ -130,7 +130,7 @@ Otherwise, the page will jump around as the data is fetched.
               xLowAccessor="low"
               xHighAccessor="high"
               yAccessor="count"
-              separator={data.length < 20 && INTEGERS.has(type) ? 1 : 0}
+              separator={data.length < 30 && INTEGERS.has(type) ? 1 : 0}
             />
             <!-- zero line -->
             <line
