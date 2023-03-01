@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
@@ -251,7 +252,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDSN:   fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSize: 10000,
 	}
-	rt, err := New(opts, nil)
+	rt, err := New(opts, zap.NewNop())
 	require.NoError(t, err)
 
 	return rt
