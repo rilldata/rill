@@ -3,11 +3,11 @@ package auth
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func LoginCmd(ver version.Version) *cobra.Command {
+func LoginCmd(cfg *config.Config) *cobra.Command {
 	var token string
 
 	loginCmd := &cobra.Command{

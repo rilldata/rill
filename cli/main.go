@@ -6,7 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/rilldata/rill/cli/cmd"
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 )
 
 // Version details are set using -ldflags
@@ -17,7 +17,7 @@ var (
 )
 
 func main() {
-	ver := version.Version{
+	ver := config.Version{
 		Number:    Version,
 		Commit:    Commit,
 		Timestamp: BuildDate,

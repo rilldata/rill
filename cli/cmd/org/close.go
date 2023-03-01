@@ -3,11 +3,11 @@ package org
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func CloseCmd(ver version.Version) *cobra.Command {
+func CloseCmd(cfg *config.Config) *cobra.Command {
 	closeCmd := &cobra.Command{
 		Use:   "close",
 		Short: "Close",

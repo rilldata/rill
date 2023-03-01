@@ -1,6 +1,6 @@
 import {
   useRuntimeServiceGetCatalogEntry,
-  useRuntimeServiceGetTimeRangeSummary,
+  useQueryServiceColumnTimeRange,
   useRuntimeServiceListCatalogEntries,
   useRuntimeServiceListFiles,
   V1MetricsView,
@@ -57,7 +57,7 @@ export function useModelAllTimeRange(
   modelName: string,
   timeDimension: string
 ) {
-  return useRuntimeServiceGetTimeRangeSummary(
+  return useQueryServiceColumnTimeRange(
     instanceId,
     modelName,
     {

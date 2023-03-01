@@ -3,11 +3,11 @@ package project
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func ConnectCmd(ver version.Version) *cobra.Command {
+func ConnectCmd(cfg *config.Config) *cobra.Command {
 	var name, displayName, prodBranch string
 	var public bool
 

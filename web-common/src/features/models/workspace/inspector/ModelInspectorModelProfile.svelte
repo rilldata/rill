@@ -8,7 +8,7 @@
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
-    useRuntimeServiceGetTableCardinality,
+    useQueryServiceTableCardinality,
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -80,7 +80,7 @@
         [
           writable($thing),
           writable(ref),
-          useRuntimeServiceGetTableCardinality(
+          useQueryServiceTableCardinality(
             $runtimeStore?.instanceId,
             $thing.name
           ),

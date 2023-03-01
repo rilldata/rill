@@ -3,11 +3,11 @@ package org
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func SwitchCmd(ver version.Version) *cobra.Command {
+func SwitchCmd(cfg *config.Config) *cobra.Command {
 	switchCmd := &cobra.Command{
 		Use:   "switch",
 		Short: "Switch",

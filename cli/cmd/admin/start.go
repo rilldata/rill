@@ -9,7 +9,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -38,7 +38,7 @@ type Config struct {
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
-func StartCmd(ver version.Version) *cobra.Command {
+func StartCmd(cliCfg *config.Config) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start admin server",

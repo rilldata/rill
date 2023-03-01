@@ -1,12 +1,12 @@
 package source
 
 import (
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 // sourceCmd represents the source command
-func SourceCmd(ver version.Version) *cobra.Command {
+func SourceCmd(cfg *config.Config) *cobra.Command {
 	sourceCmd := &cobra.Command{
 		Use:   "source",
 		Short: "Create or drop a source",
@@ -14,8 +14,8 @@ func SourceCmd(ver version.Version) *cobra.Command {
 		// 	return fmt.Errorf("must specify a sub command")
 		// },
 	}
-	sourceCmd.AddCommand(AddCmd(ver))
-	sourceCmd.AddCommand(DropCmd(ver))
+	sourceCmd.AddCommand(AddCmd(cfg))
+	sourceCmd.AddCommand(DropCmd(cfg))
 
 	return sourceCmd
 }
