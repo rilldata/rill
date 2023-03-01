@@ -21,10 +21,11 @@ import (
 )
 
 type ReconcileConfig struct {
-	DryRun       bool
-	Strict       bool
-	ChangedPaths []string
-	ForcedPaths  []string
+	DryRun         bool
+	Strict         bool
+	ChangedPaths   []string
+	ForcedPaths    []string
+	PersistSources bool
 }
 
 type ReconcileResult struct {
@@ -310,15 +311,19 @@ func (s *Service) runMigrationItems(
 		}
 
 		if failed && !conf.DryRun {
-			// remove entity from catalog and OLAP if it failed validation or during migration
-			err := s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
-			if err != nil {
-				// shouldn't ideally happen
-				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-					Code:     runtimev1.ReconcileError_CODE_OLAP,
-					Message:  err.Error(),
-					FilePath: item.Path,
-				})
+			shouldDelete := !conf.PersistSources || item.NewCatalog.Type != drivers.ObjectTypeSource
+			var err error
+			if shouldDelete {
+				// remove entity from catalog and OLAP if it failed validation or during migration
+				err = s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+				if err != nil {
+					// shouldn't ideally happen
+					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+						Code:     runtimev1.ReconcileError_CODE_OLAP,
+						Message:  err.Error(),
+						FilePath: item.Path,
+					})
+				}
 			}
 			_, err = s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 			if err != nil {
@@ -328,7 +333,7 @@ func (s *Service) runMigrationItems(
 					FilePath: item.Path,
 				})
 			}
-			if item.CatalogInStore != nil {
+			if item.CatalogInStore != nil && shouldDelete {
 				err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 				if err != nil {
 					// shouldn't ideally happen
