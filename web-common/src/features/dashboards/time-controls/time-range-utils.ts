@@ -6,6 +6,31 @@ import {
   TimeSeriesTimeRange,
 } from "./time-control-types";
 
+const TIME = {
+  MILLISECOND: 1,
+  get SECOND() {
+    return 1000 * this.MILLISECOND;
+  },
+  get MINUTE() {
+    return 60 * this.SECOND;
+  },
+  get HOUR() {
+    return 60 * this.MINUTE;
+  },
+  get DAY() {
+    return 24 * this.HOUR;
+  },
+  get WEEK() {
+    return 7 * this.DAY;
+  },
+  get MONTH() {
+    return 30 * this.DAY;
+  },
+  get YEAR() {
+    return 365 * this.DAY;
+  },
+};
+
 export const supportedTimeGrainEnums = () => {
   const supportedEnums: string[] = [];
   const unsupportedTypes = [
@@ -140,24 +165,14 @@ export const timeRangeToISODuration = (
   timeRangeName: TimeRangeName
 ): string => {
   switch (timeRangeName) {
-    case TimeRangeName.LastHour:
-      return "PT1H";
     case TimeRangeName.Last6Hours:
       return "PT6H";
     case TimeRangeName.LastDay:
       return "P1D";
-    case TimeRangeName.Last2Days:
-      return "P2D";
-    case TimeRangeName.Last5Days:
-      return "P5D";
     case TimeRangeName.LastWeek:
       return "P7D";
-    case TimeRangeName.Last2Weeks:
-      return "P14D";
     case TimeRangeName.Last30Days:
       return "P30D";
-    case TimeRangeName.Last60Days:
-      return "P60D";
     case TimeRangeName.AllTime:
       return "inf";
     default:
@@ -170,24 +185,14 @@ export const ISODurationToTimeRange = (
   defaultToAllTime = true
 ): TimeRangeName => {
   switch (isoDuration) {
-    case "PT1H":
-      return TimeRangeName.LastHour;
     case "PT6H":
       return TimeRangeName.Last6Hours;
     case "P1D":
       return TimeRangeName.LastDay;
-    case "P2D":
-      return TimeRangeName.Last2Days;
-    case "P5D":
-      return TimeRangeName.Last5Days;
     case "P7D":
       return TimeRangeName.LastWeek;
-    case "P14D":
-      return TimeRangeName.Last2Weeks;
     case "P30D":
       return TimeRangeName.Last30Days;
-    case "P60D":
-      return TimeRangeName.Last60Days;
     case "inf":
       return TimeRangeName.AllTime;
     default:
@@ -204,23 +209,23 @@ export function isGrainBigger(
 }
 
 export function getAllowedTimeGrains(timeRangeDurationMs) {
-  if (timeRangeDurationMs < 2 * 60 * 60 * 1000) {
+  if (timeRangeDurationMs < 2 * TIME.HOUR) {
     return [V1TimeGrain.TIME_GRAIN_MINUTE];
-  } else if (timeRangeDurationMs <= 6 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 6 * TIME.HOUR) {
     return [V1TimeGrain.TIME_GRAIN_MINUTE, V1TimeGrain.TIME_GRAIN_HOUR];
-  } else if (timeRangeDurationMs <= 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < TIME.DAY) {
     return [V1TimeGrain.TIME_GRAIN_HOUR];
-  } else if (timeRangeDurationMs <= 14 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 14 * TIME.DAY) {
     return [V1TimeGrain.TIME_GRAIN_HOUR, V1TimeGrain.TIME_GRAIN_DAY];
-  } else if (timeRangeDurationMs <= 30 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < TIME.MONTH) {
     return [
       V1TimeGrain.TIME_GRAIN_HOUR,
       V1TimeGrain.TIME_GRAIN_DAY,
       V1TimeGrain.TIME_GRAIN_WEEK,
     ];
-  } else if (timeRangeDurationMs <= 90 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 3 * TIME.MONTH) {
     return [V1TimeGrain.TIME_GRAIN_DAY, V1TimeGrain.TIME_GRAIN_WEEK];
-  } else if (timeRangeDurationMs <= 3 * 365 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 3 * TIME.YEAR) {
     return [
       V1TimeGrain.TIME_GRAIN_DAY,
       V1TimeGrain.TIME_GRAIN_WEEK,
@@ -238,13 +243,13 @@ export function getAllowedTimeGrains(timeRangeDurationMs) {
 export function getDefaultTimeGrain(start: Date, end: Date): V1TimeGrain {
   const timeRangeDurationMs = end.getTime() - start.getTime();
 
-  if (timeRangeDurationMs <= 2 * 60 * 60 * 1000) {
+  if (timeRangeDurationMs < 2 * TIME.HOUR) {
     return V1TimeGrain.TIME_GRAIN_MINUTE;
-  } else if (timeRangeDurationMs <= 7 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 7 * TIME.DAY) {
     return V1TimeGrain.TIME_GRAIN_HOUR;
-  } else if (timeRangeDurationMs <= 90 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 3 * TIME.MONTH) {
     return V1TimeGrain.TIME_GRAIN_DAY;
-  } else if (timeRangeDurationMs <= 3 * 365 * 24 * 60 * 60 * 1000) {
+  } else if (timeRangeDurationMs < 3 * TIME.YEAR) {
     return V1TimeGrain.TIME_GRAIN_WEEK;
   } else {
     return V1TimeGrain.TIME_GRAIN_MONTH;
@@ -467,24 +472,15 @@ function getAllTimeRangeDurationMs(allTimeRange: TimeRange): number {
 
 const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
   switch (name) {
-    case TimeRangeName.LastHour:
-      return 60 * 60 * 1000;
     case TimeRangeName.Last6Hours:
-      return 6 * 60 * 60 * 1000;
+      return 6 * TIME.HOUR;
     case TimeRangeName.LastDay:
-      return 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last2Days:
-      return 2 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last5Days:
-      return 5 * 24 * 60 * 60 * 1000;
+      return TIME.DAY;
     case TimeRangeName.LastWeek:
-      return 7 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last2Weeks:
-      return 2 * 7 * 24 * 60 * 60 * 1000;
+      return TIME.WEEK;
     case TimeRangeName.Last30Days:
-      return 30 * 24 * 60 * 60 * 1000;
-    case TimeRangeName.Last60Days:
-      return 60 * 24 * 60 * 60 * 1000;
+      return TIME.MONTH;
+
     default:
       throw new Error(`Unknown last X time range name: ${name}`);
   }
@@ -493,17 +489,17 @@ const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
 const getTimeGrainDurationMs = (timeGrain: V1TimeGrain): number => {
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return 60 * 1000;
+      return TIME.MINUTE;
     case V1TimeGrain.TIME_GRAIN_HOUR:
-      return 60 * 60 * 1000;
+      return TIME.HOUR;
     case V1TimeGrain.TIME_GRAIN_DAY:
-      return 24 * 60 * 60 * 1000;
+      return TIME.DAY;
     case V1TimeGrain.TIME_GRAIN_WEEK:
-      return 7 * 24 * 60 * 60 * 1000;
+      return TIME.WEEK;
     case V1TimeGrain.TIME_GRAIN_MONTH:
-      return 30 * 24 * 60 * 60 * 1000;
+      return TIME.MONTH;
     case V1TimeGrain.TIME_GRAIN_YEAR:
-      return 365 * 24 * 60 * 60 * 1000;
+      return TIME.YEAR;
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }
@@ -516,22 +512,22 @@ export const floorDate = (
   if (!date) return new Date();
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_MINUTE: {
-      const interval = 60 * 1000;
+      const interval = TIME.MINUTE;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
     case V1TimeGrain.TIME_GRAIN_HOUR: {
-      const interval = 60 * 60 * 1000;
+      const interval = TIME.HOUR;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
     case V1TimeGrain.TIME_GRAIN_DAY: {
-      const interval = 24 * 60 * 60 * 1000;
+      const interval = TIME.DAY;
       return new Date(Math.floor(date.getTime() / interval) * interval);
     }
     case V1TimeGrain.TIME_GRAIN_WEEK: {
       // rounds to the most recent Monday
       const day = date.getUTCDay();
       const dateRoundedDownByDay = floorDate(date, V1TimeGrain.TIME_GRAIN_DAY);
-      const timeFromMonday = (day === 0 ? 6 : day - 1) * 24 * 60 * 60 * 1000;
+      const timeFromMonday = (day === 0 ? 6 : day - 1) * TIME.DAY;
       return new Date(dateRoundedDownByDay.getTime() - timeFromMonday);
     }
     case V1TimeGrain.TIME_GRAIN_MONTH: {
@@ -557,13 +553,13 @@ export function ceilDate(date: Date, timeGrain: V1TimeGrain): Date {
 export function addGrains(date: Date, units: number, grain: V1TimeGrain): Date {
   switch (grain) {
     case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return new Date(date.getTime() + units * 60 * 1000);
+      return new Date(date.getTime() + units * TIME.MINUTE);
     case V1TimeGrain.TIME_GRAIN_HOUR:
-      return new Date(date.getTime() + units * 60 * 60 * 1000);
+      return new Date(date.getTime() + units * TIME.HOUR);
     case V1TimeGrain.TIME_GRAIN_DAY:
-      return new Date(date.getTime() + units * 24 * 60 * 60 * 1000);
+      return new Date(date.getTime() + units * TIME.DAY);
     case V1TimeGrain.TIME_GRAIN_WEEK:
-      return new Date(date.getTime() + units * 7 * 24 * 60 * 60 * 1000);
+      return new Date(date.getTime() + units * TIME.WEEK);
     case V1TimeGrain.TIME_GRAIN_MONTH:
       return new Date(
         Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + units, 1)

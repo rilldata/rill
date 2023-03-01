@@ -19,7 +19,7 @@ This component will draw an axis on the specified side.
   export let fontSize: number = undefined;
   export let placement = "middle";
 
-  export let labelColor = "fill-gray-600 dark: fill-gray-400";
+  export let labelColor = "fill-gray-600 dark:fill-gray-400";
 
   // superlabel properties
   export let superlabel = false;
@@ -189,7 +189,7 @@ This component will draw an axis on the specified side.
       dy={dy(side)}
       text-anchor={textAnchor}
       font-size={innerFontSize}
-      class={labelColor}
+      class="{labelColor}  pointer-events-none"
     >
       {formatterFunction(tick)}
     </text>
@@ -215,7 +215,7 @@ This component will draw an axis on the specified side.
           : -18}
         text-anchor="start"
         font-size={innerFontSize}
-        class={labelColor}
+        class="{labelColor} pointer-events-none"
       >
         {superLabelFormatter(tick)}
       </text>
