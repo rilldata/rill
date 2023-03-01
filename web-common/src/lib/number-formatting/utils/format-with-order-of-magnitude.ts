@@ -1,15 +1,26 @@
-import type { NumberStringParts } from "./humanizer-types";
+import type { NumberStringParts } from "../humanizer-types";
 import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 
 import _ from "lodash";
+
+export const orderOfMagnitude = (x) => {
+  return Math.floor(Math.log10(Math.abs(x)));
+};
+
+export const orderOfMagnitudeEng = (x) => {
+  return Math.round(Math.floor(orderOfMagnitude(x) / 3) * 3);
+};
 
 export const formatNumWithOrderOfMag = (
   x: number,
   newOrder: number,
   fractionDigits: number,
+  // Set to true to pad with insignificant zeros.
+  // Integers will be padded with zeros if this is set.
   padInsignificantZeros = false,
   // Set to `true` to leave a trailing "." in the case
-  // of non-integers formatted to e0 with 0 fraction digits
+  // of non-integers formatted to e0 with 0 fraction digits.
+  // Even if this is `true` integers WILL NOT be formatted with a trailing "."
   trailingDot = false
 ): NumberStringParts => {
   if (typeof x !== "number") throw new Error("input must be a number");
@@ -50,9 +61,6 @@ export const formatNumWithOrderOfMag = (
     } else {
       fractionDigits = 0;
     }
-    // if (spm < -5) {
-    // console.log({ x, spm, newSpm, fractionDigits });
-    // }
   }
 
   const [int, frac] = Intl.NumberFormat("en-US", {
