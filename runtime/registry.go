@@ -25,12 +25,14 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	if err != nil {
 		return err
 	}
+	defer olap.Close()
 
 	// Check repo connection
 	repo, repoStore, err := r.checkRepoConnection(inst)
 	if err != nil {
 		return err
 	}
+	defer repo.Close()
 
 	// Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
@@ -123,6 +125,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		if err != nil {
 			return err
 		}
+		defer olap.Close()
 
 		// Prepare connections for use
 		err = olap.Migrate(ctx)
@@ -131,7 +134,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		}
 	}
 
-	// 2. embedCatalog disabled previously but enabled now
+	// 2. Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
 		olapConn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
 		if err != nil {
@@ -151,6 +154,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		if err != nil {
 			return err
 		}
+		defer repo.Close()
 
 		// Prepare connections for use
 		err = repo.Migrate(ctx)
