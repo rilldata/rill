@@ -131,6 +131,12 @@ message Project {
   string description = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
+  // Git url of the project
+  string git_url = 6;
+  // Github app install id 
+  int64 github_app_install_id = 7;
+  // Branch to be deployed in repo
+  string production_branch = 8;
 }
 
 message CreateOrganizationRequest {
@@ -200,6 +206,9 @@ message CreateProjectRequest {
   string description = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+  string git_url = 7;
+  int64 github_app_install_id = 8;
+  string production_branch = 9;
 }
 
 // Response message for AdminService.CreateOrganization
@@ -223,6 +232,9 @@ message UpdateProjectRequest {
   string organization = 1;
   string name = 2;
   string description = 3;
+  string git_url = 4;
+  int64 github_app_install_id = 5;
+  string production_branch = 6;
 }
 
 // Response message for AdminService.UpdateOrganization

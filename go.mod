@@ -19,6 +19,7 @@ require (
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.2
+	github.com/google/go-github/v50 v50.1.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -99,6 +100,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.5.1 // indirect

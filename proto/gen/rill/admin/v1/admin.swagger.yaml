@@ -178,9 +178,16 @@ paths:
                 format: date-time
               description:
                 type: string
+              gitUrl:
+                type: string
+              githubAppInstallId:
+                type: string
+                format: int64
               id:
                 type: string
               name:
+                type: string
+              productionBranch:
                 type: string
               updatedOn:
                 type: string
@@ -262,6 +269,13 @@ paths:
             type: object
             properties:
               description:
+                type: string
+              gitUrl:
+                type: string
+              githubAppInstallId:
+                type: string
+                format: int64
+              productionBranch:
                 type: string
             title: Request message for AdminService.UpdateOrganization
       tags:
@@ -409,12 +423,22 @@ definitions:
       description:
         type: string
         title: Short description for the project
+      gitUrl:
+        type: string
+        title: Git url of the project
+      githubAppInstallId:
+        type: string
+        format: int64
+        title: Github app install id
       id:
         type: string
         title: Identifier (UUID)
       name:
         type: string
         title: project name
+      productionBranch:
+        type: string
+        title: Branch to be deployed in repo
       updatedOn:
         type: string
         format: date-time

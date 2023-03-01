@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -52,8 +53,9 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	CreateProject(ctx context.Context, orgID string, name string, description string) (*Project, error)
-	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
+	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
+	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
+	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 }
 
@@ -68,10 +70,13 @@ type Organization struct {
 }
 
 type Project struct {
-	ID             string
-	OrganizationID string `db:"organization_id"`
-	Name           string
-	Description    string
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
+	ID                 string
+	OrganizationID     string `db:"organization_id"`
+	Name               string
+	Description        string
+	GitURL             sql.NullString `db:"git_url"`
+	GithubAppInstallID sql.NullInt64  `db:"github_app_install_id"`
+	ProductionBranch   sql.NullString `db:"production_branch"`
+	CreatedOn          time.Time      `db:"created_on"`
+	UpdatedOn          time.Time      `db:"updated_on"`
 }

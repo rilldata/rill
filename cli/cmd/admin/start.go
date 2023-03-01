@@ -34,6 +34,7 @@ type Config struct {
 	AuthClientID     string        `split_words:"true"`
 	AuthClientSecret string        `split_words:"true"`
 	AuthCallbackURL  string        `split_words:"true"`
+	GithubAppSecret  string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -83,6 +84,7 @@ func StartCmd(ver version.Version) *cobra.Command {
 				AuthClientSecret: conf.AuthClientSecret,
 				AuthCallbackURL:  conf.AuthCallbackURL,
 				SessionSecret:    conf.SessionSecret,
+				GithubSecretKey:  conf.GithubAppSecret,
 			}
 			s, err := server.New(logger, db, srvConf)
 			if err != nil {

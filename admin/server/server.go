@@ -16,6 +16,7 @@ import (
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/server/eventhandler"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
@@ -29,10 +30,11 @@ import (
 // hi
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger *zap.Logger
-	db     database.DB
-	conf   Config
-	auth   *Authenticator
+	logger  *zap.Logger
+	db      database.DB
+	conf    Config
+	auth    *Authenticator
+	handler eventhandler.Handler
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -45,6 +47,7 @@ type Config struct {
 	AuthClientSecret string
 	AuthCallbackURL  string
 	SessionSecret    string
+	GithubSecretKey  string // used to validate github events
 }
 
 func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
@@ -53,11 +56,17 @@ func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
 		return nil, err
 	}
 
+	handler, err := eventhandler.NewGithubHandler(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
-		logger: logger,
-		db:     db,
-		conf:   conf,
-		auth:   auth,
+		logger:  logger,
+		db:      db,
+		conf:    conf,
+		auth:    auth,
+		handler: handler,
 	}, nil
 }
 
@@ -137,6 +146,12 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// One-off REST-only path for multipart file upload
 	err = mux.HandlePath("GET", "/auth/login", s.authLogin)
+	if err != nil {
+		panic(err)
+	}
+
+	// this MAY be a common API for all events originating from multiple sources like github,gitlab etc
+	err = mux.HandlePath("POST", "/event_handler/{origin}", s.handleEvent)
 	if err != nil {
 		panic(err)
 	}

@@ -991,6 +991,12 @@ func (m *Project) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for GitUrl
+
+	// no validation rules for GithubAppInstallId
+
+	// no validation rules for ProductionBranch
+
 	if len(errors) > 0 {
 		return ProjectMultiError(errors)
 	}
@@ -2381,6 +2387,12 @@ func (m *CreateProjectRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for GitUrl
+
+	// no validation rules for GithubAppInstallId
+
+	// no validation rules for ProductionBranch
+
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}
@@ -2829,6 +2841,12 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Description
+
+	// no validation rules for GitUrl
+
+	// no validation rules for GithubAppInstallId
+
+	// no validation rules for ProductionBranch
 
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)

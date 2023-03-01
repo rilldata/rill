@@ -110,18 +110,33 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	return res, nil
 }
 
-func (c *connection) CreateProject(ctx context.Context, orgID, name, description string) (*database.Project, error) {
+func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.db.QueryRowxContext(ctx, "INSERT INTO projects(organization_id, name, description) VALUES ($1, $2, $3) RETURNING *", orgID, name, description).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "SELECT p.* FROM projects p WHERE p.github_url=$1", githubURL).StructScan(res)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) CreateProject(ctx context.Context, orgID string, project *database.Project) (*database.Project, error) {
+	res := &database.Project{}
+	err := c.db.QueryRowxContext(ctx, "INSERT INTO projects(organization_id, name, description, git_url, github_app_install_id, production_branch) "+
+		"VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", orgID, project.Name, project.Description, project.GitURL, project.GithubAppInstallID, project.ProductionBranch).StructScan(res)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateProject(ctx context.Context, id, description string) (*database.Project, error) {
+func (c *connection) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1 WHERE id=$2 RETURNING *", description, id).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1,git_url=$2,github_app_install_id=$3,"+
+		"production_branch=$4 WHERE id=$5 RETURNING *",
+		p.Description, p.GitURL, p.GithubAppInstallID, p.ProductionBranch, p.ID).StructScan(res)
 	if err != nil {
 		return nil, err
 	}

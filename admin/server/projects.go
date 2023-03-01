@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/rilldata/rill/admin/database"
@@ -51,7 +52,15 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.db.CreateProject(ctx, org.ID, req.Name, req.Description)
+	project := &database.Project{
+		OrganizationID:     org.ID,
+		Name:               req.Name,
+		Description:        req.Description,
+		GitURL:             sql.NullString{String: req.GitUrl, Valid: true},
+		GithubAppInstallID: sql.NullInt64{Int64: req.GithubAppInstallId, Valid: true},
+		ProductionBranch:   sql.NullString{String: req.ProductionBranch, Valid: true},
+	}
+	proj, err := s.db.CreateProject(ctx, org.ID, project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -91,7 +100,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err = s.db.UpdateProject(ctx, proj.ID, req.Description)
+	proj.Description = req.Description
+	proj, err = s.db.UpdateProject(ctx, proj)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
