@@ -21,7 +21,10 @@ Otherwise, the page will jump around as the data is fetched.
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
   import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import {
+    formatInteger,
+    justEnoughPrecision,
+  } from "@rilldata/web-common/lib/formatters";
   import type {
     NumericHistogramBinsBin,
     NumericOutliersOutlier,
@@ -209,9 +212,9 @@ Otherwise, the page will jump around as the data is fetched.
                   y={config.plotTop + 12}
                   class="fill-gray-500"
                   opacity={0.8}
-                  >({point?.low}, {point?.high}{point?.high === data.at(-1).high
-                    ? ")"
-                    : "]"}</text
+                  >({justEnoughPrecision(point?.low)}, {justEnoughPrecision(
+                    point?.high
+                  )}{point?.high === data.at(-1).high ? ")" : "]"}</text
                 >
                 <text
                   use:outline

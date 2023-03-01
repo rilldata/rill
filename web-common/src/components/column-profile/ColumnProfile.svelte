@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
-  import { defaultSort, sortByName, sortByNullity } from "./sort-utils";
+  import { defaultSort, sortByName, sortByNullity } from "./utils";
 
   export let containerWidth = 0;
   // const queryClient = useQueryClient();
