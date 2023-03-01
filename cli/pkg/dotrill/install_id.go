@@ -1,4 +1,4 @@
-package local
+package dotrill
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type localConfig struct {
 	AnalyticsEnabled bool   `json:"analyticsEnabled"`
 }
 
-func config() (*localConfig, error) {
+func AnalyticsConfig() (*localConfig, error) {
 	conf := &localConfig{
 		AnalyticsEnabled: true,
 	}
