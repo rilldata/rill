@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -51,12 +51,12 @@ type App struct {
 	Instance    *drivers.Instance
 	Logger      *zap.SugaredLogger
 	BaseLogger  *zap.Logger
-	Version     version.Version
+	Version     config.Version
 	Verbose     bool
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error

@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-type localConfig struct {
+type LocalConfig struct {
 	InstallID        string `json:"installId"`
 	AnalyticsEnabled bool   `json:"analyticsEnabled"`
 }
 
-func AnalyticsConfig() (*localConfig, error) {
-	conf := &localConfig{
+func AnalyticsConfig() (*LocalConfig, error) {
+	conf := &LocalConfig{
 		AnalyticsEnabled: true,
 	}
 
