@@ -5,12 +5,17 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 const _tableHeadDefaultLimit = 25
 
 // Table level profiling APIs.
 func (s *Server) GetTableCardinality(ctx context.Context, req *runtimev1.GetTableCardinalityRequest) (*runtimev1.GetTableCardinalityResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.TableCardinality{
 		TableName: req.TableName,
 	}
@@ -30,6 +35,10 @@ type ColumnInfo struct {
 }
 
 func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColumnsRequest) (*runtimev1.ProfileColumnsResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.TableColumns{
 		TableName: req.TableName,
 	}
@@ -45,6 +54,10 @@ func (s *Server) ProfileColumns(ctx context.Context, req *runtimev1.ProfileColum
 }
 
 func (s *Server) GetTableRows(ctx context.Context, req *runtimev1.GetTableRowsRequest) (*runtimev1.GetTableRowsResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+		return nil, ErrForbidden
+	}
+
 	limit := int(req.Limit)
 	if limit == 0 {
 		limit = _tableHeadDefaultLimit

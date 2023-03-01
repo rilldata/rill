@@ -1,6 +1,13 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
 import { area, curveLinear, curveStep, line } from "d3-shape";
-import type { GraphicScale } from "./state/types";
+import { getContext } from "svelte";
+import { derived, writable } from "svelte/store";
+import { contexts } from "./constants";
+import type {
+  GraphicScale,
+  ScaleStore,
+  SimpleConfigurationStore,
+} from "./state/types";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -21,6 +28,16 @@ const curves = {
   curveStep,
 };
 
+export function pathIsDefined(yAccessor: string) {
+  return (d) => {
+    return !(
+      d[yAccessor] === undefined ||
+      isNaN(d[yAccessor]) ||
+      d[yAccessor] === null
+    );
+  };
+}
+
 export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
     return (
@@ -40,9 +57,15 @@ export function pathDoesNotDropToZero(yAccessor: string) {
 
 interface LineGeneratorArguments {
   xAccessor: string;
-  xScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
-  yScale: ScaleLinear<number, number> | ScaleTime<Date, number>;
-  curve: string;
+  xScale:
+    | ScaleLinear<number, number>
+    | ScaleTime<Date, number>
+    | ((d) => number);
+  yScale:
+    | ScaleLinear<number, number>
+    | ScaleTime<Date, number>
+    | ((d) => number);
+  curve?: string;
   pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
 }
 
@@ -160,4 +183,93 @@ export function barplotPolyline(
     path +
     ` ${X(data.findLast((d) => d[yAccessor])[xHigh]) - separator},${Y(0)} `
   );
+}
+
+/** utilizes the provided scales to calculate the line thinness in a way
+ * that enables higher-density "overplotted lines".
+ */
+
+export function createAdaptiveLineThicknessStore(yAccessor) {
+  let data;
+
+  // get xScale, yScale, and config from contexts
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const yScale = getContext(contexts.scale("y")) as ScaleStore;
+  const config = getContext(contexts.config) as SimpleConfigurationStore;
+
+  // capture data state.
+  const dataStore = writable(data);
+
+  const store = derived(
+    [xScale, yScale, config, dataStore],
+    ([$xScale, $yScale, $config, $data]) => {
+      if (!$data) {
+        return 1;
+      }
+      const totalTravelDistance = $data
+        .filter((di) => di[yAccessor] !== null)
+        .map((di, i) => {
+          if (i === $data.length - 1) {
+            return 0;
+          }
+          const max = Math.max(
+            $yScale($data[i + 1][yAccessor]),
+            $yScale($data[i][yAccessor])
+          );
+          const min = Math.min(
+            $yScale($data[i + 1][yAccessor]),
+            $yScale($data[i][yAccessor])
+          );
+          if (isNaN(min) || isNaN(max)) return 1 / $data.length;
+          return Math.abs(max - min);
+        })
+        .reduce((acc, v) => acc + v, 0);
+
+      const yIshDistanceTravelled =
+        2 /
+        (totalTravelDistance /
+          (($xScale.range()[1] - $xScale.range()[0]) *
+            ($config.devicePixelRatio || 3)));
+
+      const xIshDistanceTravellled =
+        (($xScale.range()[1] - $xScale.range()[0]) *
+          ($config.devicePixelRatio || 3) *
+          0.7) /
+        $data.length /
+        1.5;
+
+      const value = Math.min(
+        1,
+        /** to determine the stroke width of the path, let's look at
+         * the bigger of two values:
+         * 1. the "y-ish" distance travelled
+         * the inverse of "total travel distance", which is the Y
+         * gap size b/t successive points divided by the zoom window size;
+         * 2. time series length / available X pixels
+         * the time series divided by the total number of pixels in the existing
+         * zoom window.
+         *
+         * These heuristics could be refined, but this seems to provide a reasonable approximation for
+         * the stroke width. (1) excels when lots of successive points are close together in the Y direction,
+         * whereas (2) excels` when a line is very, very noisy (and thus the X direction is the main constraint).
+         */
+        Math.max(
+          // the y-ish distance travelled
+          yIshDistanceTravelled,
+          // the time series length / available X pixels
+          xIshDistanceTravellled
+        )
+      );
+
+      return value;
+    }
+  );
+
+  return {
+    subscribe: store.subscribe,
+    /** trigger an update when the data changes */
+    setData(d) {
+      dataStore.set(d);
+    },
+  };
 }

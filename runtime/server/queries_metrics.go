@@ -5,6 +5,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 // NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
@@ -12,6 +13,10 @@ import (
 
 // MetricsViewToplist implements RuntimeService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
 		DimensionName:   req.DimensionName,
@@ -33,6 +38,10 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 
 // MetricsViewTimeSeries implements RuntimeService.
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
@@ -51,6 +60,10 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 
 // MetricsViewTotals implements RuntimeService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
 	q := &queries.MetricsViewTotals{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
