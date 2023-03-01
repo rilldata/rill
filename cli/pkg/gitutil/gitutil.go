@@ -1,8 +1,8 @@
 package gitutil
 
 import (
+	"fmt"
 	"os"
-	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -23,36 +23,39 @@ func CloneRepo(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return repoName, nil
 }
 
-func ExtractRemotes(projectPath string) ([]string, error) {
+type Remote struct {
+	Name string
+	URL  string
+}
+
+func ExtractRemotes(projectPath string) ([]Remote, error) {
 	repo, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
 
-	remote, err := repo.Remote("origin")
+	remotes, err := repo.Remotes()
 	if err != nil {
 		return nil, err
 	}
 
-	refList, err := remote.List(&git.ListOptions{InsecureSkipTLS: true})
-	if err != nil {
-		return nil, err
-	}
-
-	var branches []string
-	refPrefix := "refs/heads/"
-
-	for _, ref := range refList {
-		refName := ref.Name().String()
-		if !strings.HasPrefix(refName, refPrefix) {
-			continue
+	res := make([]Remote, len(remotes))
+	for idx, remote := range remotes {
+		if len(remote.Config().URLs) == 0 {
+			return nil, fmt.Errorf("no URL found for git remote %q", remote.Config().Name)
 		}
-		branchName := refName[len(refPrefix):]
-		branches = append(branches, branchName)
+
+		res[idx] = Remote{
+			Name: remote.Config().Name,
+			// The first URL in the slice is the URL Git fetches from (main one).
+			// We'll make things easy for ourselves and only consider that.
+			URL: remote.Config().URLs[0],
+		}
 	}
 
-	return branches, nil
+	return res, nil
 }

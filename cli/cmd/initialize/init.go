@@ -36,10 +36,6 @@ func InitCmd(ver version.Version) *cobra.Command {
 
 					projectPath = repoName
 				}
-
-				// Adding this for just testing
-				remotes, _ := gitutil.ExtractRemotes(projectPath)
-				fmt.Println("Paths are", remotes)
 			}
 
 			// List examples and exit
