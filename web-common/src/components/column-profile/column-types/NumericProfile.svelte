@@ -33,16 +33,10 @@
 
   let active = false;
 
-  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
+  $: nulls = getNullPercentage(objectName, columnName);
 
-  $: numericHistogram = getNumericHistogram(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    active
-  );
+  $: numericHistogram = getNumericHistogram(objectName, columnName, active);
   $: rug = useRuntimeServiceGetRugHistogram(
-    $runtime?.instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rug-histogram", active) },
     {
@@ -53,17 +47,13 @@
       },
     }
   );
-  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
+  $: topK = getTopK(objectName, columnName);
 
   $: summary = derived(
-    useRuntimeServiceGetDescriptiveStatistics(
-      $runtime?.instanceId,
-      objectName,
-      {
-        columnName: columnName,
-        priority: getPriorityForColumn("descriptive-statistics", active),
-      }
-    ),
+    useRuntimeServiceGetDescriptiveStatistics(objectName, {
+      columnName: columnName,
+      priority: getPriorityForColumn("descriptive-statistics", active),
+    }),
     ($query) => {
       return $query?.data?.numericSummary?.numericStatistics;
     }

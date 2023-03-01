@@ -25,7 +25,6 @@ import type { EntityType } from "./types";
 
 export async function renameFileArtifact(
   queryClient: QueryClient,
-  instanceId: string,
   fromName: string,
   toName: string,
   type: EntityType,
@@ -33,7 +32,7 @@ export async function renameFileArtifact(
 ) {
   const resp = await renameMutation.mutateAsync({
     data: {
-      instanceId,
+      instanceId: get(runtime).instanceId,
       fromPath: getFilePathFromNameAndType(fromName, type),
       toPath: getFilePathFromNameAndType(toName, type),
     },
@@ -46,17 +45,12 @@ export async function renameFileArtifact(
     message: `Renamed ${getLabel(type)} ${fromName} to ${toName}`,
   });
 
-  removeEntityQueries(
-    queryClient,
-    instanceId,
-    getFilePathFromNameAndType(fromName, type)
-  );
-  invalidateAfterReconcile(queryClient, instanceId, resp);
+  removeEntityQueries(queryClient, getFilePathFromNameAndType(fromName, type));
+  invalidateAfterReconcile(queryClient, resp);
 }
 
 export async function deleteFileArtifact(
   queryClient: QueryClient,
-  instanceId: string,
   name: string,
   type: EntityType,
   deleteMutation: UseMutationResult<V1DeleteFileAndReconcileResponse>,
@@ -68,7 +62,7 @@ export async function deleteFileArtifact(
   try {
     const resp = await deleteMutation.mutateAsync({
       data: {
-        instanceId,
+        instanceId: get(runtime).instanceId,
         path,
       },
     });
@@ -80,9 +74,9 @@ export async function deleteFileArtifact(
       notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
     }
 
-    removeEntityQueries(queryClient, instanceId, path);
+    removeEntityQueries(queryClient, path);
 
-    invalidateAfterReconcile(queryClient, instanceId, resp);
+    invalidateAfterReconcile(queryClient, resp);
     if (activeEntity?.name === name) {
       const route = getRouteFromName(getNextEntityName(names, name), type);
       /** set the href store so the menu selection has an immediate visual update. */

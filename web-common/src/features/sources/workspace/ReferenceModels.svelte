@@ -13,7 +13,6 @@
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
-  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let sourceCatalog: V1CatalogEntry;
 
@@ -21,7 +20,7 @@
   $: modelsAndRowCounts = derived(
     embeds.map((modelName) => {
       return derived(
-        useRuntimeServiceGetTableCardinality($runtime?.instanceId, modelName),
+        useRuntimeServiceGetTableCardinality(modelName),
 
         (totalRows) => {
           return {

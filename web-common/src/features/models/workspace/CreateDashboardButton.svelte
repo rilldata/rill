@@ -35,12 +35,9 @@
   export let hasError = false;
   export let collapse = false;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
+  $: getModel = useRuntimeServiceGetCatalogEntry(modelName);
   $: model = $getModel.data?.entry?.model;
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: dashboardNames = useDashboardNames();
 
   const queryClient = useQueryClient();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
@@ -84,11 +81,7 @@
             MetricsEventScreenName.Model,
             MetricsEventScreenName.Dashboard
           );
-          return invalidateAfterReconcile(
-            queryClient,
-            $runtime.instanceId,
-            resp
-          );
+          return invalidateAfterReconcile(queryClient, resp);
         },
         onError: (err) => {
           console.error(err);

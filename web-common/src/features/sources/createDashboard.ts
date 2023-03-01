@@ -11,13 +11,14 @@ import {
   useMutation,
   UseMutationOptions,
 } from "@sveltestack/svelte-query";
+import { get } from "svelte/store";
+import { runtime } from "../../runtime-client/runtime-store";
 import {
   addQuickMetricsToDashboardYAML,
   initBlankDashboardYAML,
 } from "../metrics-views/metrics-internal-store";
 
 export interface CreateDashboardFromSourceRequest {
-  instanceId: string;
   sourceName: string;
   newModelName: string;
   newDashboardName: string;
@@ -47,20 +48,19 @@ export const useCreateDashboardFromSource = <
   > = async (props) => {
     const { data } = props ?? {};
 
+    const instanceId = get(runtime).instanceId;
+
     // first, create model from source
 
     await runtimeServicePutFileAndReconcile({
-      instanceId: data.instanceId,
+      instanceId: instanceId,
       path: getFilePathFromNameAndType(data.newModelName, EntityType.Model),
       blob: `select * from ${data.sourceName}`,
     });
 
     // second, create dashboard from model
 
-    const model = await runtimeServiceGetCatalogEntry(
-      data.instanceId,
-      data.newModelName
-    );
+    const model = await runtimeServiceGetCatalogEntry(data.newModelName);
     const blankDashboardYAML = initBlankDashboardYAML(data.newDashboardName);
     const fullDashboardYAML = addQuickMetricsToDashboardYAML(
       blankDashboardYAML,
@@ -68,7 +68,7 @@ export const useCreateDashboardFromSource = <
     );
 
     const response = await runtimeServicePutFileAndReconcile({
-      instanceId: data.instanceId,
+      instanceId: instanceId,
       path: getFilePathFromNameAndType(
         data.newDashboardName,
         EntityType.MetricsDefinition

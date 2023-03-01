@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
@@ -22,7 +21,7 @@
 
   let sourcePath: string;
   $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-  $: getSource = useRuntimeServiceGetFile($runtime?.instanceId, sourcePath);
+  $: getSource = useRuntimeServiceGetFile(sourcePath);
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
 
   $: connectors = useRuntimeServiceListConnectors();
@@ -47,15 +46,11 @@
       await refreshSource(
         currentConnector?.name,
         tableName,
-        $runtime?.instanceId,
         $refreshSourceMutation,
         $createSource,
         queryClient
       );
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtime?.instanceId,
-        tableName
-      );
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(tableName);
       await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op

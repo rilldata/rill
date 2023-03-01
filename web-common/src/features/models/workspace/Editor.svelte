@@ -56,7 +56,6 @@
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let modelName: string;
   export let content: string;
@@ -69,10 +68,7 @@
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
+  $: getModel = useRuntimeServiceGetCatalogEntry(modelName);
   let model: V1Model;
   $: model = $getModel?.data?.entry?.model;
 
@@ -154,12 +150,9 @@
 
   let autocompleteCompartment = new Compartment();
 
-  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
-    $runtime.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
+  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries({
+    type: "OBJECT_TYPE_SOURCE",
+  });
 
   let schema: { [table: string]: string[] };
 

@@ -20,7 +20,6 @@
     useRuntimeServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -53,7 +52,7 @@
 
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -64,17 +63,12 @@
   let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
-  $: dimensionQuery = useMetaDimension(
-    $runtime.instanceId,
-    metricViewName,
-    dimensionName
-  );
+  $: dimensionQuery = useMetaDimension(metricViewName, dimensionName);
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
-    $runtime.instanceId,
     metricViewName,
     metricsExplorer?.leaderboardMeasureName
   );
@@ -92,10 +86,7 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: metricTimeSeries = useModelHasTimeSeries(metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   function setLeaderboardValues(values) {
@@ -146,7 +137,6 @@
     }
 
     topListQuery = useRuntimeServiceMetricsViewToplist(
-      $runtime.instanceId,
       metricViewName,
       topListParams
     );

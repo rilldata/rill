@@ -40,7 +40,7 @@ The main feature-set component for dashboard filters
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
 
@@ -62,10 +62,7 @@ The main feature-set component for dashboard filters
   let searchedValues = [];
   let activeDimensionName;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: metricTimeSeries = useModelHasTimeSeries(metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: addNull = "null".includes(searchText);

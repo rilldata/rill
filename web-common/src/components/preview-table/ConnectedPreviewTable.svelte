@@ -5,23 +5,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import { PreviewTable } from ".";
-  import { runtime } from "../../runtime-client/runtime-store";
 
   export let objectName: string;
   export let limit = 150;
 
-  $: profileColumnsQuery = useRuntimeServiceProfileColumns(
-    $runtime?.instanceId,
-    objectName,
-    {}
-  );
+  $: profileColumnsQuery = useRuntimeServiceProfileColumns(objectName, {});
   $: profileColumns = $profileColumnsQuery?.data?.profileColumns;
 
-  $: tableQuery = useRuntimeServiceGetTableRows(
-    $runtime?.instanceId,
-    objectName,
-    { limit }
-  );
+  $: tableQuery = useRuntimeServiceGetTableRows(objectName, { limit });
 
   $: rows = $tableQuery?.data?.data;
 

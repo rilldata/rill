@@ -14,17 +14,14 @@ import { get } from "svelte/store";
 
 export const invalidateAfterReconcile = async (
   queryClient: QueryClient,
-  instanceId: string,
   reconcileResponse: V1ReconcileResponse
 ) => {
   // invalidate lists of catalog entries and files
   await Promise.all([
-    queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId)),
+    queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey()),
+    queryClient.refetchQueries(getRuntimeServiceListCatalogEntriesQueryKey()),
     queryClient.refetchQueries(
-      getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
-    ),
-    queryClient.refetchQueries(
-      getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
+      getRuntimeServiceListCatalogEntriesQueryKey({
         type: "OBJECT_TYPE_SOURCE",
       })
     ),
@@ -34,12 +31,9 @@ export const invalidateAfterReconcile = async (
   await Promise.all(
     reconcileResponse.affectedPaths
       .map((path) => [
-        queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, path)
-        ),
+        queryClient.refetchQueries(getRuntimeServiceGetFileQueryKey(path)),
         queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
-            instanceId,
             get(fileArtifactsStore).entities[path]?.name ??
               getNameFromFile(path)
           )
@@ -106,18 +100,13 @@ export function invalidateProfilingQueries(
 
 export const removeEntityQueries = async (
   queryClient: QueryClient,
-  instanceId: string,
   path: string
 ) => {
   const name = getNameFromFile(path);
   // remove affected catalog entries and files
   await Promise.all([
-    queryClient.removeQueries(
-      getRuntimeServiceGetFileQueryKey(instanceId, path)
-    ),
-    queryClient.removeQueries(
-      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name)
-    ),
+    queryClient.removeQueries(getRuntimeServiceGetFileQueryKey(path)),
+    queryClient.removeQueries(getRuntimeServiceGetCatalogEntryQueryKey(name)),
   ]);
 
   if (path.startsWith("/dashboards")) {

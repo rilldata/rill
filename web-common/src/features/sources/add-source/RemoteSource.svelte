@@ -21,7 +21,6 @@
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
   import { createSource } from "./createSource";
@@ -34,8 +33,7 @@
 
   export let connector: V1Connector;
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: sourceNames = useSourceNames();
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
   let createSourceMutationError: {
@@ -87,7 +85,6 @@
         try {
           const errors = await createSource(
             queryClient,
-            runtimeInstanceId,
             values.sourceName,
             yaml,
             $createSourceMutation
@@ -98,7 +95,6 @@
           } else {
             await deleteFileArtifact(
               queryClient,
-              runtimeInstanceId,
               values.sourceName,
               EntityType.Table,
               $deleteSource,

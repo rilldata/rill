@@ -9,14 +9,13 @@
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import { createModel } from "../createModel";
   import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: modelNames = useModelNames($runtime.instanceId);
+  $: modelNames = useModelNames();
 
   const queryClient = useQueryClient();
 
@@ -27,7 +26,6 @@
   async function handleAddModel() {
     await createModel(
       queryClient,
-      $runtime.instanceId,
       getName("model", $modelNames.data),
       $createModelMutation
     );

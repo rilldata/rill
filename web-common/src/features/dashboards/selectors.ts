@@ -8,9 +8,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { TimeRangeName } from "./time-controls/time-control-types";
 
-export function useDashboardNames(repoId: string) {
+export function useDashboardNames() {
   return useRuntimeServiceListFiles(
-    repoId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
@@ -33,11 +32,10 @@ export function useDashboardNames(repoId: string) {
 }
 
 export const useMetaQuery = <T = V1MetricsView>(
-  instanceId: string,
   metricViewName: string,
   selector?: (meta: V1MetricsView) => T
 ) => {
-  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
+  return useRuntimeServiceGetCatalogEntry(metricViewName, {
     query: {
       select: (data) =>
         selector
@@ -47,18 +45,11 @@ export const useMetaQuery = <T = V1MetricsView>(
   });
 };
 
-export const useModelHasTimeSeries = (
-  instanceId: string,
-  metricViewName: string
-) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+export const useModelHasTimeSeries = (metricViewName: string) =>
+  useMetaQuery(metricViewName, (meta) => !!meta?.timeDimension);
 
-export function useModelAllTimeRange(
-  instanceId: string,
-  modelName: string,
-  timeDimension: string
-) {
+export function useModelAllTimeRange(modelName: string, timeDimension: string) {
   return useRuntimeServiceGetTimeRangeSummary(
-    instanceId,
     modelName,
     {
       columnName: timeDimension,
@@ -79,21 +70,16 @@ export function useModelAllTimeRange(
   );
 }
 
-export const useMetaMeasure = (
-  instanceId: string,
-  metricViewName: string,
-  measureName: string
-) =>
-  useMetaQuery(instanceId, metricViewName, (meta) =>
+export const useMetaMeasure = (metricViewName: string, measureName: string) =>
+  useMetaQuery(metricViewName, (meta) =>
     meta.measures?.find((measure) => measure.name === measureName)
   );
 
 export const useMetaDimension = (
-  instanceId: string,
   metricViewName: string,
   dimensionName: string
 ) =>
-  useMetaQuery(instanceId, metricViewName, (meta) =>
+  useMetaQuery(metricViewName, (meta) =>
     meta.dimensions?.find((dimension) => dimension.name === dimensionName)
   );
 
@@ -121,12 +107,8 @@ export const getFilterForDimension = (
   };
 };
 
-export const useGetDashboardsForModel = (
-  instanceId: string,
-  modelName: string
-) => {
+export const useGetDashboardsForModel = (modelName: string) => {
   return useRuntimeServiceListCatalogEntries(
-    instanceId,
     { type: "OBJECT_TYPE_METRICS_VIEW" },
     {
       query: {

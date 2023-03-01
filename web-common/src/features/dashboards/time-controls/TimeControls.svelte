@@ -20,7 +20,6 @@ We should rename TimeSeriesTimeRange to a better name.
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
   import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import {
@@ -42,28 +41,18 @@ We should rename TimeSeriesTimeRange to a better name.
   let baseTimeRange: TimeRange;
 
   let metricsViewQuery;
-  $: if ($runtime.instanceId) {
-    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtime.instanceId,
-      metricViewName
-    );
-  }
+  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(metricViewName);
 
-  $: hasTimeSeriesQuery = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: hasTimeSeriesQuery = useModelHasTimeSeries(metricViewName);
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
 
   let allTimeRangeQuery: UseQueryStoreResult;
   $: if (
     hasTimeSeries &&
-    !!$runtime?.instanceId &&
     !!$metricsViewQuery?.data?.entry?.metricsView?.model &&
     !!$metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
     allTimeRangeQuery = useModelAllTimeRange(
-      $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       $metricsViewQuery.data.entry.metricsView.timeDimension
     );

@@ -50,7 +50,6 @@
     "rill:app:query-highlight"
   );
 
-  $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = useRuntimeServicePutFileAndReconcile();
 
   // track innerHeight to calculate the size of the editor element.
@@ -60,9 +59,9 @@
   let modelPath: string;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
-  $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: modelSqlQuery = useRuntimeServiceGetFile(modelPath);
 
-  $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
+  $: modelEmpty = useModelFileIsEmpty(modelName);
 
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
@@ -70,7 +69,7 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
+  $: sourceCatalogsQuery = useEmbeddedSources();
   let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
   $: embeddedSourceCatalogs = getMapFromArray(
     $sourceCatalogsQuery?.data ?? [],
@@ -138,7 +137,6 @@
       // TODO: why is the response type not present?
       const resp = (await $updateModel.mutateAsync({
         data: {
-          instanceId: runtimeInstanceId,
           path: modelPath,
           blob: content,
         },
@@ -149,11 +147,11 @@
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
       }
-      await invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
+      await invalidateAfterReconcile(queryClient, resp);
       if (resp.affectedPaths.length === 0) {
         // when backend detects no change, we need to invalidate the file
         await queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey($runtime.instanceId, modelPath)
+          getRuntimeServiceGetFileQueryKey(modelPath)
         );
       }
     } catch (err) {

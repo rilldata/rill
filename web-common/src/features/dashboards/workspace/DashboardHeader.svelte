@@ -15,7 +15,6 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import Filters from "../filters/Filters.svelte";
   import { useMetaQuery } from "../selectors";
   import TimeControls from "../time-controls/TimeControls.svelte";
@@ -38,7 +37,7 @@
     );
   };
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $featureFlags.readOnly === false;
 

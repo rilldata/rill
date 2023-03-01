@@ -23,17 +23,11 @@
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import ReferenceModels from "./ReferenceModels.svelte";
 
   export let sourceName: string;
 
-  $: runtimeInstanceId = $runtime.instanceId;
-
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
+  $: getSource = useRuntimeServiceGetCatalogEntry(sourceName);
   let sourceCatalog: V1CatalogEntry;
   $: sourceCatalog = $getSource?.data?.entry;
   $: if (sourceCatalog?.embedded) {
@@ -79,10 +73,7 @@
   $: connectorType = formatConnectorType(sourceCatalog?.source?.connector);
   $: fileExtension = getFileExtension(sourceCatalog);
 
-  $: cardinalityQuery = useRuntimeServiceGetTableCardinality(
-    $runtime.instanceId,
-    sourceName
-  );
+  $: cardinalityQuery = useRuntimeServiceGetTableCardinality(sourceName);
   $: cardinality = $cardinalityQuery?.data?.cardinality
     ? Number($cardinalityQuery?.data?.cardinality)
     : 0;
@@ -104,7 +95,6 @@
   /** total % null cells */
 
   $: profileColumns = useRuntimeServiceProfileColumns(
-    $runtime?.instanceId,
     sourceName,
     {},
     { query: { keepPreviousData: true } }
@@ -113,7 +103,6 @@
   let summaries: Readable<Array<ColumnSummary>>;
   $: summaries = getSummaries(
     sourceName,
-    $runtime?.instanceId,
     $profileColumns?.data?.profileColumns
   );
 

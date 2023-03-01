@@ -14,7 +14,6 @@
   import { getContext } from "svelte";
   import { derived, Writable, writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import References from "./References.svelte";
   import { combineEntryWithReference } from "./utils";
@@ -25,25 +24,21 @@
     "rill:app:query-highlight"
   );
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtime?.instanceId,
-    modelName
-  );
+  $: getModel = useRuntimeServiceGetCatalogEntry(modelName);
   let entry;
   // refresh entry value only if the data has changed
   $: entry = $getModel?.data?.entry || entry;
 
   $: getModelFile = useRuntimeServiceGetFile(
-    $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
 
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
-  $: getAllSources = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+  $: getAllSources = useRuntimeServiceListCatalogEntries({
     type: "OBJECT_TYPE_SOURCE",
   });
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+  $: getAllModels = useRuntimeServiceListCatalogEntries({
     type: "OBJECT_TYPE_MODEL",
   });
 
@@ -78,10 +73,7 @@
         [
           writable($thing),
           writable(ref),
-          useRuntimeServiceGetTableCardinality(
-            $runtime?.instanceId,
-            $thing.name
-          ),
+          useRuntimeServiceGetTableCardinality($thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,

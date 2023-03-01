@@ -17,7 +17,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
@@ -28,10 +27,8 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
-
-  $: sourceNames = useSourceNames(runtimeInstanceId);
-  $: modelNames = useModelNames(runtimeInstanceId);
+  $: sourceNames = useSourceNames();
+  $: modelNames = useModelNames();
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
@@ -43,7 +40,6 @@
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
       queryClient,
-      runtimeInstanceId,
       tableName,
       EntityType.Table,
       $deleteSource,
@@ -59,7 +55,6 @@
     const uploadedFiles = uploadTableFiles(
       files,
       [$sourceNames?.data, $modelNames?.data],
-      $runtime.instanceId,
       false
     );
     for await (const { tableName, filePath } of uploadedFiles) {
@@ -74,7 +69,6 @@
         // TODO: errors
         errors = await createSource(
           queryClient,
-          runtimeInstanceId,
           tableName,
           yaml,
           $createSourceMutation

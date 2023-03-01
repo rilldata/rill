@@ -6,9 +6,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
 
-export function useModelNames(instanceId: string) {
+export function useModelNames() {
   return useRuntimeServiceListFiles(
-    instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
@@ -28,8 +27,8 @@ export function useModelNames(instanceId: string) {
   );
 }
 
-export function useModelFileIsEmpty(instanceId, modelName) {
-  return useRuntimeServiceGetFile(instanceId, `/models/${modelName}.sql`, {
+export function useModelFileIsEmpty(modelName) {
+  return useRuntimeServiceGetFile(`/models/${modelName}.sql`, {
     query: {
       select(data) {
         return data?.blob?.length === 0;
@@ -38,11 +37,8 @@ export function useModelFileIsEmpty(instanceId, modelName) {
   });
 }
 
-export function useModelTimestampColumns(
-  instanceId: string,
-  modelName: string
-) {
-  return useRuntimeServiceGetCatalogEntry(instanceId, modelName, {
+export function useModelTimestampColumns(modelName: string) {
+  return useRuntimeServiceGetCatalogEntry(modelName, {
     query: {
       select: (data) =>
         data?.entry?.model?.schema?.fields?.filter((field: StructTypeField) =>

@@ -16,7 +16,6 @@ import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
 
 export async function refreshAndReconcile(
   sourceName: string,
-  instanceId: string,
   refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
   queryClient: QueryClient,
   path: string,
@@ -25,11 +24,11 @@ export async function refreshAndReconcile(
   overlay.set({ title: `Importing ${displayName || sourceName}` });
   const resp = await refreshSource.mutateAsync({
     data: {
-      instanceId,
+      instanceId: get(runtime).instanceId,
       path,
     },
   });
-  invalidateAfterReconcile(queryClient, instanceId, resp);
+  invalidateAfterReconcile(queryClient, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   return resp;
 }
@@ -37,7 +36,6 @@ export async function refreshAndReconcile(
 export async function refreshSource(
   connector: string,
   sourceName: string,
-  instanceId: string,
   refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
   createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
   queryClient: QueryClient,
@@ -48,7 +46,6 @@ export async function refreshSource(
   if (connector !== "local_file") {
     return refreshAndReconcile(
       sourceName,
-      instanceId,
       refreshSource,
       queryClient,
       artifactPath,
@@ -62,7 +59,7 @@ export async function refreshSource(
   if (!files.length) return Promise.reject();
 
   overlay.set({ title: `Importing ${sourceName}` });
-  const filePath = await uploadFile(instanceId, files[0]);
+  const filePath = await uploadFile(files[0]);
   if (filePath === null) {
     return Promise.reject();
   }
@@ -75,14 +72,14 @@ export async function refreshSource(
   );
   const resp = await createSource.mutateAsync({
     data: {
-      instanceId,
+      instanceId: get(runtime).instanceId,
       path: artifactPath,
       blob: yaml,
       create: true,
       strict: true,
     },
   });
-  invalidateAfterReconcile(queryClient, instanceId, resp);
+  invalidateAfterReconcile(queryClient, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   return resp;
 }

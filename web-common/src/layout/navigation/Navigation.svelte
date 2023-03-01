@@ -14,7 +14,6 @@
   import { Readable, Writable, writable } from "svelte/store";
   import { parseDocument } from "yaml";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
@@ -41,11 +40,7 @@
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
 
-  $: thing = useRuntimeServiceGetFile(
-    $runtime?.instanceId,
-    `rill.yaml`
-    //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
-  );
+  $: thing = useRuntimeServiceGetFile(`rill.yaml`);
 
   $: yaml = parseDocument($thing?.data?.blob || "{}")?.toJS();
 

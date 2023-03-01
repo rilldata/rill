@@ -1,9 +1,8 @@
 import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { useRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
 
-export function useAllNames(instanceId: string) {
+export function useAllNames() {
   return useRuntimeServiceListFiles(
-    instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },

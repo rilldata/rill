@@ -9,17 +9,18 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { get } from "svelte/store";
+import { runtime } from "../../../runtime-client/runtime-store";
 
 export async function createSource(
   queryClient: QueryClient,
-  instanceId: string,
   tableName: string,
   yaml: string,
   createSourceMutation: UseMutationResult<V1PutFileAndReconcileResponse>
 ): Promise<V1ReconcileError[]> {
   const resp = await createSourceMutation.mutateAsync({
     data: {
-      instanceId,
+      instanceId: get(runtime).instanceId,
       path: getFilePathFromNameAndType(tableName, EntityType.Table),
       blob: yaml,
       create: true,
@@ -34,7 +35,7 @@ export async function createSource(
     return resp.errors;
   }
   goto(`/source/${tableName}`);
-  invalidateAfterReconcile(queryClient, instanceId, resp);
+  invalidateAfterReconcile(queryClient, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   notifications.send({ message: `Created source ${tableName}` });
   return [];

@@ -3,7 +3,6 @@
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
@@ -13,20 +12,18 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
 
-  $: sourceNames = useSourceNames(runtimeInstanceId);
-  $: modelNames = useModelNames(runtimeInstanceId);
+  $: sourceNames = useSourceNames();
+  $: modelNames = useModelNames();
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
 
-    const uploadedFiles = uploadTableFiles(
-      Array.from(e?.dataTransfer?.files),
-      [$sourceNames?.data, $modelNames?.data],
-      $runtime.instanceId
-    );
+    const uploadedFiles = uploadTableFiles(Array.from(e?.dataTransfer?.files), [
+      $sourceNames?.data,
+      $modelNames?.data,
+    ]);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         const yaml = compileCreateSourceYAML(
@@ -37,13 +34,7 @@
           "local_file"
         );
         // TODO: errors
-        await createSource(
-          queryClient,
-          runtimeInstanceId,
-          tableName,
-          yaml,
-          $createSourceMutation
-        );
+        await createSource(queryClient, tableName, yaml, $createSourceMutation);
       } catch (err) {
         console.error(err);
       }

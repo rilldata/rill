@@ -14,7 +14,6 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
@@ -27,9 +26,7 @@
 
   export let modelName: string;
 
-  $: runtimeInstanceId = $runtime.instanceId;
-
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: allNamesQuery = useAllNames();
   const queryClient = useQueryClient();
   const renameModel = useRuntimeServiceRenameFileAndReconcile();
 
@@ -42,10 +39,7 @@
 
   let contextMenuOpen = false;
 
-  $: availableDashboards = useGetDashboardsForModel(
-    runtimeInstanceId,
-    modelName
-  );
+  $: availableDashboards = useGetDashboardsForModel(modelName);
 
   function formatModelName(str) {
     return str?.trim().replaceAll(" ", "_").replace(/\.sql/, "");
@@ -73,7 +67,6 @@
       const entityType = EntityType.Model;
       await renameFileArtifact(
         queryClient,
-        runtimeInstanceId,
         modelName,
         toName,
         entityType,

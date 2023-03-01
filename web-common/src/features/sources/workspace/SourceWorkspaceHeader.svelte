@@ -40,7 +40,6 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
   import { getRouteFromName } from "../../entity-management/entity-mappers";
   import { getName, isDuplicateName } from "../../entity-management/name-utils";
@@ -58,14 +57,10 @@
 
   const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
-  $: runtimeInstanceId = $runtime.instanceId;
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createSource = useRuntimeServicePutFileAndReconcile();
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
+  $: getSource = useRuntimeServiceGetCatalogEntry(sourceName);
 
   let headerWidth;
   $: isHeaderWidthSmall = headerWidth < 800;
@@ -75,20 +70,19 @@
   $: entry = $getSource?.data?.entry;
   $: source = entry?.source;
 
-  $: modelNames = useModelNames(runtimeInstanceId);
-  $: dashboardNames = useDashboardNames(runtimeInstanceId);
+  $: modelNames = useModelNames();
+  $: dashboardNames = useDashboardNames();
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let connector: string;
   $: connector = $getSource.data?.entry?.source.connector as string;
 
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: allNamesQuery = useAllNames();
 
   const handleCreateModelFromSource = async () => {
     const modelName = await createModelFromSource(
       queryClient,
-      runtimeInstanceId,
       $modelNames.data,
       sourceName,
       embedded ? `"${path}"` : sourceName,
@@ -115,7 +109,6 @@
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
-          instanceId: $runtime.instanceId,
           sourceName,
           newModelName,
           newDashboardName,
@@ -132,7 +125,7 @@
             MetricsEventScreenName.Source,
             MetricsEventScreenName.Dashboard
           );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
+          return invalidateAfterReconcile(queryClient, resp);
         },
         onSettled: () => {
           overlay.set(null);
@@ -163,7 +156,6 @@
       const entityType = EntityType.Table;
       await renameFileArtifact(
         queryClient,
-        runtimeInstanceId,
         sourceName,
         toName,
         entityType,
@@ -182,7 +174,6 @@
       if (embedded) {
         await refreshAndReconcile(
           tableName,
-          runtimeInstanceId,
           $refreshSourceMutation,
           queryClient,
           source.properties.path,
@@ -192,7 +183,6 @@
         await refreshSource(
           connector,
           tableName,
-          runtimeInstanceId,
           $refreshSourceMutation,
           $createSource,
           queryClient,
@@ -204,10 +194,7 @@
         );
       }
       // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        tableName
-      );
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(tableName);
       await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op

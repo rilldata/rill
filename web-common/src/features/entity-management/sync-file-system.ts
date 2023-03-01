@@ -17,7 +17,6 @@ import { get, Readable, Writable } from "svelte/store";
 import type { FeatureFlags } from "../../../../web-local/src/lib/application-state-stores/application-store";
 import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";
 import { overlay } from "../../layout/overlay-store";
-import type { Runtime } from "../../runtime-client/runtime-store";
 import { getFilePathFromPagePath } from "./entity-mappers";
 import {
   FileArtifactsStore,
@@ -29,7 +28,6 @@ const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;
 
 export async function syncFileSystemPeriodically(
   queryClient: QueryClient,
-  runtimeStore: Writable<Runtime>,
   featureFlags: Writable<FeatureFlags>,
   page: Readable<Page<Record<string, string>, string>>,
   fileArtifactsStore: FileArtifactsStore
@@ -39,7 +37,6 @@ export async function syncFileSystemPeriodically(
   let afterNavigateRanOnce: boolean;
 
   afterNavigate(async () => {
-    const runtimeInstanceId = get(runtimeStore).instanceId;
     if (get(featureFlags).readOnly) return;
 
     // on first page load, afterNavigate runs twice, but we only want to run the below code once
@@ -50,13 +47,7 @@ export async function syncFileSystemPeriodically(
 
     // setup Scenario 2: sync every X seconds
     syncFileSystemInterval = setInterval(
-      async () =>
-        await syncFileSystem(
-          queryClient,
-          runtimeInstanceId,
-          page,
-          fileArtifactsStore
-        ),
+      async () => await syncFileSystem(queryClient, page, fileArtifactsStore),
       SYNC_FILE_SYSTEM_INTERVAL_MILLISECONDS
     );
 
@@ -89,25 +80,22 @@ export async function syncFileSystemPeriodically(
 
 async function syncFileSystem(
   queryClient: QueryClient,
-  instanceId: string,
   page: Readable<Page<Record<string, string>, string>>,
   fileArtifactsStore: FileArtifactsStore
 ) {
-  await queryClient.invalidateQueries(
-    getRuntimeServiceListFilesQueryKey(instanceId)
-  );
+  await queryClient.invalidateQueries(getRuntimeServiceListFilesQueryKey());
 
   const pagePath = get(page).url.pathname;
   if (!isPathToAsset(pagePath)) return;
 
   const filePath = getFilePathFromPagePath(pagePath);
   fileArtifactsStore.setIsReconciling(filePath, true);
-  const resp = await runtimeServiceReconcile(instanceId, {
+  const resp = await runtimeServiceReconcile({
     changedPaths: [filePath],
   });
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   fileArtifactsStore.setIsReconciling(filePath, false);
-  invalidateAfterReconcile(queryClient, instanceId, resp);
+  invalidateAfterReconcile(queryClient, resp);
 }
 
 function isPathToAsset(path: string) {

@@ -17,7 +17,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile } from "../refreshSource";
@@ -28,8 +27,7 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: modelNames = useModelNames($runtime.instanceId);
+  $: modelNames = useModelNames();
 
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
@@ -39,7 +37,6 @@
       const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
         queryClient,
-        runtimeInstanceId,
         $modelNames.data,
         cachedSourceName,
         `"${uri}"`,
@@ -68,7 +65,6 @@
     try {
       await refreshAndReconcile(
         cachedSourceName,
-        runtimeInstanceId,
         $refreshSourceMutation,
         queryClient,
         uri,
@@ -80,10 +76,8 @@
       // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        cachedSourceName
-      );
+      const queryKey =
+        getRuntimeServiceGetCatalogEntryQueryKey(cachedSourceName);
       await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op

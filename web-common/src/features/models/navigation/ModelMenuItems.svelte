@@ -47,12 +47,9 @@
   const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
 
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
-  $: modelQuery = useRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
+  $: modelNames = useModelNames();
+  $: dashboardNames = useDashboardNames();
+  $: modelQuery = useRuntimeServiceGetCatalogEntry(modelName);
   let model: V1Model;
   $: model = $modelQuery.data?.entry?.model;
 
@@ -95,11 +92,7 @@
             EntityTypeToScreenMap[previousActiveEntity],
             MetricsEventScreenName.Dashboard
           );
-          return invalidateAfterReconcile(
-            queryClient,
-            $runtime.instanceId,
-            resp
-          );
+          return invalidateAfterReconcile(queryClient, resp);
         },
         onError: (err) => {
           console.error(err);
@@ -115,7 +108,6 @@
   const handleDeleteModel = async (modelName: string) => {
     await deleteFileArtifact(
       queryClient,
-      $runtime.instanceId,
       modelName,
       EntityType.Model,
       $deleteModel,

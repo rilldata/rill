@@ -11,10 +11,11 @@
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import type { SelectorOption } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { get } from "svelte/store";
+  import type { SelectorOption } from "../../../components/table-editable/ColumnConfig";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { initDimensionColumns } from "../DimensionColumns";
@@ -35,8 +36,6 @@
 
   const queryClient = useQueryClient();
 
-  $: instanceId = $runtime.instanceId;
-
   const switchToMetrics = async (metricsDefName: string) => {
     if (!metricsDefName) return;
 
@@ -53,7 +52,7 @@
     );
     const resp = (await $metricMigrate.mutateAsync({
       data: {
-        instanceId,
+        instanceId: get(runtime).instanceId,
         path: filePath,
         blob: internalYamlString,
         create: false,
@@ -61,7 +60,7 @@
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-    invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
+    invalidateAfterReconcile(queryClient, resp);
   }
 
   // create initial internal representation
@@ -84,7 +83,7 @@
   $: dimensions = $metricsInternalRep.getDimensions();
 
   $: modelName = $metricsInternalRep.getMetricKey("model");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
+  $: getModel = useRuntimeServiceGetCatalogEntry(modelName);
   $: model = $getModel.data?.entry?.model;
 
   function handleCreateMeasure() {

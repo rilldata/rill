@@ -12,7 +12,6 @@
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,
@@ -32,7 +31,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
@@ -45,10 +44,7 @@
       (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
     );
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: metricTimeSeries = useModelHasTimeSeries(metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: formatPreset =
@@ -73,7 +69,6 @@
       };
     }
     totalsQuery = useRuntimeServiceMetricsViewTotals(
-      $runtime.instanceId,
       metricViewName,
       totalsQueryParams
     );

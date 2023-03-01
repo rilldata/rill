@@ -26,7 +26,6 @@ import {
 export async function* uploadTableFiles(
   files: Array<File>,
   [models, sources]: [Array<string>, Array<string>],
-  instanceId: string,
   goToIfSuccessful = true
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
@@ -46,7 +45,7 @@ export async function* uploadTableFiles(
 
     importOverlayVisible.set(true);
 
-    const filePath = await uploadFile(instanceId, validFile);
+    const filePath = await uploadFile(validFile);
     // if upload failed for any reason continue
     if (filePath) {
       lastTableName = resolvedTableName;
@@ -118,17 +117,14 @@ async function checkForDuplicate(
   return undefined;
 }
 
-export async function uploadFile(
-  instanceId: string,
-  file: File
-): Promise<string> {
+export async function uploadFile(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
   const filePath = `data/${file.name}`;
 
   try {
-    await runtimeServiceFileUpload(instanceId, filePath, formData);
+    await runtimeServiceFileUpload(filePath, formData);
     return filePath;
   } catch (err) {
     console.error(err);

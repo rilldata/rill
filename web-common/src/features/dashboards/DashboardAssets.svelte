@@ -42,9 +42,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
 
-  $: instanceId = $runtime.instanceId;
-
-  $: dashboardNames = useDashboardNames(instanceId);
+  $: dashboardNames = useDashboardNames();
 
   const queryClient = useQueryClient();
 
@@ -56,15 +54,12 @@
   let showRenameMetricsDefinitionModal = false;
   let renameMetricsDefName = null;
 
-  async function getDashboardArtifact(
-    instanceId: string,
-    metricViewName: string
-  ) {
+  async function getDashboardArtifact(metricViewName: string) {
     const filePath = getFilePathFromNameAndType(
       metricViewName,
       EntityType.MetricsDefinition
     );
-    const resp = await runtimeServiceGetFile(instanceId, filePath);
+    const resp = await runtimeServiceGetFile(filePath);
     const metricYAMLString = resp.blob;
     fileArtifactsStore.setJSONRep(filePath, metricYAMLString);
   }
@@ -86,7 +81,7 @@
     const yaml = initBlankDashboardYAML(newDashboardName);
     const resp = await $createDashboard.mutateAsync({
       data: {
-        instanceId,
+        instanceId: $runtime.instanceId,
         path: filePath,
         blob: yaml,
         create: true,
@@ -97,11 +92,11 @@
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     goto(`/dashboard/${newDashboardName}`);
-    return invalidateAfterReconcile(queryClient, instanceId, resp);
+    return invalidateAfterReconcile(queryClient, resp);
   };
 
   const editModel = async (dashboardName: string) => {
-    await getDashboardArtifact(instanceId, dashboardName);
+    await getDashboardArtifact(dashboardName);
 
     const dashboardData = getDashboardData(
       $fileArtifactsStore.entities,
@@ -134,7 +129,7 @@
   };
 
   const deleteMetricsDef = async (dashboardName: string) => {
-    await getDashboardArtifact(instanceId, dashboardName);
+    await getDashboardArtifact(dashboardName);
 
     const dashboardData = getDashboardData(
       $fileArtifactsStore.entities,
@@ -142,7 +137,6 @@
     );
     await deleteFileArtifact(
       queryClient,
-      instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
       $deleteDashboard,

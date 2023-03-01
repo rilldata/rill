@@ -35,7 +35,6 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
@@ -50,27 +49,21 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
-
   const dispatch = createEventDispatcher();
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
+  $: getSource = useRuntimeServiceGetCatalogEntry(sourceName);
   let source: V1Source;
   $: source = $getSource?.data?.entry?.source;
   $: embedded = $getSource?.data?.entry?.embedded;
   $: path = source?.properties?.path;
 
   $: sourceFromYaml = useSourceFromYaml(
-    $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: sourceNames = useSourceNames();
+  $: modelNames = useModelNames();
+  $: dashboardNames = useDashboardNames();
 
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
@@ -81,7 +74,6 @@
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
       queryClient,
-      runtimeInstanceId,
       tableName,
       EntityType.Table,
       $deleteSource,
@@ -96,7 +88,6 @@
       const previousActiveEntity = $appStore.activeEntity?.type;
       const newModelName = await createModelFromSource(
         queryClient,
-        runtimeInstanceId,
         $modelNames.data,
         sourceName,
         embedded ? `"${path}"` : sourceName,
@@ -127,7 +118,6 @@
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
-          instanceId: $runtime.instanceId,
           sourceName,
           newModelName,
           newDashboardName,
@@ -145,7 +135,7 @@
             EntityTypeToScreenMap[previousActiveEntity],
             MetricsEventScreenName.Dashboard
           );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
+          return invalidateAfterReconcile(queryClient, resp);
         },
         onSettled: () => {
           overlay.set(null);
@@ -167,7 +157,6 @@
       await refreshSource(
         connector,
         tableName,
-        runtimeInstanceId,
         $refreshSourceMutation,
         $createEntityMutation,
         queryClient,
@@ -181,10 +170,7 @@
       // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
 
       // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        tableName
-      );
+      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(tableName);
       await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op

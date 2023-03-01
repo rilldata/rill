@@ -16,7 +16,6 @@
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
   import { fly } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import {
@@ -36,10 +35,8 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: instanceId = $runtime.instanceId;
-
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
 
   $: timeDimension = $metaQuery.data?.timeDimension;
 
@@ -62,7 +59,6 @@
     };
 
     totalsQuery = useRuntimeServiceMetricsViewTotals(
-      instanceId,
       metricViewName,
       totalsQueryParams
     );
@@ -79,20 +75,16 @@
     !$metaQuery.isRefetching &&
     metricsExplorer.selectedTimeRange
   ) {
-    timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(
-      instanceId,
-      metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        filter: metricsExplorer?.filters,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-        // Quick hack for now, API expects "day" instead of "1 day"
-        timeGranularity: toV1TimeGrain(
-          metricsExplorer.selectedTimeRange?.interval
-        ),
-      }
-    );
+    timeSeriesQuery = useRuntimeServiceMetricsViewTimeSeries(metricViewName, {
+      measureNames: selectedMeasureNames,
+      filter: metricsExplorer?.filters,
+      timeStart: metricsExplorer.selectedTimeRange?.start,
+      timeEnd: metricsExplorer.selectedTimeRange?.end,
+      // Quick hack for now, API expects "day" instead of "1 day"
+      timeGranularity: toV1TimeGrain(
+        metricsExplorer.selectedTimeRange?.interval
+      ),
+    });
   }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is

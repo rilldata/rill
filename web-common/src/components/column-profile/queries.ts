@@ -1,4 +1,5 @@
 import {
+  RuntimeServiceGetNumericHistogramHistogramMethod,
   useRuntimeServiceEstimateRollupInterval,
   useRuntimeServiceEstimateSmallestTimeGrain,
   useRuntimeServiceGenerateTimeSeries,
@@ -7,11 +8,10 @@ import {
   useRuntimeServiceGetNumericHistogram,
   useRuntimeServiceGetTableCardinality,
   useRuntimeServiceGetTopK,
-  RuntimeServiceGetNumericHistogramHistogramMethod,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
-import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
@@ -27,7 +27,6 @@ export type ColumnSummary = V1ProfileColumn & {
 /** for each entry in a profile column results, return the null count and the column cardinality */
 export function getSummaries(
   objectName: string,
-  instanceId: string,
   profileColumnResults: Array<V1ProfileColumn>
 ): Readable<Array<ColumnSummary>> {
   if (!profileColumnResults && !profileColumnResults?.length) return;
@@ -37,7 +36,6 @@ export function getSummaries(
         [
           writable(column),
           useRuntimeServiceGetNullCount(
-            instanceId,
             objectName,
             { columnName: column.name },
             {
@@ -45,7 +43,6 @@ export function getSummaries(
             }
           ),
           useRuntimeServiceGetCardinalityOfColumn(
-            instanceId,
             objectName,
             { columnName: column.name },
             { query: { keepPreviousData: true } }
@@ -68,18 +65,11 @@ export function getSummaries(
   );
 }
 
-export function getNullPercentage(
-  instanceId: string,
-  objectName: string,
-  columnName: string
-) {
-  const nullQuery = useRuntimeServiceGetNullCount(instanceId, objectName, {
+export function getNullPercentage(objectName: string, columnName: string) {
+  const nullQuery = useRuntimeServiceGetNullCount(objectName, {
     columnName,
   });
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
-    instanceId,
-    objectName
-  );
+  const totalRowsQuery = useRuntimeServiceGetTableCardinality(objectName);
   return derived([nullQuery, totalRowsQuery], ([nulls, totalRows]) => {
     return {
       nullCount: nulls?.data?.count,
@@ -89,21 +79,12 @@ export function getNullPercentage(
   });
 }
 
-export function getCountDistinct(
-  instanceId: string,
-  objectName: string,
-  columnName: string
-) {
-  const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
-    instanceId,
-    objectName,
-    { columnName }
-  );
+export function getCountDistinct(objectName: string, columnName: string) {
+  const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(objectName, {
+    columnName,
+  });
 
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
-    instanceId,
-    objectName
-  );
+  const totalRowsQuery = useRuntimeServiceGetTableCardinality(objectName);
 
   return derived(
     [cardinalityQuery, totalRowsQuery],
@@ -118,12 +99,11 @@ export function getCountDistinct(
 }
 
 export function getTopK(
-  instanceId: string,
   objectName: string,
   columnName: string,
   active = false
 ) {
-  const topKQuery = useRuntimeServiceGetTopK(instanceId, objectName, {
+  const topKQuery = useRuntimeServiceGetTopK(objectName, {
     columnName: columnName,
     agg: "count(*)",
     k: 75,
@@ -135,13 +115,11 @@ export function getTopK(
 }
 
 export function getTimeSeriesAndSpark(
-  instanceId: string,
   objectName: string,
   columnName: string,
   active = false
 ) {
   const query = useRuntimeServiceGenerateTimeSeries(
-    instanceId,
     objectName,
     // FIXME: convert pixel back to number once the API
     {
@@ -151,13 +129,11 @@ export function getTimeSeriesAndSpark(
     }
   );
   const estimatedInterval = useRuntimeServiceEstimateRollupInterval(
-    instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rollup-interval", active) }
   );
 
   const smallestTimeGrain = useRuntimeServiceEstimateSmallestTimeGrain(
-    instanceId,
     objectName,
     {
       columnName,
@@ -196,13 +172,11 @@ export function getTimeSeriesAndSpark(
 }
 
 export function getNumericHistogram(
-  instanceId: string,
   objectName: string,
   columnName: string,
   active = false
 ) {
   return useRuntimeServiceGetNumericHistogram(
-    instanceId,
     objectName,
     {
       columnName,

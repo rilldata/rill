@@ -4,11 +4,12 @@ import { EntityType } from "@rilldata/web-common/features/entity-management/type
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { get } from "svelte/store";
+import { runtime } from "../../runtime-client/runtime-store";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 
 export async function createModel(
   queryClient: QueryClient,
-  instanceId: string,
   newModelName: string,
   createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
   sql = "",
@@ -16,7 +17,7 @@ export async function createModel(
 ) {
   const resp = await createModelMutation.mutateAsync({
     data: {
-      instanceId,
+      instanceId: get(runtime).instanceId,
       path: getFilePathFromNameAndType(newModelName, EntityType.Model),
       blob: sql,
       create: true,
@@ -27,7 +28,7 @@ export async function createModel(
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   goto(`/model/${newModelName}?focus`);
 
-  invalidateAfterReconcile(queryClient, instanceId, resp);
+  invalidateAfterReconcile(queryClient, resp);
   if (resp.errors?.length && sql !== "") {
     resp.errors.forEach((error) => {
       console.error(error);

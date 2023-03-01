@@ -6,13 +6,11 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
 
-export async function getArtifactErrors(
-  instanceId: string
-): Promise<V1ReconcileResponse> {
-  const files = await runtimeServiceListFiles(instanceId, {
+export async function getArtifactErrors(): Promise<V1ReconcileResponse> {
+  const files = await runtimeServiceListFiles({
     glob: "{sources,models,dashboards}/*.{yaml,sql}",
   });
-  const catalogs = await runtimeServiceListCatalogEntries(instanceId);
+  const catalogs = await runtimeServiceListCatalogEntries();
   const catalogsMap = getMapFromArray(
     catalogs.entries,
     (catalog) => catalog.path
@@ -20,7 +18,7 @@ export async function getArtifactErrors(
   const missingFiles = files.paths.filter(
     (filePath) => !catalogsMap.has(filePath)
   );
-  return runtimeServiceReconcile(instanceId, {
+  return runtimeServiceReconcile({
     changedPaths: missingFiles,
     forcedPaths: missingFiles,
     dry: true,

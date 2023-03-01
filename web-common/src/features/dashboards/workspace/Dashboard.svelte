@@ -7,7 +7,6 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { WorkspaceContainer } from "../../../layout/workspace";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { metricsExplorerStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -26,7 +25,7 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
   $: if ($metaQuery.data) {
     if (!$metaQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
@@ -41,10 +40,7 @@
 
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: metricTimeSeries = useModelHasTimeSeries(metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: gridConfig = hasTimeSeries

@@ -18,7 +18,6 @@
     useRuntimeServiceMetricsViewToplist,
     useRuntimeServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -36,16 +35,11 @@
 
   let searchText = "";
 
-  $: instanceId = $runtime.instanceId;
   $: addNull = "null".includes(searchText);
 
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
 
-  $: dimensionQuery = useMetaDimension(
-    instanceId,
-    metricViewName,
-    dimensionName
-  );
+  $: dimensionQuery = useMetaDimension(metricViewName, dimensionName);
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
 
@@ -54,7 +48,6 @@
 
   $: leaderboardMeasureName = metricsExplorer?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
-    instanceId,
     metricViewName,
     leaderboardMeasureName
   );
@@ -87,7 +80,7 @@
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
 
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: metricTimeSeries = useModelHasTimeSeries(metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: if (
@@ -150,7 +143,6 @@
     }
 
     topListQuery = useRuntimeServiceMetricsViewToplist(
-      instanceId,
       metricViewName,
       topListParams
     );
@@ -174,7 +166,6 @@
       };
     }
     totalsQuery = useRuntimeServiceMetricsViewTotals(
-      instanceId,
       metricViewName,
       totalsQueryParams
     );

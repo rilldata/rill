@@ -21,7 +21,6 @@
   import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
-  import { runtime } from "../runtime-client/runtime-store";
   import BasicLayout from "./BasicLayout.svelte";
   import { importOverlayVisible, overlay } from "./overlay-store";
 
@@ -42,7 +41,7 @@
       commitHash: config.build_commit,
     });
 
-    const res = await getArtifactErrors(config.instance_id);
+    const res = await getArtifactErrors();
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
     return initMetrics(config);
@@ -50,7 +49,6 @@
 
   syncFileSystemPeriodically(
     queryClient,
-    runtime,
     featureFlags,
     page,
     fileArtifactsStore

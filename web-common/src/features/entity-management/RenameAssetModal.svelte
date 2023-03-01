@@ -4,14 +4,10 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceRenameFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
@@ -25,12 +21,7 @@
 
   let error: string;
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: getCatalog = useRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    currentAssetName
-  );
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: allNamesQuery = useAllNames();
 
   const renameAsset = useRuntimeServiceRenameFileAndReconcile();
 
@@ -58,7 +49,6 @@
       try {
         await renameFileArtifact(
           queryClient,
-          runtimeInstanceId,
           currentAssetName,
           values.newName,
           entityType,

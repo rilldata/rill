@@ -28,15 +28,11 @@
 
   let topKLimit = 15;
 
-  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
+  $: nulls = getNullPercentage(objectName, columnName);
 
-  $: columnCardinality = getCountDistinct(
-    $runtime?.instanceId,
-    objectName,
-    columnName
-  );
+  $: columnCardinality = getCountDistinct(objectName, columnName);
 
-  $: topK = getTopK($runtime?.instanceId, objectName, columnName, active);
+  $: topK = getTopK(objectName, columnName, active);
 
   function toggleColumnProfile() {
     active = !active;

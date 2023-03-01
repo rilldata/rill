@@ -15,7 +15,6 @@
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import EmbeddedSourceReference from "./EmbeddedSourceReference.svelte";
   import { getMatchingReferencesAndEntries } from "./utils";
@@ -29,16 +28,15 @@
   const queryHighlight = getContext("rill:app:query-highlight");
 
   $: getModelFile = useRuntimeServiceGetFile(
-    $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
 
-  $: getAllSources = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+  $: getAllSources = useRuntimeServiceListCatalogEntries({
     type: "OBJECT_TYPE_SOURCE",
   });
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
+  $: getAllModels = useRuntimeServiceListCatalogEntries({
     type: "OBJECT_TYPE_MODEL",
   });
 
@@ -55,10 +53,7 @@
         [
           writable($thing),
           writable(ref),
-          useRuntimeServiceGetTableCardinality(
-            $runtime?.instanceId,
-            $thing.name
-          ),
+          useRuntimeServiceGetTableCardinality($thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,

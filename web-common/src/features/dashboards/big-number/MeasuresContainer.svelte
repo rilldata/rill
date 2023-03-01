@@ -7,7 +7,6 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -38,10 +37,8 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: instanceId = $runtime.instanceId;
-
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(metricViewName);
 
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
 
@@ -136,7 +133,6 @@
     };
 
     totalsQuery = useRuntimeServiceMetricsViewTotals(
-      instanceId,
       metricViewName,
       totalsQueryParams
     );

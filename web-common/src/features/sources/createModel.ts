@@ -6,7 +6,6 @@ import type { V1PutFileAndReconcileResponse } from "../../runtime-client";
 
 export async function createModelFromSource(
   queryClient: QueryClient,
-  instanceId: string,
   modelNames: Array<string>,
   sourceName: string,
   sourceNameInQuery: string,
@@ -16,7 +15,6 @@ export async function createModelFromSource(
   const newModelName = getName(`${sourceName}_model`, modelNames);
   await createModel(
     queryClient,
-    instanceId,
     newModelName,
     createModelMutation,
     `select * from ${sourceNameInQuery}`,

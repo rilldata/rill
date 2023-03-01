@@ -30,18 +30,9 @@
   let active = false;
 
   /** queries used to power the different plots */
-  $: nullPercentage = getNullPercentage(
-    $runtime?.instanceId,
-    objectName,
-    columnName
-  );
+  $: nullPercentage = getNullPercentage(objectName, columnName);
 
-  $: timeSeries = getTimeSeriesAndSpark(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    active
-  );
+  $: timeSeries = getTimeSeriesAndSpark(objectName, columnName, active);
 
   function toggleColumnProfile() {
     active = !active;
