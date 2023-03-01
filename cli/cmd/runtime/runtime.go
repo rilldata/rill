@@ -1,17 +1,17 @@
 package runtime
 
 import (
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 // RuntimeCmd represents the runtime command
-func RuntimeCmd(ver version.Version) *cobra.Command {
+func RuntimeCmd(cfg *config.Config) *cobra.Command {
 	runtimeCmd := &cobra.Command{
 		Use:    "runtime",
-		Hidden: !ver.IsDev(),
+		Hidden: !cfg.IsDev(),
 		Short:  "Manage stand-alone runtimes",
 	}
-	runtimeCmd.AddCommand(StartCmd(ver))
+	runtimeCmd.AddCommand(StartCmd(cfg))
 	return runtimeCmd
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server"
@@ -45,7 +45,7 @@ type Config struct {
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
-func StartCmd(ver version.Version) *cobra.Command {
+func StartCmd(cliCfg *config.Config) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start stand-alone runtime server",

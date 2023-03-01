@@ -14,7 +14,7 @@ type localConfig struct {
 	AnalyticsEnabled bool   `json:"analyticsEnabled"`
 }
 
-func config() (*localConfig, error) {
+func newLocalConfig() (*localConfig, error) {
 	conf := &localConfig{
 		AnalyticsEnabled: true,
 	}

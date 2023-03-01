@@ -3,11 +3,11 @@ package org
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func MembersCmd(ver version.Version) *cobra.Command {
+func MembersCmd(cfg *config.Config) *cobra.Command {
 	membersCmd := &cobra.Command{
 		Use:   "members",
 		Short: "Members",

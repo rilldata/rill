@@ -3,11 +3,11 @@ package auth
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func LogoutCmd(ver version.Version) *cobra.Command {
+func LogoutCmd(cfg *config.Config) *cobra.Command {
 	loginCmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Logout",
