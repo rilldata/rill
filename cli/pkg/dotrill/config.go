@@ -66,13 +66,26 @@ func hostsConfigFile() (string, error) {
 	return confFile, nil
 }
 
-func load(configPath string) (*Config, error) {
+func loadConfig() (*Config, error) {
+	configPath, err := hostsConfigFile()
+	if err != nil {
+		return nil, err
+	}
+
 	m := make(map[string]any)
 	data, err := readFile(configPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
+
+		conf := &Config{entries: m}
+		err = Write(conf)
+		if err != nil {
+			return conf, err
+		}
+
+		return conf, err
 	}
 
 	err = yaml.Unmarshal(data, &m)
@@ -84,12 +97,7 @@ func load(configPath string) (*Config, error) {
 }
 
 func Set(key string, value any) error {
-	configPath, err := hostsConfigFile()
-	if err != nil {
-		return err
-	}
-
-	config, err := load(configPath)
+	config, err := loadConfig()
 	if err != nil {
 		return err
 	}
@@ -107,12 +115,7 @@ func Set(key string, value any) error {
 }
 
 func Get(key string) (interface{}, error) {
-	configPath, err := hostsConfigFile()
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := load(configPath)
+	config, err := loadConfig()
 	if err != nil {
 		return nil, err
 	}
