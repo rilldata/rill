@@ -23,7 +23,7 @@ export const humanizeDefaultStrategy = (
   } = options;
 
   // for default strategy, we'll always use the trailing dot
-  const nonIntegerHandling = "trailingDot";
+  const useTrailingDot = true;
 
   let splitStrs: NumberStringParts[] = sample.map((x) => {
     if (x === 0) {
@@ -40,17 +40,11 @@ export const humanizeDefaultStrategy = (
         0,
         maxDigitsRightSmallNums,
         padWithInSignificantZeros,
-        nonIntegerHandling === "trailingDot"
+        useTrailingDot
       );
     } else if (mag >= 3 && mag <= 5) {
       // 1000 to 999999; format with 0 rhs digits
-      return formatNumWithOrderOfMag(
-        x,
-        0,
-        0,
-        false,
-        nonIntegerHandling === "trailingDot"
-      );
+      return formatNumWithOrderOfMag(x, 0, 0, false, useTrailingDot);
     } else {
       // anything else -- use suffix with maxDigitsRightSuffixNums
       const magE = orderOfMagnitudeEng(x);
