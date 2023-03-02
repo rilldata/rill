@@ -1,15 +1,18 @@
 package org
 
 import (
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 func OrgCmd(cfg *config.Config) *cobra.Command {
 	orgCmd := &cobra.Command{
-		Use:    "org",
-		Hidden: !cfg.IsDev(),
-		Short:  "Manage organisations",
+		Use:               "org",
+		Hidden:            !cfg.IsDev(),
+		Short:             "Manage organisations",
+		PersistentPreRunE: cmdutil.CheckAuth(cfg),
 	}
 	orgCmd.AddCommand(CreateCmd(cfg))
 	orgCmd.AddCommand(EditCmd(cfg))

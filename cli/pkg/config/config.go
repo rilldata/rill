@@ -28,3 +28,8 @@ func (v Version) String() string {
 func (v Version) IsDev() bool {
 	return v.Number == ""
 }
+
+func (c *Config) IsAuthenticated() bool {
+	fmt.Println("Admin token is:", c.AdminToken, " and URL is:", c.AdminURL)
+	return (c.AdminToken != "" && c.AdminURL != "")
+}
