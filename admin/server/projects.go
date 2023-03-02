@@ -16,7 +16,7 @@ import (
 // FindProjects implements AdminService.
 // (GET /v1/organizations/{organization}/projects)
 func (s *Server) FindProjects(ctx context.Context, req *adminv1.FindProjectsRequest) (*adminv1.FindProjectsResponse, error) {
-	projs, err := s.db.FindProjects(ctx, req.Organization)
+	projs, err := s.admin.DB.FindProjects(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -31,7 +31,7 @@ func (s *Server) FindProjects(ctx context.Context, req *adminv1.FindProjectsRequ
 
 // (GET /v1/organizations/{organization}/project/{name})
 func (s *Server) FindProject(ctx context.Context, req *adminv1.FindProjectRequest) (*adminv1.FindProjectResponse, error) {
-	proj, err := s.db.FindProjectByName(ctx, req.Organization, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
@@ -45,7 +45,7 @@ func (s *Server) FindProject(ctx context.Context, req *adminv1.FindProjectReques
 
 // (POST /v1/organizations/{organization}/projects)
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
-	org, err := s.db.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -67,7 +67,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubAppInstallID: req.GithubAppInstallId,
 		ProductionBranch:   req.ProductionBranch,
 	}
-	proj, err := s.db.CreateProject(ctx, org.ID, project)
+	proj, err := s.admin.DB.CreateProject(ctx, org.ID, project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -79,7 +79,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 
 // (DELETE /v1/organizations/{organization}/project/{name})
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
-	proj, err := s.db.FindProjectByName(ctx, req.Organization, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
@@ -87,7 +87,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.db.DeleteProject(ctx, proj.ID)
+	err = s.admin.DB.DeleteProject(ctx, proj.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -99,7 +99,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 
 // (PUT /v1/organizations/{organization}/project/{name})
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
-	proj, err := s.db.FindProjectByName(ctx, req.Organization, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
@@ -117,7 +117,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	proj.GitFullName = fullName
 
-	proj, err = s.db.UpdateProject(ctx, proj)
+	proj, err = s.admin.DB.UpdateProject(ctx, proj)
+
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
