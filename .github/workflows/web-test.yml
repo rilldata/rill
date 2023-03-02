@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        codepath: [web-admin, web-local, web-common]
+        codepath: [web-admin, web-local]
 
     steps:
       - name: Checkout code
