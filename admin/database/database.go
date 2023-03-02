@@ -52,7 +52,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
+	FindProjectByGitFullName(ctx context.Context, githubURL string) (*Project, error)
 	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
 	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
@@ -69,13 +69,28 @@ type Organization struct {
 }
 
 type Project struct {
-	ID                 string
-	OrganizationID     string `db:"organization_id"`
-	Name               string
-	Description        string
-	GitURL             string    `db:"git_url"`
+	ID             string
+	OrganizationID string `db:"organization_id"`
+	Name           string
+	Description    string
+	GitURL         string `db:"git_url"`
+	// GitFullName is in format owner/repo
+	// This can be created from giturl but adding this for efficient FindProjectByGitFullName
+	GitFullName        string    `db:"git_full_name"`
 	GithubAppInstallID int64     `db:"github_app_install_id"`
 	ProductionBranch   string    `db:"production_branch"`
 	CreatedOn          time.Time `db:"created_on"`
 	UpdatedOn          time.Time `db:"updated_on"`
+}
+
+type Deployment struct {
+	ID                string
+	ProjectID         string
+	GitBranch         string
+	RuntimeHost       string
+	RuntimeInstanceID string
+	IsProd            bool
+	CreatedOn         time.Time
+	UpdatedOn         time.Time
+	State             string // in progress, running, failed etc
 }

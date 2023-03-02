@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/google/go-github/v50/github"
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
@@ -30,24 +33,29 @@ import (
 // hi
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger  *zap.Logger
-	db      database.DB
-	conf    Config
-	auth    *Authenticator
-	handler eventhandler.Handler
+	logger       *zap.Logger
+	db           database.DB
+	conf         Config
+	auth         *Authenticator
+	handler      eventhandler.Handler
+	githubClient *github.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 type Config struct {
-	HTTPPort         int
-	GRPCPort         int
-	AuthDomain       string
-	AuthClientID     string
-	AuthClientSecret string
-	AuthCallbackURL  string
-	SessionSecret    string
-	GithubSecretKey  string // used to validate github events
+	HTTPPort                int
+	GRPCPort                int
+	AuthDomain              string
+	AuthClientID            string
+	AuthClientSecret        string
+	AuthCallbackURL         string
+	SessionSecret           string
+	GithubAPISecretKey      []byte // used to validate github events
+	GithubAppID             int64
+	GithubAppPrivateKeyPath string
+	GithubAppName           string
+	UIHost                  string
 }
 
 func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
@@ -61,12 +69,20 @@ func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
 		return nil, err
 	}
 
+	// Shared transport to reuse TCP connections.
+	// Use installation transport with github.com/google/go-github
+	client, err := githubClient(conf)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
-		logger:  logger,
-		db:      db,
-		conf:    conf,
-		auth:    auth,
-		handler: handler,
+		logger:       logger,
+		db:           db,
+		conf:         conf,
+		auth:         auth,
+		handler:      handler,
+		githubClient: client,
 	}, nil
 }
 
@@ -156,6 +172,16 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		panic(err)
 	}
 
+	err = mux.HandlePath("GET", "/github-connect/organizations/{organization}/projects", s.connectProject)
+	if err != nil {
+		panic(err)
+	}
+
+	err = mux.HandlePath("GET", "/github-connect/callback", s.installSetupCallback)
+	if err != nil {
+		panic(err)
+	}
+
 	err = mux.HandlePath("GET", "/auth/callback", s.callback)
 	if err != nil {
 		panic(err)
@@ -214,4 +240,27 @@ func cors(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+func githubClient(conf Config) (*github.Client, error) {
+	fw, err := os.Open(conf.GithubAppPrivateKeyPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// this is for local setup and unblocking if devs dont have private key
+			// todo :: check some mode (local vs prod) and throw error instead of creating default client
+			return github.NewClient(http.DefaultClient), nil
+		}
+		return nil, err
+	}
+	fw.Close()
+
+	// Shared transport to reuse TCP connections.
+	tr := http.DefaultTransport
+	// Use installation transport with github.com/google/go-github
+	itr, err := ghinstallation.NewAppsTransportKeyFromFile(tr, conf.GithubAppID, conf.GithubAppPrivateKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return github.NewClient(&http.Client{Transport: itr}), nil
 }

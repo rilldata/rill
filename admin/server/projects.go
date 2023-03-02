@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"errors"
+	"strings"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
@@ -51,11 +53,17 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	fullName, err := gitFullName(req.GitUrl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	project := &database.Project{
 		OrganizationID:     org.ID,
 		Name:               req.Name,
 		Description:        req.Description,
 		GitURL:             req.GitUrl,
+		GitFullName:        fullName,
 		GithubAppInstallID: req.GithubAppInstallId,
 		ProductionBranch:   req.ProductionBranch,
 	}
@@ -100,6 +108,15 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	proj.Description = req.Description
+	proj.GitURL = req.GitUrl
+	proj.GithubAppInstallID = req.GithubAppInstallId
+
+	fullName, err := gitFullName(req.GitUrl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	proj.GitFullName = fullName
+
 	proj, err = s.db.UpdateProject(ctx, proj)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -118,4 +135,16 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		CreatedOn:   timestamppb.New(p.CreatedOn),
 		UpdatedOn:   timestamppb.New(p.CreatedOn),
 	}
+}
+
+func gitFullName(url string) (string, error) {
+	endpoint, err := transport.NewEndpoint(url)
+	if err != nil {
+		return "", err
+	}
+
+	// expected path is /owner/repo.git or /owner/repo
+	_, name, _ := strings.Cut(endpoint.Path, "/")
+	name, _, _ = strings.Cut(name, ".git")
+	return name, nil
 }

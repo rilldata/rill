@@ -3,9 +3,10 @@ package config
 import "fmt"
 
 type Config struct {
-	Version    Version
-	AdminURL   string
-	AdminToken string
+	Version      Version
+	AdminURL     string
+	AdminHTTPURL string
+	AdminToken   string
 }
 
 func (c Config) IsDev() bool {

@@ -24,17 +24,21 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver   string        `default:"postgres" split_words:"true"`
-	DatabaseURL      string        `split_words:"true"`
-	HTTPPort         int           `default:"8080" split_words:"true"`
-	GRPCPort         int           `default:"9090" split_words:"true"`
-	LogLevel         zapcore.Level `default:"info" split_words:"true"`
-	SessionSecret    string        `split_words:"true"`
-	AuthDomain       string        `split_words:"true"`
-	AuthClientID     string        `split_words:"true"`
-	AuthClientSecret string        `split_words:"true"`
-	AuthCallbackURL  string        `split_words:"true"`
-	GithubAppSecret  string        `split_words:"true"`
+	DatabaseDriver          string        `default:"postgres" split_words:"true"`
+	DatabaseURL             string        `split_words:"true"`
+	HTTPPort                int           `default:"8080" split_words:"true"`
+	GRPCPort                int           `default:"9090" split_words:"true"`
+	LogLevel                zapcore.Level `default:"info" split_words:"true"`
+	SessionSecret           string        `split_words:"true"`
+	AuthDomain              string        `split_words:"true"`
+	AuthClientID            string        `split_words:"true"`
+	AuthClientSecret        string        `split_words:"true"`
+	AuthCallbackURL         string        `split_words:"true"`
+	GithubAppSecret         string        `split_words:"true"`
+	GithubAppID             int64         `split_words:"true"`
+	GithubAppPrivateKeyPath string        `split_words:"true"`
+	GithubAppName           string        `default:"test-rill-webhooks" split_words:"true"`
+	UIHost                  string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -77,14 +81,18 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init server
 			srvConf := server.Config{
-				HTTPPort:         conf.HTTPPort,
-				GRPCPort:         conf.GRPCPort,
-				AuthDomain:       conf.AuthDomain,
-				AuthClientID:     conf.AuthClientID,
-				AuthClientSecret: conf.AuthClientSecret,
-				AuthCallbackURL:  conf.AuthCallbackURL,
-				SessionSecret:    conf.SessionSecret,
-				GithubSecretKey:  conf.GithubAppSecret,
+				HTTPPort:                conf.HTTPPort,
+				GRPCPort:                conf.GRPCPort,
+				AuthDomain:              conf.AuthDomain,
+				AuthClientID:            conf.AuthClientID,
+				AuthClientSecret:        conf.AuthClientSecret,
+				AuthCallbackURL:         conf.AuthCallbackURL,
+				SessionSecret:           conf.SessionSecret,
+				GithubAPISecretKey:      []byte(conf.GithubAppSecret),
+				GithubAppID:             conf.GithubAppID,
+				GithubAppPrivateKeyPath: conf.GithubAppPrivateKeyPath,
+				GithubAppName:           conf.GithubAppName,
+				UIHost:                  conf.UIHost,
 			}
 			s, err := server.New(logger, db, srvConf)
 			if err != nil {
