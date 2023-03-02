@@ -55,7 +55,7 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 	prodBranch := values.Get("prod_branch")
 
 	ctx := req.Context()
-	org, err := s.db.FindOrganizationByName(ctx, orgName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, orgName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
@@ -113,7 +113,7 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 
 	if installation.GetID() != 0 {
 		project.GithubAppInstallID = installation.GetID()
-		project, err = s.db.UpdateProject(ctx, project)
+		project, err = s.admin.DB.UpdateProject(ctx, project)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -144,7 +144,7 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	}
 
 	// verify that we have the project
-	project, err := s.db.FindProjectByName(ctx, installationState.Org, installationState.Project)
+	project, err := s.admin.DB.FindProjectByName(ctx, installationState.Org, installationState.Project)
 	if err != nil {
 		// todo :: revert to some page saying project is not connected ???
 		w.WriteHeader(http.StatusBadRequest)
@@ -172,12 +172,12 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	}
 	project.GithubAppInstallID = installation.GetID()
 	// ignoring error
-	_, _ = s.db.UpdateProject(ctx, project)
+	_, _ = s.admin.DB.UpdateProject(ctx, project)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) getOrCreate(ctx context.Context, org *database.Organization, projectName, remote, fullName, prodBranch string) (*database.Project, error) {
-	project, err := s.db.FindProjectByName(ctx, org.Name, projectName)
+	project, err := s.admin.DB.FindProjectByName(ctx, org.Name, projectName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			project := &database.Project{
@@ -190,7 +190,7 @@ func (s *Server) getOrCreate(ctx context.Context, org *database.Organization, pr
 			if prodBranch != "noname" {
 				project.ProductionBranch = prodBranch
 			}
-			return s.db.CreateProject(ctx, org.ID, project)
+			return s.admin.DB.CreateProject(ctx, org.ID, project)
 		}
 		return nil, err
 	}
