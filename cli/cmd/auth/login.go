@@ -21,7 +21,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Println("Saved access token to ~/.rill/credentials.")
+				fmt.Println("Saved access token to ~/.rill.")
 				return nil
 			}
 

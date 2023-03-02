@@ -36,6 +36,7 @@ var rootCmd = &cobra.Command{
 func Execute(ctx context.Context, ver config.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
 		os.Exit(1)
 	}
 }
