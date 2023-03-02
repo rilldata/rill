@@ -68,12 +68,20 @@ const getInvalidationsForPath = (
   }
 };
 
-export function invalidationForMetricsViewData(query, metricsViewName: string) {
+export function invalidationForMetricsViewDataKey(
+  queryHash,
+  metricsViewName: string
+) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`
   );
-
-  return typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]);
+  return r.test(queryHash);
+}
+export function invalidationForMetricsViewData(query, metricsViewName: string) {
+  return (
+    typeof query.queryKey[0] === "string" &&
+    invalidationForMetricsViewDataKey(query.queryKey[0], metricsViewName)
+  );
 }
 
 export function invalidationForProfileQueries(queryHash, name: string) {

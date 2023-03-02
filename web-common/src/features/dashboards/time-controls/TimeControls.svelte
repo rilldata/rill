@@ -8,6 +8,7 @@ Constructs a TimeSeriesTimeRange object – to be used as the filter in MetricsE
 We should rename TimeSeriesTimeRange to a better name.
 -->
 <script lang="ts">
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useModelAllTimeRange,
     useModelHasTimeSeries,
@@ -19,11 +20,10 @@ We should rename TimeSeriesTimeRange to a better name.
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useQueryServiceColumnTimeRange,
-    V1ColumnTimeRangeResponse,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
@@ -38,13 +38,13 @@ We should rename TimeSeriesTimeRange to a better name.
     makeRelativeTimeRange,
     supportedTimeGrainEnums,
     TimeGrainOption,
-    timeRangeToISODuration,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
   export let metricViewName: string;
 
+  const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
@@ -185,6 +185,7 @@ We should rename TimeSeriesTimeRange to a better name.
     };
 
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 </script>
 

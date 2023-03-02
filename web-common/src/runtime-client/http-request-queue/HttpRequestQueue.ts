@@ -15,7 +15,7 @@ import {
   fetchWrapper,
   FetchWrapperOptions,
 } from "@rilldata/web-local/lib/util/fetchWrapper";
-import { appQueryStatusStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
+import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
 // Examples:
 // v1/instances/id/queries/columns-profile/tables/table-name
@@ -34,6 +34,7 @@ try {
   }
 } catch (err) {
   // no-op
+  QueryQueueSize = 200;
 }
 
 /**

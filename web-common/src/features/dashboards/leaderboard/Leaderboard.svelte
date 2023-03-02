@@ -7,6 +7,7 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -20,6 +21,7 @@
     useQueryServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import {
     MetricsExplorerEntity,
@@ -51,6 +53,7 @@
   export let seeMoreSlice = 50;
   let seeMore = false;
 
+  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
@@ -107,6 +110,7 @@
 
   function toggleFilterMode() {
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function selectDimension(dimensionName) {

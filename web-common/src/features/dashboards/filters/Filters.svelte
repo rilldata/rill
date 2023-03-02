@@ -10,6 +10,7 @@ The main feature-set component for dashboard filters
   import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -22,6 +23,7 @@ The main feature-set component for dashboard filters
   import { useQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import {
@@ -31,6 +33,8 @@ The main feature-set component for dashboard filters
   import { getDisplayName } from "./getDisplayName";
 
   export let metricViewName;
+
+  const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -50,6 +54,7 @@ The main feature-set component for dashboard filters
       dimensionId,
       include
     );
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
@@ -127,6 +132,7 @@ The main feature-set component for dashboard filters
   function clearAllFilters() {
     if (hasFilters) {
       metricsExplorerStore.clearFilters(metricViewName);
+      cancelDashboardQueries(queryClient, metricViewName);
     }
   }
 
@@ -163,10 +169,12 @@ The main feature-set component for dashboard filters
 
   function toggleDimensionValue(event, item) {
     metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function toggleFilterMode(dimensionName) {
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   const excludeChipColors = {

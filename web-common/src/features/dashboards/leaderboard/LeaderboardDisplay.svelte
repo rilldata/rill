@@ -1,5 +1,6 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -11,6 +12,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import {
@@ -27,6 +29,8 @@
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
 
   export let metricViewName: string;
+
+  const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -106,6 +110,7 @@
       item.name,
       event.detail.label
     );
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function onLeaderboardValues(event) {

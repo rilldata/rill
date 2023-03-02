@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -19,6 +21,7 @@
     useQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -35,6 +38,8 @@
   export let dimensionName: string;
 
   let searchText = "";
+
+  const queryClient = useQueryClient();
 
   $: instanceId = $runtimeStore.instanceId;
   $: addNull = "null".includes(searchText);
@@ -234,6 +239,7 @@
   function onSelectItem(event) {
     const label = values[event.detail][dimension?.name];
     metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
+    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function onSortByColumn(event) {
