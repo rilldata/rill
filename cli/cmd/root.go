@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
@@ -16,6 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/start"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +50,20 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	cfg := &config.Config{
 		Version: ver,
 	}
+
+	// Load admin token from .rill (may later be overridden by flag --api-token)
+	token, err := dotrill.GetAccessToken()
+	if err != nil {
+		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
+	}
+	cfg.AdminToken = token
+
+	// Load default org from .rill
+	defaultOrg, err := dotrill.GetDefaultOrg()
+	if err != nil {
+		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
+	}
+	cfg.DefaultOrg = defaultOrg
 
 	// Add sub-commands
 	rootCmd.AddCommand(initialize.InitCmd(cfg))

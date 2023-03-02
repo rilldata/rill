@@ -14,6 +14,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
@@ -275,21 +276,23 @@ func (a *App) ReconcileSource(sourcePath string) error {
 }
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
-	// Build local info for frontend
-	localConf, err := newLocalConfig()
+	// Get analytics info
+	installID, enabled, err := dotrill.GetAnalytics()
 	if err != nil {
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
+
+	// Build local info for frontend
 	inf := &localInfo{
 		InstanceID:       a.Instance.ID,
 		GRPCPort:         grpcPort,
-		InstallID:        localConf.InstallID,
+		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
 		Version:          a.Version.Number,
 		BuildCommit:      a.Version.Commit,
 		BuildTime:        a.Version.Timestamp,
 		IsDev:            a.Version.IsDev(),
-		AnalyticsEnabled: localConf.AnalyticsEnabled,
+		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
 	}
 
