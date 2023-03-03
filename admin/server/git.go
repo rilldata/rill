@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation"
@@ -51,7 +52,12 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 	// assuming some middleware already checks and redirects user to login page before it reaches here
 	values := req.URL.Query()
 	orgName := pathParams["organization"]
-	remote := values.Get("remote")
+	remote, err := url.QueryUnescape(values.Get("remote"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	projectName := values.Get("project_name")
 	prodBranch := values.Get("prod_branch")
 
@@ -73,7 +79,7 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 	}
 
 	// todo :: find a better way to do this
-	fullName := parseRepoPath(endpoint.Path)
+	fullName := parseRepoPath(endpoint.Path, endpoint.Protocol)
 	project, err := s.getOrCreate(ctx, org, projectName, remote, fullName, prodBranch)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -113,15 +119,22 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 		return
 	}
 
-	if installation.GetID() != 0 {
+	// we already have access
+	installationID := installation.GetID()
+	if installationID != 0 {
 		project.GithubAppInstallID = installation.GetID()
-		project, err = s.admin.DB.UpdateProject(ctx, project)
+		project.GitURL, err = s.httpRemote(ctx, installationID, project.GitURL, owner, repo)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		s.logger.Debug("updated project ", zap.String("projectId", project.ID))
 	}
+	project, err = s.admin.DB.UpdateProject(ctx, project)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	s.logger.Debug("updated project ", zap.String("projectId", project.ID))
 }
 
 // installSetupCallback gets called once the user has installed the app on the repository
@@ -179,38 +192,38 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	project.GithubAppInstallID = installationID
 
 	// once we have access, change git url to use http url instead of ssh url for github app credentials to work
-	endpoint, err := transport.NewEndpoint(project.GitURL)
+	project.GitURL, err = s.httpRemote(ctx, installationID, project.GitURL, owner, repo)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	if !strings.Contains(endpoint.Protocol, "http") {
-		// todo :: should we do full all cases to keep clean repo url ??
-		client, err := githubInstallationClient(s.conf, installationID)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		repo, _, err := client.Repositories.Get(ctx, owner, repo)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		httpURL := repo.GetCloneURL()
-		if httpURL != "" {
-			httpEndpoint, _ := transport.NewEndpoint(project.GitURL)
-			httpEndpoint.User = "__githubapp_installation_id__"
-			httpEndpoint.Password = fmt.Sprint(installationID)
-			project.GitURL = httpEndpoint.String()
-		}
 	}
 
 	// ignoring error
 	_, _ = s.admin.DB.UpdateProject(ctx, project)
 	// todo :: redirect to success page
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) httpRemote(ctx context.Context, installationID int64, remote, owner, repoName string) (string, error) {
+	client, err := githubInstallationClient(s.conf, installationID)
+	if err != nil {
+		return "", err
+	}
+
+	repo, _, err := client.Repositories.Get(ctx, owner, repoName)
+	if err != nil {
+		return "", err
+	}
+
+	httpURL := repo.GetCloneURL()
+	if httpURL == "" {
+		// should hopefully never happen
+		return "", fmt.Errorf("no http url")
+	}
+	httpEndpoint, _ := transport.NewEndpoint(httpURL)
+	httpEndpoint.User = "__githubapp_installation_id__"
+	httpEndpoint.Password = fmt.Sprint(installationID)
+	return httpEndpoint.String(), nil
 }
 
 func (s *Server) getOrCreate(ctx context.Context, org *database.Organization, projectName, remote, fullName, prodBranch string) (*database.Project, error) {
@@ -258,11 +271,14 @@ func newInstallationState(in string) (*installationState, error) {
 	return installationState, err
 }
 
-// converts /owner/repo.git to owner/repo
-func parseRepoPath(path string) string {
-	_, name, _ := strings.Cut(path, "/")
-	name, _, _ = strings.Cut(name, ".git")
-	return name
+// converts /owner/repo.git to owner/repo for http
+// converts owner/repo.git to owner/repo for ssh
+func parseRepoPath(path, protocol string) string {
+	if strings.Contains(protocol, "http") {
+		_, path, _ = strings.Cut(path, "/")
+	}
+	path, _, _ = strings.Cut(path, ".git")
+	return path
 }
 
 // github client that works for specific installation

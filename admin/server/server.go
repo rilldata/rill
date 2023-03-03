@@ -65,7 +65,7 @@ func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
 		return nil, err
 	}
 
-	handler, err := eventhandler.NewGithubHandler(adm.DB)
+	handler, err := eventhandler.NewGithubHandler(adm.DB, logger)
 	if err != nil {
 		return nil, err
 	}

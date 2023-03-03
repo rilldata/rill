@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/deployment"
+	"go.uber.org/zap"
 )
 
 // Handler processes web hook events
@@ -19,12 +20,13 @@ type Handler interface {
 var ErrInvalidEvent = errors.New("invalid payload")
 
 type githubHandler struct {
-	db database.DB
+	db     database.DB
+	logger *zap.Logger
 }
 
 // NewGithubHandler returns a handler that processes github web hook events
-func NewGithubHandler(db database.DB) (Handler, error) {
-	return &githubHandler{db: db}, nil
+func NewGithubHandler(db database.DB, logger *zap.Logger) (Handler, error) {
+	return &githubHandler{db: db, logger: logger}, nil
 }
 
 func (g *githubHandler) Process(ctx context.Context, raw any) error {
@@ -65,6 +67,7 @@ func (g *githubHandler) processPushEvent(ctx context.Context, event *github.Push
 		return nil
 	}
 
+	g.logger.Debug("received event for ", zap.String("project", project.ID))
 	// some cases when this can happen
 	// 1. missed install event (unlikely since we update id in setup callback as well)
 	// 2. app installed on repo first and project connected later (may be navigate user to project connect in setup callback)
@@ -79,8 +82,9 @@ func (g *githubHandler) processPushEvent(ctx context.Context, event *github.Push
 		}
 	}
 
+	g.logger.Debug("deploying project for ", zap.String("project", project.ID))
 	// this is just for MVP
-	d := deployment.LocalDeployment{}
+	d := deployment.LocalDeployment{Logger: g.logger}
 	return d.DeployProject(project)
 }
 

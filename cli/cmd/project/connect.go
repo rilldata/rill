@@ -42,17 +42,17 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			org := cfg.DefaultOrg
-			url, err := url.Parse(fmt.Sprintf(_connectURL, cfg.AdminHTTPURL, org))
+			connectURL, err := url.Parse(fmt.Sprintf(_connectURL, cfg.AdminHTTPURL, org))
 			if err != nil {
 				return err
 			}
 
-			q := url.Query()
-			q.Set("remote", remote[0].URL)
+			q := connectURL.Query()
+			q.Set("remote", url.QueryEscape(remote[0].URL))
 			q.Set("project_name", name)
 			q.Set("prod_branch", prodBranch)
-			url.RawQuery = q.Encode()
-			return browser.OpenURL(url.String())
+			connectURL.RawQuery = q.Encode()
+			return browser.OpenURL(connectURL.String())
 		},
 	}
 
