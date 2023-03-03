@@ -250,7 +250,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 
 		fieldStrs := splitCommasUnlessQuotedOrNestedInParens(args)
 		for _, fieldStr := range fieldStrs {
-			// Each field has format `"name" TYPE`
+			// Each field has format `name TYPE` or `"name" TYPE`
 			fieldName, fieldTypeStr, ok := splitStructFieldStr(fieldStr)
 			if !ok {
 				return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
@@ -376,13 +376,13 @@ func splitCommasUnlessQuotedOrNestedInParens(s string) []string {
 }
 
 // splitStructFieldStr splits a single struct name/type pair.
-// It expects fieldStr to have the format `"name" TYPE`.
-// If the name string contains escaped quotes `""`, they'll be replaced by `"`.
+// It expects fieldStr to have the format `name TYPE` or `"name" TYPE`.
+// If the name string is quoted and contains escaped quotes `""`, they'll be replaced by `"`.
 // For example: splitStructFieldStr(`"hello "" world" VARCHAR`) -> (`hello " world`, `VARCHAR`, true).
 func splitStructFieldStr(fieldStr string) (string, string, bool) {
-	// We're expecting a string that starts with a quote
+	// If the string DOES NOT start with a `"`, we can just split on the first space.
 	if fieldStr == "" || fieldStr[0] != '"' {
-		return "", "", false
+		return strings.Cut(fieldStr, " ")
 	}
 
 	// Find end of quoted string (skipping `""` since they're escaped quotes)
