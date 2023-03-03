@@ -65,7 +65,7 @@ func TestDatabaseTypeToPB(t *testing.T) {
 			output: &runtimev1.Type{Code: runtimev1.Type_CODE_DECIMAL, Nullable: true},
 		},
 		{
-			input: "STRUCT(foo HUGEINT, bar STRUCT(a INTEGER, b MAP(INTEGER, BOOLEAN)), baz VARCHAR[])",
+			input: `STRUCT("foo" HUGEINT, "bar" STRUCT("a" INTEGER, "b" MAP(INTEGER, BOOLEAN)), "baz" VARCHAR[])`,
 			output: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
 				{Name: "foo", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT128, Nullable: true}},
 				{Name: "bar", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
@@ -76,6 +76,14 @@ func TestDatabaseTypeToPB(t *testing.T) {
 					}}},
 				}}}},
 				{Name: "baz", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY, Nullable: true, ArrayElementType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}}},
+			}}},
+		},
+		{
+			input: `STRUCT("foo ""("" bar" STRUCT("baz ,, \ \"" "" )" INTEGER))`,
+			output: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+				{Name: `foo "(" bar`, Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+					{Name: `baz ,, \ \" " )`, Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true}},
+				}}}},
 			}}},
 		},
 	}
