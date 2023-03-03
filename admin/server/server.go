@@ -32,29 +32,31 @@ import (
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger       *zap.Logger
-	admin        *admin.Service
-	conf         Config
-	auth         *Authenticator
-	handler      eventhandler.Handler
+	logger  *zap.Logger
+	admin   *admin.Service
+	conf    Config
+	auth    *Authenticator
+	handler eventhandler.Handler
+	// todo :: add service layer and setup it there
 	githubClient *github.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 type Config struct {
-	HTTPPort                int
-	GRPCPort                int
-	AuthDomain              string
-	AuthClientID            string
-	AuthClientSecret        string
-	AuthCallbackURL         string
-	SessionSecret           string
+	HTTPPort         int
+	GRPCPort         int
+	AuthDomain       string
+	AuthClientID     string
+	AuthClientSecret string
+	AuthCallbackURL  string
+	SessionSecret    string
+	GithubAppName    string
+	UIHost           string
+	// todo :: below secrets should be fetched directly from vault rather than reading from env
 	GithubAPISecretKey      []byte // used to validate github events
 	GithubAppID             int64
 	GithubAppPrivateKeyPath string
-	GithubAppName           string
-	UIHost                  string
 }
 
 func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
@@ -68,8 +70,6 @@ func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
 		return nil, err
 	}
 
-	// Shared transport to reuse TCP connections.
-	// Use installation transport with github.com/google/go-github
 	client, err := githubClient(conf)
 	if err != nil {
 		return nil, err

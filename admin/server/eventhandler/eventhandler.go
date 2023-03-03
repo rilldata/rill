@@ -3,7 +3,6 @@ package eventhandler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/google/go-github/v50/github"
@@ -62,14 +61,7 @@ func (g *githubHandler) processPushEvent(ctx context.Context, event *github.Push
 		return err
 	}
 
-	// format is refs/heads/main or refs/tags/v3.14.1
-	ref := event.GetRef()
-	if ref == "" {
-		return ErrInvalidEvent
-	}
-	_, branch, found := strings.Cut(ref, "refs/heads/")
-	if !found || branch != project.ProductionBranch {
-		// a tag push or a push on another branch
+	if !isDeployBranch(event, project.ProductionBranch) {
 		return nil
 	}
 
@@ -87,10 +79,9 @@ func (g *githubHandler) processPushEvent(ctx context.Context, event *github.Push
 		}
 	}
 
+	// this is just for MVP
 	d := deployment.LocalDeployment{}
-	_, err = d.DeployProject(project)
-	fmt.Println(err)
-	return nil
+	return d.DeployProject(project)
 }
 
 func (g *githubHandler) processInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
@@ -159,4 +150,23 @@ func (g *githubHandler) processInstallationRepositoriesEvent(ctx context.Context
 		_, _ = g.db.UpdateProject(ctx, project)
 	}
 	return nil
+}
+
+// use either user-provied branch or default branch of the repo
+func isDeployBranch(event *github.PushEvent, prodBranch string) bool {
+	ref := event.GetRef()
+	if ref == "" {
+		return false
+	}
+	// format is refs/heads/main or refs/tags/v3.14.1
+	_, branch, found := strings.Cut(ref, "refs/heads/")
+	if !found {
+		// a tag push
+		return false
+	}
+
+	if prodBranch != "" {
+		return branch == prodBranch
+	}
+	return branch == event.GetRepo().GetDefaultBranch()
 }

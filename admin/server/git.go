@@ -96,6 +96,7 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 	installation, response, err := s.githubClient.Apps.FindRepositoryInstallation(ctx, owner, repo)
 	if err != nil {
 		if response.StatusCode == http.StatusNotFound {
+			// we are going to receive this state back in callback once user has installed the app
 			state := installationState{Project: projectName, Org: orgName}
 			encodedState, err := state.encode()
 			if err != nil {
@@ -119,19 +120,17 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 			return
 		}
 		s.logger.Debug("updated project ", zap.String("projectId", project.ID))
-	} else {
-		// check if we get unauthorized error for public repo as well, if yes
-		// this can be removed
-		http.Redirect(w, req, "https://github.com/apps/test-rill-webhooks/installations/new", http.StatusTemporaryRedirect)
-		return
 	}
 }
 
+// installSetupCallback gets called once the user has installed the app on the repository
+// We leverage this to verify that user installed the app on the repo that we need and navigate user to correct pages
 func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 	ctx := req.Context()
 	values := req.URL.Query()
 	stateString := values.Get("state")
 	if stateString == "" {
+		s.logger.Error("not state found")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -139,6 +138,7 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	installationState, err := newInstallationState(stateString)
 	if err != nil {
 		// redirect to bad request
+		s.logger.Error("unable to parse installation state ", zap.Error(err), zap.String("state", stateString))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -147,13 +147,16 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	project, err := s.admin.DB.FindProjectByName(ctx, installationState.Org, installationState.Project)
 	if err != nil {
 		// todo :: revert to some page saying project is not connected ???
+		s.logger.Error("project fetch from fb failed ", zap.Error(err),
+			zap.String("org", installationState.Org),
+			zap.String("project", installationState.Project))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// we have already received installation event
 	if project.GithubAppInstallID != 0 {
-		// redirect to success page
+		// todo :: redirect to success page
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -164,6 +167,7 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	if err != nil {
 		if response.StatusCode == http.StatusNotFound {
 			// redirect to failure page ?
+			s.logger.Error("app does not have access to repo ", zap.String("repo", project.GitFullName))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -173,6 +177,7 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	project.GithubAppInstallID = installation.GetID()
 	// ignoring error
 	_, _ = s.admin.DB.UpdateProject(ctx, project)
+	// todo :: redirect to success page
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -187,7 +192,7 @@ func (s *Server) getOrCreate(ctx context.Context, org *database.Organization, pr
 				GitURL:         remote,
 				GitFullName:    fullName,
 			}
-			if prodBranch != "noname" {
+			if prodBranch != "" {
 				project.ProductionBranch = prodBranch
 			}
 			return s.admin.DB.CreateProject(ctx, org.ID, project)

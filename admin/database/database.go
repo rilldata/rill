@@ -82,15 +82,3 @@ type Project struct {
 	CreatedOn          time.Time `db:"created_on"`
 	UpdatedOn          time.Time `db:"updated_on"`
 }
-
-type Deployment struct {
-	ID                string
-	ProjectID         string
-	GitBranch         string
-	RuntimeHost       string
-	RuntimeInstanceID string
-	IsProd            bool
-	CreatedOn         time.Time
-	UpdatedOn         time.Time
-	State             string // in progress, running, failed etc
-}

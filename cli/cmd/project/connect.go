@@ -61,8 +61,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	// todo :: handle orgs
 	connectCmd.Flags().StringVar(&orgName, "org-name", "app-org", "Org Name")
 	connectCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
-	// todo :: set default branch to current default may be ??
-	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
+	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Public")
 	connectCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 
