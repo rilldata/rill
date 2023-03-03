@@ -17,7 +17,7 @@ func (l *LocalDeployment) DeployProject(project *database.Project) error {
 	app := "rill"
 
 	arg0 := "start"
-	// remove username and pwd since no support for local runtime 
+	// remove username and pwd since no support for local runtime
 	ep, _ := transport.NewEndpoint(project.GitURL)
 	ep.User = ""
 	ep.Password = ""
