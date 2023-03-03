@@ -125,7 +125,6 @@ func AnalyticsInfo() (installID string, enabled bool, err error) {
 	err = migrateOldAnalyticsConfig()
 	if err != nil {
 		fmt.Printf("state migration in ~/.rill failed: %s\n", err.Error())
-		// return "", false, err // TODO: temporary
 	}
 
 	// Get installID
