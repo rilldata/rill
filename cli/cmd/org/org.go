@@ -20,6 +20,8 @@ func OrgCmd(cfg *config.Config) *cobra.Command {
 	orgCmd.AddCommand(InviteCmd(cfg))
 	orgCmd.AddCommand(MembersCmd(cfg))
 	orgCmd.AddCommand(SwitchCmd(cfg))
+	orgCmd.AddCommand(ListCmd(cfg))
+	orgCmd.AddCommand(DeleteCmd(cfg))
 
 	return orgCmd
 }

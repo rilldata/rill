@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeleteCmd(cfg *config.Config) *cobra.Command {
-	deleteCmd := &cobra.Command{
-		Use:   "delete",
+func ListCmd(cfg *config.Config) *cobra.Command {
+	listCmd := &cobra.Command{
+		Use:   "list",
 		Args:  cobra.ExactArgs(1),
-		Short: "Delete",
+		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken)
 			if err != nil {
@@ -22,17 +22,16 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
+			proj, err := client.FindProjects(context.Background(), &adminv1.FindProjectsRequest{
 				Organization: cfg.DefaultOrg,
-				Name:         args[0],
 			})
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Deleted project: %v\n", proj)
+			fmt.Printf("Projects list: %v\n", proj)
 			return nil
 		},
 	}
-	return deleteCmd
+	return listCmd
 }

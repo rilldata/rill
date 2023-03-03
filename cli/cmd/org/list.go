@@ -1,4 +1,4 @@
-package project
+package org
 
 import (
 	"context"
@@ -10,11 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeleteCmd(cfg *config.Config) *cobra.Command {
-	deleteCmd := &cobra.Command{
-		Use:   "delete",
-		Args:  cobra.ExactArgs(1),
-		Short: "Delete",
+func ListCmd(cfg *config.Config) *cobra.Command {
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken)
 			if err != nil {
@@ -22,17 +21,15 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
-				Organization: cfg.DefaultOrg,
-				Name:         args[0],
-			})
+			orgs, err := client.FindOrganizations(context.Background(), &adminv1.FindOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Deleted project: %v\n", proj)
+			fmt.Printf("Organizations list: %v\n", orgs)
 			return nil
 		},
 	}
-	return deleteCmd
+
+	return listCmd
 }

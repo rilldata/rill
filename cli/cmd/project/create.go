@@ -10,8 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeleteCmd(cfg *config.Config) *cobra.Command {
-	deleteCmd := &cobra.Command{
+func CreateCmd(cfg *config.Config) *cobra.Command {
+	var displayName string
+	createCmd := &cobra.Command{
 		Use:   "delete",
 		Args:  cobra.ExactArgs(1),
 		Short: "Delete",
@@ -22,17 +23,22 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
+			proj, err := client.CreateProject(context.Background(), &adminv1.CreateProjectRequest{
 				Organization: cfg.DefaultOrg,
 				Name:         args[0],
+				Description:  displayName,
 			})
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Deleted project: %v\n", proj)
+			fmt.Printf("Created project: %v\n", proj)
 			return nil
 		},
 	}
-	return deleteCmd
+
+	createCmd.Flags().SortFlags = false
+	createCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
+
+	return createCmd
 }
