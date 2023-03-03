@@ -68,7 +68,7 @@ func (g *githubHandler) processPushEvent(ctx context.Context, event *github.Push
 	// some cases when this can happen
 	// 1. missed install event (unlikely since we update id in setup callback as well)
 	// 2. app installed on repo first and project connected later (may be navigate user to project connect in setup callback)
-	// 3. Events out of order where installation removed event came first and github push later (redeploy in private repo will fail since access is no longer present)
+	// 3. Events out of order where installation removed event came first and github push later (redeploy in private repo will anyways fail since access is no longer present)
 	// should we handle this ?
 	installID := event.GetInstallation().GetID()
 	if installID != 0 && project.GithubAppInstallID != installID {

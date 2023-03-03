@@ -101,9 +101,15 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 }
 
 func (c *connection) Sync(ctx context.Context, instID string) error {
+	// add retries
+	authenticatedDSN, err := parse(c.root)
+	if err != nil {
+		return err
+	}
+
 	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
 
-	err := r.Run(func() error {
+	err = r.Run(func() error {
 		repo, err := gogit.PlainOpen(c.tempdir)
 		if err != nil {
 			return err
@@ -114,7 +120,7 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 			return err
 		}
 
-		err = wt.Pull(&gogit.PullOptions{})
+		err = wt.Pull(&gogit.PullOptions{RemoteURL: authenticatedDSN})
 		if errors.Is(err, gogit.NoErrAlreadyUpToDate) {
 			return nil
 		} else if err != nil {

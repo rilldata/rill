@@ -52,7 +52,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	FindProjectByGitFullName(ctx context.Context, githubURL string) (*Project, error)
+	FindProjectByGitFullName(ctx context.Context, fullName string) (*Project, error)
 	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
 	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error

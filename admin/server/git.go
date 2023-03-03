@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
@@ -167,14 +168,45 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 	if err != nil {
 		if response.StatusCode == http.StatusNotFound {
 			// redirect to failure page ?
-			s.logger.Error("app does not have access to repo ", zap.String("repo", project.GitFullName))
+			s.logger.Error("app still does not have access to repo ", zap.String("repo", project.GitFullName))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	project.GithubAppInstallID = installation.GetID()
+	installationID := installation.GetID()
+	project.GithubAppInstallID = installationID
+
+	// once we have access, change git url to use http url instead of ssh url for github app credentials to work
+	endpoint, err := transport.NewEndpoint(project.GitURL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if !strings.Contains(endpoint.Protocol, "http") {
+		// todo :: should we do full all cases to keep clean repo url ??
+		client, err := githubInstallationClient(s.conf, installationID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		repo, _, err := client.Repositories.Get(ctx, owner, repo)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		httpURL := repo.GetCloneURL()
+		if httpURL != "" {
+			httpEndpoint, _ := transport.NewEndpoint(project.GitURL)
+			httpEndpoint.User = "__githubapp_installation_id__"
+			httpEndpoint.Password = fmt.Sprint(installationID)
+			project.GitURL = httpEndpoint.String()
+		}
+	}
+
 	// ignoring error
 	_, _ = s.admin.DB.UpdateProject(ctx, project)
 	// todo :: redirect to success page
@@ -226,9 +258,24 @@ func newInstallationState(in string) (*installationState, error) {
 	return installationState, err
 }
 
-// expected path is /owner/repo.git or /owner/repo
+// converts /owner/repo.git to owner/repo
 func parseRepoPath(path string) string {
 	_, name, _ := strings.Cut(path, "/")
 	name, _, _ = strings.Cut(name, ".git")
 	return name
+}
+
+// github client that works for specific installation
+func githubInstallationClient(conf Config, installationID int64) (*github.Client, error) {
+	// Shared transport to reuse TCP connections.
+	tr := http.DefaultTransport
+
+	// Wrap the shared transport for use with the app ID 1 authenticating with installation ID 99.
+	itr, err := ghinstallation.NewKeyFromFile(tr, conf.GithubAppID, installationID, conf.GithubAppPrivateKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use installation transport with github.com/google/go-github
+	return github.NewClient(&http.Client{Transport: itr}), nil
 }

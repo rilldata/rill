@@ -2,11 +2,16 @@ package git
 
 import (
 	"context"
+	"log"
+	"net/http"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/eapache/go-resiliency/retrier"
 	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -18,11 +23,21 @@ func init() {
 
 type driver struct{}
 
+const _installationUser = "__githubapp_installation_id__"
+
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
+	// TODO :: add some wrapper over plainclone or
+	// cloneOptions has option to set auth but seems like not being used atleast in plainclone
+	// add retries
+	authenticatedDSN, err := parse(dsn)
+	if err != nil {
+		return nil, err
+	}
+
 	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
 
 	var c *connection
-	err := r.Run(func() error {
+	err = r.Run(func() error {
 		tempdir, err := os.MkdirTemp("", "git_repo_driver")
 		if err != nil {
 			return err
@@ -31,7 +46,7 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		c = &connection{root: dsn, tempdir: tempdir}
 
 		_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
-			URL: dsn,
+			URL: authenticatedDSN,
 		})
 		if err != nil {
 			removeError := os.RemoveAll(tempdir)
@@ -51,7 +66,7 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil, err
 	}
 
-	return c, nil
+	return c, err
 }
 
 type connection struct {
@@ -97,4 +112,44 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
+}
+
+// this is specifically for hosted runtimes
+// control-plane sets github installation id using which token can be fetched to access repo
+func parse(dsn string) (string, error) {
+	endpoint, err := transport.NewEndpoint(dsn)
+	if err != nil {
+		return "", err
+	}
+
+	if endpoint.User != _installationUser {
+		return endpoint.String(), nil
+	}
+
+	installationID, err := strconv.ParseInt(endpoint.Password, 10, 64)
+	if err != nil {
+		return "", err
+	}
+	// Shared transport to reuse TCP connections.
+	tr := http.DefaultTransport
+
+	// todo :: set some error in case runtime is hosted and these env not set ??
+	// todo :: these should come from some vault probably and set into secrets
+	githubAppID, _ := strconv.ParseInt(os.Getenv("RILL_ADMIN_GITHUB_APP_ID"), 10, 64)
+	githubAppPrivateKeyPath := os.Getenv("RILL_ADMIN_GITHUB_APP_PRIVATE_KEY_PATH")
+
+	// Wrap the shared transport for use with the app ID 1 authenticating with installation ID 99.
+	itr, err := ghinstallation.NewKeyFromFile(tr, githubAppID, installationID, githubAppPrivateKeyPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	token, err := itr.Token(context.TODO())
+	if err != nil {
+		return "", err
+	}
+
+	endpoint.User = "x-access-token"
+	endpoint.Password = token
+	return endpoint.String(), nil
 }

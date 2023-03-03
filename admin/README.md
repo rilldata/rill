@@ -48,12 +48,15 @@ The app has access to read `contents` and receive webhooks on `push`.
 
 public link for test app : https://github.com/apps/test-rill-webhooks
 
-## Working with the github app in local
 Compulsarily set following secrets in .env file (get data from vault / ask a colleague for values):
 RILL_ADMIN_GITHUB_APP_SECRET
 RILL_ADMIN_GITHUB_APP_ID
 RILL_ADMIN_GITHUB_APP_PRIVATE_KEY_PATH (path to private key file in local)
 RILL_ADMIN_GITHUB_APP_NAME (set to test app by default)
+
+Also set RILL_ADMIN_GITHUB_APP_ID and RILL_ADMIN_GITHUB_APP_PRIVATE_KEY_PATH in hosted runtime
+
+## Working with the github app in local
 
 the test app currently sends link to a https://github.com/probot/smee.io channel. 
 In order for webhooks to be received on local, install smee-client and run following command for receiving web hooks:
