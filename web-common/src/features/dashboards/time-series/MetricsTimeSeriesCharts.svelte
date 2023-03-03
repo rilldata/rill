@@ -30,6 +30,7 @@
   import {
     addGrains,
     formatDateByInterval,
+    getComparisonTimeRange,
   } from "../time-controls/time-range-utils";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -43,7 +44,6 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-  $: timeDimension = $metaQuery.data?.timeDimension;
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
   $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
@@ -65,6 +65,30 @@
       instanceId,
       metricViewName,
       totalsQueryParams
+    );
+  }
+
+  let comparisonTotalQuery: UseQueryStoreResult<
+    V1MetricsViewTotalsResponse,
+    Error
+  >;
+  $: if ($totalsQuery?.data?.data && metricsExplorer?.showComparison) {
+    const comparisonRange = getComparisonTimeRange(
+      metricsExplorer.selectedTimeRange,
+      metricsExplorer.comparisonTimeRange
+    );
+
+    const comparisonTotalsQueryParams = {
+      measureNames: selectedMeasureNames,
+      filter: metricsExplorer?.filters,
+      timeStart: comparisonRange?.start,
+      timeEnd: comparisonRange?.end,
+    };
+
+    comparisonTotalQuery = useQueryServiceMetricsViewTotals(
+      instanceId,
+      metricViewName,
+      comparisonTotalsQueryParams
     );
   }
 
@@ -173,6 +197,13 @@
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
+        {@const comparisonValue =
+          $comparisonTotalQuery?.data.data?.[measure.name]}
+        {@const comparisonPercChange =
+          comparisonValue && bigNum
+            ? (bigNum - comparisonValue) / comparisonValue
+            : undefined}
+        {@const interval = metricsExplorer?.selectedTimeRange?.interval}
         {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
         {@const formatPreset =
           NicelyFormattedTypes[measure?.format] ||
@@ -180,6 +211,8 @@
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}
+          {comparisonPercChange}
+          {comparisonValue}
           description={measure?.description ||
             measure?.label ||
             measure?.expression}

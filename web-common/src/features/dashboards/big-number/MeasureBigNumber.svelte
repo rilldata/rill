@@ -9,6 +9,8 @@
   import { humanizeDataType, NicelyFormattedTypes } from "../humanize-numbers";
 
   export let value: number;
+  export let comparisonValue: number;
+  export let comparisonPercChange: number;
   export let status: EntityStatus;
   export let description: string = undefined;
   export let withTimeseries = true;
@@ -18,6 +20,7 @@
     (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
   $: valusIsPresent = value !== undefined && value !== null;
 
+  $: isComparisonPositive = comparisonPercChange && comparisonPercChange > 0;
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
@@ -52,6 +55,35 @@
               {/if}
             </WithTween>
           </div>
+          {#if comparisonValue}
+            <div class="text-sm ui-copy-inactive">
+              <WithTween
+                value={comparisonValue}
+                tweenProps={{ duration: 500 }}
+                let:output
+              >
+                {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                  {humanizeDataType(output, formatPresetEnum)}
+                {:else}
+                  {output}
+                {/if}
+              </WithTween>
+            </div>
+          {/if}
+          {#if comparisonPercChange}
+            <div
+              class="text-sm
+              {isComparisonPositive ? 'text-green-600' : 'text-red-500'}"
+            >
+              <WithTween
+                value={comparisonPercChange}
+                tweenProps={{ duration: 500 }}
+                let:output
+              >
+                {humanizeDataType(output, NicelyFormattedTypes.PERCENTAGE)}
+              </WithTween>
+            </div>
+          {/if}
         {:else if status === EntityStatus.Error}
           <CrossIcon />
         {:else if status === EntityStatus.Running}

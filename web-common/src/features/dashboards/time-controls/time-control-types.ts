@@ -16,6 +16,24 @@ export enum TimeRangeName {
   Custom = "Custom range",
 }
 
+export enum ComparisonRange {
+  // Previous period for the given TimeRangeName
+  Previous6Hours = "Previous 6 hours",
+  PreviousDay = "Previous day",
+  PreviousWeek = "Previous week",
+  Previous30Days = "Previous 30 days",
+  PreviousYear = "Previous year",
+
+  // Point in time periods
+  DayOverDay = "Day over day",
+  WeekOverWeek = "Week over week",
+  MonthOverMonth = "Month over month",
+  YearOverYear = "Year over year",
+
+  // Custom Range which the user can select
+  Custom = "Custom range",
+}
+
 export const lastXTimeRangeNames: TimeRangeName[] = [
   TimeRangeName.Last6Hours,
   TimeRangeName.LastDay,

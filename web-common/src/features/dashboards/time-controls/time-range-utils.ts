@@ -1,5 +1,6 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
+  ComparisonRange,
   lastXTimeRangeNames,
   TimeRange,
   TimeRangeName,
@@ -610,4 +611,91 @@ export function getDateFromISOString(isoString: string): string {
 
 export function getISOStringFromDate(date: string): string {
   return date + "T00:00:00.000Z";
+}
+
+// Comparison Time Utils
+
+const pointInTimeComparisons = [
+  ComparisonRange.DayOverDay,
+  ComparisonRange.WeekOverWeek,
+  ComparisonRange.MonthOverMonth,
+  ComparisonRange.YearOverYear,
+];
+
+export function getComparisonOptionsForTimeRange(
+  timeRange: TimeSeriesTimeRange
+): ComparisonRange[] {
+  const alwaysAllowed = [...pointInTimeComparisons, ComparisonRange.Custom];
+
+  switch (timeRange.name) {
+    case TimeRangeName.Last6Hours:
+      return [ComparisonRange.Previous6Hours, ...alwaysAllowed];
+    case TimeRangeName.LastDay:
+      return [ComparisonRange.PreviousDay, ...alwaysAllowed];
+    case TimeRangeName.LastWeek:
+      return [ComparisonRange.PreviousWeek, ...alwaysAllowed];
+    case TimeRangeName.Last30Days:
+      return [ComparisonRange.Previous30Days, ...alwaysAllowed];
+    case TimeRangeName.Custom:
+      return alwaysAllowed;
+    case TimeRangeName.AllTime:
+      return [];
+    default:
+      throw new Error(`Unknown time range: ${timeRange.name}`);
+  }
+}
+
+function getPointInTimeComparisonDurations(
+  comparisonRange: ComparisonRange
+): number {
+  switch (comparisonRange) {
+    case ComparisonRange.DayOverDay:
+      return TIME.DAY;
+    case ComparisonRange.WeekOverWeek:
+      return TIME.WEEK;
+    case ComparisonRange.MonthOverMonth:
+      return TIME.MONTH;
+    case ComparisonRange.YearOverYear:
+      return TIME.YEAR;
+    default:
+      throw new Error(`Unknown comparison range: ${comparisonRange}`);
+  }
+}
+
+export function getComparisonTimeRange(
+  timeRange: TimeSeriesTimeRange,
+  comparisonRange: ComparisonRange
+): TimeSeriesTimeRange {
+  const currentStartDate = new Date(timeRange.start).getTime();
+  const currentEndDate = new Date(timeRange.end).getTime();
+
+  // TODO:  Work on All time and custom comparison later
+  if (
+    timeRange.name === TimeRangeName.Custom ||
+    timeRange.name === TimeRangeName.AllTime
+  ) {
+    return timeRange;
+  }
+
+  let startDate;
+  let endDate;
+
+  // Handle Point in Time comparisons
+  if (pointInTimeComparisons.includes(comparisonRange)) {
+    startDate =
+      currentStartDate - getPointInTimeComparisonDurations(comparisonRange);
+    endDate =
+      currentEndDate - getPointInTimeComparisonDurations(comparisonRange);
+  }
+  // Handle Previous X comparisons
+  else {
+    startDate = currentStartDate - getLastXTimeRangeDurationMs(timeRange.name);
+    endDate = currentEndDate - getLastXTimeRangeDurationMs(timeRange.name);
+  }
+
+  return {
+    name: timeRange.name,
+    start: new Date(startDate).toISOString(),
+    end: new Date(endDate).toISOString(),
+  };
 }

@@ -26,6 +26,7 @@ We should rename TimeSeriesTimeRange to a better name.
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import ComparisonSelector from "./ComparisonSelector.svelte";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import {
     addGrains,
@@ -208,5 +209,6 @@ We should rename TimeSeriesTimeRange to a better name.
       {timeGrainOptions}
       {minTimeGrain}
     />
+    <ComparisonSelector {metricViewName} />
   {/if}
 </div>

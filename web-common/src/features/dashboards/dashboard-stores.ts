@@ -32,6 +32,10 @@ export interface MetricsExplorerEntity {
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
   selectedDimensionName?: string;
+  // comparison time range
+  comparisonTimeRange?: ComparisonRange;
+  // toggle for comparison time range
+  showComparison?: boolean;
 }
 
 export interface MetricsExplorerStoreType {
@@ -115,6 +119,21 @@ const metricViewReducers = {
   setMetricDimensionName(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
+    });
+  },
+
+  toggleComparison(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.showComparison = !metricsExplorer.showComparison;
+    });
+  },
+
+  setSelectedComparisonRange(
+    name: string,
+    comparisonTimeRange: ComparisonRange
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.comparisonTimeRange = comparisonTimeRange;
     });
   },
 
