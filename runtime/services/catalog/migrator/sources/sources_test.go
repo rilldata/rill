@@ -24,7 +24,7 @@ func TestSourceMigrator_Update(t *testing.T) {
 	s, _ := testutils.GetService(t)
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
-		PersistSources: true,
+		SafeSourceRefresh: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Errors, 0)
@@ -33,7 +33,7 @@ func TestSourceMigrator_Update(t *testing.T) {
 	// point to invalid file and reconcile
 	testutils.CreateSource(t, s, "AdBids", "_"+AdBidsCsvPath, AdBidsRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{
-		PersistSources: true,
+		SafeSourceRefresh: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Errors, 1)

@@ -39,6 +39,7 @@ type Config struct {
 	AuthEnable           bool          `default:"false" split_words:"true"`
 	AuthIssuerURL        string        `default:"" split_words:"true"`
 	AuthAudienceURL      string        `default:"" split_words:"true"`
+	SafeSourceRefresh    bool          `default:"false" split_words:"true"`
 	ConnectionCacheSize  int           `default:"100" split_words:"true"`
 	QueryCacheSize       int           `default:"10000" split_words:"true"`
 	AllowHostCredentials bool          `default:"false" split_words:"true"`
@@ -69,6 +70,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)
 			}
+			fmt.Println("Conf", conf)
 
 			// Init runtime
 			opts := &runtime.Options{
@@ -77,6 +79,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				MetastoreDSN:         conf.MetastoreURL,
 				QueryCacheSize:       conf.QueryCacheSize,
 				AllowHostCredentials: conf.AllowHostCredentials,
+				SafeSourceRefresh:    conf.SafeSourceRefresh,
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {

@@ -21,11 +21,11 @@ import (
 )
 
 type ReconcileConfig struct {
-	DryRun         bool
-	Strict         bool
-	ChangedPaths   []string
-	ForcedPaths    []string
-	PersistSources bool
+	DryRun            bool
+	Strict            bool
+	ChangedPaths      []string
+	ForcedPaths       []string
+	SafeSourceRefresh bool
 }
 
 type ReconcileResult struct {
@@ -311,7 +311,7 @@ func (s *Service) runMigrationItems(
 		}
 
 		if failed && !conf.DryRun {
-			shouldDelete := !conf.PersistSources || item.NewCatalog.Type != drivers.ObjectTypeSource
+			shouldDelete := !conf.SafeSourceRefresh || item.NewCatalog.Type != drivers.ObjectTypeSource
 			var err error
 			if shouldDelete {
 				// remove entity from catalog and OLAP if it failed validation or during migration
