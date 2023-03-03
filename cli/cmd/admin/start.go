@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/spf13/cobra"
@@ -42,6 +44,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 		Use:   "start",
 		Short: "Start admin server",
 		Run: func(cmd *cobra.Command, args []string) {
+			sp := cmdutil.GetSpinner(4, "Starting admin...")
+			sp.Start()
+			// Just for spinner
+			time.Sleep(2 * time.Second)
+
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -94,8 +101,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx) })
+
+			sp.Stop()
 			err = group.Wait()
 			if err != nil {
+				sp.Stop()
 				logger.Fatal("server crashed", zap.Error(err))
 			}
 

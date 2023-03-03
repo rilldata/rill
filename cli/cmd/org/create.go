@@ -3,8 +3,10 @@ package org
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -18,6 +20,11 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			sp := cmdutil.GetSpinner(4, "Creating org...")
+			sp.Start()
+			// Just for spinner, will have to remove it
+			time.Sleep(2 * time.Second)
+
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken)
 			if err != nil {
 				return err
@@ -32,6 +39,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			sp.Stop()
 			fmt.Printf("Created organization: %v\n", org)
 			return nil
 		},
