@@ -86,7 +86,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
-		cmd.PersistentFlags().StringVar(&cfg.AdminToken, "api-token", "1", "Token for authenticating with the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminToken, "api-token", cfg.AdminToken, "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}
 

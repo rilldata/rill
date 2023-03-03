@@ -1,7 +1,6 @@
 package cmdutil
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -12,11 +11,12 @@ import (
 
 func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		// This will just check if token is present in the config
 		if cfg.IsAuthenticated() {
 			return nil
 		}
 
-		return errors.New("not authenticated")
+		return fmt.Errorf("not authenticated")
 	}
 }
 
