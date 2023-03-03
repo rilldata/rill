@@ -7,6 +7,7 @@ type Config struct {
 	AdminURL     string
 	AdminHTTPURL string
 	AdminToken   string
+	DefaultOrg   string
 }
 
 func (c Config) IsDev() bool {

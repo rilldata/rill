@@ -15,13 +15,13 @@ import (
 const _connectURL = "%s/github-connect/organizations/%s/projects?remote=remote&project_name=project&prod_branch=branch"
 
 func ConnectCmd(cfg *config.Config) *cobra.Command {
-	var name, displayName, prodBranch, projectPath, orgName string
+	var name, displayName, prodBranch, projectPath string
 	var public bool
 
 	connectCmd := &cobra.Command{
 		Use:   "connect",
 		Args:  cobra.ExactArgs(1),
-		Short: "Connect",
+		Short: "Connect project to rill cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -41,7 +41,8 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("Only github hosted repos are supported at this point, please push repo to github")
 			}
 
-			url, err := url.Parse(fmt.Sprintf(_connectURL, cfg.AdminHTTPURL, orgName))
+			org := cfg.DefaultOrg
+			url, err := url.Parse(fmt.Sprintf(_connectURL, cfg.AdminHTTPURL, org))
 			if err != nil {
 				return err
 			}
@@ -58,8 +59,6 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().SortFlags = false
 
 	connectCmd.Flags().StringVar(&name, "name", "noname", "Name")
-	// todo :: handle orgs
-	connectCmd.Flags().StringVar(&orgName, "org-name", "app-org", "Org Name")
 	connectCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
 	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Public")
