@@ -23,7 +23,8 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.FindProject(context.Background(), &adminv1.FindProjectRequest{
-				Name: args[0],
+				Organization: cfg.DefaultOrg,
+				Name:         args[0],
 			})
 			if err != nil {
 				return err

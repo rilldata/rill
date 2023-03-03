@@ -25,7 +25,8 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
-				Name: args[0],
+				Organization: cfg.DefaultOrg,
+				Name:         args[0],
 			})
 			if err != nil {
 				return err
