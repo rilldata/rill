@@ -31,6 +31,5 @@ func (v Version) IsDev() bool {
 }
 
 func (c *Config) IsAuthenticated() bool {
-	fmt.Println("Admin token is:", c.AdminToken, " and URL is:", c.AdminURL)
 	return (c.AdminToken != "" && c.AdminURL != "")
 }
