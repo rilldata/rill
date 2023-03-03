@@ -98,8 +98,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Run server
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
-			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx) })
+			group.Go(func() error { return srv.ServeGRPC(cctx) })
+			group.Go(func() error { return srv.ServeHTTP(cctx) })
 
 			sp.Stop()
 			err = group.Wait()

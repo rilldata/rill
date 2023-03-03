@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jroimartin/gocui"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -52,14 +51,6 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 				fmt.Println("\nVisit our documentation for more examples: https://docs.rilldata.com")
 				return nil
 			}
-
-			// g, err := gocui.NewGui(gocui.OutputNormal)
-			// if err != nil {
-			// 	log.Panicln(err)
-			// }
-			// defer g.Close()
-
-			// g.SetManagerFunc(layout)
 
 			fmt.Println("This application is extremely alpha and we want to hear from you if you have any questions or ideas to share!")
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
@@ -114,15 +105,4 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	initCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
 
 	return initCmd
-}
-
-func layout(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-	if v, err := g.SetView("This application is extremely alpha and we want to hear from you if you have any questions or ideas to share!", maxX/2-7, maxY/2, maxX/2+7, maxY/2+2); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		fmt.Fprintln(v, "This application is extremely alpha and we want to hear from you if you have any questions or ideas to share!")
-	}
-	return nil
 }
