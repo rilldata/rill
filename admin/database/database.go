@@ -67,6 +67,17 @@ type DB interface {
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	CreateUserAuthToken(ctx context.Context, opts *CreateUserAuthTokenOptions) (*UserAuthToken, error)
 	DeleteUserAuthToken(ctx context.Context, id string) error
+
+	// CreateAuthCode inserts the authorization code data into the store.
+	CreateAuthCode(ctx context.Context, code *AuthCode) error
+	// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
+	FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*AuthCode, error)
+	// FindAuthCodeByUserCode retrieves the authorization code data from the store
+	FindAuthCodeByUserCode(ctx context.Context, userCode string) (*AuthCode, error)
+	// UpdateAuthCode updates the authorization code data in the store
+	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeApprovalState) error
+	// DeleteAuthCode deletes the authorization code data from the store
+	DeleteAuthCode(ctx context.Context, deviceCode string) error
 }
 
 // ErrNotFound is returned for single row queries that return no values.
@@ -82,6 +93,23 @@ const (
 	EntityUserAuthToken Entity = "UserAuthToken"
 	EntityClient        Entity = "Client"
 )
+
+type AuthCodeApprovalState int
+
+const (
+	Pending  AuthCodeApprovalState = 0
+	Approved AuthCodeApprovalState = 1
+	Rejected AuthCodeApprovalState = 2
+)
+
+type AuthCode struct {
+	DeviceCode    string                `db:"device_code"`
+	UserCode      string                `db:"user_code"`
+	Expiry        time.Time             `db:"expires_at"`
+	ApprovalState AuthCodeApprovalState `db:"approval_state"`
+	ClientID      string                `db:"client_id"`
+	UserID        string                `db:"user_id"`
+}
 
 // Organization represents a tenant.
 type Organization struct {

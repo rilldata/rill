@@ -227,3 +227,66 @@ func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	_, err := c.db.ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return err
 }
+
+// CreateAuthCode inserts the authorization code data into the store.
+func (c *connection) CreateAuthCode(ctx context.Context, code *database.AuthCode) error {
+	_, err := c.db.ExecContext(ctx,
+		"INSERT INTO device_code_auth (device_code, user_code, expires_at, approval_state, client_id, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
+		code.DeviceCode, code.UserCode, code.Expiry, code.ApprovalState, code.ClientID, code.UserID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
+func (c *connection) FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.AuthCode, error) {
+	authCode := &database.AuthCode{}
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE device_code = $1", deviceCode).StructScan(authCode)
+	if err != nil {
+		return nil, err
+	}
+	return authCode, nil
+}
+
+// FindAuthCodeByUserCode retrieves the authorization code data from the store
+func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string) (*database.AuthCode, error) {
+	authCode := &database.AuthCode{}
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE user_code = $1", userCode).StructScan(authCode)
+	if err != nil {
+		return nil, err
+	}
+	return authCode, nil
+}
+
+// UpdateAuthCode updates the authorization code data in the store
+func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeApprovalState) error {
+	res, err := c.db.ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2 WHERE user_code=$3", approvalState, userID, userCode)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return fmt.Errorf("could not update auth code, expected 1 row to be affected, got %d", rows)
+	}
+	return nil
+}
+
+// DeleteAuthCode deletes the authorization code data from the store
+func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) error {
+	res, err := c.db.ExecContext(ctx, "DELETE FROM device_code_auth WHERE device_code=$1", deviceCode)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return fmt.Errorf("could not delete auth code, expected 1 row to be affected, got %d", rows)
+	}
+	return nil
+}

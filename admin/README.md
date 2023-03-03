@@ -18,6 +18,7 @@ RILL_ADMIN_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afd
 RILL_ADMIN_AUTH_DOMAIN=gorillio-stage.auth0.com
 RILL_ADMIN_AUTH_CLIENT_ID=
 RILL_ADMIN_AUTH_CLIENT_SECRET=
+RILL_ADMIN_DEVICE_VERIFICATION_HOST=http://localhost:5173
 ```
 2. In a separate terminal, run Postgres in the background:
 ```
@@ -46,3 +47,9 @@ To add a new endpoint:
 2. Re-generate gRPC and OpenAPI interfaces by running `make proto.generate`
 3. Copy the new handler signature from the `AdminServiceServer` interface in `proto/gen/rill/admin/v1/api_grpc_pb.go`
 4. Paste the handler signature and implement it in a relevant file in `admin/server/`
+
+### CLI login
+For trying out CLI login add api-url parameter to point to local admin server like this:
+```
+go run ./cli auth login --api-url http://localhost:8080/
+```

@@ -27,18 +27,19 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Options struct {
-	HTTPPort         int
-	GRPCPort         int
-	ExternalURL      string
-	SessionKeyPairs  [][]byte
-	AllowedOrigins   []string
-	AuthDomain       string
-	AuthClientID     string
-	AuthClientSecret string
+	HTTPPort               int
+	GRPCPort               int
+	ExternalURL            string
+	SessionKeyPairs        [][]byte
+	AllowedOrigins         []string
+	AuthDomain             string
+	AuthClientID           string
+	AuthClientSecret       string
+	DeviceVerificationHost string
 }
 
 type Server struct {
@@ -198,6 +199,21 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		AllowCredentials: true,
 		// Set max age to 1 hour (default if not set is 5 seconds)
 		MaxAge: 60 * 60,
+	}
+
+	err = mux.HandlePath("POST", "/oauth/device_authorization", s.handleDeviceCodeRequest)
+	if err != nil {
+		panic(err)
+	}
+
+	err = mux.HandlePath("POST", "/oauth/device", s.authenticator.HTTPMiddleware(s.handleUserCodeConfirmation))
+	if err != nil {
+		panic(err)
+	}
+
+	err = mux.HandlePath("POST", "/oauth/token", s.getAccessToken)
+	if err != nil {
+		panic(err)
 	}
 
 	// Wrap mux with CORS middleware
