@@ -67,7 +67,7 @@ export function defaultSort(a, b) {
    * to the user if the nested type could easily be unnested into another simple column type
    * (e.g. low cardinality nested types may be better expressed as a VARCHAR or INTEGER)
    */
-  if (isNested(a.type) && isNested(a.type)) return sortByCardinality(a, b);
+  if (isNested(a.type) && isNested(b.type)) return sortByCardinality(a, b);
   /** for all other non-categorical types, sort by nullity (e.g. timestamps, numerics) */
   if (!CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type))
     return sortByNullity(b, a);
