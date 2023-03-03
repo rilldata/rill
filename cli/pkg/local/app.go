@@ -277,7 +277,7 @@ func (a *App) ReconcileSource(sourcePath string) error {
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
 	// Get analytics info
-	installID, enabled, err := dotrill.GetAnalytics()
+	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}

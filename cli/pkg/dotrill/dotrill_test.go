@@ -67,27 +67,27 @@ func TestAnalytics(t *testing.T) {
 	overrideHomeDir(t)
 
 	// Test ID gets created
-	id1, enabled, err := GetAnalytics()
+	id1, enabled, err := AnalyticsInfo()
 	require.NoError(t, err)
 	require.True(t, enabled)
 	require.Len(t, id1, 36) // UUID string length
 
 	// Test ID is sticky
-	id2, enabled, err := GetAnalytics()
+	id2, enabled, err := AnalyticsInfo()
 	require.NoError(t, err)
 	require.True(t, enabled)
 	require.Equal(t, id1, id2)
 
 	// Test it parses analytics_enabled
 	Set(ConfigFilename, "analytics_enabled", "false")
-	id2, enabled, err = GetAnalytics()
+	id2, enabled, err = AnalyticsInfo()
 	require.NoError(t, err)
 	require.False(t, enabled)
 	require.Equal(t, id1, id2)
 
 	// Test it parses analytics_enabled
 	Set(ConfigFilename, "analytics_enabled", "true")
-	id2, enabled, err = GetAnalytics()
+	id2, enabled, err = AnalyticsInfo()
 	require.NoError(t, err)
 	require.True(t, enabled)
 	require.Equal(t, id1, id2)
@@ -95,7 +95,7 @@ func TestAnalytics(t *testing.T) {
 	// Test it recreates install_id if cleared
 	err = Set(StateFilename, "install_id", "")
 	require.NoError(t, err)
-	id3, enabled, err := GetAnalytics()
+	id3, enabled, err := AnalyticsInfo()
 	require.NoError(t, err)
 	require.True(t, enabled)
 	require.NotEqual(t, id1, id3)
@@ -104,7 +104,7 @@ func TestAnalytics(t *testing.T) {
 	// Test it recreates install_id if state removed
 	err = os.Remove(filepath.Join(homeDir, ".rill", "state.yaml"))
 	require.NoError(t, err)
-	id4, enabled, err := GetAnalytics()
+	id4, enabled, err := AnalyticsInfo()
 	require.NoError(t, err)
 	require.True(t, enabled)
 	require.NotEqual(t, id3, id4)
@@ -115,13 +115,9 @@ func TestAnalyticsMigration(t *testing.T) {
 	// setup resets the homeDir and provides helpers for testing ~/.rill/local.json
 	setup := func(t *testing.T) (string, func() bool) {
 		overrideHomeDir(t)
-
 		require.NoError(t, os.MkdirAll(filepath.Join(homeDir, ".rill"), os.ModePerm))
-
 		oldFilename := filepath.Join(homeDir, ".rill", "local.json")
-
 		oldExists := func() bool { _, err := os.Stat(oldFilename); return !os.IsNotExist(err) }
-
 		return oldFilename, oldExists
 	}
 
@@ -134,14 +130,14 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.True(t, oldExists())
 
 		// Check that it was set correctly
-		id, enabled, err := GetAnalytics()
+		id, enabled, err := AnalyticsInfo()
 		require.NoError(t, err)
 		require.Equal(t, "cd29afba-14ff-4cd1-98e6-050a9fb0fee9", id)
 		require.True(t, enabled)
 		require.False(t, oldExists())
 
 		// Repeat, to ensure same is reported second time
-		id, enabled, err = GetAnalytics()
+		id, enabled, err = AnalyticsInfo()
 		require.NoError(t, err)
 		require.Equal(t, "cd29afba-14ff-4cd1-98e6-050a9fb0fee9", id)
 		require.True(t, enabled)
@@ -154,7 +150,7 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, oldExists())
 
-		id, enabled, err := GetAnalytics()
+		id, enabled, err := AnalyticsInfo()
 		require.NoError(t, err)
 		require.Equal(t, "cd29afba-14ff-4cd1-98e6-050a9fb0fee9", id)
 		require.True(t, enabled)
@@ -168,7 +164,7 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, oldExists())
 
-		id, enabled, err := GetAnalytics()
+		id, enabled, err := AnalyticsInfo()
 		require.NoError(t, err)
 		require.Equal(t, "cd29afba-14ff-4cd1-98e6-050a9fb0fee9", id)
 		require.False(t, enabled)
@@ -182,7 +178,7 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, oldExists())
 
-		id, enabled, err := GetAnalytics()
+		id, enabled, err := AnalyticsInfo()
 		require.NoError(t, err)
 		require.NotEqual(t, "cd29afba-14ff-4cd1-98e6-050a9fb0fee9", id)
 		require.Len(t, id, 36) // UUID string length
@@ -190,7 +186,7 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.True(t, oldExists())
 
 		// Check that second time is persistant, despite malformed local.json
-		id2, enabled, err := GetAnalytics()
+		id2, enabled, err := AnalyticsInfo()
 		require.NoError(t, err)
 		require.Equal(t, id, id2)
 		require.True(t, enabled)

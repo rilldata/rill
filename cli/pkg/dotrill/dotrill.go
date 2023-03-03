@@ -1,3 +1,4 @@
+// Package dotrill implements setting and getting key-value pairs in YAML files in ~/.rill.
 package dotrill
 
 import (
@@ -13,9 +14,9 @@ import (
 
 // Constants for YAML files
 const (
-	ConfigFilename      = "config.yaml"
-	CredentialsFilename = "credentials.yaml"
-	StateFilename       = "state.yaml"
+	ConfigFilename      = "config.yaml"      // For user-facing config
+	CredentialsFilename = "credentials.yaml" // For access tokens
+	StateFilename       = "state.yaml"       // For CLI state
 )
 
 // Constants for YAML keys
@@ -49,7 +50,7 @@ func GetAll(filename string) (map[string]string, error) {
 		return nil, err
 	}
 
-	var conf map[string]string
+	conf := map[string]string{}
 	err = yaml.Unmarshal(data, &conf)
 	if err != nil {
 		return nil, err
@@ -115,11 +116,11 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
-// GetAnalytics returns analytics info.
-// It loads a persistent install ID in ~/.rill/state.yaml.
+// AnalyticsInfo returns analytics info.
+// It loads a persistent install ID from ~/.rill/state.yaml (setting one if not found).
 // It gets analytics enabled/disabled info from ~/.rill/config.yaml (key "analytics_enabled").
 // It automatically migrates from the pre-v0.23 analytics config. See migrateOldAnalyticsConfig for details.
-func GetAnalytics() (installID string, enabled bool, err error) {
+func AnalyticsInfo() (installID string, enabled bool, err error) {
 	// Migrate from earlier analytics tracking, if necessary
 	err = migrateOldAnalyticsConfig()
 	if err != nil {
@@ -168,7 +169,7 @@ type oldAnalyticsConfig struct {
 //
 // Previously, analytics info was stored in ~/.rill/local.json. It included "installID" and "analyticsEnabled" fields.
 // We are deprecating it to centralize user-facing config in config.yaml and to prevent confusion around the local.json file.
-// It has been replaced with a config key (ConfigKeyAnalyticsEnabled) and an install ID stored separately in ~/.rill/install_id.
+// It has been replaced with a config key ("analytics_enabled") and an install ID stored separately in ~/.rill/state.yaml.
 func migrateOldAnalyticsConfig() error {
 	filename, err := resolveFilename("local.json", false)
 	if err != nil {
