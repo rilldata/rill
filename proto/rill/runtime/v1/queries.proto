@@ -124,6 +124,14 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
+
+  // Batch request with different queries
+  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query/batch",
+      body: "*"
+    };
+  }
 }
 
 // Request message for QueryService.Query
@@ -508,4 +516,75 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
+}
+
+enum QueryBatchType {
+  MetricsViewToplist = 0;
+  MetricsViewTimeSeries = 1;
+  MetricsViewTotals = 2;
+  ColumnRollupInterval = 3;
+  ColumnTopK = 4;
+  ColumnNullCount = 5;
+  ColumnDescriptiveStatistics = 6;
+  ColumnTimeGrain = 7;
+  ColumnNumericHistogram = 8;
+  ColumnRugHistogram = 9;
+  ColumnTimeRange = 10;
+  ColumnCardinality = 11;
+  ColumnTimeSeries = 12;
+  TableCardinality = 13;
+  TableColumns = 14;
+  TableRows = 15;
+}
+
+message QueryBatchSingleRequest {
+  int32 id = 1;
+  QueryBatchType type = 2;
+  oneof query {
+    MetricsViewToplistRequest metricsViewToplistRequest = 3;
+    MetricsViewTimeSeriesRequest metricsViewTimeSeriesRequest = 4;
+    MetricsViewTotalsRequest metricsViewTotalsRequest = 5;
+    ColumnRollupIntervalRequest columnRollupIntervalRequest = 6;
+    ColumnTopKRequest columnTopKRequest = 7;
+    ColumnNullCountRequest columnNullCountRequest = 8;
+    ColumnDescriptiveStatisticsRequest columnDescriptiveStatisticsRequest = 9;
+    ColumnTimeGrainRequest columnTimeGrainRequest = 10;
+    ColumnNumericHistogramRequest columnNumericHistogramRequest = 11;
+    ColumnRugHistogramRequest columnRugHistogramRequest = 12;
+    ColumnTimeRangeRequest columnTimeRangeRequest = 13;
+    ColumnCardinalityRequest columnCardinalityRequest = 14;
+    ColumnTimeSeriesRequest columnTimeSeriesRequest = 15;
+    TableCardinalityRequest tableCardinalityRequest = 16;
+    TableColumnsRequest tableColumnsRequest = 17;
+    TableRowsRequest tableRowsRequest = 18;
+  }
+}
+
+message QueryBatchRequest {
+  string instance_id = 1;
+  repeated QueryBatchSingleRequest queries = 2;
+}
+
+message QueryBatchResponse {
+  int32 id = 1;
+  QueryBatchType type = 2;
+  oneof query {
+    MetricsViewToplistResponse metricsViewToplistResponse = 3;
+    MetricsViewTimeSeriesResponse metricsViewTimeSeriesResponse = 4;
+    MetricsViewTotalsResponse metricsViewTotalsResponse = 5;
+    ColumnRollupIntervalResponse columnRollupIntervalResponse = 6;
+    ColumnTopKResponse columnTopKResponse = 7;
+    ColumnNullCountResponse columnNullCountResponse = 8;
+    ColumnDescriptiveStatisticsResponse columnDescriptiveStatisticsResponse = 9;
+    ColumnTimeGrainResponse columnTimeGrainResponse = 10;
+    ColumnNumericHistogramResponse columnNumericHistogramResponse = 11;
+    ColumnRugHistogramResponse columnRugHistogramResponse = 12;
+    ColumnTimeRangeResponse columnTimeRangeResponse = 13;
+    ColumnCardinalityResponse columnCardinalityResponse = 14;
+    ColumnTimeSeriesResponse columnTimeSeriesResponse = 15;
+    TableCardinalityResponse tableCardinalityResponse = 16;
+    TableColumnsResponse tableColumnsResponse = 17;
+    TableRowsResponse tableRowsResponse = 18;
+  }
+  string error = 19;
 }

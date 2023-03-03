@@ -1025,6 +1025,42 @@ paths:
             title: Request message for QueryService.Query
       tags:
         - QueryService
+  /v1/instances/{instanceId}/query/batch:
+    post:
+      summary: Batch request with different queries
+      operationId: QueryService_QueryBatch
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/definitions/rpcStatus'
+              result:
+                $ref: '#/definitions/v1QueryBatchResponse'
+            title: Stream result of v1QueryBatchResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              queries:
+                type: array
+                items:
+                  $ref: '#/definitions/v1QueryBatchSingleRequest'
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/reconcile:
     post:
       summary: |-
@@ -1468,16 +1504,55 @@ definitions:
       topK:
         $ref: '#/definitions/v1TopK'
     description: Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
+  v1ColumnCardinalityRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.ColumnCardinality. Returns the cardinality for a given column for table table_name
   v1ColumnCardinalityResponse:
     type: object
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1ColumnDescriptiveStatisticsRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.GetColumnDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
   v1ColumnDescriptiveStatisticsResponse:
     type: object
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
+  v1ColumnNullCountRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.ColumnNullCount. Returns the null count for a given column for table table_name
   v1ColumnNullCountResponse:
     type: object
     properties:
@@ -1485,12 +1560,39 @@ definitions:
         type: number
         format: double
     title: Response for QueryService.ColumnNullCount
+  v1ColumnNumericHistogramRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      histogramMethod:
+        $ref: '#/definitions/v1HistogramMethod'
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name
   v1ColumnNumericHistogramResponse:
     type: object
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
     title: Response for QueryService.ColumnNumericHistogram
+  v1ColumnRollupIntervalRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
   v1ColumnRollupIntervalResponse:
     type: object
     properties:
@@ -1502,27 +1604,112 @@ definitions:
       start:
         type: string
         format: date-time
+  v1ColumnRugHistogramRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.ColumnRugHistogram
   v1ColumnRugHistogramResponse:
     type: object
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
+  v1ColumnTimeGrainRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.ColumnTimeGrainRequest
   v1ColumnTimeGrainResponse:
     type: object
     properties:
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
     title: Response for QueryService.ColumnTimeGrain
+  v1ColumnTimeRangeRequest:
+    type: object
+    properties:
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    title: Request for QueryService.ColumnTimeRange
   v1ColumnTimeRangeResponse:
     type: object
     properties:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
+  v1ColumnTimeSeriesRequest:
+    type: object
+    properties:
+      filters:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      instanceId:
+        type: string
+      measures:
+        type: array
+        items:
+          $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
+      pixels:
+        type: integer
+        format: int32
+      priority:
+        type: integer
+        format: int32
+      sampleSize:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+      timeRange:
+        $ref: '#/definitions/v1TimeSeriesTimeRange'
+      timestampColumnName:
+        type: string
   v1ColumnTimeSeriesResponse:
     type: object
     properties:
       rollup:
         $ref: '#/definitions/v1TimeSeriesResponse'
+  v1ColumnTopKRequest:
+    type: object
+    properties:
+      agg:
+        type: string
+        title: default is count(*)
+      columnName:
+        type: string
+      instanceId:
+        type: string
+      k:
+        type: integer
+        format: int32
+        title: default is 50
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
+    description: Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
   v1ColumnTopKResponse:
     type: object
     properties:
@@ -1795,6 +1982,31 @@ definitions:
       name:
         type: string
     title: Sort clause for metrics view requests
+  v1MetricsViewTimeSeriesRequest:
+    type: object
+    properties:
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      instanceId:
+        type: string
+      measureNames:
+        type: array
+        items:
+          type: string
+      metricsViewName:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      timeEnd:
+        type: string
+        format: date-time
+      timeGranularity:
+        $ref: '#/definitions/v1TimeGrain'
+      timeStart:
+        type: string
+        format: date-time
+    title: Request message for QueryService.MetricsViewTimeSeries
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -1807,6 +2019,41 @@ definitions:
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
     title: Response message for QueryService.MetricsViewTimeSeries
+  v1MetricsViewToplistRequest:
+    type: object
+    properties:
+      dimensionName:
+        type: string
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      instanceId:
+        type: string
+      limit:
+        type: string
+        format: int64
+      measureNames:
+        type: array
+        items:
+          type: string
+      metricsViewName:
+        type: string
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+      sort:
+        type: array
+        items:
+          $ref: '#/definitions/v1MetricsViewSort'
+      timeEnd:
+        type: string
+        format: date-time
+      timeStart:
+        type: string
+        format: date-time
+    title: Request message for QueryService.MetricsViewToplist
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -1819,6 +2066,29 @@ definitions:
         items:
           $ref: '#/definitions/v1MetricsViewColumn'
     title: Response message for QueryService.MetricsViewToplist
+  v1MetricsViewTotalsRequest:
+    type: object
+    properties:
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      instanceId:
+        type: string
+      measureNames:
+        type: array
+        items:
+          type: string
+      metricsViewName:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      timeEnd:
+        type: string
+        format: date-time
+      timeStart:
+        type: string
+        format: date-time
+    title: Request message for QueryService.MetricsViewTotals
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -1984,6 +2254,108 @@ definitions:
         type: string
         title: 'TODO: Redundant, should be removed (but frontend currently uses it)'
     title: Response message for RuntimeService.PutFile
+  v1QueryBatchResponse:
+    type: object
+    properties:
+      columnCardinalityResponse:
+        $ref: '#/definitions/v1ColumnCardinalityResponse'
+      columnDescriptiveStatisticsResponse:
+        $ref: '#/definitions/v1ColumnDescriptiveStatisticsResponse'
+      columnNullCountResponse:
+        $ref: '#/definitions/v1ColumnNullCountResponse'
+      columnNumericHistogramResponse:
+        $ref: '#/definitions/v1ColumnNumericHistogramResponse'
+      columnRollupIntervalResponse:
+        $ref: '#/definitions/v1ColumnRollupIntervalResponse'
+      columnRugHistogramResponse:
+        $ref: '#/definitions/v1ColumnRugHistogramResponse'
+      columnTimeGrainResponse:
+        $ref: '#/definitions/v1ColumnTimeGrainResponse'
+      columnTimeRangeResponse:
+        $ref: '#/definitions/v1ColumnTimeRangeResponse'
+      columnTimeSeriesResponse:
+        $ref: '#/definitions/v1ColumnTimeSeriesResponse'
+      columnTopKResponse:
+        $ref: '#/definitions/v1ColumnTopKResponse'
+      error:
+        type: string
+      id:
+        type: integer
+        format: int32
+      metricsViewTimeSeriesResponse:
+        $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
+      metricsViewToplistResponse:
+        $ref: '#/definitions/v1MetricsViewToplistResponse'
+      metricsViewTotalsResponse:
+        $ref: '#/definitions/v1MetricsViewTotalsResponse'
+      tableCardinalityResponse:
+        $ref: '#/definitions/v1TableCardinalityResponse'
+      tableColumnsResponse:
+        $ref: '#/definitions/v1TableColumnsResponse'
+      tableRowsResponse:
+        $ref: '#/definitions/v1TableRowsResponse'
+      type:
+        $ref: '#/definitions/v1QueryBatchType'
+  v1QueryBatchSingleRequest:
+    type: object
+    properties:
+      columnCardinalityRequest:
+        $ref: '#/definitions/v1ColumnCardinalityRequest'
+      columnDescriptiveStatisticsRequest:
+        $ref: '#/definitions/v1ColumnDescriptiveStatisticsRequest'
+      columnNullCountRequest:
+        $ref: '#/definitions/v1ColumnNullCountRequest'
+      columnNumericHistogramRequest:
+        $ref: '#/definitions/v1ColumnNumericHistogramRequest'
+      columnRollupIntervalRequest:
+        $ref: '#/definitions/v1ColumnRollupIntervalRequest'
+      columnRugHistogramRequest:
+        $ref: '#/definitions/v1ColumnRugHistogramRequest'
+      columnTimeGrainRequest:
+        $ref: '#/definitions/v1ColumnTimeGrainRequest'
+      columnTimeRangeRequest:
+        $ref: '#/definitions/v1ColumnTimeRangeRequest'
+      columnTimeSeriesRequest:
+        $ref: '#/definitions/v1ColumnTimeSeriesRequest'
+      columnTopKRequest:
+        $ref: '#/definitions/v1ColumnTopKRequest'
+      id:
+        type: integer
+        format: int32
+      metricsViewTimeSeriesRequest:
+        $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
+      metricsViewToplistRequest:
+        $ref: '#/definitions/v1MetricsViewToplistRequest'
+      metricsViewTotalsRequest:
+        $ref: '#/definitions/v1MetricsViewTotalsRequest'
+      tableCardinalityRequest:
+        $ref: '#/definitions/v1TableCardinalityRequest'
+      tableColumnsRequest:
+        $ref: '#/definitions/v1TableColumnsRequest'
+      tableRowsRequest:
+        $ref: '#/definitions/v1TableRowsRequest'
+      type:
+        $ref: '#/definitions/v1QueryBatchType'
+  v1QueryBatchType:
+    type: string
+    enum:
+      - MetricsViewToplist
+      - MetricsViewTimeSeries
+      - MetricsViewTotals
+      - ColumnRollupInterval
+      - ColumnTopK
+      - ColumnNullCount
+      - ColumnDescriptiveStatistics
+      - ColumnTimeGrain
+      - ColumnNumericHistogram
+      - ColumnRugHistogram
+      - ColumnTimeRange
+      - ColumnCardinality
+      - ColumnTimeSeries
+      - TableCardinality
+      - TableColumns
+      - TableRows
+    default: MetricsViewToplist
   v1QueryResponse:
     type: object
     properties:
@@ -2192,12 +2564,32 @@ definitions:
       Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
       scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
       have managed = false.
+  v1TableCardinalityRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
   v1TableCardinalityResponse:
     type: object
     properties:
       cardinality:
         type: string
         format: int64
+  v1TableColumnsRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
   v1TableColumnsResponse:
     type: object
     properties:
@@ -2205,6 +2597,19 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1ProfileColumn'
+  v1TableRowsRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      limit:
+        type: integer
+        format: int32
+      priority:
+        type: integer
+        format: int32
+      tableName:
+        type: string
   v1TableRowsResponse:
     type: object
     properties:

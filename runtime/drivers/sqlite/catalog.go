@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,6 +32,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
 		panic(err)
 	}
 	defer rows.Close()
@@ -42,6 +46,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 
 		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil
+			}
 			panic(err)
 		}
 

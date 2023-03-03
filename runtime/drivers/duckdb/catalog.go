@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,6 +31,9 @@ func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*d
 func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
 		panic(err)
 	}
 	defer func() { _ = release() }()
@@ -37,6 +41,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 	sql := fmt.Sprintf("SELECT name, type, object, path, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 	rows, err := conn.QueryxContext(ctx, sql, args...)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
 		panic(err)
 	}
 	defer rows.Close()
@@ -48,6 +55,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 
 		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil
+			}
 			panic(err)
 		}
 

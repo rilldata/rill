@@ -15,6 +15,15 @@ This is mainly used by UI to reconcile paths missing in catalog and get errors i
   strict?: boolean;
 };
 
+export type QueryServiceQueryBatch200 = {
+  error?: RpcStatus;
+  result?: V1QueryBatchResponse;
+};
+
+export type QueryServiceQueryBatchBody = {
+  queries?: V1QueryBatchSingleRequest[];
+};
+
 export type QueryServiceQueryBody = {
   args?: unknown[];
   dryRun?: boolean;
@@ -258,12 +267,31 @@ export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
 }
 
+export interface V1TableRowsRequest {
+  instanceId?: string;
+  limit?: number;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
 }
 
+export interface V1TableColumnsRequest {
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1TableCardinalityResponse {
   cardinality?: string;
+}
+
+export interface V1TableCardinalityRequest {
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
 }
 
 export interface V1StructType {
@@ -296,6 +324,16 @@ export interface V1Source {
 
 export interface V1RenameFileResponse {
   [key: string]: any;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
 }
 
 export interface V1RenameFileAndReconcileRequest {
@@ -362,16 +400,6 @@ Only applicable if file_path is set. */
   startLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-}
-
 export interface V1ReconcileResponse {
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
@@ -387,6 +415,72 @@ export type V1QueryResponseDataItem = { [key: string]: any };
 export interface V1QueryResponse {
   data?: V1QueryResponseDataItem[];
   meta?: V1StructType;
+}
+
+export type V1QueryBatchType =
+  typeof V1QueryBatchType[keyof typeof V1QueryBatchType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1QueryBatchType = {
+  MetricsViewToplist: "MetricsViewToplist",
+  MetricsViewTimeSeries: "MetricsViewTimeSeries",
+  MetricsViewTotals: "MetricsViewTotals",
+  ColumnRollupInterval: "ColumnRollupInterval",
+  ColumnTopK: "ColumnTopK",
+  ColumnNullCount: "ColumnNullCount",
+  ColumnDescriptiveStatistics: "ColumnDescriptiveStatistics",
+  ColumnTimeGrain: "ColumnTimeGrain",
+  ColumnNumericHistogram: "ColumnNumericHistogram",
+  ColumnRugHistogram: "ColumnRugHistogram",
+  ColumnTimeRange: "ColumnTimeRange",
+  ColumnCardinality: "ColumnCardinality",
+  ColumnTimeSeries: "ColumnTimeSeries",
+  TableCardinality: "TableCardinality",
+  TableColumns: "TableColumns",
+  TableRows: "TableRows",
+} as const;
+
+export interface V1QueryBatchSingleRequest {
+  columnCardinalityRequest?: V1ColumnCardinalityRequest;
+  columnDescriptiveStatisticsRequest?: V1ColumnDescriptiveStatisticsRequest;
+  columnNullCountRequest?: V1ColumnNullCountRequest;
+  columnNumericHistogramRequest?: V1ColumnNumericHistogramRequest;
+  columnRollupIntervalRequest?: V1ColumnRollupIntervalRequest;
+  columnRugHistogramRequest?: V1ColumnRugHistogramRequest;
+  columnTimeGrainRequest?: V1ColumnTimeGrainRequest;
+  columnTimeRangeRequest?: V1ColumnTimeRangeRequest;
+  columnTimeSeriesRequest?: V1ColumnTimeSeriesRequest;
+  columnTopKRequest?: V1ColumnTopKRequest;
+  id?: number;
+  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
+  tableCardinalityRequest?: V1TableCardinalityRequest;
+  tableColumnsRequest?: V1TableColumnsRequest;
+  tableRowsRequest?: V1TableRowsRequest;
+  type?: V1QueryBatchType;
+}
+
+export interface V1QueryBatchResponse {
+  columnCardinalityResponse?: V1ColumnCardinalityResponse;
+  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
+  columnNullCountResponse?: V1ColumnNullCountResponse;
+  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
+  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
+  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
+  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
+  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
+  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
+  columnTopKResponse?: V1ColumnTopKResponse;
+  error?: string;
+  id?: number;
+  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
+  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
+  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
+  tableCardinalityResponse?: V1TableCardinalityResponse;
+  tableColumnsResponse?: V1TableColumnsResponse;
+  tableRowsResponse?: V1TableRowsResponse;
+  type?: V1QueryBatchType;
 }
 
 export interface V1PutFileResponse {
@@ -483,11 +577,6 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewToplistResponse {
-  data?: V1MetricsViewToplistResponseDataItem[];
-  meta?: V1MetricsViewColumn[];
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
   meta?: V1MetricsViewColumn[];
@@ -503,10 +592,50 @@ export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
 }
 
+export interface V1MetricsViewTotalsRequest {
+  filter?: V1MetricsViewFilter;
+  instanceId?: string;
+  measureNames?: string[];
+  metricsViewName?: string;
+  priority?: number;
+  timeEnd?: string;
+  timeStart?: string;
+}
+
+export interface V1MetricsViewToplistRequest {
+  dimensionName?: string;
+  filter?: V1MetricsViewFilter;
+  instanceId?: string;
+  limit?: string;
+  measureNames?: string[];
+  metricsViewName?: string;
+  offset?: string;
+  priority?: number;
+  sort?: V1MetricsViewSort[];
+  timeEnd?: string;
+  timeStart?: string;
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  filter?: V1MetricsViewFilter;
+  instanceId?: string;
+  measureNames?: string[];
+  metricsViewName?: string;
+  priority?: number;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  timeStart?: string;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   nullable?: boolean;
   type?: string;
+}
+
+export interface V1MetricsViewToplistResponse {
+  data?: V1MetricsViewToplistResponseDataItem[];
+  meta?: V1MetricsViewColumn[];
 }
 
 export interface V1MetricsView {
@@ -590,6 +719,10 @@ export interface V1GetFileResponse {
   updatedOn?: string;
 }
 
+export interface V1GetCatalogEntryResponse {
+  entry?: V1CatalogEntry;
+}
+
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -651,20 +784,65 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
+/**
+ * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
+ */
+export interface V1ColumnTopKRequest {
+  agg?: string;
+  columnName?: string;
+  instanceId?: string;
+  k?: number;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1ColumnTimeSeriesResponse {
   rollup?: V1TimeSeriesResponse;
+}
+
+export interface V1ColumnTimeSeriesRequest {
+  filters?: V1MetricsViewFilter;
+  instanceId?: string;
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  pixels?: number;
+  priority?: number;
+  sampleSize?: number;
+  tableName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  timestampColumnName?: string;
 }
 
 export interface V1ColumnTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
 
+export interface V1ColumnTimeRangeRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1ColumnTimeGrainResponse {
   timeGrain?: V1TimeGrain;
 }
 
+export interface V1ColumnTimeGrainRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1ColumnRugHistogramResponse {
   numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnRugHistogramRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
 }
 
 export interface V1ColumnRollupIntervalResponse {
@@ -673,16 +851,56 @@ export interface V1ColumnRollupIntervalResponse {
   start?: string;
 }
 
+export interface V1ColumnRollupIntervalRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1ColumnNumericHistogramResponse {
   numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnNumericHistogramRequest {
+  columnName?: string;
+  histogramMethod?: V1HistogramMethod;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
 }
 
 export interface V1ColumnNullCountResponse {
   count?: number;
 }
 
+export interface V1ColumnNullCountRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
+}
+
 export interface V1ColumnDescriptiveStatisticsResponse {
   numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnDescriptiveStatisticsRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
+}
+
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1ColumnCardinalityRequest {
+  columnName?: string;
+  instanceId?: string;
+  priority?: number;
+  tableName?: string;
 }
 
 /**
@@ -691,10 +909,6 @@ export interface V1ColumnDescriptiveStatisticsResponse {
 export interface V1CategoricalSummary {
   cardinality?: number;
   topK?: V1TopK;
-}
-
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {
@@ -711,10 +925,6 @@ export interface V1CatalogEntry {
   source?: V1Source;
   table?: V1Table;
   updatedOn?: string;
-}
-
-export interface V1GetCatalogEntryResponse {
-  entry?: V1CatalogEntry;
 }
 
 export interface Runtimev1Type {
