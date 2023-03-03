@@ -56,7 +56,7 @@
           ? MEASURE_CONFIG.container.width.full
           : MEASURE_CONFIG.container.width.breakpoint
       }px minmax(355px, auto)`
-    : "max-content minmax(355px, auto)";
+    : "min-content minmax(355px, auto)";
 </script>
 
 <WorkspaceContainer

@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { MEASURE_CONFIG } from "../config";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -52,6 +53,8 @@
   let measuresWrapper;
   let measuresHeight = [];
   let measureGridHeights = [];
+
+  let containerWidths = MEASURE_CONFIG.bigNumber.widthWithoutChart;
 
   function getMeasureHeightsForColumn(measuresHeight, numColumns) {
     const recalculatedHeights = [...measuresHeight];
@@ -154,7 +157,7 @@
   use:listenToNodeResize
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:margin-top="{GRID_MARGIN_TOP}px"
-  style:min-width="240px"
+  style:width={containerWidths[numColumns]}
 >
   <div
     bind:this={measuresWrapper}
