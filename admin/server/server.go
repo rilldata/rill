@@ -15,7 +15,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
@@ -26,11 +26,10 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// hi
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	logger *zap.Logger
-	db     database.DB
+	admin  *admin.Service
 	conf   Config
 	auth   *Authenticator
 }
@@ -47,7 +46,7 @@ type Config struct {
 	SessionSecret    string
 }
 
-func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
 	auth, err := newAuthenticator(context.Background(), conf)
 	if err != nil {
 		return nil, err
@@ -55,7 +54,7 @@ func New(logger *zap.Logger, db database.DB, conf Config) (*Server, error) {
 
 	return &Server{
 		logger: logger,
-		db:     db,
+		admin:  adm,
 		conf:   conf,
 		auth:   auth,
 	}, nil

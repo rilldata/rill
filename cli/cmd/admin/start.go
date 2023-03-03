@@ -8,7 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -69,19 +69,18 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Init db
-			db, err := database.Open(conf.DatabaseDriver, conf.DatabaseURL)
-			if err != nil {
-				logger.Fatal("error connecting to database", zap.Error(err))
+			// Init admin service
+			admOpts := &admin.Options{
+				DatabaseDriver: conf.DatabaseDriver,
+				DatabaseDSN:    conf.DatabaseURL,
 			}
-
-			// Auto-run migrations
-			err = db.Migrate(context.Background())
+			adm, err := admin.New(admOpts, logger)
 			if err != nil {
-				logger.Fatal("error migrating database", zap.Error(err))
+				logger.Fatal("error creating service", zap.Error(err))
 			}
+			defer adm.Close()
 
-			// Init server
+			// Init admin server
 			srvConf := server.Config{
 				HTTPPort:         conf.HTTPPort,
 				GRPCPort:         conf.GRPCPort,
@@ -91,7 +90,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthCallbackURL:  conf.AuthCallbackURL,
 				SessionSecret:    conf.SessionSecret,
 			}
-			s, err := server.New(logger, db, srvConf)
+			srv, err := server.New(logger, adm, srvConf)
 			if err != nil {
 				logger.Fatal("error creating server", zap.Error(err))
 			}
