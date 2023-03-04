@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gorilla/sessions"
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
@@ -19,22 +21,13 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
-
-type Server struct {
-	adminv1.UnsafeAdminServiceServer
-	logger *zap.Logger
-	admin  *admin.Service
-	conf   Config
-	auth   *Authenticator
-}
-
-var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 type Config struct {
 	HTTPPort         int
@@ -43,20 +36,44 @@ type Config struct {
 	AuthClientID     string
 	AuthClientSecret string
 	AuthCallbackURL  string
-	SessionSecret    string
+	SessionKeyPairs  [][]byte
 }
 
-func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
-	auth, err := newAuthenticator(context.Background(), conf)
+type Server struct {
+	adminv1.UnsafeAdminServiceServer
+	logger  *zap.Logger
+	admin   *admin.Service
+	conf    *Config
+	cookies *sessions.CookieStore
+	oidc    *oidc.Provider
+	oauth2  oauth2.Config
+}
+
+var _ adminv1.AdminServiceServer = (*Server)(nil)
+
+func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) {
+	cookies := sessions.NewCookieStore(conf.SessionKeyPairs...)
+
+	oidcProvider, err := oidc.NewProvider(context.Background(), "https://"+conf.AuthDomain+"/")
 	if err != nil {
 		return nil, err
 	}
 
+	oauth2Config := oauth2.Config{
+		ClientID:     conf.AuthClientID,
+		ClientSecret: conf.AuthClientSecret,
+		RedirectURL:  conf.AuthCallbackURL,
+		Endpoint:     oidcProvider.Endpoint(),
+		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
+	}
+
 	return &Server{
-		logger: logger,
-		admin:  adm,
-		conf:   conf,
-		auth:   auth,
+		logger:  logger,
+		admin:   adm,
+		conf:    conf,
+		cookies: cookies,
+		oidc:    oidcProvider,
+		oauth2:  oauth2Config,
 	}, nil
 }
 
@@ -140,22 +157,17 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		panic(err)
 	}
 
-	err = mux.HandlePath("GET", "/auth/callback", s.callback)
+	err = mux.HandlePath("GET", "/auth/callback", s.authLoginCallback)
 	if err != nil {
 		panic(err)
 	}
 
-	err = mux.HandlePath("GET", "/auth/user", s.user)
+	err = mux.HandlePath("GET", "/auth/logout", s.authLogout)
 	if err != nil {
 		panic(err)
 	}
 
-	err = mux.HandlePath("GET", "/auth/logout", s.logout)
-	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout/callback", s.logoutCallback)
+	err = mux.HandlePath("GET", "/auth/logout/callback", s.authLogoutCallback)
 	if err != nil {
 		panic(err)
 	}
