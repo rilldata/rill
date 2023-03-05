@@ -44,7 +44,9 @@ export class HttpRequestQueue {
   private readonly nameHeap = getHeapByName();
   private activeCount = 0;
 
-  public constructor();
+  public constructor() {
+    // no-op
+  }
 
   public add(requestOptions: FetchWrapperOptions) {
     // prepend after parsing to make parsing faster
