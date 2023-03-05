@@ -43,8 +43,8 @@ export const formatInteger = format(",");
 const formatRate = format(".1f");
 
 /**  */
-export const singleDigitPercentage = format(".0%");
-
+export const formatSimplePercentage = format(".0%");
+export const formatMetricChangePercentage = format("+.1%");
 /**
  * changes precision depending on the
  */

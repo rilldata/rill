@@ -6,7 +6,7 @@
     DATA_TYPE_COLORS,
     isNested,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { singleDigitPercentage } from "@rilldata/web-common/lib/formatters";
+  import { formatSimplePercentage } from "@rilldata/web-common/lib/formatters";
   import BarAndLabel from "../../../BarAndLabel.svelte";
 
   export let type: string;
@@ -31,7 +31,7 @@
         style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
         class="ui-copy-number"
         class:text-gray-300={nullCount === 0}
-        >{singleDigitPercentage(percentage)}</span
+        >{formatSimplePercentage(percentage)}</span
       >
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">
@@ -39,7 +39,7 @@
         what percentage of values are null?
       </svelte:fragment>
       {#if nullCount > 0}
-        {singleDigitPercentage(percentage)} of the values are null
+        {formatSimplePercentage(percentage)} of the values are null
       {:else}
         no null values in this column
       {/if}

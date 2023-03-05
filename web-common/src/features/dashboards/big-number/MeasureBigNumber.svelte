@@ -4,6 +4,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { formatMetricChangePercentage } from "@rilldata/web-common/lib/formatters";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { humanizeDataType, NicelyFormattedTypes } from "../humanize-numbers";
@@ -38,7 +39,7 @@
   </Tooltip>
   <div
     class="ui-copy-muted relative"
-    style:font-size={withTimeseries ? "1.5rem" : "1.8rem"}
+    style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
     style:font-weight="light"
   >
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
@@ -56,14 +57,20 @@
             </WithTween>
           </div>
           {#if comparisonValue}
-            <div class="text-sm ui-copy-inactive">
+            <div
+              class="text-sm ui-copy-inactive ui-copy-number"
+              class:font-semibold={isComparisonPositive}
+            >
               <WithTween
                 value={comparisonValue}
                 tweenProps={{ duration: 500 }}
                 let:output
               >
                 {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
-                  {humanizeDataType(output, formatPresetEnum)}
+                  <span
+                    style:width="9.5px"
+                    class="inline-block"
+                  />{humanizeDataType(output, formatPresetEnum)}
                 {:else}
                   {output}
                 {/if}
@@ -72,15 +79,15 @@
           {/if}
           {#if comparisonPercChange}
             <div
-              class="text-sm
-              {isComparisonPositive ? 'text-green-600' : 'text-red-500'}"
+              class="text-sm ui-copy-number
+              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
             >
               <WithTween
                 value={comparisonPercChange}
                 tweenProps={{ duration: 500 }}
                 let:output
               >
-                {humanizeDataType(output, NicelyFormattedTypes.PERCENTAGE)}
+                {formatMetricChangePercentage(output)}
               </WithTween>
             </div>
           {/if}
