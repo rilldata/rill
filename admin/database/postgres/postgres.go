@@ -213,9 +213,9 @@ func (c *connection) FindUserAuthToken(ctx context.Context, id string) (*databas
 func (c *connection) CreateUserAuthToken(ctx context.Context, opts *database.CreateUserAuthTokenOptions) (*database.UserAuthToken, error) {
 	res := &database.UserAuthToken{}
 	err := c.db.QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, oauth_client_id)
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
 		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.OAuthClientID,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID,
 	).StructScan(res)
 	if err != nil {
 		return nil, err

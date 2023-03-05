@@ -86,6 +86,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
+			s.AuthStreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
@@ -93,6 +94,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
+			s.AuthUnaryServerInterceptor(),
 		),
 	)
 
@@ -143,7 +145,10 @@ func GRPCCodeToLevel(code codes.Code) logging.Level {
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
+	mux := gateway.NewServeMux(
+		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithMetadata(s.CookieAuthAnnotator),
+	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.conf.GRPCPort)
 	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)

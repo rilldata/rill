@@ -69,8 +69,21 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 }
 
+// ErrNotFound is returned for single row queries that return no values.
 var ErrNotFound = errors.New("database: not found")
 
+// Entity is an enum representing the entities in this package.
+type Entity string
+
+const (
+	OrganizationEntity  Entity = "Organization"
+	ProjectEntity       Entity = "Project"
+	UserEntity          Entity = "User"
+	UserAuthTokenEntity Entity = "UserAuthToken"
+	ClientEntity        Entity = "Client"
+)
+
+// Organization represents a tenant.
 type Organization struct {
 	ID          string
 	Name        string
@@ -79,6 +92,8 @@ type Organization struct {
 	UpdatedOn   time.Time `db:"updated_on"`
 }
 
+// Project represents one Git connection.
+// Projects belong to an organization.
 type Project struct {
 	ID             string
 	OrganizationID string `db:"organization_id"`
@@ -88,6 +103,8 @@ type Project struct {
 	UpdatedOn      time.Time `db:"updated_on"`
 }
 
+// User is a person registered in Rill.
+// Users may belong to multiple organizations and projects.
 type User struct {
 	ID          string
 	Email       string
@@ -97,19 +114,35 @@ type User struct {
 	UpdatedOn   time.Time `db:"updated_on"`
 }
 
+// UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
 	ID            string
 	SecretHash    []byte    `db:"secret_hash"`
 	UserID        string    `db:"user_id"`
 	DisplayName   string    `db:"display_name"`
-	OAuthClientID *string   `db:"oauth_client_id"`
+	OAuthClientID *string   `db:"auth_client_id"`
 	CreatedOn     time.Time `db:"created_on"`
 }
 
+// CreateUserAuthTokenOptions defines options for creating a UserAuthToken.
 type CreateUserAuthTokenOptions struct {
-	ID            string
-	SecretHash    []byte
-	UserID        string
-	DisplayName   string
-	OAuthClientID *string
+	ID           string
+	SecretHash   []byte
+	UserID       string
+	DisplayName  string
+	AuthClientID *string
 }
+
+// AuthClient is a client that requests and consumes auth tokens.
+type AuthClient struct {
+	ID          string
+	DisplayName string
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+// Hard-coded auth client IDs (created in the migrations).
+const (
+	RillWebClientID = "12345678-0000-0000-0000-000000000001"
+	RillCLIClientID = "12345678-0000-0000-0000-000000000002"
+)

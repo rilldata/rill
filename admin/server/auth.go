@@ -1,14 +1,26 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const authCookieName = "auth"
@@ -38,7 +50,10 @@ func (s *Server) authLogin(w http.ResponseWriter, r *http.Request, pathParams ma
 	sess.Values["state"] = state
 
 	// Set redirect URL in cookie to enable custom redirects after auth has completed
-	sess.Values["redirect"] = r.URL.Query().Get("redirect")
+	redirect := r.URL.Query().Get("redirect")
+	if redirect != "" {
+		sess.Values["redirect"] = redirect
+	}
 
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
@@ -131,14 +146,14 @@ func (s *Server) authLoginCallback(w http.ResponseWriter, r *http.Request, pathP
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := s.admin.IssueUserAuthToken(r.Context(), user.ID)
+	authToken, err := s.admin.IssueUserAuthToken(r.Context(), user.ID, database.RillWebClientID, "Browser session")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to issue API token: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
 	// Set auth token in cookie
-	sess.Values["access_token"] = authToken
+	sess.Values["access_token"] = authToken.Token().String()
 
 	// Get redirect destination
 	redirect, ok := sess.Values["redirect"].(string)
@@ -178,7 +193,10 @@ func (s *Server) authLogout(w http.ResponseWriter, r *http.Request, pathParams m
 	delete(sess.Values, "access_token")
 
 	// Set redirect URL in cookie to enable custom redirects after logout
-	sess.Values["redirect"] = r.URL.Query().Get("redirect")
+	redirect := r.URL.Query().Get("redirect")
+	if redirect != "" {
+		sess.Values["redirect"] = redirect
+	}
 
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
@@ -237,4 +255,163 @@ func (s *Server) authLogoutCallback(w http.ResponseWriter, r *http.Request, path
 
 	// Redirect to UI (usually)
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+// Claims resolves permissions for a requester.
+type Claims interface {
+	Subject() string
+}
+
+// claimsContextKey is used to set and get Claims on a request context.
+type claimsContextKey struct{}
+
+// GetClaims retrieves Claims from a request context.
+// It should only be used in handlers intercepted by UnaryServerInterceptor or StreamServerInterceptor.
+func GetClaims(ctx context.Context) Claims {
+	claims, ok := ctx.Value(claimsContextKey{}).(Claims)
+	if !ok {
+		return nil
+	}
+
+	return claims
+}
+
+// anonClaims represents claims for an unauthenticated user.
+type anonClaims struct{}
+
+func (c anonClaims) Subject() string {
+	return ""
+}
+
+// tokenClaims represents claims for an auth token.
+type tokenClaims struct {
+	token admin.AuthToken
+}
+
+func (c *tokenClaims) Subject() string {
+	return c.token.OwnerID()
+}
+
+// CookieAuthAnnotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.
+func (s *Server) CookieAuthAnnotator(ctx context.Context, r *http.Request) metadata.MD {
+	// Get auth cookie
+	sess, err := s.cookies.Get(r, authCookieName)
+	if err != nil {
+		return metadata.Pairs()
+	}
+
+	token, ok := sess.Values["access_token"].(string)
+	if ok && token != "" {
+		return metadata.Pairs("authorization", fmt.Sprintf("Bearer %s", token))
+	}
+
+	return metadata.Pairs()
+}
+
+// AuthUnaryServerInterceptor is a middleware for setting claims on runtime server requests.
+// The assigned claims can be retrieved using GetClaims. If the interceptor succeeds, a Claims value is guaranteed to be set on the ctx.
+func (s *Server) AuthUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		authHeader := metautils.ExtractIncoming(ctx).Get("authorization")
+		newCtx, err := s.parseClaimsFromBearer(ctx, authHeader)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+
+		return handler(newCtx, req)
+	}
+}
+
+// AuthStreamServerInterceptor is the streaming variant of UnaryServerInterceptor.
+func (s *Server) AuthStreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		authHeader := metautils.ExtractIncoming(ss.Context()).Get("authorization")
+		newCtx, err := s.parseClaimsFromBearer(ss.Context(), authHeader)
+		if err != nil {
+			return status.Error(codes.Unauthenticated, err.Error())
+		}
+
+		wrapped := grpc_middleware.WrapServerStream(ss)
+		wrapped.WrappedContext = newCtx
+
+		return handler(srv, wrapped)
+	}
+}
+
+// AuthHTTPMiddleware is a HTTP middleware variant of UnaryServerInterceptor.
+// It additionally supports reading access tokens from cookies.
+// It should be used for non-gRPC HTTP endpoints (CookieAuthAnnotator takes care of handling cookies in gRPC-gateway requests).
+func (s *Server) AuthHTTPMiddleware(next gateway.HandlerFunc) gateway.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		// Handle authorization header
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			newCtx, err := s.parseClaimsFromBearer(r.Context(), authHeader)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			next(w, r.WithContext(newCtx), pathParams)
+			return
+		}
+
+		// There was no authorization header. Try the cookie.
+		sess, err := s.cookies.Get(r, authCookieName)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Read access token from cookie
+		authToken, ok := sess.Values["access_token"].(string)
+		if ok && authToken != "" {
+			newCtx, err := s.parseClaimsFromToken(r.Context(), authToken)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			next(w, r.WithContext(newCtx), pathParams)
+			return
+		}
+
+		// No token was found. Set anonClaims.
+		newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+		next(w, r.WithContext(newCtx), pathParams)
+	}
+}
+
+func (s *Server) parseClaimsFromBearer(ctx context.Context, authorizationHeader string) (context.Context, error) {
+	// If authorization header is not set, we set anonClaims.
+	if authorizationHeader == "" {
+		ctx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})
+		return ctx, nil
+	}
+
+	// Extract bearer token
+	bearerToken := ""
+	if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
+		bearerToken = strings.TrimSpace(authorizationHeader[6:])
+	}
+	if bearerToken == "" {
+		return nil, errors.New("no bearer token found in authorization header")
+	}
+
+	return s.parseClaimsFromToken(ctx, bearerToken)
+}
+
+func (s *Server) parseClaimsFromToken(ctx context.Context, token string) (context.Context, error) {
+	validated, err := s.admin.ValidateAuthToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create claims
+	claims := &tokenClaims{
+		token: validated,
+	}
+
+	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
+	return ctx, nil
 }

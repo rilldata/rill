@@ -9,12 +9,24 @@ CREATE TABLE users (
 
 CREATE UNIQUE INDEX users_email_idx ON users (lower(email));
 
+CREATE TABLE auth_clients (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
+	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+INSERT INTO auth_clients (id, display_name)
+VALUES
+    ('12345678-0000-0000-0000-000000000001', 'Rill Web'),
+    ('12345678-0000-0000-0000-000000000002', 'Rill CLI');
+
 CREATE TABLE user_auth_tokens (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     secret_hash BYTEA NOT NULL,
-    user_id UUID NOT NULL REFERENCES users (id),
+    user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     display_name TEXT,
-    oauth_client_id UUID,
+    auth_client_id UUID REFERENCES auth_clients (id) ON DELETE SET NULL,
     created_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
