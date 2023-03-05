@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gorilla/sessions"
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
@@ -18,10 +17,10 @@ import (
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -41,12 +40,11 @@ type Config struct {
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger  *zap.Logger
-	admin   *admin.Service
-	conf    *Config
-	cookies *sessions.CookieStore
-	oidc    *oidc.Provider
-	oauth2  oauth2.Config
+	logger        *zap.Logger
+	admin         *admin.Service
+	conf          *Config
+	cookies       *sessions.CookieStore
+	authenticator *auth.Authenticator
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -54,26 +52,22 @@ var _ adminv1.AdminServiceServer = (*Server)(nil)
 func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) {
 	cookies := sessions.NewCookieStore(conf.SessionKeyPairs...)
 
-	oidcProvider, err := oidc.NewProvider(context.Background(), "https://"+conf.AuthDomain+"/")
+	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
+		AuthDomain:       conf.AuthDomain,
+		AuthClientID:     conf.AuthClientID,
+		AuthClientSecret: conf.AuthClientSecret,
+		AuthCallbackURL:  conf.AuthCallbackURL,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	oauth2Config := oauth2.Config{
-		ClientID:     conf.AuthClientID,
-		ClientSecret: conf.AuthClientSecret,
-		RedirectURL:  conf.AuthCallbackURL,
-		Endpoint:     oidcProvider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
-	}
-
 	return &Server{
-		logger:  logger,
-		admin:   adm,
-		conf:    conf,
-		cookies: cookies,
-		oidc:    oidcProvider,
-		oauth2:  oauth2Config,
+		logger:        logger,
+		admin:         adm,
+		conf:          conf,
+		cookies:       cookies,
+		authenticator: authenticator,
 	}, nil
 }
 
@@ -86,7 +80,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
-			s.AuthStreamServerInterceptor(),
+			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
@@ -94,7 +88,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
-			s.AuthUnaryServerInterceptor(),
+			s.authenticator.UnaryServerInterceptor(),
 		),
 	)
 
@@ -147,7 +141,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	mux := gateway.NewServeMux(
 		gateway.WithErrorHandler(HTTPErrorHandler),
-		gateway.WithMetadata(s.CookieAuthAnnotator),
+		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.conf.GRPCPort)
@@ -156,25 +150,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
-	// One-off REST-only path for multipart file upload
-	err = mux.HandlePath("GET", "/auth/login", s.authLogin)
+	// Add auth endpoints (not gRPC handlers, just regular HTTP endpoints on /auth/*)
+	err = s.authenticator.RegisterEndpoints(mux)
 	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("GET", "/auth/callback", s.authLoginCallback)
-	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout", s.authLogout)
-	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout/callback", s.authLogoutCallback)
-	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Register CORS
