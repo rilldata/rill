@@ -3,8 +3,8 @@
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
   import {
+    useQueryServiceColumnTimeRange,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -13,9 +13,11 @@
     exclusiveToInclusiveEndISOString,
     getDateFromISOString,
     getISOStringFromDate,
+    validateTimeRange,
   } from "./time-range-utils";
 
   export let metricViewName: string;
+  export let minTimeGrain: string;
 
   const dispatch = createEventDispatcher();
 
@@ -33,7 +35,7 @@
     }
   }
 
-  $: error = validateTimeRange(start, end);
+  $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
   $: disabled = !start || !end || !!error;
 
   let metricsViewQuery;
@@ -49,7 +51,7 @@
     $metricsViewQuery?.data?.entry?.metricsView?.model &&
     $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
-    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
+    timeRangeQuery = useQueryServiceColumnTimeRange(
       $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       {
@@ -64,14 +66,6 @@
   $: max = $timeRangeQuery.data.timeRangeSummary?.max
     ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
     : undefined;
-
-  function validateTimeRange(start: string, end: string) {
-    if (start > end) {
-      return "Start date must be before end date";
-    } else {
-      return undefined;
-    }
-  }
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC

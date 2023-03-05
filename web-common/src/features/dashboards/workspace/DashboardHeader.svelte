@@ -55,11 +55,7 @@
   }
 </script>
 
-<section
-  class="w-full flex flex-col"
-  id="header"
-  style:padding-left="{$navigationVisibilityTween * 24}px"
->
+<section class="w-full flex flex-col" id="header">
   <!-- top row
     title and call to action
   -->
@@ -69,7 +65,7 @@
   >
     <!-- title element -->
     <h1 style:line-height="1.1" style:margin-top="-1px">
-      <div class="pl-4" style:font-family="InterDisplay" style:font-size="20px">
+      <div style:font-family="InterDisplay" style:font-size="16px">
         {displayName || metricViewName}
       </div>
     </h1>
@@ -95,7 +91,7 @@
     {/if}
   </div>
   <!-- bottom row -->
-  <div class="px-2 pt-1">
+  <div class="-ml-3 p-1">
     <TimeControls {metricViewName} />
     {#key metricViewName}
       <Filters {metricViewName} />

@@ -19,7 +19,7 @@ The main feature-set component for dashboard filters
     MetricsViewFilterCond,
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
-  import { useRuntimeServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
+  import { useQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -103,7 +103,7 @@ The main feature-set component for dashboard filters
 
       // Use topList API to fetch the dimension names
       // We prune the measure values and use the dimension labels for the filter
-      topListQuery = useRuntimeServiceMetricsViewToplist(
+      topListQuery = useQueryServiceMetricsViewToplist(
         $runtime.instanceId,
         metricViewName,
         topListParams

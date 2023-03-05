@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 )
 
 // dropCmd represents the drop command, it requires min 1 args as source path
-func DropCmd(ver version.Version) *cobra.Command {
+func DropCmd(cfg *config.Config) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string
@@ -28,7 +28,7 @@ func DropCmd(ver version.Version) *cobra.Command {
 				return fmt.Errorf("not a valid source name: %s", sourceName)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, nil)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, nil)
 			if err != nil {
 				return err
 			}

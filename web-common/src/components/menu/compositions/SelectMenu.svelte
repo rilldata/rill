@@ -14,6 +14,7 @@ A slot is provided to change the text within the button.
   export let options;
   export let selection;
   export let tailwindClasses = undefined;
+  export let activeTailwindClasses = undefined;
   /** When true, will make the trigger element a block-level element.
    * This is most useful when embedding a select menu in a table or wherever
    * a block-level treatment is needed.
@@ -21,10 +22,17 @@ A slot is provided to change the text within the button.
   export let block = false;
   export let level: undefined | "error" = undefined;
   export let dark: boolean = undefined;
+  export let disabled = false;
+
+  /* For multiSelect maintain array of keys in the consumer */
+  export let multiSelect = false;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
   export let active = false;
+
+  export let paddingTop: number = 1;
+  export let paddingBottom: number = 1;
 
   if (dark) {
     setContext("rill:menu:dark", dark);
@@ -35,13 +43,16 @@ A slot is provided to change the text within the button.
 
 <!-- wrap a WithSelectMenu with a SelectButton -->
 <WithSelectMenu
+  {paddingTop}
+  {paddingBottom}
   {dark}
   {location}
   {alignment}
   {distance}
+  {disabled}
+  {multiSelect}
   on:select={(event) => {
-    /** TODO: change this to work for multiple selections later. */
-    selection = event.detail;
+    if (!multiSelect) selection = event.detail;
     dispatch("select", selection);
   }}
   bind:selection
@@ -51,10 +62,16 @@ A slot is provided to change the text within the button.
   let:active
 >
   <SelectButton
-    on:click={toggleMenu}
+    on:click={() => {
+      if (!disabled) {
+        toggleMenu();
+      }
+    }}
     {tailwindClasses}
+    {activeTailwindClasses}
     {active}
     {block}
+    {disabled}
     {level}
   >
     <slot>

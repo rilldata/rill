@@ -1,8 +1,8 @@
 import { beforeAll, beforeEach, describe, it } from "@jest/globals";
 import {
-  runtimeServiceGetCardinalityOfColumn,
-  runtimeServiceGetNumericHistogram,
-  RuntimeServiceGetNumericHistogramHistogramMethod,
+  queryServiceColumnCardinality,
+  queryServiceColumnNumericHistogram,
+  QueryServiceColumnNumericHistogramHistogramMethod,
 } from "@rilldata/web-common/runtime-client";
 import { UrlExtractorRegex } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueue";
 import type { RequestQueueEntry } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
@@ -249,16 +249,16 @@ function getProfilingQueries(table: string, cols: number) {
     ...Array(cols)
       .fill(0)
       .map((_, i) =>
-        runtimeServiceGetNumericHistogram("i", table, {
+        queryServiceColumnNumericHistogram("i", table, {
           columnName: `c${i}`,
           histogramMethod:
-            RuntimeServiceGetNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+            QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
         })
       ),
     ...Array(cols)
       .fill(0)
       .map((_, i) =>
-        runtimeServiceGetCardinalityOfColumn("i", table, {
+        queryServiceColumnCardinality("i", table, {
           columnName: `c${i}`,
         })
       ),

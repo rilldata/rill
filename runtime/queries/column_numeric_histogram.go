@@ -237,7 +237,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 				min(%[2]s) as min,
 				max(%[2]s) as max,
 				max(%[2]s) - min(%[2]s) as range
-			FROM %[1]s 
+			FROM %[1]s
 			WHERE %[2]s IS NOT NULL
 		`,
 		safeName(q.TableName),
@@ -269,16 +269,19 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 	startTick, endTick, gap := NiceAndStep(min, max, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
+	if gap == 1 {
+		bucketCount++
+	}
 
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 	histogramSQL := fmt.Sprintf(
 		`
 		WITH data_table AS (
-			SELECT %[1]s as %[2]s 
+			SELECT %[1]s as %[2]s
 			FROM %[3]s
 			WHERE %[2]s IS NOT NULL
 		), S AS (
-			SELECT 
+			SELECT
 				min(%[2]s) as minVal,
 				max(%[2]s) as maxVal,
 				(max(%[2]s) - min(%[2]s)) as range
@@ -292,11 +295,11 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 				(range * %[7]f::FLOAT + %[5]f) as low,
 				(range * %[7]f::FLOAT + %7f::FLOAT / 2 + %[5]f) as midpoint,
 				((range + 1) * %[7]f::FLOAT + %[5]f) as high
-			FROM range(0, %[4]d, 1) 
+			FROM range(0, %[4]d, 1)
 		),
 		-- bin the values
 		binned_data AS (
-			SELECT 
+			SELECT
 				FLOOR(%[4]d::FLOAT * ((value::FLOAT - %[5]f) / %[8]f)) as bucket
 			from values
 		),
@@ -316,9 +319,9 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		-- calculate the right edge, sine in histogram_stage we don't look at the values that
 		-- might be the largest.
 		right_edge AS (
-			SELECT count(*) as c from values WHERE value = %[6]f 
+			SELECT count(*) as c from values WHERE value = %[6]f
 		)
-		SELECT 
+		SELECT
 			bucket,
 			low,
 			high,

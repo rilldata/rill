@@ -15,8 +15,8 @@
   import {
     MetricsViewDimension,
     MetricsViewFilterCond,
-    useRuntimeServiceMetricsViewToplist,
-    useRuntimeServiceMetricsViewTotals,
+    useQueryServiceMetricsViewToplist,
+    useQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
@@ -149,7 +149,7 @@
       };
     }
 
-    topListQuery = useRuntimeServiceMetricsViewToplist(
+    topListQuery = useQueryServiceMetricsViewToplist(
       instanceId,
       metricViewName,
       topListParams
@@ -173,7 +173,7 @@
         },
       };
     }
-    totalsQuery = useRuntimeServiceMetricsViewTotals(
+    totalsQuery = useQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams

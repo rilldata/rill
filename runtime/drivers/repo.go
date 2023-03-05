@@ -18,6 +18,7 @@ type RepoStore interface {
 	Put(ctx context.Context, instID string, path string, reader io.Reader) error
 	Rename(ctx context.Context, instID string, fromPath string, toPath string) error
 	Delete(ctx context.Context, instID string, path string) error
+	Sync(ctx context.Context, instID string) error
 }
 
 type RepoObjectStat struct {

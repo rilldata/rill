@@ -18,6 +18,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,26 +27,57 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
+
 type Options struct {
-	HTTPPort int
-	GRPCPort int
+	HTTPPort        int
+	GRPCPort        int
+	AuthEnable      bool
+	AuthIssuerURL   string
+	AuthAudienceURL string
 }
 
 type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
+	runtimev1.UnsafeQueryServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
 	logger  *zap.Logger
+	aud     *auth.Audience
 }
 
-var _ runtimev1.RuntimeServiceServer = (*Server)(nil)
+var (
+	_ runtimev1.RuntimeServiceServer = (*Server)(nil)
+	_ runtimev1.QueryServiceServer   = (*Server)(nil)
+)
 
 func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
-	return &Server{
+	srv := &Server{
 		opts:    opts,
 		runtime: rt,
 		logger:  logger,
-	}, nil
+	}
+
+	if opts.AuthEnable {
+		aud, err := auth.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
+		if err != nil {
+			return nil, err
+		}
+		srv.aud = aud
+	}
+
+	return srv, nil
+}
+
+// Close should be called when the server is done
+func (s *Server) Close() error {
+	// TODO: This should probably trigger a server shutdown
+
+	if s.aud != nil {
+		s.aud.Close()
+	}
+
+	return nil
 }
 
 // ServeGRPC Starts the gRPC server.
@@ -57,6 +89,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
+			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
 			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
@@ -64,9 +97,11 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
+			auth.UnaryServerInterceptor(s.aud),
 		),
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)
+	runtimev1.RegisterQueryServiceServer(server, s)
 	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -121,14 +156,19 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
+	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	// One-off REST-only path for multipart file upload
-	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", s.UploadMultipartFile)
+	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.HTTPMiddleware(s.aud, s.UploadMultipartFile))
 	if err != nil {
 		panic(err)
 	}
 
 	// One-off REST-only path for file export
-	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", s.ExportTable)
+	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.HTTPMiddleware(s.aud, s.ExportTable))
 	if err != nil {
 		panic(err)
 	}

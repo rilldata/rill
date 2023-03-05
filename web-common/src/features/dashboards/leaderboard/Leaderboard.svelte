@@ -17,7 +17,7 @@
   import {
     MetricsViewDimension,
     MetricsViewMeasure,
-    useRuntimeServiceMetricsViewToplist,
+    useQueryServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -145,7 +145,7 @@
       };
     }
 
-    topListQuery = useRuntimeServiceMetricsViewToplist(
+    topListQuery = useQueryServiceMetricsViewToplist(
       $runtime.instanceId,
       metricViewName,
       topListParams

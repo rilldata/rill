@@ -2,8 +2,8 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    useRuntimeServiceGetDescriptiveStatistics,
-    useRuntimeServiceGetRugHistogram,
+    useQueryServiceColumnDescriptiveStatistics,
+    useQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { derived } from "svelte/store";
@@ -41,7 +41,7 @@
     columnName,
     active
   );
-  $: rug = useRuntimeServiceGetRugHistogram(
+  $: rug = useQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rug-histogram", active) },
@@ -56,7 +56,7 @@
   $: topK = getTopK($runtime?.instanceId, objectName, columnName);
 
   $: summary = derived(
-    useRuntimeServiceGetDescriptiveStatistics(
+    useQueryServiceColumnDescriptiveStatistics(
       $runtime?.instanceId,
       objectName,
       {

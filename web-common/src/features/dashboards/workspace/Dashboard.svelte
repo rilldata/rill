@@ -9,6 +9,7 @@
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
+  import { MEASURE_CONFIG } from "../config";
   import { metricsExplorerStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
@@ -27,6 +28,7 @@
   $: switchToMetrics(metricViewName);
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+
   $: if ($metaQuery.data) {
     if (!$metaQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
@@ -39,6 +41,8 @@
 
   let exploreContainerWidth;
 
+  let width;
+
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
@@ -46,9 +50,12 @@
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
-
   $: gridConfig = hasTimeSeries
-    ? "560px minmax(355px, auto)"
+    ? `${
+        width >= MEASURE_CONFIG.breakpoint
+          ? MEASURE_CONFIG.container.width.full
+          : MEASURE_CONFIG.container.width.breakpoint
+      }px minmax(355px, auto)`
     : "max-content minmax(355px, auto)";
 </script>
 
@@ -58,13 +65,18 @@
   bgClass="bg-white"
   inspector={false}
 >
-  <DashboardContainer bind:exploreContainerWidth {gridConfig} slot="body">
+  <DashboardContainer
+    bind:exploreContainerWidth
+    {gridConfig}
+    bind:width
+    slot="body"
+  >
     <DashboardHeader {metricViewName} slot="header" />
 
-    <svelte:fragment slot="metrics">
+    <svelte:fragment slot="metrics" let:width>
       {#key metricViewName}
         {#if hasTimeSeries}
-          <MetricsTimeSeriesCharts {metricViewName} />
+          <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
         {:else}
           <MeasuresContainer {exploreContainerWidth} {metricViewName} />
         {/if}

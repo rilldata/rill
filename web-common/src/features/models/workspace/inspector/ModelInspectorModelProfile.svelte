@@ -6,9 +6,9 @@
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
+    useQueryServiceTableCardinality,
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
-    useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { getContext } from "svelte";
@@ -78,10 +78,7 @@
         [
           writable($thing),
           writable(ref),
-          useRuntimeServiceGetTableCardinality(
-            $runtime?.instanceId,
-            $thing.name
-          ),
+          useQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,

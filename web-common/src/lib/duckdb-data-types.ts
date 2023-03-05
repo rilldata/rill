@@ -66,11 +66,16 @@ export function isList(type) {
   return type.includes("[]");
 }
 
+export function isStruct(type) {
+  return type.startsWith("STRUCT");
+}
+
 export function isNested(type) {
   return (
     type === "JSON" ||
-    [...NESTED].some((typeDef) => type.startsWith(typeDef)) ||
-    isList(type)
+    isList(type) ||
+    isStruct(type) ||
+    [...NESTED].some((typeDef) => type.startsWith(typeDef))
   );
 }
 

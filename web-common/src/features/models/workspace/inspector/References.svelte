@@ -7,8 +7,8 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
+    useQueryServiceTableCardinality,
     useRuntimeServiceGetFile,
-    useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
@@ -55,10 +55,7 @@
         [
           writable($thing),
           writable(ref),
-          useRuntimeServiceGetTableCardinality(
-            $runtime?.instanceId,
-            $thing.name
-          ),
+          useQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,

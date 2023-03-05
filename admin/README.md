@@ -26,6 +26,11 @@ docker-compose -f admin/docker-compose.yml up
 go run ./cli admin start
 ```
 
+You can now call the local admin server from the CLI by overriding the admin API URL. For example:
+```
+go run ./cli org create foo --api-url http://localhost:9090
+```
+
 ## Adding endpoints
 
 We define our APIs using gRPC and use [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) to map the RPCs to a RESTful API. See `proto/README.md` for details.

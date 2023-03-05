@@ -70,7 +70,7 @@ const getInvalidationsForPath = (
 
 export function invalidationForMetricsViewData(query, metricsViewName: string) {
   const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/metrics-views/${metricsViewName}/`
+    `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`
   );
 
   return typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]);

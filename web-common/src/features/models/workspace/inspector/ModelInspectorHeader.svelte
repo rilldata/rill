@@ -8,12 +8,12 @@
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
+    useQueryServiceTableCardinality,
+    useQueryServiceTableColumns,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTableCardinality,
     useRuntimeServiceListCatalogEntries,
-    useRuntimeServiceProfileColumns,
-    V1GetTableCardinalityResponse,
     V1Model,
+    V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { derived } from "svelte/store";
@@ -72,7 +72,7 @@
 
     // then get the cardinalities.
     cardinalityQueries = referencedThings?.map(([entity, reference]) => {
-      return useRuntimeServiceGetTableCardinality(
+      return useQueryServiceTableCardinality(
         $runtime?.instanceId,
         entity.name,
         {},
@@ -82,7 +82,7 @@
 
     // then we'll get the total number of columns for comparison.
     sourceProfileColumns = referencedThings?.map(([entity]) => {
-      return useRuntimeServiceProfileColumns(
+      return useQueryServiceTableColumns(
         $runtime?.instanceId,
         entity.name,
         {},
@@ -110,9 +110,9 @@
     0
   );
 
-  let modelCardinalityQuery: UseQueryStoreResult<V1GetTableCardinalityResponse>;
+  let modelCardinalityQuery: UseQueryStoreResult<V1TableCardinalityResponse>;
   $: if (model?.name)
-    modelCardinalityQuery = useRuntimeServiceGetTableCardinality(
+    modelCardinalityQuery = useQueryServiceTableCardinality(
       $runtime.instanceId,
       model?.name
     );

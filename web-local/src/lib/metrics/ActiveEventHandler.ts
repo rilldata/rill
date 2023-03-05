@@ -40,7 +40,8 @@ export class ActiveEventHandler {
     }
 
     if (this.focusCount > 0) {
-      return this.metricsService.dispatch("activeEvent", [
+      // fire only if page was active in the previous minute
+      this.metricsService.dispatch("activeEvent", [
         this.commonUserMetrics,
         this.focusDuration,
         this.focusCount,

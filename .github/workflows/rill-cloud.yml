@@ -1,0 +1,53 @@
+# This workflow triggers deployment with Rill Cloud helm charts
+# Each merge to main branch is build with github sha tag and published to Rill Cloud.
+name: Deploy to Rill Cloud
+on:
+  push:
+    tags:
+      - "**"
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  RELEASE: ${{ contains('refs/tags', github.ref_name) }}
+
+jobs:
+  release:
+    name: Deploy to Rill Cloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+
+      - name: Authenticate GCloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up GCloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Build & Publish Rill docker image
+        run: |-
+          git fetch --all --tags
+
+          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+
+          gcloud auth configure-docker
+
+          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
+          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
+
+      - name: Trigger Rill Cloud deployment
+        run: |-
+          set -e
+          curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
+          --data '{"event_type": "Deploying Tag: '"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'

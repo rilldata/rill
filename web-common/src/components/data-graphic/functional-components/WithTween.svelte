@@ -7,10 +7,15 @@ of the value.
   import { tweened } from "svelte/motion";
   import type { EasingFunction } from "svelte/transition";
   export let value: any;
-  export let tweenProps: { duration?: number; easing?: EasingFunction } = {
+  export let initialValue = value;
+  export let tweenProps: {
+    duration?: number;
+    easing?: EasingFunction;
+    interpolate?: any;
+  } = {
     duration: 25,
   };
-  const tween = tweened(value, tweenProps);
+  const tween = tweened(initialValue, tweenProps);
   $: tween.set(value, tweenProps);
 </script>
 

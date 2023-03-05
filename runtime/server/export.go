@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 // ExportTable exports a table or view as a flat file and triggers a HTTP download of it.
@@ -16,6 +17,11 @@ import (
 // TODO: This is a temporary hack that only supports DuckDB.
 // We should add a generic workflow for data export that also supports possibly very large tables.
 func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	if !auth.GetClaims(req.Context()).CanInstance(pathParams["instance_id"], auth.ReadOLAP) {
+		http.Error(w, "action not allowed", http.StatusUnauthorized)
+		return
+	}
+
 	var exportString string
 	switch pathParams["format"] {
 	case "csv":

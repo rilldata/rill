@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Callout } from "@rilldata/web-common/components/callout";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -15,17 +14,17 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { onMount, setContext } from "svelte";
+  import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
+  import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { initDimensionColumns } from "../DimensionColumns";
   import { initMeasuresColumns } from "../MeasuresColumns";
   import { createInternalRepresentation } from "../metrics-internal-store";
-  import MetricsDisplayNameInput from "./MetricsDisplayNameInput.svelte";
+  import ConfigParameters from "./config-parameters/ConfigParameters.svelte";
   import MetricsEntityTable from "./MetricsEntityTable.svelte";
-  import MetricsGenerateButton from "./MetricsGenerateButton.svelte";
   import LayoutManager from "./MetricsLayoutManager.svelte";
-  import MetricsModelSelector from "./MetricsModelSelector.svelte";
-  import MetricsTimeColumnSelector from "./MetricsTimeColumnSelector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
 
   // the runtime yaml string
@@ -33,7 +32,25 @@
   export let metricsDefName: string;
   export let nonStandardError;
 
+  // this store is used to store errors that are not related to the reconciliation/runtime
+  // used to prevent the user from going to the dashboard.
+  // Ultimately, the runtime should be catching the different errors we encounter with regards to
+  // mismatches between the fields. For now, this is a very simple to use solution.
+  let configurationErrorStore = writable({
+    defaultTimeRange: null,
+    smallestTimeGrain: null,
+    model: null,
+    timeColumn: null,
+  });
+  setContext("rill:metrics-config:errors", configurationErrorStore);
+
+  $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
+    instanceId,
+    metricsDefName
+  );
+
   const queryClient = useQueryClient();
+  const { listenToNodeResize } = createResizeListenerActionFactory();
 
   $: instanceId = $runtime.instanceId;
 
@@ -46,7 +63,7 @@
   $: switchToMetrics(metricsDefName);
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
-  async function callPutAndMigrate(internalYamlString) {
+  async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
@@ -67,11 +84,19 @@
   // create initial internal representation
   let metricsInternalRep = createInternalRepresentation(
     yaml,
-    callPutAndMigrate
+    callReconcileAndUpdateYaml
   );
 
+  onMount(() => {
+    // Reconcile on mount
+    callReconcileAndUpdateYaml(yaml);
+  });
+
   function updateInternalRep() {
-    metricsInternalRep = createInternalRepresentation(yaml, callPutAndMigrate);
+    metricsInternalRep = createInternalRepresentation(
+      yaml,
+      callReconcileAndUpdateYaml
+    );
     if (errors) $metricsInternalRep.updateErrors(errors);
   }
 
@@ -150,34 +175,17 @@
 <WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {metricsInternalRep} />
 
-  <div slot="body">
+  <div use:listenToNodeResize slot="body">
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
-      <div class="flex-none flex flex-row">
-        <div>
-          <MetricsDisplayNameInput {metricsInternalRep} />
-          <MetricsModelSelector {metricsInternalRep} />
-          <MetricsTimeColumnSelector
-            selectedModel={model}
-            {metricsInternalRep}
-          />
-        </div>
-        <div class="self-center pl-10">
-          {#if metricsSourceSelectionError}
-            <Callout level="error">
-              {metricsSourceSelectionError}
-            </Callout>
-          {:else}
-            <MetricsGenerateButton
-              handlePutAndMigrate={callPutAndMigrate}
-              selectedModel={model}
-              {metricsInternalRep}
-            />
-          {/if}
-        </div>
-      </div>
+      <ConfigParameters
+        {metricsInternalRep}
+        {model}
+        {metricsSourceSelectionError}
+        updateRuntime={callReconcileAndUpdateYaml}
+      />
 
       <div
         style="display: flex; flex-direction:column; overflow:hidden;"
