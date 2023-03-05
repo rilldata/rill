@@ -1,4 +1,5 @@
 export type FetchWrapperOptions = {
+  baseUrl?: string;
   url: string;
   method: string;
   headers?: HeadersInit;

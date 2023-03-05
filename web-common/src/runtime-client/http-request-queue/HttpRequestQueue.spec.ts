@@ -4,10 +4,10 @@ import {
   queryServiceColumnNumericHistogram,
   QueryServiceColumnNumericHistogramHistogramMethod,
 } from "@rilldata/web-common/runtime-client";
+import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { UrlExtractorRegex } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueue";
 import type { RequestQueueEntry } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
 import { asyncWait, waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
-import { getHttpRequestQueueForHost } from "../http-client";
 import Mock = jest.Mock;
 
 // skipping because there is too much instability due to race conditions
@@ -58,9 +58,6 @@ describe.skip("HttpRequestQueue", () => {
     await asyncWait(55);
     unlockRequests(table1, cols1, 0, 2);
     await asyncWait(55);
-    const httpRequestQueue = getHttpRequestQueueForHost(
-      "http://localhost:9009"
-    );
     httpRequestQueue.removeByName(table1);
     await asyncWait(55);
     unlockRequests(table1, cols1, 2);
@@ -93,9 +90,6 @@ describe.skip("HttpRequestQueue", () => {
     await asyncWait(55);
     unlockRequests(table1, cols1, 0, 2);
     await asyncWait(55);
-    const httpRequestQueue = getHttpRequestQueueForHost(
-      "http://localhost:9009"
-    );
     httpRequestQueue.inactiveByName(table1);
     await asyncWait(55);
 
@@ -125,9 +119,6 @@ describe.skip("HttpRequestQueue", () => {
     expect(fetchMock.mock.calls.length).toBe(5);
     unlockRequests(table, cols, 0, 2);
     await asyncWait(55);
-    const httpRequestQueue = getHttpRequestQueueForHost(
-      "http://localhost:9009"
-    );
     httpRequestQueue.prioritiseColumn(table, "c2", true);
     unlockRequests(table, cols, 2);
     await Promise.all(promises);

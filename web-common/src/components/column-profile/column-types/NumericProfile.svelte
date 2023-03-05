@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { derived } from "svelte/store";
-  import { getHttpRequestQueueForHost } from "../../../runtime-client/http-client";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
@@ -71,7 +71,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    const httpRequestQueue = getHttpRequestQueueForHost($runtime.host);
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 

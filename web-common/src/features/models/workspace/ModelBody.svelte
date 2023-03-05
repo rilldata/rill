@@ -23,7 +23,6 @@
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { getHttpRequestQueueForHost } from "@rilldata/web-common/runtime-client/http-client";
   import {
     invalidateAfterReconcile,
     invalidationForProfileQueries,
@@ -36,6 +35,7 @@
   import { slide } from "svelte/transition";
   import { SIDE_PAD } from "../../../layout/config";
   import { drag } from "../../../layout/drag";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
@@ -124,7 +124,6 @@
           overlayShown = true;
         }
 
-        const httpRequestQueue = getHttpRequestQueueForHost($runtime.host);
         httpRequestQueue.removeByName(modelName);
         // cancel all existing analytical queries currently running.
         await queryClient.cancelQueries({

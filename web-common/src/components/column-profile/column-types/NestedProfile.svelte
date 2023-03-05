@@ -4,7 +4,7 @@
     DATA_TYPE_COLORS,
     INTERVALS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { getHttpRequestQueueForHost } from "../../../runtime-client/http-client";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
@@ -44,7 +44,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    const httpRequestQueue = getHttpRequestQueueForHost($runtime.host);
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 

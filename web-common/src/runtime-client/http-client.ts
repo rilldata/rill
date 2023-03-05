@@ -12,7 +12,7 @@ import { runtime } from "./runtime-store";
  *    In prod: https://{region}.runtime.rilldata.com
  */
 
-const httpRequestQueues = new Map<string, HttpRequestQueue>();
+export const httpRequestQueue = new HttpRequestQueue();
 
 export const httpClient = async <T>(
   config: FetchWrapperOptions
@@ -21,16 +21,7 @@ export const httpClient = async <T>(
   const host = get(runtime).host;
   const interceptedConfig = { ...config, baseUrl: host };
 
-  const httpRequestQueue = getHttpRequestQueueForHost(host);
   return (await httpRequestQueue.add(interceptedConfig)) as Promise<T>;
 };
-
-export function getHttpRequestQueueForHost(host: string): HttpRequestQueue {
-  if (!httpRequestQueues.has(host)) {
-    httpRequestQueues.set(host, new HttpRequestQueue(host));
-  }
-
-  return httpRequestQueues.get(host);
-}
 
 export default httpClient;
