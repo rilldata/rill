@@ -8,8 +8,9 @@
   // TODO: call the admin server
   $: runtimeHost = undefined;
   $: runtimeInstanceId = undefined;
+  $: jwt = undefined;
 </script>
 
-<RuntimeProvider host={runtimeHost} instanceId={runtimeInstanceId}>
+<RuntimeProvider host={runtimeHost} instanceId={runtimeInstanceId} {jwt}>
   <slot />
 </RuntimeProvider>

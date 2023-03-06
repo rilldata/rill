@@ -17,9 +17,20 @@ export const httpRequestQueue = new HttpRequestQueue();
 export const httpClient = async <T>(
   config: FetchWrapperOptions
 ): Promise<T> => {
-  // naive request interceptor
+  // naive request interceptors
+
+  // set host
   const host = get(runtime).host;
   const interceptedConfig = { ...config, baseUrl: host };
+
+  // set jwt
+  const jwt = get(runtime).jwt;
+  if (jwt) {
+    interceptedConfig.headers = {
+      ...interceptedConfig.headers,
+      Authorization: `Bearer ${jwt}`,
+    };
+  }
 
   return (await httpRequestQueue.add(interceptedConfig)) as Promise<T>;
 };
