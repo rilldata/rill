@@ -1,6 +1,6 @@
 export type NumberFormatter = (x: number) => RichFormatNumber;
 
-export type NumberStringParts = {
+export type NumberParts = {
   neg?: "-";
   dollar?: "$";
   int: string;
@@ -15,7 +15,7 @@ export type NumericRange = {
   max: number;
 };
 
-export type PxWidthLookupFn = (str: string) => number;
+export type PxWidthLookupFn = (str: string | undefined) => number;
 
 export type FormatterWidths = {
   left: number;
@@ -26,7 +26,7 @@ export type FormatterWidths = {
 
 export type RichFormatNumber = {
   number: number;
-  splitStr: NumberStringParts;
+  splitStr: NumberParts;
 };
 
 export enum NumberKind {
@@ -73,7 +73,7 @@ export type FormatterOptionsCommon = {
   // Options common to all strategies
 
   // max number of digits to be shown for formatted numbers
-  maxTotalDigits: number;
+  // maxTotalDigits: number;
 
   // The kind of number being formatted
   numberKind: NumberKind;
@@ -81,22 +81,26 @@ export type FormatterOptionsCommon = {
   // If true, pad numbers with insignificant zeros in order
   // to have a consistent number of digits to the right of the
   // decimal point
-  padWithInSignificantZeros: boolean;
+  padWithInsignificantZeros: boolean;
 
   // method for formatting exact zeros
   // "none": don't do anything special.
-  // Ex: If the general option padWithInSignificantZeros is used such
+  // Ex: If the general option padWithInsignificantZeros is used such
   // that e.g. a 0 is rendered as "0.000", then if
   // this option is "none", the trailing zeros will be retained
   // "trailingDot": add a trailing decimal point to exact zeros "0."
   // "zeroOnly": render exact zeros as "0"
-  zeroHandling: "none" | "trailingDot" | "zeroOnly";
+  // zeroHandling: "none" | "trailingDot" | "zeroOnly";
 
-  pxWidthLookupFn?: PxWidthLookupFn;
+  // pxWidthLookupFn?: PxWidthLookupFn;
 
   // not actually used for formatting, but needed to calculate the
   // px sizes of maxWidthsInSample and maxWidthsPossible
-  alignDecimal?: boolean;
+  // alignDecimal?: boolean;
+
+  // If `true`, use upper case "E" for exponential notation;
+  // If `false` or `undefined`, use lower case
+  upperCaseEForExponent?: boolean;
 };
 
 export type FormatterFactoryOptions = (
@@ -106,46 +110,64 @@ export type FormatterFactoryOptions = (
 ) &
   FormatterOptionsCommon;
 
-export type FormatterFactoryOutput = {
-  formatter: NumberFormatter;
-  options: FormatterFactoryOptions;
+// FIXME? --maybe deprecated
 
-  // Maximum formatted pixel widths in this sample.
-  // Will be `undefined` if a pxWidthLookupFn
-  // is not given in the options.
-  maxPxWidthsInSample?: FormatterWidths;
-  // Maximum possible formatted widths given the options used.
-  // It is possible that no actual number in the sample
-  // will be this wide, but this is the upper limit on the width
-  // that can be reached given these formatting options. This
-  // may be useful if additional numbers will be added to a sample
-  // later and  resizing the column would be undesirable.
-  // Will be `undefined` if a pxWidthLookupFn
-  // is not given in the options.
-  maxPxWidthPossible?: FormatterWidths;
+// export type FormatterFactoryOutput = {
+//   formatter: NumberFormatter;
+//   options: FormatterFactoryOptions;
 
-  // Maximum formatted character widths in this sample.
-  maxCharWidthsInSample: FormatterWidths;
-  // Maximum possible formatted character widths given the options used.
-  // It is possible that no actual number in the sample
-  // will be this wide, but this is the upper limit on the width
-  // that can be reached given these formatting options. This
-  // may be useful if additional numbers will be added to a sample
-  // later and resizing the column would be undesirable.
-  maxCharWidthPossible: FormatterWidths;
+//   // Maximum formatted pixel widths in this sample.
+//   // Will be `undefined` if a pxWidthLookupFn
+//   // is not given in the options.
+//   maxPxWidthsInSample?: FormatterWidths;
+//   // Maximum possible formatted widths given the options used.
+//   // It is possible that no actual number in the sample
+//   // will be this wide, but this is the upper limit on the width
+//   // that can be reached given these formatting options. This
+//   // may be useful if additional numbers will be added to a sample
+//   // later and  resizing the column would be undesirable.
+//   // Will be `undefined` if a pxWidthLookupFn
+//   // is not given in the options.
+//   maxPxWidthPossible?: FormatterWidths;
 
-  // the largest order of magnitude of any number in this data set
-  largestMagnitude: number;
-  // the Order of magnitude of the most precise digit in any
-  // number from this data set
-  mostPreciseDigitMagnitude: number;
-  // the min and max of this data set
-  range: NumericRange;
-};
+//   // Maximum formatted character widths in this sample.
+//   maxCharWidthsInSample: FormatterWidths;
+//   // Maximum possible formatted character widths given the options used.
+//   // It is possible that no actual number in the sample
+//   // will be this wide, but this is the upper limit on the width
+//   // that can be reached given these formatting options. This
+//   // may be useful if additional numbers will be added to a sample
+//   // later and resizing the column would be undesirable.
+//   maxCharWidthPossible: FormatterWidths;
+
+//   // the largest order of magnitude of any number in this data set
+//   largestMagnitude: number;
+//   // the Order of magnitude of the most precise digit in any
+//   // number from this data set
+//   mostPreciseDigitMagnitude: number;
+//   // the min and max of this data set
+//   range: NumericRange;
+// };
 
 export type NumPartPxWidthLookupFn = (str: string, isNumStr: boolean) => number;
 
 export type FormatterFactory = (
   sample: number[],
   options: FormatterFactoryOptions
-) => FormatterFactoryOutput;
+) => Formatter;
+
+export interface Formatter {
+  options: FormatterFactoryOptions;
+  largestPossibleNumberStringParts: NumberParts;
+
+  stringFormat(x: number): string;
+
+  partsFormat(x: number): NumberParts;
+
+  // FIXME? -- will be needed if we want alignment
+  // maxPxWidthsSampled(): FormatterWidths;
+  // maxPxWidthsPossible(): FormatterWidths;
+
+  // maxCharWidthsSampled(): FormatterWidths;
+  // maxCharWidthsPossible(): FormatterWidths;
+}
