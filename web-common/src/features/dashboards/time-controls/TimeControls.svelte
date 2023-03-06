@@ -32,6 +32,7 @@ We should rename TimeSeriesTimeRange to a better name.
     addGrains,
     checkValidTimeGrain,
     floorDate,
+    getComparisonOptionsForTimeRange,
     getDefaultTimeGrain,
     getDefaultTimeRange,
     getTimeGrainOptions,
@@ -47,6 +48,8 @@ We should rename TimeSeriesTimeRange to a better name.
   export let metricViewName: string;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+
+  $: selectedTimeRange = $dashboardStore?.selectedTimeRange;
 
   let baseTimeRange: TimeRange;
   let defaultTimeRange: TimeRangeName;
@@ -89,7 +92,7 @@ We should rename TimeSeriesTimeRange to a better name.
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 
   // once we have the allTimeRange, set the default time range and time grain
-  $: if (!$dashboardStore?.selectedTimeRange && allTimeRange)
+  $: if (!selectedTimeRange && allTimeRange)
     setDefaultTimeControls(allTimeRange);
 
   function setDefaultTimeControls(allTimeRange: TimeRange) {
@@ -108,9 +111,19 @@ We should rename TimeSeriesTimeRange to a better name.
   // activeTimeGrain is valid whenever the baseTimeRange changes
   let timeGrainOptions: TimeGrainOption[];
   $: timeGrainOptions = getTimeGrainOptions(
-    new Date($dashboardStore?.selectedTimeRange?.start),
-    new Date($dashboardStore?.selectedTimeRange?.end)
+    new Date(selectedTimeRange?.start),
+    new Date(selectedTimeRange?.end)
   );
+
+  let comparisonOptions = [];
+  $: if (selectedTimeRange) {
+    comparisonOptions = getComparisonOptionsForTimeRange(selectedTimeRange);
+    console.log(comparisonOptions, !!comparisonOptions.length);
+    metricsExplorerStore.setShowComparison(
+      metricViewName,
+      !!comparisonOptions.length
+    );
+  }
 
   function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
     baseTimeRange = {
@@ -209,6 +222,9 @@ We should rename TimeSeriesTimeRange to a better name.
       {timeGrainOptions}
       {minTimeGrain}
     />
-    <ComparisonSelector {metricViewName} />
+
+    {#if comparisonOptions.length}
+      <ComparisonSelector {comparisonOptions} {metricViewName} />
+    {/if}
   {/if}
 </div>

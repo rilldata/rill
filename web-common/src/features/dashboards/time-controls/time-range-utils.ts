@@ -622,6 +622,7 @@ const pointInTimeComparisons = [
   ComparisonRange.YearOverYear,
 ];
 
+// TODO: Check if previous period data is available
 export function getComparisonOptionsForTimeRange(
   timeRange: TimeSeriesTimeRange
 ): ComparisonRange[] {

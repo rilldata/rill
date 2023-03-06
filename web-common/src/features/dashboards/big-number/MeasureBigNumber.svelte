@@ -12,6 +12,7 @@
   export let value: number;
   export let comparisonValue: number;
   export let comparisonPercChange: number;
+  export let showComparison: boolean;
   export let status: EntityStatus;
   export let description: string = undefined;
   export let withTimeseries = true;
@@ -56,40 +57,42 @@
               {/if}
             </WithTween>
           </div>
-          {#if comparisonValue}
-            <div
-              class="text-sm ui-copy-inactive ui-copy-number"
-              class:font-semibold={isComparisonPositive}
-            >
-              <WithTween
-                value={comparisonValue}
-                tweenProps={{ duration: 500 }}
-                let:output
+          {#if showComparison}
+            {#if comparisonValue}
+              <div
+                class="text-sm ui-copy-inactive ui-copy-number"
+                class:font-semibold={isComparisonPositive}
               >
-                {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
-                  <span
-                    style:width="9.5px"
-                    class="inline-block"
-                  />{humanizeDataType(output, formatPresetEnum)}
-                {:else}
-                  {output}
-                {/if}
-              </WithTween>
-            </div>
-          {/if}
-          {#if comparisonPercChange}
-            <div
-              class="text-sm ui-copy-number
+                <WithTween
+                  value={comparisonValue}
+                  tweenProps={{ duration: 500 }}
+                  let:output
+                >
+                  {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                    <span
+                      style:width="9.5px"
+                      class="inline-block"
+                    />{humanizeDataType(output, formatPresetEnum)}
+                  {:else}
+                    {output}
+                  {/if}
+                </WithTween>
+              </div>
+            {/if}
+            {#if comparisonPercChange}
+              <div
+                class="text-sm ui-copy-number
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
-            >
-              <WithTween
-                value={comparisonPercChange}
-                tweenProps={{ duration: 500 }}
-                let:output
               >
-                {formatMetricChangePercentage(output)}
-              </WithTween>
-            </div>
+                <WithTween
+                  value={comparisonPercChange}
+                  tweenProps={{ duration: 500 }}
+                  let:output
+                >
+                  {formatMetricChangePercentage(output)}
+                </WithTween>
+              </div>
+            {/if}
           {/if}
         {:else if status === EntityStatus.Error}
           <CrossIcon />

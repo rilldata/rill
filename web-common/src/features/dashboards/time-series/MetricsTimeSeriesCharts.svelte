@@ -203,7 +203,6 @@
           comparisonValue && bigNum
             ? (bigNum - comparisonValue) / comparisonValue
             : undefined}
-        {@const interval = metricsExplorer?.selectedTimeRange?.interval}
         {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
         {@const formatPreset =
           NicelyFormattedTypes[measure?.format] ||
@@ -213,6 +212,7 @@
           value={bigNum}
           {comparisonPercChange}
           {comparisonValue}
+          showComparison={metricsExplorer?.showComparison}
           description={measure?.description ||
             measure?.label ||
             measure?.expression}

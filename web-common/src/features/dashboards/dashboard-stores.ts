@@ -4,7 +4,10 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
-import type { TimeSeriesTimeRange } from "./time-controls/time-control-types";
+import type {
+  TimeSeriesTimeRange,
+  ComparisonRange,
+} from "./time-controls/time-control-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -34,7 +37,7 @@ export interface MetricsExplorerEntity {
   selectedDimensionName?: string;
   // comparison time range
   comparisonTimeRange?: ComparisonRange;
-  // toggle for comparison time range
+  // flag to show/hide comparison based on time range
   showComparison?: boolean;
 }
 
@@ -122,9 +125,9 @@ const metricViewReducers = {
     });
   },
 
-  toggleComparison(name: string) {
+  setShowComparison(name: string, flag: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showComparison = !metricsExplorer.showComparison;
+      metricsExplorer.showComparison = flag;
     });
   },
 
