@@ -35,6 +35,10 @@ export enum NumberKind {
   ANY,
 }
 
+export type FormatterOptionsNoneStrategy = {
+  strategy: "none";
+};
+
 export type FormatterOptionsDefaultStrategy = {
   strategy: "default";
   // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
@@ -104,6 +108,7 @@ export type FormatterOptionsCommon = {
 };
 
 export type FormatterFactoryOptions = (
+  | FormatterOptionsNoneStrategy
   | FormatterOptionsDefaultStrategy
   | FormatterOptionsDigitBudget
   | FormatterOptionsLargestMag

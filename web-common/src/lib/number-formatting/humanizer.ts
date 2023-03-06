@@ -5,6 +5,7 @@ import {
   FormatterFactoryOptions,
 } from "./humanizer-types";
 import { DefaultHumanizer } from "./strategies/default";
+import { NonFormatter } from "./strategies/none";
 
 export const humanizedFormatterFactory: FormatterFactory = (
   sample: number[],
@@ -12,6 +13,10 @@ export const humanizedFormatterFactory: FormatterFactory = (
 ) => {
   let formatter: Formatter;
   switch (options.strategy) {
+    case "none":
+      formatter = new NonFormatter(sample, options);
+      break;
+
     case "default":
       formatter = new DefaultHumanizer(sample, options);
       break;
