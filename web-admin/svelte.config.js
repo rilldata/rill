@@ -9,9 +9,6 @@ const config = {
 
   kit: {
     adapter: adapter(),
-    files: {
-      assets: "../web-common/static",
-    },
   },
 };
 
