@@ -23,7 +23,7 @@ CREATE TABLE user_auth_tokens (
 	display_name TEXT,
 	auth_client_id UUID REFERENCES auth_clients (id) ON DELETE CASCADE,
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
-    updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
+	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 CREATE INDEX user_auth_tokens_user_idx ON user_auth_tokens (user_id);

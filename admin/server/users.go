@@ -1,23 +1,38 @@
 package server
 
-// func (s *Server) user(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-// 	sess, _ := sessions.NewCookieStore([]byte(s.conf.SessionSecret)).Get(r, authSessionName)
+import (
+	"context"
+	"fmt"
 
-// 	var profiles map[string]interface{}
-// 	if sess.Values["profile"] == nil {
-// 		http.Error(w, "Not Authenticated", http.StatusUnauthorized)
-// 		return
-// 	}
-// 	profile := sess.Values["profile"].([]byte)
-// 	err := json.Unmarshal(profile, &profiles)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
+	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/server/auth"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+)
 
-// 	err = json.NewEncoder(w).Encode(profiles)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// }
+func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if ent, ok := claims.OwnerEntity(); !ok || ent != database.EntityUser {
+		return nil, fmt.Errorf("not an authenticated user")
+	}
+
+	u, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.GetCurrentUserResponse{
+		User: userToPB(u),
+	}, nil
+}
+
+func userToPB(u *database.User) *adminv1.User {
+	return &adminv1.User{
+		Id:          u.ID,
+		Email:       u.Email,
+		DisplayName: u.DisplayName,
+		PhotoUrl:    u.PhotoURL,
+		CreatedOn:   timestamppb.New(u.CreatedOn),
+		UpdatedOn:   timestamppb.New(u.UpdatedOn),
+	}
+}

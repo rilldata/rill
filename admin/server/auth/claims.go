@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 )
 
 // Claims resolves permissions for a requester.
 type Claims interface {
-	Subject() string
+	OwnerEntity() (database.Entity, bool)
+	OwnerID() string
 	// TODO: Add functions for checking permissions
 }
 
@@ -29,7 +31,11 @@ func GetClaims(ctx context.Context) Claims {
 // anonClaims represents claims for an unauthenticated user.
 type anonClaims struct{}
 
-func (c anonClaims) Subject() string {
+func (c anonClaims) OwnerEntity() (database.Entity, bool) {
+	return "", false
+}
+
+func (c anonClaims) OwnerID() string {
 	return ""
 }
 
@@ -38,6 +44,10 @@ type authTokenClaims struct {
 	token admin.AuthToken
 }
 
-func (c *authTokenClaims) Subject() string {
+func (c *authTokenClaims) OwnerEntity() (database.Entity, bool) {
+	return c.token.OwnerType(), true
+}
+
+func (c *authTokenClaims) OwnerID() string {
 	return c.token.OwnerID()
 }
