@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AdminServiceClient interface {
-	// Ping returns information about the admin
+	// Ping returns information about the server
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// findOrganizations lists all the organizations currently managed by the admin
 	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
@@ -42,8 +42,10 @@ type AdminServiceClient interface {
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
-	// UpdateProject update a project
+	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
+	// GetCurrentUser returns the currently authenticated user (if any)
+	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 }
 
 type adminServiceClient struct {
@@ -153,11 +155,20 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 	return out, nil
 }
 
+func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
+	out := new(GetCurrentUserResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetCurrentUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
 type AdminServiceServer interface {
-	// Ping returns information about the admin
+	// Ping returns information about the server
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// findOrganizations lists all the organizations currently managed by the admin
 	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
@@ -177,8 +188,10 @@ type AdminServiceServer interface {
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
-	// UpdateProject update a project
+	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
+	// GetCurrentUser returns the currently authenticated user (if any)
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -218,6 +231,9 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 }
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -430,6 +446,24 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetCurrentUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/GetCurrentUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -480,6 +514,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateProject",
 			Handler:    _AdminService_UpdateProject_Handler,
+		},
+		{
+			MethodName: "GetCurrentUser",
+			Handler:    _AdminService_GetCurrentUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
