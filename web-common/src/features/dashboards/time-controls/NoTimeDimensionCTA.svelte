@@ -17,10 +17,12 @@
     modelName
   );
   $: timestampColumns = $timestampColumnsQuery?.data;
+  $: isReadOnlyDashboard = $runtimeStore.readOnly === true;
 
   $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";
 
   function noTimeseriesCTA() {
+    if (isReadOnlyDashboard) return;
     if (timestampColumns?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     } else {
@@ -38,10 +40,14 @@
     <span class="ui-copy-disabled">No time dimension specified</span>
   </button>
   <TooltipContent slot="tooltip-content" maxWidth="250px">
-    Add a time dimension to your {redirectToScreen} to enable time series plots.
-    <TooltipShortcutContainer>
-      <div class="capitalize">Edit {redirectToScreen}</div>
-      <Shortcut>Click</Shortcut>
-    </TooltipShortcutContainer>
+    {#if isReadOnlyDashboard}
+      No time dimension available for this dashboard.
+    {:else}
+      Add a time dimension to your {redirectToScreen} to enable time series plots.
+      <TooltipShortcutContainer>
+        <div class="capitalize">Edit {redirectToScreen}</div>
+        <Shortcut>Click</Shortcut>
+      </TooltipShortcutContainer>
+    {/if}
   </TooltipContent>
 </Tooltip>
