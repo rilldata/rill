@@ -23,7 +23,7 @@ jobs:
           node-version: 18
 
       - name: NPM Install
-        run: npm install -w ${{ matrix.codepath }}
+        run: npm install
 
       - name: Prettier checks for web
         run: npx prettier --check "${{ matrix.codepath }}/**/*"
