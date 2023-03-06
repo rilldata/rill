@@ -30,10 +30,10 @@ type Config struct {
 	HTTPPort         int           `default:"8080" split_words:"true"`
 	GRPCPort         int           `default:"9090" split_words:"true"`
 	LogLevel         zapcore.Level `default:"info" split_words:"true"`
+	ExternalURL      string        `default:"http://localhost:8080" split_words:"true"`
 	AuthDomain       string        `split_words:"true"`
 	AuthClientID     string        `split_words:"true"`
 	AuthClientSecret string        `split_words:"true"`
-	AuthCallbackURL  string        `split_words:"true"`
 	SessionKeyPairs  []string      `split_words:"true"`
 }
 
@@ -88,11 +88,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			srvConf := &server.Config{
 				HTTPPort:         conf.HTTPPort,
 				GRPCPort:         conf.GRPCPort,
+				ExternalURL:      conf.ExternalURL,
+				SessionKeyPairs:  keyPairs,
 				AuthDomain:       conf.AuthDomain,
 				AuthClientID:     conf.AuthClientID,
 				AuthClientSecret: conf.AuthClientSecret,
-				AuthCallbackURL:  conf.AuthCallbackURL,
-				SessionKeyPairs:  keyPairs,
 			}
 			srv, err := server.New(logger, adm, srvConf)
 			if err != nil {

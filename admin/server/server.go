@@ -31,11 +31,11 @@ import (
 type Config struct {
 	HTTPPort         int
 	GRPCPort         int
+	ExternalURL      string
+	SessionKeyPairs  [][]byte
 	AuthDomain       string
 	AuthClientID     string
 	AuthClientSecret string
-	AuthCallbackURL  string
-	SessionKeyPairs  [][]byte
 }
 
 type Server struct {
@@ -56,7 +56,7 @@ func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) 
 		AuthDomain:       conf.AuthDomain,
 		AuthClientID:     conf.AuthClientID,
 		AuthClientSecret: conf.AuthClientSecret,
-		AuthCallbackURL:  conf.AuthCallbackURL,
+		ExternalURL:      conf.ExternalURL,
 	})
 	if err != nil {
 		return nil, err

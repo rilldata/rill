@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValid(t *testing.T) {
+func TestReciprocity(t *testing.T) {
 	tkn := NewRandom(TypeUser)
 	require.Equal(t, TypeUser, tkn.Type)
 	require.True(t, tkn.ID != uuid.UUID{})
@@ -25,7 +25,7 @@ func TestValid(t *testing.T) {
 	require.Equal(t, tkn.SecretHash(), parsed.SecretHash())
 }
 
-func TestInvalid(t *testing.T) {
+func TestValidity(t *testing.T) {
 	valid := []string{
 		"rill_usr_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
 		"rill_svc_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
@@ -42,6 +42,7 @@ func TestInvalid(t *testing.T) {
 		"rill_usr_",
 		"rill__2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
 		"rill_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
+		"rillusr2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
 		"_usr_2Dws32dc2FxTThgCQjHerGM1rx9pJLCPQh5QbWjUiwpkZNkCCRrlrK",
 		"",
 		"_",

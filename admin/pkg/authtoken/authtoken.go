@@ -14,6 +14,9 @@ import (
 // ErrMalformed is used when attempting to parse an invalid token string.
 var ErrMalformed = errors.New("malformed auth token")
 
+// Prefix is prepended to every auth token.
+const Prefix = "rill"
+
 // Type is part of the token prefix in the string representation.
 type Type string
 
@@ -63,7 +66,7 @@ func FromString(s string) (*Token, error) {
 		return nil, ErrMalformed
 	}
 
-	if parts[0] != "rill" {
+	if parts[0] != Prefix {
 		return nil, ErrMalformed
 	}
 
@@ -99,7 +102,7 @@ func (t *Token) String() string {
 	payload := make([]byte, 40)
 	copy(payload[0:16], t.ID[:])
 	copy(payload[16:40], t.Secret[:])
-	return fmt.Sprintf("rill_%s_%s", t.Type, marshalBase62(payload))
+	return fmt.Sprintf("%s_%s_%s", Prefix, t.Type, marshalBase62(payload))
 }
 
 // SecretHash returns a SHA256 hash of the token secret.

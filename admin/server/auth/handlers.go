@@ -8,16 +8,48 @@ import (
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
 )
 
-const authCookieName = "auth"
+const (
+	cookieName             = "auth"
+	cookieFieldState       = "state"
+	cookieFieldRedirect    = "redirect"
+	cookieFieldAccessToken = "access_token"
+)
+
+// RegisterEndpoints adds HTTP endpoints for auth.
+// The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
+// Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
+func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux) error {
+	err := mux.HandlePath("GET", "/auth/login", a.authLogin)
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("GET", "/auth/callback", a.authLoginCallback)
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("GET", "/auth/logout", a.authLogout)
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("GET", "/auth/logout/callback", a.authLogoutCallback)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
 // After auth, the user is redirected back to authLoginCallback, which in turn will redirect the user to "/".
 // You can override the redirect destination by passing a `?redirect=URI` query to this endpoint.
-// The implementation was derived from: https://auth0.com/docs/quickstart/webapp/golang/01-login.
 func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
@@ -29,19 +61,19 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathPa
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, authCookieName)
+	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Set state in cookie
-	sess.Values["state"] = state
+	sess.Values[cookieFieldState] = state
 
 	// Set redirect URL in cookie to enable custom redirects after auth has completed
 	redirect := r.URL.Query().Get("redirect")
 	if redirect != "" {
-		sess.Values["redirect"] = redirect
+		sess.Values[cookieFieldRedirect] = redirect
 	}
 
 	// Save cookie
@@ -57,20 +89,21 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathPa
 // authLoginCallback is called after the user has successfully authenticated with the auth provider.
 // It validates the OAuth info, fetches user profile info, and creates/updates the user in our DB.
 // It then issues a new user auth token and saves it in a cookie.
+// Finally, it redirects the user to the location specified in the initial call to authLogin.
 func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, authCookieName)
+	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Check that random state matches (for CSRF protection)
-	if r.URL.Query().Get("state") != sess.Values["state"] {
+	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
 		http.Error(w, fmt.Sprintf("Invalid state parameter: %s", err), http.StatusBadRequest)
 		return
 	}
-	delete(sess.Values, "state")
+	delete(sess.Values, cookieFieldState)
 
 	// Exchange authorization code for an oauth2 token
 	oauthToken, err := a.oauth2.Exchange(r.Context(), r.URL.Query().Get("code"))
@@ -125,33 +158,34 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// If there's already a token in the cookie, revoke it (not stopping on errors)
-	oldAuthToken, ok := sess.Values["access_token"].(string)
+	// If there's already a token in the cookie, revoke it (since we're now issuing a new one)
+	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && oldAuthToken != "" {
 		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
 		if err != nil {
 			a.logger.Error("failed to revoke old user auth token during new auth", zap.Error(err))
+			// The old token was probably manually revoked. We can still continue.
 		}
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.RillWebClientID, "Browser session")
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to issue API token: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
 	// Set auth token in cookie
-	sess.Values["access_token"] = authToken.Token().String()
+	sess.Values[cookieFieldAccessToken] = authToken.Token().String()
 
 	// Get redirect destination
-	redirect, ok := sess.Values["redirect"].(string)
+	redirect, ok := sess.Values[cookieFieldRedirect].(string)
 	if !ok || redirect == "" {
 		redirect = "/"
 	}
-	delete(sess.Values, "redirect")
+	delete(sess.Values, cookieFieldRedirect)
 
-	// Update cookie
+	// Save cookie
 	if err := sess.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -161,30 +195,31 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
-// authLogout implements user logout. It revokes the current user auth token, then redirects to the auth providers logout flow.
+// authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.
 // Once the logout has completed, the auth provider will redirect the user to authLogoutCallback.
 func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, authCookieName)
+	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Revoke access token and clear in cookie
-	authToken, ok := sess.Values["access_token"].(string)
+	authToken, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && authToken != "" {
 		err := a.admin.RevokeAuthToken(r.Context(), authToken)
 		if err != nil {
 			a.logger.Error("failed to revoke user auth token during logout", zap.Error(err))
+			// We should still continue to ensure the user is logged out on the auth provider as well.
 		}
 	}
-	delete(sess.Values, "access_token")
+	delete(sess.Values, cookieFieldAccessToken)
 
 	// Set redirect URL in cookie to enable custom redirects after logout
 	redirect := r.URL.Query().Get("redirect")
 	if redirect != "" {
-		sess.Values["redirect"] = redirect
+		sess.Values[cookieFieldRedirect] = redirect
 	}
 
 	// Save cookie
@@ -223,18 +258,18 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathP
 // authLogoutCallback is called when a logout flow iniated by authLogout has completed.
 func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, authCookieName)
+	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Get redirect destination
-	redirect, ok := sess.Values["redirect"].(string)
+	redirect, ok := sess.Values[cookieFieldRedirect].(string)
 	if !ok || redirect == "" {
 		redirect = "/"
 	}
-	delete(sess.Values, "redirect")
+	delete(sess.Values, cookieFieldRedirect)
 
 	// Save updated cookie
 	if err := sess.Save(r, w); err != nil {

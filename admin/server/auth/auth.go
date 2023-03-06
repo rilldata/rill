@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gorilla/sessions"
@@ -15,11 +16,12 @@ type AuthenticatorOptions struct {
 	AuthDomain       string
 	AuthClientID     string
 	AuthClientSecret string
-	AuthCallbackURL  string
+	ExternalURL      string
 }
 
 // Authenticator wraps functionality for admin server auth.
 // It provides endpoints for login/logout, creates users, issues cookie-based auth tokens, and provides middleware for authenticating requests.
+// The implementation was derived from: https://auth0.com/docs/quickstart/webapp/golang/01-login.
 type Authenticator struct {
 	logger  *zap.Logger
 	admin   *admin.Service
@@ -36,10 +38,16 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookies *sessions.
 		return nil, err
 	}
 
+	// Auth callback URL is fixed. See RegisterEndpoints.
+	redirectURL, err := url.JoinPath(opts.ExternalURL, "/auth/callback")
+	if err != nil {
+		return nil, err
+	}
+
 	oauth2Config := oauth2.Config{
 		ClientID:     opts.AuthClientID,
 		ClientSecret: opts.AuthClientSecret,
-		RedirectURL:  opts.AuthCallbackURL,
+		RedirectURL:  redirectURL,
 		Endpoint:     oidcProvider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
 	}

@@ -76,11 +76,11 @@ var ErrNotFound = errors.New("database: not found")
 type Entity string
 
 const (
-	OrganizationEntity  Entity = "Organization"
-	ProjectEntity       Entity = "Project"
-	UserEntity          Entity = "User"
-	UserAuthTokenEntity Entity = "UserAuthToken"
-	ClientEntity        Entity = "Client"
+	EntityOrganization  Entity = "Organization"
+	EntityProject       Entity = "Project"
+	EntityUser          Entity = "User"
+	EntityUserAuthToken Entity = "UserAuthToken"
+	EntityClient        Entity = "Client"
 )
 
 // Organization represents a tenant.
@@ -116,12 +116,12 @@ type User struct {
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID            string
-	SecretHash    []byte    `db:"secret_hash"`
-	UserID        string    `db:"user_id"`
-	DisplayName   string    `db:"display_name"`
-	OAuthClientID *string   `db:"auth_client_id"`
-	CreatedOn     time.Time `db:"created_on"`
+	ID           string
+	SecretHash   []byte    `db:"secret_hash"`
+	UserID       string    `db:"user_id"`
+	DisplayName  string    `db:"display_name"`
+	AuthClientID *string   `db:"auth_client_id"`
+	CreatedOn    time.Time `db:"created_on"`
 }
 
 // CreateUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -143,6 +143,6 @@ type AuthClient struct {
 
 // Hard-coded auth client IDs (created in the migrations).
 const (
-	RillWebClientID = "12345678-0000-0000-0000-000000000001"
-	RillCLIClientID = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
+	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
 )

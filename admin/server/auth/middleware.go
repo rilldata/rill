@@ -16,41 +16,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// RegisterEndpoints adds HTTP endpoints for auth.
-// Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway.
-func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux) error {
-	err := mux.HandlePath("GET", "/auth/login", a.authLogin)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/callback", a.authLoginCallback)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout", a.authLogout)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout/callback", a.authLogoutCallback)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.
 func (a *Authenticator) Annotator(ctx context.Context, r *http.Request) metadata.MD {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, authCookieName)
+	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
 		return metadata.Pairs()
 	}
 
-	token, ok := sess.Values["access_token"].(string)
+	// Get access token from cookie and pretend it's a bearer token
+	token, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && token != "" {
 		return metadata.Pairs("authorization", fmt.Sprintf("Bearer %s", token))
 	}
@@ -59,6 +34,8 @@ func (a *Authenticator) Annotator(ctx context.Context, r *http.Request) metadata
 }
 
 // UnaryServerInterceptor is a middleware for setting claims on runtime server requests.
+// It authenticates the user and acquires the claims using the bearer token in the "authorization" request metadata field.
+// If no bearer token is found, it will still succeed, setting anonClaims on the request.
 // The assigned claims can be retrieved using GetClaims. If the interceptor succeeds, a Claims value is guaranteed to be set on the ctx.
 func (a *Authenticator) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -107,14 +84,14 @@ func (a *Authenticator) HTTPMiddleware(next gateway.HandlerFunc) gateway.Handler
 		}
 
 		// There was no authorization header. Try the cookie.
-		sess, err := a.cookies.Get(r, authCookieName)
+		sess, err := a.cookies.Get(r, cookieName)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 			return
 		}
 
 		// Read access token from cookie
-		authToken, ok := sess.Values["access_token"].(string)
+		authToken, ok := sess.Values[cookieFieldAccessToken].(string)
 		if ok && authToken != "" {
 			newCtx, err := a.parseClaimsFromToken(r.Context(), authToken)
 			if err != nil {
@@ -152,13 +129,14 @@ func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorization
 }
 
 func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) (context.Context, error) {
+	// Validate token against database
 	validated, err := a.admin.ValidateAuthToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
 
 	// Set claims
-	claims := &tokenClaims{token: validated}
+	claims := &authTokenClaims{token: validated}
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
 	return ctx, nil
 }

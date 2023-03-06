@@ -33,11 +33,11 @@ func (c anonClaims) Subject() string {
 	return ""
 }
 
-// tokenClaims represents claims for an auth token.
-type tokenClaims struct {
+// authTokenClaims represents claims for an admin.AuthToken.
+type authTokenClaims struct {
 	token admin.AuthToken
 }
 
-func (c *tokenClaims) Subject() string {
+func (c *authTokenClaims) Subject() string {
 	return c.token.OwnerID()
 }
