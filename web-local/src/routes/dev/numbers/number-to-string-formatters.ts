@@ -2,7 +2,7 @@ import {
   humanizeDataType,
   humanizeGroupValues,
   NicelyFormattedTypes,
-} from "@rilldata/web-local/lib/util/humanize-numbers";
+} from "@rilldata/web-common/features/dashboards/humanize-numbers";
 import { humanized2FormatterFactory } from "./humanizer-2";
 
 import {
