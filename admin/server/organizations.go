@@ -14,7 +14,7 @@ import (
 // ListOrganizations implements AdminService.
 // (GET /v1/organizations)
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
-	orgs, err := s.admin.DB.ListOrganizations(ctx)
+	orgs, err := s.admin.DB.FindOrganizations(ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -29,7 +29,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 // (GET /organizations/{name})
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
-	org, err := s.admin.DB.GetOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")

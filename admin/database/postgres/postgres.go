@@ -45,7 +45,7 @@ func (c *connection) FindMigrationVersion(ctx context.Context) (int, error) {
 	return version, nil
 }
 
-func (c *connection) ListOrganizations(ctx context.Context) ([]*database.Organization, error) {
+func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.db.Select(&res, "SELECT * FROM organizations ORDER BY name")
 	if err != nil {
@@ -54,7 +54,7 @@ func (c *connection) ListOrganizations(ctx context.Context) ([]*database.Organiz
 	return res, nil
 }
 
-func (c *connection) GetOrganizationByName(ctx context.Context, name string) (*database.Organization, error) {
+func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.db.QueryRowxContext(ctx, "SELECT * FROM organizations WHERE name = $1", name).StructScan(res)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *connection) DeleteOrganization(ctx context.Context, name string) error 
 	return err
 }
 
-func (c *connection) ListProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
+func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.db.Select(&res, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE o.name=$1 ORDER BY p.name", orgName)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *connection) ListProjects(ctx context.Context, orgName string) ([]*datab
 	return res, nil
 }
 
-func (c *connection) GetProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
+func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)
 	if err != nil {

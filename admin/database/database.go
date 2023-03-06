@@ -44,14 +44,14 @@ type DB interface {
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
 
-	ListOrganizations(ctx context.Context) ([]*Organization, error)
-	GetOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizations(ctx context.Context) ([]*Organization, error)
+	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	CreateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
-	ListProjects(ctx context.Context, orgName string) ([]*Project, error)
-	GetProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
+	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
+	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	CreateProject(ctx context.Context, orgID string, name string, description string) (*Project, error)
 	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
