@@ -12,6 +12,7 @@ const config = {
       fallback: "index.html",
     }),
   },
+
 };
 
 export default config;
