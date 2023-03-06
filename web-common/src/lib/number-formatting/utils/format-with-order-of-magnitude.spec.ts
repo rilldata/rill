@@ -1,9 +1,12 @@
-import type { NumberStringParts } from "../humanizer-types";
-import { formatNumWithOrderOfMag } from "./format-with-order-of-magnitude";
+import type { NumberParts } from "../humanizer-types";
+import {
+  formatNumWithOrderOfMag,
+  orderOfMagnitudeEng,
+} from "./format-with-order-of-magnitude";
 
 type TestArgs = [number, number, number, boolean, boolean?];
 
-const testCases: [TestArgs, NumberStringParts][] = [
+const testCases: [TestArgs, NumberParts][] = [
   [[Infinity, 3, 4, true], { int: "∞", dot: "", frac: "", suffix: "" }],
   [[-Infinity, 3, 4, true], { int: "-∞", dot: "", frac: "", suffix: "" }],
   [[NaN, 3, 4, true], { int: "NaN", dot: "", frac: "", suffix: "" }],
@@ -105,7 +108,7 @@ const testCases: [TestArgs, NumberStringParts][] = [
   ],
 ];
 
-const integerTestCases: [TestArgs, NumberStringParts][] = [
+const integerTestCases: [TestArgs, NumberParts][] = [
   [[710, 0, 0, true, true], { int: "710", dot: "", frac: "", suffix: "E0" }],
   [[710, 0, 0, false, true], { int: "710", dot: "", frac: "", suffix: "E0" }],
 
@@ -131,6 +134,31 @@ describe("formatNumWithOrderOfMag", () => {
   integerTestCases.forEach(([input, output]) => {
     it(`should have correct "dot" and padding for int input targeting e0: ${input}`, () => {
       expect(formatNumWithOrderOfMag(...input)).toEqual(output);
+    });
+  });
+});
+
+describe("orderOfMagnitudeEng", () => {
+  [
+    [0, 0],
+    [2.23434, 0],
+    [10, 0],
+    [210, 0],
+    [3210, 3],
+    [43210, 3],
+    [9_876_543_210, 9],
+    [876_543_210, 6],
+    [76_543_210, 6],
+    [6_543_210, 6],
+    [0.1, -3],
+    [0.01, -3],
+    [0.001, -3],
+    [0.000_000_000_001, -12],
+    [0.000_000_000_01, -12],
+    [0.000_000_000_1, -12],
+  ].forEach(([input, output]) => {
+    it(`returns the correct engineering order of magnitude: ${input}`, () => {
+      expect(orderOfMagnitudeEng(input)).toEqual(output);
     });
   });
 });

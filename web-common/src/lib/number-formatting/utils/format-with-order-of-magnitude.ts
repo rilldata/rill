@@ -1,9 +1,10 @@
-import type { NumberStringParts } from "../humanizer-types";
+import type { NumberParts } from "../humanizer-types";
 import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 
 import _ from "lodash";
 
 export const orderOfMagnitude = (x) => {
+  if (x === 0) return 0;
   return Math.floor(Math.log10(Math.abs(x)));
 };
 
@@ -22,7 +23,7 @@ export const formatNumWithOrderOfMag = (
   // of non-integers formatted to e0 with 0 fraction digits.
   // Even if this is `true` integers WILL NOT be formatted with a trailing "."
   trailingDot = false
-): NumberStringParts => {
+): NumberParts => {
   if (typeof x !== "number") throw new Error("input must be a number");
 
   if (x === Infinity) return { int: "∞", dot: "", frac: "", suffix: "" };
@@ -78,7 +79,5 @@ export const formatNumWithOrderOfMag = (
       ? "."
       : "";
 
-  const splitStr = { int, dot, frac: frac ?? "", suffix };
-
-  return splitStr;
+  return { int, dot, frac: frac ?? "", suffix };
 };
