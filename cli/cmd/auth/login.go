@@ -2,7 +2,9 @@ package auth
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/spf13/cobra"
@@ -15,6 +17,11 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		Use:   "login",
 		Short: "Login",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			sp := cmdutil.GetSpinner(4, "Login in...")
+			sp.Start()
+			// Just for spinner, will have to remove it
+			time.Sleep(1 * time.Second)
+
 			if token != "" {
 				err := dotrill.SetAccessToken(token)
 				if err != nil {
@@ -27,6 +34,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 			// TODO: Start browser-based login flow
 			fmt.Println("Logging in")
+			sp.Stop()
 			return nil
 		},
 	}

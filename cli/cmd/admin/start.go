@@ -47,7 +47,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			sp := cmdutil.GetSpinner(4, "Starting admin...")
 			sp.Start()
 			// Just for spinner
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()

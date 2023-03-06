@@ -23,7 +23,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.GetSpinner(4, "Creating org...")
 			sp.Start()
 			// Just for spinner, will have to remove it
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 
 			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
 			if err != nil {
