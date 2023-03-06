@@ -16,7 +16,7 @@ func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error
 			return nil
 		}
 
-		return fmt.Errorf("not authenticated")
+		return fmt.Errorf("not authenticated, Please run 'rill auth login'")
 	}
 }
 

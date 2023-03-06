@@ -25,7 +25,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			// Just for spinner, will have to remove it
 			time.Sleep(2 * time.Second)
 
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken)
+			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
 			if err != nil {
 				return err
 			}

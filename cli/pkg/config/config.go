@@ -3,10 +3,11 @@ package config
 import "fmt"
 
 type Config struct {
-	Version    Version
-	AdminURL   string
-	AdminToken string
-	DefaultOrg string
+	Version             Version
+	AdminURL            string
+	OverridenAdminToken string
+	DefaultAdminToken   string
+	DefaultOrg          string
 }
 
 func (c Config) IsDev() bool {
@@ -31,5 +32,12 @@ func (v Version) IsDev() bool {
 }
 
 func (c *Config) IsAuthenticated() bool {
-	return (c.AdminToken != "" && c.AdminURL != "")
+	return (c.GetAdminToken() != "" && c.AdminURL != "")
+}
+
+func (c *Config) GetAdminToken() string {
+	if c.OverridenAdminToken != "" {
+		return c.OverridenAdminToken
+	}
+	return c.DefaultAdminToken
 }

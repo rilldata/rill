@@ -13,7 +13,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 		Use:   "switch",
 		Short: "Switch",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := dotrill.SetDefaultOrg(cfg.AdminToken)
+			err := dotrill.SetDefaultOrg(cfg.GetAdminToken())
 			if err != nil {
 				return err
 			}
