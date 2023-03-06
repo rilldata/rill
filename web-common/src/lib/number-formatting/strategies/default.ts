@@ -157,6 +157,11 @@ export class DefaultHumanizer implements Formatter {
       padWithInsignificantZeros,
     } = this.options;
 
+    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
+    const isPercent = this.options.numberKind === NumberKind.PERCENT;
+
+    if (isPercent) x = 100 * x;
+
     // for default strategy, we'll always use the trailing dot
     const useTrailingDot = true;
 
@@ -168,8 +173,6 @@ export class DefaultHumanizer implements Formatter {
 
     // can the number be shown without suffix within the rules allowed?
     const mag = orderOfMagnitude(x);
-
-    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
 
     if (mag >= -3 && mag <= 2 && !isCurrency) {
       // 0.001 to 999.999 and NOT currency; format with 3 rhs digits

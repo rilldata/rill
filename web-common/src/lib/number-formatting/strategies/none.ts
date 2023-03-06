@@ -105,6 +105,11 @@ export class NonFormatter implements Formatter {
   partsFormat(x: number): NumberParts {
     let numParts;
 
+    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
+    const isPercent = this.options.numberKind === NumberKind.PERCENT;
+
+    if (isPercent) x = 100 * x;
+
     if (x === 0) {
       numParts = { int: "0", dot: "", frac: "", suffix: "" };
     } else {
@@ -122,10 +127,10 @@ export class NonFormatter implements Formatter {
       numParts.suffix = numParts.suffix.replace("E", "e");
     }
 
-    if (this.options.numberKind === NumberKind.DOLLAR) {
+    if (isCurrency) {
       numParts.dollar = "$";
     }
-    if (this.options.numberKind === NumberKind.PERCENT) {
+    if (isPercent) {
       numParts.percent = "%";
     }
 

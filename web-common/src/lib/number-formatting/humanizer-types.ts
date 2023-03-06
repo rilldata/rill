@@ -30,9 +30,9 @@ export type RichFormatNumber = {
 };
 
 export enum NumberKind {
-  DOLLAR,
-  PERCENT,
-  ANY,
+  DOLLAR = "DOLLAR",
+  PERCENT = "PERCENT",
+  ANY = "ANY",
 }
 
 export type FormatterOptionsNoneStrategy = {
