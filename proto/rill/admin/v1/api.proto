@@ -13,12 +13,12 @@ service AdminService {
   }
 
   // findOrganizations lists all the organizations currently managed by the admin
-  rpc FindOrganizations(FindOrganizationsRequest) returns (FindOrganizationsResponse) {
+  rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
     option (google.api.http) = {get: "/v1/organizations"};
   }
 
-  // FindOrganization returns information about a specific organization
-  rpc FindOrganization(FindOrganizationRequest) returns (FindOrganizationResponse) {
+  // GetOrganization returns information about a specific organization
+  rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
 
@@ -44,13 +44,13 @@ service AdminService {
     };
   }
 
-  // FindProjects lists all the projects currently available for given organizations
-  rpc FindProjects(FindProjectsRequest) returns (FindProjectsResponse) {
+  // ListProjects lists all the projects currently available for given organizations
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects"};
   }
 
-  // FindProject returns information about a specific project
-  rpc FindProject(FindProjectRequest) returns (FindProjectResponse) {
+  // GetProject returns information about a specific project
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{name}"};
   }
 
@@ -88,25 +88,25 @@ message PingResponse {
   google.protobuf.Timestamp time = 2;
 }
 
-// Request message for AdminService.FindOrganizations
-message FindOrganizationsRequest {
+// Request message for AdminService.ListOrganizations
+message ListOrganizationsRequest {
   uint32 page_size = 1;
   string page_token = 2;
 }
 
-// Response message for AdminService.FindOrganizations
-message FindOrganizationsResponse {
+// Response message for AdminService.ListOrganizations
+message ListOrganizationsResponse {
   repeated Organization organization = 1;
   string next_page_token = 2;
 }
 
 // Request message for AdminService.GetInstance
-message FindOrganizationRequest {
+message GetOrganizationRequest {
   string name = 1;
 }
 
 // Response message for AdminService.GetInstance
-message FindOrganizationResponse {
+message GetOrganizationResponse {
   Organization organization = 1;
 }
 
@@ -168,27 +168,27 @@ message UpdateOrganizationResponse {
 }
 
 
-// Request message for AdminService.FindProjects
-message FindProjectsRequest {
+// Request message for AdminService.ListProjects
+message ListProjectsRequest {
   string organization =1;
   uint32 page_size = 2;
   string page_token = 3;
 }
 
-// Response message for AdminService.FindProjects
-message FindProjectsResponse {
+// Response message for AdminService.ListProjects
+message ListProjectsResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
 }
 
-// Request message for AdminService.FindProject
-message FindProjectRequest {
+// Request message for AdminService.GetProject
+message GetProjectRequest {
   string organization = 1;
   string name = 2;
 }
 
-// Response message for AdminService.FindProject
-message FindProjectResponse {
+// Response message for AdminService.GetProject
+message GetProjectResponse {
   Project project = 1;
 }
 

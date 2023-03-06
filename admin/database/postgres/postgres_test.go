@@ -55,7 +55,7 @@ func TestPostgres(t *testing.T) {
 func testOrganizations(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
-	org, err := db.FindOrganizationByName(ctx, "foo")
+	org, err := db.GetOrganizationByName(ctx, "foo")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 
@@ -70,12 +70,12 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "bar", org.Name)
 
-	orgs, err := db.FindOrganizations(ctx)
+	orgs, err := db.ListOrganizations(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "bar", orgs[0].Name)
 	require.Equal(t, "foo", orgs[1].Name)
 
-	org, err = db.FindOrganizationByName(ctx, "foo")
+	org, err = db.GetOrganizationByName(ctx, "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
@@ -88,7 +88,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
 
-	org, err = db.FindOrganizationByName(ctx, "foo")
+	org, err = db.GetOrganizationByName(ctx, "foo")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 }
@@ -100,7 +100,7 @@ func testProjects(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 
-	proj, err := db.FindProjectByName(ctx, org.Name, "bar")
+	proj, err := db.GetProjectByName(ctx, org.Name, "bar")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
@@ -112,7 +112,7 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Less(t, time.Since(proj.CreatedOn), 10*time.Second)
 	require.Less(t, time.Since(proj.UpdatedOn), 10*time.Second)
 
-	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
+	proj, err = db.GetProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
@@ -130,14 +130,14 @@ func testProjects(t *testing.T, db database.DB) {
 	err = db.DeleteProject(ctx, proj.ID)
 	require.NoError(t, err)
 
-	proj, err = db.FindProjectByName(ctx, org.Name, "bar")
+	proj, err = db.GetProjectByName(ctx, org.Name, "bar")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
 
-	org, err = db.FindOrganizationByName(ctx, "foo")
+	org, err = db.GetOrganizationByName(ctx, "foo")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 }
