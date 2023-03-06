@@ -29,6 +29,7 @@
     "@babel/preset-env": "^7.16.11",
     "@playwright/test": "^1.28.1",
     "@rollup/plugin-typescript": "^8.3.1",
+    "@stdlib/stdlib": "^0.0.96",
     "@sveltejs/adapter-static": "^1.0.0-next.41",
     "@sveltejs/kit": "^1.0.0-next.463",
     "@testing-library/jest-dom": "^5.16.3",
@@ -58,6 +59,7 @@
     "sinon": "^15.0.0",
     "supertest": "^6.2.4",
     "svelte-check": "^2.8.0",
+    "svelte-awesome-color-picker": "^2.3.0",
     "svelte-jester": "^2.3.2",
     "svelte-preprocess": "^4.10.7",
     "tailwindcss": "^3.0.23",
@@ -95,8 +97,6 @@
     "immer": "^9.0.12",
     "module-alias": "^2.2.2",
     "svelte": "^3.48.0",
-    "svelte-awesome-color-picker": "^2.3.0",
-    "svelte-color-picker": "^1.0.7",
     "svelte-forms-lib": "^2.0.1",
     "yup": "^0.32.11"
   }
