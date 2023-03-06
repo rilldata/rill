@@ -14,13 +14,12 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	claims := auth.GetClaims(ctx)
 
 	// Return an empty result if not authenticated.
-	ent, ok := claims.OwnerEntity()
-	if !ok {
+	if claims.OwnerType() == auth.OwnerTypeAnon {
 		return &adminv1.GetCurrentUserResponse{}, nil
 	}
 
 	// Error if authenticated as anything other than a user
-	if ent != database.EntityUser {
+	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 

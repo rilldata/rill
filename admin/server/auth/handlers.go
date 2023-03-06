@@ -236,19 +236,15 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathP
 	}
 
 	// Build callback endpoint for authLogoutCallback
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	returnTo, err := url.Parse(scheme + "://" + r.Host + "/auth/logout/callback")
+	returnTo, err := url.JoinPath(a.opts.ExternalURL, "/auth/logout/callback")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to build callback URL: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
 	// Redirect to auth provider's logout
 	parameters := url.Values{}
-	parameters.Add("returnTo", returnTo.String())
+	parameters.Add("returnTo", returnTo)
 	parameters.Add("client_id", a.opts.AuthClientID)
 	logoutURL.RawQuery = parameters.Encode()
 

@@ -14,7 +14,6 @@ import (
 type AuthToken interface {
 	Token() *authtoken.Token
 	OwnerID() string
-	OwnerType() database.Entity
 }
 
 // userAuthToken implements AuthToken for tokens belonging to a user.
@@ -29,10 +28,6 @@ func (t *userAuthToken) Token() *authtoken.Token {
 
 func (t *userAuthToken) OwnerID() string {
 	return t.model.UserID
-}
-
-func (t *userAuthToken) OwnerType() database.Entity {
-	return database.EntityUser
 }
 
 // IssueUserAuthToken generates and persists a new auth token for a user.

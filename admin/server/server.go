@@ -51,6 +51,9 @@ var _ adminv1.AdminServiceServer = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) {
 	cookies := sessions.NewCookieStore(conf.SessionKeyPairs...)
+	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
+	cookies.Options.Secure = true
+	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
 		AuthDomain:       conf.AuthDomain,

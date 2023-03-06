@@ -2,14 +2,23 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
+)
+
+// OwnerType is an enum of types of claim owners
+type OwnerType string
+
+const (
+	OwnerTypeAnon OwnerType = "anon"
+	OwnerTypeUser OwnerType = "user"
 )
 
 // Claims resolves permissions for a requester.
 type Claims interface {
-	OwnerEntity() (database.Entity, bool)
+	OwnerType() OwnerType
 	OwnerID() string
 	// TODO: Add functions for checking permissions
 }
@@ -31,8 +40,8 @@ func GetClaims(ctx context.Context) Claims {
 // anonClaims represents claims for an unauthenticated user.
 type anonClaims struct{}
 
-func (c anonClaims) OwnerEntity() (database.Entity, bool) {
-	return "", false
+func (c anonClaims) OwnerType() OwnerType {
+	return OwnerTypeAnon
 }
 
 func (c anonClaims) OwnerID() string {
@@ -44,8 +53,14 @@ type authTokenClaims struct {
 	token admin.AuthToken
 }
 
-func (c *authTokenClaims) OwnerEntity() (database.Entity, bool) {
-	return c.token.OwnerType(), true
+func (c *authTokenClaims) OwnerType() OwnerType {
+	t := c.token.Token().Type
+	switch t {
+	case authtoken.TypeUser:
+		return OwnerTypeUser
+	default:
+		panic(fmt.Errorf("unexpected token type %q", t))
+	}
 }
 
 func (c *authTokenClaims) OwnerID() string {
