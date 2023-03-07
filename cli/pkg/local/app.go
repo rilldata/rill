@@ -310,26 +310,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
-		HTTPPort: httpPort,
-		GRPCPort: grpcPort,
+		HTTPPort:       httpPort,
+		GRPCPort:       grpcPort,
+		AllowedOrigins: []string{"*"},
 	}
 	runtimeServer, err := runtimeserver.NewServer(opts, a.Runtime, serverLogger)
 	if err != nil {
 		return err
 	}
-	runtimeHandler, err := runtimeServer.HTTPHandler(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Create a single HTTP handler for both the local UI, local backend endpoints, and local runtime
-	mux := http.NewServeMux()
-	if enableUI {
-		mux.Handle("/", web.StaticHandler())
-	}
-	mux.Handle("/v1/", runtimeHandler)
-	mux.Handle("/local/config", a.infoHandler(inf))
-	mux.Handle("/local/track", a.trackingHandler(inf))
 
 	// Start the gRPC server
 	group.Go(func() error {
@@ -338,8 +326,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Start the local HTTP server
 	group.Go(func() error {
-		server := &http.Server{Handler: cors(mux)}
-		return graceful.ServeHTTP(ctx, server, httpPort)
+		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
+			// Inject local-only endpoints on the server for the local UI and local backend endpoints
+			if enableUI {
+				mux.Handle("/", web.StaticHandler())
+			}
+			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/track", a.trackingHandler(inf))
+		})
 	})
 
 	// Open the browser when health check succeeds
@@ -447,22 +441,6 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 
 		// Done
 		w.WriteHeader(http.StatusOK)
-	})
-}
-
-// Fully open CORS policy. This is very much local-only.
-// TODO: Adapt before recommending hosting Rill using the local server.
-func cors(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				w.Header().Set("Access-Control-Allow-Headers", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
 	})
 }
 
