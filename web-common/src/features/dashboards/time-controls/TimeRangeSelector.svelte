@@ -8,34 +8,25 @@
   import { Menu, MenuItem } from "../../../components/menu";
   import Divider from "../../../components/menu/core/Divider.svelte";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
-  import type { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import { TimeRange, TimeRangeName } from "./time-control-types";
-  import {
-    getRelativeTimeRangeOptions,
-    prettyFormatTimeRange,
-  } from "./time-range-utils";
+  import { prettyFormatTimeRange } from "./time-range-utils";
 
-  export let metricViewName: string;
-  export let allTimeRange: TimeRange;
-  export let minTimeGrain: V1TimeGrain;
+  export let timeRangeOptions = [];
+  export let selectedTimeRange;
+
+  // Custom Time Range Props
+  export let min;
+  export let max;
+  export let initialStartDate: string;
+  export let initialEndDate: string;
+  export let validateCustomTimeRange: (start: string, end: string) => string;
 
   const dispatch = createEventDispatcher();
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  let relativeTimeRangeOptions: TimeRange[];
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
-
-  $: if (allTimeRange) {
-    relativeTimeRangeOptions = getRelativeTimeRangeOptions(
-      allTimeRange,
-      minTimeGrain
-    );
-  }
 
   function onSelectRelativeTimeRange(
     timeRange: TimeRange,
@@ -94,11 +85,11 @@
         <span class="ui-copy-icon"><Calendar size="16px" /></span>
         <span style:transform="translateY(1px)">
           <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-          {$dashboardStore?.selectedTimeRange?.name ?? "Select a time range"}
+          {selectedTimeRange?.name ?? "Select a time range"}
         </span>
       </div>
       <span style:transform="translateY(1px)">
-        {prettyFormatTimeRange($dashboardStore?.selectedTimeRange)}
+        {prettyFormatTimeRange(selectedTimeRange)}
       </span>
     </div>
     <IconSpaceFixer pullRight>
@@ -112,13 +103,13 @@
     on:escape={toggleFloatingElement}
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
   >
-    {#if relativeTimeRangeOptions}
-      {#each relativeTimeRangeOptions as relativeTimeRange}
+    {#if timeRangeOptions}
+      {#each timeRangeOptions as timeRange}
         <MenuItem
           on:select={() =>
-            onSelectRelativeTimeRange(relativeTimeRange, toggleFloatingElement)}
+            onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
         >
-          {relativeTimeRange.name}
+          {timeRange.name}
         </MenuItem>
       {/each}
     {/if}
@@ -130,8 +121,11 @@
     {#if isCustomRangeOpen}
       <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
-          {metricViewName}
-          {minTimeGrain}
+          {min}
+          {max}
+          {initialStartDate}
+          {initialEndDate}
+          {validateCustomTimeRange}
           on:apply={(e) =>
             onSelectCustomTimeRange(
               e.detail.startDate,

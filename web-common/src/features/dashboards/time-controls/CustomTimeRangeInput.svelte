@@ -1,71 +1,22 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useQueryServiceColumnTimeRange,
-    V1GetTimeRangeSummaryResponse,
-  } from "../../../runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
-  import {
-    exclusiveToInclusiveEndISOString,
-    getDateFromISOString,
-    getISOStringFromDate,
-    validateTimeRange,
-  } from "./time-range-utils";
 
-  export let metricViewName: string;
-  export let minTimeGrain: string;
+  import { getISOStringFromDate } from "./time-range-utils";
+
+  export let min;
+  export let max;
+  export let initialStartDate;
+  export let initialEndDate;
+  export let validateCustomTimeRange: (start: string, end: string) => string;
 
   const dispatch = createEventDispatcher();
 
-  let start: string;
-  let end: string;
+  let start: string = initialStartDate;
+  let end: string = initialEndDate;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  $: if (!start && !end) {
-    if ($dashboardStore?.selectedTimeRange) {
-      start = getDateFromISOString($dashboardStore.selectedTimeRange.start);
-      end = getDateFromISOString(
-        exclusiveToInclusiveEndISOString($dashboardStore.selectedTimeRange.end)
-      );
-    }
-  }
-
-  $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
+  $: error = validateCustomTimeRange(start, end);
   $: disabled = !start || !end || !!error;
-
-  let metricsViewQuery;
-  $: if ($runtimeStore?.instanceId) {
-    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtimeStore.instanceId,
-      metricViewName
-    );
-  }
-  let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
-  $: if (
-    $runtimeStore?.instanceId &&
-    $metricsViewQuery?.data?.entry?.metricsView?.model &&
-    $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
-  ) {
-    timeRangeQuery = useQueryServiceColumnTimeRange(
-      $runtimeStore.instanceId,
-      $metricsViewQuery.data.entry.metricsView.model,
-      {
-        columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
-      }
-    );
-  }
-
-  $: min = $timeRangeQuery.data.timeRangeSummary?.min
-    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.min)
-    : undefined;
-  $: max = $timeRangeQuery.data.timeRangeSummary?.max
-    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
-    : undefined;
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC

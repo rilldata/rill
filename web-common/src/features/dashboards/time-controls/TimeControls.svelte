@@ -25,6 +25,7 @@ We should rename TimeSeriesTimeRange to a better name.
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import ComparisonSelector from "./ComparisonSelector.svelte";
+  import MainTimeRangeSelector from "./MainTimeRangeSelector.svelte";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import {
     addGrains,
@@ -225,7 +226,7 @@ We should rename TimeSeriesTimeRange to a better name.
       modelName={$metricsViewQuery?.data?.entry?.metricsView?.model}
     />
   {:else}
-    <TimeRangeSelector
+    <MainTimeRangeSelector
       {metricViewName}
       {allTimeRange}
       {minTimeGrain}
