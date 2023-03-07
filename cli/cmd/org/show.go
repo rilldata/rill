@@ -22,7 +22,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			org, err := client.FindOrganization(context.Background(), &adminv1.FindOrganizationRequest{
+			org, err := client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
 				Name: args[0],
 			})
 			if err != nil {

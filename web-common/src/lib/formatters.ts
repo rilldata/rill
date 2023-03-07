@@ -1,11 +1,14 @@
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
-import type { Interval } from "./duckdb-data-types";
 import {
   CATEGORICALS,
   FLOATS,
   INTEGERS,
+  Interval,
   INTERVALS,
+  isList,
+  isNested,
+  isStruct,
   PreviewRollupInterval,
   TIMESTAMPS,
 } from "./duckdb-data-types";
@@ -146,7 +149,7 @@ export function formatCompactInteger(n: number) {
   }
 }
 
-export function formatDataType(value: any, type: string) {
+export function formatDataType(value: unknown, type: string) {
   if (INTEGERS.has(type) || type.startsWith("DECIMAL")) {
     return value;
   } else if (FLOATS.has(type)) {
@@ -156,18 +159,18 @@ export function formatDataType(value: any, type: string) {
   } else if (TIMESTAMPS.has(type)) {
     return standardTimestampFormat(value, type);
   } else if (INTERVALS.has(type)) {
-    return intervalToTimestring(value);
+    return intervalToTimestring(value as Interval);
+  } else if (isStruct(type)) {
+    return JSON.stringify(value).replace(/"/g, "'");
+  } else if (isList(type)) {
+    return (
+      `[${(value as Array<unknown>)
+        ?.map((entry) => (+entry ? +entry : `'${entry}'`))
+        ?.join(", ")}]` || `null`
+    );
+  } else if (isNested(type)) {
+    return JSON.stringify(value).replace(/"/g, "'");
   }
-  // list type
-  if (type.includes("[]")) {
-    return `[${value
-      .map((entry) => (+entry ? +entry : `'${entry}'`))
-      .join(", ")}]`;
-  }
-  if (type === "JSON") {
-    return value;
-  }
-  // use this for structs, maps, etc
   return JSON.stringify(value).replace(/"/g, "'");
 }
 

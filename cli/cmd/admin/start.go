@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -31,11 +32,11 @@ type Config struct {
 	HTTPPort         int           `default:"8080" split_words:"true"`
 	GRPCPort         int           `default:"9090" split_words:"true"`
 	LogLevel         zapcore.Level `default:"info" split_words:"true"`
-	SessionSecret    string        `split_words:"true"`
+	ExternalURL      string        `default:"http://localhost:8080" split_words:"true"`
 	AuthDomain       string        `split_words:"true"`
 	AuthClientID     string        `split_words:"true"`
 	AuthClientSecret string        `split_words:"true"`
-	AuthCallbackURL  string        `split_words:"true"`
+	SessionKeyPairs  []string      `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -80,15 +81,25 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			defer adm.Close()
 
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
+			}
+
 			// Init admin server
-			srvConf := server.Config{
+			srvConf := &server.Config{
 				HTTPPort:         conf.HTTPPort,
 				GRPCPort:         conf.GRPCPort,
+				ExternalURL:      conf.ExternalURL,
+				SessionKeyPairs:  keyPairs,
 				AuthDomain:       conf.AuthDomain,
 				AuthClientID:     conf.AuthClientID,
 				AuthClientSecret: conf.AuthClientSecret,
-				AuthCallbackURL:  conf.AuthCallbackURL,
-				SessionSecret:    conf.SessionSecret,
 			}
 			srv, err := server.New(logger, adm, srvConf)
 			if err != nil {

@@ -3,9 +3,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { Readable, Writable } from "svelte/store";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import type { MetricsInternalRepresentation } from "../../metrics-internal-store";
   import {
     CONFIG_SELECTOR,
@@ -24,7 +24,7 @@
   $: sourceModelDisplayValue =
     $metricsInternalRep.getMetricKey("model") || "__DEFAULT_VALUE__";
 
-  $: allModels = useModelNames($runtimeStore.instanceId);
+  $: allModels = useModelNames($runtime.instanceId);
 
   function updateMetricsDefinitionHandler(modelName: string) {
     // Reset time selectors as some models might not have a timeseries

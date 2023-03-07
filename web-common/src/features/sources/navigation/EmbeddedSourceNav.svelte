@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import EmbeddedSourceNavigationEntry from "../embedded/EmbeddedSourceNavigationEntry.svelte";
   import { useEmbeddedSources } from "../selectors";
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
   let embeddedSourceCatalogs: Array<V1CatalogEntry>;
   $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 </script>

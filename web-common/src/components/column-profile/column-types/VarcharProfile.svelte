@@ -1,7 +1,7 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -28,19 +28,15 @@
 
   let topKLimit = 15;
 
-  $: nulls = getNullPercentage(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
+  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
 
   $: columnCardinality = getCountDistinct(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     columnName
   );
 
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName, active);
+  $: topK = getTopK($runtime?.instanceId, objectName, columnName, active);
 
   function toggleColumnProfile() {
     active = !active;
