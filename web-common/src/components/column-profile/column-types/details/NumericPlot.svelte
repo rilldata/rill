@@ -134,9 +134,9 @@ Otherwise, the page will jump around as the data is fetched.
             />
             <!-- zero line -->
             <line
-              x1={xScale(0)}
-              x2={xScale(0)}
-              y1={yScale(0)}
+              x1={xScale(0) || 0}
+              x2={xScale(0) || 0}
+              y1={yScale(0) || 0}
               y2={config.plotTop}
               class="stroke-gray-400"
               stroke-dasharray="2,2"
