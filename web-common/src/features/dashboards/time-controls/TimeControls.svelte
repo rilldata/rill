@@ -184,8 +184,8 @@ We should rename TimeSeriesTimeRange to a better name.
       interval: timeGrain,
     };
 
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
     cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   }
 </script>
 

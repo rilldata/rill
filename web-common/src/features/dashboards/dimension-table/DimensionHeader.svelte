@@ -47,8 +47,8 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, null);
   };
   function toggleFilterMode() {
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
     cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 </script>
 

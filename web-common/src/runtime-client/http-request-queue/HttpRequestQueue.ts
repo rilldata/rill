@@ -34,7 +34,6 @@ try {
   }
 } catch (err) {
   // no-op
-  QueryQueueSize = 200;
 }
 
 /**

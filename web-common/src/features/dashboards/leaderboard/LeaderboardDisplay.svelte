@@ -105,12 +105,12 @@
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(
       metricViewName,
       item.name,
       event.detail.label
     );
-    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function onLeaderboardValues(event) {

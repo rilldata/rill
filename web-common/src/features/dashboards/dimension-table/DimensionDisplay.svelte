@@ -238,8 +238,8 @@
 
   function onSelectItem(event) {
     const label = values[event.detail][dimension?.name];
-    metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
     cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
 
   function onSortByColumn(event) {

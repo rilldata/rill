@@ -109,8 +109,8 @@
   }
 
   function toggleFilterMode() {
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
     cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 
   function selectDimension(dimensionName) {

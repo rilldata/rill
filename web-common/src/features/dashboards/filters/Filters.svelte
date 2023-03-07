@@ -49,12 +49,12 @@ The main feature-set component for dashboard filters
   $: dimensions = $metaQuery.data?.dimensions;
 
   function clearFilterForDimension(dimensionId, include: boolean) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.clearFilterForDimension(
       metricViewName,
       dimensionId,
       include
     );
-    cancelDashboardQueries(queryClient, metricViewName);
   }
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
@@ -131,8 +131,8 @@ The main feature-set component for dashboard filters
 
   function clearAllFilters() {
     if (hasFilters) {
-      metricsExplorerStore.clearFilters(metricViewName);
       cancelDashboardQueries(queryClient, metricViewName);
+      metricsExplorerStore.clearFilters(metricViewName);
     }
   }
 
@@ -168,13 +168,13 @@ The main feature-set component for dashboard filters
   }
 
   function toggleDimensionValue(event, item) {
-    metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
     cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
   }
 
   function toggleFilterMode(dimensionName) {
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
     cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 
   const excludeChipColors = {
