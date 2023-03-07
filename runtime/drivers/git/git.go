@@ -2,11 +2,13 @@ package git
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
 	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -18,21 +20,40 @@ func init() {
 
 type driver struct{}
 
+type DSN struct {
+	URL    string
+	branch string
+}
+
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
 
+	var dsnObject DSN
+	err := json.Unmarshal([]byte(dsn), &dsnObject)
+	if err != nil {
+		return nil, err
+	}
+
 	var c *connection
-	err := r.Run(func() error {
+	err = r.Run(func() error {
 		tempdir, err := os.MkdirTemp("", "git_repo_driver")
 		if err != nil {
 			return err
 		}
 
-		c = &connection{root: dsn, tempdir: tempdir}
+		c = &connection{root: dsnObject.URL, branch: dsnObject.branch, tempdir: tempdir}
 
-		_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
-			URL: dsn,
-		})
+		if dsnObject.branch != "" {
+			_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
+				URL:           dsnObject.URL,
+				ReferenceName: plumbing.NewBranchReferenceName(dsnObject.branch),
+				SingleBranch:  true,
+			})
+		} else {
+			_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
+				URL: dsnObject.URL,
+			})
+		}
 		if err != nil {
 			removeError := os.RemoveAll(tempdir)
 			if removeError != nil {
@@ -57,6 +78,7 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 type connection struct {
 	root    string
 	tempdir string
+	branch  string
 }
 
 // Close implements drivers.Connection.
