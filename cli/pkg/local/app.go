@@ -327,7 +327,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Start the local HTTP server
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
-			// Inject local-only endpoints on the server for the local UI, local backend endpoints, and local runtime
+			// Inject local-only endpoints on the server for the local UI and local backend endpoints
 			if enableUI {
 				mux.Handle("/", web.StaticHandler())
 			}
@@ -443,22 +443,6 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		w.WriteHeader(http.StatusOK)
 	})
 }
-
-// // Fully open CORS policy. This is very much local-only.
-// // TODO: Adapt before recommending hosting Rill using the local server.
-// func cors(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if origin := r.Header.Get("Origin"); origin != "" {
-// 			w.Header().Set("Access-Control-Allow-Origin", origin)
-// 			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-// 				w.Header().Set("Access-Control-Allow-Headers", "*")
-// 				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-// 				return
-// 			}
-// 		}
-// 		h.ServeHTTP(w, r)
-// 	})
-// }
 
 func ParseLogFormat(format string) (LogFormat, bool) {
 	switch format {
