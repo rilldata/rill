@@ -22,7 +22,8 @@
     (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
   $: valusIsPresent = value !== undefined && value !== null;
 
-  $: isComparisonPositive = comparisonPercChange && comparisonPercChange > 0;
+  $: isComparisonPositive = comparisonPercChange && comparisonPercChange >= 0;
+
   const [send, receive] = crossfade({ fallback: fly });
 </script>
 
@@ -58,7 +59,7 @@
             </WithTween>
           </div>
           {#if showComparison}
-            {#if comparisonValue}
+            {#if comparisonValue != null}
               <div
                 class="text-sm ui-copy-inactive ui-copy-number"
                 class:font-semibold={isComparisonPositive}
@@ -79,7 +80,7 @@
                 </WithTween>
               </div>
             {/if}
-            {#if comparisonPercChange}
+            {#if comparisonPercChange != null}
               <div
                 class="text-sm ui-copy-number
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
