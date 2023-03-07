@@ -79,6 +79,7 @@
 
 <TimeRangeSelector
   on:select-time-range
+  showIcon
   timeRangeOptions={relativeTimeRangeOptions}
   {selectedTimeRange}
   {min}

@@ -19,6 +19,7 @@
 
   export let timeRangeOptions = [];
   export let selectedTimeRange;
+  export let showIcon = false;
 
   // Custom Time Range Props
   export let min: string;
@@ -86,21 +87,23 @@
   >
     <div class="flex flew-row gap-x-3">
       <div class="font-bold flex flex-row items-center gap-x-3">
-        <span class="ui-copy-icon"><Calendar size="16px" /></span>
-        <span style:transform="translateY(1px)">
+        {#if showIcon}
+          <span class="ui-copy-icon"><Calendar size="16px" /></span>
+        {/if}
+        <span style:transform={showIcon ? "translateY(1px)" : ""}>
           <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
           {selectedTimeRange?.name ?? "Select a time range"}
         </span>
       </div>
-      <span style:transform="translateY(1px)">
+      <span style:transform={showIcon ? "translateY(1px)" : ""}>
         {prettyFormatTimeRange(selectedTimeRange)}
       </span>
+      <IconSpaceFixer pullRight>
+        <div class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon size="16px" />
+        </div>
+      </IconSpaceFixer>
     </div>
-    <IconSpaceFixer pullRight>
-      <div class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon size="16px" />
-      </div>
-    </IconSpaceFixer>
   </button>
   <Menu
     slot="floating-element"
