@@ -11,13 +11,13 @@
     useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
@@ -25,11 +25,11 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtimeStore.instanceId);
-  $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: sourceNames = useSourceNames($runtime.instanceId);
+  $: modelNames = useModelNames($runtime.instanceId);
   const createModelMutation = useRuntimeServicePutFileAndReconcile();
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
   let embeddedSourceCatalogs: Array<V1CatalogEntry>;
   $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 
@@ -46,7 +46,7 @@
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
       queryClient,
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       $modelNames.data,
       tableName,
       tableName,

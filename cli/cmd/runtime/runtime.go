@@ -13,5 +13,6 @@ func RuntimeCmd(cfg *config.Config) *cobra.Command {
 		Short:  "Manage stand-alone runtimes",
 	}
 	runtimeCmd.AddCommand(StartCmd(cfg))
+	runtimeCmd.AddCommand(PingCmd(cfg))
 	return runtimeCmd
 }

@@ -19,9 +19,13 @@ import {
  */
 export function justEnoughPrecision(n: number) {
   if (typeof n !== "number") throw Error("argument must be a number");
+  // return only integer in this case.
+  if (n >= 10 ** 4) return n.toFixed();
   const str = n.toString();
   // if there are no floating point digits, return the string
-  if (n === ~~n) return str;
+  if (n === Math.round(n)) return str;
+
+  // otherwise, proceed.
   const [left, right] = str.split(".");
 
   // count the integer side

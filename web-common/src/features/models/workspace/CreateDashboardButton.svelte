@@ -16,7 +16,6 @@
     useRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -25,6 +24,7 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import {
     addQuickMetricsToDashboardYAML,
@@ -36,11 +36,11 @@
   export let collapse = false;
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     modelName
   );
   $: model = $getModel.data?.entry?.model;
-  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
+  $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();
@@ -62,7 +62,7 @@
     $createFileMutation.mutate(
       {
         data: {
-          instanceId: $runtimeStore.instanceId,
+          instanceId: $runtime.instanceId,
           path: getFilePathFromNameAndType(
             newDashboardName,
             EntityType.MetricsDefinition
@@ -86,7 +86,7 @@
           );
           return invalidateAfterReconcile(
             queryClient,
-            $runtimeStore.instanceId,
+            $runtime.instanceId,
             resp
           );
         },

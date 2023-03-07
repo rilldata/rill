@@ -1,17 +1,17 @@
 import {
-  useQueryServiceColumnRollupInterval,
-  useQueryServiceColumnTimeGrain,
-  useQueryServiceColumnTimeSeries,
+  QueryServiceColumnNumericHistogramHistogramMethod,
   useQueryServiceColumnCardinality,
   useQueryServiceColumnNullCount,
   useQueryServiceColumnNumericHistogram,
-  useQueryServiceTableCardinality,
+  useQueryServiceColumnRollupInterval,
+  useQueryServiceColumnTimeGrain,
+  useQueryServiceColumnTimeSeries,
   useQueryServiceColumnTopK,
-  QueryServiceColumnNumericHistogramHistogramMethod,
+  useQueryServiceTableCardinality,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
-import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
@@ -199,6 +199,7 @@ export function getNumericHistogram(
   instanceId: string,
   objectName: string,
   columnName: string,
+  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
   active = false
 ) {
   return useQueryServiceColumnNumericHistogram(
@@ -206,8 +207,7 @@ export function getNumericHistogram(
     objectName,
     {
       columnName,
-      histogramMethod:
-        QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      histogramMethod,
       priority: getPriorityForColumn("numeric-histogram", active),
     },
     {
