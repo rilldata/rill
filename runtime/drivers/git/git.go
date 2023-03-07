@@ -21,8 +21,8 @@ func init() {
 type driver struct{}
 
 type DSN struct {
-	URL    string
-	branch string
+	URL    string `json:"url"`
+	Branch string `json:"branch,omitempty"`
 }
 
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
@@ -41,12 +41,12 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 			return err
 		}
 
-		c = &connection{root: dsnObject.URL, branch: dsnObject.branch, tempdir: tempdir}
+		c = &connection{root: dsnObject.URL, branch: dsnObject.Branch, tempdir: tempdir}
 
-		if dsnObject.branch != "" {
+		if dsnObject.Branch != "" {
 			_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
 				URL:           dsnObject.URL,
-				ReferenceName: plumbing.NewBranchReferenceName(dsnObject.branch),
+				ReferenceName: plumbing.NewBranchReferenceName(dsnObject.Branch),
 				SingleBranch:  true,
 			})
 		} else {
