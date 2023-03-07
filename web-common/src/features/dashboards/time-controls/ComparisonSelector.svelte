@@ -3,6 +3,10 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { WithSelectMenu } from "../../../components/menu";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    getComparisonTimeRange,
+    prettyFormatTimeRange,
+  } from "./time-range-utils";
 
   export let metricViewName;
   export let comparisonOptions;
@@ -14,9 +18,14 @@
     main: key,
     key,
   }));
-  $: selectedCompareRange =
-    $dashboardStore.comparisonTimeRange || options[0]?.key;
 
+  $: selectedTimeRange = $dashboardStore?.selectedTimeRange;
+  $: selectedCompareRange =
+    $dashboardStore?.comparisonTimeRange || options[0]?.key;
+
+  $: datePrettyString = prettyFormatTimeRange(
+    getComparisonTimeRange(selectedTimeRange, selectedCompareRange)
+  );
   const onCompareRangeSelect = (comparisonRange) => {
     metricsExplorerStore.setSelectedComparisonRange(
       metricViewName,
@@ -44,6 +53,7 @@
       on:click={toggleMenu}
     >
       <span class="font-bold">{selectedCompareRange}</span>
+      <span>{datePrettyString}</span>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>
           <CaretDownIcon size="16px" />
