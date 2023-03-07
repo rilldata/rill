@@ -26,6 +26,10 @@ docker-compose -f admin/docker-compose.yml up
 ```
 go run ./cli admin start
 ```
+4. Ping the server:
+```
+go run ./cli admin ping --base-url http://localhost:9090
+```
 
 You can now call the local admin server from the CLI by overriding the admin API URL. For example:
 ```
