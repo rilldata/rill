@@ -29,11 +29,12 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type Config struct {
+type Options struct {
 	HTTPPort         int
 	GRPCPort         int
 	ExternalURL      string
 	SessionKeyPairs  [][]byte
+	AllowedOrigins   []string
 	AuthDomain       string
 	AuthClientID     string
 	AuthClientSecret string
@@ -43,24 +44,24 @@ type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	logger        *zap.Logger
 	admin         *admin.Service
-	conf          *Config
+	opts          *Options
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) {
-	cookies := sessions.NewCookieStore(conf.SessionKeyPairs...)
+func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error) {
+	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
 	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
 	cookies.Options.Secure = true
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:       conf.AuthDomain,
-		AuthClientID:     conf.AuthClientID,
-		AuthClientSecret: conf.AuthClientSecret,
-		ExternalURL:      conf.ExternalURL,
+		AuthDomain:       opts.AuthDomain,
+		AuthClientID:     opts.AuthClientID,
+		AuthClientSecret: opts.AuthClientSecret,
+		ExternalURL:      opts.ExternalURL,
 	})
 	if err != nil {
 		return nil, err
@@ -69,7 +70,7 @@ func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) 
 	return &Server{
 		logger:        logger,
 		admin:         adm,
-		conf:          conf,
+		opts:          opts,
 		cookies:       cookies,
 		authenticator: authenticator,
 	}, nil
@@ -97,8 +98,8 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
-	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.conf.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.conf.GRPCPort)
+	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
 // Starts the HTTP server.
@@ -109,8 +110,8 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.conf.HTTPPort)
-	return graceful.ServeHTTP(ctx, server, s.conf.HTTPPort)
+	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
 // ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
@@ -148,7 +149,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf(":%d", s.conf.GRPCPort)
+	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
@@ -160,15 +161,24 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
-	// Register CORS
-	// handler := cors(mux)
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{},
+	// Build CORS options for admin server
+	corsOpts := cors.Options{
+		AllowedOrigins: s.opts.AllowedOrigins,
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowedHeaders: []string{"*"},
+		// We use cookies for browser sessions, so this is required to allow ui.rilldata.com to make authenticated requests to admin.rilldata.com
 		AllowCredentials: true,
-		// Enable Debugging for testing, consider disabling in production
-		// Debug: true,
-	})
-	handler := c.Handler(mux)
+	}
+
+	// Wrap mux with CORS middleware
+	handler := cors.New(corsOpts).Handler(mux)
 
 	return handler, nil
 }
@@ -191,18 +201,3 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 	}
 	return resp, nil
 }
-
-// func cors(h http.Handler) http.Handler {
-// 	// TODO: Hack for local - not production-ready
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if origin := r.Header.Get("Origin"); origin != "" {
-// 			w.Header().Set("Access-Control-Allow-Origin", origin)
-// 			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-// 				w.Header().Set("Access-Control-Allow-Headers", "*")
-// 				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-// 				return
-// 			}
-// 		}
-// 		h.ServeHTTP(w, r)
-// 	})
-// }

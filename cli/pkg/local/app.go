@@ -22,7 +22,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
-	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -311,26 +310,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
-		HTTPPort: httpPort,
-		GRPCPort: grpcPort,
+		HTTPPort:       httpPort,
+		GRPCPort:       grpcPort,
+		AllowedOrigins: []string{"*"},
 	}
 	runtimeServer, err := runtimeserver.NewServer(opts, a.Runtime, serverLogger)
 	if err != nil {
 		return err
 	}
-	runtimeHandler, err := runtimeServer.HTTPHandler(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Create a single HTTP handler for both the local UI, local backend endpoints, and local runtime
-	mux := http.NewServeMux()
-	if enableUI {
-		mux.Handle("/", web.StaticHandler())
-	}
-	mux.Handle("/v1/", runtimeHandler)
-	mux.Handle("/local/config", a.infoHandler(inf))
-	mux.Handle("/local/track", a.trackingHandler(inf))
 
 	// Start the gRPC server
 	group.Go(func() error {
@@ -339,16 +326,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Start the local HTTP server
 	group.Go(func() error {
-		c := cors.New(cors.Options{
-			AllowedOrigins:   []string{},
-			AllowCredentials: true,
-			// Enable Debugging for testing, consider disabling in production
-			// Debug: true,
+		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
+			// Inject local-only endpoints on the server for the local UI, local backend endpoints, and local runtime
+			if enableUI {
+				mux.Handle("/", web.StaticHandler())
+			}
+			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
-		handler := c.Handler(mux)
-
-		server := &http.Server{Handler: handler}
-		return graceful.ServeHTTP(ctx, server, httpPort)
 	})
 
 	// Open the browser when health check succeeds
