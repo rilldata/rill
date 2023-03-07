@@ -21,8 +21,8 @@
   export let selectedTimeRange;
 
   // Custom Time Range Props
-  export let min;
-  export let max;
+  export let min: string;
+  export let max: string;
   export let initialStartDate: string;
   export let initialEndDate: string;
   export let validateCustomTimeRange: (start: string, end: string) => string;

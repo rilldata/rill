@@ -83,8 +83,17 @@
     });
   };
 
+  // Define a better validation criteria
   function validateCustomTimeRange(start, end) {
-    return undefined;
+    const customStartDate = new Date(start);
+    const customEndDate = new Date(end);
+    const selectedEndDate = new Date(selectedTimeRange.end);
+
+    if (customStartDate > customEndDate)
+      return "Start date must be before end date";
+    else if (customEndDate > selectedEndDate)
+      return "End date must be before selected date";
+    else return undefined;
   }
 </script>
 

@@ -4,10 +4,10 @@
 
   import { getISOStringFromDate } from "./time-range-utils";
 
-  export let min;
-  export let max;
-  export let initialStartDate;
-  export let initialEndDate;
+  export let min: string;
+  export let max: string;
+  export let initialStartDate: string;
+  export let initialEndDate: string;
   export let validateCustomTimeRange: (start: string, end: string) => string;
 
   const dispatch = createEventDispatcher();
