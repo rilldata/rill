@@ -6,8 +6,8 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { WorkspaceContainer } from "../../../layout/workspace";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { MEASURE_CONFIG } from "../config";
   import { metricsExplorerStore } from "../dashboard-stores";
@@ -27,7 +27,7 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
   $: if ($metaQuery.data) {
     if (!$metaQuery.data?.measures?.length) {
@@ -46,7 +46,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;

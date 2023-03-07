@@ -12,28 +12,28 @@
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
-  import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { createQueryClient } from "@rilldata/web-local/lib/svelte-query/globalQueryClient";
-  import { QueryClientProvider } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
+  import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
+  import { runtime } from "../runtime-client/runtime-store";
   import BasicLayout from "./BasicLayout.svelte";
   import { importOverlayVisible, overlay } from "./overlay-store";
 
-  const queryClient = createQueryClient();
+  const queryClient = useQueryClient();
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
+
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
 
-    runtimeStore.set({
-      instanceId: config.instance_id,
+    featureFlags.set({
       readOnly: config.readonly,
     });
 
@@ -50,7 +50,8 @@
 
   syncFileSystemPeriodically(
     queryClient,
-    runtimeStore,
+    runtime,
+    featureFlags,
     page,
     fileArtifactsStore
   );
@@ -77,47 +78,45 @@
   }
 </script>
 
-<QueryClientProvider client={queryClient}>
-  <div class="body">
-    {#if $importOverlayVisible}
-      <PreparingImport />
-    {:else if showDropOverlay}
-      <FileDrop bind:showDropOverlay />
-    {:else if $overlay !== null}
-      <BlockingOverlayContainer
-        bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
-      >
-        <div slot="title">
-          <span class="font-bold">{$overlay?.title}</span>
-          {#if $overlay?.message}
-            <div>{$overlay?.message}</div>
-          {/if}
-        </div>
-      </BlockingOverlayContainer>
-    {/if}
-
-    {#if $duplicateSourceName !== null}
-      <DuplicateSource />
-    {/if}
-    {#if $calendlyModalStore}
-      <Calendly />
-    {/if}
-
-    <div
-      class="index-body absolute w-screen h-screen"
-      on:dragenter|preventDefault|stopPropagation
-      on:dragleave|preventDefault|stopPropagation
-      on:dragover|preventDefault|stopPropagation={(e) => {
-        if (isEventWithFiles(e)) showDropOverlay = true;
-      }}
-      on:drag|preventDefault|stopPropagation
-      on:drop|preventDefault|stopPropagation
+<div class="body">
+  {#if $importOverlayVisible}
+    <PreparingImport />
+  {:else if showDropOverlay}
+    <FileDrop bind:showDropOverlay />
+  {:else if $overlay !== null}
+    <BlockingOverlayContainer
+      bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
     >
-      <BasicLayout>
-        <slot />
-      </BasicLayout>
-    </div>
+      <div slot="title">
+        <span class="font-bold">{$overlay?.title}</span>
+        {#if $overlay?.message}
+          <div>{$overlay?.message}</div>
+        {/if}
+      </div>
+    </BlockingOverlayContainer>
+  {/if}
+
+  {#if $duplicateSourceName !== null}
+    <DuplicateSource />
+  {/if}
+  {#if $calendlyModalStore}
+    <Calendly />
+  {/if}
+
+  <div
+    class="index-body absolute w-screen h-screen"
+    on:dragenter|preventDefault|stopPropagation
+    on:dragleave|preventDefault|stopPropagation
+    on:dragover|preventDefault|stopPropagation={(e) => {
+      if (isEventWithFiles(e)) showDropOverlay = true;
+    }}
+    on:drag|preventDefault|stopPropagation
+    on:drop|preventDefault|stopPropagation
+  >
+    <BasicLayout>
+      <slot />
+    </BasicLayout>
   </div>
-</QueryClientProvider>
+</div>
 
 <NotificationCenter />

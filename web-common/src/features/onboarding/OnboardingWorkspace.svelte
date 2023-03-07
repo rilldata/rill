@@ -3,7 +3,7 @@
   import Metrics from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { WorkspaceContainer } from "../../layout/workspace";
 
   const dataModelerSteps = [
@@ -36,7 +36,7 @@
     },
   ];
 
-  $: isModelerEnabled = $runtimeStore.readOnly === false;
+  $: isModelerEnabled = $featureFlags.readOnly === false;
   $: steps = isModelerEnabled
     ? [...dataModelerSteps, ...dashboardSteps]
     : dashboardSteps;

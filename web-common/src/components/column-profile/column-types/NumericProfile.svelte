@@ -5,10 +5,10 @@
     useQueryServiceColumnDescriptiveStatistics,
     useQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { derived } from "svelte/store";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -33,20 +33,16 @@
 
   let active = false;
 
-  $: nulls = getNullPercentage(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
+  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
 
   $: numericHistogram = getNumericHistogram(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     columnName,
     active
   );
   $: rug = useQueryServiceColumnRugHistogram(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rug-histogram", active) },
     {
@@ -57,11 +53,11 @@
       },
     }
   );
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
+  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
 
   $: summary = derived(
     useQueryServiceColumnDescriptiveStatistics(
-      $runtimeStore?.instanceId,
+      $runtime?.instanceId,
       objectName,
       {
         columnName: columnName,

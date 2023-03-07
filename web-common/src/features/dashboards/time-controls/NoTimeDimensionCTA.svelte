@@ -6,14 +6,14 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { useModelTimestampColumns } from "@rilldata/web-common/features/models/selectors";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let metricViewName: string;
   export let modelName: string;
 
   let timestampColumns: Array<string>;
   const timestampColumnsQuery = useModelTimestampColumns(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     modelName
   );
   $: timestampColumns = $timestampColumnsQuery?.data;
