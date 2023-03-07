@@ -71,3 +71,4 @@ rill-binary-sa.json
 # runtime test resources
 !runtime/testdata/**
 sysroot/
+latest.txt

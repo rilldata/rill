@@ -11,7 +11,7 @@ produces:
 paths:
   /v1/organizations:
     get:
-      summary: findOrganizations lists all the organizations currently managed by the admin
+      summary: FindOrganizations lists all the organizations the caller has access to
       operationId: AdminService_FindOrganizations
       responses:
         "200":
@@ -56,7 +56,7 @@ paths:
         - AdminService
   /v1/organizations/{name}:
     get:
-      summary: FindOrganization returns information about a specific organization
+      summary: FindOrganization looks up a specific organization
       operationId: AdminService_FindOrganization
       responses:
         "200":
@@ -123,7 +123,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects:
     get:
-      summary: FindProjects lists all the projects currently available for given organizations
+      summary: FindProjects lists all the projects in an organization
       operationId: AdminService_FindProjects
       responses:
         "200":
@@ -189,7 +189,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{name}:
     get:
-      summary: FindProject returns information about a specific project
+      summary: FindProject looks up a project by name
       operationId: AdminService_FindProject
       responses:
         "200":
@@ -235,7 +235,7 @@ paths:
       tags:
         - AdminService
     put:
-      summary: UpdateProject update a project
+      summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
       responses:
         "200":
@@ -268,13 +268,28 @@ paths:
         - AdminService
   /v1/ping:
     get:
-      summary: Ping returns information about the admin
+      summary: Ping returns information about the server
       operationId: AdminService_Ping
       responses:
         "200":
           description: A successful response.
           schema:
             $ref: '#/definitions/v1PingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/users/current:
+    get:
+      summary: GetCurrentUser returns the currently authenticated user (if any)
+      operationId: AdminService_GetCurrentUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCurrentUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -371,6 +386,12 @@ definitions:
         items:
           $ref: '#/definitions/v1Project'
     title: Response message for AdminService.FindProjects
+  v1GetCurrentUserResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+    title: Response message for GetCurrentUser
   v1Organization:
     type: object
     properties:
@@ -430,3 +451,20 @@ definitions:
       project:
         $ref: '#/definitions/v1Project'
     title: Response message for AdminService.UpdateOrganization
+  v1User:
+    type: object
+    properties:
+      createdOn:
+        type: string
+        format: date-time
+      displayName:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      photoUrl:
+        type: string
+      updatedOn:
+        type: string
+        format: date-time
