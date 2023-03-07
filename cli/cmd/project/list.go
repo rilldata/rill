@@ -28,7 +28,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.FindProjects(context.Background(), &adminv1.FindProjectsRequest{
+			proj, err := client.ListProjects(context.Background(), &adminv1.ListProjectsRequest{
 				Organization: cfg.DefaultOrg,
 			})
 			if err != nil {
