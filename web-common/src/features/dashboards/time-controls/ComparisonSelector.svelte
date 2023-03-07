@@ -20,17 +20,21 @@
   }));
 
   $: selectedTimeRange = $dashboardStore?.selectedTimeRange;
-  $: selectedCompareRange =
-    $dashboardStore?.comparisonTimeRange || options[0]?.key;
+  $: selectedCompareName =
+    $dashboardStore?.selectedComparisonTimeRange?.name || options[0]?.key;
 
   $: datePrettyString = prettyFormatTimeRange(
-    getComparisonTimeRange(selectedTimeRange, selectedCompareRange)
+    $dashboardStore?.selectedComparisonTimeRange
   );
   const onCompareRangeSelect = (comparisonRange) => {
-    metricsExplorerStore.setSelectedComparisonRange(
-      metricViewName,
+    const comparisonTimeRange = getComparisonTimeRange(
+      selectedTimeRange,
       comparisonRange
     );
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      ...comparisonTimeRange,
+      name: comparisonRange,
+    });
   };
 </script>
 
@@ -41,8 +45,8 @@
     distance={8}
     {options}
     selection={{
-      main: selectedCompareRange,
-      key: selectedCompareRange,
+      main: selectedCompareName,
+      key: selectedCompareName,
     }}
     on:select={(event) => onCompareRangeSelect(event.detail.key)}
     let:toggleMenu
@@ -52,7 +56,7 @@
       class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
-      <span class="font-bold">{selectedCompareRange}</span>
+      <span class="font-bold">{selectedCompareName}</span>
       <span>{datePrettyString}</span>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>

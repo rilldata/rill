@@ -30,7 +30,6 @@
   import {
     addGrains,
     formatDateByInterval,
-    getComparisonTimeRange,
   } from "../time-controls/time-range-utils";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -73,16 +72,11 @@
     Error
   >;
   $: if ($totalsQuery?.data?.data && metricsExplorer?.showComparison) {
-    const comparisonRange = getComparisonTimeRange(
-      metricsExplorer.selectedTimeRange,
-      metricsExplorer.comparisonTimeRange
-    );
-
     const comparisonTotalsQueryParams = {
       measureNames: selectedMeasureNames,
       filter: metricsExplorer?.filters,
-      timeStart: comparisonRange?.start,
-      timeEnd: comparisonRange?.end,
+      timeStart: metricsExplorer.selectedComparisonTimeRange?.start,
+      timeEnd: metricsExplorer.selectedComparisonTimeRange?.end,
     };
 
     comparisonTotalQuery = useQueryServiceMetricsViewTotals(

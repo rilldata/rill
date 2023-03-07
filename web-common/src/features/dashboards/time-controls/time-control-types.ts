@@ -53,3 +53,9 @@ export interface TimeSeriesTimeRange {
   end?: string;
   interval?: V1TimeGrain;
 }
+
+export interface ComparisonWithTimeRange {
+  name?: ComparisonRange;
+  start?: string;
+  end?: string;
+}

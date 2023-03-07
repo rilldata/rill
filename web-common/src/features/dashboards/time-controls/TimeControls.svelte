@@ -19,8 +19,6 @@ We should rename TimeSeriesTimeRange to a better name.
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
   import {
     useRuntimeServiceGetCatalogEntry,
-    useQueryServiceColumnTimeRange,
-    V1ColumnTimeRangeResponse,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -33,6 +31,7 @@ We should rename TimeSeriesTimeRange to a better name.
     checkValidTimeGrain,
     floorDate,
     getComparisonOptionsForTimeRange,
+    getComparisonTimeRange,
     getDefaultTimeGrain,
     getDefaultTimeRange,
     getTimeGrainOptions,
@@ -40,7 +39,6 @@ We should rename TimeSeriesTimeRange to a better name.
     makeRelativeTimeRange,
     supportedTimeGrainEnums,
     TimeGrainOption,
-    timeRangeToISODuration,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
@@ -125,10 +123,14 @@ We should rename TimeSeriesTimeRange to a better name.
       );
 
       if (comparisonOptions.length) {
-        metricsExplorerStore.setSelectedComparisonRange(
-          metricViewName,
+        const comparisonTimeRange = getComparisonTimeRange(
+          newTimeRange,
           comparisonOptions[0]
         );
+        metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+          ...comparisonTimeRange,
+          name: comparisonOptions[0],
+        });
       }
       metricsExplorerStore.setShowComparison(
         metricViewName,

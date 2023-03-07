@@ -5,6 +5,7 @@ import {
   TimeRange,
   TimeRangeName,
   TimeSeriesTimeRange,
+  ComparisonWithTimeRange,
 } from "./time-control-types";
 
 const TIME = {
@@ -258,7 +259,7 @@ export function getDefaultTimeGrain(start: Date, end: Date): V1TimeGrain {
 }
 
 export const prettyFormatTimeRange = (
-  timeRange: TimeSeriesTimeRange
+  timeRange: TimeSeriesTimeRange | ComparisonWithTimeRange
 ): string => {
   if (!timeRange?.start && timeRange?.end) {
     return `- ${timeRange.end}`;

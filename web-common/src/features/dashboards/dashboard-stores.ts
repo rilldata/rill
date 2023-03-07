@@ -6,7 +6,7 @@ import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
 import type {
   TimeSeriesTimeRange,
-  ComparisonRange,
+  ComparisonWithTimeRange,
 } from "./time-controls/time-control-types";
 
 export interface LeaderboardValue {
@@ -36,7 +36,7 @@ export interface MetricsExplorerEntity {
   // user selected dimension
   selectedDimensionName?: string;
   // comparison time range
-  comparisonTimeRange?: ComparisonRange;
+  selectedComparisonTimeRange?: ComparisonWithTimeRange;
   // flag to show/hide comparison based on time range
   showComparison?: boolean;
 }
@@ -133,10 +133,10 @@ const metricViewReducers = {
 
   setSelectedComparisonRange(
     name: string,
-    comparisonTimeRange: ComparisonRange
+    comparisonTimeRange: ComparisonWithTimeRange
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.comparisonTimeRange = comparisonTimeRange;
+      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
     });
   },
 
