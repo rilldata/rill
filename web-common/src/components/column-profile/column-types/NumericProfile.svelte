@@ -1,7 +1,12 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
+    FLOATS,
+    INTERVALS,
+    isFloat,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
+  import {
+    QueryServiceColumnNumericHistogramHistogramMethod,
     useQueryServiceColumnDescriptiveStatistics,
     useQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
@@ -17,6 +22,7 @@
     getTopK,
     isFetching,
   } from "../queries";
+  import { chooseBetweenDiagnosticAndStatistical } from "../utils";
   import NumericPlot from "./details/NumericPlot.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
@@ -35,12 +41,37 @@
 
   $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
 
-  $: numericHistogram = getNumericHistogram(
+  $: diagnosticHistogram = getNumericHistogram(
     $runtime?.instanceId,
     objectName,
     columnName,
+    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     active
   );
+  let fdHistogram;
+  $: if (isFloat(type)) {
+    fdHistogram = getNumericHistogram(
+      $runtime?.instanceId,
+      objectName,
+      columnName,
+      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      active
+    );
+  }
+
+  /**
+   * We have two choices of histogram method: diagnostic and freedman-diaconis.
+   * For integers, we go with diagnostic. For floating points, let's choose between
+   * the most viable of diagnostic and freedman-diaconis. We'll remove
+   * this once we've refactored floating-point columns toward a KDE plot.
+   */
+  $: histogramData = isFloat(type)
+    ? chooseBetweenDiagnosticAndStatistical(
+        $diagnosticHistogram?.data,
+        $fdHistogram?.data
+      )
+    : $diagnosticHistogram?.data;
+
   $: rug = useQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
     objectName,
@@ -74,7 +105,44 @@
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
-  $: fetchingSummaries = isFetching($nulls, $numericHistogram);
+  $: fetchingSummaries = FLOATS.has(type)
+    ? isFetching($nulls, $diagnosticHistogram, $fdHistogram)
+    : isFetching($nulls, $diagnosticHistogram);
+
+  /** if we have a singleton where all summary information is the same, let's construct a single bin. */
+  $: if (
+    $summary?.min !== undefined &&
+    $summary?.min === $summary?.max &&
+    $nulls?.totalRows !== undefined
+  ) {
+    const boundaries = 10;
+    histogramData = [
+      // add 4 more empty bins
+      ...Array.from({ length: boundaries }).map((_, i) => {
+        return {
+          bucket: -boundaries + i,
+          count: 0,
+          high: $summary?.min - (boundaries - i - 1),
+          low: $summary?.min - (boundaries - i),
+        };
+      }),
+      {
+        bucket: boundaries,
+        count: $nulls?.totalRows,
+        low: $summary?.min,
+        high: $summary?.min + 1,
+      },
+      // add more empty bins
+      ...Array.from({ length: boundaries }).map((_, i) => {
+        return {
+          bucket: boundaries + i + 1,
+          count: 0,
+          low: $summary?.min + i,
+          high: $summary?.min + i + 1,
+        };
+      }),
+    ];
+  }
 </script>
 
 <ProfileContainer
@@ -94,7 +162,7 @@
   <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
+  <NumericSpark {type} {compact} data={histogramData} slot="summary" />
   <NullPercentageSpark
     isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
@@ -108,7 +176,7 @@
     class:hidden={INTERVALS.has(type)}
   >
     <NumericPlot
-      data={$numericHistogram.data}
+      data={histogramData}
       rug={$rug?.data}
       summary={$summary}
       topK={$topK}

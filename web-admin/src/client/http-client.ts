@@ -6,6 +6,7 @@ const ADMIN_URL =
 
 export const AXIOS_INSTANCE = Axios.create({
   baseURL: ADMIN_URL,
+  withCredentials: true,
 });
 
 // TODO: use the new client?
