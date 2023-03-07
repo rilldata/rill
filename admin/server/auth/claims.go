@@ -66,3 +66,16 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 func (c *authTokenClaims) OwnerID() string {
 	return c.token.OwnerID()
 }
+
+func GetAuthTokenIDFromClaims(claims Claims) (string, error) {
+	if claims == nil {
+		return "", fmt.Errorf("claims is nil")
+	}
+
+	atc, ok := claims.(*authTokenClaims)
+	if !ok {
+		return "", fmt.Errorf("claims is not an authTokenClaims")
+	}
+
+	return atc.token.Token().ID.String(), nil
+}

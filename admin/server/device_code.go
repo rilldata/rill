@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
-	auth1 "github.com/rilldata/rill/admin/server/auth"
+	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"go.uber.org/zap"
 )
@@ -110,7 +110,7 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	claims := auth1.GetClaims(r.Context())
+	claims := auth.GetClaims(r.Context())
 	if claims == nil {
 		s.logger.Error("did not find any claims")
 		internalServerError(w, errors.New("server error"))

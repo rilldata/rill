@@ -10,8 +10,6 @@ import (
 
 // LoginCmd is the command for logging into a Rill account.
 func LoginCmd(cfg *config.Config) *cobra.Command {
-	var authURL string
-
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
@@ -22,7 +20,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			authenticator, err := deviceauth.New(authURL)
+			authenticator, err := deviceauth.New(cfg.AdminURL)
 			if err != nil {
 				return err
 			}
@@ -55,7 +53,6 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&authURL, "auth-url", deviceauth.DefaultBaseURL, "Rill Auth base URL.")
 
 	return cmd
 }
