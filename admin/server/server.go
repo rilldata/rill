@@ -175,6 +175,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		AllowedHeaders: []string{"*"},
 		// We use cookies for browser sessions, so this is required to allow ui.rilldata.com to make authenticated requests to admin.rilldata.com
 		AllowCredentials: true,
+		// Set max age to 1 hour (default if not set is 5 seconds)
+		MaxAge: 60 * 60,
 	}
 
 	// Wrap mux with CORS middleware

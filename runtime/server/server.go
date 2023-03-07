@@ -186,8 +186,24 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	httpMux.Handle("/v1/", mux)
 
 	// Build CORS options for runtime server
+
+	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
+	// This circumvents a special case where the browser will not follow redirects for wildcard allow origins. This impacts CORS API calls that get redirected.
+	// Resolving "*" to the requester's origin is normally discouraged, but is useful in development on localhost (where different ports are considered different origins).
+	// We should always set AllowedOrigins to non-wildcard values in production, so this should not have security implications.
+	var allowedOriginFunc func(string) bool
+	allowedOrigins := s.opts.AllowedOrigins
+	for _, origin := range s.opts.AllowedOrigins {
+		if origin == "*" {
+			allowedOriginFunc = func(origin string) bool { return true }
+			allowedOrigins = nil
+			break
+		}
+	}
+
 	corsOpts := cors.Options{
-		AllowedOrigins: s.opts.AllowedOrigins,
+		AllowedOrigins:  allowedOrigins,
+		AllowOriginFunc: allowedOriginFunc,
 		AllowedMethods: []string{
 			http.MethodHead,
 			http.MethodGet,
@@ -198,6 +214,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: false,
+		MaxAge:           60 * 60, // 1 hour (default if not set is 5 seconds)
 	}
 
 	// Wrap mux with CORS middleware
