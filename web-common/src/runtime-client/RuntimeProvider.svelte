@@ -19,4 +19,6 @@
   $: (host || jwt) && invalidateRuntimeQueries(queryClient);
 </script>
 
-<slot />
+{#if $runtime.host && $runtime.instanceId}
+  <slot />
+{/if}
